@@ -1,4 +1,4 @@
-package wres.io.concurrency;
+package wres.io.retrieval;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -30,6 +30,8 @@ import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
+import wres.io.concurrency.Executor;
+import wres.io.concurrency.WRESCallable;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.UnitConversions;
 import wres.io.data.details.ProjectDetails;
@@ -45,7 +47,7 @@ import wres.util.Time;
  * Created by ctubbs on 7/17/17.
  */
 @Internal(exclusivePackage = "wres.io")
-public final class InputRetriever extends WRESCallable<MetricInput<?>>
+class InputRetriever extends WRESCallable<MetricInput<?>>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(InputRetriever.class);
 
@@ -522,7 +524,7 @@ public final class InputRetriever extends WRESCallable<MetricInput<?>>
                                                this.progress,
                                                pair,
                                                isBaseline );
-            Executor.submitHighPriorityTask(saver);
+            Executor.submitHighPriorityTask( saver);
         }
     }
 

@@ -6,7 +6,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.stream.Stream;
 
@@ -14,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.generated.DataSourceConfig;
+import wres.config.generated.Feature;
 import wres.config.generated.Format;
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.Executor;
@@ -21,7 +24,9 @@ import wres.io.concurrency.ForecastSaver;
 import wres.io.concurrency.ObservationSaver;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DataSources;
+import wres.io.data.caching.Features;
 import wres.io.data.caching.Projects;
+import wres.io.data.details.FeatureDetails;
 import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
@@ -197,7 +202,8 @@ public class SourceLoader
 
             files.close();
         }
-        catch (IOException e) {
+        catch (IOException e)
+        {
             LOGGER.error(Strings.getStackTrace(e));
         }
 
@@ -222,27 +228,30 @@ public class SourceLoader
 
         if (shouldIngest(absolutePath, source, dataSourceConfig))
         {
-            if (ConfigHelper.isForecast(dataSourceConfig))
+            try
             {
-                LOGGER.trace("Loading {} as forecast data...", absolutePath);
-                task = Executor.execute(new ForecastSaver(absolutePath,
-                                                          this.projectDetails,
-                                                          dataSourceConfig,
-                                                          source,
-                                                          this.projectConfig
-                                                                  .getPair()
-                                                                  .getFeature() ) );
+                if (ConfigHelper.isForecast(dataSourceConfig))
+                {
+                    LOGGER.trace("Loading {} as forecast data...", absolutePath);
+                    task = Executor.execute(new ForecastSaver(absolutePath,
+                                                              this.projectDetails,
+                                                              dataSourceConfig,
+                                                              source,
+                                                              this.getSpecifiedFeatures() ) );
+                }
+                else
+                {
+                    LOGGER.trace("Loading {} as Observation data...");
+                    task = Executor.execute(new ObservationSaver(absolutePath,
+                                                                 this.projectDetails,
+                                                                 dataSourceConfig,
+                                                                 source,
+                                                                 this.getSpecifiedFeatures() ));
+                }
             }
-            else
+            catch (SQLException sqlException)
             {
-                LOGGER.trace("Loading {} as Observation data...");
-                task = Executor.execute(new ObservationSaver(absolutePath,
-                                                             this.projectDetails,
-                                                             dataSourceConfig,
-                                                             source,
-                                                             this.projectConfig
-                                                                     .getPair()
-                                                                     .getFeature() ) );
+                LOGGER.error("'" + absolutePath + "' could not be queued for ingest.");
             }
         }
         else
@@ -411,6 +420,23 @@ public class SourceLoader
 
         return source;
     }
+
+    private List<Feature> getSpecifiedFeatures() throws SQLException
+    {
+        if (this.specifiedFeatures == null)
+        {
+            Set<Feature> atomicFeatures = new HashSet<>();
+
+            for ( FeatureDetails details : Features.getAllDetails( projectConfig ) )
+            {
+                atomicFeatures.add( details.toFeature() );
+            }
+            this.specifiedFeatures = new ArrayList<>(atomicFeatures);
+        }
+        return this.specifiedFeatures;
+    }
+
+    private List<Feature> specifiedFeatures;
 
     /**
      * The project configuration indicating what data to used

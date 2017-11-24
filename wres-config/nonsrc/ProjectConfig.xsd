@@ -48,6 +48,7 @@
     <xs:complexType name="feature">
         <xs:sequence>
             <xs:element name="alias" type="xs:string" minOccurs="0" maxOccurs="unbounded" />
+            <xs:element name="coordinate" type="coordinateSelection" minOccurs="0" />
         </xs:sequence>
         <xs:attribute name="label" type="xs:string" />
         <xs:attribute name="locationId" type="xs:string" />
@@ -55,11 +56,20 @@
         <xs:attribute name="gage_id" type="xs:string" />
         <xs:attribute name="huc" type="xs:string" />
         <xs:attribute name="name" type="xs:string" />
+        <xs:attribute name="rfc" type="xs:string" />
         <!-- WKT can specify a point or polygon. If not using WGS84 lon/lat,
              or if not using the same coordinate system in all sources,
              then it probably needs its own geographic coordinate system
              specified. -->
         <xs:attribute name="wkt" type="xs:string" />
+    </xs:complexType>
+
+    <xs:complexType name="coordinateSelection">
+        <xs:sequence>
+            <xs:element name="longitude" type="xs:float" />
+            <xs:element name="latitude" type="xs:float" />
+            <xs:element name="range" type="xs:float" />
+        </xs:sequence>
     </xs:complexType>
 
     <!-- TODO revisit selection of a grid point by index - who wants? -->

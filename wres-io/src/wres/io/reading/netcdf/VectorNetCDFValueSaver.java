@@ -607,7 +607,7 @@ class VectorNetCDFValueSaver extends WRESRunnable
 
             // Send the copier to the Database handler's task queue and add
             // the resulting future to our list of copy operations
-            Database.storeIngestTask( Database.execute( copier ) );
+            Database.ingest( copier );
 
             // Reset the values to copy
             this.copyScript = new StringBuilder(  );

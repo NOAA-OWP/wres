@@ -1,13 +1,20 @@
 package wres.io.data.caching;
 
+import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.generated.Feature;
+import wres.config.generated.ProjectConfig;
 import wres.io.data.details.FeatureDetails;
 import wres.io.utilities.Database;
 import wres.util.Internal;
@@ -161,6 +168,67 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         return Features.getCache().get( ID );
     }
 
+    public static Set<FeatureDetails> getAllDetails( ProjectConfig projectConfig ) throws SQLException
+    {
+        Set<FeatureDetails> features = new HashSet<>(  );
+
+        for (Feature feature : projectConfig.getPair().getFeature())
+        {
+            for (FeatureDetails details : Features.getAllDetails( feature ))
+            {
+                features.add( details );
+            }
+        }
+
+        return features;
+    }
+
+    public static Set<FeatureDetails> getAllDetails(Feature feature) throws SQLException
+    {
+        Set<FeatureDetails> details = new HashSet<>(  );
+
+        if (Strings.hasValue( feature.getHuc() ))
+        {
+            details.addAll( Features.getDetailsByHUC( feature.getHuc() ) );
+        }
+
+        if (feature.getCoordinate() != null)
+        {
+            details.addAll(
+                    Features.getDetailsByCoordinates(
+                            feature.getCoordinate().getLongitude(),
+                            feature.getCoordinate().getLatitude(),
+                            feature.getCoordinate().getRange()
+                    )
+            );
+        }
+
+        if (Strings.hasValue(feature.getRfc()))
+        {
+            details.addAll(Features.getDetailsByRFC( feature.getRfc() ));
+        }
+
+        if (Strings.hasValue( feature.getLocationId() ))
+        {
+            details.add( Features.getDetailsByLID( feature.getLocationId() ) );
+        }
+
+        if (Strings.hasValue( feature.getGageId() ))
+        {
+            details.add( Features.getDetailsByGageID( feature.getGageId() ) );
+        }
+
+        if (feature.getComid() != null)
+        {
+            details.add (Features.getDetails( feature.getComid().intValue(),
+                                              null,
+                                              null,
+                                              null ));
+        }
+
+        return details;
+    }
+
     public static FeatureDetails getDetails(Integer comid, String lid, String gageID, String huc)
             throws SQLException
     {
@@ -176,6 +244,151 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
     public static FeatureDetails getDetailsByGageID(String gageID) throws SQLException
     {
         return Features.getDetails( null, null, gageID, null );
+    }
+
+    public static List<FeatureDetails> getDetailsByCoordinates(Float longitude, Float latitude, Float range)
+            throws SQLException
+    {
+        Double radianLatitude = Math.toRadians( latitude );
+
+        // This is the approximate distance between longitudinal degrees at
+        // the equator
+        Double distanceAtEquator = 111321.0;
+
+        // This is an approximation
+        Double distanceOfOneDegree = Math.cos(radianLatitude) * distanceAtEquator;
+
+        // We take the max between the approximate distance and 0.00005 because
+        // 0.00005 serves as a decent epsilon for database distance comparison.
+        // If the distance is much smaller than that, float point error
+        // can exclude the requested location, even if the coordinates were
+        // spot on.
+        Double rangeInDegrees = Math.max( range / distanceOfOneDegree, 0.00005);
+
+        // TODO: Convert to database function
+        String script = "";
+        script += "WITH feature_and_distance AS" + NEWLINE;
+        script += "(" + NEWLINE;
+        script += "    SELECT SQRT((" + latitude + " - latitude)^2 + (" + longitude + " - longitude)^2) AS distance, *" + NEWLINE;
+        script += "    FROM wres.Feature" + NEWLINE;
+        script += ")" + NEWLINE;
+        script += "SELECT *" + NEWLINE;
+        script += "FROM feature_and_distance" + NEWLINE;
+        script += "WHERE distance <= " + rangeInDegrees + ";";
+
+        Connection connection = null;
+        ResultSet closestFeatures = null;
+        List<FeatureDetails> features = new ArrayList<>(  );
+
+        try
+        {
+            connection = Database.getHighPriorityConnection();
+            closestFeatures = Database.getResults( connection, script );
+
+            while (closestFeatures.next())
+            {
+                FeatureDetails details = new FeatureDetails( closestFeatures );
+                features.add( details );
+                Features.getCache().addElement( details );
+            }
+        }
+        finally
+        {
+            if (closestFeatures != null)
+            {
+                closestFeatures.close();
+            }
+
+            if (connection != null)
+            {
+                Database.returnHighPriorityConnection( connection );
+            }
+        }
+
+        return features;
+
+
+    }
+
+    public static List<FeatureDetails> getDetailsByHUC(String huc)
+            throws SQLException
+    {
+        String script = "";
+
+        script += "SELECT *" + NEWLINE;
+        script += "FROM wres.Feature" + NEWLINE;
+        script += "WHERE huc LIKE '" + huc + "%';";
+
+        Connection connection = null;
+        ResultSet hucFeatures = null;
+        List<FeatureDetails> features = new ArrayList<>(  );
+
+        try
+        {
+            connection = Database.getHighPriorityConnection();
+            hucFeatures = Database.getResults( connection, script );
+
+            while (hucFeatures.next())
+            {
+                FeatureDetails details = new FeatureDetails( hucFeatures );
+                features.add( details );
+                Features.getCache().addElement( details );
+            }
+        }
+        finally
+        {
+            if (hucFeatures != null)
+            {
+                hucFeatures.close();
+            }
+
+            if (connection != null)
+            {
+                Database.returnHighPriorityConnection( connection );
+            }
+        }
+
+        return features;
+    }
+
+    public static List<FeatureDetails> getDetailsByRFC(String rfc)
+            throws SQLException
+    {
+        String script = "";
+        script += "SELECT *" + NEWLINE;
+        script += "FROM wres.Feature" + NEWLINE;
+        script += "WHERE rfc = '" + rfc + "';";
+
+        Connection connection = null;
+        ResultSet rfcFeatures = null;
+        List<FeatureDetails> features = new ArrayList<>(  );
+
+        try
+        {
+            connection = Database.getHighPriorityConnection();
+            rfcFeatures = Database.getResults( connection, script );
+
+            while (rfcFeatures.next())
+            {
+                FeatureDetails details = new FeatureDetails( rfcFeatures );
+                features.add( details );
+                Features.getCache().addElement( details );
+            }
+        }
+        finally
+        {
+            if (rfcFeatures != null)
+            {
+                rfcFeatures.close();
+            }
+
+            if (connection != null)
+            {
+                Database.returnHighPriorityConnection( connection );
+            }
+        }
+
+        return features;
     }
 
     public static Integer getVariablePositionID(Integer comid, String lid, String gageID, String huc, Integer variableID)

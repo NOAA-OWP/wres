@@ -1,16 +1,12 @@
 package wres.io.retrieval;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.InvalidPropertiesFormatException;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
 import java.util.NavigableMap;
 import java.util.NoSuchElementException;
 import java.util.TreeMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import org.slf4j.Logger;
@@ -18,17 +14,15 @@ import org.slf4j.Logger;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.VectorOfDoubles;
-import wres.io.concurrency.InputRetriever;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Projects;
-import wres.io.data.caching.UnitConversions;
 import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
 import wres.util.Collections;
+import wres.util.FormattedStopwatch;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
 
@@ -92,6 +86,8 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
     {
         if (this.getProjectDetails().usesProbabilityThresholds() && this.climatology == null)
         {
+            FormattedStopwatch stopwatch = new FormattedStopwatch();
+            stopwatch.start();
             /**
              * This should generate a script of the form:
              *
@@ -139,7 +135,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
              *
              */
 
-            StringBuilder script = new StringBuilder(  );
+            /*StringBuilder script = new StringBuilder(  );
             script.append("SELECT O.observed_value,").append(NEWLINE);
             script.append("    O.measurementunit_id,").append(NEWLINE);
             script.append("    D.member_number,").append(NEWLINE);
@@ -190,10 +186,16 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
 
             Connection connection = null;
             ResultSet results = null;
+            VectorOfDoubles testClimatology;*/
 
             try
             {
-                connection = Database.getConnection();
+                ClimatologyBuilder climatologyBuilder = new ClimatologyBuilder( this.getProjectDetails(),
+                                                                                this.getProjectDetails().getLeft(),
+                                                                                this.getFeature() );
+                this.climatology = climatologyBuilder.getClimatology();
+
+                /*connection = Database.getConnection();
                 results = Database.getResults( connection, script.toString() );
 
                 int memberNumber = -1;
@@ -311,11 +313,23 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
                     this.climatology =
                             DefaultDataFactory.getInstance()
                                               .vectorOf( aggregatedValues.toArray( new Double[aggregatedValues.size()] ) );
-                }
+                }*/
+            }
+            catch ( InterruptedException e )
+            {
+                e.printStackTrace();
+            }
+            catch ( ExecutionException e )
+            {
+                e.printStackTrace();
+            }
+            catch ( NoDataException e )
+            {
+                e.printStackTrace();
             }
             finally
             {
-                if (results != null)
+                /*if (results != null)
                 {
                     results.close();
                 }
@@ -323,7 +337,11 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
                 if (connection != null)
                 {
                     Database.returnConnection( connection );
-                }
+                }*/
+
+                stopwatch.stop();
+
+                this.getLogger().info("Climatology retrieval took {}", stopwatch.getFormattedDuration());
             }
         }
 

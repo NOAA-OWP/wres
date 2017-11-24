@@ -5,6 +5,7 @@ import java.sql.SQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.io.utilities.DataSet;
 import wres.io.utilities.Database;
 import wres.util.Internal;
 import wres.util.Strings;
@@ -45,11 +46,14 @@ public class SQLExecutor extends WRESRunnable
 	}
 
 	@Override
-    public void execute() {
+    public void execute()
+	{
 		try
 		{
 			Database.execute(this.script);
-		} catch (SQLException e) {
+		}
+		catch (SQLException e)
+		{
 			// We allow the hiding of errors on the screen on the rare
 			// occasion where failing in the database is acceptable
 			if (this.displayErrors)

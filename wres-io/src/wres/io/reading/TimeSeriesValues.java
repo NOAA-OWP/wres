@@ -111,7 +111,7 @@ public class TimeSeriesValues
         CopyExecutor copier = new CopyExecutor( TimeSeriesValues.getTableDefinition( partitionName ),
                                                 values.toString(),
                                                 DELIMITER );
-        Database.storeIngestTask(Database.execute( copier ));
+        Database.ingest(copier);
 
         // Replace the old list of values with a new one
         VALUES_TO_SAVE.put( partitionName, new LinkedList<>(  ) );

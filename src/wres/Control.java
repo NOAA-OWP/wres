@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -215,17 +216,28 @@ public class Control implements Function<String[], Integer>
                       projectConfigPlus.getPath() );
 
         // TODO: Implement way of iterating through features correctly
-        Feature feature = projectConfig.getPair()
+        /*Feature feature = projectConfig.getPair()
                                        .getFeature()
-                                       .get( 0 );
+                                       .get( 0 );*/
 
         ProgressMonitor.setShowStepDescription( false );
-        ProgressMonitor.resetMonitor();
-        processFeature( feature,
-                        projectConfigPlus,
-                        pairExecutor,
-                        thresholdExecutor,
-                        metricExecutor );
+
+        try
+        {
+            for (Feature feature : Operations.decomposeFeatures( projectConfig ))
+            {
+                ProgressMonitor.resetMonitor();
+                processFeature( feature,
+                                projectConfigPlus,
+                                pairExecutor,
+                                thresholdExecutor,
+                                metricExecutor );
+            }
+        }
+        catch ( SQLException e )
+        {
+            throw new IOException( "Data for a feature could not be processed.", e );
+        }
     }
 
     /**

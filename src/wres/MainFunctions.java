@@ -937,7 +937,8 @@ final class MainFunctions
 
 							copyCount++;
 
-							if (copyCount >= SystemSettings.getMaximumCopies()) {
+							if (copyCount >= SystemSettings.getMaximumCopies())
+							{
 								LOGGER.trace("The copy count now exceeds the maximum allowable copies, so the values are being sent to save.");
 								SQLExecutor sqlExecutor = new SQLExecutor(builder.toString());
 								sqlExecutor.setOnRun(ProgressMonitor.onThreadStartHandler());
@@ -1083,9 +1084,7 @@ final class MainFunctions
                     {
                         if (parameters.size() >= SystemSettings.maximumDatabaseInsertStatements())
                         {
-                            WRESRunnable runnable = createThread.apply(parameters);
-
-                            Database.storeIngestTask(Database.execute(runnable));
+                            Database.ingest( createThread.apply( parameters ) );
                             parameters = new ArrayList<>();
                         }
 
@@ -1095,8 +1094,7 @@ final class MainFunctions
                         }
                     }
 
-                    WRESRunnable runnable = createThread.apply(parameters);
-                    Database.storeIngestTask(Database.execute(runnable));
+                    Database.ingest( createThread.apply( parameters ) );
 
                     Database.completeAllIngestTasks();
 

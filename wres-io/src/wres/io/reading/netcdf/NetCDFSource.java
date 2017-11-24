@@ -82,7 +82,7 @@ public class NetCDFSource extends BasicSource
 
                 saver.setOnRun(ProgressMonitor.onThreadStartHandler());
                 saver.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
-                Database.storeIngestTask(Executor.execute(saver));
+                Database.ingest(saver);
             }
             catch (SQLException e)
 			{

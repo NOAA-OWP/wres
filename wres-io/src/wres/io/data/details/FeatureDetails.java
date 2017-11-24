@@ -7,6 +7,7 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import wres.config.generated.Feature;
 import wres.io.utilities.Database;
 import wres.util.Internal;
 import wres.util.Strings;
@@ -54,6 +55,27 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
     public FeatureDetails( ResultSet row) throws SQLException
     {
         this.update( row );
+    }
+
+    public Feature toFeature()
+    {
+        Long comid = null;
+
+        if (this.getComid() != null)
+        {
+            comid = this.getComid().longValue();
+        }
+
+        return new Feature( null,
+                            null,
+                            this.getFeatureName(),
+                            this.getLid(),
+                            comid,
+                            this.getGageID(),
+                            this.getHuc(),
+                            this.getFeatureName(),
+                            this.getRfc(),
+                            null );
     }
 
     private void update(ResultSet row) throws SQLException
