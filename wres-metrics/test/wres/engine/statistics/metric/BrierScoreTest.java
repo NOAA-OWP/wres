@@ -8,8 +8,8 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
-import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
+import wres.datamodel.inputs.pairs.PairedInput;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.outputs.MetricOutputMetadata;
 import wres.datamodel.outputs.VectorOutput;
@@ -35,7 +35,7 @@ public final class BrierScoreTest
     public void test1BrierScore() throws MetricParameterException
     {
         //Generate some data
-        final MetricInput<?> input = MetricTestDataFactory.getDiscreteProbabilityPairsOne();
+        final PairedInput<?> input = MetricTestDataFactory.getDiscreteProbabilityPairsOne();
 
         //Build the metric
         final BrierScoreBuilder b = new BrierScore.BrierScoreBuilder();
@@ -48,7 +48,7 @@ public final class BrierScoreTest
 
         //Metadata for the output
         final MetricOutputMetadata m1 =
-                                      metaFac.getOutputMetadata(input.size(),
+                                      metaFac.getOutputMetadata(input.getData().size(),
                                                                 metaFac.getDimension(),
                                                                 metaFac.getDimension(),
                                                                 MetricConstants.BRIER_SCORE,

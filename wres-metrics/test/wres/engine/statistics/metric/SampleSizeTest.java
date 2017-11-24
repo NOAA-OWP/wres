@@ -55,7 +55,7 @@ public final class SampleSizeTest
 
         //Check the results
         final ScalarOutput actual = ss.apply(input);
-        final ScalarOutput expected = outF.ofScalarOutput(input.size(), m1);
+        final ScalarOutput expected = outF.ofScalarOutput(input.getData().size(), m1);
         assertTrue("Actual: " + actual.getData().doubleValue() + ". Expected: " + expected.getData().doubleValue()
             + ".", actual.equals(expected));
 

@@ -85,12 +85,6 @@ class SafeMulticategoryPairs implements MulticategoryPairs
     {
         return baselineMeta;
     }
-
-    @Override
-    public int size()
-    {
-        return mainInput.size();
-    }
     
     @Override
     public VectorOfDoubles getClimatology()
@@ -117,10 +111,10 @@ class SafeMulticategoryPairs implements MulticategoryPairs
     }      
 
     /**
-     * A {@link MetricInputBuilder} to build the metric input.
+     * A {@link DefaultPairedInputBuilder} to build the metric input.
      */
 
-    static class MulticategoryPairsBuilder extends MetricInputBuilder<List<VectorOfBooleans>>
+    static class MulticategoryPairsBuilder extends DefaultPairedInputBuilder<VectorOfBooleans>
     {
 
         /**

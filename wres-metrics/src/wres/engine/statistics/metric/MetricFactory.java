@@ -13,6 +13,7 @@ import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.MulticategoryPairs;
+import wres.datamodel.inputs.pairs.PairedInput;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.MatrixOutput;
@@ -1212,7 +1213,7 @@ public class MetricFactory
      * @throws MetricParameterException if one or more parameter values is incorrect
      */
 
-    <T extends MetricInput<?>> SampleSize<T> ofSampleSize() throws MetricParameterException
+    <T extends PairedInput<?>> SampleSize<T> ofSampleSize() throws MetricParameterException
     {
         return (SampleSize<T>) new SampleSizeBuilder<T>().setOutputFactory( outputFactory ).build();
     }

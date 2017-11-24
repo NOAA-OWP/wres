@@ -51,7 +51,7 @@ public final class ReliabilityDiagramTest
 
         //Metadata for the output
         final MetricOutputMetadata m1 =
-                                      metaFac.getOutputMetadata(input.size(),
+                                      metaFac.getOutputMetadata(input.getData().size(),
                                                                 metaFac.getDimension(),
                                                                 metaFac.getDimension(),
                                                                 MetricConstants.RELIABILITY_DIAGRAM,

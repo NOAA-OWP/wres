@@ -1,5 +1,6 @@
 package wres.datamodel;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -84,12 +85,6 @@ class SafeEnsemblePairs implements EnsemblePairs
     }
 
     @Override
-    public int size()
-    {
-        return mainInput.size();
-    }
-
-    @Override
     public VectorOfDoubles getClimatology()
     {
         return climatology;
@@ -102,10 +97,10 @@ class SafeEnsemblePairs implements EnsemblePairs
     }
 
     /**
-     * A {@link MetricInputBuilder} to build the metric input.
+     * A {@link DefaultPairedInputBuilder} to build the metric input.
      */
 
-    static class EnsemblePairsBuilder extends MetricInputBuilder<List<PairOfDoubleAndVectorOfDoubles>>
+    static class EnsemblePairsBuilder extends DefaultPairedInputBuilder<PairOfDoubleAndVectorOfDoubles>
     {
 
         /**
@@ -125,9 +120,9 @@ class SafeEnsemblePairs implements EnsemblePairs
             {
                 this.mainInput.addAll( mainInput );
             }
-            else
+            else if ( Objects.nonNull( mainInput ) )
             {
-                this.mainInput = mainInput;
+                this.mainInput = new ArrayList<>( mainInput );
             }
             return this;
         }
@@ -139,9 +134,9 @@ class SafeEnsemblePairs implements EnsemblePairs
             {
                 this.baselineInput.addAll( baselineInput );
             }
-            else
+            else if ( Objects.nonNull( baselineInput ) )
             {
-                this.baselineInput = baselineInput;
+                this.baselineInput = new ArrayList<>( baselineInput );
             }
             return this;
         }

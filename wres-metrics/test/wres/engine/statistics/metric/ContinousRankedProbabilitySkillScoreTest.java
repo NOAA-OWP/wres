@@ -68,7 +68,7 @@ public final class ContinousRankedProbabilitySkillScoreTest
 
         //Metadata for the output
         final MetricOutputMetadata m1 =
-                metaFac.getOutputMetadata( input.size(),
+                metaFac.getOutputMetadata( input.getData().size(),
                                            metaFac.getDimension(),
                                            metaFac.getDimension(),
                                            MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,

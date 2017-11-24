@@ -3,9 +3,12 @@ package wres.datamodel.inputs;
 import wres.datamodel.metadata.Metadata;
 
 /**
- * An input to be iterated over by a metric. A metric input may comprise paired data or unpaired data. Each
- * dataset should contain one or more elements with no, explicit, missing values. Missing values should be handled in
- * advance. 
+ * <p>An input to be iterated over by a metric. A metric input may comprise paired data or unpaired data.</p>
+ * 
+ * <p><b>Implementation Requirements:</b></p>
+ * 
+ * <p>A dataset may comprise missing elements, including both <code>null</code> elements that are used to retain 
+ * position and elements of which a subset of values correspond to a missing value identifier.</p>
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
@@ -29,13 +32,5 @@ public interface MetricInput<S>
      */
 
     Metadata getMetadata();
-
-    /**
-     * Returns the number of elements in the input.
-     * 
-     * @return the size of the input
-     */
-
-    int size();
 
 }

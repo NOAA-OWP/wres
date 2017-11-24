@@ -136,7 +136,7 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
      */
 
     final MetricCollection<SingleValuedPairs, MultiVectorOutput> singleValuedMultiVector;
-    
+
     /**
      * The list of metrics associated with the verification project.
      */
@@ -175,7 +175,7 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
      */
 
     public abstract T getStoredMetricOutput();
-    
+
     /**
      * Returns true if a prior call led to the caching of metric outputs.
      * 
@@ -192,7 +192,7 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
      */
 
     abstract void validate( ProjectConfig config ) throws MetricConfigurationException;
-    
+
     /**
      * Returns true if one or more metric outputs will be cached across successive calls to {@link #apply(Object)},
      * false otherwise.
@@ -597,9 +597,9 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
      * @throws MetricInputSliceException if the input contains insufficient data for metric calculation 
      */
 
-    void checkSlice( MetricInput<?> subset, Threshold threshold ) throws MetricInputSliceException
+    void checkSlice( PairedInput<?> subset, Threshold threshold ) throws MetricInputSliceException
     {
-        if ( subset.size() < minimumSampleSize )
+        if ( subset.getData().size() < minimumSampleSize )
         {
             throw new MetricInputSliceException( "Failed to compute one or more metrics for threshold '"
                                                  + threshold
