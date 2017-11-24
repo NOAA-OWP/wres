@@ -31,9 +31,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.io.concurrency.SQLExecutor;
+import wres.io.concurrency.WRESCallable;
 import wres.io.concurrency.WRESRunnable;
 import wres.io.config.SystemSettings;
 import wres.io.reading.IngestException;
+import wres.io.reading.TimeSeriesValues;
 import wres.util.FormattedStopwatch;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
@@ -108,9 +110,23 @@ public final class Database {
 	 * Adds a task to the ingest queue
 	 * @param task The ingest task to add to the queue
 	 */
-	public static void storeIngestTask(Future task)
+	private static void storeIngestTask(Future task)
 	{
-		storedIngestTasks.add(task);
+		Database.storedIngestTasks.add(task);
+	}
+
+	public static Future<?> ingest(WRESRunnable ingestTask)
+	{
+		Future<?> result = Database.execute( ingestTask );
+		Database.storeIngestTask( result );
+		return result;
+	}
+
+	public static <U> Future<U> ingest(WRESCallable<U> ingestTask)
+	{
+		Future<U> result = Database.submit( ingestTask );
+		Database.storeIngestTask( result );
+		return result;
 	}
 
 	/**
@@ -323,6 +339,10 @@ public final class Database {
             LOGGER.trace( "Now completing all issued ingest tasks..." );
         }
 
+        // This will gather all left over timeseries values that haven't
+        // been sent to the database yet.
+        TimeSeriesValues.complete();
+
 		Future task;
 	    boolean shouldAnalyze = false;
 
@@ -519,7 +539,7 @@ public final class Database {
      * communicate with the database
      */
 	public static void execute(final String query) throws SQLException
-	{	
+	{
 		Connection connection = null;
 		Statement statement = null;
 
@@ -555,7 +575,6 @@ public final class Database {
 				returnConnection(connection);
 			}
 		}
-
 	}
 
     /**

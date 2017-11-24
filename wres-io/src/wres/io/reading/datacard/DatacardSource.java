@@ -337,7 +337,7 @@ public class DatacardSource extends BasicSource
             CopyExecutor copier = new CopyExecutor(currentTableDefinition, currentScript.toString(), delimiter);
             copier.setOnRun(ProgressMonitor.onThreadStartHandler());
             copier.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
-            Database.storeIngestTask(Database.execute(copier));
+            Database.ingest(copier);
             currentScript = null;
         }
     }

@@ -8,7 +8,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -21,6 +24,9 @@ import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.Executor;
 import wres.io.config.SystemSettings;
+import wres.io.data.caching.Features;
+import wres.io.data.details.FeatureDetails;
+import wres.io.data.details.ProjectDetails;
 import wres.io.reading.IngestException;
 import wres.io.reading.SourceLoader;
 import wres.io.reading.fews.PIXMLReader;
@@ -239,5 +245,18 @@ public final class Operations {
         }
 
         return project.toString();
+    }
+
+    public static Feature[] decomposeFeatures(ProjectConfig projectConfig)
+            throws SQLException
+    {
+        Set<Feature> atomicFeatures = new HashSet<>();
+
+        for (FeatureDetails details : Features.getAllDetails( projectConfig ))
+        {
+            atomicFeatures.add( details.toFeature() );
+        }
+
+        return atomicFeatures.toArray( new Feature[atomicFeatures.size()] );
     }
 }

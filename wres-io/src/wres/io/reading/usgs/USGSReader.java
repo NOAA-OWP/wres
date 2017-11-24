@@ -453,7 +453,7 @@ public class USGSReader extends BasicSource
 
             StatementRunner statement = new StatementRunner( USGSReader.UPSERT, values );
             statement.setOnComplete( ProgressMonitor.onThreadCompleteHandler() );
-            Database.storeIngestTask(Database.execute( statement ));
+            Database.ingest(statement);
 
             ProgressMonitor.increment();
         }

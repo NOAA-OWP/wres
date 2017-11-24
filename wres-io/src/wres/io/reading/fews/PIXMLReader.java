@@ -423,7 +423,7 @@ public final class PIXMLReader extends XMLReader
                         delimiter);
                 copier.setOnRun(ProgressMonitor.onThreadStartHandler());
                 copier.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
-                Database.storeIngestTask(Database.execute(copier));
+                Database.ingest(copier);
 
                 copyCount.put(lead, 0);
                 builderMap.put(lead, new StringBuilder());
@@ -490,7 +490,7 @@ public final class PIXMLReader extends XMLReader
                                               delimiter );
                     copier.setOnRun( ProgressMonitor.onThreadStartHandler() );
                     copier.setOnComplete( ProgressMonitor.onThreadCompleteHandler() );
-                    Database.storeIngestTask( Database.execute( copier ) );
+                    Database.ingest(copier);
                     PIXMLReader.builderMap.put( key, new StringBuilder() );
                 }
             }
@@ -505,7 +505,7 @@ public final class PIXMLReader extends XMLReader
             CopyExecutor copier = new CopyExecutor(currentTableDefinition, currentScript.toString(), delimiter);
             copier.setOnRun(ProgressMonitor.onThreadStartHandler());
             copier.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
-            Database.storeIngestTask(Database.execute(copier));
+            Database.ingest(copier);
             currentScript = null;
         }
     }
