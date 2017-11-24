@@ -55,6 +55,7 @@ public class USGSParameterReader
     {
         try ( BufferedReader reader = new BufferedReader( new FileReader( this.fileName ) ))
         {
+            // We don't care about the header and want to skip it
             reader.readLine();
             String line = "";
             while ((line = reader.readLine()) != null)
@@ -98,6 +99,18 @@ public class USGSParameterReader
         }
         finally
         {
+            if (statement != null)
+            {
+                try
+                {
+                    statement.close();
+                }
+                catch ( SQLException e )
+                {
+                    LOGGER.debug("The prepared statement used to save USGS " +
+                                 "parameters could not be closed.");
+                }
+            }
             if (connection != null)
             {
                 Database.returnConnection( connection );
@@ -223,6 +236,11 @@ public class USGSParameterReader
         }
         finally
         {
+            if (statement != null)
+            {
+                statement.close();
+            }
+
             if (connection != null)
             {
                 Database.returnConnection( connection );

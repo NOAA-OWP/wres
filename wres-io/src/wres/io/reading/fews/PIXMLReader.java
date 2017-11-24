@@ -555,6 +555,9 @@ public final class PIXMLReader extends XMLReader
 					//	If we are at the tag for the location id, save it to the location metadata
 					this.currentLID = XML.getXMLText(reader);
 
+					// If this is an alias, get the real LID
+					this.currentLID = this.getLIDToSave( this.currentLID );
+
 					if (currentLID.length() > 5)
 					{
 					    String shortendID = currentLID.substring(0, 5);
@@ -998,6 +1001,23 @@ public final class PIXMLReader extends XMLReader
         }
 
         return value;
+    }
+
+    protected String getLIDToSave(final String lid)
+    {
+        String lidToSave = lid;
+        for (Feature feature : this.getSpecifiedFeatures())
+        {
+            if (Strings.hasValue( feature.getLocationId() ) &&
+                feature.getAlias() != null &&
+                Collections.exists( feature.getAlias(), alias -> alias.equalsIgnoreCase( lid ) ) )
+            {
+                lidToSave = feature.getLocationId();
+                break;
+            }
+        }
+
+        return lidToSave;
     }
 
     private LocalDateTime getStartDate()

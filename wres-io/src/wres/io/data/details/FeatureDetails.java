@@ -3,6 +3,7 @@ package wres.io.data.details;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -32,6 +33,8 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
     private Float longitude = null;
 	private Float latitude = null;
 	private Integer nwmIndex = null;
+
+	private List<String> aliases = null;
 
 	private FeatureKey key = null;
 	
@@ -66,7 +69,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
             comid = this.getComid().longValue();
         }
 
-        return new Feature( null,
+        return new Feature( aliases,
                             null,
                             this.getFeatureName(),
                             this.getLid(),
@@ -241,6 +244,11 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
             // Reset the ID since a key changed
             this.featureId = null;
         }
+    }
+
+    public void setAliases(List<String> aliases)
+    {
+        this.aliases = aliases;
     }
 
 	@Override

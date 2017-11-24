@@ -15,8 +15,10 @@ import wres.io.utilities.DataSet;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
 import wres.util.Collections;
+import wres.util.Strings;
 import wres.util.Time;
 
+import java.io.IOException;
 import java.security.InvalidParameterException;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -228,18 +230,28 @@ class ClimatologyBuilder
     private Feature feature;
 
     public ClimatologyBuilder(ProjectDetails projectDetails, DataSourceConfig dataSourceConfig, Feature feature)
-            throws SQLException
+            throws IOException
     {
         this.projectDetails = projectDetails;
         this.dataSourceConfig = dataSourceConfig;
         this.feature = feature;
 
-        String earliestDate = this.projectDetails.getZeroDate( this.dataSourceConfig );
-        this.prepareDateLoad( earliestDate );
-        //this.prepareValueLoad( earliestDate );
+        try
+        {
+            String earliestDate =
+                    this.projectDetails.getZeroDate( this.dataSourceConfig );
+            this.prepareDateLoad( earliestDate );
+        }
+        catch (SQLException e)
+        {
+            throw new IOException( "The earliest date to retrieve " +
+                                   "climatological data for could not be " +
+                                   "determined.",
+                                   e );
+        }
     }
 
-    private void prepareDateLoad(String earliestDate) throws SQLException
+    private void prepareDateLoad(String earliestDate)
     {
         this.futureClimatologicalDates = Database.execute( new WRESRunnable() {
             @Override
@@ -296,7 +308,7 @@ class ClimatologyBuilder
                 }
                 catch ( SQLException e )
                 {
-                    e.printStackTrace();
+                    LOGGER.error( Strings.getStackTrace(e));
                 }
                 finally
                 {
@@ -308,7 +320,7 @@ class ClimatologyBuilder
                         }
                         catch ( SQLException e )
                         {
-                            e.printStackTrace();
+                            LOGGER.error( Strings.getStackTrace(e));
                         }
                     }
 
@@ -319,75 +331,9 @@ class ClimatologyBuilder
                 }
             }
         } );
-
-        /*StringBuilder script = new StringBuilder("SELECT").append(NEWLINE);
-        script.append("    (")
-              .append(earliestDate).append("::timestamp without time zone")
-              .append(" + ( member_number || ' ")
-              .append(this.projectDetails.getAggregationUnit())
-              .append("')::INTERVAL)::TEXT AS start_date,").append(NEWLINE);
-        script.append("    (")
-              .append(earliestDate).append("::timestamp without time zone")
-              .append(" + ( ( member_number + ").append(this.projectDetails.getAggregationPeriod())
-              .append(" ) || ' ").append(this.projectDetails.getAggregationUnit()).append("')::INTERVAL)::TEXT AS end_date")
-              .append(NEWLINE);
-        script.append("FROM generate_series(0, ")
-              .append( ConfigHelper.getValueCount(this.projectDetails,
-                                                  this.dataSourceConfig,
-                                                  this.feature))
-              .append(" * ")
-              .append(this.projectDetails.getAggregationPeriod())
-              .append(", ")
-              .append(this.projectDetails.getAggregationPeriod())
-              .append(") AS member_number;");
-        SQLExecutor sqlExecutor = new SQLExecutor( script.toString() );
-        this.futureClimatologicalDates = Database.submit( sqlExecutor);*/
     }
 
-    // This assumes that the climatology will always be "observed" values.
-    // I'm not sure if that is valid - Chris Tubbs
-    /*private void prepareValueLoad(String earliestDate) throws SQLException
-    {
-        StringBuilder script = new StringBuilder();
-
-        script.append("SELECT O.observed_value,").append(NEWLINE);
-        script.append("    O.measurementunit_id,").append(NEWLINE);
-        script.append("    O.observation_time::text").append(NEWLINE);
-        script.append("FROM wres.Observation O").append(NEWLINE);
-        script.append("WHERE ")
-              .append(ConfigHelper.getVariablePositionClause( this.feature,
-                                                              ConfigHelper.getVariableID( this.dataSourceConfig ),
-                                                              "O"))
-              .append(NEWLINE);
-        script.append("    AND EXISTS (").append(NEWLINE);
-        script.append("        SELECT 1").append(NEWLINE);
-        script.append("        FROM wres.ProjectSource PS").append(NEWLINE);
-        script.append("        WHERE PS.project_id = ").append(this.projectDetails.getId()).append(NEWLINE);
-        script.append("            AND PS.member = ");
-
-        if (this.projectDetails.getLeft().equals(this.dataSourceConfig))
-        {
-            script.append(ProjectDetails.LEFT_MEMBER);
-        }
-        else if (this.projectDetails.getRight().equals(this.dataSourceConfig))
-        {
-            script.append(ProjectDetails.RIGHT_MEMBER);
-        }
-        else
-        {
-            script.append(ProjectDetails.BASELINE_MEMBER);
-        }
-
-        script.append(NEWLINE);
-        script.append("        AND PS.source_id = O.source_id").append(NEWLINE);
-        script.append("        AND PS.inactive_time IS NULL").append(NEWLINE);
-        script.append(");");
-        this.futureValues = Database.submit(new SQLExecutor( script.toString() ));
-    }*/
-
-    public VectorOfDoubles getClimatology()
-            throws InterruptedException, ExecutionException, NoDataException,
-            SQLException
+    public VectorOfDoubles getClimatology() throws IOException
     {
         if (this.climatology == null)
         {
@@ -413,30 +359,27 @@ class ClimatologyBuilder
         return this.climatology;
     }
 
-    private void setupDates()
-            throws ExecutionException, InterruptedException, NoDataException
+    private void setupDates() throws IOException
     {
-        /*DataSet dates =*/ this.futureClimatologicalDates.get();
-
-        /*while (dates.next())
+        String errorPrepend = "The process of determining dates within which to aggregate ";
+        try
         {
-            if (this.values == null)
-            {
-                this.values = new TreeMap<>();
-            }
-
-            this.values.put(
-                    new DateRange(dates.getString( "start_date" ),
-                                  dates.getString("end_date")),
-                    new ArrayList<>(  ));
-        }*/
+            this.futureClimatologicalDates.get();
+        }
+        catch ( InterruptedException e )
+        {
+            throw new IOException( errorPrepend +
+                                   " was interupted and could not be completed.",
+                                   e );
+        }
+        catch ( ExecutionException e )
+        {
+            throw new IOException( errorPrepend + "encountered an error.", e );
+        }
     }
 
-    private void addValues()
-            throws ExecutionException, InterruptedException, NoDataException,
-            SQLException
+    private void addValues() throws IOException
     {
-        //DataSet rawValues = this.futureValues.get();
 
         StringBuilder script = new StringBuilder();
 
@@ -444,11 +387,35 @@ class ClimatologyBuilder
         script.append("    O.measurementunit_id,").append(NEWLINE);
         script.append("    O.observation_time::text").append(NEWLINE);
         script.append("FROM wres.Observation O").append(NEWLINE);
-        script.append("WHERE ")
-              .append(ConfigHelper.getVariablePositionClause( this.feature,
-                                                              ConfigHelper.getVariableID( this.dataSourceConfig ),
-                                                              "O"))
-              .append(NEWLINE);
+        try
+        {
+            script.append("WHERE ")
+                  .append(ConfigHelper.getVariablePositionClause( this.feature,
+                                                                  ConfigHelper.getVariableID( this.dataSourceConfig ),
+                                                                  "O"))
+                  .append(NEWLINE);
+        }
+        catch ( SQLException e )
+        {
+            String message = "The proper variable used to generate climatology ";
+            message += "data could not be gleaned from the ";
+
+            if (this.projectDetails.getLeft() == this.dataSourceConfig)
+            {
+                message += ProjectDetails.LEFT_MEMBER;
+            }
+            else if (this.projectDetails.getRight() == this.dataSourceConfig)
+            {
+                message += ProjectDetails.RIGHT_MEMBER;
+            }
+            else
+            {
+                message += ProjectDetails.BASELINE_MEMBER;
+            }
+
+            message += " side of the data source specification.";
+            throw new IOException( message, e );
+        }
         script.append("    AND EXISTS (").append(NEWLINE);
         script.append("        SELECT 1").append(NEWLINE);
         script.append("        FROM wres.ProjectSource PS").append(NEWLINE);
@@ -507,11 +474,22 @@ class ClimatologyBuilder
                 }
             }
         }
+        catch ( SQLException e )
+        {
+            throw new IOException( "Values could not be retrieved to add to the climatology data.", e );
+        }
         finally
         {
             if (results != null)
             {
-                results.close();
+                try
+                {
+                    results.close();
+                }
+                catch ( SQLException e )
+                {
+                    LOGGER.debug( "ClimatologyBuilder#addValues: the result set could not be closed." );
+                }
             }
 
             if (connection != null)
