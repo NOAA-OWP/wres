@@ -17,6 +17,8 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
+import wres.datamodel.Slicer;
+import wres.datamodel.Threshold;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.MetricInputSliceException;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
@@ -33,8 +35,6 @@ import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.ScalarOutput;
 import wres.datamodel.outputs.VectorOutput;
 import wres.datamodel.time.TimeWindow;
-import wres.datamodel.Slicer;
-import wres.datamodel.Threshold;
 import wres.engine.statistics.metric.MetricProcessorByTime.MetricFuturesByTime.MetricFuturesByTimeBuilder;
 
 /**
@@ -612,7 +612,7 @@ class MetricProcessorEnsemblePairsByTime extends MetricProcessorByTime
             throws MetricInputSliceException
     {
         long nonOccurrences = subset.getData().stream().filter( a -> Double.compare( a.getItemOne(), 0 ) == 0 ).count();
-        double min = Math.min( nonOccurrences, subset.size() - nonOccurrences );
+        double min = Math.min( nonOccurrences, subset.getData().size() - nonOccurrences );
         if ( min < minimumSampleSize )
         {
             throw new MetricInputSliceException( "Failed to compute one or more metrics for threshold '"

@@ -50,9 +50,10 @@ class BrierSkillScore extends MeanSquareErrorSkillScore<DiscreteProbabilityPairs
             if ( climP > 0 )
             {
                 result[0] =
-                        FunctionFactory.skill().applyAsDouble( getSumOfSquareError( s ) / s.size(), p * ( 1.0 - p ) );
+                        FunctionFactory.skill().applyAsDouble( getSumOfSquareError( s ) / s.getData().size(),
+                                                               p * ( 1.0 - p ) );
             }
-            else 
+            else
             {
                 result[0] = Double.NaN;
             }

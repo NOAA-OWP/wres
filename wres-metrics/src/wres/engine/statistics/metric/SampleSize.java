@@ -6,6 +6,7 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.MetricInputException;
+import wres.datamodel.inputs.pairs.PairedInput;
 import wres.datamodel.outputs.ScalarOutput;
 
 /**
@@ -15,7 +16,7 @@ import wres.datamodel.outputs.ScalarOutput;
  * @version 0.1
  * @since 0.1
  */
-class SampleSize<S extends MetricInput<?>> extends Metric<S, ScalarOutput> implements Score
+class SampleSize<S extends PairedInput<?>> extends Metric<S, ScalarOutput> implements Score
 {
 
     @Override
@@ -25,7 +26,8 @@ class SampleSize<S extends MetricInput<?>> extends Metric<S, ScalarOutput> imple
         {
             throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
         }
-        return getDataFactory().ofScalarOutput( s.size(), getMetadata( s, s.size(), MetricConstants.MAIN, null ) );
+        return getDataFactory().ofScalarOutput( s.getData().size(),
+                                                getMetadata( s, s.getData().size(), MetricConstants.MAIN, null ) );
     }
 
     @Override
@@ -62,7 +64,7 @@ class SampleSize<S extends MetricInput<?>> extends Metric<S, ScalarOutput> imple
      * A {@link MetricBuilder} to build the metric.
      */
 
-    static class SampleSizeBuilder<S extends MetricInput<?>> extends MetricBuilder<S, ScalarOutput>
+    static class SampleSizeBuilder<S extends PairedInput<?>> extends MetricBuilder<S, ScalarOutput>
     {
         @Override
         protected SampleSize<S> build() throws MetricParameterException

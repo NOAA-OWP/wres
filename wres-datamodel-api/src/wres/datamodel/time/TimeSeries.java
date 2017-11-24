@@ -22,10 +22,12 @@ import wres.datamodel.inputs.pairs.Pair;
  * <p>A {@link TimeSeries} may be regular or irregular. A {@link TimeSeries} is regular iif each time is separated by 
  * exactly the same {@link Duration}, there are no missing times between the earliest and latest times, and the number
  * of times in each atomic time-series is constant; by implication a regular {@link TimeSeries} cannot contain more
- * than one value with the same time and basis time.</p>
+ * than one value with the same time and basis time. If the timeline is viewed as a function of unit time, a regular 
+ * time-series is a linear function whose first derivative is the regular timestep.</p>
  * 
- * <p>A lead time is defined as the {@link Duration} between the basis time and the (valid) time associated with a 
- * value.</p>
+ * <p>A duration is defined as the {@link Duration} between the basis time and the (valid) time associated with a 
+ * value. If {@link #isRegular()} returns <code>true</code>, the {@link #getRegularDuration()} corresponds to the 
+ * first derivative of the timeline, i.e. the duration between successive times in the time-series.</p>
  * 
  * <p><b>Implementation Requirements:</b></p>
  * 
@@ -61,16 +63,17 @@ public interface TimeSeries<T>
     Iterable<TimeSeries<T>> basisTimeIterator();
 
     /**
-     * Returns a lead-time view of the {@link TimeSeries} whereby each atomic time-series contains one {@link Duration}
-     * and each element originates from a separate basis time. The time-series are not returned in a guaranteed order.
+     * Returns a duration view of the {@link TimeSeries} whereby each atomic time-series contains one {@link Duration}
+     * and each element originates from a separate basis time. The atomic time-series are not returned in a 
+     * guaranteed order.
      * 
-     * @return an iterable atomic time-series by lead time
+     * @return an iterable atomic time-series by duration
      */
 
-    Iterable<TimeSeries<T>> leadTimeIterator();
+    Iterable<TimeSeries<T>> durationIterator();
 
     /**
-     * Returns a {@link TimeSeries} whose elements are filtered according to lead time or null if no such time-series 
+     * Returns a {@link TimeSeries} whose elements are filtered according to duration or null if no such time-series 
      * exists. If the current time-series is regular, the returned time-series may be irregular, and vice versa, 
      * depending on the filter applied. 
      * 
@@ -78,7 +81,7 @@ public interface TimeSeries<T>
      * @return a list of values with the same duration or null if no such duration exists
      */
 
-    TimeSeries<T> filterByLeadTime( Predicate<Duration> duration );
+    TimeSeries<T> filterByDuration( Predicate<Duration> duration );
 
     /**
      * Returns a {@link TimeSeries} whose elements are filtered according to basis time or null if no such time-series 
@@ -101,13 +104,13 @@ public interface TimeSeries<T>
     SortedSet<Instant> getBasisTimes();
 
     /**
-     * Returns the lead times associated with all the atomic time-series in the container. The results are ordered 
-     * from the earliest lead time to the latest.
+     * Returns the durations associated with all the atomic time-series in the container. The results are ordered 
+     * from the earliest duration to the latest.
      * 
      * @return the basis times
      */
 
-    SortedSet<Duration> getLeadTimes();
+    SortedSet<Duration> getDurations();
 
     /**
      * Returns <code>true</code> if the {@link TimeSeries} contains multiple atomic time-series, each with a separate 
@@ -134,8 +137,12 @@ public interface TimeSeries<T>
      * atomic time-series must have a constant {@link Duration} between times, as revealed by this method. However, 
      * when the container stores forecasts, the basis/issue time may not be regular and the time-step between 
      * basis/issue times may differ from the {@link #getRegularDuration}. For example, the container may store 
-     * forecasts that are issued once per day with a regular time-step of 6 hours. In this context, the 
-     * {@link #getRegularDuration} would be 6 hours.  
+     * forecasts that are issued once per day with a regular time-step of 6 hours. If the timeline is viewed as a 
+     * function of the unit duration, f(h)=6h, the first derivative of the timeline is 6h, and 
+     * {@link #getRegularDuration} will return a {@link Duration} of 6h. 
+     *  
+     * 
+     * The regular duration is the first derivative of the timeline   
      * 
      * @return a duration for a regular time-series or null
      */
