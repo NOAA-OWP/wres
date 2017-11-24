@@ -144,7 +144,9 @@ public class DataCardSourceTest
 
         Feature featureConfig = new Feature( null,
                                              null,
+                                             null,
                                              "FAKELID",
+                                             null,
                                              null,
                                              null,
                                              null,
@@ -226,12 +228,14 @@ public class DataCardSourceTest
                                                                 null );
         Feature featureConfig = new Feature( null,
                                              null,
+                                             null,
                                              "FAKELID",
                                              null,
                                              null,
                                              null,
                                              null,
-                                             null );
+                                             null,
+                                             null);
 
         List<Feature> features = new ArrayList<>();
         features.add( featureConfig );

@@ -57,9 +57,9 @@ public class ConfigHelperTest
 
         String expected = "feature_id in (1,2,3)";
 
-        Feature featureFakeOne = new Feature( null, null, "fake1", null, null, null, null, null );
-        Feature featureFakeTwo = new Feature(null, null, "fake2", null, null, null, null, null );
-        Feature featureFakeThree = new Feature(null, null, "fake3", null, null, null, null, null );
+        Feature featureFakeOne = new Feature( null, null, null, "fake1", null, null, null, null, null, null );
+        Feature featureFakeTwo = new Feature(null, null, null, "fake2", null, null, null, null, null, null );
+        Feature featureFakeThree = new Feature(null, null, null, "fake3", null, null, null, null, null, null );
 
         List<Feature> features = new ArrayList<>();
         features.add(featureFakeOne);

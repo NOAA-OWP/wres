@@ -187,19 +187,16 @@ public class USGSParameters
     private static ConcurrentMap<ParameterKey, USGSParameter> getParameterStore()
             throws SQLException
     {
-        if (USGSParameters.parameterStore == null)
+        synchronized ( PARAMETER_LOCK )
         {
-            synchronized ( PARAMETER_LOCK )
+            if (USGSParameters.parameterStore == null)
             {
-                if (USGSParameters.parameterStore == null)
-                {
-                    USGSParameters.parameterStore = new ConcurrentSkipListMap<>(  );
-                    USGSParameters.init();
-                }
+                USGSParameters.parameterStore = new ConcurrentSkipListMap<>(  );
+                USGSParameters.init();
             }
-        }
 
-        return USGSParameters.parameterStore;
+            return USGSParameters.parameterStore;
+        }
     }
 
     private static void init() throws SQLException

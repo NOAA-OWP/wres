@@ -1,5 +1,6 @@
 package wres.io.retrieval;
 
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.InvalidPropertiesFormatException;
 import java.util.Iterator;
@@ -82,267 +83,14 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
         this.leftHandMap.put( date, measurement );
     }
 
-    protected VectorOfDoubles getClimatology() throws SQLException
+    protected VectorOfDoubles getClimatology() throws IOException
     {
         if (this.getProjectDetails().usesProbabilityThresholds() && this.climatology == null)
         {
-            FormattedStopwatch stopwatch = new FormattedStopwatch();
-            stopwatch.start();
-            /**
-             * This should generate a script of the form:
-             *
-             * SELECT O.observed_value,
-             *     O.measurementunit_id,
-             *     D.member_number,
-             *     COUNT(*) OVER (PARTITION BY D.member_number) AS member_count
-             * FROM wres.Observation O
-             * RIGHT JOIN (
-             *     SELECT
-             *         '1980-10-01 12:00:00'::timestamp without time zone + ( member_number || ' hours')::INTERVAL AS start_time,
-             *         '1980-10-01 12:00:00'::timestamp without time zone + ( (member_number + 24) || ' hours')::INTERVAL AS end_time,
-             *         member_number
-             *     FROM generate_series(0, 262945, 24) AS member_number
-             *     ) AS D
-             *     ON D.start_time <= O.observation_time
-             *         AND D.end_time > O.observation_time
-             * WHERE O.variableposition_id = 1
-             *     AND EXISTS (
-             *       SELECT 1
-             *       FROM wres.ProjectSource PS
-             *       WHERE PS.project_id = 1
-             *           AND PS.member = 'left'
-             *           AND PS.source_id = O.source_id
-             *           AND PS.inactive_time IS NULL
-             *     )
-             * ORDER BY member_count DESC, member_number;
-             *
-             * The results should look like:
-             *
-             * 39.3299  3  0       24
-             * 39.3299  3  0       24
-             * .
-             * .
-             * 46.3497  3  262944  1
-             *
-             * We will aggregate values grouped by their member number and
-             * stop when we either hit the bottom of the result set or
-             * hit a member count less than what we've been working with.
-             * A lower number indicates a partial set, which we can't aggregate.
-             * The '1' on the last example shows that there is only 1 value
-             * that is a member of that group. The highest number shows that
-             * there should be 24. As a result, we stop; no more full groups to
-             * aggregate.
-             *
-             */
-
-            /*StringBuilder script = new StringBuilder(  );
-            script.append("SELECT O.observed_value,").append(NEWLINE);
-            script.append("    O.measurementunit_id,").append(NEWLINE);
-            script.append("    D.member_number,").append(NEWLINE);
-            script.append("    (COUNT(*) OVER (PARTITION BY D.member_number))::int AS member_count").append(NEWLINE);
-            script.append("FROM wres.Observation O").append(NEWLINE);
-            script.append("RIGHT JOIN (").append(NEWLINE);
-            script.append("    SELECT").append(NEWLINE);
-            script.append("        ")
-                  .append(this.getEarliestObservationDate()).append("::timestamp without time zone ")
-                  .append("+ ( member_number || ' ").append(this.getProjectDetails().getAggregationUnit()).append("')::INTERVAL AS start_time,")
-                  .append(NEWLINE);
-            script.append("        ")
-                  .append(this.getEarliestObservationDate()).append( "::timestamp without time zone ")
-                  .append("+ ((member_number + ")
-                  .append(this.getProjectDetails().getAggregationPeriod())
-                  .append(" ) || ' ")
-                  .append(this.getProjectDetails().getAggregationUnit())
-                  .append("')::INTERVAL AS end_time,")
-                  .append(NEWLINE);
-            script.append("        ").append("member_number").append(NEWLINE);
-            script.append("    FROM generate_series(0, ")
-                  .append(ConfigHelper.getValueCount( this.getProjectDetails(),
-                                                      this.getProjectDetails().getLeft(),
-                                                      this.getFeature() ))
-                  .append(" * ")
-                  .append(this.getProjectDetails().getAggregationPeriod())
-                  .append(", ")
-                  .append(this.getProjectDetails().getAggregationPeriod())
-                  .append(") AS member_number")
-                  .append(NEWLINE);
-            script.append("    ) AS D").append(NEWLINE);
-            script.append("ON D.start_time <= O.observation_time").append(NEWLINE);
-            script.append("    AND D.end_time > O.observation_time").append(NEWLINE);
-            script.append("WHERE ")
-                  .append(ConfigHelper.getVariablePositionClause( this.getFeature(),
-                                                                  this.getProjectDetails().getLeftVariableID(),
-                                                                  "O" ))
-                  .append(NEWLINE);
-            script.append("    AND EXISTS (").append(NEWLINE);
-            script.append("        SELECT 1").append(NEWLINE);
-            script.append("        FROM wres.ProjectSource PS").append(NEWLINE);
-            script.append("        WHERE PS.project_id = ").append(this.getProjectDetails().getId()).append(NEWLINE);
-            script.append("            AND PS.member = 'left'").append(NEWLINE);
-            script.append("            AND PS.source_id = O.source_id").append(NEWLINE);
-            script.append("            AND PS.inactive_time IS NULL").append(NEWLINE);
-            script.append("    )").append(NEWLINE);
-            script.append("ORDER BY member_number;");
-
-            Connection connection = null;
-            ResultSet results = null;
-            VectorOfDoubles testClimatology;*/
-
-            try
-            {
-                ClimatologyBuilder climatologyBuilder = new ClimatologyBuilder( this.getProjectDetails(),
-                                                                                this.getProjectDetails().getLeft(),
-                                                                                this.getFeature() );
-                this.climatology = climatologyBuilder.getClimatology();
-
-                /*connection = Database.getConnection();
-                results = Database.getResults( connection, script.toString() );
-
-                int memberNumber = -1;
-                int maxMemberCount = -1;
-
-                List<Double> awaitingAggregations = new ArrayList<>(  );
-                List<Double> aggregatedValues = new ArrayList<>();
-                Map<Integer, UnitConversions.Conversion> conversions = new TreeMap<>(  );
-
-                while (results.next())
-                {
-                    if (maxMemberCount < 0)
-                    {
-                        maxMemberCount = Database.getValue( results, "member_count" );
-                    }
-                    else if ((int)(Database.getValue(results, "member_number")) > memberNumber)
-                    {
-                        //TODO: This logic block is used twice. It probably needs to be extracted.
-                        if (maxMemberCount == awaitingAggregations.size())
-                        {
-                            Double aggregation = Collections.aggregate(
-                                    awaitingAggregations,
-                                    this.getProjectDetails()
-                                        .getAggregationFunction() );
-
-                            if ( !aggregation.isNaN() )
-                            {
-                                aggregatedValues.add( aggregation );
-                            }
-                            else
-                            {
-                                this.getLogger().trace( "The values for member " +
-                                                        "{} could not be added " +
-                                                        "to the climatology; " +
-                                                        "their aggregation was NaN",
-                                                        memberNumber );
-                            }
-                        }
-                        else
-                        {
-                            this.getLogger().trace("The values for member {} " +
-                                                  "could not be aggregated " +
-                                                  "because not enough valid " +
-                                                  "member values could be " +
-                                                  "retrieved.",
-                                                  memberNumber);
-                        }
-
-                        awaitingAggregations.clear();
-
-                        memberNumber = Database.getValue( results, "member_number" );
-                    }
-
-                    Double observedValue = Database.getValue(results, "observed_value");
-
-                    if (observedValue == null)
-                    {
-                        this.getLogger().trace( "A null value was encountered " +
-                                               "from member {}. Skipping to next value...",
-                                               memberNumber );
-                        continue;
-                    }
-
-                    int measurementUnitID = Database.getValue( results, "measurementunit_id" );
-
-                    if (!conversions.containsKey( measurementUnitID ))
-                    {
-                        conversions.put(measurementUnitID,
-                                        UnitConversions.getConversion( measurementUnitID,
-                                                                       this.getProjectDetails().getDesiredMeasurementUnit() ));
-                    }
-
-                    Double convertedValue = conversions.get(measurementUnitID).convert( observedValue );
-
-                    if (convertedValue != null &&
-                        !convertedValue.isNaN()  )
-                    {
-                        awaitingAggregations.add( conversions.get(
-                                measurementUnitID ).convert( observedValue ) );
-                    }
-                    else
-                    {
-                        this.getLogger().trace( "A value could not be added to " +
-                                               "member {} because it was marked " +
-                                               "as an invalid value.",
-                                               memberNumber );
-                    }
-
-                }
-
-                if (maxMemberCount == awaitingAggregations.size())
-                {
-                    Double aggregation = Collections.aggregate(
-                            awaitingAggregations,
-                            this.getProjectDetails()
-                                .getAggregationFunction() );
-
-                    if ( !aggregation.isNaN() )
-                    {
-                        aggregatedValues.add( aggregation );
-                    }
-                }
-                else
-                {
-                    this.getLogger().trace("The values for member {} " +
-                                          "could not be aggregated " +
-                                          "because not enough valid " +
-                                          "member values could be " +
-                                          "retrieved.",
-                                          memberNumber);
-                }
-
-                if (aggregatedValues.size() > 0)
-                {
-                    this.climatology =
-                            DefaultDataFactory.getInstance()
-                                              .vectorOf( aggregatedValues.toArray( new Double[aggregatedValues.size()] ) );
-                }*/
-            }
-            catch ( InterruptedException e )
-            {
-                e.printStackTrace();
-            }
-            catch ( ExecutionException e )
-            {
-                e.printStackTrace();
-            }
-            catch ( NoDataException e )
-            {
-                e.printStackTrace();
-            }
-            finally
-            {
-                /*if (results != null)
-                {
-                    results.close();
-                }
-
-                if (connection != null)
-                {
-                    Database.returnConnection( connection );
-                }*/
-
-                stopwatch.stop();
-
-                this.getLogger().info("Climatology retrieval took {}", stopwatch.getFormattedDuration());
-            }
+            ClimatologyBuilder climatologyBuilder = new ClimatologyBuilder( this.getProjectDetails(),
+                                                                            this.getProjectDetails().getLeft(),
+                                                                            this.getFeature() );
+            this.climatology = climatologyBuilder.getClimatology();
         }
 
         return this.climatology;
@@ -451,7 +199,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
 
                 nextInput = Database.submit(retriever);
             }
-            catch ( NoDataException | SQLException | InvalidPropertiesFormatException e )
+            catch ( SQLException | IOException e )
             {
                 this.getLogger().error( Strings.getStackTrace( e ) );
                 e.printStackTrace();

@@ -160,12 +160,14 @@ public class CommaSeparatedTest
 
         Feature feature = new Feature( null,
                                        null,
+                                       null,
                                        LID,
                                        null,
                                        null,
                                        null,
                                        null,
-                                       null );
+                                       null,
+                                       null);
 
         List<Feature> features = new ArrayList<>();
         features.add( feature );

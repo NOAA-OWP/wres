@@ -226,6 +226,11 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
                                               null ));
         }
 
+        for (FeatureDetails detail : details)
+        {
+            detail.setAliases( feature.getAlias() );
+        }
+
         return details;
     }
 
