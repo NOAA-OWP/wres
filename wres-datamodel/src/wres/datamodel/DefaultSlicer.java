@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiFunction;
+import java.util.function.DoublePredicate;
 import java.util.function.DoubleUnaryOperator;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -102,6 +103,108 @@ class DefaultSlicer implements Slicer
     }
 
     @Override
+    public SingleValuedPairs filter( SingleValuedPairs input, DoublePredicate condition, boolean applyToClimatology )
+            throws MetricInputSliceException
+    {
+        Objects.requireNonNull( input, NULL_INPUT );
+        Objects.requireNonNull( condition, "Specify a non-null condition." );
+        String sliceFail = "While slicing, the condition failed to select any data.";
+        List<PairOfDoubles> mainPairs = input.getData();
+        List<PairOfDoubles> mainPairsSubset = new ArrayList<>();
+        mainPairs.forEach( a -> {
+            if ( condition.test( a.getItemOne() ) && condition.test( a.getItemTwo() ) )
+                mainPairsSubset.add( a );
+        } );
+        //No pairs in the subset
+        if ( mainPairsSubset.isEmpty() )
+        {
+            throw new MetricInputSliceException( sliceFail + " No data for main pairs." );
+        }
+        //Filter climatology as required
+        VectorOfDoubles climatology = input.getClimatology();
+        if ( input.hasClimatology() && applyToClimatology )
+        {
+            climatology = filter( input.getClimatology(), condition, sliceFail + " No data for climatology." );
+        }
+        //Filter baseline as required
+        if ( input.hasBaseline() )
+        {
+            List<PairOfDoubles> basePairs = input.getDataForBaseline();
+            List<PairOfDoubles> basePairsSubset = new ArrayList<>();
+            basePairs.forEach( a -> {
+                if ( condition.test( a.getItemOne() ) && condition.test( a.getItemTwo() ) )
+                    basePairsSubset.add( a );
+            } );
+
+            //No pairs in the subset
+            if ( basePairsSubset.isEmpty() )
+            {
+                throw new MetricInputSliceException( sliceFail + " No data for baseline pairs." );
+            }
+            return dataFac.ofSingleValuedPairs( mainPairsSubset,
+                                                basePairsSubset,
+                                                input.getMetadata(),
+                                                input.getMetadataForBaseline(),
+                                                climatology );
+        }
+        return dataFac.ofSingleValuedPairs( mainPairsSubset, input.getMetadata(), climatology );
+    }
+
+    @Override
+    public EnsemblePairs filter( EnsemblePairs input, DoublePredicate condition, boolean applyToClimatology )
+            throws MetricInputSliceException
+    {
+        Objects.requireNonNull( input, NULL_INPUT );
+        Objects.requireNonNull( condition, "Specify a non-null condition." );
+        String sliceFail = "While slicing, the condition failed to select any data.";
+        List<PairOfDoubleAndVectorOfDoubles> mainPairs = input.getData();
+        List<PairOfDoubleAndVectorOfDoubles> mainPairsSubset = new ArrayList<>();
+        mainPairs.forEach( a -> {
+            PairOfDoubleAndVectorOfDoubles next = filter( a, condition );
+            if ( Objects.nonNull( next ) )
+            {
+                mainPairsSubset.add( next );
+            }
+        } );
+        //No pairs in the subset
+        if ( mainPairsSubset.isEmpty() )
+        {
+            throw new MetricInputSliceException( sliceFail + " No data for main pairs." );
+        }
+        //Filter climatology as required
+        VectorOfDoubles climatology = input.getClimatology();
+        if ( input.hasClimatology() && applyToClimatology )
+        {
+            climatology = filter( input.getClimatology(), condition, sliceFail + " No data for climatology." );
+        }
+        //Filter baseline as required
+        if ( input.hasBaseline() )
+        {
+            List<PairOfDoubleAndVectorOfDoubles> basePairs = input.getDataForBaseline();
+            List<PairOfDoubleAndVectorOfDoubles> basePairsSubset = new ArrayList<>();
+            basePairs.forEach( a -> {
+                PairOfDoubleAndVectorOfDoubles next = filter( a, condition );
+                if ( Objects.nonNull( next ) )
+                {
+                    basePairsSubset.add( next );
+                }
+            } );
+
+            //No pairs in the subset
+            if ( basePairsSubset.isEmpty() )
+            {
+                throw new MetricInputSliceException( sliceFail + " No data for baseline pairs." );
+            }
+            return dataFac.ofEnsemblePairs( mainPairsSubset,
+                                            basePairsSubset,
+                                            input.getMetadata(),
+                                            input.getMetadataForBaseline(),
+                                            climatology );
+        }
+        return dataFac.ofEnsemblePairs( mainPairsSubset, input.getMetadata(), climatology );
+    }
+
+    @Override
     public SingleValuedPairs filterByLeft( SingleValuedPairs input, Threshold threshold )
             throws MetricInputSliceException
     {
@@ -182,7 +285,8 @@ class DefaultSlicer implements Slicer
     }
 
     @Override
-    public Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> filterByRight( List<PairOfDoubleAndVectorOfDoubles> input )
+    public Map<Integer, List<PairOfDoubleAndVectorOfDoubles>>
+            filterByRight( List<PairOfDoubleAndVectorOfDoubles> input )
     {
         Objects.requireNonNull( input, NULL_INPUT );
         return input.stream().collect( Collectors.groupingBy( pair -> pair.getItemTwo().length ) );
@@ -413,7 +517,58 @@ class DefaultSlicer implements Slicer
             return bd.doubleValue();
         };
     }
-    
+
+    /**
+     * Filters a {@link VectorOfDoubles}, returning a subset that meet the condition.
+     * 
+     * @param input the input
+     * @param condition the condition
+     * @param failMessage a message to locate a source of failure
+     * @throws MetricInputSliceException if no elements meet the condition
+     */
+
+    private VectorOfDoubles filter( VectorOfDoubles input, DoublePredicate condition, String failMessage )
+            throws MetricInputSliceException
+    {
+        Objects.requireNonNull( input, "Specify non-null input to filter." );
+        Objects.requireNonNull( input, "Specify a non-null condition on which to filter." );
+        double[] filtered = Arrays.stream( input.getDoubles() )
+                                  .filter( condition )
+                                  .toArray();
+        if ( filtered.length == 0 )
+        {
+            throw new MetricInputSliceException( failMessage );
+        }
+        return dataFac.vectorOf( filtered );
+    }
+
+    /**
+     * Filters a {@link PairOfDoubleAndVectorOfDoubles}, returning a filtered pair that contains the left and subset of
+     * right that meet the condition or null if the left or none of right meet the condition.
+     * 
+     * @param input the input pair
+     * @param condition the filter
+     * @return the filtered pair or null
+     */
+
+    private PairOfDoubleAndVectorOfDoubles filter( PairOfDoubleAndVectorOfDoubles input, DoublePredicate condition )
+    {
+        PairOfDoubleAndVectorOfDoubles returnMe = null;
+        //Left meets condition
+        if ( condition.test( input.getItemOne() ) )
+        {
+            double[] filtered = Arrays.stream( input.getItemTwo() )
+                                      .filter( condition )
+                                      .toArray();
+            //One or more of right meets condition
+            if ( filtered.length > 0 )
+            {
+                returnMe = dataFac.pairOf( input.getItemOne(), filtered );
+            }
+        }
+        return returnMe;
+    }
+
     /**
      * Hidden constructor.
      */

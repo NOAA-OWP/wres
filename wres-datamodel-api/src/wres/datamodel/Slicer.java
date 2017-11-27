@@ -3,6 +3,7 @@ package wres.datamodel;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
+import java.util.function.DoublePredicate;
 import java.util.function.DoubleUnaryOperator;
 import java.util.function.Function;
 
@@ -71,11 +72,41 @@ public interface Slicer
     double[] getLeftSide( EnsemblePairs input );
 
     /**
+     * Returns the subset of pairs where the left and right both meet the prescribed condition. Applies to both the 
+     * main pairs and any baseline, by default, and optionally to any climatological data associated with the pairs.
+     * 
+     * @param input the {@link SingleValuedPairs} to slice
+     * @param condition the condition on which to slice
+     * @param applyToClimatology is true to apply the filter to the climatology also, false otherwise
+     * @return the subset of pairs that meet the condition
+     * @throws MetricInputSliceException if the slice contains no elements
+     */
+
+    SingleValuedPairs filter( SingleValuedPairs input, DoublePredicate condition, boolean applyToClimatology )
+            throws MetricInputSliceException;
+
+    /**
+     * Returns the subset of pairs where the left meets the prescribed condition and one or more elements of the right
+     * meet the prescribed condition, returning only those elements of the right that meet the prescribed condition. 
+     * Applies to both the main pairs and any baseline, by default, and optionally to any climatological data 
+     * associated with the pairs.
+     * 
+     * @param input the {@link EnsemblePairs} to slice
+     * @param condition the condition on which to slice
+     * @param applyToClimatology is true to apply the filter to the climatology also, false otherwise
+     * @return the subset of pairs that meet the condition
+     * @throws MetricInputSliceException if the slice contains no elements
+     */
+
+    EnsemblePairs filter( EnsemblePairs input, DoublePredicate condition, boolean applyToClimatology )
+            throws MetricInputSliceException;
+
+    /**
      * Returns a subset of pairs where the {@link Threshold} is met on the left side or null for the empty subset.
      * 
      * @param input the {@link SingleValuedPairs} to slice
      * @param threshold the {@link Threshold} on which to slice
-     * @return the subset of pairs that meet the condition or null
+     * @return the subset of pairs that meet the condition
      * @throws MetricInputSliceException if the slice contains no elements
      */
 
@@ -86,7 +117,7 @@ public interface Slicer
      * 
      * @param input the {@link EnsemblePairs} to slice
      * @param threshold the {@link Threshold} on which to slice
-     * @return the subset of pairs that meet the condition or null
+     * @return the subset of pairs that meet the condition
      * @throws MetricInputSliceException if the slice contains no elements
      */
 
