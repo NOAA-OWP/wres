@@ -703,7 +703,95 @@ public final class DefaultSlicerTest
         }
     }
 
+    /**
+     * Tests the {@link Slicer#filter(EnsemblePairs, java.util.function.DoublePredicate, boolean)}.
     
-    
+     * @throws MetricInputSliceException if slicing results in an unexpected exception
+     */
+
+    @Test
+    public void test16FilterEnsemblePairs() throws MetricInputSliceException
+    {
+        DataFactory metIn = DefaultDataFactory.getInstance();
+        final List<PairOfDoubleAndVectorOfDoubles> values = new ArrayList<>();
+        values.add( metIn.pairOf( 0, new double[] { 1, 2, 3 } ) );
+        values.add( metIn.pairOf( 0, new double[] { 1, 2, 3 } ) );
+        values.add( metIn.pairOf( 0, new double[] { 1, 2, 3 } ) );
+        values.add( metIn.pairOf( Double.NaN, new double[] { Double.NaN, Double.NaN, Double.NaN } ) );
+        values.add( metIn.pairOf( 0, new double[] { Double.NaN, Double.NaN, Double.NaN } ) );
+        values.add( metIn.pairOf( 0, new double[] { Double.NaN, 2, 3, Double.NaN } ) );
+
+        List<PairOfDoubleAndVectorOfDoubles> expectedValues = new ArrayList<>();
+        expectedValues.add( metIn.pairOf( 0, new double[] { 1, 2, 3 } ) );
+        expectedValues.add( metIn.pairOf( 0, new double[] { 1, 2, 3 } ) );
+        expectedValues.add( metIn.pairOf( 0, new double[] { 1, 2, 3 } ) );
+        expectedValues.add( metIn.pairOf( 0, new double[] { 2, 3 } ) );
+
+        VectorOfDoubles climatology = metIn.vectorOf( new double[] { 1, 2, 3, 4, 5, Double.NaN } );
+        VectorOfDoubles climatologyExpected = metIn.vectorOf( new double[] { 1, 2, 3, 4, 5 } );
+
+        Metadata meta = metIn.getMetadataFactory().getMetadata();
+        EnsemblePairs pairs = metIn.ofEnsemblePairs( values, values, meta, meta, climatology );
+        EnsemblePairs sliced = slicer.filter( pairs, a -> Double.isFinite( a ), true );
+
+        //Test with baseline
+        assertTrue( "The sliced data does not match the benchmark.", sliced.getData().equals( expectedValues ) );
+        assertTrue( "The sliced baseline data does not match the benchmark.",
+                    sliced.getDataForBaseline().equals( expectedValues ) );
+        assertTrue( "The sliced climatology data does not match the benchmark.",
+                    Arrays.equals( sliced.getClimatology().getDoubles(), climatologyExpected.getDoubles() ) );
+        assertTrue( "Unexpected equality of the sliced and unsliced climatology.",
+                    !Arrays.equals( slicer.filter( pairs, a -> Double.isFinite( a ), false )
+                                          .getClimatology()
+                                          .getDoubles(),
+                                    climatologyExpected.getDoubles() ) );
+        assertTrue( "Unexpected equality of the sliced and unsliced data.",
+                    !sliced.getData().equals( values ) );
+        //Test without baseline or climatology
+        EnsemblePairs pairsNoBase = metIn.ofEnsemblePairs( values, meta );
+        EnsemblePairs slicedNoBase = slicer.filter( pairsNoBase, a -> Double.isFinite( a ), false );
+
+        assertTrue( "The sliced data without a baseline does not match the benchmark.",
+                    slicedNoBase.getData().equals( expectedValues ) );
+
+        //Test exceptions
+        //No pairs in main
+        try
+        {
+            List<PairOfDoubleAndVectorOfDoubles> none = new ArrayList<>();
+            none.add( metIn.pairOf( Double.NaN, new double[] { Double.NaN } ) );
+            slicer.filter( metIn.ofEnsemblePairs( none, meta ), a -> Double.isFinite( a ), false );
+            fail( "Expected an exception on attempting to filter with no data." );
+        }
+        catch ( MetricInputSliceException e )
+        {
+        }
+        //No pairs in baseline
+        try
+        {
+            List<PairOfDoubleAndVectorOfDoubles> none = new ArrayList<>();
+            none.add( metIn.pairOf( Double.NaN, new double[] { Double.NaN } ) );
+            slicer.filter( metIn.ofEnsemblePairs( values, none, meta, meta ), a -> Double.isFinite( a ), false );
+            fail( "Expected an exception on attempting to filter with no baseline data." );
+        }
+        catch ( MetricInputSliceException e )
+        {
+        }
+
+        //No climatological data
+        try
+        {
+            EnsemblePairs test =
+                    metIn.ofEnsemblePairs( values,
+                                           meta,
+                                           metIn.vectorOf( new double[] { Double.NaN } ) );
+            slicer.filter( test, a -> Double.isFinite( a ), true );
+            fail( "Expected an exception on attempting to filter with no climatological data." );
+        }
+        catch ( MetricInputSliceException e )
+        {
+        }
+    }
+
 
 }
