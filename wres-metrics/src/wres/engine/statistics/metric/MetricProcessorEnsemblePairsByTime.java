@@ -593,7 +593,7 @@ class MetricProcessorEnsemblePairsByTime extends MetricProcessorByTime
                     throws MetricInputSliceException
     {
         //Slice the pairs
-        EnsemblePairs subset = dataFactory.getSlicer().sliceByLeft( pairs, threshold );
+        EnsemblePairs subset = dataFactory.getSlicer().filterByLeft( pairs, threshold );
         checkSlice( subset, threshold );
         return CompletableFuture.supplyAsync( () -> collection.apply( subset ), thresholdExecutor );
     }

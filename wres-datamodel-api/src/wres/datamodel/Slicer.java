@@ -79,7 +79,7 @@ public interface Slicer
      * @throws MetricInputSliceException if the slice contains no elements
      */
 
-    SingleValuedPairs sliceByLeft( SingleValuedPairs input, Threshold threshold ) throws MetricInputSliceException;
+    SingleValuedPairs filterByLeft( SingleValuedPairs input, Threshold threshold ) throws MetricInputSliceException;
 
     /**
      * Returns a subset of pairs where the {@link Threshold} is met on the left side or null for the empty subset.
@@ -90,7 +90,7 @@ public interface Slicer
      * @throws MetricInputSliceException if the slice contains no elements
      */
 
-    EnsemblePairs sliceByLeft( EnsemblePairs input, Threshold threshold ) throws MetricInputSliceException;
+    EnsemblePairs filterByLeft( EnsemblePairs input, Threshold threshold ) throws MetricInputSliceException;
 
     /**
      * Returns as many lists of {@link PairOfDoubleAndVectorOfDoubles} as groups of atomic pairs in the input with an
@@ -102,7 +102,7 @@ public interface Slicer
      * @return as many subsets of {@link PairOfDoubleAndVectorOfDoubles} as groups of pairs in the input of equal size
      */
 
-    Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> sliceByRight( List<PairOfDoubleAndVectorOfDoubles> input );
+    Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> filterByRight( List<PairOfDoubleAndVectorOfDoubles> input );
 
     /**
      * Returns a map of {@link ScalarOutput} for each component in the input map of {@link VectorOutput}. The slices are
@@ -113,7 +113,7 @@ public interface Slicer
      */
 
     Map<MetricConstants, MetricOutputMapByTimeAndThreshold<ScalarOutput>>
-            sliceByMetricComponent( MetricOutputMapByTimeAndThreshold<VectorOutput> input );
+            filterByMetricComponent( MetricOutputMapByTimeAndThreshold<VectorOutput> input );
 
     /**
      * Produces a {@link List} of {@link PairOfDoubles} from a {@link List} of {@link PairOfDoubleAndVectorOfDoubles}

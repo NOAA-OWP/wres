@@ -7,8 +7,7 @@ import wres.datamodel.metadata.Metadata;
  * 
  * <p><b>Implementation Requirements:</b></p>
  * 
- * <p>A dataset may comprise missing elements, including both <code>null</code> elements that are used to retain 
- * position and elements of which a subset of values correspond to a missing value identifier.</p>
+ * <p>A dataset may contain values that correspond to a missing value identifier.</p>
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1

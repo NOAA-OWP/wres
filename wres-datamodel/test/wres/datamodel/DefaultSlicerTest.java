@@ -112,7 +112,7 @@ public final class DefaultSlicerTest
     }
 
     /**
-     * Tests the {@link Slicer#sliceByLeft(SingleValuedPairs, Threshold)}.
+     * Tests the {@link Slicer#filterByLeft(SingleValuedPairs, Threshold)}.
      * 
      * @throws MetricInputSliceException
      */
@@ -132,19 +132,19 @@ public final class DefaultSlicerTest
         Threshold threshold = metIn.getThreshold( 0.0, Operator.GREATER );
         Metadata meta = metIn.getMetadataFactory().getMetadata();
         SingleValuedPairs pairs = metIn.ofSingleValuedPairs( values, values, meta, meta, null );
-        SingleValuedPairs sliced = slicer.sliceByLeft( pairs, threshold );
+        SingleValuedPairs sliced = slicer.filterByLeft( pairs, threshold );
         //Test with baseline
         assertTrue( "The left side of the test data does not match the benchmark.",
                     Arrays.equals( slicer.getLeftSide( sliced.getBaselineData() ), expected ) );
         //Test without baseline
         SingleValuedPairs pairsNoBase = metIn.ofSingleValuedPairs( values, meta );
-        SingleValuedPairs slicedNoBase = slicer.sliceByLeft( pairsNoBase, threshold );
+        SingleValuedPairs slicedNoBase = slicer.filterByLeft( pairsNoBase, threshold );
         assertTrue( "The left side of the test data does not match the benchmark.",
                     Arrays.equals( slicer.getLeftSide( slicedNoBase ), expected ) );
         //Test exception
         try
         {
-            slicer.sliceByLeft( pairs, metIn.getThreshold( 1.0, Operator.GREATER ) );
+            slicer.filterByLeft( pairs, metIn.getThreshold( 1.0, Operator.GREATER ) );
             fail( "Expected an exception on attempting to return an empty subset." );
         }
         catch ( Exception e )
@@ -162,7 +162,7 @@ public final class DefaultSlicerTest
         SingleValuedPairs pairsNullBase = metIn.ofSingleValuedPairs( values, nullValuesBase, meta, meta, null );
         try
         {
-            slicer.sliceByLeft( pairsNullBase, threshold );
+            slicer.filterByLeft( pairsNullBase, threshold );
             fail( "Expected an exception on attempting to return an empty subset for the baseline." );
         }
         catch ( Exception e )
@@ -171,7 +171,7 @@ public final class DefaultSlicerTest
     }
 
     /**
-     * Tests the {@link Slicer#sliceByLeft(EnsemblePairs, Threshold)}.
+     * Tests the {@link Slicer#filterByLeft(EnsemblePairs, Threshold)}.
      * 
      * @throws MetricInputSliceException
      */
@@ -191,19 +191,19 @@ public final class DefaultSlicerTest
         Threshold threshold = metIn.getThreshold( 0.0, Operator.GREATER );
         Metadata meta = metIn.getMetadataFactory().getMetadata();
         EnsemblePairs pairs = metIn.ofEnsemblePairs( values, values, meta, meta, null );
-        EnsemblePairs sliced = slicer.sliceByLeft( pairs, threshold );
+        EnsemblePairs sliced = slicer.filterByLeft( pairs, threshold );
         //Test with baseline
         assertTrue( "The left side of the test data does not match the benchmark.",
                     Arrays.equals( slicer.getLeftSide( sliced.getBaselineData() ), expected ) );
         //Test without baseline
         EnsemblePairs pairsNoBase = metIn.ofEnsemblePairs( values, meta );
-        EnsemblePairs slicedNoBase = slicer.sliceByLeft( pairsNoBase, threshold );
+        EnsemblePairs slicedNoBase = slicer.filterByLeft( pairsNoBase, threshold );
         assertTrue( "The left side of the test data does not match the benchmark.",
                     Arrays.equals( slicer.getLeftSide( slicedNoBase ), expected ) );
         //Test exception
         try
         {
-            slicer.sliceByLeft( pairs, metIn.getThreshold( 1.0, Operator.GREATER ) );
+            slicer.filterByLeft( pairs, metIn.getThreshold( 1.0, Operator.GREATER ) );
             fail( "Expected an exception on attempting to return an empty subset." );
         }
         catch ( Exception e )
@@ -221,7 +221,7 @@ public final class DefaultSlicerTest
         EnsemblePairs pairsNullBase = metIn.ofEnsemblePairs( values, nullValuesBase, meta, meta, null );
         try
         {
-            slicer.sliceByLeft( pairsNullBase, threshold );
+            slicer.filterByLeft( pairsNullBase, threshold );
             fail( "Expected an exception on attempting to return an empty subset for the baseline." );
         }
         catch ( Exception e )
@@ -566,7 +566,7 @@ public final class DefaultSlicerTest
     }
 
     /**
-     * Tests the {@link Slicer#sliceByRight(List)}.
+     * Tests the {@link Slicer#filterByRight(List)}.
      */
 
     @Test
@@ -587,7 +587,7 @@ public final class DefaultSlicerTest
         input.add( metIn.pairOf( 3, new double[] { 1, 2, 3, 4, 5, 6 } ) );
         input.add( metIn.pairOf( 3, new double[] { 1, 2, 3, 4, 5, 6 } ) );
         //Slice
-        Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> sliced = slicer.sliceByRight( input );
+        Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> sliced = slicer.filterByRight( input );
         //Check the results
         assertTrue( "Expected three slices of data.", sliced.size() == 3 );
         assertTrue( "Expected the first slice to contain three pairs.", sliced.get( 3 ).size() == 3 );
@@ -596,7 +596,7 @@ public final class DefaultSlicerTest
     }
 
     /**
-     * Tests the {@link Slicer#sliceByMetricComponent(MetricOutputMapByTimeAndThreshold)}.
+     * Tests the {@link Slicer#filterByMetricComponent(MetricOutputMapByTimeAndThreshold)}.
      */
 
     @Test
@@ -606,7 +606,7 @@ public final class DefaultSlicerTest
         MetricOutputMapByTimeAndThreshold<VectorOutput> toSlice =
                 DataModelTestDataFactory.getVectorMetricOutputMapByLeadThresholdOne();
         Map<MetricConstants, MetricOutputMapByTimeAndThreshold<ScalarOutput>> sliced =
-                slicer.sliceByMetricComponent( toSlice );
+                slicer.filterByMetricComponent( toSlice );
 
         //Check the results
         assertTrue( "Expected five slices of data.",

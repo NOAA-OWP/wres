@@ -889,7 +889,7 @@ public abstract class ChartEngineFactory
 
         final Map<MetricConstants, MetricOutputMapByTimeAndThreshold<ScalarOutput>> slicedInput =
                 factory.getSlicer()
-                       .sliceByMetricComponent( input );
+                       .filterByMetricComponent( input );
         for ( final Map.Entry<MetricConstants, MetricOutputMapByTimeAndThreshold<ScalarOutput>> entry : slicedInput.entrySet() )
         {
             final ChartEngine engine = buildGenericScalarOutputChartEngine( entry.getValue(),

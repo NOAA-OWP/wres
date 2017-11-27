@@ -565,7 +565,7 @@ public abstract class MetricProcessorByTime extends MetricProcessor<MetricOutput
                     throws MetricInputSliceException
     {
         //Slice the pairs
-        SingleValuedPairs subset = dataFactory.getSlicer().sliceByLeft( pairs, threshold );
+        SingleValuedPairs subset = dataFactory.getSlicer().filterByLeft( pairs, threshold );
         checkSlice( subset, threshold );
         return CompletableFuture.supplyAsync( () -> collection.apply( subset ), thresholdExecutor );
     }
