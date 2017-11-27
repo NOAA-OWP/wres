@@ -64,10 +64,10 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
     private final Iterable<TimeSeries<PairOfDoubles>> basisTimeIterator;
 
     /**
-     * Iterable view of the lead times.
+     * Iterable view of the durations.
      */
 
-    private final Iterable<TimeSeries<PairOfDoubles>> leadTimeIterator;
+    private final Iterable<TimeSeries<PairOfDoubles>> durationIterator;
 
     /**
      * Iterable view of the pairs of times and values. 
@@ -115,7 +115,7 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
     @Override
     public Iterable<TimeSeries<PairOfDoubles>> durationIterator()
     {
-        return leadTimeIterator;
+        return durationIterator;
     }
 
     @Override
@@ -446,7 +446,7 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
         }
         //Set the iterators
         basisTimeIterator = getBasisTimeIterator();
-        leadTimeIterator = getLeadTimeIterator();
+        durationIterator = getDurationIterator();
         timeIterator = getTimeIterator();
     }
 
@@ -514,12 +514,12 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
     }
 
     /**
-     * Returns an {@link Iterable} view of the lead times.
+     * Returns an {@link Iterable} view of the durations.
      * 
-     * @return an iterable view of the lead times
+     * @return an iterable view of the durations
      */
 
-    private Iterable<TimeSeries<PairOfDoubles>> getLeadTimeIterator()
+    private Iterable<TimeSeries<PairOfDoubles>> getDurationIterator()
     {
         //Construct an iterable view of the basis times
         class IterableTimeSeries implements Iterable<TimeSeries<PairOfDoubles>>
