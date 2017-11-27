@@ -548,7 +548,7 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
                         }
                         SafeRegularTimeSeriesOfSingleValuedPairsBuilder builder =
                                 new SafeRegularTimeSeriesOfSingleValuedPairsBuilder();
-                        builder.setTimeStep( timeStep.multipliedBy( returned + 1 ) );
+                        builder.setTimeStep( timeStep.multipliedBy( (long) returned + 1 ) );
                         builder.setMetadata( getMetadata() );
                         int start = 0;
                         for ( Instant next : basisTimes )
@@ -627,7 +627,8 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
                             {
                                 int basisIndex = (int) Math.floor( ( (double) returnedSoFar ) / timeStepCount );
                                 int residual = returnedSoFar - ( basisIndex * timeStepCount );
-                                return basisTimes.get( basisIndex ).plus( timeStep.multipliedBy( residual + 1 ) );
+                                return basisTimes.get( basisIndex )
+                                                 .plus( timeStep.multipliedBy( (long) residual + 1 ) );
                             }
 
                             @Override
