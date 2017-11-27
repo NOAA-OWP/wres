@@ -163,7 +163,7 @@ class DefaultSlicer implements Slicer
             PairOfDoubleAndVectorOfDoubles next = filter( a, condition );
             if ( Objects.nonNull( next ) )
             {
-                mainPairs.add( next );
+                mainPairsSubset.add( next );
             }
         } );
         //No pairs in the subset
@@ -172,7 +172,7 @@ class DefaultSlicer implements Slicer
             throw new MetricInputSliceException( sliceFail + " No data for main pairs." );
         }
         //Filter climatology as required
-        VectorOfDoubles climatology = null;
+        VectorOfDoubles climatology = input.getClimatology();
         if ( input.hasClimatology() && applyToClimatology )
         {
             climatology = filter( input.getClimatology(), condition, sliceFail + " No data for climatology." );
@@ -186,7 +186,7 @@ class DefaultSlicer implements Slicer
                 PairOfDoubleAndVectorOfDoubles next = filter( a, condition );
                 if ( Objects.nonNull( next ) )
                 {
-                    basePairs.add( next );
+                    basePairsSubset.add( next );
                 }
             } );
 
