@@ -118,7 +118,7 @@ public final class DefaultSlicerTest
      */
 
     @Test
-    public void test4SliceByLeft() throws MetricInputSliceException
+    public void test4FilterByLeft() throws MetricInputSliceException
     {
         DataFactory metIn = DefaultDataFactory.getInstance();
         final List<PairOfDoubles> values = new ArrayList<>();
@@ -177,7 +177,7 @@ public final class DefaultSlicerTest
      */
 
     @Test
-    public void test5SliceByLeft() throws MetricInputSliceException
+    public void test5FilterByLeft() throws MetricInputSliceException
     {
         DataFactory metIn = DefaultDataFactory.getInstance();
         final List<PairOfDoubleAndVectorOfDoubles> values = new ArrayList<>();
@@ -403,7 +403,7 @@ public final class DefaultSlicerTest
     {
         DataFactory metIn = DefaultDataFactory.getInstance();
         double[] sorted = new double[] { 1.5, 4.9, 6.3, 27, 43.3, 433.9, 1012.6, 2009.8, 7001.4, 12038.5, 17897.2 };
-        double[] sortedB = new double[] { -50, -40, -30, -20, -10, 0, 10, 20, 30, 40 , 50 };
+        double[] sortedB = new double[] { -50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50 };
         double testA = 0.0;
         double testB = 1.0;
         double testC = 7.0 / 11.0;
@@ -418,7 +418,7 @@ public final class DefaultSlicerTest
         //Test for equality
         DoubleUnaryOperator qFA = slicer.getQuantileFunction( sorted );
         DoubleUnaryOperator qFB = slicer.getQuantileFunction( sortedB );
-        
+
         assertTrue( "The inverse cumulative probability does not match the benchmark",
                     metIn.doubleEquals( qFA.applyAsDouble( testA ), expectedA, 7 ) );
         assertTrue( "The inverse cumulative probability does not match the benchmark",
@@ -429,7 +429,7 @@ public final class DefaultSlicerTest
                     metIn.doubleEquals( qFA.applyAsDouble( testD ), expectedD, 7 ) );
         assertTrue( "The inverse cumulative probability does not match the benchmark",
                     metIn.doubleEquals( qFB.applyAsDouble( testE ), expectedE, 7 ) );
-        
+
         //Test the exception conditions
         try
         {
@@ -570,7 +570,7 @@ public final class DefaultSlicerTest
      */
 
     @Test
-    public void test13SliceByRight()
+    public void test13FilterByRight()
     {
         List<PairOfDoubleAndVectorOfDoubles> input = new ArrayList<>();
         DataFactory metIn = DefaultDataFactory.getInstance();
@@ -600,7 +600,7 @@ public final class DefaultSlicerTest
      */
 
     @Test
-    public void test14SliceByMetricComponent()
+    public void test14FilterByMetricComponent()
     {
         //Obtain input and slice
         MetricOutputMapByTimeAndThreshold<VectorOutput> toSlice =
@@ -613,5 +613,97 @@ public final class DefaultSlicerTest
                     sliced.size() == toSlice.getMetadata().getMetricComponentID().getMetricComponents().size() );
         sliced.forEach( ( key, value ) -> assertTrue( "Expected 638 elements in each slice.", value.size() == 638 ) );
     }
+
+    /**
+     * Tests the {@link Slicer#filter(SingleValuedPairs, java.util.function.DoublePredicate, boolean).
+    
+     * @throws MetricInputSliceException if slicing results in an unexpected exception
+     */
+
+    @Test
+    public void test15FilterSingleValuedPairs() throws MetricInputSliceException
+    {
+        DataFactory metIn = DefaultDataFactory.getInstance();
+        List<PairOfDoubles> values = new ArrayList<>();
+        values.add( metIn.pairOf( 1, 2.0 / 5.0 ) );
+        values.add( metIn.pairOf( 1, 3.0 / 5.0 ) );
+        values.add( metIn.pairOf( 1, 1.0 / 5.0 ) );
+        values.add( metIn.pairOf( Double.NaN, Double.NaN ) );
+        values.add( metIn.pairOf( 0, Double.NaN ) );
+        values.add( metIn.pairOf( Double.NaN, 0 ) );
+
+        List<PairOfDoubles> expectedValues = new ArrayList<>();
+        expectedValues.add( metIn.pairOf( 1, 2.0 / 5.0 ) );
+        expectedValues.add( metIn.pairOf( 1, 3.0 / 5.0 ) );
+        expectedValues.add( metIn.pairOf( 1, 1.0 / 5.0 ) );
+
+        VectorOfDoubles climatology = metIn.vectorOf( new double[] { 1, 2, 3, 4, 5, Double.NaN } );
+        VectorOfDoubles climatologyExpected = metIn.vectorOf( new double[] { 1, 2, 3, 4, 5 } );
+
+        Metadata meta = metIn.getMetadataFactory().getMetadata();
+        SingleValuedPairs pairs = metIn.ofSingleValuedPairs( values, values, meta, meta, climatology );
+        SingleValuedPairs sliced = slicer.filter( pairs, a -> Double.isFinite( a ), true );
+
+        //Test with baseline
+        assertTrue( "The sliced data does not match the benchmark.", sliced.getData().equals( expectedValues ) );
+        assertTrue( "The sliced baseline data does not match the benchmark.",
+                    sliced.getDataForBaseline().equals( expectedValues ) );
+        assertTrue( "The sliced climatology data does not match the benchmark.",
+                    Arrays.equals( sliced.getClimatology().getDoubles(), climatologyExpected.getDoubles() ) );
+        assertTrue( "Unexpected equality of the sliced and unsliced climatology.",
+                    !Arrays.equals( slicer.filter( pairs, a -> Double.isFinite( a ), false )
+                                          .getClimatology()
+                                          .getDoubles(),
+                                    climatologyExpected.getDoubles() ) );
+        assertTrue( "Unexpected equality of the sliced and unsliced data.",
+                    !sliced.getData().equals( values ) );
+        //Test without baseline or climatology
+        SingleValuedPairs pairsNoBase = metIn.ofSingleValuedPairs( values, meta );
+        SingleValuedPairs slicedNoBase = slicer.filter( pairsNoBase, a -> Double.isFinite( a ), false );
+
+        assertTrue( "The sliced data without a baseline does not match the benchmark.",
+                    slicedNoBase.getData().equals( expectedValues ) );
+
+        //Test exceptions
+        //No pairs in main
+        try
+        {
+            List<PairOfDoubles> none = new ArrayList<>();
+            none.add( metIn.pairOf( Double.NaN, Double.NaN ) );
+            slicer.filter( metIn.ofSingleValuedPairs( none, meta ), a -> Double.isFinite( a ), false );
+            fail( "Expected an exception on attempting to filter with no data." );
+        }
+        catch ( MetricInputSliceException e )
+        {
+        }
+        //No pairs in baseline
+        try
+        {
+            List<PairOfDoubles> none = new ArrayList<>();
+            none.add( metIn.pairOf( Double.NaN, Double.NaN ) );
+            slicer.filter( metIn.ofSingleValuedPairs( values, none, meta, meta ), a -> Double.isFinite( a ), false );
+            fail( "Expected an exception on attempting to filter with no baseline data." );
+        }
+        catch ( MetricInputSliceException e )
+        {
+        }
+
+        //No climatological data
+        try
+        {
+            SingleValuedPairs test =
+                    metIn.ofSingleValuedPairs( values,
+                                               meta,
+                                               metIn.vectorOf( new double[] { Double.NaN } ) );
+            slicer.filter( test, a -> Double.isFinite( a ), true );
+            fail( "Expected an exception on attempting to filter with no climatological data." );
+        }
+        catch ( MetricInputSliceException e )
+        {
+        }
+    }
+
+    
+    
 
 }
