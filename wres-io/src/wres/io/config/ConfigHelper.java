@@ -60,43 +60,6 @@ public class ConfigHelper
         // prevent construction
     }
 
-    /**
-     * Given a config, generate feature IDs and return a sql string of them.
-     *
-     * @param config the project config
-     * @return sql string useful in a where clause
-     * @throws IOException if the feature ID could not be retrieved or added
-     */
-    public static String getFeatureIdsAndPutIfAbsent(ProjectConfig config)
-    throws IOException
-    {
-        if ( config.getPair() == null
-             || config.getPair().getFeature() == null )
-        {
-            return "";
-        }
-
-        StringJoiner result = new StringJoiner(",", "feature_id in (", ")");
-
-        try
-        {
-            // build a sql string of feature_ids, using cache to populate as needed
-            for ( Feature feature : Collections.where(config.getPair().getFeature(), feature -> {
-                return feature.getLocationId() != null && !feature.getLocationId().isEmpty();
-            } ) )
-            {
-                Integer i = Features.getFeatureID( feature );
-                result.add(Integer.toString(i));
-            }
-        }
-        catch ( SQLException e )
-        {
-            throw new IOException("Failed to get or put a feature id.", e);
-        }
-
-        return result.toString();
-    }
-
     public static boolean usesProbabilityThresholds(final ProjectConfig projectConfig)
     {
         boolean hasProbabilityThreshold = projectConfig.getOutputs().getProbabilityThresholds() != null;
