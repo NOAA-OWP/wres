@@ -396,6 +396,12 @@
         <xs:attribute name="label" type="xs:string" />
     </xs:complexType>
 
+    <xs:complexType name="dateCondition">
+        <!-- xs:dateTime ends up being yucky XMLGregorianCalendar. Use string, let app deal with it. -->
+        <xs:attribute name="earliest" type="xs:string" />
+        <xs:attribute name="latest" type="xs:string" />
+    </xs:complexType>
+
     <xs:complexType name="pair">
 
         <!-- for class naming using xjc-->
@@ -410,19 +416,9 @@
             <xs:element name="feature" type="feature" minOccurs="1" maxOccurs="unbounded"/>
 
             <xs:element name="leadHours" type="intBoundsType" minOccurs="0" />
-            <xs:element name="dates" minOccurs="0" maxOccurs="1">
-                <xs:complexType>
-                    <!-- xs:dateTime ends up being yucky XMLGregorianCalendar. Use string, let app deal with it. -->
-                    <xs:attribute name="earliest" type="xs:string" />
-                    <xs:attribute name="latest" type="xs:string" />
-                </xs:complexType>
-            </xs:element>
-            <xs:element name="issuedDates" minOccurs="0" maxOccurs="1">
-                <xs:complexType>
-                    <xs:attribute name="earliest" type="xs:string" />
-                    <xs:attribute name="latest" type="xs:string" />
-                </xs:complexType>
-            </xs:element>
+            <xs:element name="dates" type="dateCondition" minOccurs="0" />
+            <xs:element name="issuedDates" type="dateCondition" minOccurs="0" />
+
             <!-- Intended for seasonal verification, GMT, valid time: -->
             <xs:element name="season" minOccurs="0" maxOccurs="1">
                 <xs:complexType>
