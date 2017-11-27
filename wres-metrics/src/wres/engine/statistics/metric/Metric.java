@@ -22,8 +22,9 @@ import wres.datamodel.outputs.MetricOutputMetadata;
  * </p>
  * <p>
  * A metric cannot conduct any pre-processing of the input, such as rescaling, changing measurement units, conditioning,
- * or removing missing values (except for missing ensemble members whose treatment may be metric-specific and whose
- * inclusion may be important for recovering ensemble traces).
+ * or removing missing values. However, for metrics that rely on ordered input, such as position within a time-series 
+ * or spatial coordinates, missing values may be used to retain (relative) position. Such metrics are uniquely aware 
+ * of missing values. In other cases, missing values should be removed upfront.
  * </p>
  * <p>
  * In order to build a metric, implement the inner class {@link MetricBuilder} and validate the parameters in a hidden
