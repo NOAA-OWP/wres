@@ -274,7 +274,7 @@ public class CommaSeparated
             Map<MetricConstants, MetricOutputMapByTimeAndThreshold<ScalarOutput>> helper
                     = DefaultDataFactory.getInstance()
                                         .getSlicer()
-                                        .sliceByMetricComponent( m.getValue() );
+                                        .filterByMetricComponent( m.getValue() );
 
             String outerName = m.getKey().getKey().toString();
 

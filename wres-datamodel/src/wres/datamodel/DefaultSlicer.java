@@ -102,7 +102,7 @@ class DefaultSlicer implements Slicer
     }
 
     @Override
-    public SingleValuedPairs sliceByLeft( SingleValuedPairs input, Threshold threshold )
+    public SingleValuedPairs filterByLeft( SingleValuedPairs input, Threshold threshold )
             throws MetricInputSliceException
     {
         Objects.requireNonNull( input, NULL_INPUT );
@@ -143,7 +143,7 @@ class DefaultSlicer implements Slicer
     }
 
     @Override
-    public EnsemblePairs sliceByLeft( EnsemblePairs input, Threshold threshold ) throws MetricInputSliceException
+    public EnsemblePairs filterByLeft( EnsemblePairs input, Threshold threshold ) throws MetricInputSliceException
     {
         Objects.requireNonNull( input, NULL_INPUT );
         Objects.requireNonNull( threshold, "Specify a non-null threshold." );
@@ -182,7 +182,7 @@ class DefaultSlicer implements Slicer
     }
 
     @Override
-    public Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> sliceByRight( List<PairOfDoubleAndVectorOfDoubles> input )
+    public Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> filterByRight( List<PairOfDoubleAndVectorOfDoubles> input )
     {
         Objects.requireNonNull( input, NULL_INPUT );
         return input.stream().collect( Collectors.groupingBy( pair -> pair.getItemTwo().length ) );
@@ -190,7 +190,7 @@ class DefaultSlicer implements Slicer
 
     @Override
     public Map<MetricConstants, MetricOutputMapByTimeAndThreshold<ScalarOutput>>
-            sliceByMetricComponent( MetricOutputMapByTimeAndThreshold<VectorOutput> input )
+            filterByMetricComponent( MetricOutputMapByTimeAndThreshold<VectorOutput> input )
     {
         Objects.requireNonNull( input, NULL_INPUT );
         Map<MetricConstants, Map<MapBiKey<TimeWindow, Threshold>, ScalarOutput>> sourceMap =
