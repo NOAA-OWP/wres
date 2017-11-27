@@ -27,13 +27,12 @@ import org.slf4j.LoggerFactory;
 import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
+import wres.config.generated.DateCondition;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.DurationUnit;
 import wres.config.generated.Feature;
 import wres.config.generated.MetricConfig;
-import wres.config.generated.PairConfig.Dates;
-import wres.config.generated.PairConfig.IssuedDates;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.TimeAggregationConfig;
 import wres.config.generated.TimeAggregationFunction;
@@ -43,7 +42,6 @@ import wres.datamodel.time.TimeWindow;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.Projects;
 import wres.io.data.caching.Variables;
-import wres.io.data.details.FeatureDetails;
 import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.Database;
 import wres.util.Collections;
@@ -894,8 +892,8 @@ public class ConfigHelper
      * following is available (in this order):</p> 
      * 
      * <ol>
-     * <li>The valid times in {@link Dates#getEarliest()} and {@link Dates#getLatest()}; or</li>
-     * <li>The issue times in {@link IssuedDates#getEarliest()} and the {@link IssuedDates#getLatest()}; or</li>
+     * <li>The valid times in {@link DateCondition#getEarliest()} and {@link DateCondition#getLatest()}; or</li>
+     * <li>The issue times in {@link DateCondition#getEarliest()} and the {@link DateCondition#getLatest()}; or</li>
      * <li>The earliest and latest possible dates on the UTC timeline in valid time, namely {@link Instant#MIN} and 
      * {@link Instant#MAX}, respectively.</li>
      * </ol>

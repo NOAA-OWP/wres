@@ -5,6 +5,7 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.DateTimeException;
+import java.time.Instant;
 import java.time.MonthDay;
 import java.util.List;
 import java.util.Objects;
@@ -17,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.generated.DataSourceConfig;
+import wres.config.generated.DateCondition;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DurationUnit;
 import wres.config.generated.Feature;
@@ -381,6 +383,14 @@ public class Validation
                                                     pairConfig )
                  && result;
 
+        result = Validation.areDatesValid ( projectConfigPlus,
+                                            pairConfig.getDates() )
+                 && result;
+
+        result = Validation.areDatesValid ( projectConfigPlus,
+                                            pairConfig.getIssuedDates() )
+                 && result;
+
         result = Validation.isSeasonValid( projectConfigPlus,
                                            pairConfig )
                  && result;
@@ -420,6 +430,76 @@ public class Validation
 
         return result;
     }
+
+    private static boolean areDatesValid( ProjectConfigPlus projectConfigPlus,
+                                          DateCondition dates )
+    {
+        Objects.requireNonNull( projectConfigPlus, NON_NULL );
+
+        boolean result = true;
+
+        if ( dates != null )
+        {
+            String earliest = dates.getEarliest();
+            String latest = dates.getLatest();
+            if ( earliest != null )
+            {
+                result = Validation.isDateStringValid( projectConfigPlus,
+                                                       dates,
+                                                       earliest )
+                         && result;
+            }
+
+            if ( latest != null )
+            {
+                result = Validation.isDateStringValid( projectConfigPlus,
+                                                       dates,
+                                                       latest )
+                         && result;
+            }
+        }
+
+        return result;
+    }
+
+    private static boolean isDateStringValid( ProjectConfigPlus projectConfigPlus,
+                                              Locatable locatable,
+                                              String date )
+    {
+        boolean result = true;
+
+        Objects.requireNonNull( projectConfigPlus, NON_NULL );
+        Objects.requireNonNull( locatable, NON_NULL );
+        Objects.requireNonNull( date, NON_NULL );
+
+        try
+        {
+            Instant.parse( date );
+        }
+        catch ( DateTimeException dte )
+        {
+            if ( LOGGER.isWarnEnabled() )
+            {
+                String msg = FILE_LINE_COLUMN_BOILERPLATE
+                             + " In the pair configuration, the text '"
+                             + date + "' was not able to be converted to an "
+                             + "Instant. Please use the ISO8601 format, the UTC"
+                             + " zoneOffset, and second-precision, e.g. "
+                             + "'2017-11-27 17:36:00Z'.";
+
+                LOGGER.warn( msg,
+                             projectConfigPlus.getPath(),
+                             locatable.sourceLocation().getLineNumber(),
+                             locatable.sourceLocation()
+                                      .getColumnNumber() );
+            }
+
+            result = false;
+        }
+
+        return result;
+    }
+
 
     /**
      * Validates a given feature's aliases from a projectconfig.
