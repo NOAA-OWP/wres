@@ -157,12 +157,17 @@ public final class TimeWindow implements Comparable<TimeWindow>
         {
             return compare;
         }
-        compare = Duration.of( earliestLead, leadUnits ).compareTo( Duration.of( o.earliestLead, o.leadUnits ) );
+        compare = Long.compare( earliestLead, o.earliestLead );
         if ( compare != 0 )
         {
             return compare;
         }
-        return Duration.of( latestLead, leadUnits ).compareTo( Duration.of( o.latestLead, o.leadUnits ) );
+        compare = Long.compare( latestLead, o.latestLead );
+        if ( compare != 0 )
+        {
+            return compare;
+        }    
+        return leadUnits.compareTo( o.leadUnits );
     }
 
     @Override
@@ -175,8 +180,9 @@ public final class TimeWindow implements Comparable<TimeWindow>
         TimeWindow in = (TimeWindow) o;
         boolean timesEqual = in.earliestTime.equals( earliestTime ) && in.latestTime.equals( latestTime )
                              && in.referenceTime.equals( referenceTime );
-        return timesEqual && Duration.of( earliestLead, leadUnits ).equals( Duration.of( in.earliestLead, in.leadUnits ) )
-                && Duration.of( latestLead, leadUnits ).equals( Duration.of( in.latestLead, in.leadUnits ) );
+        return timesEqual && earliestLead == in.earliestLead
+               && latestLead == in.latestLead
+               && leadUnits.equals( in.leadUnits );
     }
 
     @Override
@@ -185,8 +191,9 @@ public final class TimeWindow implements Comparable<TimeWindow>
         return Objects.hash( earliestTime,
                              latestTime,
                              referenceTime,
-                             Duration.of( earliestLead, leadUnits ),
-                             Duration.of( latestLead, leadUnits ) );
+                             earliestLead,
+                             latestLead,
+                             leadUnits );
     }
 
     @Override

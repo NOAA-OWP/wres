@@ -111,7 +111,7 @@ class SafeThreshold implements Threshold
     @Override
     public int hashCode()
     {
-        int returnMe = 53728;
+        int returnMe = 17;
         if ( hasOrdinaryValues() )
         {
             returnMe = returnMe * 37 + threshold.hashCode();
