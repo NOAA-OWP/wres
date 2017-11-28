@@ -5,6 +5,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.Threshold.Operator;
@@ -13,7 +15,6 @@ import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.MulticategoryPairs;
-import wres.datamodel.inputs.pairs.Pair;
 import wres.datamodel.inputs.pairs.PairOfBooleans;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
@@ -23,7 +24,6 @@ import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.outputs.BoxPlotOutput;
-import wres.datamodel.outputs.MapBiKey;
 import wres.datamodel.outputs.MapKey;
 import wres.datamodel.outputs.MatrixOutput;
 import wres.datamodel.outputs.MetricOutput;
@@ -53,7 +53,7 @@ public interface DataFactory
 {
 
     /**
-     * Convenience method that returns a {@link MapBiKey} to map a {@link MetricOutput} by {@link TimeWindow} and
+     * Convenience method that returns a {@link Pair} to map a {@link MetricOutput} by {@link TimeWindow} and
      * {@link Threshold}.
      * 
      * @param timeWindow the time window
@@ -62,15 +62,15 @@ public interface DataFactory
      * @return a map key
      */
 
-    default MapBiKey<TimeWindow, Threshold> getMapKeyByTimeThreshold( final TimeWindow timeWindow,
+    default  Pair<TimeWindow, Threshold> getMapKeyByTimeThreshold( final TimeWindow timeWindow,
                                                                    final Double threshold,
                                                                    final Operator condition )
     {
-        return getMapKey( timeWindow, getThreshold( threshold, condition ) );
+        return Pair.of( timeWindow, getThreshold( threshold, condition ) );
     }
 
     /**
-     * Convenience method that returns a {@link MapBiKey} to map a {@link MetricOutput} by {@link TimeWindow} and
+     * Convenience method that returns a {@link Pair} to map a {@link MetricOutput} by {@link TimeWindow} and
      * {@link Threshold}.
      * 
      * @param timeWindow the time window
@@ -80,12 +80,12 @@ public interface DataFactory
      * @return a map key
      */
 
-    default MapBiKey<TimeWindow, Threshold> getMapKeyByTimeThreshold( final TimeWindow timeWindow,
+    default  Pair<TimeWindow, Threshold> getMapKeyByTimeThreshold( final TimeWindow timeWindow,
                                                                    final Double threshold,
                                                                    final Double thresholdUpper,
                                                                    final Operator condition )
     {
-        return getMapKey( timeWindow, getThreshold( threshold, thresholdUpper, condition ) );
+        return Pair.of( timeWindow, getThreshold( threshold, thresholdUpper, condition ) );
     }
 
     /**
@@ -753,17 +753,6 @@ public interface DataFactory
 
     <S extends Comparable<S>> MapKey<S> getMapKey( S key );
 
-    /**
-     * Returns a {@link MapBiKey} to map a {@link MetricOutput} by two elementary keys.
-     * 
-     * @param <S> the type of the first key
-     * @param <T> the type of the second key
-     * @param firstKey the first key
-     * @param secondKey the second key
-     * @return a map key
-     */
-
-    <S extends Comparable<S>, T extends Comparable<T>> MapBiKey<S, T> getMapKey( S firstKey, T secondKey );
 
     /**
      * Returns {@link Threshold} from the specified input.
@@ -815,7 +804,7 @@ public interface DataFactory
      */
 
     <T extends MetricOutput<?>> MetricOutputMapByTimeAndThreshold<T>
-            ofMap( final Map<MapBiKey<TimeWindow, Threshold>, T> input );
+            ofMap( final Map<Pair<TimeWindow, Threshold>, T> input );
 
     /**
      * Returns a {@link MetricOutputMultiMapByTimeAndThreshold} from a map of inputs by {@link TimeWindow} and {@link Threshold}.
@@ -826,7 +815,7 @@ public interface DataFactory
      */
 
     <T extends MetricOutput<?>> MetricOutputMultiMapByTimeAndThreshold<T>
-            ofMultiMap( final Map<MapBiKey<TimeWindow, Threshold>, MetricOutputMapByMetric<T>> input );
+            ofMultiMap( final Map<Pair<TimeWindow, Threshold>, MetricOutputMapByMetric<T>> input );
 
     /**
      * Returns a builder for a {@link MetricOutputMultiMapByTimeAndThreshold} that allows for the incremental addition of

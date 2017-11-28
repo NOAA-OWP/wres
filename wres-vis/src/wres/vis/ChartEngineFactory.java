@@ -11,6 +11,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.jfree.chart.JFreeChart;
 import org.jfree.data.xy.XYDataset;
 import org.slf4j.Logger;
@@ -41,7 +42,6 @@ import wres.datamodel.Threshold;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.outputs.BoxPlotOutput;
-import wres.datamodel.outputs.MapBiKey;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMetadata;
 import wres.datamodel.outputs.MultiVectorOutput;
@@ -362,7 +362,7 @@ public abstract class ChartEngineFactory
             arguments.addArgument( "legendTitle", "Lead Time" );
             arguments.addArgument( "legendUnitsText", " [hours]" );
             arguments.addArgument( "leadHour",
-                                   Long.toString( inputSlice.getKey( 0 ).getFirstKey().getLatestLeadTimeInHours() ) );
+                                   Long.toString( inputSlice.getKey( 0 ).getLeft().getLatestLeadTimeInHours() ) );
             arguments.addArgument( "diagramInstanceDescription",
                                    "for Threshold " + ( (Threshold) inputKeyInstance ).toString()
                                                                  + " ("
@@ -473,7 +473,7 @@ public abstract class ChartEngineFactory
             arguments.addArgument( "legendTitle", "Lead Time" );
             arguments.addArgument( "legendUnitsText", " [hours]" );
             arguments.addArgument( "leadHour",
-                                   Long.toString( inputSlice.getKey( 0 ).getFirstKey().getLatestLeadTimeInHours() ) );
+                                   Long.toString( inputSlice.getKey( 0 ).getLeft().getLatestLeadTimeInHours() ) );
             arguments.addArgument( "diagramInstanceDescription",
                                    "for Threshold " + ( (Threshold) inputKeyInstance ).toString()
                                                                  + " ("
@@ -584,7 +584,7 @@ public abstract class ChartEngineFactory
             arguments.addArgument( "legendTitle", "Lead Time" );
             arguments.addArgument( "legendUnitsText", " [hours]" );
             arguments.addArgument( "leadHour",
-                                   Long.toString( inputSlice.getKey( 0 ).getFirstKey().getLatestLeadTimeInHours() ) );
+                                   Long.toString( inputSlice.getKey( 0 ).getLeft().getLatestLeadTimeInHours() ) );
             arguments.addArgument( "diagramInstanceDescription",
                                    "for Threshold " + ( (Threshold) inputKeyInstance ).toString()
                                                                  + " ("
@@ -752,7 +752,7 @@ public abstract class ChartEngineFactory
      */
     private static WRESChartEngine
             processBoxPlotErrorsDiagram(
-                                         MapBiKey<TimeWindow, Threshold> inputKeyInstance,
+                                         Pair<TimeWindow, Threshold> inputKeyInstance,
                                          final MetricOutputMapByTimeAndThreshold<BoxPlotOutput> input,
                                          final DataFactory factory,
                                          String templateName,
@@ -775,9 +775,9 @@ public abstract class ChartEngineFactory
         final MetricOutputMetadata meta = boxPlotData.getMetadata();
         arguments = buildDefaultMetricOutputPlotArgumentsProcessor( factory, meta );
         arguments.addArgument( "diagramInstanceDescription",
-                               "at Lead Hour " + inputKeyInstance.getFirstKey().getLatestLeadTimeInHours()
+                               "at Lead Hour " + inputKeyInstance.getLeft().getLatestLeadTimeInHours()
                                                              + " for "
-                                                             + inputKeyInstance.getSecondKey() );
+                                                             + inputKeyInstance.getRight() );
         arguments.addArgument( "probabilities",
                                HString.buildStringFromArray( boxPlotData.getProbabilities().getDoubles(), ", " )
                                       .replaceAll( "0.0,", "min," )
@@ -814,17 +814,17 @@ public abstract class ChartEngineFactory
      *            chart construction. May be null to use default template identified in static table.
      * @param overrideParametersStr String of XML (top level tag: chartDrawingParameters) that specifies the user
      *            overrides for the appearance of chart.
-     * @return Map where the keys are instances of {@link MapBiKey} with the two keys being an integer and a threshold.
+     * @return Map where the keys are instances of {@link Pair} with the two keys being an integer and a threshold.
      * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
      */
-    public static ConcurrentMap<MapBiKey<TimeWindow, Threshold>, ChartEngine>
+    public static ConcurrentMap<Pair<TimeWindow, Threshold>, ChartEngine>
             buildBoxPlotChartEngine( final MetricOutputMapByTimeAndThreshold<BoxPlotOutput> input,
                                      final DataFactory factory,
                                      final String userSpecifiedTemplateResourceName,
                                      final String overrideParametersStr )
                     throws ChartEngineException
     {
-        final ConcurrentMap<MapBiKey<TimeWindow, Threshold>, ChartEngine> results = new ConcurrentSkipListMap<>();
+        final ConcurrentMap<Pair<TimeWindow, Threshold>, ChartEngine> results = new ConcurrentSkipListMap<>();
 
         String templateName =
                 getNonNullMultiVectorOutputPlotTypeInformation( input.getMetadata().getMetricID(),
@@ -835,10 +835,10 @@ public abstract class ChartEngineFactory
         }
 
         //Determine the key set for the loop below based on if this is a lead time first and threshold first plot type.
-        Set<MapBiKey<TimeWindow, Threshold>> keySetValues = input.keySet();
+        Set<Pair<TimeWindow, Threshold>> keySetValues = input.keySet();
 
         //For each lead time, do the following....
-        for ( final MapBiKey<TimeWindow, Threshold> keyInstance : keySetValues )
+        for ( final Pair<TimeWindow, Threshold> keyInstance : keySetValues )
         {
             if ( input.getMetadata().getMetricID() == MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED
                  || input.getMetadata().getMetricID() == MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST )

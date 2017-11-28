@@ -2,6 +2,8 @@ package wres.datamodel.outputs;
 
 import java.util.concurrent.Future;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.Threshold;
 import wres.datamodel.time.TimeWindow;
@@ -90,10 +92,10 @@ public interface MetricOutputForProjectByTimeAndThreshold
          * @return the builder
          */
 
-        default MetricOutputForProjectByTimeAndThresholdBuilder addScalarOutput( MapBiKey<TimeWindow, Threshold> key,
+        default MetricOutputForProjectByTimeAndThresholdBuilder addScalarOutput( Pair<TimeWindow, Threshold> key,
                                                                                  Future<MetricOutputMapByMetric<ScalarOutput>> result )
         {
-            addScalarOutput( key.getFirstKey(), key.getSecondKey(), result );
+            addScalarOutput( key.getLeft(), key.getRight(), result );
             return this;
         }
 
@@ -105,10 +107,10 @@ public interface MetricOutputForProjectByTimeAndThreshold
          * @return the builder
          */
 
-        default MetricOutputForProjectByTimeAndThresholdBuilder addVectorOutput( MapBiKey<TimeWindow, Threshold> key,
+        default MetricOutputForProjectByTimeAndThresholdBuilder addVectorOutput( Pair<TimeWindow, Threshold> key,
                                                                                  Future<MetricOutputMapByMetric<VectorOutput>> result )
         {
-            addVectorOutput( key.getFirstKey(), key.getSecondKey(), result );
+            addVectorOutput( key.getLeft(), key.getRight(), result );
             return this;
         }
 
@@ -121,10 +123,10 @@ public interface MetricOutputForProjectByTimeAndThreshold
          */
 
         default MetricOutputForProjectByTimeAndThresholdBuilder
-                addMultiVectorOutput( MapBiKey<TimeWindow, Threshold> key,
+                addMultiVectorOutput( Pair<TimeWindow, Threshold> key,
                                       Future<MetricOutputMapByMetric<MultiVectorOutput>> result )
         {
-            addMultiVectorOutput( key.getFirstKey(), key.getSecondKey(), result );
+            addMultiVectorOutput( key.getLeft(), key.getRight(), result );
             return this;
         }
 
@@ -136,10 +138,10 @@ public interface MetricOutputForProjectByTimeAndThreshold
          * @return the builder
          */
 
-        default MetricOutputForProjectByTimeAndThresholdBuilder addMatrixOutput( MapBiKey<TimeWindow, Threshold> key,
+        default MetricOutputForProjectByTimeAndThresholdBuilder addMatrixOutput( Pair<TimeWindow, Threshold> key,
                                                                                  Future<MetricOutputMapByMetric<MatrixOutput>> result )
         {
-            addMatrixOutput( key.getFirstKey(), key.getSecondKey(), result );
+            addMatrixOutput( key.getLeft(), key.getRight(), result );
             return this;
         }
 
@@ -151,10 +153,10 @@ public interface MetricOutputForProjectByTimeAndThreshold
          * @return the builder
          */
 
-        default MetricOutputForProjectByTimeAndThresholdBuilder addBoxPlotOutput( MapBiKey<TimeWindow, Threshold> key,
+        default MetricOutputForProjectByTimeAndThresholdBuilder addBoxPlotOutput( Pair<TimeWindow, Threshold> key,
                                                                                   Future<MetricOutputMapByMetric<BoxPlotOutput>> result )
         {
-            addBoxPlotOutput( key.getFirstKey(), key.getSecondKey(), result );
+            addBoxPlotOutput( key.getLeft(), key.getRight(), result );
             return this;
         }
 

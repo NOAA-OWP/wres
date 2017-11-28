@@ -13,6 +13,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
 import wres.config.ProjectConfigException;
@@ -27,7 +28,6 @@ import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Threshold;
 import wres.datamodel.metadata.MetadataFactory;
-import wres.datamodel.outputs.MapBiKey;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMapByMetric;
 import wres.datamodel.outputs.MetricOutputMetadata;
@@ -130,7 +130,7 @@ public class CommaSeparatedTest
                 CompletableFuture.completedFuture( fakeOutputData );
 
         // Fake lead time and threshold
-        MapBiKey<TimeWindow, Threshold> mapKeyByLeadThreshold =
+        Pair<TimeWindow, Threshold> mapKeyByLeadThreshold =
                 outputFactory.getMapKeyByTimeThreshold( timeOne,
                                                         Double.NEGATIVE_INFINITY,
                                                         Threshold.Operator.GREATER );

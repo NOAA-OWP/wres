@@ -15,6 +15,8 @@ import java.util.SortedMap;
 import java.util.StringJoiner;
 import java.util.TreeMap;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import wres.config.ProjectConfigException;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
@@ -23,7 +25,6 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Threshold;
-import wres.datamodel.outputs.MapBiKey;
 import wres.datamodel.outputs.MapKey;
 import wres.datamodel.outputs.MetricOutputAccessException;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
@@ -212,9 +213,7 @@ public class CommaSeparated
 
                     // To maintain rectangular CSV output, construct keys using
                     // both dimensions. If we do not find a value, use NA.
-                    MapBiKey<TimeWindow,Threshold> key =
-                            DefaultDataFactory.getInstance()
-                                              .getMapKey( timeWindow, t );
+                    Pair<TimeWindow,Threshold> key = Pair.of( timeWindow, t );
 
                     ScalarOutput value = m.getValue()
                                           .get( key );
@@ -311,9 +310,7 @@ public class CommaSeparated
 
                         // To maintain rectangular CSV output, construct keys using
                         // both dimensions. If we do not find a value, use NA.
-                        MapBiKey<TimeWindow, Threshold> key =
-                                DefaultDataFactory.getInstance()
-                                                  .getMapKey( timeWindow, t );
+                        Pair<TimeWindow, Threshold> key = Pair.of( timeWindow, t );
 
                         ScalarOutput value = e.getValue()
                                               .get( key );

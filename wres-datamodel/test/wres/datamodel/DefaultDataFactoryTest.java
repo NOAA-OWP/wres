@@ -7,11 +7,11 @@ import static org.junit.Assert.assertTrue;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
 import wres.datamodel.VectorOfBooleans;
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.inputs.pairs.Pair;
 import wres.datamodel.inputs.pairs.PairOfBooleans;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
@@ -102,13 +102,13 @@ public final class DefaultDataFactoryTest
     {
         final double[] arrOne = {1.0, 2.0, 3.0};
         final double[] arrTwo = {4.0, 5.0};
-        final Pair<VectorOfDoubles, VectorOfDoubles> pair = metIn.pairOf(arrOne, arrTwo);
+        final Pair<VectorOfDoubles, VectorOfDoubles> pair = metIn.pairOf( arrOne, arrTwo);
         assertNotNull(pair);
-        assertEquals(pair.getItemOne().getDoubles()[0], 1.0, THRESHOLD);
-        assertEquals(pair.getItemOne().getDoubles()[1], 2.0, THRESHOLD);
-        assertEquals(pair.getItemOne().getDoubles()[2], 3.0, THRESHOLD);
-        assertEquals(pair.getItemTwo().getDoubles()[0], 4.0, THRESHOLD);
-        assertEquals(pair.getItemTwo().getDoubles()[1], 5.0, THRESHOLD);
+        assertEquals(pair.getLeft().getDoubles()[0], 1.0, THRESHOLD);
+        assertEquals(pair.getLeft().getDoubles()[1], 2.0, THRESHOLD);
+        assertEquals(pair.getLeft().getDoubles()[2], 3.0, THRESHOLD);
+        assertEquals(pair.getRight().getDoubles()[0], 4.0, THRESHOLD);
+        assertEquals(pair.getRight().getDoubles()[1], 5.0, THRESHOLD);
     }
 
     @Test

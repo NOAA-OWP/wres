@@ -12,6 +12,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants.MetricInputGroup;
@@ -21,7 +23,6 @@ import wres.datamodel.inputs.MetricInputSliceException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.outputs.BoxPlotOutput;
-import wres.datamodel.outputs.MapBiKey;
 import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold.MetricOutputForProjectByTimeAndThresholdBuilder;
@@ -120,26 +121,26 @@ public abstract class MetricProcessorByTime extends MetricProcessor<MetricOutput
          * Scalar results.
          */
 
-        private final ConcurrentMap<MapBiKey<TimeWindow, Threshold>, Future<MetricOutputMapByMetric<ScalarOutput>>> scalar =
+        private final ConcurrentMap<Pair<TimeWindow, Threshold>, Future<MetricOutputMapByMetric<ScalarOutput>>> scalar =
                 new ConcurrentHashMap<>();
         /**
          * Vector results.
          */
 
-        private final ConcurrentMap<MapBiKey<TimeWindow, Threshold>, Future<MetricOutputMapByMetric<VectorOutput>>> vector =
+        private final ConcurrentMap<Pair<TimeWindow, Threshold>, Future<MetricOutputMapByMetric<VectorOutput>>> vector =
                 new ConcurrentHashMap<>();
         /**
          * Multivector results.
          */
 
-        private final ConcurrentMap<MapBiKey<TimeWindow, Threshold>, Future<MetricOutputMapByMetric<MultiVectorOutput>>> multivector =
+        private final ConcurrentMap<Pair<TimeWindow, Threshold>, Future<MetricOutputMapByMetric<MultiVectorOutput>>> multivector =
                 new ConcurrentHashMap<>();
 
         /**
          * Box plot results.
          */
 
-        private final ConcurrentMap<MapBiKey<TimeWindow, Threshold>, Future<MetricOutputMapByMetric<BoxPlotOutput>>> boxplot =
+        private final ConcurrentMap<Pair<TimeWindow, Threshold>, Future<MetricOutputMapByMetric<BoxPlotOutput>>> boxplot =
                 new ConcurrentHashMap<>();
         
         /**
@@ -188,26 +189,26 @@ public abstract class MetricProcessorByTime extends MetricProcessor<MetricOutput
              * Scalar results.
              */
 
-            private final ConcurrentMap<MapBiKey<TimeWindow, Threshold>, Future<MetricOutputMapByMetric<ScalarOutput>>> scalar =
+            private final ConcurrentMap<Pair<TimeWindow, Threshold>, Future<MetricOutputMapByMetric<ScalarOutput>>> scalar =
                     new ConcurrentHashMap<>();
             /**
              * Vector results.
              */
 
-            private final ConcurrentMap<MapBiKey<TimeWindow, Threshold>, Future<MetricOutputMapByMetric<VectorOutput>>> vector =
+            private final ConcurrentMap<Pair<TimeWindow, Threshold>, Future<MetricOutputMapByMetric<VectorOutput>>> vector =
                     new ConcurrentHashMap<>();
             /**
              * Multivector results.
              */
 
-            private final ConcurrentMap<MapBiKey<TimeWindow, Threshold>, Future<MetricOutputMapByMetric<MultiVectorOutput>>> multivector =
+            private final ConcurrentMap<Pair<TimeWindow, Threshold>, Future<MetricOutputMapByMetric<MultiVectorOutput>>> multivector =
                     new ConcurrentHashMap<>();
 
             /**
              * Box plot results.
              */
 
-            private final ConcurrentMap<MapBiKey<TimeWindow, Threshold>, Future<MetricOutputMapByMetric<BoxPlotOutput>>> boxplot =
+            private final ConcurrentMap<Pair<TimeWindow, Threshold>, Future<MetricOutputMapByMetric<BoxPlotOutput>>> boxplot =
                     new ConcurrentHashMap<>();
 
             /**
@@ -231,8 +232,8 @@ public abstract class MetricProcessorByTime extends MetricProcessor<MetricOutput
              * @return the builder
              */
 
-            MetricFuturesByTimeBuilder addScalarOutput( MapBiKey<TimeWindow, Threshold> key,
-                                                            Future<MetricOutputMapByMetric<ScalarOutput>> value )
+            MetricFuturesByTimeBuilder addScalarOutput( Pair<TimeWindow, Threshold> key,
+                                                        Future<MetricOutputMapByMetric<ScalarOutput>> value )
             {
                 scalar.put( key, value );
                 return this;
@@ -246,8 +247,8 @@ public abstract class MetricProcessorByTime extends MetricProcessor<MetricOutput
              * @return the builder
              */
 
-            MetricFuturesByTimeBuilder addVectorOutput( MapBiKey<TimeWindow, Threshold> key,
-                                                            Future<MetricOutputMapByMetric<VectorOutput>> value )
+            MetricFuturesByTimeBuilder addVectorOutput( Pair<TimeWindow, Threshold> key,
+                                                        Future<MetricOutputMapByMetric<VectorOutput>> value )
             {
                 vector.put( key, value );
                 return this;
@@ -261,8 +262,8 @@ public abstract class MetricProcessorByTime extends MetricProcessor<MetricOutput
              * @return the builder
              */
 
-            MetricFuturesByTimeBuilder addMultiVectorOutput( MapBiKey<TimeWindow, Threshold> key,
-                                                                 Future<MetricOutputMapByMetric<MultiVectorOutput>> value )
+            MetricFuturesByTimeBuilder addMultiVectorOutput( Pair<TimeWindow, Threshold> key,
+                                                             Future<MetricOutputMapByMetric<MultiVectorOutput>> value )
             {
                 multivector.put( key, value );
                 return this;
@@ -276,8 +277,8 @@ public abstract class MetricProcessorByTime extends MetricProcessor<MetricOutput
              * @return the builder
              */
 
-            MetricFuturesByTimeBuilder addBoxPlotOutput( MapBiKey<TimeWindow, Threshold> key,
-                                                             Future<MetricOutputMapByMetric<BoxPlotOutput>> value )
+            MetricFuturesByTimeBuilder addBoxPlotOutput( Pair<TimeWindow, Threshold> key,
+                                                         Future<MetricOutputMapByMetric<BoxPlotOutput>> value )
             {
                 boxplot.put( key, value );
                 return this;
@@ -392,7 +393,7 @@ public abstract class MetricProcessorByTime extends MetricProcessor<MetricOutput
      * @param meta the {@link Metadata} used to help focus messaging
      * @param inGroup the {@link MetricInputGroup} consumed by the metrics on which the failure occurred, used to 
      *            focus messaging
-     * @throws a MetricCalculationException if all thresholds fail
+     * @throws MetricCalculationException if all thresholds fail
      */
 
     static void handleThresholdFailures( Map<Threshold, MetricCalculationException> failures,
@@ -518,21 +519,21 @@ public abstract class MetricProcessorByTime extends MetricProcessor<MetricOutput
         {
             if ( outGroup == MetricOutputGroup.SCALAR )
             {
-                futures.addScalarOutput( dataFactory.getMapKey( timeWindow, threshold ),
+                futures.addScalarOutput( Pair.of( timeWindow, threshold ),
                                          processSingleValuedThreshold( threshold,
                                                                        input,
                                                                        singleValuedScalar ) );
             }
             else if ( outGroup == MetricOutputGroup.VECTOR )
             {
-                futures.addVectorOutput( dataFactory.getMapKey( timeWindow, threshold ),
+                futures.addVectorOutput( Pair.of( timeWindow, threshold ),
                                          processSingleValuedThreshold( threshold,
                                                                        input,
                                                                        singleValuedVector ) );
             }
             else if ( outGroup == MetricOutputGroup.MULTIVECTOR )
             {
-                futures.addMultiVectorOutput( dataFactory.getMapKey( timeWindow, threshold ),
+                futures.addMultiVectorOutput( Pair.of( timeWindow, threshold ),
                                               processSingleValuedThreshold( threshold,
                                                                             input,
                                                                             singleValuedMultiVector ) );
