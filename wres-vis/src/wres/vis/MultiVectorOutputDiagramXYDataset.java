@@ -83,11 +83,11 @@ public class MultiVectorOutputDiagramXYDataset extends WRESAbstractXYDataset<Met
         }
         else if((!getPlotData().keySetByFirstKey().isEmpty()) && (getPlotData().keySetBySecondKey().size() == 1))
         {
-            return Long.toString( getPlotData().getKey(series).getFirstKey().getLatestLeadTimeInHours() );
+            return Long.toString( getPlotData().getKey(series).getLeft().getLatestLeadTimeInHours() );
         } 
         else
         {
-            return getPlotData().getKey(series).getSecondKey().toString();
+            return getPlotData().getKey(series).getRight().toString();
         } 
     }
 

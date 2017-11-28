@@ -6,6 +6,8 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Threshold;
 import wres.datamodel.time.TimeWindow;
@@ -101,10 +103,10 @@ public interface MetricOutputMultiMapByTimeAndThreshold<S extends MetricOutput<?
          * @return the builder
          */
 
-        default MetricOutputMultiMapByTimeAndThresholdBuilder<S> put( MapBiKey<TimeWindow, Threshold> key,
+        default MetricOutputMultiMapByTimeAndThresholdBuilder<S> put( Pair<TimeWindow, Threshold> key,
                                                                    MetricOutputMapByMetric<S> result )
         {
-            put( key.getFirstKey(), key.getSecondKey(), result );
+            put( key.getLeft(), key.getRight(), result );
             return this;
         }
 

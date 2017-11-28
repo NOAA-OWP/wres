@@ -167,8 +167,9 @@ project(':utilities')
 project(':wres-datamodel-api')
 {
 	dependencies
-    {     
-	testCompile 'junit:junit:4.12'
+    {
+        compile 'org.apache.commons:commons-lang3:3.6'
+        testCompile 'junit:junit:4.12'
     }
 }
 
@@ -179,6 +180,7 @@ project(':wres-datamodel')
         compile project(':wres-datamodel-api')
 
         compile 'org.slf4j:slf4j-api:1.7.25'
+        compile 'org.apache.commons:commons-lang3:3.6'
 
         testCompile 'junit:junit:4.12'
 

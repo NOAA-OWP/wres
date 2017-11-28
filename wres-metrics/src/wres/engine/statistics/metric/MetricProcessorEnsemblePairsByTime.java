@@ -12,6 +12,8 @@ import java.util.concurrent.Future;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
@@ -388,21 +390,21 @@ class MetricProcessorEnsemblePairsByTime extends MetricProcessorByTime
         {
             if ( outGroup == MetricOutputGroup.SCALAR )
             {
-                futures.addScalarOutput( dataFactory.getMapKey( timeWindow, threshold ),
+                futures.addScalarOutput( Pair.of( timeWindow, threshold ),
                                          processEnsembleThreshold( threshold,
                                                                    input,
                                                                    ensembleScalar ) );
             }
             else if ( outGroup == MetricOutputGroup.VECTOR )
             {
-                futures.addVectorOutput( dataFactory.getMapKey( timeWindow, threshold ),
+                futures.addVectorOutput( Pair.of( timeWindow, threshold ),
                                          processEnsembleThreshold( threshold,
                                                                    input,
                                                                    ensembleVector ) );
             }
             else if ( outGroup == MetricOutputGroup.MULTIVECTOR )
             {
-                futures.addMultiVectorOutput( dataFactory.getMapKey( timeWindow, threshold ),
+                futures.addMultiVectorOutput( Pair.of( timeWindow, threshold ),
                                               processEnsembleThreshold( threshold,
                                                                         input,
                                                                         ensembleMultiVector ) );
@@ -410,7 +412,7 @@ class MetricProcessorEnsemblePairsByTime extends MetricProcessorByTime
             //Only process box plots for "all data" threshold
             else if ( outGroup == MetricOutputGroup.BOXPLOT && !threshold.isFinite() )
             {
-                futures.addBoxPlotOutput( dataFactory.getMapKey( timeWindow, threshold ),
+                futures.addBoxPlotOutput( Pair.of( timeWindow, threshold ),
                                           processEnsembleThreshold( threshold,
                                                                     input,
                                                                     ensembleBoxPlot ) );
@@ -525,14 +527,14 @@ class MetricProcessorEnsemblePairsByTime extends MetricProcessorByTime
         {
             if ( outGroup == MetricOutputGroup.VECTOR )
             {
-                futures.addVectorOutput( dataFactory.getMapKey( timeWindow, threshold ),
+                futures.addVectorOutput( Pair.of( timeWindow, threshold ),
                                          processDiscreteProbabilityThreshold( threshold,
                                                                               input,
                                                                               discreteProbabilityVector ) );
             }
             else if ( outGroup == MetricOutputGroup.MULTIVECTOR )
             {
-                futures.addMultiVectorOutput( dataFactory.getMapKey( timeWindow, threshold ),
+                futures.addMultiVectorOutput( Pair.of( timeWindow, threshold ),
                                               processDiscreteProbabilityThreshold( threshold,
                                                                                    input,
                                                                                    discreteProbabilityMultiVector ) );
@@ -601,7 +603,7 @@ class MetricProcessorEnsemblePairsByTime extends MetricProcessorByTime
     /**
      * Validates the {@link DiscreteProbabilityPairs} and throws an exception if the smaller of the number of 
      * occurrences ({@link PairOfDoubles#getItemOne()} = 0) or non-occurrences ({@link PairOfDoubles#getItemOne()} = 1) 
-     * is less than the {@link minimumSampleSize}.
+     * is less than the {@link this.minimumSampleSize}.
      * 
      * @param subset the data to validate
      * @param threshold the threshold used to localize the error message

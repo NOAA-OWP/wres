@@ -12,11 +12,11 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.StringJoiner;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
 import wres.datamodel.SafeRegularTimeSeriesOfSingleValuedPairs.SafeRegularTimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.Pair;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.RegularTimeSeriesOfSingleValuedPairs;
 import wres.datamodel.metadata.Metadata;
@@ -76,7 +76,7 @@ public final class SafeRegularTimeSeriesOfSinglevaluedPairsTest
             for ( Pair<Instant, PairOfDoubles> nextPair : next.timeIterator() )
             {
                 assertTrue( "Unexpected pair in basis-time iteration of time-series.",
-                            nextPair.getItemTwo().equals( metIn.pairOf( nextValue, nextValue ) ) );
+                            nextPair.getRight().equals( metIn.pairOf( nextValue, nextValue ) ) );
                 nextValue++;
             }
         }
@@ -126,7 +126,7 @@ public final class SafeRegularTimeSeriesOfSinglevaluedPairsTest
             for ( Pair<Instant, PairOfDoubles> nextPair : next.timeIterator() )
             {
                 assertTrue( "Unexpected pair in lead-time iteration of time-series.",
-                            nextPair.getItemTwo().equals( metIn.pairOf( nextValue, nextValue ) ) );
+                            nextPair.getRight().equals( metIn.pairOf( nextValue, nextValue ) ) );
             }
             //Three time-series for main, one for baseline.
             assertTrue( "Unexpected number of time-series in dataset.",
@@ -336,7 +336,7 @@ public final class SafeRegularTimeSeriesOfSinglevaluedPairsTest
             for ( Pair<Instant, PairOfDoubles> nextPair : next.timeIterator() )
             {
                 assertTrue( "Unexpected pair in lead-time iteration of baseline time-series.",
-                            nextPair.getItemTwo().equals( metIn.pairOf( nextValue, nextValue ) ) );
+                            nextPair.getRight().equals( metIn.pairOf( nextValue, nextValue ) ) );
                 nextValue++;
             }
         }
@@ -392,7 +392,7 @@ public final class SafeRegularTimeSeriesOfSinglevaluedPairsTest
         for ( Pair<Instant, PairOfDoubles> nextPair : tsAppend.timeIterator() )
         {
             assertTrue( "Unexpected pair in lead-time iteration of baseline time-series.",
-                        nextPair.getItemTwo().equals( metIn.pairOf( nextValue, nextValue ) ) );
+                        nextPair.getRight().equals( metIn.pairOf( nextValue, nextValue ) ) );
             nextValue++;
         }
     }
@@ -440,7 +440,7 @@ public final class SafeRegularTimeSeriesOfSinglevaluedPairsTest
         assertTrue( "Unexpected issue time in the filtered time-series.",
                     filtered.getBasisTimes().first().equals( secondBasisTime ) );
         assertTrue( "Unexpected value in the filtered time-series.",
-                    filtered.timeIterator().iterator().next().getItemTwo().equals( metIn.pairOf( 4, 4 ) ) );
+                    filtered.timeIterator().iterator().next().getRight().equals( metIn.pairOf( 4, 4 ) ) );
         //Check for nullity on none filter
         assertTrue( "Expected nullity on filtering basis times.",
                     Objects.isNull( ts.filterByBasisTime( a -> a.equals( Instant.parse( "1985-01-04T00:00:00Z" ) ) ) ) );
@@ -491,7 +491,7 @@ public final class SafeRegularTimeSeriesOfSinglevaluedPairsTest
         assertTrue( "Unexpected lead time in the filtered time-series.",
                     filtered.getDurations().first().equals( Duration.ofDays( 3 ) ) );
         assertTrue( "Unexpected value in the filtered time-series.",
-                    filtered.timeIterator().iterator().next().getItemTwo().equals( metIn.pairOf( 6, 6 ) ) );
+                    filtered.timeIterator().iterator().next().getRight().equals( metIn.pairOf( 6, 6 ) ) );
         //Check for nullity on none filter
         assertTrue( "Expected nullity on filtering lead times.",
                     Objects.isNull( ts.filterByDuration( p -> p.equals( Duration.ofDays( 4 ) ) ) ) );

@@ -4,10 +4,10 @@ import static org.junit.Assert.assertTrue;
 
 import java.time.Instant;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
 import wres.datamodel.Threshold.Operator;
-import wres.datamodel.outputs.MapBiKey;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.ScalarOutput;
 import wres.datamodel.time.ReferenceTime;
@@ -41,7 +41,7 @@ public final class SafeMetricOutputMapByTimeAndThresholdTest
                                               ReferenceTime.VALID_TIME,
                                               42 );
         final Threshold q = outputFactory.getQuantileThreshold( 531.88, 0.005, Operator.GREATER );
-        final MapBiKey<TimeWindow, Threshold> testKeyOne = outputFactory.getMapKey( timeWindow, q );
+        final Pair<TimeWindow, Threshold> testKeyOne = Pair.of( timeWindow, q );
         final MetricOutputMapByTimeAndThreshold<ScalarOutput> subMap =
                 results.sliceByTime( timeWindow ).sliceByThreshold( q );
         //Slice by threshold = 531.88
@@ -57,7 +57,7 @@ public final class SafeMetricOutputMapByTimeAndThresholdTest
         final Threshold q2 = outputFactory.getQuantileThreshold( Double.NEGATIVE_INFINITY,
                                                                  Double.NEGATIVE_INFINITY,
                                                                  Operator.GREATER );
-        final MapBiKey<TimeWindow, Threshold> testKeyTwo = outputFactory.getMapKey( timeWindowTwo, q2 );
+        final Pair<TimeWindow, Threshold> testKeyTwo = Pair.of( timeWindowTwo, q2 );
 
         //Slice by threshold = all data
         final MetricOutputMapByTimeAndThreshold<ScalarOutput> subMap3 = results.sliceByTime( timeWindowTwo )

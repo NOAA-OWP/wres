@@ -14,6 +14,8 @@ import java.util.function.DoubleUnaryOperator;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import wres.datamodel.inputs.MetricInputSliceException;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
@@ -24,7 +26,6 @@ import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
-import wres.datamodel.outputs.MapBiKey;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMetadata;
 import wres.datamodel.outputs.ScalarOutput;
@@ -297,14 +298,14 @@ class DefaultSlicer implements Slicer
             filterByMetricComponent( MetricOutputMapByTimeAndThreshold<VectorOutput> input )
     {
         Objects.requireNonNull( input, NULL_INPUT );
-        Map<MetricConstants, Map<MapBiKey<TimeWindow, Threshold>, ScalarOutput>> sourceMap =
+        Map<MetricConstants, Map<Pair<TimeWindow, Threshold>, ScalarOutput>> sourceMap =
                 new EnumMap<>( MetricConstants.class );
         MetadataFactory metaFac = dataFac.getMetadataFactory();
         input.forEach( ( key, value ) -> {
             List<MetricConstants> components = value.getOutputTemplate().getMetricComponents();
             for ( MetricConstants next : components )
             {
-                Map<MapBiKey<TimeWindow, Threshold>, ScalarOutput> nextMap = null;
+                Map<Pair<TimeWindow, Threshold>, ScalarOutput> nextMap = null;
                 if ( sourceMap.containsKey( next ) )
                 {
                     nextMap = sourceMap.get( next );

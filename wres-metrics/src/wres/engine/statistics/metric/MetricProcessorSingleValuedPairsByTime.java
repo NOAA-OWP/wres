@@ -10,6 +10,8 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 import java.util.function.Function;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
@@ -223,7 +225,7 @@ class MetricProcessorSingleValuedPairsByTime extends MetricProcessorByTime
         MetricCalculationException returnMe = null;
         try
         {
-            futures.addScalarOutput( dataFactory.getMapKey( timeWindow, threshold ),
+            futures.addScalarOutput( Pair.of( timeWindow, threshold ),
                                      processDichotomousThreshold( threshold,
                                                                   input,
                                                                   dichotomousScalar ) );
@@ -269,8 +271,8 @@ class MetricProcessorSingleValuedPairsByTime extends MetricProcessorByTime
 
     /**
      * Validates the {@link DichotomousPairs} and throws an exception if the smaller of the number of 
-     * occurrences ({@link VectorOfBooleans#} = 0) or non-occurrences ({@link PairOfDoubles#getItemOne()} = 1) 
-     * is less than the {@link minimumSampleSize}.
+     * occurrences ({@link VectorOfBooleans#} = 0) or non-occurrences ({@link PairOfDoubles#getItemOne()} = 1)
+     * is less than the {@link this.minimumSampleSize}.
      * 
      * @param subset the data to validate
      * @param threshold the threshold used to localize the error message
