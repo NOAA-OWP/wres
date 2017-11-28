@@ -322,14 +322,15 @@ public class DefaultDataFactory implements DataFactory
     }
 
     @Override
-    public <S extends MetricOutput<?>> MetricOutputMultiMapByTimeAndThreshold.MetricOutputMultiMapByTimeAndThresholdBuilder<S>
+    public <S extends MetricOutput<?>>
+            MetricOutputMultiMapByTimeAndThreshold.MetricOutputMultiMapByTimeAndThresholdBuilder<S>
             ofMultiMap()
     {
         return new SafeMetricOutputMultiMapByTimeAndThresholdBuilder<>();
     }
-    
+
     @Override
-    public RegularTimeSeriesOfSingleValuedPairsBuilder ofRegularTimeSeriesOfSingleValuedPairsBuilder() 
+    public RegularTimeSeriesOfSingleValuedPairsBuilder ofRegularTimeSeriesOfSingleValuedPairsBuilder()
     {
         return new SafeRegularTimeSeriesOfSingleValuedPairsBuilder();
     }
@@ -592,6 +593,23 @@ public class DefaultDataFactory implements DataFactory
             Objects.requireNonNull( o, "Specify a non-null map key for comparison." );
             return getKey().compareTo( o.getKey() );
         }
+        
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( ! ( o instanceof DefaultMapKey ) )
+            {
+                return false;
+            }
+            DefaultMapKey<?> check = (DefaultMapKey<?>) o;
+            return key.equals( check.key );
+        }
+        
+        @Override
+        public int hashCode()
+        {
+            return Objects.hashCode( key );
+        }        
 
         @Override
         public S getKey()
@@ -602,7 +620,7 @@ public class DefaultDataFactory implements DataFactory
         @Override
         public String toString()
         {
-            return "[" + getKey().toString() + "]";
+            return "[" + getKey() + "]";
         }
     }
 
@@ -634,7 +652,7 @@ public class DefaultDataFactory implements DataFactory
 
         DefaultMapBiKey( S firstKey, T secondKey )
         {
-            Objects.requireNonNull( secondKey, "Specify a non-null first map key." );
+            Objects.requireNonNull( firstKey, "Specify a non-null first map key." );
             Objects.requireNonNull( secondKey, "Specify a non-null second map key." );
             this.firstKey = firstKey;
             this.secondKey = secondKey;
@@ -653,6 +671,23 @@ public class DefaultDataFactory implements DataFactory
         }
 
         @Override
+        public boolean equals( Object o )
+        {
+            if ( ! ( o instanceof DefaultMapBiKey ) )
+            {
+                return false;
+            }
+            DefaultMapBiKey<?, ?> check = (DefaultMapBiKey<?, ?>) o;
+            return firstKey.equals( check.firstKey ) && secondKey.equals( check.secondKey );
+        }
+        
+//        @Override
+//        public int hashCode()
+//        {
+//            return Objects.hash( firstKey, secondKey );
+//        }
+
+        @Override
         public S getFirstKey()
         {
             return firstKey;
@@ -667,7 +702,7 @@ public class DefaultDataFactory implements DataFactory
         @Override
         public String toString()
         {
-            return "[" + getFirstKey().toString() + ", " + getSecondKey().toString() + "]";
+            return "[" + getFirstKey() + ", " + getSecondKey() + "]";
         }
     }
 
