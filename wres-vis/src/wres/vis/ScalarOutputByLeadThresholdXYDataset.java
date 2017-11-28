@@ -64,7 +64,7 @@ public class ScalarOutputByLeadThresholdXYDataset extends WRESAbstractXYDataset<
     @Override
     public Number getX(final int series, final int item)
     {
-        return getPlotData().get(series).getKey(item).getFirstKey().getLatestLeadTimeInHours();
+        return getPlotData().get(series).getKey(item).getLeft().getLatestLeadTimeInHours();
     }
 
     @Override

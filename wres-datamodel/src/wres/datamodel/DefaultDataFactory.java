@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.SafeMetricOutputMultiMapByTimeAndThreshold.SafeMetricOutputMultiMapByTimeAndThresholdBuilder;
@@ -16,7 +18,6 @@ import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.MulticategoryPairs;
-import wres.datamodel.inputs.pairs.Pair;
 import wres.datamodel.inputs.pairs.PairOfBooleans;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
@@ -25,7 +26,6 @@ import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.outputs.BoxPlotOutput;
-import wres.datamodel.outputs.MapBiKey;
 import wres.datamodel.outputs.MapKey;
 import wres.datamodel.outputs.MatrixOutput;
 import wres.datamodel.outputs.MetricOutput;
@@ -210,13 +210,19 @@ public class DefaultDataFactory implements DataFactory
         return new Pair<VectorOfDoubles, VectorOfDoubles>()
         {
             @Override
-            public VectorOfDoubles getItemOne()
+            public VectorOfDoubles setValue( VectorOfDoubles vectorOfDoubles )
+            {
+                throw new UnsupportedOperationException( "Cannot set on this entry." );
+            }
+
+            @Override
+            public VectorOfDoubles getLeft()
             {
                 return SafeVectorOfDoubles.of( left );
             }
 
             @Override
-            public VectorOfDoubles getItemTwo()
+            public VectorOfDoubles getRight()
             {
                 return SafeVectorOfDoubles.of( right );
             }
@@ -301,7 +307,7 @@ public class DefaultDataFactory implements DataFactory
 
     @Override
     public <T extends MetricOutput<?>> MetricOutputMapByTimeAndThreshold<T>
-            ofMap( final Map<MapBiKey<TimeWindow, Threshold>, T> input )
+            ofMap( final Map<Pair<TimeWindow, Threshold>, T> input )
     {
         Objects.requireNonNull( input, "Specify a non-null map of inputs by lead time and threshold." );
         final SafeMetricOutputMapByTimeAndThreshold.Builder<T> builder =
@@ -312,7 +318,7 @@ public class DefaultDataFactory implements DataFactory
 
     @Override
     public <T extends MetricOutput<?>> MetricOutputMultiMapByTimeAndThreshold<T>
-            ofMultiMap( final Map<MapBiKey<TimeWindow, Threshold>, MetricOutputMapByMetric<T>> input )
+            ofMultiMap( final Map<Pair<TimeWindow, Threshold>, MetricOutputMapByMetric<T>> input )
     {
         Objects.requireNonNull( input, "Specify a non-null map of inputs by threshold." );
         final SafeMetricOutputMultiMapByTimeAndThresholdBuilder<T> builder =
@@ -351,13 +357,6 @@ public class DefaultDataFactory implements DataFactory
     public <S extends Comparable<S>> MapKey<S> getMapKey( final S key )
     {
         return new DefaultMapKey<>( key );
-    }
-
-    @Override
-    public <S extends Comparable<S>, T extends Comparable<T>> MapBiKey<S, T> getMapKey( final S firstKey,
-                                                                                        final T secondKey )
-    {
-        return new DefaultMapBiKey<>( firstKey, secondKey );
     }
 
     @Override
@@ -621,88 +620,6 @@ public class DefaultDataFactory implements DataFactory
         public String toString()
         {
             return "[" + getKey() + "]";
-        }
-    }
-
-    /**
-     * Default implementation of a {@link MapBiKey}.
-     */
-
-    class DefaultMapBiKey<S extends Comparable<S>, T extends Comparable<T>> implements MapBiKey<S, T>
-    {
-
-        /**
-         * The first map key.
-         */
-
-        private final S firstKey;
-
-        /**
-         * The second map key.
-         */
-
-        private final T secondKey;
-
-        /**
-         * Constructor.
-         * 
-         * @param firstKey the first key
-         * @param secondKey the second key
-         */
-
-        DefaultMapBiKey( S firstKey, T secondKey )
-        {
-            Objects.requireNonNull( firstKey, "Specify a non-null first map key." );
-            Objects.requireNonNull( secondKey, "Specify a non-null second map key." );
-            this.firstKey = firstKey;
-            this.secondKey = secondKey;
-        }
-
-        @Override
-        public int compareTo( final MapBiKey<S, T> o )
-        {
-            Objects.requireNonNull( o, "Specify a non-null map key for comparison." );
-            int returnMe = getFirstKey().compareTo( o.getFirstKey() );
-            if ( returnMe != 0 )
-            {
-                return returnMe;
-            }
-            return getSecondKey().compareTo( o.getSecondKey() );
-        }
-
-        @Override
-        public boolean equals( Object o )
-        {
-            if ( ! ( o instanceof DefaultMapBiKey ) )
-            {
-                return false;
-            }
-            DefaultMapBiKey<?, ?> check = (DefaultMapBiKey<?, ?>) o;
-            return firstKey.equals( check.firstKey ) && secondKey.equals( check.secondKey );
-        }
-        
-//        @Override
-//        public int hashCode()
-//        {
-//            return Objects.hash( firstKey, secondKey );
-//        }
-
-        @Override
-        public S getFirstKey()
-        {
-            return firstKey;
-        }
-
-        @Override
-        public T getSecondKey()
-        {
-            return secondKey;
-        }
-
-        @Override
-        public String toString()
-        {
-            return "[" + getFirstKey() + ", " + getSecondKey() + "]";
         }
     }
 

@@ -24,6 +24,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +45,6 @@ import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.Threshold;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.outputs.BoxPlotOutput;
-import wres.datamodel.outputs.MapBiKey;
 import wres.datamodel.outputs.MapKey;
 import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.MetricOutputAccessException;
@@ -771,19 +771,19 @@ public class Control implements Function<String[], Integer>
                         templateResourceName = nextConfig.getTemplateResourceName();
                     }
 
-                    final Map<MapBiKey<TimeWindow, Threshold>, ChartEngine> engines =
+                    final Map<Pair<TimeWindow, Threshold>, ChartEngine> engines =
                             ChartEngineFactory.buildBoxPlotChartEngine( e.getValue(),
                                                                         DATA_FACTORY,
                                                                         templateResourceName,
                                                                         graphicsString );
                     // Build the outputs
-                    for(final Map.Entry<MapBiKey<TimeWindow, Threshold>, ChartEngine> nextEntry: engines.entrySet())
+                    for(final Map.Entry<Pair<TimeWindow, Threshold>, ChartEngine> nextEntry: engines.entrySet())
                     {
                         // Build the output file name
                         File destDir = ConfigHelper.getDirectoryFromDestinationConfig( dest );
                         // TODO: adopt a more general naming convention as the pipelines expand
                         // For now, the only temporal pipeline is by lead time
-                        long key = nextEntry.getKey().getFirstKey().getLatestLeadTimeInHours();
+                        long key = nextEntry.getKey().getLeft().getLatestLeadTimeInHours();
                         Path outputImage = Paths.get( destDir.toString(),
                                                       ConfigHelper.getFeatureDescription( feature )
                                                       + "_"

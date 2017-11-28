@@ -7,6 +7,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Assert;
 
 import evs.io.xml.ProductFileIO;
@@ -21,7 +22,6 @@ import wres.datamodel.SafeMetricOutputForProjectByTimeAndThreshold.SafeMetricOut
 import wres.datamodel.SafeMetricOutputMapByTimeAndThreshold.Builder;
 import wres.datamodel.Threshold.Operator;
 import wres.datamodel.metadata.MetadataFactory;
-import wres.datamodel.outputs.MapBiKey;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMapByMetric;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
@@ -96,7 +96,7 @@ public final class DataModelTestDataFactory
                     final Threshold q = outputFactory.getQuantileThreshold( constants[0],
                                                                             probConstants[0],
                                                                             Operator.GREATER );
-                    final MapBiKey<TimeWindow, Threshold> key = outputFactory.getMapKey( timeWindow, q );
+                    final Pair<TimeWindow, Threshold> key = Pair.of( timeWindow, q );
 
                     //Build the scalar result
                     final MetricResult result = t.getResult( f );
@@ -172,7 +172,7 @@ public final class DataModelTestDataFactory
                     final Threshold q = outputFactory.getQuantileThreshold( constants[0],
                                                                             probConstants[0],
                                                                             Operator.GREATER );
-                    final MapBiKey<TimeWindow, Threshold> key = outputFactory.getMapKey( timeWindow, q );
+                    final Pair<TimeWindow, Threshold> key = Pair.of( timeWindow, q );
 
                     //Build the scalar result
                     final MetricResult result = t.getResult( f );

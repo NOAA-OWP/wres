@@ -9,12 +9,11 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
-import wres.datamodel.DefaultDataFactory.DefaultMapBiKey;
 import wres.datamodel.DefaultDataFactory.DefaultMapKey;
 import wres.datamodel.Threshold.Operator;
-import wres.datamodel.inputs.pairs.Pair;
 import wres.datamodel.inputs.pairs.PairOfBooleans;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
@@ -107,13 +106,13 @@ public final class DefaultDataFactoryTest
     {
         final double[] arrOne = {1.0, 2.0, 3.0};
         final double[] arrTwo = {4.0, 5.0};
-        final Pair<VectorOfDoubles, VectorOfDoubles> pair = metIn.pairOf(arrOne, arrTwo);
+        final Pair<VectorOfDoubles, VectorOfDoubles> pair = metIn.pairOf( arrOne, arrTwo);
         assertNotNull(pair);
-        assertEquals(pair.getItemOne().getDoubles()[0], 1.0, THRESHOLD);
-        assertEquals(pair.getItemOne().getDoubles()[1], 2.0, THRESHOLD);
-        assertEquals(pair.getItemOne().getDoubles()[2], 3.0, THRESHOLD);
-        assertEquals(pair.getItemTwo().getDoubles()[0], 4.0, THRESHOLD);
-        assertEquals(pair.getItemTwo().getDoubles()[1], 5.0, THRESHOLD);
+        assertEquals(pair.getLeft().getDoubles()[0], 1.0, THRESHOLD);
+        assertEquals(pair.getLeft().getDoubles()[1], 2.0, THRESHOLD);
+        assertEquals(pair.getLeft().getDoubles()[2], 3.0, THRESHOLD);
+        assertEquals(pair.getRight().getDoubles()[0], 4.0, THRESHOLD);
+        assertEquals(pair.getRight().getDoubles()[1], 5.0, THRESHOLD);
     }
 
     @Test
@@ -221,59 +220,53 @@ public final class DefaultDataFactoryTest
     }
 
     /**
-     * Tests for the correct implementation of {@link Comparable} by the {@link DefaultMapBiKey}.
+     * Tests for the correct implementation of {@link Comparable} by the {@link Pair}.
      */
 
     @Test
     public void compareDefaultMapBiKeyTest()
     {
         //Test equality
-        DefaultMapBiKey<TimeWindow, Threshold> first =
-                (DefaultMapBiKey<TimeWindow, Threshold>) metIn.getMapKey( metIn.ofTimeWindow( Instant.MIN,
-                                                                                              Instant.MAX,
-                                                                                              ReferenceTime.ISSUE_TIME ),
-                                                                          metIn.getThreshold( 1.0, Operator.GREATER ) );
-        DefaultMapBiKey<TimeWindow, Threshold> second =
-                (DefaultMapBiKey<TimeWindow, Threshold>) metIn.getMapKey( metIn.ofTimeWindow( Instant.MIN,
-                                                                                              Instant.MAX,
-                                                                                              ReferenceTime.ISSUE_TIME ),
-                                                                          metIn.getThreshold( 1.0, Operator.GREATER ) );
+        Pair<TimeWindow, Threshold> first = Pair.of( metIn.ofTimeWindow( Instant.MIN,
+                                                                         Instant.MAX,
+                                                                         ReferenceTime.ISSUE_TIME ),
+                                                     metIn.getThreshold( 1.0, Operator.GREATER ) );
+        Pair<TimeWindow, Threshold> second = Pair.of( metIn.ofTimeWindow( Instant.MIN,
+                                                                          Instant.MAX,
+                                                                          ReferenceTime.ISSUE_TIME ),
+                                                      metIn.getThreshold( 1.0, Operator.GREATER ) );
         assertTrue( "Expected equality.",
                     first.compareTo( second ) == 0 && second.compareTo( first ) == 0 && first.equals( second ) );
         //Test inequality and anticommutativity 
         //Earliest date
-        DefaultMapBiKey<TimeWindow, Threshold> third =
-                (DefaultMapBiKey<TimeWindow, Threshold>) metIn.getMapKey( metIn.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                                                              Instant.MAX,
-                                                                                              ReferenceTime.ISSUE_TIME ),
-                                                                          metIn.getThreshold( 1.0, Operator.GREATER ) );
+        Pair<TimeWindow, Threshold> third = Pair.of( metIn.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                                         Instant.MAX,
+                                                                         ReferenceTime.ISSUE_TIME ),
+                                                     metIn.getThreshold( 1.0, Operator.GREATER ) );
         assertTrue( "Expected greater than.", third.compareTo( first ) > 0 );
         assertTrue( "Expected anticommutativity.",
                     Math.abs( first.compareTo( third ) ) == Math.abs( third.compareTo( first ) ) );
         //Latest date
-        DefaultMapBiKey<TimeWindow, Threshold> fourth =
-                (DefaultMapBiKey<TimeWindow, Threshold>) metIn.getMapKey( metIn.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                                                              Instant.parse( "1986-01-01T00:00:00Z" ),
-                                                                                              ReferenceTime.ISSUE_TIME ),
-                                                                          metIn.getThreshold( 1.0, Operator.GREATER ) );
+        Pair<TimeWindow, Threshold> fourth = Pair.of( metIn.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                                          Instant.parse( "1986-01-01T00:00:00Z" ),
+                                                                          ReferenceTime.ISSUE_TIME ),
+                                                      metIn.getThreshold( 1.0, Operator.GREATER ) );
         assertTrue( "Expected greater than.", third.compareTo( fourth ) > 0 );
         assertTrue( "Expected anticommutativity.",
                     Math.abs( third.compareTo( fourth ) ) == Math.abs( fourth.compareTo( third ) ) );
         //Reference time
-        DefaultMapBiKey<TimeWindow, Threshold> fifth =
-                (DefaultMapBiKey<TimeWindow, Threshold>) metIn.getMapKey( metIn.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                                                              Instant.parse( "1986-01-01T00:00:00Z" ),
-                                                                                              ReferenceTime.VALID_TIME ),
-                                                                          metIn.getThreshold( 1.0, Operator.GREATER ) );
+        Pair<TimeWindow, Threshold> fifth = Pair.of( metIn.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                                         Instant.parse( "1986-01-01T00:00:00Z" ),
+                                                                         ReferenceTime.VALID_TIME ),
+                                                     metIn.getThreshold( 1.0, Operator.GREATER ) );
         assertTrue( "Expected greater than.", fourth.compareTo( fifth ) > 0 );
         assertTrue( "Expected anticommutativity.",
                     Math.abs( fourth.compareTo( fifth ) ) == Math.abs( fifth.compareTo( fourth ) ) );
         //Threshold
-        DefaultMapBiKey<TimeWindow, Threshold> sixth =
-                (DefaultMapBiKey<TimeWindow, Threshold>) metIn.getMapKey( metIn.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                                                              Instant.parse( "1986-01-01T00:00:00Z" ),
-                                                                                              ReferenceTime.VALID_TIME ),
-                                                                          metIn.getThreshold( 0.0, Operator.GREATER ) );
+        Pair<TimeWindow, Threshold> sixth = Pair.of( metIn.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                                         Instant.parse( "1986-01-01T00:00:00Z" ),
+                                                                         ReferenceTime.VALID_TIME ),
+                                                     metIn.getThreshold( 0.0, Operator.GREATER ) );
         assertTrue( "Expected greater than.", fifth.compareTo( sixth ) > 0 );
         assertTrue( "Expected anticommutativity.",
                     Math.abs( fifth.compareTo( sixth ) ) == Math.abs( sixth.compareTo( fifth ) ) );
@@ -289,28 +282,25 @@ public final class DefaultDataFactoryTest
     }
 
     /**
-     * Tests the {@link DefaultMapBiKey#equals(Object)} and {@link DefaultMapBiKey#hashCode()}.
+     * Tests the {@link Pair#equals(Object)} and {@link Pair#hashCode()}.
      */
 
     @Test
-    public void equalsHashCodeDefaultMapBiKeyTest()
+    public void equalsHashCodePairTest()
     {
         //Equality
-        DefaultMapBiKey<TimeWindow, Threshold> zeroeth =
-                (DefaultMapBiKey<TimeWindow, Threshold>) metIn.getMapKey( metIn.ofTimeWindow( Instant.MIN,
-                                                                                              Instant.MAX,
-                                                                                              ReferenceTime.ISSUE_TIME ),
-                                                                          metIn.getThreshold( 1.0, Operator.GREATER ) );
-        DefaultMapBiKey<TimeWindow, Threshold> first =
-                (DefaultMapBiKey<TimeWindow, Threshold>) metIn.getMapKey( metIn.ofTimeWindow( Instant.MIN,
-                                                                                              Instant.MAX,
-                                                                                              ReferenceTime.ISSUE_TIME ),
-                                                                          metIn.getThreshold( 1.0, Operator.GREATER ) );
-        DefaultMapBiKey<TimeWindow, Threshold> second =
-                (DefaultMapBiKey<TimeWindow, Threshold>) metIn.getMapKey( metIn.ofTimeWindow( Instant.MIN,
-                                                                                              Instant.MAX,
-                                                                                              ReferenceTime.ISSUE_TIME ),
-                                                                          metIn.getThreshold( 1.0, Operator.GREATER ) );
+        Pair<TimeWindow, Threshold> zeroeth = Pair.of( metIn.ofTimeWindow( Instant.MIN,
+                                                                           Instant.MAX,
+                                                                           ReferenceTime.ISSUE_TIME ),
+                                                       metIn.getThreshold( 1.0, Operator.GREATER ) );
+        Pair<TimeWindow, Threshold> first = Pair.of( metIn.ofTimeWindow( Instant.MIN,
+                                                                         Instant.MAX,
+                                                                         ReferenceTime.ISSUE_TIME ),
+                                                     metIn.getThreshold( 1.0, Operator.GREATER ) );
+        Pair<TimeWindow, Threshold> second = Pair.of( metIn.ofTimeWindow( Instant.MIN,
+                                                                          Instant.MAX,
+                                                                          ReferenceTime.ISSUE_TIME ),
+                                                      metIn.getThreshold( 1.0, Operator.GREATER ) );
         //Reflexive
         assertEquals( "Expected reflexive equality.", first, first );
         //Symmetric 
@@ -325,32 +315,28 @@ public final class DefaultDataFactoryTest
 
         //Test inequalities
         //Earliest date
-        DefaultMapBiKey<TimeWindow, Threshold> third =
-                (DefaultMapBiKey<TimeWindow, Threshold>) metIn.getMapKey( metIn.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                                                              Instant.MAX,
-                                                                                              ReferenceTime.ISSUE_TIME ),
-                                                                          metIn.getThreshold( 1.0, Operator.GREATER ) );
+        Pair<TimeWindow, Threshold> third = Pair.of( metIn.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                                         Instant.MAX,
+                                                                         ReferenceTime.ISSUE_TIME ),
+                                                     metIn.getThreshold( 1.0, Operator.GREATER ) );
         assertTrue( "Expected inequality.", !third.equals( first ) );
         //Latest date
-        DefaultMapBiKey<TimeWindow, Threshold> fourth =
-                (DefaultMapBiKey<TimeWindow, Threshold>) metIn.getMapKey( metIn.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                                                              Instant.parse( "1986-01-01T00:00:00Z" ),
-                                                                                              ReferenceTime.ISSUE_TIME ),
-                                                                          metIn.getThreshold( 1.0, Operator.GREATER ) );
+        Pair<TimeWindow, Threshold> fourth = Pair.of( metIn.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                                          Instant.parse( "1986-01-01T00:00:00Z" ),
+                                                                          ReferenceTime.ISSUE_TIME ),
+                                                      metIn.getThreshold( 1.0, Operator.GREATER ) );
         assertTrue( "Expected inequality.", !third.equals( fourth ) );
         //Reference time
-        DefaultMapBiKey<TimeWindow, Threshold> fifth =
-                (DefaultMapBiKey<TimeWindow, Threshold>) metIn.getMapKey( metIn.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                                                              Instant.parse( "1986-01-01T00:00:00Z" ),
-                                                                                              ReferenceTime.VALID_TIME ),
-                                                                          metIn.getThreshold( 1.0, Operator.GREATER ) );
+        Pair<TimeWindow, Threshold> fifth = Pair.of( metIn.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                                         Instant.parse( "1986-01-01T00:00:00Z" ),
+                                                                         ReferenceTime.VALID_TIME ),
+                                                     metIn.getThreshold( 1.0, Operator.GREATER ) );
         assertTrue( "Expected inequality.", !fourth.equals( fifth ) );
         //Threshold
-        DefaultMapBiKey<TimeWindow, Threshold> sixth =
-                (DefaultMapBiKey<TimeWindow, Threshold>) metIn.getMapKey( metIn.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                                                              Instant.parse( "1986-01-01T00:00:00Z" ),
-                                                                                              ReferenceTime.VALID_TIME ),
-                                                                          metIn.getThreshold( 0.0, Operator.GREATER ) );
+        Pair<TimeWindow, Threshold> sixth = Pair.of( metIn.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                                         Instant.parse( "1986-01-01T00:00:00Z" ),
+                                                                         ReferenceTime.VALID_TIME ),
+                                                     metIn.getThreshold( 0.0, Operator.GREATER ) );
         assertTrue( "Expected inequality.", !fifth.equals( sixth ) );
     }
 
