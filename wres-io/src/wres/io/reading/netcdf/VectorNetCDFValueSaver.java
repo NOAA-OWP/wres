@@ -323,7 +323,7 @@ class VectorNetCDFValueSaver extends WRESRunnable
         {
             // Create the script to add this source file to all time series
             // that it contributes to
-            String forecastSourceInsert =
+            /*String forecastSourceInsert =
                     "INSERT INTO wres.ForecastSource (forecast_id, source_id)"
                     + NEWLINE;
             forecastSourceInsert +=
@@ -352,11 +352,48 @@ class VectorNetCDFValueSaver extends WRESRunnable
             forecastSourceInsert += ");";
 
             // Attach the source to its time series
-            Database.execute( forecastSourceInsert );
+            Database.execute( forecastSourceInsert );*/
+            this.addForecastSource();
         }
 
         // Attach the source to the project
         Database.execute( insertProjectSource );
+    }
+
+    private void addForecastSource() throws IOException, SQLException
+    {
+        // Create the script to add this source file to all time series
+        // that it contributes to
+        String forecastSourceInsert =
+                "INSERT INTO wres.ForecastSource (forecast_id, source_id)"
+                + NEWLINE;
+        forecastSourceInsert +=
+                "SELECT TS.timeseries_id, " + this.sourceID + NEWLINE;
+        forecastSourceInsert += "FROM wres.TimeSeries TS" + NEWLINE;
+        forecastSourceInsert +=
+                "INNER JOIN wres.VariablePosition VP" + NEWLINE;
+        forecastSourceInsert +=
+                "   ON TS.variableposition_id = VP.variableposition_id"
+                + NEWLINE;
+        forecastSourceInsert +=
+                "WHERE TS.ensemble_id = " + this.getEnsembleID() + NEWLINE;
+        forecastSourceInsert += "   AND TS.initialization_date = '" + NetCDF
+                .getInitializedTime( this.getSource() ) + "'" + NEWLINE;
+        forecastSourceInsert += "   AND TS.measurementunit_id = "
+                                + this.getMeasurementUnitID() + NEWLINE;
+        forecastSourceInsert +=
+                "   AND VP.variable_id = " + this.getVariableID() + NEWLINE;
+        forecastSourceInsert += "   AND NOT EXISTS (" + NEWLINE;
+        forecastSourceInsert += "  SELECT 1" + NEWLINE;
+        forecastSourceInsert += "  FROM wres.ForecastSource FS" + NEWLINE;
+        forecastSourceInsert +=
+                "  WHERE FS.source_id = " + this.sourceID + NEWLINE;
+        forecastSourceInsert +=
+                "      AND FS.forecast_id = TS.timeseries_id" + NEWLINE;
+        forecastSourceInsert += ");";
+
+        // Attach the source to its time series
+        Database.execute( forecastSourceInsert );
     }
 
     @Override
