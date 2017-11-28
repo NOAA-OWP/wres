@@ -28,7 +28,7 @@ import wres.io.config.ProjectConfigPlus;
  * @version 0.1
  * @since 0.1
  */
-public final class MetricProcessorEnsemblePairsTest
+public final class MetricProcessorEnsemblePairsByTimeTest
 {
 
     private final DataFactory dataFactory = DefaultDataFactory.getInstance();

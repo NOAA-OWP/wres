@@ -3,20 +3,25 @@ package wres.datamodel;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.Test;
 
-import wres.datamodel.VectorOfBooleans;
-import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.DefaultDataFactory.DefaultMapBiKey;
+import wres.datamodel.DefaultDataFactory.DefaultMapKey;
+import wres.datamodel.Threshold.Operator;
 import wres.datamodel.inputs.pairs.Pair;
 import wres.datamodel.inputs.pairs.PairOfBooleans;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.time.ReferenceTime;
+import wres.datamodel.time.TimeWindow;
 
 /**
  * Tests the {@link DefaultDataFactory}.
@@ -34,35 +39,35 @@ public final class DefaultDataFactoryTest
     private final DataFactory metIn = DefaultDataFactory.getInstance();
 
     /**
-     * Tests the pairing methods in {@link DefaultDataFactory}.
+     * Tests for the successful construction of pairs via the {@link DefaultDataFactory}.
      */
 
     @Test
-    public void test1MetricFactory()
+    public void constructionOfPairsTest()
     {
         final MetadataFactory metaFac = DefaultMetadataFactory.getInstance();
-        final Metadata m1 = metaFac.getMetadata(metaFac.getDimension(),
-                                                metaFac.getDatasetIdentifier("DRRC2", "SQIN", "HEFS"));
+        final Metadata m1 = metaFac.getMetadata( metaFac.getDimension(),
+                                                 metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ) );
         final List<VectorOfBooleans> input = new ArrayList<>();
-        input.add(metIn.vectorOf(new boolean[]{true, false}));
-        metIn.ofDichotomousPairs(input, m1);
-        metIn.ofMulticategoryPairs(input, m1);
+        input.add( metIn.vectorOf( new boolean[] { true, false } ) );
+        assertNotNull( metIn.ofDichotomousPairs( input, m1 ) );
+        assertNotNull( metIn.ofMulticategoryPairs( input, m1 ) );
 
         final List<PairOfDoubles> dInput = new ArrayList<>();
-        dInput.add(metIn.pairOf(0.0, 1.0));
-        final Metadata m2 = metaFac.getMetadata(metaFac.getDimension(),
-                                                metaFac.getDatasetIdentifier("DRRC2", "SQIN", "HEFS"));
-        final Metadata m3 = metaFac.getMetadata(metaFac.getDimension(),
-                                                metaFac.getDatasetIdentifier("DRRC2", "SQIN", "ESP"));
-        metIn.ofDiscreteProbabilityPairs(dInput, m2);
-        metIn.ofDiscreteProbabilityPairs(dInput, dInput, m2, m3, null);
-        metIn.ofSingleValuedPairs(dInput, m3);
-        metIn.ofSingleValuedPairs(dInput, dInput, m2, m3, null);
-        
+        dInput.add( metIn.pairOf( 0.0, 1.0 ) );
+        final Metadata m2 = metaFac.getMetadata( metaFac.getDimension(),
+                                                 metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ) );
+        final Metadata m3 = metaFac.getMetadata( metaFac.getDimension(),
+                                                 metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "ESP" ) );
+        assertNotNull( metIn.ofDiscreteProbabilityPairs( dInput, m2 ) );
+        assertNotNull( metIn.ofDiscreteProbabilityPairs( dInput, dInput, m2, m3, null ) );
+        assertNotNull( metIn.ofSingleValuedPairs( dInput, m3 ) );
+        assertNotNull( metIn.ofSingleValuedPairs( dInput, dInput, m2, m3, null ) );
+
         final List<PairOfDoubleAndVectorOfDoubles> eInput = new ArrayList<>();
-        eInput.add(metIn.pairOf(0.0, new double[]{1.0,2.0}));
-        metIn.ofEnsemblePairs(eInput, m3);
-        metIn.ofEnsemblePairs(eInput, eInput, m2, m3, null);       
+        eInput.add( metIn.pairOf( 0.0, new double[] { 1.0, 2.0 } ) );
+        assertNotNull( metIn.ofEnsemblePairs( eInput, m3 ) );
+        assertNotNull( metIn.ofEnsemblePairs( eInput, eInput, m2, m3, null ) );
     }
 
     @Test
@@ -80,7 +85,7 @@ public final class DefaultDataFactoryTest
     {
         final double[] arrOne = {1.0, 2.0};
         final VectorOfDoubles doubleVecOne = metIn.vectorOf(arrOne);
-        assertNotNull(doubleVecOne);
+        assertNotNull( doubleVecOne );
         assertEquals(doubleVecOne.getDoubles()[0], 1.0, THRESHOLD);
         assertEquals(doubleVecOne.getDoubles()[1], 2.0, THRESHOLD);
     }
@@ -88,8 +93,8 @@ public final class DefaultDataFactoryTest
     @Test
     public void vectorOfDoublesMutationTest()
     {
-        final double[] arrOne = {1.0, 2.0};
-        final VectorOfDoubles doubleVecOne = metIn.vectorOf(arrOne);
+        final double[] arrOne = { 1.0, 2.0 };
+        final VectorOfDoubles doubleVecOne = metIn.vectorOf( arrOne );
         arrOne[0] = 3.0;
         arrOne[1] = 4.0;
         assertNotNull(doubleVecOne);
@@ -131,7 +136,7 @@ public final class DefaultDataFactoryTest
         final PairOfDoubleAndVectorOfDoubles tuple = metIn.pairOf(1.0, arrOne);
         arrOne[0] = 4.0;
         arrOne[1] = 5.0;
-        assertNotNull(tuple);
+        assertNotNull( tuple );
         assertEquals(tuple.getItemOne(), 1.0, THRESHOLD);
         assertEquals(tuple.getItemTwo()[0], 2.0, THRESHOLD);
         assertEquals(tuple.getItemTwo()[1], 3.0, THRESHOLD);
@@ -206,12 +211,255 @@ public final class DefaultDataFactoryTest
         PairOfDoubleAndVectorOfDoubles p = metIn.pairOf(141516.0, arr);
         String result = p.toString();
         assertTrue("12345 expected to show up in toString: " + result,
-                   result.contains("12345"));
+                    result.contains("12345"));
         assertTrue("7891 expected to show up in toString: " + result,
                     result.contains("7891"));
         assertTrue("11121 expected to show up in toString: " + result,
-                result.contains("11121"));
+                    result.contains("11121"));
         assertTrue("14151 expected to show up in toString: " + result,
-                result.contains("14151"));
+                    result.contains("14151"));
     }
+
+    /**
+     * Tests for the correct implementation of {@link Comparable} by the {@link DefaultMapBiKey}.
+     */
+
+    @Test
+    public void compareDefaultMapBiKeyTest()
+    {
+        //Test equality
+        DefaultMapBiKey<TimeWindow, Threshold> first =
+                (DefaultMapBiKey<TimeWindow, Threshold>) metIn.getMapKey( metIn.ofTimeWindow( Instant.MIN,
+                                                                                              Instant.MAX,
+                                                                                              ReferenceTime.ISSUE_TIME ),
+                                                                          metIn.getThreshold( 1.0, Operator.GREATER ) );
+        DefaultMapBiKey<TimeWindow, Threshold> second =
+                (DefaultMapBiKey<TimeWindow, Threshold>) metIn.getMapKey( metIn.ofTimeWindow( Instant.MIN,
+                                                                                              Instant.MAX,
+                                                                                              ReferenceTime.ISSUE_TIME ),
+                                                                          metIn.getThreshold( 1.0, Operator.GREATER ) );
+        assertTrue( "Expected equality.",
+                    first.compareTo( second ) == 0 && second.compareTo( first ) == 0 && first.equals( second ) );
+        //Test inequality and anticommutativity 
+        //Earliest date
+        DefaultMapBiKey<TimeWindow, Threshold> third =
+                (DefaultMapBiKey<TimeWindow, Threshold>) metIn.getMapKey( metIn.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                                                              Instant.MAX,
+                                                                                              ReferenceTime.ISSUE_TIME ),
+                                                                          metIn.getThreshold( 1.0, Operator.GREATER ) );
+        assertTrue( "Expected greater than.", third.compareTo( first ) > 0 );
+        assertTrue( "Expected anticommutativity.",
+                    Math.abs( first.compareTo( third ) ) == Math.abs( third.compareTo( first ) ) );
+        //Latest date
+        DefaultMapBiKey<TimeWindow, Threshold> fourth =
+                (DefaultMapBiKey<TimeWindow, Threshold>) metIn.getMapKey( metIn.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                                                              Instant.parse( "1986-01-01T00:00:00Z" ),
+                                                                                              ReferenceTime.ISSUE_TIME ),
+                                                                          metIn.getThreshold( 1.0, Operator.GREATER ) );
+        assertTrue( "Expected greater than.", third.compareTo( fourth ) > 0 );
+        assertTrue( "Expected anticommutativity.",
+                    Math.abs( third.compareTo( fourth ) ) == Math.abs( fourth.compareTo( third ) ) );
+        //Reference time
+        DefaultMapBiKey<TimeWindow, Threshold> fifth =
+                (DefaultMapBiKey<TimeWindow, Threshold>) metIn.getMapKey( metIn.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                                                              Instant.parse( "1986-01-01T00:00:00Z" ),
+                                                                                              ReferenceTime.VALID_TIME ),
+                                                                          metIn.getThreshold( 1.0, Operator.GREATER ) );
+        assertTrue( "Expected greater than.", fourth.compareTo( fifth ) > 0 );
+        assertTrue( "Expected anticommutativity.",
+                    Math.abs( fourth.compareTo( fifth ) ) == Math.abs( fifth.compareTo( fourth ) ) );
+        //Threshold
+        DefaultMapBiKey<TimeWindow, Threshold> sixth =
+                (DefaultMapBiKey<TimeWindow, Threshold>) metIn.getMapKey( metIn.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                                                              Instant.parse( "1986-01-01T00:00:00Z" ),
+                                                                                              ReferenceTime.VALID_TIME ),
+                                                                          metIn.getThreshold( 0.0, Operator.GREATER ) );
+        assertTrue( "Expected greater than.", fifth.compareTo( sixth ) > 0 );
+        assertTrue( "Expected anticommutativity.",
+                    Math.abs( fifth.compareTo( sixth ) ) == Math.abs( sixth.compareTo( fifth ) ) );
+        //Check nullity contract
+        try
+        {
+            first.compareTo( null );
+            fail( "Expected null pointer on comparing." );
+        }
+        catch ( NullPointerException e )
+        {
+        }
+    }
+
+    /**
+     * Tests the {@link DefaultMapBiKey#equals(Object)} and {@link DefaultMapBiKey#hashCode()}.
+     */
+
+    @Test
+    public void equalsHashCodeDefaultMapBiKeyTest()
+    {
+        //Equality
+        DefaultMapBiKey<TimeWindow, Threshold> zeroeth =
+                (DefaultMapBiKey<TimeWindow, Threshold>) metIn.getMapKey( metIn.ofTimeWindow( Instant.MIN,
+                                                                                              Instant.MAX,
+                                                                                              ReferenceTime.ISSUE_TIME ),
+                                                                          metIn.getThreshold( 1.0, Operator.GREATER ) );
+        DefaultMapBiKey<TimeWindow, Threshold> first =
+                (DefaultMapBiKey<TimeWindow, Threshold>) metIn.getMapKey( metIn.ofTimeWindow( Instant.MIN,
+                                                                                              Instant.MAX,
+                                                                                              ReferenceTime.ISSUE_TIME ),
+                                                                          metIn.getThreshold( 1.0, Operator.GREATER ) );
+        DefaultMapBiKey<TimeWindow, Threshold> second =
+                (DefaultMapBiKey<TimeWindow, Threshold>) metIn.getMapKey( metIn.ofTimeWindow( Instant.MIN,
+                                                                                              Instant.MAX,
+                                                                                              ReferenceTime.ISSUE_TIME ),
+                                                                          metIn.getThreshold( 1.0, Operator.GREATER ) );
+        //Reflexive
+        assertEquals( "Expected reflexive equality.", first, first );
+        //Symmetric 
+        assertTrue( "Expected symmetric equality.", first.equals( second ) && second.equals( first ) );
+        //Transitive 
+        assertTrue( "Expected transitive equality.",
+                    zeroeth.equals( first ) && first.equals( second ) && zeroeth.equals( second ) );
+        //Nullity
+        assertTrue( "Expected inequality on null.", !first.equals( null ) );
+        //Check hashcode
+        //assertEquals( "Expected equal hashcodes.", first.hashCode(), second.hashCode() );
+
+        //Test inequalities
+        //Earliest date
+        DefaultMapBiKey<TimeWindow, Threshold> third =
+                (DefaultMapBiKey<TimeWindow, Threshold>) metIn.getMapKey( metIn.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                                                              Instant.MAX,
+                                                                                              ReferenceTime.ISSUE_TIME ),
+                                                                          metIn.getThreshold( 1.0, Operator.GREATER ) );
+        assertTrue( "Expected inequality.", !third.equals( first ) );
+        //Latest date
+        DefaultMapBiKey<TimeWindow, Threshold> fourth =
+                (DefaultMapBiKey<TimeWindow, Threshold>) metIn.getMapKey( metIn.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                                                              Instant.parse( "1986-01-01T00:00:00Z" ),
+                                                                                              ReferenceTime.ISSUE_TIME ),
+                                                                          metIn.getThreshold( 1.0, Operator.GREATER ) );
+        assertTrue( "Expected inequality.", !third.equals( fourth ) );
+        //Reference time
+        DefaultMapBiKey<TimeWindow, Threshold> fifth =
+                (DefaultMapBiKey<TimeWindow, Threshold>) metIn.getMapKey( metIn.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                                                              Instant.parse( "1986-01-01T00:00:00Z" ),
+                                                                                              ReferenceTime.VALID_TIME ),
+                                                                          metIn.getThreshold( 1.0, Operator.GREATER ) );
+        assertTrue( "Expected inequality.", !fourth.equals( fifth ) );
+        //Threshold
+        DefaultMapBiKey<TimeWindow, Threshold> sixth =
+                (DefaultMapBiKey<TimeWindow, Threshold>) metIn.getMapKey( metIn.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                                                              Instant.parse( "1986-01-01T00:00:00Z" ),
+                                                                                              ReferenceTime.VALID_TIME ),
+                                                                          metIn.getThreshold( 0.0, Operator.GREATER ) );
+        assertTrue( "Expected inequality.", !fifth.equals( sixth ) );
+    }
+
+    /**
+     * Tests for the correct implementation of {@link Comparable} by the {@link DefaultMapKey}.
+     */
+
+    @Test
+    public void compareDefaultMapKeyTest()
+    {
+        //Test equality
+        DefaultMapKey<TimeWindow> first =
+                (DefaultMapKey<TimeWindow>) metIn.getMapKey( metIn.ofTimeWindow( Instant.MIN,
+                                                                                 Instant.MAX,
+                                                                                 ReferenceTime.ISSUE_TIME ) );
+        DefaultMapKey<TimeWindow> second =
+                (DefaultMapKey<TimeWindow>) metIn.getMapKey( metIn.ofTimeWindow( Instant.MIN,
+                                                                                 Instant.MAX,
+                                                                                 ReferenceTime.ISSUE_TIME ) );
+        assertTrue( "Expected equality.",
+                    first.compareTo( second ) == 0 && second.compareTo( first ) == 0 && first.equals( second ) );
+        //Test inequality and anticommutativity 
+        //Earliest date
+        DefaultMapKey<TimeWindow> third =
+                (DefaultMapKey<TimeWindow>) metIn.getMapKey( metIn.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                                                 Instant.MAX,
+                                                                                 ReferenceTime.ISSUE_TIME ) );
+        assertTrue( "Expected greater than.", third.compareTo( first ) > 0 );
+        assertTrue( "Expected anticommutativity.",
+                    Math.abs( first.compareTo( third ) ) == Math.abs( third.compareTo( first ) ) );
+        //Latest date
+        DefaultMapKey<TimeWindow> fourth =
+                (DefaultMapKey<TimeWindow>) metIn.getMapKey( metIn.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                                                 Instant.parse( "1986-01-01T00:00:00Z" ),
+                                                                                 ReferenceTime.ISSUE_TIME ) );
+        assertTrue( "Expected greater than.", third.compareTo( fourth ) > 0 );
+        assertTrue( "Expected anticommutativity.",
+                    Math.abs( third.compareTo( fourth ) ) == Math.abs( fourth.compareTo( third ) ) );
+        //Reference time
+        DefaultMapKey<TimeWindow> fifth =
+                (DefaultMapKey<TimeWindow>) metIn.getMapKey( metIn.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                                                 Instant.parse( "1986-01-01T00:00:00Z" ),
+                                                                                 ReferenceTime.VALID_TIME ) );
+        assertTrue( "Expected greater than.", fourth.compareTo( fifth ) > 0 );
+        assertTrue( "Expected anticommutativity.",
+                    Math.abs( fourth.compareTo( fifth ) ) == Math.abs( fifth.compareTo( fourth ) ) );
+        //Check nullity contract
+        try
+        {
+            first.compareTo( null );
+            fail( "Expected null pointer on comparing." );
+        }
+        catch ( NullPointerException e )
+        {
+        }
+    }
+
+    /**
+     * Tests the {@link DefaultMapKey#equals(Object)} and {@link DefaultMapKey#hashCode()}.
+     */
+
+    @Test
+    public void equalsHashCodeDefaultMapKeyTest()
+    {
+        //Equality
+        DefaultMapKey<TimeWindow> zeroeth =
+                (DefaultMapKey<TimeWindow>) metIn.getMapKey( metIn.ofTimeWindow( Instant.MIN,
+                                                                                 Instant.MAX,
+                                                                                 ReferenceTime.ISSUE_TIME ) );
+        DefaultMapKey<TimeWindow> first =
+                (DefaultMapKey<TimeWindow>) metIn.getMapKey( metIn.ofTimeWindow( Instant.MIN,
+                                                                                 Instant.MAX,
+                                                                                 ReferenceTime.ISSUE_TIME ) );
+        DefaultMapKey<TimeWindow> second =
+                (DefaultMapKey<TimeWindow>) metIn.getMapKey( metIn.ofTimeWindow( Instant.MIN,
+                                                                                 Instant.MAX,
+                                                                                 ReferenceTime.ISSUE_TIME ) );
+        //Reflexive
+        assertEquals( "Expected reflexive equality.", first, first );
+        //Symmetric 
+        assertTrue( "Expected symmetric equality.", first.equals( second ) && second.equals( first ) );
+        //Transitive 
+        assertTrue( "Expected transitive equality.",
+                    zeroeth.equals( first ) && first.equals( second ) && zeroeth.equals( second ) );
+        //Nullity
+        assertTrue( "Expected inequality on null.", !first.equals( null ) );
+        //Check hashcode
+        assertEquals( "Expected equal hashcodes.", first.hashCode(), second.hashCode() );
+
+        //Test inequalities
+        //Earliest date
+        DefaultMapKey<TimeWindow> third =
+                (DefaultMapKey<TimeWindow>) metIn.getMapKey( metIn.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                                                 Instant.MAX,
+                                                                                 ReferenceTime.ISSUE_TIME ) );
+        assertTrue( "Expected inequality.", !third.equals( first ) );
+        //Latest date
+        DefaultMapKey<TimeWindow> fourth =
+                (DefaultMapKey<TimeWindow>) metIn.getMapKey( metIn.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                                                 Instant.parse( "1986-01-01T00:00:00Z" ),
+                                                                                 ReferenceTime.ISSUE_TIME ) );
+        assertTrue( "Expected inequality.", !third.equals( fourth ) );
+        //Reference time
+        DefaultMapKey<TimeWindow> fifth =
+                (DefaultMapKey<TimeWindow>) metIn.getMapKey( metIn.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                                                 Instant.parse( "1986-01-01T00:00:00Z" ),
+                                                                                 ReferenceTime.VALID_TIME ) );
+        assertTrue( "Expected inequality.", !fourth.equals( fifth ) );
+    }
+
+
 }

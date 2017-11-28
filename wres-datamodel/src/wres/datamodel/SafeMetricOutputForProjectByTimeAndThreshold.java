@@ -297,7 +297,7 @@ class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForPro
         vector.putAll( builder.vectorInternal );
         multiVector.putAll( builder.multiVectorInternal );
         matrix.putAll( builder.matrixInternal );
-        boxplot.putAll( builder.boxplotInternal );
+        boxplot.putAll( builder.boxplotInternal ); 
     }
 
     /**
