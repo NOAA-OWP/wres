@@ -113,13 +113,20 @@ public final class TimeWindowTest
                                                    0,
                                                    1,
                                                    ChronoUnit.HOURS ) ) );
+        TimeWindow hours = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                       Instant.parse( "2010-12-31T11:59:59Z" ),
+                       ReferenceTime.VALID_TIME,
+                       1,
+                       1,
+                       ChronoUnit.HOURS ); 
+        TimeWindow days = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                          Instant.parse( "2010-12-31T11:59:59Z" ),
+                                          ReferenceTime.VALID_TIME,
+                                          1,
+                                          1,
+                                          ChronoUnit.DAYS );                            
         assertTrue( "Unexpected equality between time windows on lead time units.",
-                    !window.equals( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                   Instant.parse( "2010-12-31T11:59:59Z" ),
-                                                   ReferenceTime.VALID_TIME,
-                                                   0,
-                                                   0,
-                                                   ChronoUnit.DAYS ) ) );
+                    !hours.equals( days ) );
     }
 
     /**

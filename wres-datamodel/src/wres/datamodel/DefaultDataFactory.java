@@ -328,14 +328,15 @@ public class DefaultDataFactory implements DataFactory
     }
 
     @Override
-    public <S extends MetricOutput<?>> MetricOutputMultiMapByTimeAndThreshold.MetricOutputMultiMapByTimeAndThresholdBuilder<S>
+    public <S extends MetricOutput<?>>
+            MetricOutputMultiMapByTimeAndThreshold.MetricOutputMultiMapByTimeAndThresholdBuilder<S>
             ofMultiMap()
     {
         return new SafeMetricOutputMultiMapByTimeAndThresholdBuilder<>();
     }
-    
+
     @Override
-    public RegularTimeSeriesOfSingleValuedPairsBuilder ofRegularTimeSeriesOfSingleValuedPairsBuilder() 
+    public RegularTimeSeriesOfSingleValuedPairsBuilder ofRegularTimeSeriesOfSingleValuedPairsBuilder()
     {
         return new SafeRegularTimeSeriesOfSingleValuedPairsBuilder();
     }
@@ -591,6 +592,23 @@ public class DefaultDataFactory implements DataFactory
             Objects.requireNonNull( o, "Specify a non-null map key for comparison." );
             return getKey().compareTo( o.getKey() );
         }
+        
+        @Override
+        public boolean equals( Object o )
+        {
+            if ( ! ( o instanceof DefaultMapKey ) )
+            {
+                return false;
+            }
+            DefaultMapKey<?> check = (DefaultMapKey<?>) o;
+            return key.equals( check.key );
+        }
+        
+        @Override
+        public int hashCode()
+        {
+            return Objects.hashCode( key );
+        }        
 
         @Override
         public S getKey()
@@ -601,10 +619,9 @@ public class DefaultDataFactory implements DataFactory
         @Override
         public String toString()
         {
-            return "[" + getKey().toString() + "]";
+            return "[" + getKey() + "]";
         }
     }
-
 
     /**
      * Prevent construction.

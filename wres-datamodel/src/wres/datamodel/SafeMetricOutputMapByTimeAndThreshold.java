@@ -172,7 +172,7 @@ class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implement
     @Override
     public int hashCode()
     {
-        return metadata.hashCode() + store.hashCode();
+        return Objects.hash( store, metadata );
     }
 
     @Override

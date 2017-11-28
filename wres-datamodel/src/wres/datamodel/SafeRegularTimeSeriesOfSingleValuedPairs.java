@@ -80,7 +80,7 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
      * Error message denoting attempt to modify an immutable time-series via an iterator.
      */
 
-    private static final String UNSUPPORTED_MODIFICATION = " While attempting to modify an immutable time-series.";
+    private static final String UNSUPPORTED_MODIFICATION = "While attempting to modify an immutable time-series.";
 
     @Override
     public RegularTimeSeriesOfSingleValuedPairs getBaselineData()
@@ -122,8 +122,8 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
     @Override
     public TimeSeries<PairOfDoubles> filterByDuration( Predicate<Duration> duration )
     {
-        Objects.requireNonNull( duration, "Provide a non-null predicate on which to filter lead time." );
-        //Iterate through the lead times and append to the builder
+        Objects.requireNonNull( duration, "Provide a non-null predicate on which to filter by duration." );
+        //Iterate through the durations and append to the builder
         //Throw an exception if attempting to construct an irregular time-series
         RegularTimeSeriesOfSingleValuedPairsBuilder builder = new SafeRegularTimeSeriesOfSingleValuedPairsBuilder();
         Integer step = null;
@@ -163,7 +163,7 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
     @Override
     public TimeSeries<PairOfDoubles> filterByBasisTime( Predicate<Instant> basisTime )
     {
-        Objects.requireNonNull( basisTime, "Provide a non-null predicate on which to filter basis time." );
+        Objects.requireNonNull( basisTime, "Provide a non-null predicate on which to filter by basis time." );
         SafeRegularTimeSeriesOfSingleValuedPairsBuilder builder = new SafeRegularTimeSeriesOfSingleValuedPairsBuilder();
         builder.setTimeStep( timeStep );
         //Add the filtered data
@@ -263,7 +263,8 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
         private final List<Instant> basisTimes = new ArrayList<>();
 
         /**
-         * A list of basis times associated with a baseline dataset. There are as many basis times as atomic time-series.
+         * A list of basis times associated with a baseline dataset. There are as many basis times as atomic 
+         * time-series.
          */
 
         private final List<Instant> basisTimesBaseline = new ArrayList<>();
@@ -412,7 +413,7 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
     {
         super( b );
         this.timeStep = b.timeStep;
-        //Set as unmodifiable maps
+        //Set as unmodifiable lists
         this.basisTimes =
                 Collections.unmodifiableList( b.basisTimes );
         this.basisTimesBaseline =
@@ -452,7 +453,7 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
     }
 
     /**
-     * Returns an {@link Iterable} view of the basis times.
+     * Returns an {@link Iterable} view of the atomic time-series by basis time.
      * 
      * @return an iterable view of the basis times
      */
@@ -467,10 +468,10 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
             {
                 return new Iterator<TimeSeries<PairOfDoubles>>()
                 {
-                    private int returned = 0;
-                    final Iterator<Instant> iterator = basisTimes.iterator();
-                    final List<PairOfDoubles> data = getData();
-                    final List<PairOfDoubles> baselineData = getDataForBaseline();
+                    int returned = 0;
+                    Iterator<Instant> iterator = basisTimes.iterator();
+                    List<PairOfDoubles> data = getData();
+                    List<PairOfDoubles> baselineData = getDataForBaseline();
 
                     @Override
                     public boolean hasNext()
@@ -515,7 +516,7 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
     }
 
     /**
-     * Returns an {@link Iterable} view of the durations.
+     * Returns an {@link Iterable} view of the atomic time-series by duration.
      * 
      * @return an iterable view of the durations
      */
@@ -530,9 +531,9 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
             {
                 return new Iterator<TimeSeries<PairOfDoubles>>()
                 {
-                    private int returned = 0;
-                    final List<PairOfDoubles> data = getData();
-                    final List<PairOfDoubles> baselineData = getDataForBaseline();
+                    int returned = 0;
+                    List<PairOfDoubles> data = getData();
+                    List<PairOfDoubles> baselineData = getDataForBaseline();
 
                     @Override
                     public boolean hasNext()
@@ -590,12 +591,12 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
     /**
      * Returns an {@link Iterable} view of the pairs of times and values.
      * 
-     * @return an iterable view of the basis times
+     * @return an iterable view of the times and values
      */
 
     private Iterable<Pair<Instant, PairOfDoubles>> getTimeIterator()
     {
-        //Construct an iterable view of the basis times
+        //Construct an iterable view of the times and values
         class IterableTimeSeries implements Iterable<Pair<Instant, PairOfDoubles>>
         {
             @Override
@@ -603,8 +604,8 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
             {
                 return new Iterator<Pair<Instant, PairOfDoubles>>()
                 {
-                    private int returned = 0;
-                    final List<PairOfDoubles> data = getData();
+                    int returned = 0;
+                    List<PairOfDoubles> data = getData();
 
                     @Override
                     public boolean hasNext()
@@ -617,7 +618,7 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
                     {
                         if ( returned >= data.size() )
                         {
-                            throw new NoSuchElementException( " No more pairs to iterate." );
+                            throw new NoSuchElementException( "No more pairs to iterate." );
                         }
                         Pair<Instant, PairOfDoubles> returnMe = new Pair<Instant, PairOfDoubles>()
                         {
