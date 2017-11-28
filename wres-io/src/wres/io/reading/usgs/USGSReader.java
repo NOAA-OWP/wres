@@ -3,11 +3,16 @@ package wres.io.reading.usgs;
 import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.Stack;
+import java.util.TreeMap;
 
 import org.slf4j.Logger;
 import javax.ws.rs.client.Client;
@@ -23,6 +28,7 @@ import wres.config.generated.Feature;
 import wres.io.concurrency.StatementRunner;
 import wres.io.config.SystemSettings;
 import wres.io.data.caching.DataSources;
+import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.USGSParameters;
 import wres.io.data.caching.Variables;
@@ -59,7 +65,8 @@ public class USGSReader extends BasicSource
             "    UPDATE wres.Observation" + System.lineSeparator() +
             "        SET observed_value = ?" + System.lineSeparator() +
             "    WHERE variableposition_id = ?" + System.lineSeparator() +
-            "        AND observation_time = ?" + System.lineSeparator() +
+            "        AND observation_time = (?)::timestamp without time zone" + System.lineSeparator() +
+            "        AND measurementunit_id = ?" + System.lineSeparator() +
             "        AND source_id = ?" + System.lineSeparator() +
             "    RETURNING *" + System.lineSeparator() +
             ")" + System.lineSeparator() +
@@ -67,21 +74,24 @@ public class USGSReader extends BasicSource
             "    variableposition_id," + System.lineSeparator() +
             "    observation_time," + System.lineSeparator() +
             "    observed_value," + System.lineSeparator() +
+            "    measurementunit_id," + System.lineSeparator() +
             "    source_id" + System.lineSeparator() +
             ")" + System.lineSeparator() +
-            "SELECT ?, ?, ?, ?" + System.lineSeparator() +
+            "SELECT ?, (?)::timestamp without time zone, ?, ?, ?" + System.lineSeparator() +
             "WHERE NOT EXISTS (" + System.lineSeparator() +
             "    SELECT 1" + System.lineSeparator() +
             "    FROM upsert U" + System.lineSeparator() +
             "    WHERE U.variableposition_id = ?" + System.lineSeparator() +
-            "        AND U.observation_time = ?" + System.lineSeparator() +
+            "        AND U.observation_time = (?)::timestamp without time zone" + System.lineSeparator() +
+            "        AND U.measurementunit_id = ?" + System.lineSeparator() +
             "        AND U.source_id = ?" + System.lineSeparator() +
             ");" + System.lineSeparator();
 
     private class UpsertValue
     {
-        public UpsertValue(String observationTime, Double value)
+        public UpsertValue(String gageID, String observationTime, Double value)
         {
+            this.gageID = gageID;
             this.observationTime = observationTime;
             this.value = value;
         }
@@ -89,65 +99,53 @@ public class USGSReader extends BasicSource
         public void addToUpsert( PreparedStatement upsertStatement)
                 throws SQLException
         {
-            String hash = Strings.getMD5Checksum(
-                    (USGSReader.USGS_URL + "/" + getValueType() ).getBytes()
-            );
-
-            Integer sourceID = DataSources.getSourceID(USGSReader.USGS_URL,
-                                                       null,
-                                                       null,
-                                                       hash);
 
             upsertStatement.setDouble( 1, this.value );
-            upsertStatement.setInt( 2, getVariablePositionID() );
+            upsertStatement.setInt( 2, getVariablePositionID(gageID) );
             upsertStatement.setString( 3, this.observationTime );
-            upsertStatement.setInt( 4, sourceID );
+            upsertStatement.setInt( 4, getSourceID() );
 
-            upsertStatement.setInt( 5, getVariablePositionID() );
+            upsertStatement.setInt( 5, getVariablePositionID(gageID) );
             upsertStatement.setString( 6, this.observationTime );
             upsertStatement.setDouble( 7, this.value );
-            upsertStatement.setInt( 8, sourceID );
+            upsertStatement.setInt( 8, getSourceID() );
 
-            upsertStatement.setInt( 9, getVariablePositionID() );
+            upsertStatement.setInt( 9, getVariablePositionID(gageID) );
             upsertStatement.setString( 10, this.observationTime );
-            upsertStatement.setInt( 11, sourceID );
+            upsertStatement.setInt( 11, getSourceID() );
 
             upsertStatement.addBatch();
         }
 
         public Object[] getParameters() throws SQLException
         {
-            String hash = Strings.getMD5Checksum(
-                    (USGSReader.USGS_URL + "/" + getValueType() ).getBytes()
-            );
-
-            Integer sourceID = DataSources.getSourceID(USGSReader.USGS_URL,
-                                                       null,
-                                                       null,
-                                                       hash);
-
             return new Object[] {
                     this.value,
-                    getVariablePositionID(),
+                    getVariablePositionID(gageID),
                     this.observationTime,
-                    sourceID,
-                    getVariablePositionID(),
+                    parameter.getMeasurementUnitID(),
+                    getSourceID(),
+                    getVariablePositionID(gageID),
                     this.observationTime,
                     this.value,
-                    sourceID,
-                    getVariablePositionID(),
+                    parameter.getMeasurementUnitID(),
+                    getSourceID(),
+                    getVariablePositionID(gageID),
                     this.observationTime,
-                    sourceID
+                    parameter.getMeasurementUnitID(),
+                    getSourceID()
             };
         }
 
         private final String observationTime;
         private final Double value;
+        private final String gageID;
     }
 
     @Override
     public void saveObservation() throws IOException
     {
+        this.operationStartTime = Time.convertDateToString( OffsetDateTime.now() );
         this.load();
 
         if (this.response == null ||
@@ -160,6 +158,24 @@ public class USGSReader extends BasicSource
         for (TimeSeries series : this.response.getValue().getTimeSeries())
         {
             this.readSeries( series );
+        }
+
+        try
+        {
+            this.performUpserts();
+        }
+        catch ( SQLException e )
+        {
+            throw new IOException( "USGS observations could not be saved.", e );
+        }
+
+        try
+        {
+            this.getProjectDetails().addSource( this.getHash(), this.getDataSourceConfig() );
+        }
+        catch ( SQLException e )
+        {
+            throw new IOException( "USGS observations could not be linked to this project.", e);
         }
     }
 
@@ -221,26 +237,26 @@ public class USGSReader extends BasicSource
     // This is specifically for gages; we also need to support selecting by
     // latitude and longitude (WGS84; that is what is used by USGS)
     // TODO: It may make sense to do a gage at a time in order to fire off shorter requests more often
-    private String getGageID()
+    private String getGageID() throws SQLException
     {
         String ID = null;
 
         if (this.getSpecifiedFeatures().size() > 0)
         {
-            for (Feature feature : this.getSpecifiedFeatures())
+            for (FeatureDetails feature : this.getProjectDetails().getFeatures())
             {
-                if ( Strings.hasValue(feature.getGageId()) && !Strings.hasValue( ID ))
+                if ( Strings.hasValue( feature.getGageID()) && !Strings.hasValue( ID ))
                 {
-                    ID = feature.getGageId();
+                    ID = feature.getGageID();
                 }
-                else if (Strings.hasValue( feature.getGageId() ))
+                else if (Strings.hasValue( feature.getGageID() ))
                 {
-                    ID += "," + feature.getGageId();
+                    ID += "," + feature.getGageID();
                 }
             }
         }
 
-        Objects.requireNonNull( ID, "No valid gageIDs could be found." );
+        Objects.requireNonNull( ID, "No valid gageIDs could be found. USGS data could not be ingested." );
 
         return ID;
     }
@@ -250,7 +266,7 @@ public class USGSReader extends BasicSource
         if (this.parameterCode == null)
         {
             // If the user uses the explicit USGS code, use that and bypass everything else
-            if (this.getDataSourceConfig().getVariable().getValue().matches( "\\d\\d\\d\\d\\d" ))
+            if (this.getDataSourceConfig().getVariable().getValue().matches( "\\d{5}" ))
             {
                 this.parameterCode = this.getDataSourceConfig().getVariable().getValue();
             }
@@ -274,6 +290,10 @@ public class USGSReader extends BasicSource
             if (variableName.matches( ".+,.+" ))
             {
                 this.parameter = USGSParameters.getParameterByDescription( variableName );
+            }
+            else if (variableName.matches( "\\d{5}" ))
+            {
+                this.parameter = USGSParameters.getParameterByCode( variableName );
             }
             else
             {
@@ -423,26 +443,86 @@ public class USGSReader extends BasicSource
         return valueType;
     }
 
-    private Integer getVariablePositionID()
+    private Integer getVariablePositionID(String gageID) throws SQLException
     {
-        if (this.variablePositionID == null)
+        if (this.variablePositionIDs == null)
         {
-            // TODO: Implement feature/variableposition logic for non-lid info
-            //FeatureDetails details = new FeatureDetails();
+            this.variablePositionIDs = new TreeMap<>(  );
         }
 
-        return this.variablePositionID;
+        if (!this.variablePositionIDs.containsKey( gageID ))
+        {
+            FeatureDetails details =
+                    Collections.find( this.getProjectDetails().getFeatures(),
+                                      feature -> feature.getGageID() != null &&
+                                                 feature.getGageID().equalsIgnoreCase( gageID ) );
+
+            this.variablePositionIDs.put(gageID,
+                                         details.getVariablePositionID( this.getVariableID() ));
+        }
+
+        return this.variablePositionIDs.get( gageID );
     }
 
-    private void addValue(String observationTime, Double value)
+    private Integer getVariableID() throws SQLException
+    {
+        if (this.variableID == null)
+        {
+            if (this.getProjectDetails().getLeft().equals( this.getDataSourceConfig() ))
+            {
+                this.variableID = this.getProjectDetails().getLeftVariableID();
+            }
+            else if (this.getProjectDetails().getRight().equals( this.getDataSourceConfig() ))
+            {
+                this.variableID = this.getProjectDetails().getRightVariableID();
+            }
+            else
+            {
+                this.variableID = this.getProjectDetails().getBaselineVariableID();
+            }
+        }
+
+        return this.variableID;
+    }
+
+    private void addValue(String gageID, String observationTime, Double value)
             throws SQLException
     {
         this.upsertValues.add(
-                new UpsertValue( Time.normalize( observationTime ),
+                new UpsertValue( gageID,
+                                 Time.normalize( observationTime ),
                                  value )
         );
 
         if ( this.upsertValues.size() >= SystemSettings.maximumDatabaseInsertStatements())
+        {
+            this.performUpserts();
+        }
+    }
+
+    private void readSeries(TimeSeries series) throws IOException
+    {
+        for (TimeSeriesValues valueSet : series.getValues())
+        {
+            for (TimeSeriesValue value : valueSet.getValue())
+            {
+                try
+                {
+                    this.addValue( series.getSourceInfo().getSiteCode()[0].getValue(),
+                                   value.getDateTime(),
+                                   value.getValue() );
+                }
+                catch ( SQLException e )
+                {
+                    throw new IOException( e );
+                }
+            }
+        }
+    }
+
+    private void performUpserts() throws SQLException
+    {
+        if (this.upsertValues.size() > 0)
         {
             List<Object[]> values = new ArrayList<>(  );
 
@@ -459,16 +539,28 @@ public class USGSReader extends BasicSource
         }
     }
 
-    // TODO: This needs to compensate for many locations in a file
-    private void readSeries(TimeSeries series) //throws SQLException
+    @Override
+    public String getHash()
     {
-        /*for (TimeSeriesValues valueSet : series.getValues())
+        if (this.hash == null)
         {
-            for (TimeSeriesValue value : valueSet.getValue())
-            {
-                this.addValue( value.getDateTime(), value.getValue() );
-            }
-        }*/
+            this.hash = Strings.getMD5Checksum(
+                    (USGSReader.USGS_URL + "/" + getValueType() ).getBytes()
+            );
+        }
+        return this.hash;
+    }
+
+    public Integer getSourceID() throws SQLException
+    {
+        if (this.sourceID == null)
+        {
+            this.sourceID = DataSources.getSourceID(USGSReader.USGS_URL,
+                                                       operationStartTime,
+                                                       null,
+                                                       hash);
+        }
+        return sourceID;
     }
 
     // This should be transformed from the feature table if the lid or anything
@@ -483,7 +575,10 @@ public class USGSReader extends BasicSource
 
     private String startDate;
     private String endDate;
-    private Integer variablePositionID;
+    private Integer variableID;
+    private Map<String, Integer> variablePositionIDs;
+    private Integer sourceID;
+    private String hash;
 
     private Stack<UpsertValue> upsertValues = new Stack<>();
 
@@ -494,4 +589,6 @@ public class USGSReader extends BasicSource
 
     private USGSParameters.USGSParameter parameter;
     private Response response;
+
+    private String operationStartTime;
 }

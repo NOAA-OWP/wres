@@ -1012,7 +1012,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
         @Override
         public int compareTo( FeatureKey featureKey )
         {
-            int comparison = -1;
+            int comparison = 0;
 
             if (featureKey == null)
             {
@@ -1024,8 +1024,20 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
             }
             else
             {
-                comparison = Integer.compare( this.hashCode(),
-                                              featureKey.hashCode() );
+                if (Strings.hasValue( this.lid ) && Strings.hasValue( featureKey.lid ))
+                {
+                    comparison = this.lid.compareTo( featureKey.lid );
+                }
+
+                if (comparison == 0 && Strings.hasValue( this.gageID ) && Strings.hasValue( featureKey.gageID ))
+                {
+                    comparison = this.gageID.compareTo( featureKey.gageID );
+                }
+
+                if (comparison == 0 && this.comid != null && featureKey.comid != null)
+                {
+                    comparison = this.comid.compareTo( featureKey.comid );
+                }
             }
 
             return comparison;
