@@ -163,7 +163,7 @@ public final class ScriptGenerator
         else
         {
 
-            String zeroDate = projectDetails.getZeroDate( dataSourceConfig );
+            String zeroDate = projectDetails.getZeroDate( dataSourceConfig, feature );
             List<Integer> sourceIds;
             int windowPeriod = Time.unitsToHours( projectDetails.getAggregationUnit(),
                                                  projectDetails.getAggregationPeriod()).intValue();
@@ -288,7 +288,8 @@ public final class ScriptGenerator
     }
 
     public static String generateZeroDateScript(ProjectConfig projectConfig,
-                                                DataSourceConfig simulation)
+                                                DataSourceConfig simulation,
+                                                Feature feature)
             throws SQLException
     {
 
@@ -296,11 +297,6 @@ public final class ScriptGenerator
         {
             return null;
         }
-
-        // TODO: This will need to evolve once we get multiple locations involved
-        Feature feature = projectConfig.getPair()
-                                       .getFeature()
-                                       .get( 0 );
 
         String earliestDate = null;
         String latestDate = null;

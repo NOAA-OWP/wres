@@ -239,7 +239,7 @@ class ClimatologyBuilder
         try
         {
             String earliestDate =
-                    this.projectDetails.getZeroDate( this.dataSourceConfig );
+                    this.projectDetails.getZeroDate( this.dataSourceConfig, this.feature );
             this.prepareDateLoad( earliestDate );
         }
         catch (SQLException e)

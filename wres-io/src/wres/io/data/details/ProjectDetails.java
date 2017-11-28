@@ -1070,10 +1070,11 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return ConfigHelper.getWindowWidth( this.projectConfig ).intValue();
     }
 
-    public String getZeroDate(DataSourceConfig sourceConfig) throws SQLException
+    public String getZeroDate(DataSourceConfig sourceConfig, Feature feature) throws SQLException
     {
         String script = ScriptGenerator.generateZeroDateScript( this.projectConfig,
-                                                                sourceConfig );
+                                                                sourceConfig,
+                                                                feature);
         return "'" + Database.getResult( script, "zero_date" ) + "'";
     }
 
