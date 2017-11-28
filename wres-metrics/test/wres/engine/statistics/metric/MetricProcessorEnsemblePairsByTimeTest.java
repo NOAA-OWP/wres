@@ -642,9 +642,10 @@ public final class MetricProcessorEnsemblePairsByTimeTest
                                  .getMetricProcessorByLeadTime( config,
                                                                 MetricOutputGroup.values() );
             //Check for the expected number of metrics
+            //One fewer than total, as sample size appears in both ensemble and single-valued
             assertTrue( processor.metrics.size() == MetricInputGroup.ENSEMBLE.getMetrics().size()
                                                     + MetricInputGroup.DISCRETE_PROBABILITY.getMetrics().size()
-                                                    + MetricInputGroup.SINGLE_VALUED.getMetrics().size() );
+                                                    + MetricInputGroup.SINGLE_VALUED.getMetrics().size() -1 );
         }
         catch ( Exception e )
         {

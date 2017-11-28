@@ -71,6 +71,7 @@ public interface RegularTimeSeriesOfSingleValuedPairs extends SingleValuedPairs,
          * Sets the time-step of the regular time-series.
          * 
          * @param timeStep the time-step of the regular time-series
+         * @return the builder
          */
 
         RegularTimeSeriesOfSingleValuedPairsBuilder setTimeStep( Duration timeStep );

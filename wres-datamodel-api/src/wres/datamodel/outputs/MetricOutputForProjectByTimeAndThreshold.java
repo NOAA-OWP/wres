@@ -85,7 +85,8 @@ public interface MetricOutputForProjectByTimeAndThreshold
     {
 
         /**
-         * Adds a new {@link ScalarOutput} for a collection of metrics to the internal store.
+         * Adds a new {@link ScalarOutput} for a collection of metrics to the internal store, merging with existing 
+         * items that share the same key, as required.
          * 
          * @param key the key
          * @param result the result
@@ -100,7 +101,8 @@ public interface MetricOutputForProjectByTimeAndThreshold
         }
 
         /**
-         * Adds a new {@link VectorOutput} for a collection of metrics to the internal store.
+         * Adds a new {@link VectorOutput} for a collection of metrics to the internal store, merging with existing 
+         * items that share the same key, as required.
          * 
          * @param key the key
          * @param result the result
@@ -115,7 +117,8 @@ public interface MetricOutputForProjectByTimeAndThreshold
         }
 
         /**
-         * Adds a new {@link MultiVectorOutput} for a collection of metrics to the internal store.
+         * Adds a new {@link MultiVectorOutput} for a collection of metrics to the internal store, merging with 
+         * existing items that share the same key, as required.
          * 
          * @param key the key
          * @param result the result
@@ -131,7 +134,8 @@ public interface MetricOutputForProjectByTimeAndThreshold
         }
 
         /**
-         * Adds a new {@link MatrixOutput} result for a collection of metrics to the internal store.
+         * Adds a new {@link MatrixOutput} result for a collection of metrics to the internal store, merging with 
+         * existing items that share the same key, as required.
          * 
          * @param key the key
          * @param result the result
@@ -146,7 +150,8 @@ public interface MetricOutputForProjectByTimeAndThreshold
         }
 
         /**
-         * Adds a new {@link BoxPlotOutput} for a collection of metrics to the internal store.
+         * Adds a new {@link BoxPlotOutput} for a collection of metrics to the internal store, merging with existing 
+         * items that share the same key, as required.
          * 
          * @param key the key
          * @param result the result
@@ -161,7 +166,8 @@ public interface MetricOutputForProjectByTimeAndThreshold
         }
 
         /**
-         * Adds a new {@link ScalarOutput} for a collection of metrics to the internal store.
+         * Adds a new {@link ScalarOutput} for a collection of metrics to the internal store, merging with existing 
+         * items that share the same key, as required.
          * 
          * @param timeWindow the time window
          * @param threshold the threshold
@@ -174,7 +180,8 @@ public interface MetricOutputForProjectByTimeAndThreshold
                                                                          Future<MetricOutputMapByMetric<ScalarOutput>> result );
 
         /**
-         * Adds a new {@link VectorOutput} for a collection of metrics to the internal store.
+         * Adds a new {@link VectorOutput} for a collection of metrics to the internal store, merging with existing 
+         * items that share the same key, as required.
          * 
          * @param timeWindow the time window
          * @param threshold the threshold
@@ -187,7 +194,8 @@ public interface MetricOutputForProjectByTimeAndThreshold
                                                                          Future<MetricOutputMapByMetric<VectorOutput>> result );
 
         /**
-         * Adds a new {@link MultiVectorOutput} for a collection of metrics to the internal store.
+         * Adds a new {@link MultiVectorOutput} for a collection of metrics to the internal store, merging with existing 
+         * items that share the same key, as required.
          * 
          * @param timeWindow the time window
          * @param threshold the threshold
@@ -200,7 +208,8 @@ public interface MetricOutputForProjectByTimeAndThreshold
                                                                               Future<MetricOutputMapByMetric<MultiVectorOutput>> result );
 
         /**
-         * Adds a new {@link MatrixOutput} for a collection of metrics to the internal store.
+         * Adds a new {@link MatrixOutput} for a collection of metrics to the internal store, merging with existing 
+         * items that share the same key, as required.
          * 
          * @param timeWindow the time window
          * @param threshold the threshold
@@ -213,7 +222,8 @@ public interface MetricOutputForProjectByTimeAndThreshold
                                                                          Future<MetricOutputMapByMetric<MatrixOutput>> result );
 
         /**
-         * Adds a new {@link BoxPlotOutput} for a collection of metrics to the internal store.
+         * Adds a new {@link BoxPlotOutput} for a collection of metrics to the internal store, merging with existing 
+         * items that share the same key, as required.
          * 
          * @param timeWindow the time window
          * @param threshold the threshold

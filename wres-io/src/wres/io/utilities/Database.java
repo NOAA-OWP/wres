@@ -23,12 +23,13 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import com.mchange.v2.c3p0.C3P0ProxyConnection;
-import com.mchange.v2.c3p0.ComboPooledDataSource;
 import org.postgresql.PGConnection;
 import org.postgresql.copy.CopyManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.mchange.v2.c3p0.C3P0ProxyConnection;
+import com.mchange.v2.c3p0.ComboPooledDataSource;
 
 import wres.io.concurrency.SQLExecutor;
 import wres.io.concurrency.WRESCallable;
@@ -331,6 +332,7 @@ public final class Database {
 
     /**
      * Loops through all stored ingest tasks and ensures that they all complete
+     * @throws IngestException if the ingest fails or is interrupted
      */
 	public static void completeAllIngestTasks() throws IngestException
     {

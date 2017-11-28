@@ -807,15 +807,17 @@ public interface DataFactory
             ofMap( final Map<Pair<TimeWindow, Threshold>, T> input );
 
     /**
-     * Returns a {@link MetricOutputMultiMapByTimeAndThreshold} from a map of inputs by {@link TimeWindow} and {@link Threshold}.
+     * Returns a {@link MetricOutputMultiMapByTimeAndThreshold} from a map of inputs by {@link TimeWindow} and 
+     * {@link Threshold}.
      * 
      * @param <T> the type of output
      * @param input the input map of metric outputs by time window and threshold
      * @return a map of metric outputs by lead time and threshold for several metrics
+     * @throws MetricOutputException if attempting to add multiple results for the same metric by time and threshold
      */
 
     <T extends MetricOutput<?>> MetricOutputMultiMapByTimeAndThreshold<T>
-            ofMultiMap( final Map<Pair<TimeWindow, Threshold>, MetricOutputMapByMetric<T>> input );
+            ofMultiMap( final Map<Pair<TimeWindow, Threshold>, List<MetricOutputMapByMetric<T>>> input );
 
     /**
      * Returns a builder for a {@link MetricOutputMultiMapByTimeAndThreshold} that allows for the incremental addition of

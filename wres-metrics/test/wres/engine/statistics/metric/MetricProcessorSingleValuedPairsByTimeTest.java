@@ -7,7 +7,6 @@ import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.concurrent.Executors;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import wres.config.generated.ProjectConfig;
@@ -102,7 +101,6 @@ public final class MetricProcessorSingleValuedPairsByTimeTest
      */
 
     @Test
-    @Ignore // Until we figure out the issue
     public void test2ApplyThresholds()
     {
         final DataFactory metIn = DefaultDataFactory.getInstance();

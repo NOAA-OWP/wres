@@ -108,18 +108,32 @@ public class CommaSeparatedTest
                                               "HEFS",
                                               "ESP" );
 
-        MetricOutputMetadata fakeMetadata =
+        MetricOutputMetadata fakeMetadataA =
                 metaFac.getOutputMetadata( 1000,
                                            metaFac.getDimension(),
                                            metaFac.getDimension( "CMS" ),
                                            MetricConstants.MEAN_SQUARE_ERROR,
                                            MetricConstants.MAIN,
                                            datasetIdentifier );
-
+        MetricOutputMetadata fakeMetadataB =
+                metaFac.getOutputMetadata( 1000,
+                                           metaFac.getDimension(),
+                                           metaFac.getDimension( "CMS" ),
+                                           MetricConstants.MEAN_ERROR,
+                                           MetricConstants.MAIN,
+                                           datasetIdentifier );
+        MetricOutputMetadata fakeMetadataC =
+                metaFac.getOutputMetadata( 1000,
+                                           metaFac.getDimension(),
+                                           metaFac.getDimension( "CMS" ),
+                                           MetricConstants.MEAN_ABSOLUTE_ERROR,
+                                           MetricConstants.MAIN,
+                                           datasetIdentifier );
+        
         List<ScalarOutput> fakeOutputs = new ArrayList<>();
-        fakeOutputs.add( outputFactory.ofScalarOutput( 1.0, fakeMetadata ) );
-        fakeOutputs.add( outputFactory.ofScalarOutput( 2.0, fakeMetadata ) );
-        fakeOutputs.add( outputFactory.ofScalarOutput( 3.0, fakeMetadata ) );
+        fakeOutputs.add( outputFactory.ofScalarOutput( 1.0, fakeMetadataA ) );
+        fakeOutputs.add( outputFactory.ofScalarOutput( 2.0, fakeMetadataB ) );
+        fakeOutputs.add( outputFactory.ofScalarOutput( 3.0, fakeMetadataC ) );
 
         // Fake output wrapper.
         MetricOutputMapByMetric<ScalarOutput> fakeOutputData =
@@ -201,7 +215,7 @@ public class CommaSeparatedTest
 
         assertTrue( result.get(0).contains( "," ) );
         assertTrue( result.get(0).contains( "ERROR" ) );
-        assertTrue( result.get(1).equals( "1,3.0" ) );
+        assertTrue( result.get(1).equals( "1,3.0,2.0,1.0" ) );
 
         // If all succeeded, remove the file, otherwise leave to help debugging.
         Files.deleteIfExists( pathToFile );
