@@ -1,5 +1,7 @@
 package wres.engine.statistics.metric;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -121,28 +123,28 @@ public abstract class MetricProcessorByTime extends MetricProcessor<MetricOutput
          * Scalar results.
          */
 
-        private final ConcurrentMap<Pair<TimeWindow, Threshold>, Future<MetricOutputMapByMetric<ScalarOutput>>> scalar =
+        private final ConcurrentMap<Pair<TimeWindow, Threshold>, List<Future<MetricOutputMapByMetric<ScalarOutput>>>> scalar =
                 new ConcurrentHashMap<>();
         /**
          * Vector results.
          */
 
-        private final ConcurrentMap<Pair<TimeWindow, Threshold>, Future<MetricOutputMapByMetric<VectorOutput>>> vector =
+        private final ConcurrentMap<Pair<TimeWindow, Threshold>, List<Future<MetricOutputMapByMetric<VectorOutput>>>> vector =
                 new ConcurrentHashMap<>();
         /**
          * Multivector results.
          */
 
-        private final ConcurrentMap<Pair<TimeWindow, Threshold>, Future<MetricOutputMapByMetric<MultiVectorOutput>>> multivector =
+        private final ConcurrentMap<Pair<TimeWindow, Threshold>, List<Future<MetricOutputMapByMetric<MultiVectorOutput>>>> multivector =
                 new ConcurrentHashMap<>();
 
         /**
          * Box plot results.
          */
 
-        private final ConcurrentMap<Pair<TimeWindow, Threshold>, Future<MetricOutputMapByMetric<BoxPlotOutput>>> boxplot =
+        private final ConcurrentMap<Pair<TimeWindow, Threshold>, List<Future<MetricOutputMapByMetric<BoxPlotOutput>>>> boxplot =
                 new ConcurrentHashMap<>();
-        
+
         /**
          * Returns the results associated with the futures.
          * 
@@ -154,10 +156,18 @@ public abstract class MetricProcessorByTime extends MetricProcessor<MetricOutput
             MetricOutputForProjectByTimeAndThresholdBuilder builder =
                     dataFactory.ofMetricOutputForProjectByTimeAndThreshold();
             //Add outputs for current futures
-            scalar.forEach( builder::addScalarOutput );
-            vector.forEach( builder::addVectorOutput );
-            multivector.forEach( builder::addMultiVectorOutput );
-            boxplot.forEach( builder::addBoxPlotOutput );
+            scalar.forEach( ( key, list ) -> {
+                list.forEach( value -> builder.addScalarOutput( key, value ) );
+            } );
+            vector.forEach( ( key, list ) -> {
+                list.forEach( value -> builder.addVectorOutput( key, value ) );
+            } );
+            multivector.forEach( ( key, list ) -> {
+                list.forEach( value -> builder.addMultiVectorOutput( key, value ) );
+            } );
+            boxplot.forEach( ( key, list ) -> {
+                list.forEach( value -> builder.addBoxPlotOutput( key, value ) );
+            } );
             return builder.build();
         }
 
@@ -189,26 +199,26 @@ public abstract class MetricProcessorByTime extends MetricProcessor<MetricOutput
              * Scalar results.
              */
 
-            private final ConcurrentMap<Pair<TimeWindow, Threshold>, Future<MetricOutputMapByMetric<ScalarOutput>>> scalar =
+            private final ConcurrentMap<Pair<TimeWindow, Threshold>, List<Future<MetricOutputMapByMetric<ScalarOutput>>>> scalar =
                     new ConcurrentHashMap<>();
             /**
              * Vector results.
              */
 
-            private final ConcurrentMap<Pair<TimeWindow, Threshold>, Future<MetricOutputMapByMetric<VectorOutput>>> vector =
+            private final ConcurrentMap<Pair<TimeWindow, Threshold>, List<Future<MetricOutputMapByMetric<VectorOutput>>>> vector =
                     new ConcurrentHashMap<>();
             /**
              * Multivector results.
              */
 
-            private final ConcurrentMap<Pair<TimeWindow, Threshold>, Future<MetricOutputMapByMetric<MultiVectorOutput>>> multivector =
+            private final ConcurrentMap<Pair<TimeWindow, Threshold>, List<Future<MetricOutputMapByMetric<MultiVectorOutput>>>> multivector =
                     new ConcurrentHashMap<>();
 
             /**
              * Box plot results.
              */
 
-            private final ConcurrentMap<Pair<TimeWindow, Threshold>, Future<MetricOutputMapByMetric<BoxPlotOutput>>> boxplot =
+            private final ConcurrentMap<Pair<TimeWindow, Threshold>, List<Future<MetricOutputMapByMetric<BoxPlotOutput>>>> boxplot =
                     new ConcurrentHashMap<>();
 
             /**
@@ -235,7 +245,12 @@ public abstract class MetricProcessorByTime extends MetricProcessor<MetricOutput
             MetricFuturesByTimeBuilder addScalarOutput( Pair<TimeWindow, Threshold> key,
                                                         Future<MetricOutputMapByMetric<ScalarOutput>> value )
             {
-                scalar.put( key, value );
+                List<Future<MetricOutputMapByMetric<ScalarOutput>>> result =
+                        scalar.putIfAbsent( key, new ArrayList<>( Arrays.asList( value ) ) );
+                if ( Objects.nonNull( result ) )
+                {
+                    result.add( value );
+                }
                 return this;
             }
 
@@ -250,7 +265,12 @@ public abstract class MetricProcessorByTime extends MetricProcessor<MetricOutput
             MetricFuturesByTimeBuilder addVectorOutput( Pair<TimeWindow, Threshold> key,
                                                         Future<MetricOutputMapByMetric<VectorOutput>> value )
             {
-                vector.put( key, value );
+                List<Future<MetricOutputMapByMetric<VectorOutput>>> result =
+                        vector.putIfAbsent( key, new ArrayList<>( Arrays.asList( value ) ) );
+                if ( Objects.nonNull( result ) )
+                {
+                    result.add( value );
+                }
                 return this;
             }
 
@@ -265,7 +285,12 @@ public abstract class MetricProcessorByTime extends MetricProcessor<MetricOutput
             MetricFuturesByTimeBuilder addMultiVectorOutput( Pair<TimeWindow, Threshold> key,
                                                              Future<MetricOutputMapByMetric<MultiVectorOutput>> value )
             {
-                multivector.put( key, value );
+                List<Future<MetricOutputMapByMetric<MultiVectorOutput>>> result =
+                        multivector.putIfAbsent( key, new ArrayList<>( Arrays.asList( value ) ) );
+                if ( Objects.nonNull( result ) )
+                {
+                    result.add( value );
+                }
                 return this;
             }
 
@@ -280,7 +305,12 @@ public abstract class MetricProcessorByTime extends MetricProcessor<MetricOutput
             MetricFuturesByTimeBuilder addBoxPlotOutput( Pair<TimeWindow, Threshold> key,
                                                          Future<MetricOutputMapByMetric<BoxPlotOutput>> value )
             {
-                boxplot.put( key, value );
+                List<Future<MetricOutputMapByMetric<BoxPlotOutput>>> result =
+                        boxplot.putIfAbsent( key, new ArrayList<>( Arrays.asList( value ) ) );
+                if ( Objects.nonNull( result ) )
+                {
+                    result.add( value );
+                }
                 return this;
             }
 
@@ -302,11 +332,10 @@ public abstract class MetricProcessorByTime extends MetricProcessor<MetricOutput
              * @param futures the input futures
              * @param mergeList the merge list
              * @return the builder
-             * @throws MetricCalculationException if one or more of the {@link MetricOutputGroup} are unsupported
              */
 
             private MetricFuturesByTimeBuilder addFutures( MetricFuturesByTime futures,
-                                                               MetricOutputGroup[] mergeList )
+                                                           MetricOutputGroup[] mergeList )
             {
                 if ( Objects.nonNull( mergeList ) )
                 {
@@ -444,10 +473,10 @@ public abstract class MetricProcessorByTime extends MetricProcessor<MetricOutput
      */
 
     MetricProcessorByTime( DataFactory dataFactory,
-                               ProjectConfig config,
-                               ExecutorService thresholdExecutor,
-                               ExecutorService metricExecutor,
-                               MetricOutputGroup[] mergeList )
+                           ProjectConfig config,
+                           ExecutorService thresholdExecutor,
+                           ExecutorService metricExecutor,
+                           MetricOutputGroup[] mergeList )
             throws MetricConfigurationException
     {
         super( dataFactory, config, thresholdExecutor, metricExecutor, mergeList );

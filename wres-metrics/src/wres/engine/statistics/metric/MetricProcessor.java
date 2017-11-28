@@ -6,6 +6,7 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.Function;
@@ -138,10 +139,10 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
     final MetricCollection<SingleValuedPairs, MultiVectorOutput> singleValuedMultiVector;
 
     /**
-     * The list of metrics associated with the verification project.
+     * The set of metrics associated with the verification project.
      */
 
-    final List<MetricConstants> metrics;
+    final Set<MetricConstants> metrics;
 
     /**
      * An array of {@link MetricOutputGroup} that should be retained and merged across calls. May be null.
@@ -303,7 +304,7 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
      * @throws MetricConfigurationException if the metrics are configured incorrectly
      */
 
-    static List<MetricConstants> getMetricsFromConfig( ProjectConfig config ) throws MetricConfigurationException
+    static Set<MetricConstants> getMetricsFromConfig( ProjectConfig config ) throws MetricConfigurationException
     {
         Objects.requireNonNull( config, "Specify a non-null project from which to generate metrics." );
         //Obtain the list of metrics
@@ -312,7 +313,7 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
                                                      .stream()
                                                      .map( MetricConfig::getName )
                                                      .collect( Collectors.toList() );
-        List<MetricConstants> metrics = new ArrayList<>();
+        Set<MetricConstants> metrics = new TreeSet<>();
         //All valid metrics
         if ( metricsConfig.contains( MetricConfigName.ALL_VALID ) )
         {
@@ -351,10 +352,10 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
      * @throws MetricConfigurationException if the configuration is invalid
      */
 
-    static List<MetricConstants> getAllValidMetricsFromConfig( ProjectConfig config )
+    static Set<MetricConstants> getAllValidMetricsFromConfig( ProjectConfig config )
             throws MetricConfigurationException
     {
-        List<MetricConstants> returnMe;
+        Set<MetricConstants> returnMe;
         MetricInputGroup group = getInputType( config );
         switch ( group )
         {
@@ -521,6 +522,9 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
 
     /**
      * Returns a set of {@link MetricConstants} for a specified {@link MetricInputGroup} and {@link MetricOutputGroup}.
+     * If the specified {@link MetricInputGroup} is a {@link MetricInputGroup#ENSEMBLE} and this processor is already
+     * computing single-valued metrics, then the {@link MetricConstants#SAMPLE_SIZE} is removed from the returned set,
+     * in order to avoid duplication, since the {@link MetricConstants#SAMPLE_SIZE} belongs to both groups.
      * 
      * @param input the input constants
      * @param inGroup the {@link MetricInputGroup}
@@ -529,7 +533,7 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
      *         or an empty array
      */
 
-    MetricConstants[] getSelectedMetrics( List<MetricConstants> input,
+    MetricConstants[] getSelectedMetrics( Set<MetricConstants> input,
                                           MetricInputGroup inGroup,
                                           MetricOutputGroup outGroup )
     {
@@ -537,6 +541,11 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
         //Find the matching metrics 
         Set<MetricConstants> metrics = MetricConstants.getMetrics( inGroup, outGroup );
         metrics.removeIf( a -> !input.contains( a ) );
+        //Remove duplicate sample size
+        if ( inGroup == MetricInputGroup.ENSEMBLE && hasMetrics( MetricInputGroup.SINGLE_VALUED ) )
+        {
+            metrics.remove( MetricConstants.SAMPLE_SIZE );
+        }
         return metrics.toArray( new MetricConstants[metrics.size()] );
     }
 
@@ -616,9 +625,9 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
      * @return the valid metrics for {@link MetricInputGroup#ENSEMBLE}
      */
 
-    private static List<MetricConstants> getMetricsForEnsembleInput( ProjectConfig config )
+    private static Set<MetricConstants> getMetricsForEnsembleInput( ProjectConfig config )
     {
-        List<MetricConstants> returnMe = new ArrayList<>();
+        Set<MetricConstants> returnMe = new TreeSet<>();
         returnMe.addAll( MetricInputGroup.ENSEMBLE.getMetrics() );
         returnMe.addAll( MetricInputGroup.SINGLE_VALUED.getMetrics() );
         if ( hasThresholds( config.getOutputs() ) )
@@ -635,9 +644,9 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
      * @return the valid metrics for {@link MetricInputGroup#SINGLE_VALUED}
      */
 
-    private static List<MetricConstants> getMetricsForSingleValuedInput( ProjectConfig config )
+    private static Set<MetricConstants> getMetricsForSingleValuedInput( ProjectConfig config )
     {
-        List<MetricConstants> returnMe = new ArrayList<>();
+        Set<MetricConstants> returnMe = new TreeSet<>();
         returnMe.addAll( MetricInputGroup.SINGLE_VALUED.getMetrics() );
         if ( hasThresholds( config.getOutputs() ) )
         {

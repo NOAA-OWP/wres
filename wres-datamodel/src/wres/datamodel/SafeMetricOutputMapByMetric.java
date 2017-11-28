@@ -5,17 +5,16 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map.Entry;
-
-import wres.datamodel.outputs.MapKey;
-import wres.datamodel.outputs.MetricOutput;
-import wres.datamodel.outputs.MetricOutputException;
-import wres.datamodel.outputs.MetricOutputMapByMetric;
-
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.StringJoiner;
 import java.util.TreeMap;
+
+import wres.datamodel.outputs.MapKey;
+import wres.datamodel.outputs.MetricOutput;
+import wres.datamodel.outputs.MetricOutputException;
+import wres.datamodel.outputs.MetricOutputMapByMetric;
 
 /**
  * Immutable map of {@link MetricOutput} stored by unique metric identifier.
@@ -40,57 +39,57 @@ class SafeMetricOutputMapByMetric<T extends MetricOutput<?>> implements MetricOu
     private final List<MapKey<MetricConstants>> internal;
 
     @Override
-    public T get(final MapKey<MetricConstants> key)
+    public T get( final MapKey<MetricConstants> key )
     {
-        return store.get(key);
+        return store.get( key );
     }
 
     @Override
-    public T get(final MetricConstants metricID)
+    public T get( final MetricConstants metricID )
     {
-        return get(DefaultDataFactory.getInstance().getMapKey(metricID));
+        return get( DefaultDataFactory.getInstance().getMapKey( metricID ) );
     }
 
     @Override
-    public MapKey<MetricConstants> getKey(final int index)
+    public MapKey<MetricConstants> getKey( final int index )
     {
-        return internal.get(index);
+        return internal.get( index );
     }
 
     @Override
-    public T getValue(final int index)
+    public T getValue( final int index )
     {
-        return get(getKey(index));
+        return get( getKey( index ) );
     }
 
     @Override
-    public boolean containsKey(final MapKey<MetricConstants> key)
+    public boolean containsKey( final MapKey<MetricConstants> key )
     {
-        return store.containsKey(key);
+        return store.containsKey( key );
     }
 
     @Override
-    public boolean containsValue(T value)
+    public boolean containsValue( T value )
     {
-        return store.containsValue(value);
+        return store.containsValue( value );
     }
 
     @Override
     public Collection<T> values()
     {
-        return Collections.unmodifiableCollection(store.values());
+        return Collections.unmodifiableCollection( store.values() );
     }
 
     @Override
     public Set<MapKey<MetricConstants>> keySet()
     {
-        return Collections.unmodifiableSet(store.keySet());
+        return Collections.unmodifiableSet( store.keySet() );
     }
 
     @Override
     public Set<Entry<MapKey<MetricConstants>, T>> entrySet()
     {
-        return Collections.unmodifiableSet(store.entrySet());
+        return Collections.unmodifiableSet( store.entrySet() );
     }
 
     @Override
@@ -100,23 +99,23 @@ class SafeMetricOutputMapByMetric<T extends MetricOutput<?>> implements MetricOu
     }
 
     @Override
-    public SortedMap<MapKey<MetricConstants>, T> subMap(MapKey<MetricConstants> fromKey,
-                                                                           MapKey<MetricConstants> toKey)
+    public SortedMap<MapKey<MetricConstants>, T> subMap( MapKey<MetricConstants> fromKey,
+                                                         MapKey<MetricConstants> toKey )
     {
-        return (SortedMap<MapKey<MetricConstants>, T>)Collections.unmodifiableMap(store.subMap(fromKey,
-                                                                                                                  toKey));
+        return (SortedMap<MapKey<MetricConstants>, T>) Collections.unmodifiableMap( store.subMap( fromKey,
+                                                                                                  toKey ) );
     }
 
     @Override
-    public SortedMap<MapKey<MetricConstants>, T> headMap(MapKey<MetricConstants> toKey)
+    public SortedMap<MapKey<MetricConstants>, T> headMap( MapKey<MetricConstants> toKey )
     {
-        return (SortedMap<MapKey<MetricConstants>, T>)Collections.unmodifiableMap(store.headMap(toKey));
+        return (SortedMap<MapKey<MetricConstants>, T>) Collections.unmodifiableMap( store.headMap( toKey ) );
     }
 
     @Override
-    public SortedMap<MapKey<MetricConstants>, T> tailMap(MapKey<MetricConstants> fromKey)
+    public SortedMap<MapKey<MetricConstants>, T> tailMap( MapKey<MetricConstants> fromKey )
     {
-        return (SortedMap<MapKey<MetricConstants>, T>)Collections.unmodifiableMap(store.tailMap(fromKey));
+        return (SortedMap<MapKey<MetricConstants>, T>) Collections.unmodifiableMap( store.tailMap( fromKey ) );
     }
 
     @Override
@@ -137,7 +136,7 @@ class SafeMetricOutputMapByMetric<T extends MetricOutput<?>> implements MetricOu
      * @param <T> the metric output
      */
 
-    protected static class Builder<T extends MetricOutput<?>>
+    static class SafeMetricOutputMapByMetricBuilder<T extends MetricOutput<?>>
     {
 
         private final TreeMap<MapKey<MetricConstants>, T> store = new TreeMap<>();
@@ -148,11 +147,34 @@ class SafeMetricOutputMapByMetric<T extends MetricOutput<?>> implements MetricOu
          * @param key the key
          * @param value the value
          * @return the builder
+         * @throws MetricOutputException if one or more of the inputs already exist in this store
          */
 
-        protected Builder<T> put(final MapKey<MetricConstants> key, final T value)
+        SafeMetricOutputMapByMetricBuilder<T> put( final MapKey<MetricConstants> key, final T value )
         {
-            store.put(key, value);
+            if ( store.containsKey( key ) )
+            {
+                throw new MetricOutputException( "While attempting to add a '" + key.getKey()
+                                                 + "' to a store that already "
+                                                 + "contains one." );
+            }
+            store.put( key, value );
+            return this;
+        }
+
+        /**
+         * Adds an existing {@link MetricOutputMapByMetric} to the store.
+         * 
+         * @param map the existing map
+         * @return the builder
+         * @throws MetricOutputException if one or more of the inputs already exist in this store
+         */
+
+        SafeMetricOutputMapByMetricBuilder<T> put( MetricOutputMapByMetric<T> map )
+        {
+            map.forEach( ( key, value ) -> {
+                put( key, value );
+            } );
             return this;
         }
 
@@ -162,9 +184,9 @@ class SafeMetricOutputMapByMetric<T extends MetricOutput<?>> implements MetricOu
          * @return the mapping
          */
 
-        protected MetricOutputMapByMetric<T> build()
+        MetricOutputMapByMetric<T> build()
         {
-            return new SafeMetricOutputMapByMetric<>(this);
+            return new SafeMetricOutputMapByMetric<>( this );
         }
 
     }
@@ -176,26 +198,26 @@ class SafeMetricOutputMapByMetric<T extends MetricOutput<?>> implements MetricOu
      * @throws MetricOutputException if any of the inputs are invalid
      */
 
-    private SafeMetricOutputMapByMetric(final Builder<T> builder)
+    private SafeMetricOutputMapByMetric( final SafeMetricOutputMapByMetricBuilder<T> builder )
     {
         //Bounds checks
-        if(builder.store.isEmpty())
+        if ( builder.store.isEmpty() )
         {
-            throw new MetricOutputException("Specify one or more <key,value> mappings to build the map.");
+            throw new MetricOutputException( "Specify one or more <key,value> mappings to build the map." );
         }
-        builder.store.forEach((key, value) -> {
-            if(Objects.isNull(key))
+        builder.store.forEach( ( key, value ) -> {
+            if ( Objects.isNull( key ) )
             {
-                throw new MetricOutputException("Cannot prescribe a null key for the input map.");
+                throw new MetricOutputException( "Cannot prescribe a null key for the input map." );
             }
-            if(Objects.isNull(value))
+            if ( Objects.isNull( value ) )
             {
-                throw new MetricOutputException("Cannot prescribe a null value for the input map.");
+                throw new MetricOutputException( "Cannot prescribe a null value for the input map." );
             }
-        });
+        } );
         store = new TreeMap<>();
-        store.putAll(builder.store);
-        internal = new ArrayList<>(store.keySet());
+        store.putAll( builder.store );
+        internal = new ArrayList<>( store.keySet() );
     }
 
     /**
@@ -206,8 +228,8 @@ class SafeMetricOutputMapByMetric<T extends MetricOutput<?>> implements MetricOu
     @Override
     public String toString()
     {
-        StringJoiner joiner  = new StringJoiner(",","[","]");
-        this.forEach((key, value) -> joiner.add(value.toString()));
+        StringJoiner joiner = new StringJoiner( ",", "[", "]" );
+        this.forEach( ( key, value ) -> joiner.add( value.toString() ) );
         return joiner.toString();
     }
 

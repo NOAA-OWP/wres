@@ -11,6 +11,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
+import wres.datamodel.SafeMetricOutputMapByMetric.SafeMetricOutputMapByMetricBuilder;
 import wres.datamodel.SafeMetricOutputMultiMapByTimeAndThreshold.SafeMetricOutputMultiMapByTimeAndThresholdBuilder;
 import wres.datamodel.SafeRegularTimeSeriesOfSingleValuedPairs.SafeRegularTimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.Threshold.Operator;
@@ -297,7 +298,7 @@ public class DefaultDataFactory implements DataFactory
     public <T extends MetricOutput<?>> MetricOutputMapByMetric<T> ofMap( final List<T> input )
     {
         Objects.requireNonNull( input, "Specify a non-null list of inputs." );
-        final SafeMetricOutputMapByMetric.Builder<T> builder = new SafeMetricOutputMapByMetric.Builder<>();
+        final SafeMetricOutputMapByMetricBuilder<T> builder = new SafeMetricOutputMapByMetricBuilder<>();
         input.forEach( a -> {
             final MapKey<MetricConstants> key = getMapKey( a.getMetadata().getMetricID() );
             builder.put( key, a );
@@ -318,12 +319,17 @@ public class DefaultDataFactory implements DataFactory
 
     @Override
     public <T extends MetricOutput<?>> MetricOutputMultiMapByTimeAndThreshold<T>
-            ofMultiMap( final Map<Pair<TimeWindow, Threshold>, MetricOutputMapByMetric<T>> input )
+            ofMultiMap( final Map<Pair<TimeWindow, Threshold>, List<MetricOutputMapByMetric<T>>> input )
     {
         Objects.requireNonNull( input, "Specify a non-null map of inputs by threshold." );
         final SafeMetricOutputMultiMapByTimeAndThresholdBuilder<T> builder =
                 new SafeMetricOutputMultiMapByTimeAndThresholdBuilder<>();
-        input.forEach( builder::put );
+        input.forEach( ( key, value ) -> {
+            //Merge the outputs for different metrics
+            final SafeMetricOutputMapByMetricBuilder<T> mBuilder = new SafeMetricOutputMapByMetricBuilder<>();
+            value.forEach( mBuilder::put );
+            builder.put( key, mBuilder.build() ); 
+        } );
         return builder.build();
     }
 
@@ -592,7 +598,7 @@ public class DefaultDataFactory implements DataFactory
             Objects.requireNonNull( o, "Specify a non-null map key for comparison." );
             return getKey().compareTo( o.getKey() );
         }
-        
+
         @Override
         public boolean equals( Object o )
         {
@@ -603,12 +609,12 @@ public class DefaultDataFactory implements DataFactory
             DefaultMapKey<?> check = (DefaultMapKey<?>) o;
             return key.equals( check.key );
         }
-        
+
         @Override
         public int hashCode()
         {
             return Objects.hashCode( key );
-        }        
+        }
 
         @Override
         public S getKey()
