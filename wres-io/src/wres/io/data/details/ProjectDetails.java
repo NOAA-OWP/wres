@@ -9,6 +9,7 @@ import java.util.Collection;
 import java.util.InvalidPropertiesFormatException;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
@@ -24,6 +25,7 @@ import wres.config.generated.TimeAggregationConfig;
 import wres.io.concurrency.SQLExecutor;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DataSources;
+import wres.io.data.caching.Features;
 import wres.io.data.caching.Variables;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
@@ -63,6 +65,8 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     private final List<Integer> leftSources = new ArrayList<>(  );
     private final List<Integer> rightSources = new ArrayList<>(  );
     private final List<Integer> baselineSources = new ArrayList<>(  );
+
+    private Set<FeatureDetails> features;
 
     private Integer leftVariableID = null;
     private Integer rightVariableID = null;
@@ -189,6 +193,15 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         }
 
         return name;
+    }
+
+    public Set<FeatureDetails> getFeatures() throws SQLException
+    {
+        if (this.features == null)
+        {
+            this.features = Features.getAllDetails(this.projectConfig);
+        }
+        return this.features;
     }
 
     public DataSourceConfig getLeft()

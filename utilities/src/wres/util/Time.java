@@ -55,8 +55,15 @@ public final class Time
     public static boolean isTimestamp(String possibleTimestamp)
     {
         return Strings.hasValue( possibleTimestamp ) && (
-                possibleTimestamp.matches("\\d\\d\\d\\d-\\d\\d-\\d\\d(T| )\\d\\d:\\d\\d:\\d\\d\\.?\\d*") ||
+                possibleTimestamp.matches("\\d\\d\\d\\d-\\d\\d-\\d\\d(T| )\\d?\\d:\\d\\d(:\\d\\d\\.?\\d*)?((-|\\+)\\d\\d:?\\d\\d)?Z?") ||
                 Arrays.asList("epoch", "infinity", "-infinity", "now", "today", "tomorrow", "yesterday").contains(possibleTimestamp));
+    }
+
+    public static boolean isDate(String possibleDate)
+    {
+        return Strings.hasValue( possibleDate ) &&
+               (possibleDate.length() == 8 || possibleDate.length() == 10) &&
+               possibleDate.matches( "\\d\\d\\d\\d(-|/)?\\d\\d(-|/)?\\d\\d" );
     }
     
     /**
@@ -103,12 +110,21 @@ public final class Time
     /**
      * Attempts to convert a string representation of a date to an actual date
      * object
+     *
+     * Allows many different types of date and time representations to be used.
+     * Formats such as "epoch", "now", "infinity", "1980-01-01", "1980/01/01",
+     * "19800101", "1980-01-01 01:00:00", and "1980-01-01T01:00:00-0600" may
+     * be used.
+     *
      * @param datetime A string representation of a date
      * @return A date and time object representing the described date
      */
     public static OffsetDateTime convertStringToDate(String datetime)
     {
         Objects.requireNonNull( datetime );
+
+        // This function allows us to use many possible formats without having
+        // to use many different DateTimeFormatter objects.
 
         OffsetDateTime date = null;
 
@@ -147,20 +163,53 @@ public final class Time
         }
         else if (isTimestamp(datetime))
         {
-            if (!datetime.endsWith("Z"))
+            // Allows the use of timestamps of the form "2017-08-08 00:00:00-0600",
+            // which can't be parsed; they must be "2017-08-08 00:00:00-06:00"
+            if (datetime.matches( ".+(-|\\+)\\d\\d\\d\\d" ))
+            {
+                datetime = datetime.substring( 0, datetime.length() - 2 ) + ":" + datetime.substring( datetime.length() - 2 );
+            }
+            // Allows the use of timestamps of the form "2017-08-08 00:00:00",
+            // which can't be parsed
+            else if (!datetime.matches( ".+(-|\\+)\\d\\d:?\\d\\d" ) && !datetime.endsWith("Z"))
             {
                 datetime += "Z";
             }
 
+            // Timestamps such as "2017-08-08 00:00:00Z" can't be parsed,
+            // but "2017-08-08T00:00:00Z" can
             if (!datetime.contains("T"))
             {
                 datetime = datetime.replace(" ", "T");
             }
 
+            // Timestamps such as "2017-08-08T6:00:00-06:30" cannot be parsed,
+            // but "2017-08-08T06:00:00-06:30" can.
+            if (datetime.charAt( 13 ) != ':' || datetime.matches( "T\\d:" ))
+            {
+                datetime = datetime.substring( 0, 11 ) + "0" + datetime.substring( 11 );
+            }
+
             date = OffsetDateTime.parse(datetime);
         }
+        else if (isDate( datetime ))
+        {
+            if (datetime.length() == 8)
+            {
+                datetime = datetime.substring( 0, 4 ) + "-" + datetime.substring( 4, 6 ) + "-" + datetime.substring( 6 );
+            }
 
-        Objects.requireNonNull( date );
+            datetime = datetime.replaceAll( "/", "-" );
+
+            datetime += "T00:00:00Z";
+            date = OffsetDateTime.parse(datetime);
+
+            // would it be faster to perform LocalDate.parse(datetime).atTime(0,0).atOffset(ZoneOffset.UTC)?
+        }
+
+        Objects.requireNonNull( date, "The given date ('" +
+                                      String.valueOf(datetime) +
+                                      "') could not be converted into a date object." );
 
         return date;
     }

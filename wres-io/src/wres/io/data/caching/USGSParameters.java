@@ -96,19 +96,15 @@ public class USGSParameters
 
     public static class USGSParameter
     {
-        private static final String DESCRIPTION_PATTERN = "(?=\").+(?<=\",)";
-
         public USGSParameter( String line)
         {
-            this.description = Strings.extractWord( line, DESCRIPTION_PATTERN);
-            this.description = this.description.replaceAll( "\",", "" );
-            this.description = this.description.replaceAll( "\"", "" );
-            line = line.replaceAll( DESCRIPTION_PATTERN, "" );
-            String[] lineParts = line.split(",");
-            this.parameterCode = lineParts[0];
-            this.name = lineParts[1];
-            this.measurementUnit = lineParts[2];
-            this.aggregation = lineParts[3];
+            String[] lineParts = line.split("\\|");
+
+            this.description = lineParts[0].replaceAll( "\"", "" );
+            this.parameterCode = lineParts[1].replaceAll( "\"", "" );
+            this.name = lineParts[2].replaceAll( "\"", "" );
+            this.measurementUnit = lineParts[3].replaceAll("\"", "");
+            this.aggregation = lineParts[4].replaceAll("\"", "");
         }
 
         public USGSParameter (ResultSet results) throws SQLException
@@ -222,6 +218,23 @@ public class USGSParameters
                 Database.returnHighPriorityConnection( connection );
             }
         }
+    }
+
+    public static USGSParameter getParameterByCode(String code)
+            throws SQLException
+    {
+        USGSParameter foundParameter = null;
+
+        for (USGSParameter parameter : USGSParameters.getParameterStore().values())
+        {
+            if (parameter.getParameterCode().equals(code))
+            {
+                foundParameter = parameter;
+                break;
+            }
+        }
+
+        return foundParameter;
     }
 
     public static USGSParameter getParameter(String parameterName, String measurementUnit, String aggregationMethod)
