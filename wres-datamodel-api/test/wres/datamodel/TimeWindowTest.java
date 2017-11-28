@@ -1,5 +1,6 @@
 package wres.datamodel;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -136,42 +137,63 @@ public final class TimeWindowTest
     @Test
     public void test3HashCode()
     {
-        //Construct a window from 1985-01-01T00:00:00Z to 2010-12-31T11:59:59Z with lead times of 6-120h
-        TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+        TimeWindow first = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                            Instant.parse( "2010-12-31T11:59:59Z" ),
                                            ReferenceTime.VALID_TIME,
                                            0 );
-        TimeWindow equalWindow = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+        TimeWindow second = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                 Instant.parse( "2010-12-31T11:59:59Z" ) );
-        assertTrue( "Unexpected hash inequality between time windows.",
-                    window.hashCode() == equalWindow.hashCode() );
+        
+        TimeWindow third = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                       Instant.parse( "2010-12-31T11:59:59Z" ),
+                       ReferenceTime.VALID_TIME,
+                       0,
+                       120,
+                       ChronoUnit.HOURS );
+        TimeWindow fourth = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                          Instant.parse( "2010-12-31T11:59:59Z" ),
+                                          ReferenceTime.VALID_TIME,
+                                          0,
+                                          120,
+                                          ChronoUnit.HOURS );
+        assertEquals( "Unexpected hash inequality between time windows.",first.hashCode(), second.hashCode() );
+        assertEquals( "Unexpected hash inequality between time windows.",third.hashCode(), fourth.hashCode() );
         assertTrue( "Unexpected hash equality between time windows on input type.",
-                    window.hashCode() != Double.hashCode( 1.0 ) );
+                    first.hashCode() != Double.hashCode( 1.0 ) );
         assertTrue( "Unexpected hash equality between time windows on earliest time.",
-                    window.hashCode() != Objects.hashCode( TimeWindow.of( Instant.parse( "1985-01-01T00:00:01Z" ),
+                    first.hashCode() != Objects.hashCode( TimeWindow.of( Instant.parse( "1985-01-01T00:00:01Z" ),
                                                                           Instant.parse( "2010-12-31T11:59:59Z" ) ) ) );
         assertTrue( "Unexpected hash equality between time windows on latest time.",
-                    window.hashCode() != Objects.hashCode( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                    first.hashCode() != Objects.hashCode( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                                           Instant.parse( "2011-01-01T00:00:00Z" ) ) ) );
         assertTrue( "Unexpected hash equality between time windows on reference time.",
-                    window.hashCode() != Objects.hashCode( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                    first.hashCode() != Objects.hashCode( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                                           Instant.parse( "2010-12-31T11:59:59Z" ),
                                                                           ReferenceTime.ISSUE_TIME,
                                                                           0 ) ) );
         assertTrue( "Unexpected hash equality between time windows on earliest lead time.",
-                    window.hashCode() != Objects.hashCode( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                    first.hashCode() != Objects.hashCode( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                                           Instant.parse( "2010-12-31T11:59:59Z" ),
                                                                           ReferenceTime.VALID_TIME,
-                                                                          -1,
+                                                                          -10,
                                                                           0,
                                                                           ChronoUnit.HOURS ) ) );
+        TimeWindow hours = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                            Instant.parse( "2010-12-31T11:59:59Z" ),
+                                                            ReferenceTime.VALID_TIME,
+                                                            0,
+                                                            1,
+                                                            ChronoUnit.HOURS );
         assertTrue( "Unexpected hash equality between time windows on latest lead time.",
-                    window.hashCode() != Objects.hashCode( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                                          Instant.parse( "2010-12-31T11:59:59Z" ),
-                                                                          ReferenceTime.VALID_TIME,
-                                                                          0,
-                                                                          1,
-                                                                          ChronoUnit.HOURS ) ) );
+                    first.hashCode() != hours.hashCode() );
+        TimeWindow days = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                          Instant.parse( "2010-12-31T11:59:59Z" ),
+                                          ReferenceTime.VALID_TIME,
+                                          0,
+                                          1,
+                                          ChronoUnit.DAYS );
+        assertTrue( "Unexpected hash equality between time windows on time units.",
+                    days.hashCode() != hours.hashCode() );
     }
 
     /**
