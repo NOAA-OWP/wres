@@ -622,13 +622,14 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
                         }
                         Pair<Instant, PairOfDoubles> returnMe = new Pair<Instant, PairOfDoubles>()
                         {
+                            static final long serialVersionUID = -1526254706557220091L;
+                            int returnedSoFar = returned; //Current step, before incremented
+                            
                             @Override
                             public PairOfDoubles setValue( PairOfDoubles pairOfDoubles )
                             {
                                 throw new UnsupportedOperationException( "Cannot mutate this pair." );
                             }
-
-                            int returnedSoFar = returned; //Current step, before incremented
 
                             @Override
                             public Instant getLeft()

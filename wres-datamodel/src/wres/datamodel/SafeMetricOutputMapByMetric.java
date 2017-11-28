@@ -172,9 +172,7 @@ class SafeMetricOutputMapByMetric<T extends MetricOutput<?>> implements MetricOu
 
         SafeMetricOutputMapByMetricBuilder<T> put( MetricOutputMapByMetric<T> map )
         {
-            map.forEach( ( key, value ) -> {
-                put( key, value );
-            } );
+            map.forEach( this::put );
             return this;
         }
 
