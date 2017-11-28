@@ -175,9 +175,8 @@ public final class TimeWindow implements Comparable<TimeWindow>
         TimeWindow in = (TimeWindow) o;
         boolean timesEqual = in.earliestTime.equals( earliestTime ) && in.latestTime.equals( latestTime )
                              && in.referenceTime.equals( referenceTime );
-        return timesEqual && in.earliestLead == earliestLead
-               && in.latestLead == latestLead
-               && in.leadUnits.equals( leadUnits );
+        return timesEqual && Duration.of( earliestLead, leadUnits ).equals( Duration.of( in.earliestLead, in.leadUnits ) )
+                && Duration.of( latestLead, leadUnits ).equals( Duration.of( in.latestLead, in.leadUnits ) );
     }
 
     @Override
@@ -264,7 +263,7 @@ public final class TimeWindow implements Comparable<TimeWindow>
      * @return the earliest lead time
      */
 
-    public long getEarliestLeadTime( )
+    public long getEarliestLeadTime()
     {
         return earliestLead;
     }
@@ -276,7 +275,7 @@ public final class TimeWindow implements Comparable<TimeWindow>
      * @return the latest lead time
      */
 
-    public long getLatestLeadTime( )
+    public long getLatestLeadTime()
     {
         return latestLead;
     }
@@ -302,7 +301,7 @@ public final class TimeWindow implements Comparable<TimeWindow>
     {
         return Duration.of( latestLead, leadUnits ).toHours();
     }
-    
+
     /**
      * A convenience method that returns the earliest forecast lead time in seconds.
      * 
@@ -323,8 +322,8 @@ public final class TimeWindow implements Comparable<TimeWindow>
     public long getLatestLeadTimeInSeconds()
     {
         return Duration.of( latestLead, leadUnits ).getSeconds();
-    }    
-    
+    }
+
     /**
      * Returns the {@link ChronoUnit} associated with the lead times.
      * 
@@ -335,7 +334,7 @@ public final class TimeWindow implements Comparable<TimeWindow>
     {
         return leadUnits;
     }
-    
+
     /**
      * Hidden constructor.
      * 
