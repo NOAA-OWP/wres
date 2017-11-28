@@ -554,6 +554,9 @@ public final class PIXMLReader extends XMLReader
 				    // TODO: Set the LID on a FeatureDetails object; don't just store the LID
 					//	If we are at the tag for the location id, save it to the location metadata
 					this.currentLID = XML.getXMLText(reader);
+					this.currentVariablePositionID = null;
+					this.currentTimeSeriesID = null;
+					this.currentTimeSeries = null;
 
 					// If this is an alias, get the real LID
 					this.currentLID = this.getLIDToSave( this.currentLID );
@@ -573,6 +576,9 @@ public final class PIXMLReader extends XMLReader
 				    // TODO: Set the featureName on a FeatureDetails object; don't just store the stationName
 					//	If we are at the tag for the name of the station, save it to the location
 					currentStationName = XML.getXMLText(reader);
+					this.currentVariablePositionID = null;
+					this.currentTimeSeriesID = null;
+					this.currentTimeSeries = null;
 				}
 				else if(localName.equalsIgnoreCase("units"))
 				{

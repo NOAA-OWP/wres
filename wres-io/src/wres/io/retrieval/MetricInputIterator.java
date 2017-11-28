@@ -237,15 +237,6 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
                this.getProjectDetails().getLeadOffset( this.getFeature() );
     }
 
-    protected String getEarliestObservationDate() throws SQLException
-    {
-        if (this.earliestObservationDate == null)
-        {
-            this.earliestObservationDate = this.projectDetails.getZeroDate( this.getLeft() );
-        }
-        return this.earliestObservationDate;
-    }
-
     abstract int calculateWindowCount()
             throws SQLException,
             InvalidPropertiesFormatException,

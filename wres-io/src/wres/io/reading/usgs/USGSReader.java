@@ -182,9 +182,10 @@ public class USGSReader extends BasicSource
     private void load() throws IOException
     {
         String requestURL = null;
+        Client client = null;
         try
         {
-            Client client = ClientBuilder.newClient();
+            client = ClientBuilder.newClient();
             WebTarget webTarget = client.target( USGS_URL );
 
             if (this.dataSourceConfig.getExistingTimeAggregation() == null)
@@ -229,6 +230,13 @@ public class USGSReader extends BasicSource
         {
             LOGGER.error( "The desired parameter could not be determined." );
             throw new IngestException( "The desired parameter could not be determined.", e );
+        }
+        finally
+        {
+            if (client != null)
+            {
+                client.close();
+            }
         }
 
         LOGGER.info("TimeSeres has been downloaded from USGS.");
@@ -558,7 +566,7 @@ public class USGSReader extends BasicSource
             this.sourceID = DataSources.getSourceID(USGSReader.USGS_URL,
                                                        operationStartTime,
                                                        null,
-                                                       hash);
+                                                       this.getHash());
         }
         return sourceID;
     }
