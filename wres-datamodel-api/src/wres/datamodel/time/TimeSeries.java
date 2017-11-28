@@ -6,7 +6,7 @@ import java.util.Iterator;
 import java.util.SortedSet;
 import java.util.function.Predicate;
 
-import wres.datamodel.inputs.pairs.Pair;
+import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * <p>A representation of one or more atomic time-series, each of which contains one or more {@link Pair} of times and 

@@ -9,6 +9,8 @@ import java.util.TreeMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import wres.datamodel.outputs.MapKey;
 import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.MetricOutputException;
@@ -136,12 +138,12 @@ class SafeMetricOutputMultiMapByTimeAndThreshold<S extends MetricOutput<?>>
                 //Safe put
                 final SafeMetricOutputMapByTimeAndThreshold.Builder<S> addMe =
                         new SafeMetricOutputMapByTimeAndThreshold.Builder<>();
-                addMe.put( dataFactory.getMapKey( timeWindow, threshold ), value );
+                addMe.put( Pair.of( timeWindow, threshold ), value );
                 final SafeMetricOutputMapByTimeAndThreshold.Builder<S> checkMe = internal.putIfAbsent( check, addMe );
                 //Add if already exists 
                 if ( !Objects.isNull( checkMe ) )
                 {
-                    checkMe.put( dataFactory.getMapKey( timeWindow, threshold ), value );
+                    checkMe.put( Pair.of( timeWindow, threshold ), value );
                 }
             } );
             return this;

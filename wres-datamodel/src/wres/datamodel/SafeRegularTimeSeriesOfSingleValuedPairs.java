@@ -15,8 +15,9 @@ import java.util.StringJoiner;
 import java.util.TreeSet;
 import java.util.function.Predicate;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.Pair;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.RegularTimeSeriesOfSingleValuedPairs;
 import wres.datamodel.time.TimeSeries;
@@ -620,10 +621,16 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
                         }
                         Pair<Instant, PairOfDoubles> returnMe = new Pair<Instant, PairOfDoubles>()
                         {
+                            @Override
+                            public PairOfDoubles setValue( PairOfDoubles pairOfDoubles )
+                            {
+                                throw new UnsupportedOperationException( "Cannot mutate this pair." );
+                            }
+
                             int returnedSoFar = returned; //Current step, before incremented
 
                             @Override
-                            public Instant getItemOne()
+                            public Instant getLeft()
                             {
                                 int basisIndex = (int) Math.floor( ( (double) returnedSoFar ) / timeStepCount );
                                 int residual = returnedSoFar - ( basisIndex * timeStepCount );
@@ -632,7 +639,7 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
                             }
 
                             @Override
-                            public PairOfDoubles getItemTwo()
+                            public PairOfDoubles getRight()
                             {
                                 return data.get( returnedSoFar );
                             }
@@ -640,7 +647,7 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
                             @Override
                             public String toString()
                             {
-                                return getItemOne() + "," + getItemTwo().getItemOne() + "," + getItemTwo().getItemTwo();
+                                return getLeft() + "," + getRight().getItemOne() + "," + getRight().getItemTwo();
                             }
 
                         };

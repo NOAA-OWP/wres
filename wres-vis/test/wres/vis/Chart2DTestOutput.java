@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentMap;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Assert;
 
 import evs.io.xml.ProductFileIO;
@@ -38,7 +39,6 @@ import wres.datamodel.Threshold.Operator;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.outputs.BoxPlotOutput;
-import wres.datamodel.outputs.MapBiKey;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMetadata;
 import wres.datamodel.outputs.MultiVectorOutput;
@@ -605,17 +605,17 @@ public class Chart2DTestOutput extends TestCase
             final DataFactory factory = DefaultDataFactory.getInstance();
 
             //Call the factory.
-            final Map<MapBiKey<TimeWindow, Threshold>, ChartEngine> engineMap = ChartEngineFactory.buildBoxPlotChartEngine( results,
-                                                                                                   factory,
-                                                                                                   null,
-                                                                                                   null );
+            final Map<Pair<TimeWindow, Threshold>, ChartEngine> engineMap = ChartEngineFactory.buildBoxPlotChartEngine( results,
+                                                                                                                        factory,
+                                                                                                                        null,
+                                                                                                                        null );
 
             //Generate the output file.
-            for ( final MapBiKey<TimeWindow, Threshold> key : engineMap.keySet() )
+            for ( final Pair<TimeWindow, Threshold> key : engineMap.keySet() )
             {
                 
-                long lead = key.getFirstKey().getEarliestLeadTimeInHours();
-                Threshold thresh = key.getSecondKey();
+                long lead = key.getLeft().getEarliestLeadTimeInHours();
+                Threshold thresh = key.getRight();
 
                 String thresholdString = ( thresh.getThreshold() ).toString();
                 if ( Double.isInfinite( thresh.getThreshold() ) )
@@ -663,16 +663,16 @@ public class Chart2DTestOutput extends TestCase
             final DataFactory factory = DefaultDataFactory.getInstance();
 
             //Call the factory.
-            final Map<MapBiKey<TimeWindow, Threshold>, ChartEngine> engineMap = ChartEngineFactory.buildBoxPlotChartEngine( results,
+            final Map<Pair<TimeWindow, Threshold>, ChartEngine> engineMap = ChartEngineFactory.buildBoxPlotChartEngine( results,
                                                                                                    factory,
                                                                                                    null,
                                                                                                    null );
 
             //Generate the output file.
-            for ( final MapBiKey<TimeWindow, Threshold> key : engineMap.keySet() )
+            for ( final Pair<TimeWindow, Threshold> key : engineMap.keySet() )
             {
-                long lead = key.getFirstKey().getLatestLeadTimeInHours();
-                Threshold thresh = key.getSecondKey();
+                long lead = key.getLeft().getLatestLeadTimeInHours();
+                Threshold thresh = key.getRight();
 
                 String thresholdString = ( thresh.getThreshold() ).toString();
                 if ( Double.isInfinite( thresh.getThreshold() ) )
@@ -757,7 +757,7 @@ public class Chart2DTestOutput extends TestCase
     {
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
         final MetadataFactory metaFactory = outputFactory.getMetadataFactory();
-        final Map<MapBiKey<TimeWindow, Threshold>, ScalarOutput> rawData = new TreeMap<>();
+        final Map<Pair<TimeWindow, Threshold>, ScalarOutput> rawData = new TreeMap<>();
 
         try
         {
@@ -801,7 +801,7 @@ public class Chart2DTestOutput extends TestCase
                                                        (int) leadTime,
                                                        (int) leadTime,
                                                        ChronoUnit.HOURS );
-                    final MapBiKey<TimeWindow, Threshold> key = outputFactory.getMapKey( window, q );
+                    final Pair<TimeWindow, Threshold> key = Pair.of( window, q );
 
                     //Build the scalar result
                     final MetricResult result = t.getResult( f );
@@ -832,7 +832,7 @@ public class Chart2DTestOutput extends TestCase
     {
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
         final MetadataFactory metaFactory = outputFactory.getMetadataFactory();
-        final Map<MapBiKey<TimeWindow, Threshold>, VectorOutput> rawData = new TreeMap<>();
+        final Map<Pair<TimeWindow, Threshold>, VectorOutput> rawData = new TreeMap<>();
 
         try
         {
@@ -876,7 +876,7 @@ public class Chart2DTestOutput extends TestCase
                                                        (int) leadTime,
                                                        (int) leadTime,
                                                        ChronoUnit.HOURS );
-                    final MapBiKey<TimeWindow, Threshold> key = outputFactory.getMapKey( window, q );
+                    final Pair<TimeWindow, Threshold> key = Pair.of( window, q );
 
                     //Build the scalar result
                     final MetricResult result = t.getResult( f );
@@ -908,7 +908,7 @@ public class Chart2DTestOutput extends TestCase
     {
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
         final MetadataFactory metaFactory = outputFactory.getMetadataFactory();
-        final Map<MapBiKey<TimeWindow, Threshold>, MultiVectorOutput> rawData = new TreeMap<>();
+        final Map<Pair<TimeWindow, Threshold>, MultiVectorOutput> rawData = new TreeMap<>();
         //Read only selected quantiles
         final List<Threshold> allowed = new ArrayList<>();
         final double[][] allow =
@@ -972,7 +972,7 @@ public class Chart2DTestOutput extends TestCase
                                                            (int) leadTime,
                                                            (int) leadTime,
                                                            ChronoUnit.HOURS );
-                        final MapBiKey<TimeWindow, Threshold> key = outputFactory.getMapKey( window, q );
+                        final Pair<TimeWindow, Threshold> key = Pair.of( window, q );
 
                         //Build the result
                         final MetricResult result = t.getResult( f );
@@ -1031,7 +1031,7 @@ public class Chart2DTestOutput extends TestCase
     {
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
         final MetadataFactory metaFactory = outputFactory.getMetadataFactory();
-        final Map<MapBiKey<TimeWindow, Threshold>, MultiVectorOutput> rawData = new TreeMap<>();
+        final Map<Pair<TimeWindow, Threshold>, MultiVectorOutput> rawData = new TreeMap<>();
         //Read only selected quantiles
         final List<Threshold> allowed = new ArrayList<>();
         final double[][] allow =
@@ -1086,7 +1086,7 @@ public class Chart2DTestOutput extends TestCase
                                                            (int) leadTime,
                                                            (int) leadTime,
                                                            ChronoUnit.HOURS );
-                        final MapBiKey<TimeWindow, Threshold> key = outputFactory.getMapKey( window, q );
+                        final Pair<TimeWindow, Threshold> key = Pair.of( window, q );
 
                         //Build the result
                         final MetricResult result = t.getResult( f );
@@ -1136,7 +1136,7 @@ public class Chart2DTestOutput extends TestCase
     {
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
         final MetadataFactory metaFactory = outputFactory.getMetadataFactory();
-        final Map<MapBiKey<TimeWindow, Threshold>, MultiVectorOutput> rawData = new TreeMap<>();
+        final Map<Pair<TimeWindow, Threshold>, MultiVectorOutput> rawData = new TreeMap<>();
         try
         {
             //Create the input file
@@ -1186,7 +1186,7 @@ public class Chart2DTestOutput extends TestCase
                                                        (int) leadTime,
                                                        (int) leadTime,
                                                        ChronoUnit.HOURS );
-                    final MapBiKey<TimeWindow, Threshold> key = outputFactory.getMapKey( window, q );
+                    final Pair<TimeWindow, Threshold> key = Pair.of( window, q );
 
                     //Build the result
                     final MetricResult result = t.getResult( f );
@@ -1234,7 +1234,7 @@ public class Chart2DTestOutput extends TestCase
     {
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
         final MetadataFactory metaFactory = outputFactory.getMetadataFactory();
-        final Map<MapBiKey<TimeWindow, Threshold>, MultiVectorOutput> rawData = new TreeMap<>();
+        final Map<Pair<TimeWindow, Threshold>, MultiVectorOutput> rawData = new TreeMap<>();
         try
         {
             //Create the input file
@@ -1269,7 +1269,7 @@ public class Chart2DTestOutput extends TestCase
                                                    (int) leadTime,
                                                    (int) leadTime,
                                                    ChronoUnit.HOURS );
-                final MapBiKey<TimeWindow, Threshold> key = outputFactory.getMapKey( window, threshold );
+                final Pair<TimeWindow, Threshold> key = Pair.of( window, threshold );
                 final DoubleMatrix2DResult t = (DoubleMatrix2DResult) data.getResult( leadTime );
                 final double[][] qq = t.getResult().toArray();
 
@@ -1303,7 +1303,7 @@ public class Chart2DTestOutput extends TestCase
     {
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
         final MetadataFactory metaFactory = outputFactory.getMetadataFactory();
-        final Map<MapBiKey<TimeWindow, Threshold>, BoxPlotOutput> rawData = new TreeMap<>();
+        final Map<Pair<TimeWindow, Threshold>, BoxPlotOutput> rawData = new TreeMap<>();
         try
         {
             //Create the input file
@@ -1337,7 +1337,7 @@ public class Chart2DTestOutput extends TestCase
                                                    (int) leadTime,
                                                    (int) leadTime,
                                                    ChronoUnit.HOURS );
-                final MapBiKey<TimeWindow, Threshold> key = outputFactory.getMapKey( window, threshold );
+                final Pair<TimeWindow, Threshold> key = Pair.of( window, threshold );
                 final DoubleMatrix2DResult t = (DoubleMatrix2DResult) data.getResult( leadTime );
                 final double[][] bp = t.getResult().toArray();
                 //Thresholds in the first row
@@ -1381,7 +1381,7 @@ public class Chart2DTestOutput extends TestCase
     {
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
         final MetadataFactory metaFactory = outputFactory.getMetadataFactory();
-        final Map<MapBiKey<TimeWindow, Threshold>, BoxPlotOutput> rawData = new TreeMap<>();
+        final Map<Pair<TimeWindow, Threshold>, BoxPlotOutput> rawData = new TreeMap<>();
         try
         {
             //Create the input file
@@ -1415,7 +1415,7 @@ public class Chart2DTestOutput extends TestCase
                                                    (int) leadTime,
                                                    (int) leadTime,
                                                    ChronoUnit.HOURS );
-                final MapBiKey<TimeWindow, Threshold> key = outputFactory.getMapKey( window, threshold );
+                final Pair<TimeWindow, Threshold> key = Pair.of( window, threshold );
                 final DoubleMatrix2DResult t = (DoubleMatrix2DResult) data.getResult( leadTime );
                 final double[][] bp = t.getResult().toArray();
                 //Thresholds in the first row

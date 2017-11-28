@@ -65,7 +65,7 @@ public class ScalarOutputByThresholdLeadXYDataset extends WRESAbstractXYDataset<
     public Number getX(final int series, final int item)
     {
         //Cannot allow all data (infinite) threshold. Use lower bound if this is a "BETWEEN" threshold
-        final double test = getPlotData().get(series).getKey(item).getSecondKey().getThreshold();
+        final double test = getPlotData().get(series).getKey(item).getRight().getThreshold();
         if(Double.isInfinite(test))
         {
             return Double.MIN_VALUE; //JFreeChart missing protocol is to return finite double for X and null for Y
