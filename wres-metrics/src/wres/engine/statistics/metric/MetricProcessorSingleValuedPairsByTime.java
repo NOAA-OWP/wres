@@ -17,6 +17,7 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
+import wres.datamodel.Slicer;
 import wres.datamodel.Threshold;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.MetricInputSliceException;
@@ -61,7 +62,25 @@ class MetricProcessorSingleValuedPairsByTime extends MetricProcessorByTime
         }
         TimeWindow timeWindow = input.getMetadata().getTimeWindow();
         Objects.requireNonNull( timeWindow, "Expected a non-null time window in the input metadata." );
-
+        
+        //Slicer
+        Slicer slicer = dataFactory.getSlicer();
+        
+        //Remove missing values. 
+        //TODO: when time-series metrics are supported, leave missings in place for time-series
+        MetricInput<?> inputNoMissing = input;
+        if ( input instanceof SingleValuedPairs )
+        {
+            try
+            {
+                inputNoMissing = slicer.filter( (SingleValuedPairs) input, ADMISSABLE_DATA, true );
+            }
+            catch ( MetricInputSliceException e )
+            {
+                throw new MetricCalculationException( "While attempting to remove missing values: ", e );
+            }
+        }
+        
         //Metric futures 
         MetricFuturesByTimeBuilder futures = new MetricFuturesByTimeBuilder();
         futures.addDataFactory( dataFactory );
@@ -69,11 +88,11 @@ class MetricProcessorSingleValuedPairsByTime extends MetricProcessorByTime
         //Process the metrics that consume single-valued pairs
         if ( hasMetrics( MetricInputGroup.SINGLE_VALUED ) )
         {
-            processSingleValuedPairs( timeWindow, (SingleValuedPairs) input, futures );
+            processSingleValuedPairs( timeWindow, (SingleValuedPairs) inputNoMissing, futures );
         }
         if ( hasMetrics( MetricInputGroup.DICHOTOMOUS ) )
         {
-            processDichotomousPairs( timeWindow, (SingleValuedPairs) input, futures );
+            processDichotomousPairs( timeWindow, (SingleValuedPairs) inputNoMissing, futures );
         }
 
         // Log

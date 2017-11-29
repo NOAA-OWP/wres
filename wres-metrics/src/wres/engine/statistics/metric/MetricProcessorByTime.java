@@ -156,18 +156,10 @@ public abstract class MetricProcessorByTime extends MetricProcessor<MetricOutput
             MetricOutputForProjectByTimeAndThresholdBuilder builder =
                     dataFactory.ofMetricOutputForProjectByTimeAndThreshold();
             //Add outputs for current futures
-            scalar.forEach( ( key, list ) -> {
-                list.forEach( value -> builder.addScalarOutput( key, value ) );
-            } );
-            vector.forEach( ( key, list ) -> {
-                list.forEach( value -> builder.addVectorOutput( key, value ) );
-            } );
-            multivector.forEach( ( key, list ) -> {
-                list.forEach( value -> builder.addMultiVectorOutput( key, value ) );
-            } );
-            boxplot.forEach( ( key, list ) -> {
-                list.forEach( value -> builder.addBoxPlotOutput( key, value ) );
-            } );
+            scalar.forEach( ( key, list ) -> list.forEach( value -> builder.addScalarOutput( key, value ) ) );
+            vector.forEach( ( key, list ) -> list.forEach( value -> builder.addVectorOutput( key, value ) ) );
+            multivector.forEach( ( key, list ) -> list.forEach( value -> builder.addMultiVectorOutput( key, value ) ) );
+            boxplot.forEach( ( key, list ) -> list.forEach( value -> builder.addBoxPlotOutput( key, value ) ) );
             return builder.build();
         }
 
@@ -594,10 +586,15 @@ public abstract class MetricProcessorByTime extends MetricProcessor<MetricOutput
                                           MetricCollection<SingleValuedPairs, T> collection )
                     throws MetricInputSliceException
     {
-        //Slice the pairs
-        SingleValuedPairs subset = dataFactory.getSlicer().filterByLeft( pairs, threshold );
+        //Slice the pairs, if required
+        SingleValuedPairs subset = pairs;
+        if ( threshold.isFinite() )
+        {
+            subset = dataFactory.getSlicer().filterByLeft( pairs, threshold );
+        }
         checkSlice( subset, threshold );
-        return CompletableFuture.supplyAsync( () -> collection.apply( subset ), thresholdExecutor );
+        SingleValuedPairs finalPairs = subset;
+        return CompletableFuture.supplyAsync( () -> collection.apply( finalPairs ), thresholdExecutor );
     }
 
 }

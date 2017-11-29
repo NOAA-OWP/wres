@@ -122,22 +122,37 @@ class MetricProcessorEnsemblePairsByTime extends MetricProcessorByTime
         //Slicer
         Slicer slicer = dataFactory.getSlicer();
 
+        //Remove missing values. 
+        //TODO: when time-series metrics are supported, leave missings in place for time-series
+        MetricInput<?> inputNoMissing = input;
+        if ( input instanceof EnsemblePairs )
+        {
+            try
+            {
+                inputNoMissing = slicer.filter( (EnsemblePairs) input, ADMISSABLE_DATA, true );
+            }
+            catch ( MetricInputSliceException e )
+            {
+                throw new MetricCalculationException( "While attempting to remove missing values: ", e );
+            }
+        }
+
         //Process the metrics that consume ensemble pairs
         if ( hasMetrics( MetricInputGroup.ENSEMBLE ) )
         {
-            processEnsemblePairs( timeWindow, (EnsemblePairs) input, futures );
+            processEnsemblePairs( timeWindow, (EnsemblePairs) inputNoMissing, futures );
         }
         //Process the metrics that consume single-valued pairs
         if ( hasMetrics( MetricInputGroup.SINGLE_VALUED ) )
         {
             //Derive the single-valued pairs from the ensemble pairs using the configured mapper
-            SingleValuedPairs singleValued = slicer.transformPairs( (EnsemblePairs) input, toSingleValues );
+            SingleValuedPairs singleValued = slicer.transformPairs( (EnsemblePairs) inputNoMissing, toSingleValues );
             processSingleValuedPairs( timeWindow, singleValued, futures );
         }
         //Process the metrics that consume discrete probability pairs
         if ( hasMetrics( MetricInputGroup.DISCRETE_PROBABILITY ) )
         {
-            processDiscreteProbabilityPairs( timeWindow, (EnsemblePairs) input, futures );
+            processDiscreteProbabilityPairs( timeWindow, (EnsemblePairs) inputNoMissing, futures );
         }
 
         // Log
@@ -595,9 +610,14 @@ class MetricProcessorEnsemblePairsByTime extends MetricProcessorByTime
                     throws MetricInputSliceException
     {
         //Slice the pairs
-        EnsemblePairs subset = dataFactory.getSlicer().filterByLeft( pairs, threshold );
+        EnsemblePairs subset = pairs;
+        if ( threshold.isFinite() )
+        {
+            subset = dataFactory.getSlicer().filterByLeft( pairs, threshold );
+        }
         checkSlice( subset, threshold );
-        return CompletableFuture.supplyAsync( () -> collection.apply( subset ), thresholdExecutor );
+        EnsemblePairs finalPairs = subset;
+        return CompletableFuture.supplyAsync( () -> collection.apply( finalPairs ), thresholdExecutor );
     }
 
     /**

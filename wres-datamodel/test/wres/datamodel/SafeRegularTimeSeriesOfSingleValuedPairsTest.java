@@ -30,7 +30,7 @@ import wres.datamodel.time.TimeSeries;
  * @version 0.1
  * @since 0.1
  */
-public final class SafeRegularTimeSeriesOfSinglevaluedPairsTest
+public final class SafeRegularTimeSeriesOfSingleValuedPairsTest
 {
 
 
