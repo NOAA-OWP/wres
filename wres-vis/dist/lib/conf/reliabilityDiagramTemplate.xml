@@ -70,5 +70,24 @@
         </title>
         <borderLineWidth>0.0</borderLineWidth>
     </legend>
-
+    
+    <!--  A subtitle is added so that the 1.00 on the far right of the 
+          domain axis will be drawn correctly.  It is an empty subtitle
+          intended to force the plot area to be a bit smaller, left to 
+          right, and allow space for 1.00 to be drawn completely. -->
+    <subtitleList>
+        <subtitle>
+            <font family="Dialog" size="12" style="0"/>
+            <color alpha="255" blue="0" green="0" red="0"/>
+            <text></text>  <!-- Empty! -->
+            <border>
+                <lineWidths bottom="0.0" left="0.0" right="0.0" top="0.0"/>
+                <color alpha="255" blue="0" green="0" red="0"/>
+            </border>
+            <horizontalAlignment>CENTER</horizontalAlignment>
+            <textAlignment>CENTER</textAlignment>
+            <textInsets bottom="0.0" left="0.0" right="0.0" top="0.0"/>
+            <position>RIGHT</position>  <!-- Positioned on the RIGHT! -->
+        </subtitle>
+    </subtitleList>
 </chartDrawingParameters>
