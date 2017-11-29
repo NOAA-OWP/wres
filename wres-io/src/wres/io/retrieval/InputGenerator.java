@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.inputs.MetricInput;
+import wres.io.config.ConfigHelper;
 import wres.io.utilities.NoDataException;
 import wres.util.NotImplementedException;
 import wres.util.Strings;
@@ -36,21 +37,25 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>>
     public Iterator<Future<MetricInput<?>>> iterator()
     {
         // TODO: Evaluate what kind of MetricInputIterator to return.
-        BackToBackMetricInputIterator iterator = null;
+        Iterator<Future<MetricInput<?>>> iterator = null;
         try {
             iterator =  new BackToBackMetricInputIterator( this.projectConfig,
                                                            this.feature);
         }
         catch (SQLException | NotImplementedException | InvalidPropertiesFormatException e)
         {
-            LOGGER.error("A MetricInputIterator could not be created.");
-            LOGGER.error(Strings.getStackTrace(e));
+            // We don't want to log the new line, we just want the separator
+            System.err.println();
+            LOGGER.error("A MetricInputIterator could not be created for '{}'.",
+                         ConfigHelper.getFeatureDescription( this.feature ));
         }
         catch ( NoDataException e )
         {
-            LOGGER.error("A MetricInputIterator could not be created. " + ""
-                         + "There's no data to iterate over.");
-            LOGGER.error(Strings.getStackTrace( e ));
+            // We don't want to log the new line, we just want the separator
+            System.err.println();
+            LOGGER.error("A MetricInputIterator could not be created for '{}'. " +
+                         "There's no data to iterate over.",
+                         ConfigHelper.getFeatureDescription(this.feature));
         }
         return iterator;
     }

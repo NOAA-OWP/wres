@@ -109,11 +109,7 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
 	void addElement( T element ) throws SQLException
 	{
 		element.save();
-		add(element.getKey(), element.getId());
-		if (this.details != null && !this.details.containsKey(element.getId()))
-		{
-		    this.getDetails().put(element.getId(), element);
-		}
+		add(element);
 	}
 	
 	/**
@@ -122,12 +118,14 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
 	 * @return The ID of a specific set of details
 	 * @throws SQLException Thrown if the ID could not be retrieved
 	 */
-	Integer getID( U key ) throws SQLException {
+	Integer getID( U key ) throws SQLException
+    {
 		Integer id = null;
 		
 		synchronized (KEY_LOCK)
 		{
-    		if (this.getKeyIndex().containsKey(key)) {
+    		if (this.getKeyIndex().containsKey(key))
+    		{
     			id = this.getKeyIndex().get(key);
     		}
 		}
@@ -146,10 +144,24 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
 	    
 	    return hasIt;
 	}
+
+	void add( T element )
+    {
+        synchronized (KEY_LOCK)
+        {
+            this.getKeyIndex().put(element.getKey(), element.getId());
+
+            if (this.details != null && !this.details.containsKey(element.getId()))
+            {
+                this.getDetails().put(element.getId(), element);
+            }
+        }
+    }
 	
 	void add( U key, Integer id )
 	{
-	    synchronized (KEY_LOCK) {
+	    synchronized (KEY_LOCK)
+        {
 	        this.getKeyIndex().put(key, id);
 	    }
 	}
