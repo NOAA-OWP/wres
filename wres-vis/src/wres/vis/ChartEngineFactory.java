@@ -265,7 +265,7 @@ public abstract class ChartEngineFactory
                                                                         MetricDimension.FORECAST_PROBABILITY,
                                                                         MetricDimension.OBSERVED_GIVEN_FORECAST_PROBABILITY,
                                                                         "Forecast Probability",
-                                                                        "Observed Probability Given Forecast Probability" ) );
+                                                                        "Observed Relative Frequency" ) );
         dataSources.add( new MultiVectorOutputDiagramXYChartDataSource( 1,
                                                                         inputSlice,
                                                                         MetricDimension.FORECAST_PROBABILITY,
