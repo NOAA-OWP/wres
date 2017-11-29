@@ -15,7 +15,12 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public final class Strings {
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public final class Strings
+{
+	private static final Logger LOGGER = LoggerFactory.getLogger( Strings.class );
 
 	private final static int TRUNCATE_SIZE = 1000;
 
@@ -24,7 +29,7 @@ public final class Strings {
 	/**
 	 * Static list of string values that might map to the boolean value 'true'
 	 */
-	public static final List<String> POSSIBLE_TRUE_VALUES = Arrays.asList("true", "True", "TRUE", "T", "t", "y", "yes", "Yes", "YES", "Y", "1");
+	private static final List<String> POSSIBLE_TRUE_VALUES = Arrays.asList("true", "True", "TRUE", "T", "t", "y", "yes", "Yes", "YES", "Y", "1");
 	
 	public static boolean isTrue(String possibleBoolean)
 	{
@@ -203,7 +208,7 @@ public final class Strings {
         }
         catch ( NoSuchAlgorithmException e )
         {
-            e.printStackTrace();
+        	LOGGER.error(Strings.getStackTrace( e ));
             throw new RuntimeException(
                     "Something went wrong when trying to generate the MD5 algorithm",
                     e );

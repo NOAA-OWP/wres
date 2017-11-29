@@ -13,7 +13,18 @@ import wres.util.Internal;
 public final class VariableDetails extends CachedDetail<VariableDetails, String>
 {
 	private String variable_name = null;
-	public Integer measurementunitId = null;
+
+    public Integer getMeasurementunitId()
+    {
+        return measurementunitId;
+    }
+
+    public void setMeasurementunitId( Integer measurementunitId )
+    {
+        this.measurementunitId = measurementunitId;
+    }
+
+    private Integer measurementunitId = null;
 	private Integer variable_id = null;
 	private String variablePositionPartitionName;
 	private static final Object saveLock = new Object();
@@ -82,7 +93,8 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
 	}
 
 	@Override
-	public String getInsertSelectStatement() {
+	public String getInsertSelectStatement()
+    {
 		String script = "";
 		
 		script += "WITH new_variable_id AS" + NEWLINE;
@@ -116,8 +128,8 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
 	}
 
 	@Override
-	public void setID(Integer id) {
+	public void setID(Integer id)
+	{
 		this.variable_id = id;
-		
 	}
 }

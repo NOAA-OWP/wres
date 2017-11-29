@@ -21,7 +21,7 @@ import wres.util.Strings;
 public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDetails.FeatureKey>
 {
 	private String lid = null;
-	public String featureName = null;
+	private String featureName = null;
 	private Integer featureId = null;
 	private Integer comid = null;
 	private String gageID = null;
@@ -131,6 +131,11 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
         if (Database.hasColumn( row, "longitude" ))
         {
             this.setLongitude( Database.getValue( row, "longitude" ) );
+        }
+
+        if (Database.hasColumn( row, "nwm_index" ))
+        {
+            this.nwmIndex = Database.getValue( row, "nwm_index" );
         }
 
         if (Database.hasColumn( row, this.getIDName() ))
@@ -829,9 +834,9 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
 
         script += NEWLINE;
         script += "    )" + NEWLINE;
-        script += "    RETURNING feature_id, comid, lid, gage_id, rfc, st, st_code, huc, feature_name, latitude, longitude" + NEWLINE;
+        script += "    RETURNING feature_id, comid, lid, gage_id, rfc, st, st_code, huc, feature_name, latitude, longitude, nwm_index" + NEWLINE;
         script += ")" + NEWLINE;
-        script += "SELECT feature_id, comid, lid, gage_id, rfc, st, st_code, huc, feature_name, latitude, longitude" + NEWLINE;
+        script += "SELECT feature_id, comid, lid, gage_id, rfc, st, st_code, huc, feature_name, latitude, longitude, nwm_index" + NEWLINE;
         script += "FROM new_feature" + NEWLINE;
 
         return script;
@@ -846,7 +851,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
     {
         String script = "";
 
-        script += "SELECT feature_id, comid, lid, gage_id, rfc, st, st_code, huc, feature_name, latitude, longitude" + NEWLINE;
+        script += "SELECT feature_id, comid, lid, gage_id, rfc, st, st_code, huc, feature_name, latitude, longitude, nwm_index" + NEWLINE;
         script += "FROM wres.feature" + NEWLINE;
 
         script += "WHERE ";

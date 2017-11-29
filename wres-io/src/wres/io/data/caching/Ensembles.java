@@ -186,7 +186,7 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
 			EnsembleDetails detail = new EnsembleDetails();
 			detail.setEnsembleName(grouping.getEnsembleName());
 			detail.setEnsembleMemberID(grouping.getMemberIndex());
-			detail.qualifierID = grouping.getQualifierID();
+			detail.setQualifierID(grouping.getQualifierID());
 			addElement(detail);
 		}
 		
@@ -224,7 +224,7 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
                 detail = new EnsembleDetails();
                 detail.setEnsembleName(ensembles.getString("ensemble_name"));
                 detail.setEnsembleMemberID(String.valueOf(ensembles.getInt("ensemblemember_id")));
-                detail.qualifierID = ensembles.getString("qualifier_id");
+                detail.setQualifierID(ensembles.getString("qualifier_id"));
                 detail.setID(ensembles.getInt("ensemble_id"));
                 
                 this.add(detail.getKey(), detail.getId());
