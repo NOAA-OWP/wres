@@ -703,36 +703,41 @@ class VectorNetCDFValueSaver extends WRESRunnable
      */
     private void addVariablePositions() throws IOException, SQLException
     {
-        // Only add variable positions for variables that haven't had positions
-        // added in this session. It doesn't scale well.
-        if (!VectorNetCDFValueSaver.addedVariables.contains( this.getVariableID() ))
+        synchronized (VectorNetCDFValueSaver.addedVariables)
         {
-            // Build a script to add an entry to wres.VariablePosition for each
-            // variable and each location in the database that we can tie to a
-            // NetCDF index that does not exist
-            StringBuilder script = new StringBuilder();
+            // Only add variable positions for variables that haven't had positions
+            // added in this session. It doesn't scale well.
+            if ( !VectorNetCDFValueSaver.addedVariables.contains( this.getVariableID() ) )
+            {
+                // Build a script to add an entry to wres.VariablePosition for each
+                // variable and each location in the database that we can tie to a
+                // NetCDF index that does not exist
+                StringBuilder script = new StringBuilder();
 
-            script.append(
-                    "INSERT INTO wres.VariablePosition (variable_id, x_position)" )
-                  .append( NEWLINE );
-            script.append( "SELECT " )
-                  .append( this.getVariableID() )
-                  .append( ", F.feature_id" )
-                  .append( NEWLINE );
-            script.append( "FROM wres.Feature F" ).append( NEWLINE );
-            script.append( "WHERE F.nwm_index IS NOT NULL" ).append( NEWLINE );
-            script.append( "     AND NOT EXISTS (" ).append( NEWLINE );
-            script.append( "         SELECT 1" ).append( NEWLINE );
-            script.append( "         FROM wres.VariablePosition VP" )
-                  .append( NEWLINE );
-            script.append( "         WHERE VP.variable_id = " )
-                  .append( this.getVariableID() )
-                  .append( NEWLINE );
-            script.append( "             AND VP.x_position = F.feature_id" )
-                  .append( NEWLINE );
-            script.append( ");" );
+                script.append(
+                        "INSERT INTO wres.VariablePosition (variable_id, x_position)" )
+                      .append( NEWLINE );
+                script.append( "SELECT " )
+                      .append( this.getVariableID() )
+                      .append( ", F.feature_id" )
+                      .append( NEWLINE );
+                script.append( "FROM wres.Feature F" ).append( NEWLINE );
+                script.append( "WHERE F.nwm_index IS NOT NULL" )
+                      .append( NEWLINE );
+                script.append( "     AND NOT EXISTS (" ).append( NEWLINE );
+                script.append( "         SELECT 1" ).append( NEWLINE );
+                script.append( "         FROM wres.VariablePosition VP" )
+                      .append( NEWLINE );
+                script.append( "         WHERE VP.variable_id = " )
+                      .append( this.getVariableID() )
+                      .append( NEWLINE );
+                script.append( "             AND VP.x_position = F.feature_id" )
+                      .append( NEWLINE );
+                script.append( ");" );
 
-            Database.execute( script.toString() );
+                Database.execute( script.toString() );
+                VectorNetCDFValueSaver.addedVariables.add( this.getVariableID() );
+            }
         }
     }
 
@@ -873,6 +878,7 @@ class VectorNetCDFValueSaver extends WRESRunnable
                      || !VectorNetCDFValueSaver.indexMapping.containsKey( key ) )
                 {
                     // Add all missing locations for variables
+                    // TODO: Implement mechanism to ensure this only occurs once
                     this.addVariablePositions();
 
                     String keyLabel = "nwm_index";

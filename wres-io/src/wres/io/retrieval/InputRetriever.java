@@ -26,6 +26,7 @@ import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.Dimension;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.MetricInput;
+import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.metadata.Metadata;
@@ -137,7 +138,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         }
         catch ( Exception error )
         {
-            LOGGER.error( Strings.getStackTrace( error ) );
+            LOGGER.debug( Strings.getStackTrace( error ) );
             throw error;
         }
         return input;
@@ -145,7 +146,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
 
     private MetricInput<?> createInput() throws NoDataException
     {
-        MetricInput<?> input;
+        MetricInput<?> input = null;
 
         DatasourceType dataType = this.projectDetails.getRight().getType();
 
@@ -183,11 +184,23 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                 baseline = convertToPairOfDoubles( this.baselinePairs );
             }
 
-            input = factory.ofSingleValuedPairs(primary,
-                                                baseline,
-                                                metadata,
-                                                baselineMetadata,
-                                                this.climatology);
+            try
+            {
+
+                input = factory.ofSingleValuedPairs( primary,
+                                                     baseline,
+                                                     metadata,
+                                                     baselineMetadata,
+                                                     this.climatology );
+            }
+            catch (MetricInputException mie)
+            {
+                LOGGER.error("A collection of pairs could not be created at " +
+                             "window {} for '{}'",
+                             this.progress + 1,
+                             ConfigHelper.getFeatureDescription( this.feature ));
+                LOGGER.debug(Strings.getStackTrace( mie ));
+            }
         }
 
         return input;
@@ -439,8 +452,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                 LOGGER.error("The width of the standard window for this project could not be determined.");
             }
         }
-        //TODO: this class and other classes in IO need to use java.time rather than
-        //rolling our own (Jbrown @ 5 Nov 2017)
+
         Double lastLead = ( windowNumber * windowWidth ) + leadOffset;
         return metadataFactory.getMetadata( dim,
                                             datasetIdentifier,
@@ -475,13 +487,13 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                 wres.util.Collections.aggregate( leftValues,
                                                  this.projectDetails.getAggregationFunction() );
 
-        if ( leftAggregation.isNaN())
+        /*if ( leftAggregation.isNaN())
         {
             LOGGER.debug("The left value aggregated to NaN and could not form a pair from the dates '{}' to '{}'.",
                          firstDate,
                          date);
             return null;
-        }
+        }*/
 
         Double[] rightAggregation = new Double[rightValues.size()];
 
@@ -498,10 +510,12 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
 
         for (Double value : rightAggregation)
         {
-            if (value != null && !Double.isNaN( value ))
+            if (value == null)
             {
-                validAggregations.add( value );
+                value = Double.NaN;
             }
+
+            validAggregations.add( value );
         }
 
         return DefaultDataFactory.getInstance().pairOf( leftAggregation,

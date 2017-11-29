@@ -20,6 +20,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -66,10 +67,12 @@ import wres.io.config.ConfigHelper;
 import wres.io.config.ProjectConfigPlus;
 import wres.io.config.SystemSettings;
 import wres.io.retrieval.InputGenerator;
+import wres.io.utilities.NoDataException;
 import wres.io.writing.ChartWriter;
 import wres.io.writing.ChartWriter.ChartWritingException;
 import wres.io.writing.CommaSeparated;
 import wres.util.ProgressMonitor;
+import wres.util.Strings;
 import wres.vis.ChartEngineFactory;
 
 /**
@@ -176,6 +179,19 @@ public class Control implements Function<String[], Integer>
         // Shutdown
         finally
         {
+            if (LOGGER.isInfoEnabled())
+            {
+                Double completion = COMPLETED_FEATURE_COUNT.doubleValue() / FEATURE_COUNT.doubleValue();
+                completion *= 100.0;
+
+                Long completionPercent = Math.min( Math.round( completion ), 100L );
+
+                System.out.println();
+                LOGGER.info("{}% of all indicated features were evaluated successfully.",
+                            completionPercent);
+                System.out.println();
+            }
+
             shutDownGracefully(metricExecutor);
             shutDownGracefully(thresholdExecutor);
             shutDownGracefully(pairExecutor);
@@ -224,7 +240,9 @@ public class Control implements Function<String[], Integer>
 
         try
         {
-            for (Feature feature : Operations.decomposeFeatures( projectConfig ))
+            Feature[] decomposedFeatures = Operations.decomposeFeatures( projectConfig );
+            FEATURE_COUNT.getAndAdd( decomposedFeatures.length );
+            for (Feature feature : decomposedFeatures)
             {
                 ProgressMonitor.resetMonitor();
                 processFeature( feature,
@@ -291,26 +309,58 @@ public class Control implements Function<String[], Integer>
 
         // Queue the various tasks by lead time (lead time is the pooling dimension for metric calculation here)
         final List<CompletableFuture<?>> listOfFutures = new ArrayList<>(); //List of futures to test for completion
+        int inputCount = 0;
 
-        // Iterate
-        for(final Future<MetricInput<?>> nextInput: metricInputs)
+        try
         {
-            // Complete all tasks asynchronously:
-            // 1. Get some pairs from the database
-            // 2. Compute the metrics
-            // 3. Process any intermediate verification results
-            final CompletableFuture<Void> c =
-                                            CompletableFuture.supplyAsync(new PairsByLeadProcessor(nextInput),
-                                                                          pairExecutor)
-                                                             .thenApplyAsync(processor, pairExecutor)
-                                                             .thenAcceptAsync( new IntermediateResultProcessor( feature,
-                                                                                                                projectConfigPlus ),
-                                                                              pairExecutor)
-                                                             .thenAccept(
-                                                                         aVoid -> ProgressMonitor.completeStep() );
+            // Iterate
+            for ( final Future<MetricInput<?>> nextInput : metricInputs )
+            {
+                inputCount++;
+                // Complete all tasks asynchronously:
+                // 1. Get some pairs from the database
+                // 2. Compute the metrics
+                // 3. Process any intermediate verification results
+                final CompletableFuture<Void> c =
+                        CompletableFuture.supplyAsync( new PairsByLeadProcessor(
+                                                               nextInput ),
+                                                       pairExecutor )
+                                         .thenApplyAsync( processor,
+                                                          pairExecutor )
+                                         .thenAcceptAsync( new IntermediateResultProcessor(
+                                                                   feature,
+                                                                   projectConfigPlus ),
+                                                           pairExecutor )
+                                         .thenAccept(
+                                                 aVoid -> ProgressMonitor.completeStep() );
 
-            //Add the future to the list
-            listOfFutures.add(c);
+                //Add the future to the list
+                listOfFutures.add( c );
+            }
+        }
+        catch (NullPointerException npe)
+        {
+            if (inputCount == 0)
+            {
+                LOGGER.debug( Strings.getStackTrace(npe));
+                // Not a single metric input could be created, meaning that
+                // something was most likely wrong with the data itself, not
+                // the programming
+                LOGGER.info("Data for '{}' could not be evaluated. Please view " +
+                            "the log for more information.",
+                            ConfigHelper.getFeatureDescription( feature ));
+
+                // We don't want to log the blank line, we just want a separator
+                // on the terminal
+                System.out.println();
+
+                return;
+            }
+            else
+            {
+                // Data has been used; this is a legitimate NPE
+                throw npe;
+            }
         }
 
         // Complete all tasks or one exceptionally: join() is blocking, representing a final sink for the results
@@ -320,9 +370,17 @@ public class Control implements Function<String[], Integer>
         }
         catch(final CompletionException e)
         {
+            // Shouldn't be logged; just in there to make it easier to spot the error
+            System.err.println("");
             String message = "Error while processing feature "
                              + ConfigHelper.getFeatureDescription( feature );
-            throw new WresProcessingException( message, e );
+            LOGGER.error(message);
+            LOGGER.error(e.getMessage());
+            System.err.println("");
+
+            // TODO: This is commented out experimentally; The app should not die
+            // if a single feature fails.  If this is checked in, remove it.
+            //throw new WresProcessingException( message, e );
         }
 
         // Generated stored output if available
@@ -403,6 +461,7 @@ public class Control implements Function<String[], Integer>
                           feature.getLocationId() );
         }
 
+        COMPLETED_FEATURE_COUNT.incrementAndGet();
         if ( LOGGER.isInfoEnabled() )
         {
             LOGGER.info( "Completed processing of feature '{}'.", feature.getLocationId() );
@@ -1119,6 +1178,9 @@ public class Control implements Function<String[], Integer>
      */
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Control.class);
+
+    private static final AtomicInteger FEATURE_COUNT = new AtomicInteger(  );
+    private static final AtomicInteger COMPLETED_FEATURE_COUNT = new AtomicInteger(  );
 
     /**
      * Log interval.

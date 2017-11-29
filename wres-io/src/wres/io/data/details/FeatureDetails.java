@@ -823,24 +823,8 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
                 script += NEWLINE;
                 script += "            OR ";
             }
-            else
-            {
-                // A clause will be added
-                lineAdded = true;
-            }
-            script += "            AND gage_id = '" + String.valueOf(this.getGageID()) + "'";
-        }
 
-        if (Strings.hasValue( this.getHuc() ))
-        {
-            if (lineAdded)
-            {
-                // Separate this clause from the previous with an OR operator
-                script += NEWLINE;
-                script += "            OR ";
-            }
-
-            script += "huc = '" + String.valueOf( this.getHuc() ) + "'";
+            script += "gage_id = '" + String.valueOf(this.getGageID()) + "'";
         }
 
         script += NEWLINE;
@@ -903,25 +887,8 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
                 script += NEWLINE;
                 script += "    OR ";
             }
-            else
-            {
-                // A clause will be added
-                clauseAdded = true;
-            }
 
             script += "gage_id = '" + String.valueOf(this.getGageID()) + "'" + NEWLINE;
-        }
-
-        if (Strings.hasValue( this.getHuc() ))
-        {
-            if (clauseAdded)
-            {
-                // Separate clauses by an OR operator
-                script += NEWLINE;
-                script += "    OR ";
-            }
-
-            script += "huc = '" + String.valueOf( this.getHuc() ) + "'" + NEWLINE;
         }
 
         script += "LIMIT 1;";
@@ -929,7 +896,28 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
         return script;
     }
 
-	public static FeatureKey keyOfComid(Integer comid)
+    @Override
+    public String toString()
+    {
+        String name = "Unknown";
+
+        if (Strings.hasValue( this.getFeatureName() ))
+        {
+            name = this.getFeatureName();
+        }
+        else if (Strings.hasValue( this.getLid() ))
+        {
+            name = this.getLid();
+        }
+        else if (Strings.hasValue( this.getGageID() ))
+        {
+            name = "Gage: " + this.getGageID();
+        }
+
+        return name;
+    }
+
+    public static FeatureKey keyOfComid( Integer comid)
     {
         return new FeatureKey( comid, null, null, null );
     }

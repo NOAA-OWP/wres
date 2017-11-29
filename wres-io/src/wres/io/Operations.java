@@ -20,11 +20,14 @@ import javax.xml.transform.TransformerException;
 
 import org.slf4j.LoggerFactory;
 
+import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
+import wres.config.generated.Format;
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.Executor;
 import wres.io.config.SystemSettings;
 import wres.io.data.caching.Features;
+import wres.io.data.caching.Projects;
 import wres.io.data.details.FeatureDetails;
 import wres.io.data.details.ProjectDetails;
 import wres.io.reading.IngestException;
@@ -32,6 +35,7 @@ import wres.io.reading.SourceLoader;
 import wres.io.reading.fews.PIXMLReader;
 import wres.io.utilities.Database;
 import wres.io.retrieval.InputGenerator;
+import wres.util.Collections;
 import wres.util.Strings;
 
 public final class Operations {
@@ -250,10 +254,15 @@ public final class Operations {
     public static Feature[] decomposeFeatures(ProjectConfig projectConfig)
             throws SQLException
     {
+        ProjectDetails project = Projects.getProject(projectConfig);
+
+        // TODO: Would it be better to use a stream?
         Set<Feature> atomicFeatures = new HashSet<>();
 
-        for (FeatureDetails details : Features.getAllDetails( projectConfig ))
+        for (FeatureDetails details : project.getFeatures())
         {
+            // Check if the feature has any intersecting values
+
             atomicFeatures.add( details.toFeature() );
         }
 
