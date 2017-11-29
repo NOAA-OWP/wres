@@ -13,7 +13,7 @@ import wres.util.Internal;
 public final class EnsembleDetails extends CachedDetail<EnsembleDetails, EnsembleKey>{
 	
 	// The name of the ensemble being represented
-	private String ensemble_name = null;
+	private String ensembleName = null;
 	
 	// The "numeric" id of the member of the ensemble
 	private String ensembleMemberID = null;
@@ -21,8 +21,13 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
 	// The serial id of the ensemble in the database
 	private Integer ensembleID = null;
 
+	public void setQualifierID( String qualifierID )
+	{
+		this.qualifierID = qualifierID;
+	}
+
 	// The qualifier for the ensemble
-	public String qualifierID = null;
+	private String qualifierID = null;
 	
 	/**
 	 * Updates the ensemble name if necessary. If the update occurs, the serial id is reset
@@ -30,9 +35,9 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
 	 */
 	public void setEnsembleName(String ensemble_name)
 	{
-		if (this.ensemble_name == null || !this.ensemble_name.equalsIgnoreCase(ensemble_name))
+		if (this.ensembleName == null || !this.ensembleName.equalsIgnoreCase(ensemble_name))
 		{
-			this.ensemble_name = ensemble_name;
+			this.ensembleName = ensemble_name;
 			this.ensembleID = null;
 		}
 	}
@@ -87,8 +92,9 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
 	}
 
 	@Override
-	public int compareTo(EnsembleDetails other) {
-		int comparison = this.ensemble_name.compareTo(other.ensemble_name);
+	public int compareTo(EnsembleDetails other)
+	{
+		int comparison = this.ensembleName.compareTo(other.ensembleName);
 		
 		if (comparison == 0)
 		{
@@ -99,8 +105,9 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
 	}
 
 	@Override
-	public EnsembleKey getKey() {
-		return new EnsembleKey(this.ensemble_name, this.qualifierID, this.ensembleMemberID);
+	public EnsembleKey getKey()
+	{
+		return new EnsembleKey(this.ensembleName, this.qualifierID, this.ensembleMemberID);
 	}
 
 	@Override
@@ -125,11 +132,11 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
 		script += "WITH new_ensemble AS" + NEWLINE;
 		script += "(" + NEWLINE;
 		script += "		INSERT INTO wres.Ensemble(ensemble_name, qualifier_id, ensemblemember_id)" + NEWLINE;
-		script += "		SELECT '" + ensemble_name + "', " + getQualifierID() + ", " + getEnsembleMemberID() + NEWLINE;
+		script += "		SELECT '" + ensembleName + "', " + getQualifierID() + ", " + getEnsembleMemberID() + NEWLINE;
 		script += "		WHERE NOT EXISTS (" + NEWLINE;
 		script += "			SELECT 1" + NEWLINE;
 		script += "			FROM wres.Ensemble" + NEWLINE;
-		script += "			WHERE ensemble_name = '" + ensemble_name + "'" + NEWLINE;
+		script += "			WHERE ensemble_name = '" + ensembleName + "'" + NEWLINE;
 		script += "				AND ensemblemember_id = " + getEnsembleMemberID() + NEWLINE;
 		script += "		)" + NEWLINE;
 		script += "		RETURNING ensemble_id" + NEWLINE;
@@ -141,7 +148,7 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
 		script += "";
 		script += "SELECT ensemble_id" + NEWLINE;
 		script += "FROM wres.Ensemble" + NEWLINE;
-		script += "WHERE ensemble_name = '" + ensemble_name + "'" + NEWLINE;
+		script += "WHERE ensemble_name = '" + ensembleName + "'" + NEWLINE;
 		script += "		AND ensemblemember_id = " + getEnsembleMemberID() + ";";
 		return script;
 	}

@@ -128,7 +128,6 @@ final class MainFunctions
 		prototypes.put("killconnections", killWRESConnections());
 		prototypes.put("testchecksum", testChecksum());
 		prototypes.put( "savepairs", savePairs() );
-		prototypes.put( "loadfromusgs", loadFromUSGS());
 		prototypes.put( "loadusgsparameters", loadUSGSParameters());
 
 		return prototypes;
@@ -158,26 +157,6 @@ final class MainFunctions
                 LOGGER.error("usage: loadUSGSParameters parameters.csv");
             }
 
-            return result;
-        };
-    }
-
-	public static Function<String[], Integer> loadFromUSGS()
-    {
-        return (final String[] args) -> {
-            Integer result = FAILURE;
-            try
-            {
-
-                USGSReader
-                        loader = new USGSReader(  );
-                loader.saveObservation();
-                result = SUCCESS;
-            }
-            catch ( IOException e )
-            {
-                e.printStackTrace();
-            }
             return result;
         };
     }
@@ -330,7 +309,7 @@ final class MainFunctions
                 }
                 catch ( IOException e )
                 {
-                    e.printStackTrace();
+                    LOGGER.error( Strings.getStackTrace( e ));
                 }
             }
             else

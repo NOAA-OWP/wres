@@ -30,7 +30,7 @@ public final class Time
      * i.e. The mapping of "second" holds the value to multiply a number of
      * hours to get the total number of seconds contained.
      */
-    public static final Map<String, Double> HOUR_CONVERSION = mapTimeToHours();
+    private static final Map<String, Double> HOUR_CONVERSION = mapTimeToHours();
     
     private static Map<String, Double> mapTimeToHours()
     {

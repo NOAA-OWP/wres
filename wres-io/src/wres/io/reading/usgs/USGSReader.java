@@ -357,10 +357,10 @@ public class USGSReader extends BasicSource
                             Variables.getByName( variableName );
 
                     if ( currentDetails != null
-                         && currentDetails.measurementunitId != null )
+                         && currentDetails.getMeasurementunitId() != null )
                     {
                         unit =
-                                MeasurementUnits.getNameByID( currentDetails.measurementunitId );
+                                MeasurementUnits.getNameByID( currentDetails.getMeasurementunitId() );
                     }
                 }
 

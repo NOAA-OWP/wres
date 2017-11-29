@@ -137,7 +137,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         LOGGER.trace("getFeatureID - args {} ; {}", lid, featureName);
         FeatureDetails detail = new FeatureDetails();
         detail.setLid( lid);
-        detail.featureName = featureName;
+        detail.setFeatureName( featureName );
         return getFeatureID(detail);
     }
 
