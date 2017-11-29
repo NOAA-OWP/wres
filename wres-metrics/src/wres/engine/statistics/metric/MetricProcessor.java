@@ -9,6 +9,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
+import java.util.function.DoublePredicate;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -92,7 +93,13 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
      */
 
     static final Logger LOGGER = LoggerFactory.getLogger( MetricProcessor.class );
+    
+    /**
+     * Filter for admissible numerical data.
+     */
 
+    static final DoublePredicate ADMISSABLE_DATA = Double::isFinite;
+    
     /**
      * Instance of a {@link MetricFactory}.
      */
