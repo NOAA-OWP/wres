@@ -24,11 +24,9 @@ import javax.ws.rs.core.MediaType;
 import org.slf4j.LoggerFactory;
 
 import wres.config.generated.DurationUnit;
-import wres.config.generated.Feature;
 import wres.io.concurrency.StatementRunner;
 import wres.io.config.SystemSettings;
 import wres.io.data.caching.DataSources;
-import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.USGSParameters;
 import wres.io.data.caching.Variables;
@@ -41,6 +39,7 @@ import wres.io.reading.usgs.waterml.timeseries.TimeSeries;
 import wres.io.reading.usgs.waterml.timeseries.TimeSeriesValue;
 import wres.io.reading.usgs.waterml.timeseries.TimeSeriesValues;
 import wres.io.utilities.Database;
+import wres.io.utilities.NoDataException;
 import wres.util.Collections;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
@@ -155,9 +154,23 @@ public class USGSReader extends BasicSource
             throw new IOException( "No USGS data could be loaded with the given configuration." );
         }
 
+        List<String> foundLocations = new ArrayList<>(  );
+
         for (TimeSeries series : this.response.getValue().getTimeSeries())
         {
+            foundLocations.add(series.getSourceInfo().getSiteCode()[0].getValue());
             this.readSeries( series );
+        }
+
+        try
+        {
+            enforceValidFeatures( foundLocations );
+        }
+        catch ( SQLException e )
+        {
+            throw new IOException( "Locations without official data from the " +
+                                   "USGS could not be removed from the total " +
+                                   "list of locations to evaluate.", e );
         }
 
         try
@@ -176,6 +189,25 @@ public class USGSReader extends BasicSource
         catch ( SQLException e )
         {
             throw new IOException( "USGS observations could not be linked to this project.", e);
+        }
+    }
+
+    private void enforceValidFeatures(List<String> foundLocations)
+            throws SQLException
+    {
+        List<FeatureDetails> invalidFeatures = new ArrayList<>();
+
+        for (FeatureDetails details : this.getProjectDetails().getFeatures())
+        {
+            if (!foundLocations.contains( details.getGageID() ))
+            {
+                invalidFeatures.add( details );
+            }
+        }
+
+        if (invalidFeatures.size() > 0)
+        {
+            this.getProjectDetails().getFeatures().removeAll( invalidFeatures );
         }
     }
 
@@ -239,13 +271,13 @@ public class USGSReader extends BasicSource
             }
         }
 
-        LOGGER.info("TimeSeres has been downloaded from USGS.");
+        LOGGER.debug("A set of time series has been downloaded from USGS.");
     }
 
     // This is specifically for gages; we also need to support selecting by
     // latitude and longitude (WGS84; that is what is used by USGS)
     // TODO: It may make sense to do a gage at a time in order to fire off shorter requests more often
-    private String getGageID() throws SQLException
+    private String getGageID() throws SQLException, NoDataException
     {
         String ID = null;
 
@@ -264,7 +296,10 @@ public class USGSReader extends BasicSource
             }
         }
 
-        Objects.requireNonNull( ID, "No valid gageIDs could be found. USGS data could not be ingested." );
+        if (!Strings.hasValue( ID ))
+        {
+            throw new NoDataException( "No valid gageIDs could be found. USGS data could not be ingested." );
+        }
 
         return ID;
     }
@@ -322,10 +357,10 @@ public class USGSReader extends BasicSource
                             Variables.getByName( variableName );
 
                     if ( currentDetails != null
-                         && currentDetails.measurementunitId != null )
+                         && currentDetails.getMeasurementunitId() != null )
                     {
                         unit =
-                                MeasurementUnits.getNameByID( currentDetails.measurementunitId );
+                                MeasurementUnits.getNameByID( currentDetails.getMeasurementunitId() );
                     }
                 }
 
@@ -510,8 +545,64 @@ public class USGSReader extends BasicSource
 
     private void readSeries(TimeSeries series) throws IOException
     {
+        String gageID = series.getSourceInfo().getSiteCode()[0].getValue();
+
+        if (series.getValues().length == 0)
+        {
+            FeatureDetails invalidFeature = null;
+
+            try
+            {
+                for (FeatureDetails feature : this.getProjectDetails().getFeatures())
+                {
+                    if (Strings.hasValue( feature.getGageID() ) && feature.getGageID().equalsIgnoreCase( gageID ))
+                    {
+                        invalidFeature = feature;
+                        break;
+                    }
+                }
+
+                this.getProjectDetails().getFeatures().remove( invalidFeature );
+                return;
+            }
+            catch ( SQLException e )
+            {
+                throw new IOException( "Could not iterate through available " +
+                                       "features in order to avoid processing " +
+                                       "the invalid location '" + gageID + "'" ,
+                                       e);
+            }
+        }
+
         for (TimeSeriesValues valueSet : series.getValues())
         {
+            if (valueSet.getValue().length == 0)
+            {
+                FeatureDetails invalidFeature = null;
+
+                try
+                {
+                    for (FeatureDetails feature : this.getProjectDetails().getFeatures())
+                    {
+                        if (Strings.hasValue( feature.getGageID() ) && feature.getGageID().equalsIgnoreCase( gageID ))
+                        {
+                            invalidFeature = feature;
+                            break;
+                        }
+                    }
+
+                    this.getProjectDetails().getFeatures().remove( invalidFeature );
+                    return;
+                }
+                catch ( SQLException e )
+                {
+                    throw new IOException( "Could not iterate through available " +
+                                           "features in order to avoid processing " +
+                                           "the invalid location '" + gageID + "'" ,
+                                           e);
+                }
+            }
+
             for (TimeSeriesValue value : valueSet.getValue())
             {
                 try

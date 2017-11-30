@@ -10,7 +10,6 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.metadata.Metadata;
-import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.MetricOutputMetadata;
 
@@ -74,15 +73,14 @@ public abstract class Metric<S extends MetricInput<?>, T extends MetricOutput<?>
     public abstract boolean hasRealUnits();
 
     /**
-     * Returns the unique name of the metric. See also {@link #getID()} and
-     * {@link MetadataFactory#getMetricName(MetricConstants)}.
+     * Returns the unique name of the metric, namely the string representation of {@link #getID()}.
      * 
      * @return the unique metric name
      */
 
     public String getName()
     {
-        return getDataFactory().getMetadataFactory().getMetricName( getID() );
+        return getID().toString();
     }
 
     /**

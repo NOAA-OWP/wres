@@ -67,7 +67,7 @@ public final class BoxPlotErrorByForecastTest
         final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getData().size(),
                                                                    metFac.getDimension( "MM/DAY" ),
                                                                    metFac.getDimension( "MM/DAY" ),
-                                                                   MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST,
+                                                                   MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE,
                                                                    MetricConstants.MAIN,
                                                                    metFac.getDatasetIdentifier( "A", "MAP" ),
                                                                    window );
@@ -89,7 +89,7 @@ public final class BoxPlotErrorByForecastTest
 
         //Check the parameters
         assertTrue( "Unexpected name for box plot of errors by observed value.",
-                    bpe.getName().equals( metaFac.getMetricName( MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST ) ) );
+                    bpe.getName().equals( MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE.toString() ) );
         assertTrue( "Box plot of errors by observed value has real units", bpe.hasRealUnits() );
     }
     
@@ -127,7 +127,7 @@ public final class BoxPlotErrorByForecastTest
         final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getData().size(),
                                                                    metFac.getDimension( "MM/DAY" ),
                                                                    metFac.getDimension( "MM/DAY" ),
-                                                                   MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST,
+                                                                   MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE,
                                                                    MetricConstants.MAIN,
                                                                    metFac.getDatasetIdentifier( "A", "MAP" ),
                                                                    window );

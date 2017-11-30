@@ -75,8 +75,9 @@ public final class Variables extends Cache<VariableDetails, String>
 		if (!getKeyIndex().containsKey(variableName)) {
 			VariableDetails detail = new VariableDetails();
 			detail.setVariableName(variableName);
-			detail.measurementunitId = MeasurementUnits.getMeasurementUnitID(measurementUnit);
-            try {
+			detail.setMeasurementunitId( MeasurementUnits.getMeasurementUnitID(measurementUnit) );
+            try
+			{
                 addElement(detail);
             }
             catch (SQLException e) {
@@ -97,11 +98,12 @@ public final class Variables extends Cache<VariableDetails, String>
 	 * @throws SQLException Thrown if an error was encountered while interacting with the database or storing
 	 * the result in the cache
 	 */
-	public Integer getID(String variableName, Integer measurementUnitID) throws SQLException {
+	public Integer getID(String variableName, Integer measurementUnitID) throws SQLException
+	{
 		if (!getKeyIndex().containsKey(variableName)) {
 			VariableDetails detail = new VariableDetails();
 			detail.setVariableName(variableName);
-			detail.measurementunitId = measurementUnitID;
+			detail.setMeasurementunitId( measurementUnitID );
 			addElement(detail);
 		}
 		return this.getKeyIndex().get(variableName);
@@ -180,7 +182,7 @@ public final class Variables extends Cache<VariableDetails, String>
                 while (variables.next()) {
                     detail = new VariableDetails();
                     detail.setVariableName(variables.getString("variable_name"));
-                    detail.measurementunitId = Database.getValue( variables, "measurementunit_id" );
+                    detail.setMeasurementunitId( Database.getValue( variables, "measurementunit_id" ));
                     detail.setID(Database.getValue( variables,"variable_id"));
                     this.getKeyIndex().put(detail.getKey(), detail.getId());
 

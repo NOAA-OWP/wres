@@ -202,7 +202,6 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
             catch ( SQLException | IOException e )
             {
                 this.getLogger().error( Strings.getStackTrace( e ) );
-                e.printStackTrace();
             }
         }
 

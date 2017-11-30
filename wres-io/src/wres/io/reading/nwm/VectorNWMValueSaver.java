@@ -1,4 +1,4 @@
-package wres.io.reading.netcdf;
+package wres.io.reading.nwm;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -40,7 +40,7 @@ import wres.util.ProgressMonitor;
 import wres.util.Strings;
 
 @Internal(exclusivePackage = "wres.io")
-class VectorNetCDFValueSaver extends WRESRunnable
+class VectorNWMValueSaver extends WRESRunnable
 {
     /**
      * Used as a key to tie variable and position identifiers to their
@@ -150,7 +150,7 @@ class VectorNetCDFValueSaver extends WRESRunnable
             "(timeseries_id, lead, forecasted_value)";
 
     private final static Logger LOGGER =
-            LoggerFactory.getLogger(VectorNetCDFValueSaver.class);
+            LoggerFactory.getLogger(VectorNWMValueSaver.class);
 
     private StringBuilder copyScript;
     private String copyHeader;
@@ -170,10 +170,10 @@ class VectorNetCDFValueSaver extends WRESRunnable
     private Double missingValue;
 
     @Internal(exclusivePackage = "wres.io")
-    public VectorNetCDFValueSaver(String filename,
-                                  Future<String> futureHash,
-                                  DataSourceConfig dataSourceConfig,
-                                  ProjectDetails projectDetails)
+    public VectorNWMValueSaver( String filename,
+                                Future<String> futureHash,
+                                DataSourceConfig dataSourceConfig,
+                                ProjectDetails projectDetails)
     {
         if (filename == null || filename.isEmpty())
         {
@@ -240,7 +240,7 @@ class VectorNetCDFValueSaver extends WRESRunnable
         {
             this.copyHeader = TimeSeries.getForecastValueParitionName( this.getLead() );
             this.copyHeader += " ";
-            this.copyHeader += VectorNetCDFValueSaver.FORECAST_COLUMN_DEFINTIION;
+            this.copyHeader += VectorNWMValueSaver.FORECAST_COLUMN_DEFINTIION;
         }
         else if (!Strings.hasValue( this.copyHeader ))
         {
@@ -703,36 +703,41 @@ class VectorNetCDFValueSaver extends WRESRunnable
      */
     private void addVariablePositions() throws IOException, SQLException
     {
-        // Only add variable positions for variables that haven't had positions
-        // added in this session. It doesn't scale well.
-        if (!VectorNetCDFValueSaver.addedVariables.contains( this.getVariableID() ))
+        synchronized ( VectorNWMValueSaver.addedVariables)
         {
-            // Build a script to add an entry to wres.VariablePosition for each
-            // variable and each location in the database that we can tie to a
-            // NetCDF index that does not exist
-            StringBuilder script = new StringBuilder();
+            // Only add variable positions for variables that haven't had positions
+            // added in this session. It doesn't scale well.
+            if ( !VectorNWMValueSaver.addedVariables.contains( this.getVariableID() ) )
+            {
+                // Build a script to add an entry to wres.VariablePosition for each
+                // variable and each location in the database that we can tie to a
+                // NetCDF index that does not exist
+                StringBuilder script = new StringBuilder();
 
-            script.append(
-                    "INSERT INTO wres.VariablePosition (variable_id, x_position)" )
-                  .append( NEWLINE );
-            script.append( "SELECT " )
-                  .append( this.getVariableID() )
-                  .append( ", F.feature_id" )
-                  .append( NEWLINE );
-            script.append( "FROM wres.Feature F" ).append( NEWLINE );
-            script.append( "WHERE F.nwm_index IS NOT NULL" ).append( NEWLINE );
-            script.append( "     AND NOT EXISTS (" ).append( NEWLINE );
-            script.append( "         SELECT 1" ).append( NEWLINE );
-            script.append( "         FROM wres.VariablePosition VP" )
-                  .append( NEWLINE );
-            script.append( "         WHERE VP.variable_id = " )
-                  .append( this.getVariableID() )
-                  .append( NEWLINE );
-            script.append( "             AND VP.x_position = F.feature_id" )
-                  .append( NEWLINE );
-            script.append( ");" );
+                script.append(
+                        "INSERT INTO wres.VariablePosition (variable_id, x_position)" )
+                      .append( NEWLINE );
+                script.append( "SELECT " )
+                      .append( this.getVariableID() )
+                      .append( ", F.feature_id" )
+                      .append( NEWLINE );
+                script.append( "FROM wres.Feature F" ).append( NEWLINE );
+                script.append( "WHERE F.nwm_index IS NOT NULL" )
+                      .append( NEWLINE );
+                script.append( "     AND NOT EXISTS (" ).append( NEWLINE );
+                script.append( "         SELECT 1" ).append( NEWLINE );
+                script.append( "         FROM wres.VariablePosition VP" )
+                      .append( NEWLINE );
+                script.append( "         WHERE VP.variable_id = " )
+                      .append( this.getVariableID() )
+                      .append( NEWLINE );
+                script.append( "             AND VP.x_position = F.feature_id" )
+                      .append( NEWLINE );
+                script.append( ");" );
 
-            Database.execute( script.toString() );
+                Database.execute( script.toString() );
+                VectorNWMValueSaver.addedVariables.add( this.getVariableID() );
+            }
         }
     }
 
@@ -861,18 +866,19 @@ class VectorNetCDFValueSaver extends WRESRunnable
 
         // If there is no mapping yet or there is no mapping for these
         // circumstances...
-        if ( VectorNetCDFValueSaver.indexMapping == null
-             || !VectorNetCDFValueSaver.indexMapping.containsKey( key ) )
+        if ( VectorNWMValueSaver.indexMapping == null
+             || !VectorNWMValueSaver.indexMapping.containsKey( key ) )
         {
             // Wait and lock down processing to ensure work isn't duplicated
-            synchronized ( VectorNetCDFValueSaver.getKeyLock( key ) )
+            synchronized ( VectorNWMValueSaver.getKeyLock( key ) )
             {
                 // Double check to make sure the necessary work wasn't done
                 // while waiting for the lock
-                if ( VectorNetCDFValueSaver.indexMapping == null
-                     || !VectorNetCDFValueSaver.indexMapping.containsKey( key ) )
+                if ( VectorNWMValueSaver.indexMapping == null
+                     || !VectorNWMValueSaver.indexMapping.containsKey( key ) )
                 {
                     // Add all missing locations for variables
+                    // TODO: Implement mechanism to ensure this only occurs once
                     this.addVariablePositions();
 
                     String keyLabel = "nwm_index";
@@ -938,9 +944,9 @@ class VectorNetCDFValueSaver extends WRESRunnable
                     }
 
                     // If a map hasn't been created yet, create it
-                    if ( VectorNetCDFValueSaver.indexMapping == null )
+                    if ( VectorNWMValueSaver.indexMapping == null )
                     {
-                        VectorNetCDFValueSaver.indexMapping =
+                        VectorNWMValueSaver.indexMapping =
                                 new ConcurrentHashMap<>();
                     }
 
@@ -955,14 +961,14 @@ class VectorNetCDFValueSaver extends WRESRunnable
                                           valueLabel );
 
                     // Add the populated map to the overal collection
-                    VectorNetCDFValueSaver.indexMapping.put( key,
-                                                             currentVariableIndices );
+                    VectorNWMValueSaver.indexMapping.put( key,
+                                                          currentVariableIndices );
                 }
             }
         }
 
         // Retrieve the custom tailored index mapping for these circumstances
-        return VectorNetCDFValueSaver.indexMapping.get( key );
+        return VectorNWMValueSaver.indexMapping.get( key );
     }
 
     /**

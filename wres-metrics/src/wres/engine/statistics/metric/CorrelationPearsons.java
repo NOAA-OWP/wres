@@ -51,7 +51,7 @@ implements Score, Collectable<SingleValuedPairs, ScalarOutput, ScalarOutput>
             MetricOutputMetadata meta = mF.getOutputMetadata(s.getData().size(),
                                                              mF.getDimension(),
                                                              in.getDimension(),
-                                                             MetricConstants.CORRELATION_PEARSONS,
+                                                             MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
                                                              MetricConstants.MAIN,
                                                              in.getIdentifier());
             double returnMe = correlation.correlation(slicer.getLeftSide(s), slicer.getRightSide(s));
@@ -72,7 +72,7 @@ implements Score, Collectable<SingleValuedPairs, ScalarOutput, ScalarOutput>
     @Override
     public MetricConstants getID()
     {
-        return MetricConstants.CORRELATION_PEARSONS;
+        return MetricConstants.PEARSON_CORRELATION_COEFFICIENT;
     }
 
     @Override
@@ -109,7 +109,7 @@ implements Score, Collectable<SingleValuedPairs, ScalarOutput, ScalarOutput>
     @Override
     public MetricConstants getCollectionOf()
     {
-        return MetricConstants.CORRELATION_PEARSONS;
+        return MetricConstants.PEARSON_CORRELATION_COEFFICIENT;
     }
 
     /**

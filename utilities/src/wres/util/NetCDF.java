@@ -188,7 +188,7 @@ public final class NetCDF {
 
     public static boolean isNWMData(NetcdfFile file)
     {
-        boolean matches = Strings.getFileName(file.getLocation()).matches(NetCDF.NWM_NAME_PATTERN);
+        boolean matches = NetCDF.isNWMData( Strings.getFileName(file.getLocation()) );
 
         if (!matches)
         {
@@ -198,6 +198,12 @@ public final class NetCDF {
 
         return matches;
     }
+
+    public static boolean isNWMData(String filename)
+    {
+        return filename.matches( NetCDF.NWM_NAME_PATTERN );
+    }
+
 
     public static String getNWMCategory(NetcdfFile file)
     {

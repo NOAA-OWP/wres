@@ -19,7 +19,7 @@ public class ProgressMonitor
     private ExecutorService ASYNC_UPDATER = Executors.newSingleThreadExecutor();
 
     private static ProgressMonitor MONITOR = new ProgressMonitor();
-    private final Logger logger = LoggerFactory.getLogger( this.getClass() );
+    private final Logger LOGGER = LoggerFactory.getLogger( this.getClass() );
     public static void deactivate()
     {
         MONITOR.shutdown();
@@ -219,7 +219,8 @@ public class ProgressMonitor
         this.startTime = System.currentTimeMillis();
     }
     
-    private String getProgressMessage() {
+    private String getProgressMessage()
+    {
         String message = "COULDN'T CREATE UPDATE MESSAGE";
         String builder = "\r  ";
         try
@@ -257,11 +258,13 @@ public class ProgressMonitor
             }
             message = builder;
         }
-        catch (Exception e) {
-            System.err.println();
-            System.err.println("Could not print: ");
-            System.err.println(builder);
-            e.printStackTrace();
+        catch (Exception e)
+        {
+            LOGGER.error("{}Could not print:{}{}",
+                         System.lineSeparator(),
+                         System.lineSeparator(),
+                         builder);
+            LOGGER.error(Strings.getStackTrace( e ));
         }
         return message;
     }
@@ -309,9 +312,9 @@ public class ProgressMonitor
             this.printer.print(message);
         }
 
-        if (logger.isTraceEnabled())
+        if ( LOGGER.isTraceEnabled())
         {
-            logger.trace( message );
+            LOGGER.trace( message );
         }
     }
     

@@ -36,7 +36,7 @@
   <outputs>
     <!-- destinations has one default: text, ., xml; even when nothing is here. Program chooses filenames for now -->
     <metric label="ME"><name>mean error</name></metric>
-    <metric><name>correlation pearsons</name></metric>
+    <metric><name>pearson correlation coefficient</name></metric>
     <metric><name>mean absolute error</name></metric>
     <metric><name>bias fraction</name></metric>
     <metric><name>coefficient of determination</name></metric>

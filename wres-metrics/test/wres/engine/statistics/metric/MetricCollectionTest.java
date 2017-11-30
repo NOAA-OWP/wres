@@ -620,7 +620,7 @@ public class MetricCollectionTest
 
         //Add some appropriate metrics to the collection
         final MetricCollection<SingleValuedPairs, ScalarOutput> n =
-                metF.ofSingleValuedScalarCollection( MetricConstants.CORRELATION_PEARSONS,
+                metF.ofSingleValuedScalarCollection( MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
                                                      MetricConstants.COEFFICIENT_OF_DETERMINATION );
         //Compute them
         final MetricOutputMapByMetric<ScalarOutput> d = n.apply( input );
@@ -631,7 +631,7 @@ public class MetricCollectionTest
         //Check them   
         final Double expectedFirst = 0.9999999910148981;
         final Double expectedSecond = Math.pow( expectedFirst, 2 );
-        final Double actualFirst = d.get( MetricConstants.CORRELATION_PEARSONS ).getData();
+        final Double actualFirst = d.get( MetricConstants.PEARSON_CORRELATION_COEFFICIENT ).getData();
         final Double actualSecond = d.get( MetricConstants.COEFFICIENT_OF_DETERMINATION ).getData();
 
         final BiPredicate<Double, Double> testMe = FunctionFactory.doubleEquals();
