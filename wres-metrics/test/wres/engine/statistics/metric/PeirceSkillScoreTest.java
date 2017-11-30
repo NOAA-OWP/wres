@@ -44,42 +44,47 @@ public final class PeirceSkillScoreTest
 
         //Metadata for the output
         final MetricOutputMetadata m1 =
-                                      metaFac.getOutputMetadata(input.getData().size(),
-                                                                metaFac.getDimension(),
-                                                                metaFac.getDimension(),
-                                                                MetricConstants.PEIRCE_SKILL_SCORE,
-                                                                MetricConstants.MAIN,
-                                                                metaFac.getDatasetIdentifier("DRRC2", "SQIN", "HEFS"));
+                metaFac.getOutputMetadata( input.getData().size(),
+                                           metaFac.getDimension(),
+                                           metaFac.getDimension(),
+                                           MetricConstants.PEIRCE_SKILL_SCORE,
+                                           MetricConstants.MAIN,
+                                           metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ) );
         //Build the metric
         final PeirceSkillScoreBuilder<DichotomousPairs> b = new PeirceSkillScore.PeirceSkillScoreBuilder<>();
-        b.setOutputFactory(outF);
+        b.setOutputFactory( outF );
         final PeirceSkillScore<DichotomousPairs> ps = b.build();
 
         //Check the results
-        final ScalarOutput actual = ps.apply(input);
-        final MetricFactory metF = MetricFactory.getInstance(outF);
-        final ScalarOutput expected = outF.ofScalarOutput(0.6347985347985348, m1);
-        assertTrue("Actual: " + actual.getData().doubleValue() + ". Expected: " + expected.getData().doubleValue()
-            + ".", actual.equals(expected));
+        final ScalarOutput actual = ps.apply( input );
+        final MetricFactory metF = MetricFactory.getInstance( outF );
+        final ScalarOutput expected = outF.ofScalarOutput( 0.6347985347985348, m1 );
+        assertTrue( "Actual: " + actual.getData().doubleValue()
+                    + ". Expected: "
+                    + expected.getData().doubleValue()
+                    + ".",
+                    actual.equals( expected ) );
         //Check the parameters
-        assertTrue("Unexpected name for the Peirce Skill Score.",
-                   ps.getName().equals(metaFac.getMetricName(MetricConstants.PEIRCE_SKILL_SCORE)));
-        assertTrue("The Peirce Skill Score is not decomposable.", !ps.isDecomposable());
-        assertTrue("The Peirce Skill Score is a skill score.", ps.isSkillScore());
-        assertTrue("The Peirce Skill Score cannot be decomposed.",
-                   ps.getScoreOutputGroup() == ScoreOutputGroup.NONE);
+        assertTrue( "Unexpected name for the Peirce Skill Score.",
+                    ps.getName().equals( MetricConstants.PEIRCE_SKILL_SCORE.toString() ) );
+        assertTrue( "The Peirce Skill Score is not decomposable.", !ps.isDecomposable() );
+        assertTrue( "The Peirce Skill Score is a skill score.", ps.isSkillScore() );
+        assertTrue( "The Peirce Skill Score cannot be decomposed.",
+                    ps.getScoreOutputGroup() == ScoreOutputGroup.NONE );
         final String expName = metF.ofContingencyTable().getName();
-        final String actName = metaFac.getMetricName(ps.getCollectionOf());
-        assertTrue("The Peirce Skill Score should be a collection of '" + expName
-            + "', but is actually a collection of '" + actName + "'.",
-                   ps.getCollectionOf() == metF.ofContingencyTable().getID());
+        final String actName = ps.getCollectionOf().toString();
+        assertTrue( "The Peirce Skill Score should be a collection of '" + expName
+                    + "', but is actually a collection of '"
+                    + actName
+                    + "'.",
+                    ps.getCollectionOf() == metF.ofContingencyTable().getID() );
         //Test exceptions
         try
         {
-            ps.apply(outF.ofMatrixOutput(new double[][]{{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}}, m1));
-            fail("Expected an exception on construction with a a non-square matrix.");
+            ps.apply( outF.ofMatrixOutput( new double[][] { { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 } }, m1 ) );
+            fail( "Expected an exception on construction with a a non-square matrix." );
         }
-        catch(final Exception e)
+        catch ( final Exception e )
         {
         }
     }
@@ -101,30 +106,34 @@ public final class PeirceSkillScoreTest
 
         //Metadata for the output
         final MetricOutputMetadata m1 =
-                                      metaFac.getOutputMetadata(input.getData().size(),
-                                                                metaFac.getDimension(),
-                                                                metaFac.getDimension(),
-                                                                MetricConstants.PEIRCE_SKILL_SCORE,
-                                                                MetricConstants.MAIN,
-                                                                metaFac.getDatasetIdentifier("DRRC2", "SQIN", "HEFS"));
+                metaFac.getOutputMetadata( input.getData().size(),
+                                           metaFac.getDimension(),
+                                           metaFac.getDimension(),
+                                           MetricConstants.PEIRCE_SKILL_SCORE,
+                                           MetricConstants.MAIN,
+                                           metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ) );
 
         //Build the metric
         final PeirceSkillScoreBuilder<MulticategoryPairs> b = new PeirceSkillScore.PeirceSkillScoreBuilder<>();
-        b.setOutputFactory(outF);
+        b.setOutputFactory( outF );
         final PeirceSkillScore<MulticategoryPairs> ps = b.build();
 
         //Check the results
-        final ScalarOutput actual = ps.apply(input);
-        final ScalarOutput expected = outF.ofScalarOutput(0.05057466520850963, m1);
-        assertTrue("Actual: " + actual.getData().doubleValue() + ". Expected: " + expected.getData().doubleValue()
-            + ".", actual.equals(expected));
+        final ScalarOutput actual = ps.apply( input );
+        final ScalarOutput expected = outF.ofScalarOutput( 0.05057466520850963, m1 );
+        assertTrue( "Actual: " + actual.getData().doubleValue()
+                    + ". Expected: "
+                    + expected.getData().doubleValue()
+                    + ".",
+                    actual.equals( expected ) );
         //Test exceptions
         try
         {
-            ps.apply(outF.ofMatrixOutput(new double[][]{{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}}, m1));
-            fail("Expected a zero sum product.");
+            ps.apply( outF.ofMatrixOutput( new double[][] { { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 } },
+                                           m1 ) );
+            fail( "Expected a zero sum product." );
         }
-        catch(final Exception e)
+        catch ( final Exception e )
         {
         }
 

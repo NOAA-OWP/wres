@@ -68,7 +68,7 @@ public final class BrierSkillScoreTest
                     actual.equals( expected ) );
         //Check the parameters
         assertTrue( "Unexpected name for the Brier Skill Score.",
-                    bss.getName().equals( metaFac.getMetricName( MetricConstants.BRIER_SKILL_SCORE ) ) );
+                    bss.getName().equals( MetricConstants.BRIER_SKILL_SCORE.toString() ) );
         assertTrue( "The Brier Skill Score is decomposable.", bss.isDecomposable() );
         assertTrue( "The Brier Skill Score is a skill score.", bss.isSkillScore() );
         assertTrue( "Expected no decomposition for the Brier Skill Score.",

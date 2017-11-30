@@ -124,12 +124,12 @@ public abstract class ChartEngineFactory
                                                 new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
                                                                          MultiVectorOutput.class,
                                                                          "rankHistogramTemplate.xml" ) );
-        multiVectorOutputPlotTypeInfoTable.put( MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST,
+        multiVectorOutputPlotTypeInfoTable.put( MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE,
                                                 PlotTypeSelection.LEAD_THRESHOLD, //Unimportant
                                                 new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
                                                                          BoxPlotOutput.class,
                                                                          "boxPlotOfErrors.xml" ) );
-        multiVectorOutputPlotTypeInfoTable.put( MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED,
+        multiVectorOutputPlotTypeInfoTable.put( MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
                                                 PlotTypeSelection.LEAD_THRESHOLD, //Unimportant
                                                 new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
                                                                          BoxPlotOutput.class,
@@ -764,8 +764,8 @@ public abstract class ChartEngineFactory
         int[] diagonalDataSourceIndices = null;
         String axisToSquareAgainstDomain = null;
 
-        if ( input.getMetadata().getMetricID() != MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED
-             && input.getMetadata().getMetricID() != MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST )
+        if ( input.getMetadata().getMetricID() != MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE
+             && input.getMetadata().getMetricID() != MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE )
         {
             throw new IllegalArgumentException( "Unrecognized plot type of " + input.getMetadata().getMetricID()
                                                 + " specified in the metric information." );
@@ -787,7 +787,7 @@ public abstract class ChartEngineFactory
 
         //Argument identifies observed or forecast for plot title usage (or elsewhere).
         String obsOrFcstStr = "Observed";
-        if ( input.getMetadata().getMetricID() == MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST )
+        if ( input.getMetadata().getMetricID() == MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE )
         {
             obsOrFcstStr = "Forecast";
         }
@@ -840,8 +840,8 @@ public abstract class ChartEngineFactory
         //For each lead time, do the following....
         for ( final Pair<TimeWindow, Threshold> keyInstance : keySetValues )
         {
-            if ( input.getMetadata().getMetricID() == MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED
-                 || input.getMetadata().getMetricID() == MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST )
+            if ( input.getMetadata().getMetricID() == MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE
+                 || input.getMetadata().getMetricID() == MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE )
             {
 
                 final ChartEngine engine = processBoxPlotErrorsDiagram( keyInstance,
@@ -1112,9 +1112,8 @@ public abstract class ChartEngineFactory
         arguments.addArgument( "locationName", identifier.getGeospatialID() );
         arguments.addArgument( "variableName", identifier.getVariableID() );
         arguments.addArgument( "primaryScenario", identifier.getScenarioID() );
-        arguments.addArgument( "metricName", factory.getMetadataFactory().getMetricName( meta.getMetricID() ) );
-        arguments.addArgument( "metricShortName",
-                               factory.getMetadataFactory().getMetricShortName( meta.getMetricID() ) );
+        arguments.addArgument( "metricName", meta.getMetricID().toString() );
+        arguments.addArgument( "metricShortName", meta.getMetricID().toString() );
         arguments.addArgument( "outputUnitsText", " [" + meta.getDimension() + "]" );
         arguments.addArgument( "inputUnitsText", " [" + meta.getInputDimension() + "]" );
 
@@ -1126,9 +1125,7 @@ public abstract class ChartEngineFactory
         }
         else
         {
-            arguments.addArgument( "metricComponentNameSuffix",
-                                   " " + factory.getMetadataFactory()
-                                                .getMetricComponentName( meta.getMetricComponentID() ) );
+            arguments.addArgument( "metricComponentNameSuffix", meta.getMetricComponentID().toString() );
         }
 
         return arguments;
