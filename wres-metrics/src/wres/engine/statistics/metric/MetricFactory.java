@@ -615,7 +615,7 @@ public class MetricFactory
                 return ofMeanError();
             case ROOT_MEAN_SQUARE_ERROR:
                 return ofRootMeanSquareError();
-            case CORRELATION_PEARSONS:
+            case PEARSON_CORRELATION_COEFFICIENT:
                 return ofCorrelationPearsons();
             case COEFFICIENT_OF_DETERMINATION:
                 return ofCoefficientOfDetermination();
@@ -858,9 +858,9 @@ public class MetricFactory
     {
         switch ( metric )
         {
-            case BOX_PLOT_OF_ERRORS_BY_OBSERVED:
+            case BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE:
                 return ofBoxPlotErrorByObserved();
-            case BOX_PLOT_OF_ERRORS_BY_FORECAST:
+            case BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE:
                 return ofBoxPlotErrorByForecast();
             default:
                 throw new IllegalArgumentException( error + " '" + metric + "'." );

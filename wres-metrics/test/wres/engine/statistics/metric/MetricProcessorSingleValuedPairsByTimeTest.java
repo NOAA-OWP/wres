@@ -64,7 +64,7 @@ public final class MetricProcessorSingleValuedPairsByTimeTest
                     results.getScalarOutput()
                            .get( MetricConstants.COEFFICIENT_OF_DETERMINATION );
             MetricOutputMapByTimeAndThreshold<ScalarOutput> rho = results.getScalarOutput()
-                                                                      .get( MetricConstants.CORRELATION_PEARSONS );
+                                                                      .get( MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
             MetricOutputMapByTimeAndThreshold<ScalarOutput> mae = results.getScalarOutput()
                                                                       .get( MetricConstants.MEAN_ABSOLUTE_ERROR );
             MetricOutputMapByTimeAndThreshold<ScalarOutput> me =
@@ -76,7 +76,7 @@ public final class MetricProcessorSingleValuedPairsByTimeTest
                         bias.getValue( 0 ).getData().equals( 1.6666666666666667 ) );
             assertTrue( "Unexpected difference in " + MetricConstants.COEFFICIENT_OF_DETERMINATION,
                         cod.getValue( 0 ).getData().equals( 1.0 ) );
-            assertTrue( "Unexpected difference in " + MetricConstants.CORRELATION_PEARSONS,
+            assertTrue( "Unexpected difference in " + MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
                         rho.getValue( 0 ).getData().equals( 1.0 ) );
             assertTrue( "Unexpected difference in " + MetricConstants.MEAN_ABSOLUTE_ERROR,
                         mae.getValue( 0 ).getData().equals( 5.0 ) );

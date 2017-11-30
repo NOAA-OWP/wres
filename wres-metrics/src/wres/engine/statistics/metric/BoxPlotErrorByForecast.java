@@ -43,7 +43,7 @@ class BoxPlotErrorByForecast extends BoxPlot
     @Override
     public MetricConstants getID()
     {
-        return MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST;
+        return MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE;
     }
 
     /**

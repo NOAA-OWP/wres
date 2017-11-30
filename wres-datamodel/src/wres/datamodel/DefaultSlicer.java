@@ -520,7 +520,7 @@ class DefaultSlicer implements Slicer
     }
 
     /**
-     * Filters a {@link VectorOfDoubles}, returning a subset that meet the condition.
+     * Filters a {@link VectorOfDoubles}, returning a subset whose elements meet the condition.
      * 
      * @param input the input
      * @param condition the condition
@@ -545,7 +545,7 @@ class DefaultSlicer implements Slicer
 
     /**
      * Filters a {@link PairOfDoubleAndVectorOfDoubles}, returning a filtered pair that contains the left and subset of
-     * right that meet the condition or null if the left or none of right meet the condition.
+     * right that meet the condition or null if the left or all of right do not meet the condition.
      * 
      * @param input the input pair
      * @param condition the filter

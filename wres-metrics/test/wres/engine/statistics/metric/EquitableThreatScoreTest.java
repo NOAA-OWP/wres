@@ -69,13 +69,13 @@ public final class EquitableThreatScoreTest
 
         //Check the parameters
         assertTrue( "Unexpected name for the Equitable Threat Score.",
-                    ets.getName().equals( metaFac.getMetricName( MetricConstants.EQUITABLE_THREAT_SCORE ) ) );
+                    ets.getName().equals( MetricConstants.EQUITABLE_THREAT_SCORE.toString() ) );
         assertTrue( "The Equitable Threat Score is not decomposable.", !ets.isDecomposable() );
         assertTrue( "The Equitable Threat Score is a skill score.", ets.isSkillScore() );
         assertTrue( "The Equitable Threat Score cannot be decomposed.",
                     ets.getScoreOutputGroup() == ScoreOutputGroup.NONE );
         final String expName = metF.ofContingencyTable().getName();
-        final String actName = metaFac.getMetricName( ets.getCollectionOf() );
+        final String actName = ets.getCollectionOf().toString();
         assertTrue( "The Equitable Threat Score should be a collection of '" + expName
                     + "', but is actually a collection of '"
                     + actName

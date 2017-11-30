@@ -44,52 +44,55 @@ public final class RelativeOperatingCharacteristicScoreTest
         final DataFactory outF = DefaultDataFactory.getInstance();
         final MetadataFactory metaFac = outF.getMetadataFactory();
         final List<PairOfDoubles> values = new ArrayList<>();
-        values.add(outF.pairOf(0, 0.8));
-        values.add(outF.pairOf(0, 0.8));
-        values.add(outF.pairOf(0, 0.0));
-        values.add(outF.pairOf(1, 1.0));
-        values.add(outF.pairOf(1, 1.0));
-        values.add(outF.pairOf(1, 0.6));
-        values.add(outF.pairOf(0, 0.4));
-        values.add(outF.pairOf(1, 0.8));
-        values.add(outF.pairOf(1, 0.0));
-        values.add(outF.pairOf(0, 0.0));
-        values.add(outF.pairOf(0, 0.2));
-        values.add(outF.pairOf(0, 0.0));
-        values.add(outF.pairOf(0, 0.0));
-        values.add(outF.pairOf(1, 1.0));
-        values.add(outF.pairOf(1, 1.0));
+        values.add( outF.pairOf( 0, 0.8 ) );
+        values.add( outF.pairOf( 0, 0.8 ) );
+        values.add( outF.pairOf( 0, 0.0 ) );
+        values.add( outF.pairOf( 1, 1.0 ) );
+        values.add( outF.pairOf( 1, 1.0 ) );
+        values.add( outF.pairOf( 1, 0.6 ) );
+        values.add( outF.pairOf( 0, 0.4 ) );
+        values.add( outF.pairOf( 1, 0.8 ) );
+        values.add( outF.pairOf( 1, 0.0 ) );
+        values.add( outF.pairOf( 0, 0.0 ) );
+        values.add( outF.pairOf( 0, 0.2 ) );
+        values.add( outF.pairOf( 0, 0.0 ) );
+        values.add( outF.pairOf( 0, 0.0 ) );
+        values.add( outF.pairOf( 1, 1.0 ) );
+        values.add( outF.pairOf( 1, 1.0 ) );
 
-        final DiscreteProbabilityPairs input = outF.ofDiscreteProbabilityPairs(values, metaFac.getMetadata());
+        final DiscreteProbabilityPairs input = outF.ofDiscreteProbabilityPairs( values, metaFac.getMetadata() );
 
         //Build the metric
         final RelativeOperatingCharacteristicScoreBuilder b = new RelativeOperatingCharacteristicScoreBuilder();
-        b.setOutputFactory(outF);
+        b.setOutputFactory( outF );
 
         final RelativeOperatingCharacteristicScore rocs = b.build();
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = metaFac.getOutputMetadata(input.getData().size(),
-                                                                  metaFac.getDimension(),
-                                                                  metaFac.getDimension(),
-                                                                  MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE,
-                                                                  MetricConstants.NONE);
+        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getData().size(),
+                                                                   metaFac.getDimension(),
+                                                                   metaFac.getDimension(),
+                                                                   MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE,
+                                                                   MetricConstants.NONE );
 
         //Check the results       
-        final VectorOutput actual = rocs.apply(input);
-        final VectorOutput expected = outF.ofVectorOutput(new double[]{0.6785714285714286}, m1);
-        assertTrue("Actual: " + actual.getData().getDoubles()[0] + ". Expected: " + expected.getData().getDoubles()[0]
-            + ".", actual.equals(expected));
+        final VectorOutput actual = rocs.apply( input );
+        final VectorOutput expected = outF.ofVectorOutput( new double[] { 0.6785714285714286 }, m1 );
+        assertTrue( "Actual: " + actual.getData().getDoubles()[0]
+                    + ". Expected: "
+                    + expected.getData().getDoubles()[0]
+                    + ".",
+                    actual.equals( expected ) );
         //Check the parameters
-        assertTrue("Unexpected name for the ROC Score.",
-                   rocs.getName()
-                       .equals(metaFac.getMetricName(MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE)));
-        assertTrue("The ROC Score is not decomposable.", !rocs.isDecomposable());
-        assertTrue("The ROC Score is a skill score.", rocs.isSkillScore());
-        assertTrue("Expected no decomposition for the ROC Score.",
-                   rocs.getScoreOutputGroup() == ScoreOutputGroup.NONE);
-        assertTrue("The ROC Score is not proper.", !rocs.isProper());
-        assertTrue("The ROC Score is not strictly proper.", !rocs.isStrictlyProper());
+        assertTrue( "Unexpected name for the ROC Score.",
+                    rocs.getName()
+                        .equals( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE.toString() ) );
+        assertTrue( "The ROC Score is not decomposable.", !rocs.isDecomposable() );
+        assertTrue( "The ROC Score is a skill score.", rocs.isSkillScore() );
+        assertTrue( "Expected no decomposition for the ROC Score.",
+                    rocs.getScoreOutputGroup() == ScoreOutputGroup.NONE );
+        assertTrue( "The ROC Score is not proper.", !rocs.isProper() );
+        assertTrue( "The ROC Score is not strictly proper.", !rocs.isStrictlyProper() );
     }
 
     /**
@@ -105,50 +108,56 @@ public final class RelativeOperatingCharacteristicScoreTest
         final DataFactory outF = DefaultDataFactory.getInstance();
         final MetadataFactory metaFac = outF.getMetadataFactory();
         final List<PairOfDoubles> values = new ArrayList<>();
-        values.add(outF.pairOf(0, 0.928));
-        values.add(outF.pairOf(0, 0.576));
-        values.add(outF.pairOf(0, 0.008));
-        values.add(outF.pairOf(1, 0.944));
-        values.add(outF.pairOf(1, 0.832));
-        values.add(outF.pairOf(1, 0.816));
-        values.add(outF.pairOf(0, 0.136));
-        values.add(outF.pairOf(1, 0.584));
-        values.add(outF.pairOf(1, 0.032));
-        values.add(outF.pairOf(0, 0.016));
-        values.add(outF.pairOf(0, 0.28));
-        values.add(outF.pairOf(0, 0.024));
-        values.add(outF.pairOf(0, 0.0));
-        values.add(outF.pairOf(1, 0.984));
-        values.add(outF.pairOf(1, 0.952));
+        values.add( outF.pairOf( 0, 0.928 ) );
+        values.add( outF.pairOf( 0, 0.576 ) );
+        values.add( outF.pairOf( 0, 0.008 ) );
+        values.add( outF.pairOf( 1, 0.944 ) );
+        values.add( outF.pairOf( 1, 0.832 ) );
+        values.add( outF.pairOf( 1, 0.816 ) );
+        values.add( outF.pairOf( 0, 0.136 ) );
+        values.add( outF.pairOf( 1, 0.584 ) );
+        values.add( outF.pairOf( 1, 0.032 ) );
+        values.add( outF.pairOf( 0, 0.016 ) );
+        values.add( outF.pairOf( 0, 0.28 ) );
+        values.add( outF.pairOf( 0, 0.024 ) );
+        values.add( outF.pairOf( 0, 0.0 ) );
+        values.add( outF.pairOf( 1, 0.984 ) );
+        values.add( outF.pairOf( 1, 0.952 ) );
         Metadata meta = metaFac.getMetadata();
-        final DiscreteProbabilityPairs input = outF.ofDiscreteProbabilityPairs(values, meta);
+        final DiscreteProbabilityPairs input = outF.ofDiscreteProbabilityPairs( values, meta );
 
         //Build the metric
         final RelativeOperatingCharacteristicScoreBuilder b = new RelativeOperatingCharacteristicScoreBuilder();
-        b.setOutputFactory(outF);
+        b.setOutputFactory( outF );
 
         final RelativeOperatingCharacteristicScore rocs = b.build();
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = metaFac.getOutputMetadata(input.getData().size(),
-                                                                  metaFac.getDimension(),
-                                                                  metaFac.getDimension(),
-                                                                  MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE,
-                                                                  MetricConstants.NONE);
+        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getData().size(),
+                                                                   metaFac.getDimension(),
+                                                                   metaFac.getDimension(),
+                                                                   MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE,
+                                                                   MetricConstants.NONE );
 
         //Check the results       
-        final VectorOutput actual = rocs.apply(input);
-        final VectorOutput expected = outF.ofVectorOutput(new double[]{0.75}, m1);
-        assertTrue("Actual: " + actual.getData().getDoubles()[0] + ". Expected: " + expected.getData().getDoubles()[0]
-            + ".", actual.equals(expected));
+        final VectorOutput actual = rocs.apply( input );
+        final VectorOutput expected = outF.ofVectorOutput( new double[] { 0.75 }, m1 );
+        assertTrue( "Actual: " + actual.getData().getDoubles()[0]
+                    + ". Expected: "
+                    + expected.getData().getDoubles()[0]
+                    + ".",
+                    actual.equals( expected ) );
         //Check against a baseline
-        final DiscreteProbabilityPairs inputBase = outF.ofDiscreteProbabilityPairs(values, values, meta, meta);
-        final VectorOutput actualBase = rocs.apply(inputBase);
-        final VectorOutput expectedBase = outF.ofVectorOutput(new double[]{0.0}, m1);
-        assertTrue("Actual: " + actualBase.getData().getDoubles()[0] + ". Expected: "
-            + expectedBase.getData().getDoubles()[0] + ".", actualBase.equals(expectedBase));
+        final DiscreteProbabilityPairs inputBase = outF.ofDiscreteProbabilityPairs( values, values, meta, meta );
+        final VectorOutput actualBase = rocs.apply( inputBase );
+        final VectorOutput expectedBase = outF.ofVectorOutput( new double[] { 0.0 }, m1 );
+        assertTrue( "Actual: " + actualBase.getData().getDoubles()[0]
+                    + ". Expected: "
+                    + expectedBase.getData().getDoubles()[0]
+                    + ".",
+                    actualBase.equals( expectedBase ) );
     }
-    
+
     /**
      * Constructs a {@link RelativeOperatingCharacteristicScore} and compares the actual result to the expected result
      * for an example dataset with no occurrences.
@@ -162,44 +171,47 @@ public final class RelativeOperatingCharacteristicScoreTest
         final DataFactory outF = DefaultDataFactory.getInstance();
         final MetadataFactory metaFac = outF.getMetadataFactory();
         final List<PairOfDoubles> values = new ArrayList<>();
-        values.add(outF.pairOf(0, 0.928));
-        values.add(outF.pairOf(0, 0.576));
-        values.add(outF.pairOf(0, 0.008));
-        values.add(outF.pairOf(0, 0.944));
-        values.add(outF.pairOf(0, 0.832));
-        values.add(outF.pairOf(0, 0.816));
-        values.add(outF.pairOf(0, 0.136));
-        values.add(outF.pairOf(0, 0.584));
-        values.add(outF.pairOf(0, 0.032));
-        values.add(outF.pairOf(0, 0.016));
-        values.add(outF.pairOf(0, 0.28));
-        values.add(outF.pairOf(0, 0.024));
-        values.add(outF.pairOf(0, 0.0));
-        values.add(outF.pairOf(0, 0.984));
-        values.add(outF.pairOf(0, 0.952));
+        values.add( outF.pairOf( 0, 0.928 ) );
+        values.add( outF.pairOf( 0, 0.576 ) );
+        values.add( outF.pairOf( 0, 0.008 ) );
+        values.add( outF.pairOf( 0, 0.944 ) );
+        values.add( outF.pairOf( 0, 0.832 ) );
+        values.add( outF.pairOf( 0, 0.816 ) );
+        values.add( outF.pairOf( 0, 0.136 ) );
+        values.add( outF.pairOf( 0, 0.584 ) );
+        values.add( outF.pairOf( 0, 0.032 ) );
+        values.add( outF.pairOf( 0, 0.016 ) );
+        values.add( outF.pairOf( 0, 0.28 ) );
+        values.add( outF.pairOf( 0, 0.024 ) );
+        values.add( outF.pairOf( 0, 0.0 ) );
+        values.add( outF.pairOf( 0, 0.984 ) );
+        values.add( outF.pairOf( 0, 0.952 ) );
         Metadata meta = metaFac.getMetadata();
-        final DiscreteProbabilityPairs input = outF.ofDiscreteProbabilityPairs(values, meta);
+        final DiscreteProbabilityPairs input = outF.ofDiscreteProbabilityPairs( values, meta );
 
         //Build the metric
         final RelativeOperatingCharacteristicScoreBuilder b = new RelativeOperatingCharacteristicScoreBuilder();
-        b.setOutputFactory(outF);
+        b.setOutputFactory( outF );
 
         final RelativeOperatingCharacteristicScore rocs = b.build();
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = metaFac.getOutputMetadata(input.getData().size(),
-                                                                  metaFac.getDimension(),
-                                                                  metaFac.getDimension(),
-                                                                  MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE,
-                                                                  MetricConstants.NONE);
+        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getData().size(),
+                                                                   metaFac.getDimension(),
+                                                                   metaFac.getDimension(),
+                                                                   MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE,
+                                                                   MetricConstants.NONE );
 
         //Check the results       
-        final VectorOutput actual = rocs.apply(input);
-        final VectorOutput expected = outF.ofVectorOutput(new double[]{Double.NaN}, m1);
-        assertTrue("Actual: " + actual.getData().getDoubles()[0] + ". Expected: " + expected.getData().getDoubles()[0]
-            + ".", actual.equals(expected));
-    }    
-    
+        final VectorOutput actual = rocs.apply( input );
+        final VectorOutput expected = outF.ofVectorOutput( new double[] { Double.NaN }, m1 );
+        assertTrue( "Actual: " + actual.getData().getDoubles()[0]
+                    + ". Expected: "
+                    + expected.getData().getDoubles()[0]
+                    + ".",
+                    actual.equals( expected ) );
+    }
+
     /**
      * Constructs a {@link RelativeOperatingCharacteristicScore} and checks for exceptional cases.
      * @throws MetricParameterException if the metric could not be constructed
@@ -213,7 +225,7 @@ public final class RelativeOperatingCharacteristicScoreTest
 
         //Build the metric
         final RelativeOperatingCharacteristicScoreBuilder b = new RelativeOperatingCharacteristicScoreBuilder();
-        b.setOutputFactory(outF);
+        b.setOutputFactory( outF );
 
         final RelativeOperatingCharacteristicScore rocs = b.build();
 
@@ -223,9 +235,9 @@ public final class RelativeOperatingCharacteristicScoreTest
             rocs.apply( null );
             fail( "Expected an exception on null input." );
         }
-        catch(MetricInputException e)
-        {          
+        catch ( MetricInputException e )
+        {
         }
-    }     
+    }
 
 }

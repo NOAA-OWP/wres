@@ -76,7 +76,7 @@ public final class ContinousRankedProbabilityScoreTest
         //Check the parameters
         assertTrue( "Unexpected name for the Continuous Ranked Probability Score.",
                     crps.getName()
-                        .equals( metaFac.getMetricName( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE ) ) );
+                        .equals( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE.toString() ) );
         assertTrue( "The Continuous Ranked Probability Score is decomposable.", crps.isDecomposable() );
         assertTrue( "The Continuous Ranked Probability Score is not a skill score.", !crps.isSkillScore() );
         assertTrue( "Expected no decomposition for the Continuous Ranked Probability Score.",

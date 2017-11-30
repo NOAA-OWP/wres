@@ -58,7 +58,7 @@ public final class MetricProcessorEnsemblePairsByTimeTest
                     results.getScalarOutput()
                            .get( MetricConstants.COEFFICIENT_OF_DETERMINATION );
             MetricOutputMapByTimeAndThreshold<ScalarOutput> rho = results.getScalarOutput()
-                                                                      .get( MetricConstants.CORRELATION_PEARSONS );
+                                                                      .get( MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
             MetricOutputMapByTimeAndThreshold<ScalarOutput> mae = results.getScalarOutput()
                                                                       .get( MetricConstants.MEAN_ABSOLUTE_ERROR );
             MetricOutputMapByTimeAndThreshold<ScalarOutput> me =
@@ -74,7 +74,7 @@ public final class MetricProcessorEnsemblePairsByTimeTest
                         bias.getValue( 0 ).getData().equals( -0.032093836077598345 ) );
             assertTrue( "Unexpected difference in " + MetricConstants.COEFFICIENT_OF_DETERMINATION,
                         cod.getValue( 0 ).getData().equals( 0.7873367083297588 ) );
-            assertTrue( "Unexpected difference in " + MetricConstants.CORRELATION_PEARSONS,
+            assertTrue( "Unexpected difference in " + MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
                         rho.getValue( 0 ).getData().equals( 0.8873199582618204 ) );
             assertTrue( "Unexpected difference in " + MetricConstants.MEAN_ABSOLUTE_ERROR,
                         mae.getValue( 0 ).getData().equals( 11.009512537315405 ) );
@@ -175,28 +175,28 @@ public final class MetricProcessorEnsemblePairsByTimeTest
                         + cod.getKey( 5 ),
                         cod.getValue( 5 ).getData().equals( 0.7492338765733539 ) );
             //Validate rho
-            MetricOutputMapByTimeAndThreshold<ScalarOutput> rho = results.get( MetricConstants.CORRELATION_PEARSONS );
-            assertTrue( "Expected results differ from actual results for " + MetricConstants.CORRELATION_PEARSONS
+            MetricOutputMapByTimeAndThreshold<ScalarOutput> rho = results.get( MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
+            assertTrue( "Expected results differ from actual results for " + MetricConstants.PEARSON_CORRELATION_COEFFICIENT
                         + " at "
                         + rho.getKey( 0 ),
                         rho.getValue( 0 ).getData().equals( 0.8873199582618204 ) );
-            assertTrue( "Expected results differ from actual results for " + MetricConstants.CORRELATION_PEARSONS
+            assertTrue( "Expected results differ from actual results for " + MetricConstants.PEARSON_CORRELATION_COEFFICIENT
                         + " at "
                         + rho.getKey( 1 ),
                         rho.getValue( 1 ).getData().equals( 0.8873199582618204 ) );
-            assertTrue( "Expected results differ from actual results for " + MetricConstants.CORRELATION_PEARSONS
+            assertTrue( "Expected results differ from actual results for " + MetricConstants.PEARSON_CORRELATION_COEFFICIENT
                         + " at "
                         + rho.getKey( 2 ),
                         rho.getValue( 2 ).getData().equals( 0.8748508230594344 ) );
-            assertTrue( "Expected results differ from actual results for " + MetricConstants.CORRELATION_PEARSONS
+            assertTrue( "Expected results differ from actual results for " + MetricConstants.PEARSON_CORRELATION_COEFFICIENT
                         + " at "
                         + rho.getKey( 3 ),
                         rho.getValue( 3 ).getData().equals( 0.8721422652304439 ) );
-            assertTrue( "Expected results differ from actual results for " + MetricConstants.CORRELATION_PEARSONS
+            assertTrue( "Expected results differ from actual results for " + MetricConstants.PEARSON_CORRELATION_COEFFICIENT
                         + " at "
                         + rho.getKey( 4 ),
                         rho.getValue( 4 ).getData().equals( 0.868449155921652 ) );
-            assertTrue( "Expected results differ from actual results for " + MetricConstants.CORRELATION_PEARSONS
+            assertTrue( "Expected results differ from actual results for " + MetricConstants.PEARSON_CORRELATION_COEFFICIENT
                         + " at "
                         + rho.getKey( 5 ),
                         rho.getValue( 5 ).getData().equals( 0.8655829692024641 ) );
@@ -372,28 +372,28 @@ public final class MetricProcessorEnsemblePairsByTimeTest
                         + cod.getKey( 5 ),
                         cod.getValue( 5 ).getData().equals( 0.7492338765733539 ) );
             //Validate rho
-            MetricOutputMapByTimeAndThreshold<ScalarOutput> rho = results.get( MetricConstants.CORRELATION_PEARSONS );
-            assertTrue( "Expected results differ from actual results for " + MetricConstants.CORRELATION_PEARSONS
+            MetricOutputMapByTimeAndThreshold<ScalarOutput> rho = results.get( MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
+            assertTrue( "Expected results differ from actual results for " + MetricConstants.PEARSON_CORRELATION_COEFFICIENT
                         + " at "
                         + rho.getKey( 0 ),
                         rho.getValue( 0 ).getData().equals( 0.8873199582618204 ) );
-            assertTrue( "Expected results differ from actual results for " + MetricConstants.CORRELATION_PEARSONS
+            assertTrue( "Expected results differ from actual results for " + MetricConstants.PEARSON_CORRELATION_COEFFICIENT
                         + " at "
                         + rho.getKey( 1 ),
                         rho.getValue( 1 ).getData().equals( 0.8873199582618204 ) );
-            assertTrue( "Expected results differ from actual results for " + MetricConstants.CORRELATION_PEARSONS
+            assertTrue( "Expected results differ from actual results for " + MetricConstants.PEARSON_CORRELATION_COEFFICIENT
                         + " at "
                         + rho.getKey( 2 ),
                         rho.getValue( 2 ).getData().equals( 0.8748508230594344 ) );
-            assertTrue( "Expected results differ from actual results for " + MetricConstants.CORRELATION_PEARSONS
+            assertTrue( "Expected results differ from actual results for " + MetricConstants.PEARSON_CORRELATION_COEFFICIENT
                         + " at "
                         + rho.getKey( 3 ),
                         rho.getValue( 3 ).getData().equals( 0.8721422652304439 ) );       
-            assertTrue( "Expected results differ from actual results for " + MetricConstants.CORRELATION_PEARSONS
+            assertTrue( "Expected results differ from actual results for " + MetricConstants.PEARSON_CORRELATION_COEFFICIENT
                         + " at "
                         + rho.getKey( 4 ),
                         rho.getValue( 4 ).getData().equals( 0.8683714794421868 ) );
-            assertTrue( "Expected results differ from actual results for " + MetricConstants.CORRELATION_PEARSONS
+            assertTrue( "Expected results differ from actual results for " + MetricConstants.PEARSON_CORRELATION_COEFFICIENT
                         + " at "
                         + rho.getKey( 5 ),
                         rho.getValue( 5 ).getData().equals( 0.8655829692024641 ) );
@@ -737,28 +737,28 @@ public final class MetricProcessorEnsemblePairsByTimeTest
                         + cod.getKey( 5 ),
                         cod.getValue( 5 ).getData().equals( 0.7492338765733539 ) );
             //Validate rho
-            MetricOutputMapByTimeAndThreshold<ScalarOutput> rho = results.get( MetricConstants.CORRELATION_PEARSONS );
-            assertTrue( "Expected results differ from actual results for " + MetricConstants.CORRELATION_PEARSONS
+            MetricOutputMapByTimeAndThreshold<ScalarOutput> rho = results.get( MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
+            assertTrue( "Expected results differ from actual results for " + MetricConstants.PEARSON_CORRELATION_COEFFICIENT
                         + " at "
                         + rho.getKey( 0 ),
                         rho.getValue( 0 ).getData().equals( 0.8873199582618204 ) );
-            assertTrue( "Expected results differ from actual results for " + MetricConstants.CORRELATION_PEARSONS
+            assertTrue( "Expected results differ from actual results for " + MetricConstants.PEARSON_CORRELATION_COEFFICIENT
                         + " at "
                         + rho.getKey( 1 ),
                         rho.getValue( 1 ).getData().equals( 0.8873199582618204 ) );
-            assertTrue( "Expected results differ from actual results for " + MetricConstants.CORRELATION_PEARSONS
+            assertTrue( "Expected results differ from actual results for " + MetricConstants.PEARSON_CORRELATION_COEFFICIENT
                         + " at "
                         + rho.getKey( 2 ),
                         rho.getValue( 2 ).getData().equals( 0.8748508230594344 ) );
-            assertTrue( "Expected results differ from actual results for " + MetricConstants.CORRELATION_PEARSONS
+            assertTrue( "Expected results differ from actual results for " + MetricConstants.PEARSON_CORRELATION_COEFFICIENT
                         + " at "
                         + rho.getKey( 3 ),
                         rho.getValue( 3 ).getData().equals( 0.8721422652304439 ) );
-            assertTrue( "Expected results differ from actual results for " + MetricConstants.CORRELATION_PEARSONS
+            assertTrue( "Expected results differ from actual results for " + MetricConstants.PEARSON_CORRELATION_COEFFICIENT
                         + " at "
                         + rho.getKey( 4 ),
                         rho.getValue( 4 ).getData().equals( 0.868449155921652 ) );
-            assertTrue( "Expected results differ from actual results for " + MetricConstants.CORRELATION_PEARSONS
+            assertTrue( "Expected results differ from actual results for " + MetricConstants.PEARSON_CORRELATION_COEFFICIENT
                         + " at "
                         + rho.getKey( 5 ),
                         rho.getValue( 5 ).getData().equals( 0.8655829692024641 ) );
