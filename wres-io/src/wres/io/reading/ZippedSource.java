@@ -93,12 +93,14 @@ public class ZippedSource extends BasicSource {
     }
 
 	@Override
-	public void saveForecast() throws IOException {
+	public void saveForecast() throws IOException
+    {
 	    issue(true);
 	}
 
 	@Override
-	public void saveObservation() throws IOException {
+	public void saveObservation() throws IOException
+    {
 	    issue(false);
 	}
 
@@ -110,7 +112,8 @@ public class ZippedSource extends BasicSource {
         TarArchiveInputStream archive = null;
         TarArchiveEntry archivedSource;
 
-        try {
+        try
+        {
             fileStream = new FileInputStream(this.getAbsoluteFilename());
             bufferedFile = new BufferedInputStream(fileStream);
             decompressedFileStream = new GzipCompressorInputStream(bufferedFile);
@@ -147,7 +150,13 @@ public class ZippedSource extends BasicSource {
 
             for (String filename : this.savedFiles)
             {
-                new File(filename).delete();
+                boolean fileRemoved = new File(filename).delete();
+                if (!fileRemoved)
+                {
+                    LOGGER.debug( "The file '{}' could not be removed after " +
+                                  "extracting it for reading.",
+                                  filename );
+                }
             }
         }
         catch ( InterruptedException ie )

@@ -76,7 +76,7 @@ public final class KlingGuptaEfficiencyTest
 
         //Check the parameters
         assertTrue( "Unexpected name for the Kling Gupta Efficiency.",
-                    kge.getName().equals( metaFac.getMetricName( MetricConstants.KLING_GUPTA_EFFICIENCY ) ) );
+                    kge.getName().equals( MetricConstants.KLING_GUPTA_EFFICIENCY.toString() ) );
         assertTrue( "The Kling Gupta Efficiency is decomposable.", kge.isDecomposable() );
         assertTrue( "The Kling Gupta Efficiency is a skill score.", kge.isSkillScore() );
         assertTrue( "Expected no decomposition for the Kling Gupta Efficiency.",

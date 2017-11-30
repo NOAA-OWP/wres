@@ -64,7 +64,7 @@ public final class BiasFractionTest
 
         //Check the parameters
         assertTrue( "Unexpected name for the Bias Fraction.",
-                    bf.getName().equals( metaFac.getMetricName( MetricConstants.BIAS_FRACTION ) ) );
+                    bf.getName().equals( MetricConstants.BIAS_FRACTION.toString() ) );
         assertTrue( "The Bias Fraction is not decomposable.", !bf.isDecomposable() );
         assertTrue( "The Bias Fraction is not a skill score.", !bf.isSkillScore() );
         assertTrue( "The Bias Fraction cannot be decomposed.", bf.getScoreOutputGroup() == ScoreOutputGroup.NONE );

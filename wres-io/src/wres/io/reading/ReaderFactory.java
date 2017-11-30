@@ -1,12 +1,16 @@
 package wres.io.reading;
 
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import wres.config.generated.Format;
 import wres.io.reading.fews.FEWSSource;
-import wres.io.reading.netcdf.NetCDFSource;
+import wres.io.reading.nwm.NWMSource;
 import wres.io.reading.usgs.USGSReader;
+import wres.io.reading.datacard.DatacardSource;
 import wres.util.Internal;
+import wres.util.NetCDF;
 import wres.util.Strings;
 
 /**
@@ -26,13 +30,13 @@ public class ReaderFactory {
 		switch (typeOfFile)
         {
 			case DATACARD:
-				source = new wres.io.reading.datacard.DatacardSource(filename);
+				source = new DatacardSource(filename);
 				break;
             case ARCHIVE:
                 source = new ZippedSource(filename);
                 break;
 			case NETCDF:
-				source = new NetCDFSource(filename);
+				source = new NWMSource( filename);
 				break;
 			case PI_XML:
 				source = new FEWSSource(filename);
@@ -51,18 +55,14 @@ public class ReaderFactory {
 	public static SourceType getFiletype(String filename)
 	{
 		SourceType type;
-		
-		filename = filename.toLowerCase();
+
+		filename = Paths.get(filename).getFileName().toString().toLowerCase();
 
 		// Can't do switch because of the PIXML logic
 
 		if (filename.endsWith("tar.gz") || filename.endsWith(".tgz"))
 		{
 			type = SourceType.ARCHIVE;
-		}
-		else if (filename.endsWith(".nc") || filename.endsWith(".gz"))
-		{
-			type = SourceType.NETCDF;
 		}
 		else if ( filename.endsWith(".xml") || Strings.contains(filename, ".+\\.\\d+$"))
 		{
@@ -71,6 +71,10 @@ public class ReaderFactory {
 		else if (filename.equalsIgnoreCase( "usgs" ))
         {
             type = SourceType.USGS;
+        }
+        else if ( NetCDF.isNWMData(filename ) )
+        {
+            type = SourceType.NETCDF;
         }
 		else
 		{

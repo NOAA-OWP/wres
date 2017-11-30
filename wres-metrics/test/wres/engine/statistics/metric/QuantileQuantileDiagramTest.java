@@ -43,50 +43,62 @@ public final class QuantileQuantileDiagramTest
         final QuantileQuantileDiagramBuilder b = new QuantileQuantileDiagramBuilder();
         final DataFactory outF = DefaultDataFactory.getInstance();
         final MetadataFactory metaFac = outF.getMetadataFactory();
-        b.setOutputFactory(outF);
+        b.setOutputFactory( outF );
 
         final QuantileQuantileDiagram qq = b.build();
 
         //Generate some data
         final List<PairOfDoubles> values = new ArrayList<>();
-        for(int i = 1; i < 1001; i++)
+        for ( int i = 1; i < 1001; i++ )
         {
             double left = i;
             double right = left;
-            values.add(outF.pairOf(left, right));
+            values.add( outF.pairOf( left, right ) );
         }
 
-        final SingleValuedPairs input = outF.ofSingleValuedPairs(values, metaFac.getMetadata());
+        final SingleValuedPairs input = outF.ofSingleValuedPairs( values, metaFac.getMetadata() );
 
         //Check the results       
-        final MultiVectorOutput actual = qq.apply(input);
-        double[] actualObs = actual.get(MetricDimension.OBSERVED_QUANTILES).getDoubles();
-        double[] actualPred = actual.get(MetricDimension.PREDICTED_QUANTILES).getDoubles();
-        
+        final MultiVectorOutput actual = qq.apply( input );
+        double[] actualObs = actual.get( MetricDimension.OBSERVED_QUANTILES ).getDoubles();
+        double[] actualPred = actual.get( MetricDimension.PREDICTED_QUANTILES ).getDoubles();
+
         //Check the first pair of quantiles, which should map to the first entry, since the lower bound is unknown
-        assertTrue("Difference between actual and expected quantiles of observations [" + 1.0 + ", "
-            + actualObs[0] + "].", Double.compare(actualObs[0], 1.0) == 0);
-        assertTrue("Difference between actual and expected quantiles of predictions [" + 1.0 + ", "
-            + actualPred[0] + "].", Double.compare(actualPred[0], 1.0) == 0);
+        assertTrue( "Difference between actual and expected quantiles of observations [" + 1.0
+                    + ", "
+                    + actualObs[0]
+                    + "].",
+                    Double.compare( actualObs[0], 1.0 ) == 0 );
+        assertTrue( "Difference between actual and expected quantiles of predictions [" + 1.0
+                    + ", "
+                    + actualPred[0]
+                    + "].",
+                    Double.compare( actualPred[0], 1.0 ) == 0 );
 
         //Expected values
-        for(int i = 1; i < 1000; i++)
+        for ( int i = 1; i < 1000; i++ )
         {
             double expectedObserved = i + 1;
             double expectedPredicted = i + 1;
-            double actualObserved = Precision.round(actualObs[i], 5);
-            double actualPredicted = Precision.round(actualPred[i], 5);
-            assertTrue("Difference between actual and expected quantiles of observations [" + expectedObserved + ", "
-                + actualObserved + "].", Double.compare(actualObserved, expectedObserved) == 0);
-            assertTrue("Difference between actual and expected quantiles of predictions [" + expectedPredicted + ", "
-                + actualPredicted + "].", Double.compare(actualPredicted, expectedPredicted) == 0);
+            double actualObserved = Precision.round( actualObs[i], 5 );
+            double actualPredicted = Precision.round( actualPred[i], 5 );
+            assertTrue( "Difference between actual and expected quantiles of observations [" + expectedObserved
+                        + ", "
+                        + actualObserved
+                        + "].",
+                        Double.compare( actualObserved, expectedObserved ) == 0 );
+            assertTrue( "Difference between actual and expected quantiles of predictions [" + expectedPredicted
+                        + ", "
+                        + actualPredicted
+                        + "].",
+                        Double.compare( actualPredicted, expectedPredicted ) == 0 );
         }
 
         //Check the parameters
-        assertTrue("Unexpected name for the Quantile-Quantile Diagram.",
-                   qq.getName().equals(metaFac.getMetricName(MetricConstants.QUANTILE_QUANTILE_DIAGRAM)));
+        assertTrue( "Unexpected name for the Quantile-Quantile Diagram.",
+                    qq.getName().equals( MetricConstants.QUANTILE_QUANTILE_DIAGRAM.toString() ) );
     }
-    
+
     /**
      * Constructs a {@link QuantileQuantileDiagram} and checks for exceptional cases.
      * @throws MetricParameterException if the metric could not be constructed
@@ -95,11 +107,11 @@ public final class QuantileQuantileDiagramTest
     @Test
     public void test2Exceptions() throws MetricParameterException
     {
-        
+
         //Build the metric
         final QuantileQuantileDiagramBuilder b = new QuantileQuantileDiagramBuilder();
         final DataFactory outF = DefaultDataFactory.getInstance();
-        b.setOutputFactory(outF);
+        b.setOutputFactory( outF );
 
         final QuantileQuantileDiagram qq = b.build();
 
@@ -109,9 +121,9 @@ public final class QuantileQuantileDiagramTest
             qq.apply( null );
             fail( "Expected an exception on null input." );
         }
-        catch(MetricInputException e)
-        {          
+        catch ( MetricInputException e )
+        {
         }
-    }    
+    }
 
 }

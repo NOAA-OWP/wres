@@ -47,13 +47,13 @@ public enum MetricConstants
      * Identifier for a box plot of errors by observed value.
      */
     
-    BOX_PLOT_OF_ERRORS_BY_OBSERVED( MetricInputGroup.ENSEMBLE, MetricOutputGroup.BOXPLOT ),
+    BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE( MetricInputGroup.ENSEMBLE, MetricOutputGroup.BOXPLOT ),
     
     /**
      * Identifier for a box plot of errors by forecast value.
      */
     
-    BOX_PLOT_OF_ERRORS_BY_FORECAST( MetricInputGroup.ENSEMBLE, MetricOutputGroup.BOXPLOT ),    
+    BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE( MetricInputGroup.ENSEMBLE, MetricOutputGroup.BOXPLOT ),    
 
     /**
      * Identifier for coefficient of determination.
@@ -83,7 +83,7 @@ public enum MetricConstants
      * Identifier for Pearson's product-moment correlation coefficient.
      */
 
-    CORRELATION_PEARSONS( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCALAR ),
+    PEARSON_CORRELATION_COEFFICIENT( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCALAR ),
 
     /**
      * Identifier for a Critical Success Index.
@@ -264,7 +264,7 @@ public enum MetricConstants
      * Identifier for the Type-II conditional bias component of a score decomposition.
      */
 
-    TYPE_II_BIAS( ScoreOutputGroup.LBR, ScoreOutputGroup.CR_AND_LBR ),
+    TYPE_II_CONDITIONAL_BIAS( ScoreOutputGroup.LBR, ScoreOutputGroup.CR_AND_LBR ),
 
     /**
      * Identifier for the discrimination component of a score decomposition.
@@ -661,12 +661,6 @@ public enum MetricConstants
          */
 
         FORECAST_PROBABILITY,
-
-        /**
-         * Identifier for the conditional observed probability of an event, given the forecast probability.
-         */
-
-        OBSERVED_GIVEN_FORECAST_PROBABILITY,
 
         /**
          * Identifier for the observed relative frequency with which an event occurs.

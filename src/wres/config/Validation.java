@@ -27,6 +27,7 @@ import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.TimeAggregationConfig;
 import wres.io.config.ProjectConfigPlus;
+import wres.util.Strings;
 
 
 /**
@@ -531,10 +532,17 @@ public class Validation
                                     + "<alias>{}ONE</alias><alias>{}TWO"
                                     + "</alias></feature>.";
 
-        String name = featureConfig.getLocationId();
         List<String> aliases = featureConfig.getAlias();
 
-        if ( name.length() > 0 )
+        // There aren't any aliases to validate, therefore valid
+        if (aliases == null || aliases.size() == 0)
+        {
+            return result;
+        }
+
+        String name = featureConfig.getLocationId();
+
+        if ( Strings.hasValue(name) && name.length() > 0 )
         {
             if ( stuffAlreadyUsed.contains( name ) )
             {

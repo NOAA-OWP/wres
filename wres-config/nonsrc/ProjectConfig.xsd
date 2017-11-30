@@ -202,13 +202,13 @@
             <xs:enumeration value="all valid" />
 
             <xs:enumeration value="bias fraction" />
-            <xs:enumeration value="box plot of errors by observed" />
-            <xs:enumeration value="box plot of errors by forecast" />
+            <xs:enumeration value="box plot of errors by observed value" />
+            <xs:enumeration value="box plot of errors by forecast value" />
             <xs:enumeration value="brier score" />
             <xs:enumeration value="brier skill score" />
             <xs:enumeration value="coefficient of determination" />
             <xs:enumeration value="contingency table" />
-            <xs:enumeration value="correlation pearsons" />
+            <xs:enumeration value="pearson correlation coefficient" />
             <xs:enumeration value="continuous ranked probability score" />
             <xs:enumeration value="continuous ranked probability skill score" />
             <xs:enumeration value="critical success index" />

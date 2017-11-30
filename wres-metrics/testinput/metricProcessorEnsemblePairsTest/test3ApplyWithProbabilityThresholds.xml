@@ -43,7 +43,7 @@
       <operator>greater than or equal to</operator>
     </probabilityThresholds>
     <metric label="ME"><name>mean error</name></metric>
-    <metric><name>correlation pearsons</name></metric>
+    <metric><name>pearson correlation coefficient</name></metric>
     <metric><name>mean absolute error</name></metric>
     <metric><name>bias fraction</name></metric>
     <metric><name>coefficient of determination</name></metric>

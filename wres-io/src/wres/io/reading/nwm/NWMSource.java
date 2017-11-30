@@ -1,4 +1,4 @@
-package wres.io.reading.netcdf;
+package wres.io.reading.nwm;
 
 import java.io.IOException;
 import java.sql.SQLException;
@@ -8,7 +8,6 @@ import org.slf4j.LoggerFactory;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
 
-import wres.io.concurrency.Executor;
 import wres.io.concurrency.WRESRunnable;
 import wres.io.data.caching.Variables;
 import wres.io.reading.BasicSource;
@@ -23,16 +22,16 @@ import wres.util.Strings;
  *
  */
 @Internal(exclusivePackage = "wres.io")
-public class NetCDFSource extends BasicSource
+public class NWMSource extends BasicSource
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(NetCDFSource.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(NWMSource.class);
 
 	/**
 	 * 
 	 * @param filename the file name
 	 */
 	@Internal(exclusivePackage = "wres.io")
-	public NetCDFSource(String filename)
+	public NWMSource( String filename)
     {
 		this.setFilename(filename);
 		this.setHash();
@@ -67,17 +66,17 @@ public class NetCDFSource extends BasicSource
                 WRESRunnable saver;
                 if (NetCDF.isGridded(var))
                 {
-                    saver = new GriddedNetCDFValueSaver(this.getFilename(),
-                                                        Variables.getVariableID(var.getShortName(),
+                    saver = new GriddedNWMValueSaver( this.getFilename(),
+													  Variables.getVariableID(var.getShortName(),
 																				var.getUnitsString()),
-														this.getFutureHash());
+													  this.getFutureHash());
                 }
                 else
                 {
-                    saver = new VectorNetCDFValueSaver(this.getFilename(),
-													   this.getFutureHash(),
-													   this.dataSourceConfig,
-													   this.getProjectDetails());
+                    saver = new VectorNWMValueSaver( this.getFilename(),
+													 this.getFutureHash(),
+													 this.dataSourceConfig,
+													 this.getProjectDetails());
                 }
 
                 saver.setOnRun(ProgressMonitor.onThreadStartHandler());

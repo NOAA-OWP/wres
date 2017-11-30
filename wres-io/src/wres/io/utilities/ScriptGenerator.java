@@ -224,8 +224,8 @@ public final class ScriptGenerator
                     script.append(" + INTERVAL '1 hour' * ").append(timeShift);
                 }
 
-                script.append(" <= ").append(projectDetails.getLatestDate())
-                      .append("            ")
+                script.append(" <= '").append(projectDetails.getLatestDate())
+                      .append("'            ")
                       .append("-- Only retrieve observations on or before this date")
                       .append(NEWLINE);
             }

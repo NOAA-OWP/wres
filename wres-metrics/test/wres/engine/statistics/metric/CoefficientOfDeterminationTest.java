@@ -29,7 +29,7 @@ import wres.engine.statistics.metric.CoefficientOfDetermination.CoefficientOfDet
  */
 public final class CoefficientOfDeterminationTest
 {
-    
+
     /**
      * Constructs a {@link CoefficientOfDetermination}.
      * @throws MetricParameterException if the metric could not be constructed 
@@ -46,29 +46,32 @@ public final class CoefficientOfDeterminationTest
 
         //Build the metric
         final CoefficientOfDeterminationBuilder b = new CoefficientOfDetermination.CoefficientOfDeterminationBuilder();
-        b.setOutputFactory(dataF);
+        b.setOutputFactory( dataF );
         final CoefficientOfDetermination cod = b.build();
 
-        final MetricOutputMetadata m1 = metaFac.getOutputMetadata(input.getData().size(),
-                                                                  metaFac.getDimension(),
-                                                                  metaFac.getDimension(),
-                                                                  MetricConstants.COEFFICIENT_OF_DETERMINATION,
-                                                                  MetricConstants.MAIN);
+        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getData().size(),
+                                                                   metaFac.getDimension(),
+                                                                   metaFac.getDimension(),
+                                                                   MetricConstants.COEFFICIENT_OF_DETERMINATION,
+                                                                   MetricConstants.MAIN );
 
         //Compute normally
-        final ScalarOutput actual = cod.apply(input);
-        final ScalarOutput expected = dataF.ofScalarOutput(Math.pow(0.9999999910148981, 2), m1);
-        assertTrue("Actual: " + actual.getData().doubleValue() + ". Expected: " + expected.getData().doubleValue()
-            + ".", actual.equals(expected));
+        final ScalarOutput actual = cod.apply( input );
+        final ScalarOutput expected = dataF.ofScalarOutput( Math.pow( 0.9999999910148981, 2 ), m1 );
+        assertTrue( "Actual: " + actual.getData().doubleValue()
+                    + ". Expected: "
+                    + expected.getData().doubleValue()
+                    + ".",
+                    actual.equals( expected ) );
 
         //Check the parameters
-        assertTrue("Unexpected name for coefficient of determination.",
-                   cod.getName().equals(metaFac.getMetricName(MetricConstants.COEFFICIENT_OF_DETERMINATION)));
-        assertTrue("Coefficient of determination is not decomposable.", !cod.isDecomposable());
-        assertTrue("Coefficient of determination is not a skill score.", !cod.isSkillScore());
-        assertTrue("Coefficient of determination cannot be decomposed.",
-                   cod.getScoreOutputGroup() == ScoreOutputGroup.NONE);
-        assertTrue("Coefficient of determination does not have real units", !cod.hasRealUnits());
+        assertTrue( "Unexpected name for coefficient of determination.",
+                    cod.getName().equals( MetricConstants.COEFFICIENT_OF_DETERMINATION.toString() ) );
+        assertTrue( "Coefficient of determination is not decomposable.", !cod.isDecomposable() );
+        assertTrue( "Coefficient of determination is not a skill score.", !cod.isSkillScore() );
+        assertTrue( "Coefficient of determination cannot be decomposed.",
+                    cod.getScoreOutputGroup() == ScoreOutputGroup.NONE );
+        assertTrue( "Coefficient of determination does not have real units", !cod.hasRealUnits() );
     }
 
     /**
@@ -83,7 +86,7 @@ public final class CoefficientOfDeterminationTest
         final DataFactory outF = DefaultDataFactory.getInstance();
         final MetadataFactory metaFac = outF.getMetadataFactory();
         final CoefficientOfDeterminationBuilder b = new CoefficientOfDetermination.CoefficientOfDeterminationBuilder();
-        b.setOutputFactory(outF);
+        b.setOutputFactory( outF );
         final CoefficientOfDetermination cod = b.build();
 
         //Check the exceptions
@@ -102,13 +105,13 @@ public final class CoefficientOfDeterminationTest
             cod.apply( outF.ofSingleValuedPairs( list, metaFac.getOutputMetadata( 1,
                                                                                   metaFac.getDimension(),
                                                                                   metaFac.getDimension(),
-                                                                                  MetricConstants.CORRELATION_PEARSONS ) ) );
+                                                                                  MetricConstants.PEARSON_CORRELATION_COEFFICIENT ) ) );
             fail( "Expected a checked exception on invalid inputs: insufficient pairs." );
         }
         catch ( MetricCalculationException e )
         {
         }
-    }    
-    
-    
+    }
+
+
 }

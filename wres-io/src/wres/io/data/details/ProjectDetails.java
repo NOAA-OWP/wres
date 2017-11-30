@@ -940,6 +940,15 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         }
     }
 
+    public boolean hasMatchingData(FeatureDetails feature)
+    {
+        boolean matchExists = false;
+
+        StringBuilder script = new StringBuilder();
+
+        return matchExists;
+    }
+
     @Override
     public Integer getId() {
         return this.projectID;

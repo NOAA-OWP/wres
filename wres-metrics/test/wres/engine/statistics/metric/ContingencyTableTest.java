@@ -43,25 +43,28 @@ public final class ContingencyTableTest
 
         //Metadata for the output
         final MetricOutputMetadata m1 =
-                                      metaFac.getOutputMetadata(input.getData().size(),
-                                                                metaFac.getDimension(),
-                                                                metaFac.getDimension(),
-                                                                MetricConstants.CONTINGENCY_TABLE,
-                                                                MetricConstants.MAIN,
-                                                                metaFac.getDatasetIdentifier("DRRC2", "SQIN", "HEFS"));
+                metaFac.getOutputMetadata( input.getData().size(),
+                                           metaFac.getDimension(),
+                                           metaFac.getDimension(),
+                                           MetricConstants.CONTINGENCY_TABLE,
+                                           MetricConstants.MAIN,
+                                           metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ) );
 
         //Build the metric
         final ContingencyTableBuilder<DichotomousPairs> b = new ContingencyTable.ContingencyTableBuilder<>();
-        b.setOutputFactory(outF);
+        b.setOutputFactory( outF );
         final ContingencyTable<DichotomousPairs> table = b.build();
-        final double[][] benchmark = new double[][]{{82.0, 38.0}, {23.0, 222.0}};
-        final MatrixOutput actual = table.apply(input);
-        final MatrixOutput expected = outF.ofMatrixOutput(benchmark, m1);
-        assertTrue("Actual: " + actual.getData().getDoubles()[0] + ". Expected: " + expected.getData().getDoubles()[0]
-            + ".", actual.equals(expected));
+        final double[][] benchmark = new double[][] { { 82.0, 38.0 }, { 23.0, 222.0 } };
+        final MatrixOutput actual = table.apply( input );
+        final MatrixOutput expected = outF.ofMatrixOutput( benchmark, m1 );
+        assertTrue( "Actual: " + actual.getData().getDoubles()[0]
+                    + ". Expected: "
+                    + expected.getData().getDoubles()[0]
+                    + ".",
+                    actual.equals( expected ) );
 
         //Check the parameters
-        assertTrue(table.getName().equals(metaFac.getMetricName(MetricConstants.CONTINGENCY_TABLE)));
+        assertTrue( table.getName().equals( MetricConstants.CONTINGENCY_TABLE.toString() ) );
     }
 
     /**
@@ -75,7 +78,7 @@ public final class ContingencyTableTest
         //Build the metric
         final DataFactory outF = DefaultDataFactory.getInstance();
         final ContingencyTableBuilder<DichotomousPairs> b = new ContingencyTable.ContingencyTableBuilder<>();
-        b.setOutputFactory(outF);
+        b.setOutputFactory( outF );
         final ContingencyTable<DichotomousPairs> table = b.build();
 
         //Check the exceptions
@@ -87,6 +90,6 @@ public final class ContingencyTableTest
         catch ( MetricInputException e )
         {
         }
-    }    
-    
+    }
+
 }

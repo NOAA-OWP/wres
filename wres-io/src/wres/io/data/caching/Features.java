@@ -13,7 +13,9 @@ import java.util.TreeMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
+import wres.config.generated.Format;
 import wres.config.generated.ProjectConfig;
 import wres.io.data.details.FeatureDetails;
 import wres.io.utilities.Database;
@@ -135,7 +137,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         LOGGER.trace("getFeatureID - args {} ; {}", lid, featureName);
         FeatureDetails detail = new FeatureDetails();
         detail.setLid( lid);
-        detail.featureName = featureName;
+        detail.setFeatureName( featureName );
         return getFeatureID(detail);
     }
 
@@ -171,12 +173,108 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
     public static Set<FeatureDetails> getAllDetails( ProjectConfig projectConfig ) throws SQLException
     {
         Set<FeatureDetails> features = new HashSet<>(  );
+        boolean hasNetCDF = false;
+        boolean hasUSGS = false;
+
+        for ( DataSourceConfig.Source source : projectConfig.getInputs().getLeft().getSource())
+        {
+            hasNetCDF = hasNetCDF || source.getFormat() == Format.NET_CDF;
+            hasUSGS = hasUSGS || source.getFormat() == Format.USGS;
+
+            if (hasUSGS && hasNetCDF)
+            {
+                break;
+            }
+        }
+
+        for ( DataSourceConfig.Source source : projectConfig.getInputs().getRight().getSource())
+        {
+            hasNetCDF = hasNetCDF || source.getFormat() == Format.NET_CDF;
+            hasUSGS = hasUSGS || source.getFormat() == Format.USGS;
+
+            if (hasUSGS && hasNetCDF)
+            {
+                break;
+            }
+        }
+
+        if (projectConfig.getInputs().getBaseline() != null)
+        {
+            for ( DataSourceConfig.Source source : projectConfig.getInputs()
+                                                                .getBaseline()
+                                                                .getSource() )
+            {
+                hasNetCDF = hasNetCDF || source.getFormat() == Format.NET_CDF;
+                hasUSGS = hasUSGS || source.getFormat() == Format.USGS;
+
+                if ( hasUSGS && hasNetCDF )
+                {
+                    break;
+                }
+            }
+        }
 
         for (Feature feature : projectConfig.getPair().getFeature())
         {
             for (FeatureDetails details : Features.getAllDetails( feature ))
             {
-                features.add( details );
+                // If we aren't using NetCDF or USGS data, we don't need to worry
+                // about identifiers on the locations
+                if (!(hasNetCDF || hasUSGS))
+                {
+                    features.add( details );
+                }
+                // If we are using both NetCDF and USGS data, we need both Gage IDs
+                // and indexes for NetCDF files to be able to load any sort of
+                // data for evaluation
+                else if ((hasNetCDF && details.getNwmIndex() != null) &&
+                         (hasUSGS && Strings.hasValue( details.getGageID() )))
+                {
+                    features.add( details );
+                }
+                // If we are using NetCDF data, we need indexes to determine what
+                // data to retrieve
+                else if (hasNetCDF && details.getNwmIndex() != null)
+                {
+                    features.add( details );
+                }
+                // If we are using USGS data, we need a gageID or we won't be
+                // able to retrieve data
+                else if (hasUSGS && Strings.hasValue( details.getGageID() ))
+                {
+                    features.add( details );
+                }
+                else
+                {
+                    String message = "";
+                    if ((hasNetCDF && details.getNwmIndex() == null) &&
+                        (hasUSGS && !Strings.hasValue( details.getGageID() )))
+                    {
+                        message = "Since this project uses both USGS and NetCDF " +
+                                  "data, the location {} can't be used for " +
+                                  "evaluation because there is not enough " +
+                                  "information available to connect it to both " +
+                                  "USGS and NetCDF sources.";
+                    }
+                    else if (hasNetCDF && details.getNwmIndex() == null)
+                    {
+                        message = "Since this project uses NetCDF data, the " +
+                                  "location {} cannot be used for " +
+                                  "evaluation because there is not enough " +
+                                  "information available to link it to a NetCDF " +
+                                  "source file.";
+                    }
+                    else if (hasUSGS && !Strings.hasValue( details.getGageID() ))
+                    {
+                        message = "Since this project uses USGS data, the " +
+                                  "location {} cannot be used for " +
+                                  "evaluation because there is not enough " +
+                                  "information available to link it to a valid " +
+                                  "USGS location.";
+                    }
+
+                    LOGGER.debug(message, details.toString());
+                }
             }
         }
 
@@ -205,7 +303,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
 
         if (Strings.hasValue(feature.getRfc()))
         {
-            details.addAll(Features.getDetailsByRFC( feature.getRfc() ));
+            details.addAll(Features.getDetailsByRFC( feature.getRfc().toUpperCase() ));
         }
 
         if (Strings.hasValue( feature.getLocationId() ))
@@ -294,7 +392,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
             {
                 FeatureDetails details = new FeatureDetails( closestFeatures );
                 features.add( details );
-                Features.getCache().addElement( details );
+                Features.getCache().add( details );
             }
         }
         finally
@@ -337,7 +435,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
             {
                 FeatureDetails details = new FeatureDetails( hucFeatures );
                 features.add( details );
-                Features.getCache().addElement( details );
+                Features.getCache().add( details );
             }
         }
         finally
@@ -377,7 +475,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
             {
                 FeatureDetails details = new FeatureDetails( rfcFeatures );
                 features.add( details );
-                Features.getCache().addElement( details );
+                Features.getCache().add( details );
             }
         }
         finally

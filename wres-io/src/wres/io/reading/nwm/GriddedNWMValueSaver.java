@@ -1,4 +1,4 @@
-package wres.io.reading.netcdf;
+package wres.io.reading.nwm;
 
 import java.io.IOException;
 import java.nio.file.Paths;
@@ -33,10 +33,10 @@ import wres.util.Strings;
  * @author Christopher Tubbs
  */
 @Internal(exclusivePackage = "wres.io")
-class GriddedNetCDFValueSaver extends WRESRunnable
+class GriddedNWMValueSaver extends WRESRunnable
 {
 	private final static String DELIMITER = ",";
-    private static final Logger LOGGER = LoggerFactory.getLogger(GriddedNetCDFValueSaver.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(GriddedNWMValueSaver.class);
 
     private int sourceID = Integer.MIN_VALUE;
     private final int variableID;
@@ -55,7 +55,7 @@ class GriddedNetCDFValueSaver extends WRESRunnable
     private final Future<String> futureHash;
 
     @Internal(exclusivePackage = "wres.io")
-	public GriddedNetCDFValueSaver (String fileName, int variableID, Future<String> futureHash)
+	public GriddedNWMValueSaver( String fileName, int variableID, Future<String> futureHash)
 	{
 		this.fileName = fileName;
 		this.variableID = variableID;
@@ -475,6 +475,6 @@ class GriddedNetCDFValueSaver extends WRESRunnable
 
     @Override
     protected Logger getLogger () {
-        return GriddedNetCDFValueSaver.LOGGER;
+        return GriddedNWMValueSaver.LOGGER;
     }
 }

@@ -41,29 +41,33 @@ public final class RootMeanSquareErrorTest
         final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = metaFac.getOutputMetadata(input.getData().size(),
-                                                            metaFac.getDimension(),
-                                                            metaFac.getDimension(),
-                                                            MetricConstants.ROOT_MEAN_SQUARE_ERROR,
-                                                            MetricConstants.MAIN);
+        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getData().size(),
+                                                                   metaFac.getDimension(),
+                                                                   metaFac.getDimension(),
+                                                                   MetricConstants.ROOT_MEAN_SQUARE_ERROR,
+                                                                   MetricConstants.MAIN );
 
         //Build the metric
         final RootMeanSquareErrorBuilder b = new RootMeanSquareError.RootMeanSquareErrorBuilder();
-        b.setOutputFactory(outF);
+        b.setOutputFactory( outF );
         final RootMeanSquareError mse = b.build();
 
         //Check the results
-        final ScalarOutput actual = mse.apply(input);
-        final ScalarOutput expected = outF.ofScalarOutput(632.4586381732801, m1);
-        assertTrue("Actual: " + actual.getData() + ". Expected: " + expected.getData() + ".", actual.equals(expected));
+        final ScalarOutput actual = mse.apply( input );
+        final ScalarOutput expected = outF.ofScalarOutput( 632.4586381732801, m1 );
+        assertTrue( "Actual: " + actual.getData()
+                    + ". Expected: "
+                    + expected.getData()
+                    + ".",
+                    actual.equals( expected ) );
 
         //Check the parameters
-        assertTrue("Unexpected name for the Root Mean Square Error.",
-                   mse.getName().equals(metaFac.getMetricName(MetricConstants.ROOT_MEAN_SQUARE_ERROR)));
-        assertTrue("The Root Mean Square Error is not decomposable.", !mse.isDecomposable());
-        assertTrue("The Root Mean Square Error is not a skill score.", !mse.isSkillScore());
-        assertTrue("Expected no decomposition for the Root Mean Square Error.",
-                   mse.getScoreOutputGroup() == ScoreOutputGroup.NONE);
+        assertTrue( "Unexpected name for the Root Mean Square Error.",
+                    mse.getName().equals( MetricConstants.ROOT_MEAN_SQUARE_ERROR.toString() ) );
+        assertTrue( "The Root Mean Square Error is not decomposable.", !mse.isDecomposable() );
+        assertTrue( "The Root Mean Square Error is not a skill score.", !mse.isSkillScore() );
+        assertTrue( "Expected no decomposition for the Root Mean Square Error.",
+                    mse.getScoreOutputGroup() == ScoreOutputGroup.NONE );
 
     }
 
