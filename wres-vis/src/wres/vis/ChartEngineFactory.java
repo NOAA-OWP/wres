@@ -263,7 +263,7 @@ public abstract class ChartEngineFactory
         dataSources.add( new MultiVectorOutputDiagramXYChartDataSource( 0,
                                                                         inputSlice,
                                                                         MetricDimension.FORECAST_PROBABILITY,
-                                                                        MetricDimension.OBSERVED_GIVEN_FORECAST_PROBABILITY,
+                                                                        MetricDimension.OBSERVED_RELATIVE_FREQUENCY,
                                                                         "Forecast Probability",
                                                                         "Observed Relative Frequency" ) );
         dataSources.add( new MultiVectorOutputDiagramXYChartDataSource( 1,

@@ -72,7 +72,7 @@ public final class ReliabilityDiagramTest
 
         Map<MetricDimension, double[]> output = new HashMap<>();
         output.put( MetricDimension.FORECAST_PROBABILITY, expectedFProb );
-        output.put( MetricDimension.OBSERVED_GIVEN_FORECAST_PROBABILITY, expectedOProb );
+        output.put( MetricDimension.OBSERVED_RELATIVE_FREQUENCY, expectedOProb );
         output.put( MetricDimension.SAMPLE_SIZE, expectedSample );
 
         final MultiVectorOutput expected = outF.ofMultiVectorOutput( output, m1 );
