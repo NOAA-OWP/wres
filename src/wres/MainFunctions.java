@@ -28,23 +28,18 @@ import ucar.ma2.Array;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
 
-import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.inputs.MetricInput;
 import wres.io.Operations;
 import wres.io.concurrency.Downloader;
 import wres.io.concurrency.Executor;
 import wres.io.concurrency.SQLExecutor;
 import wres.io.concurrency.WRESRunnable;
 import wres.io.config.ConfigHelper;
-import wres.io.config.ProjectConfigPlus;
 import wres.io.config.SystemSettings;
 import wres.io.reading.ReaderFactory;
 import wres.io.reading.SourceType;
 import wres.io.reading.usgs.USGSParameterReader;
-import wres.io.reading.usgs.USGSReader;
 import wres.io.utilities.Database;
-import wres.io.retrieval.InputGenerator;
 import wres.util.NetCDF;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
@@ -127,7 +122,6 @@ final class MainFunctions
 		prototypes.put("loadfeatures", loadFeatures());
 		prototypes.put("killconnections", killWRESConnections());
 		prototypes.put("testchecksum", testChecksum());
-		prototypes.put( "savepairs", savePairs() );
 		prototypes.put( "loadusgsparameters", loadUSGSParameters());
 
 		return prototypes;
@@ -268,57 +262,6 @@ final class MainFunctions
 			return result;
 		};
 	}
-
-	private static Function<String[], Integer> savePairs()
-    {
-        return (final String[] args) -> {
-            Integer result = FAILURE;
-
-            if (args.length >= 1)
-            {
-                try
-                {
-                    ProjectConfig projectConfig = ProjectConfigPlus.from( Paths.get( args[0] ) ).getProjectConfig();
-
-                    Feature feature = projectConfig.getPair()
-                                                   .getFeature()
-                                                   .get( 0 );
-
-                    InputGenerator generator = Operations.getInputs(projectConfig,
-                                                                     feature );
-
-                    List<Future<MetricInput<?>>> futures = new ArrayList<>(  );
-
-                    for (Future<MetricInput<?>> inputFuture : generator)
-                    {
-                        futures.add( inputFuture );
-                    }
-
-                    futures.forEach( metricInputFuture -> {
-                        try
-                        {
-                            metricInputFuture.get();
-                        }
-                        catch ( InterruptedException | ExecutionException e )
-                        {
-                            LOGGER.error( Strings.getStackTrace( e ) );
-                        }
-                    } );
-
-                    result = SUCCESS;
-                }
-                catch ( IOException e )
-                {
-                    LOGGER.error( Strings.getStackTrace( e ));
-                }
-            }
-            else
-            {
-                LOGGER.error( "usage: savePairs <path to project>" );
-            }
-            return result;
-        };
-    }
 
     /**
      * Spawns threads to download NWM data and store them in easy to reach
