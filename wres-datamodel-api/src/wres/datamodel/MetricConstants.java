@@ -663,12 +663,6 @@ public enum MetricConstants
         FORECAST_PROBABILITY,
 
         /**
-         * Identifier for the conditional observed probability of an event, given the forecast probability.
-         */
-
-        OBSERVED_GIVEN_FORECAST_PROBABILITY,
-
-        /**
          * Identifier for the observed relative frequency with which an event occurs.
          */
 
