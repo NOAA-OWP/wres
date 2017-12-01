@@ -747,7 +747,8 @@ public final class PIXMLReader extends XMLReader
 	 * @return The ID of the position for the variable being parsed
 	 * @throws SQLException Thrown if the ID of the position could not be loaded from the cache
 	 */
-	private int getVariablePositionID() throws SQLException {
+	private int getVariablePositionID() throws SQLException
+	{
 		if (currentVariablePositionID == null)
 		{
 		    // TODO: This needs to rely on a FeatureDetails object, not an LID
@@ -901,7 +902,8 @@ public final class PIXMLReader extends XMLReader
         return approved;
     }
     
-    private boolean featureIsApproved (final String lid) {
+    private boolean featureIsApproved (final String lid)
+    {
 	    boolean approved = true;
 
 	    boolean hasLocations = Collections.exists(this.getSpecifiedFeatures(), (Feature feature) -> {

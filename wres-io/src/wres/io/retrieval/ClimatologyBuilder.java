@@ -451,7 +451,7 @@ class ClimatologyBuilder
             // Add and convert all retrieved values
             while ( results.next() )
             {
-                Double value = results.getDouble( "observed_value" );
+                Double value = Database.getValue( results, "observed_value" );
                 if ( value == null )
                 {
                     continue;
