@@ -4,13 +4,10 @@ import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
 import java.util.ArrayList;
-import java.util.LinkedList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
 import java.util.Stack;
 import java.util.TreeMap;
 
@@ -40,7 +37,6 @@ import wres.io.reading.usgs.waterml.timeseries.TimeSeriesValue;
 import wres.io.reading.usgs.waterml.timeseries.TimeSeriesValues;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
-import wres.util.Collections;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
 import wres.util.Time;
@@ -142,14 +138,15 @@ public class USGSReader extends BasicSource
     }
 
     @Override
-    public void saveObservation() throws IOException
+    public List<String> saveObservation() throws IOException
     {
         this.operationStartTime = Time.convertDateToString( OffsetDateTime.now() );
         this.load();
 
         if (this.response == null ||
-            Collections.exists(this.response.getValue().getTimeSeries(), (TimeSeries series) ->
-                    series.getValues() == null || series.getValues().length == 0 ))
+            wres.util.Collections.exists(
+                    this.response.getValue().getTimeSeries(), (TimeSeries series) ->
+                            series.getValues() == null || series.getValues().length == 0 ) )
         {
             throw new IOException( "No USGS data could be loaded with the given configuration." );
         }
@@ -190,6 +187,10 @@ public class USGSReader extends BasicSource
         {
             throw new IOException( "USGS observations could not be linked to this project.", e);
         }
+
+        List<String> result = new ArrayList<>( 1 );
+        result.add( this.getHash() );
+        return Collections.unmodifiableList( result );
     }
 
     private void enforceValidFeatures(List<String> foundLocations)
@@ -496,9 +497,9 @@ public class USGSReader extends BasicSource
         if (!this.variablePositionIDs.containsKey( gageID ))
         {
             FeatureDetails details =
-                    Collections.find( this.getProjectDetails().getFeatures(),
-                                      feature -> feature.getGageID() != null &&
-                                                 feature.getGageID().equalsIgnoreCase( gageID ) );
+                    wres.util.Collections.find( this.getProjectDetails().getFeatures(),
+                                                feature -> feature.getGageID() != null &&
+                                                           feature.getGageID().equalsIgnoreCase( gageID ) );
 
             this.variablePositionIDs.put(gageID,
                                          details.getVariablePositionID( this.getVariableID() ));

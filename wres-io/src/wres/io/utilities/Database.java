@@ -11,6 +11,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -96,13 +97,13 @@ public final class Database {
 	/**
 	 * A queue containing tasks used to ingest data into the database
 	 */
-	private static final LinkedBlockingQueue<Future> storedIngestTasks =
+    private static final LinkedBlockingQueue<Future<List<String>>> storedIngestTasks =
 			new LinkedBlockingQueue<>();
 
 	/**
 	 * @return Either the first value in the ingest queue or null if none exist
 	 */
-	public static Future getStoredIngestTask()
+    public static Future<List<String>> getStoredIngestTask()
     {
 		return storedIngestTasks.poll();
 	}
@@ -334,32 +335,47 @@ public final class Database {
      * Loops through all stored ingest tasks and ensures that they all complete
      * @throws IngestException if the ingest fails or is interrupted
      */
-	public static void completeAllIngestTasks() throws IngestException
+    public static List<String> completeAllIngestTasks() throws IngestException
     {
 	    if (LOGGER.isTraceEnabled())
         {
             LOGGER.trace( "Now completing all issued ingest tasks..." );
         }
 
+        List<String> result = new ArrayList<>();
+
         // This will gather all left over timeseries values that haven't
         // been sent to the database yet.
         TimeSeriesValues.complete();
 
-		Future task;
+		Future<List<String>> task;
+
 	    boolean shouldAnalyze = false;
 
 		try
 		{
-			while (storedIngestTasks.peek() != null)
+            task = getStoredIngestTask();
+
+            while ( task != null )
             {
                 shouldAnalyze = true;
 				ProgressMonitor.increment();
-				task = getStoredIngestTask();
+
 				if (!task.isDone())
 				{
 					try
                     {
-						task.get();
+						List<String> singleResult = task.get();
+
+                        if ( singleResult != null )
+                        {
+                            result.addAll( singleResult );
+                        }
+                        else
+                        {
+                            // TODO: remove or demote message after fix issue
+                            LOGGER.warn( "An unexpected null value in Database class." );
+                        }
 					}
 					catch (ExecutionException e)
                     {
@@ -368,6 +384,7 @@ public final class Database {
 				}
 
 				ProgressMonitor.completeStep();
+                task = getStoredIngestTask();
 			}
 		}
 		catch (InterruptedException e)
@@ -383,8 +400,10 @@ public final class Database {
             Database.addNewIndexes();
             Database.refreshStatistics( false );
         }
-	}
-	
+
+        return Collections.unmodifiableList( result );
+    }
+
 	/**
 	 * Submits the passed in runnable task for execution
 	 * @param task The thread whose task to execute

@@ -4,9 +4,9 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,7 +24,7 @@ import wres.util.Strings;
  * Created by ctubbs on 7/19/17.
  */
 @Internal(exclusivePackage = "wres.io")
-public final class ZippedPIXMLIngest extends WRESRunnable
+public final class ZippedPIXMLIngest extends WRESCallable<List<String>>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ZippedPIXMLIngest.class);
 
@@ -52,8 +52,10 @@ public final class ZippedPIXMLIngest extends WRESRunnable
     }
 
     @Override
-    public void execute ()
+    public List<String> execute ()
     {
+        List<String> result = new ArrayList<>( 1 );
+
         try
         {
             String hash = Strings.getMD5Checksum( content );
@@ -78,11 +80,15 @@ public final class ZippedPIXMLIngest extends WRESRunnable
             {
                 this.projectDetails.addSource( hash, this.dataSourceConfig );
             }
+
+            result.add( hash );
         }
         catch ( SQLException | IOException  e )
         {
             throw new RuntimeException( "Failed to ingest", e );
         }
+
+        return Collections.unmodifiableList( result );
     }
 
     @Override

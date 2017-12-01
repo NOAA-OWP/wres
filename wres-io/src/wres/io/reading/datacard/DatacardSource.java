@@ -11,6 +11,9 @@ import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.time.LocalDateTime;
 
@@ -27,10 +30,8 @@ import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
 import wres.io.reading.BasicSource;
-import wres.io.reading.IngestException;
 import wres.io.reading.InvalidInputDataException;
 import wres.io.utilities.Database;
-import wres.util.Collections;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
 
@@ -96,7 +97,7 @@ public class DatacardSource extends BasicSource
 	}
 
 	@Override
-	public void saveObservation() throws IOException
+	public List<String> saveObservation() throws IOException
     {
 		Path path = Paths.get(getFilename());
 										
@@ -327,8 +328,12 @@ public class DatacardSource extends BasicSource
             LOGGER.debug( "{} values of datacardsource saved to database.",
                          entryCount );
 		}
+
+        List<String> result = new ArrayList<>( 1 );
+        result.add( this.getHash() );
+        return Collections.unmodifiableList( result );
 	}
-				
+
 	public void save()
     {
         if (insertCount > 0)
@@ -511,8 +516,8 @@ public class DatacardSource extends BasicSource
 
     private boolean valueIsIgnorable(final double value)
     {
-        return Collections.exists( DatacardSource.IGNORABLE_VALUES,
-                                   ignorable -> Precision.equals( value, ignorable, EPSILON ));
+        return wres.util.Collections.exists( DatacardSource.IGNORABLE_VALUES,
+											 ignorable -> Precision.equals( value, ignorable, EPSILON ));
     }
 
     private boolean valueIsMissing(final double value)
