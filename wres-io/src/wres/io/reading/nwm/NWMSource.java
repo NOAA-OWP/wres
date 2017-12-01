@@ -2,6 +2,9 @@ package wres.io.reading.nwm;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,25 +39,33 @@ public class NWMSource extends BasicSource
 		this.setFilename(filename);
 		this.setHash();
 	}
-	
+
 	@Override
-	public void saveObservation() throws IOException
+	public List<String> saveObservation() throws IOException
 	{
 		try ( NetcdfFile source = getSource() )
 		{
 			save( source );
 		}
+
+        List<String> result = new ArrayList<>( 1 );
+        result.add( this.getHash() );
+        return Collections.unmodifiableList( result );
 	}
-	
+
 	@Override
-	public void saveForecast() throws IOException
+	public List<String> saveForecast() throws IOException
 	{
 		try (NetcdfFile source = getSource())
 		{
 			save( source );
 		}
+
+        List<String> result = new ArrayList<>( 1 );
+        result.add( this.getHash() );
+        return Collections.unmodifiableList( result );
 	}
-	
+
 	private void save(NetcdfFile source)
 	{
 		Variable var = NetCDF.getVariable(source, this.getSpecifiedVariableName());

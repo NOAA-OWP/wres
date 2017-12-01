@@ -44,7 +44,7 @@ public abstract class BasicSource
     /**
      * Saves data within the source file as a forecast
      */
-    public void saveForecast() throws IOException
+    public List<String> saveForecast() throws IOException
 	{
 		throw new IOException("Forecasts may not be saved using this type of source.");
 	}
@@ -53,7 +53,7 @@ public abstract class BasicSource
     /**
      * Saves data within the source file as an observation
      */
-    public void saveObservation() throws IOException
+    public List<String> saveObservation() throws IOException
 	{
 		throw new IOException("Observations may not be saved using this type of source.");
 	}
