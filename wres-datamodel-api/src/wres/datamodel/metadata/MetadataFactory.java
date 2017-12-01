@@ -294,33 +294,4 @@ public interface MetadataFactory
 
     Dimension getDimension(final String dimension);
 
-    /**
-     * Returns the fully qualified metric name for a prescribed metric identifier from this class. See
-     * {@link #getMetricShortName(MetricConstants)}.
-     * 
-     * @param identifier the metric identifier
-     * @return a long metric name for the input identifier
-     */
-
-    String getMetricName(final MetricConstants identifier);
-
-    /**
-     * Returns an abbreviated metric name for a prescribed metric identifier from this class. See
-     * {@link #getMetricName(MetricConstants)}.
-     * 
-     * @param identifier the metric identifier
-     * @return an abbreviated metric name for the input identifier
-     */
-
-    String getMetricShortName(final MetricConstants identifier);
-
-    /**
-     * Returns the name associated with a prescribed metric component from this class, such as a score component.
-     * 
-     * @param identifier the metric component identifier
-     * @return a metric component name for the input identifier
-     */
-
-    String getMetricComponentName(final MetricConstants identifier);
-
 }

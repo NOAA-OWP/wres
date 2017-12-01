@@ -43,30 +43,33 @@ public final class MeanErrorTest
         final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = metaFac.getOutputMetadata(input.getData().size(),
-                                                                  metaFac.getDimension(),
-                                                                  metaFac.getDimension(),
-                                                                  MetricConstants.MEAN_ERROR,
-                                                                  MetricConstants.MAIN);
+        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getData().size(),
+                                                                   metaFac.getDimension(),
+                                                                   metaFac.getDimension(),
+                                                                   MetricConstants.MEAN_ERROR,
+                                                                   MetricConstants.MAIN );
         //Build the metric
         final MeanErrorBuilder b = new MeanError.MeanErrorBuilder();
-        b.setOutputFactory(outF);
+        b.setOutputFactory( outF );
         final MeanError me = b.build();
 
         //Check the results
-        final ScalarOutput actual = me.apply(input);
-        final ScalarOutput expected = outF.ofScalarOutput(200.55, m1);
-        assertTrue("Actual: " + actual.getData().doubleValue() + ". Expected: " + expected.getData().doubleValue()
-            + ".", actual.equals(expected));
+        final ScalarOutput actual = me.apply( input );
+        final ScalarOutput expected = outF.ofScalarOutput( 200.55, m1 );
+        assertTrue( "Actual: " + actual.getData().doubleValue()
+                    + ". Expected: "
+                    + expected.getData().doubleValue()
+                    + ".",
+                    actual.equals( expected ) );
 
         //Check the parameters
-        assertTrue("Unexpected name for the Mean Error.",
-                   me.getName().equals(metaFac.getMetricName(MetricConstants.MEAN_ERROR)));
-        assertTrue("The Mean Error is not decomposable.", !me.isDecomposable());
-        assertTrue("The Mean Error is not a skill score.", !me.isSkillScore());
-        assertTrue("The Mean Error cannot be decomposed.", me.getScoreOutputGroup() == ScoreOutputGroup.NONE);
+        assertTrue( "Unexpected name for the Mean Error.",
+                    me.getName().equals( MetricConstants.MEAN_ERROR.toString() ) );
+        assertTrue( "The Mean Error is not decomposable.", !me.isDecomposable() );
+        assertTrue( "The Mean Error is not a skill score.", !me.isSkillScore() );
+        assertTrue( "The Mean Error cannot be decomposed.", me.getScoreOutputGroup() == ScoreOutputGroup.NONE );
     }
-    
+
     /**
      * Constructs a {@link MeanError} and checks for exceptional cases.
      * @throws MetricParameterException if the metric could not be constructed 
@@ -80,7 +83,7 @@ public final class MeanErrorTest
 
         //Build the metric
         final MeanErrorBuilder b = new MeanError.MeanErrorBuilder();
-        b.setOutputFactory(outF);
+        b.setOutputFactory( outF );
         final MeanError me = b.build();
 
         //Check exceptions
@@ -89,9 +92,9 @@ public final class MeanErrorTest
             me.apply( null );
             fail( "Expected an exception on null input." );
         }
-        catch(MetricInputException e)
-        {          
+        catch ( MetricInputException e )
+        {
         }
-    }     
+    }
 
 }

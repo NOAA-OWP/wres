@@ -36,6 +36,7 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.Threshold;
 import wres.datamodel.Threshold.Operator;
+import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.outputs.BoxPlotOutput;
@@ -46,7 +47,6 @@ import wres.datamodel.outputs.ScalarOutput;
 import wres.datamodel.outputs.VectorOutput;
 import wres.datamodel.time.ReferenceTime;
 import wres.datamodel.time.TimeWindow;
-import wres.datamodel.VectorOfDoubles;
 
 /**
  * Tests the construction of a 3D chart of metric outputs. The building of the charts and images is tested via the unit
@@ -155,7 +155,7 @@ public class Chart2DTestOutput extends TestCase
 //        results42.forEach((key,result)-> {
 //            System.out.println(key.getSecondKey());
 //            System.out.println(Arrays.toString(result.get(MetricConstants.FORECAST_PROBABILITY).getDoubles()));  //This array forms the domain
-//            System.out.println(Arrays.toString(result.get(MetricConstants.OBSERVED_GIVEN_FORECAST_PROBABILITY).getDoubles()));  //This array forms the range for reliability diagram subplot
+//            System.out.println(Arrays.toString(result.get(MetricConstants.OBSERVED_RELATIVE_FREQUENCY).getDoubles()));  //This array forms the range for reliability diagram subplot
 //            System.out.println(Arrays.toString(result.get(MetricConstants.SAMPLE_SIZE).getDoubles())); //This array forms the range for the sample size subplot
 //        });
 
@@ -999,7 +999,7 @@ public class Chart2DTestOutput extends TestCase
 
                         final Map<MetricDimension, double[]> output = new EnumMap<>( MetricDimension.class );
                         output.put( MetricDimension.FORECAST_PROBABILITY, res[0] ); //Forecast probabilities
-                        output.put( MetricDimension.OBSERVED_GIVEN_FORECAST_PROBABILITY, res[1] ); //Observed | forecast probabilities
+                        output.put( MetricDimension.OBSERVED_RELATIVE_FREQUENCY, res[1] ); //Observed | forecast probabilities
                         output.put( MetricDimension.SAMPLE_SIZE, res[2] ); //Observed | forecast probabilities
                         final MultiVectorOutput value = outputFactory.ofMultiVectorOutput( output, meta );
 
@@ -1316,7 +1316,7 @@ public class Chart2DTestOutput extends TestCase
             final MetricOutputMetadata meta = metaFactory.getOutputMetadata( 1000,
                                                                              metaFactory.getDimension( "INCH" ),
                                                                              metaFactory.getDimension( "INCH" ),
-                                                                             MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED,
+                                                                             MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
                                                                              MetricConstants.MAIN,
                                                                              metaFactory.getDatasetIdentifier( "NBBC1",
                                                                                                                "PRECIPITATION",
@@ -1394,7 +1394,7 @@ public class Chart2DTestOutput extends TestCase
             final MetricOutputMetadata meta = metaFactory.getOutputMetadata( 1000,
                                                                              metaFactory.getDimension( "INCH" ),
                                                                              metaFactory.getDimension( "INCH" ),
-                                                                             MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST,
+                                                                             MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE,
                                                                              MetricConstants.MAIN,
                                                                              metaFactory.getDatasetIdentifier( "NBBC1",
                                                                                                                "PRECIPITATION",

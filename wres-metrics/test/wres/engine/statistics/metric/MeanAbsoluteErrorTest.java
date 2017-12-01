@@ -41,29 +41,32 @@ public final class MeanAbsoluteErrorTest
         final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = metaFac.getOutputMetadata(input.getData().size(),
-                                                                  metaFac.getDimension(),
-                                                                  metaFac.getDimension(),
-                                                                  MetricConstants.MEAN_ABSOLUTE_ERROR,
-                                                                  MetricConstants.MAIN);
+        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getData().size(),
+                                                                   metaFac.getDimension(),
+                                                                   metaFac.getDimension(),
+                                                                   MetricConstants.MEAN_ABSOLUTE_ERROR,
+                                                                   MetricConstants.MAIN );
 
         //Build the metric
         final MeanAbsoluteErrorBuilder b = new MeanAbsoluteError.MeanAbsoluteErrorBuilder();
-        b.setOutputFactory(outF);
+        b.setOutputFactory( outF );
         final MeanAbsoluteError mae = b.build();
 
         //Check the results
-        final ScalarOutput actual = mae.apply(input);
-        final ScalarOutput expected = outF.ofScalarOutput(201.37, m1);
-        assertTrue("Actual: " + actual.getData().doubleValue() + ". Expected: " + expected.getData().doubleValue()
-            + ".", actual.equals(expected));
+        final ScalarOutput actual = mae.apply( input );
+        final ScalarOutput expected = outF.ofScalarOutput( 201.37, m1 );
+        assertTrue( "Actual: " + actual.getData().doubleValue()
+                    + ". Expected: "
+                    + expected.getData().doubleValue()
+                    + ".",
+                    actual.equals( expected ) );
         //Check the parameters
-        assertTrue("Unexpected name for the Mean Absolute Error.",
-                   mae.getName().equals(metaFac.getMetricName(MetricConstants.MEAN_ABSOLUTE_ERROR)));
-        assertTrue("The Mean Absolute Error is not decomposable.", !mae.isDecomposable());
-        assertTrue("The Mean Absolute Error is not a skill score.", !mae.isSkillScore());
-        assertTrue("The Mean Absolute Error cannot be decomposed.",
-                   mae.getScoreOutputGroup() == ScoreOutputGroup.NONE);
+        assertTrue( "Unexpected name for the Mean Absolute Error.",
+                    mae.getName().equals( MetricConstants.MEAN_ABSOLUTE_ERROR.toString() ) );
+        assertTrue( "The Mean Absolute Error is not decomposable.", !mae.isDecomposable() );
+        assertTrue( "The Mean Absolute Error is not a skill score.", !mae.isSkillScore() );
+        assertTrue( "The Mean Absolute Error cannot be decomposed.",
+                    mae.getScoreOutputGroup() == ScoreOutputGroup.NONE );
     }
 
 }
