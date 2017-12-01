@@ -43,30 +43,33 @@ public final class SampleSizeTest
         final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = metaFac.getOutputMetadata(input.getData().size(),
-                                                                  metaFac.getDimension(),
-                                                                  metaFac.getDimension(),
-                                                                  MetricConstants.SAMPLE_SIZE,
-                                                                  MetricConstants.MAIN);
+        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getData().size(),
+                                                                   metaFac.getDimension(),
+                                                                   metaFac.getDimension(),
+                                                                   MetricConstants.SAMPLE_SIZE,
+                                                                   MetricConstants.MAIN );
         //Build the metric
         final SampleSizeBuilder<SingleValuedPairs> b = new SampleSize.SampleSizeBuilder<>();
-        b.setOutputFactory(outF);
+        b.setOutputFactory( outF );
         final SampleSize<SingleValuedPairs> ss = b.build();
 
         //Check the results
-        final ScalarOutput actual = ss.apply(input);
-        final ScalarOutput expected = outF.ofScalarOutput(input.getData().size(), m1);
-        assertTrue("Actual: " + actual.getData().doubleValue() + ". Expected: " + expected.getData().doubleValue()
-            + ".", actual.equals(expected));
+        final ScalarOutput actual = ss.apply( input );
+        final ScalarOutput expected = outF.ofScalarOutput( input.getData().size(), m1 );
+        assertTrue( "Actual: " + actual.getData().doubleValue()
+                    + ". Expected: "
+                    + expected.getData().doubleValue()
+                    + ".",
+                    actual.equals( expected ) );
 
         //Check the parameters
-        assertTrue("Unexpected name for the Sample Size.",
-                   ss.getName().equals(metaFac.getMetricName(MetricConstants.SAMPLE_SIZE)));
-        assertTrue("The Sample Size is not decomposable.", !ss.isDecomposable());
-        assertTrue("The Sample Size is not a skill score.", !ss.isSkillScore());
-        assertTrue("The Sample Size cannot be decomposed.", ss.getScoreOutputGroup() == ScoreOutputGroup.NONE);
+        assertTrue( "Unexpected name for the Sample Size.",
+                    ss.getName().equals( MetricConstants.SAMPLE_SIZE.toString() ) );
+        assertTrue( "The Sample Size is not decomposable.", !ss.isDecomposable() );
+        assertTrue( "The Sample Size is not a skill score.", !ss.isSkillScore() );
+        assertTrue( "The Sample Size cannot be decomposed.", ss.getScoreOutputGroup() == ScoreOutputGroup.NONE );
     }
-    
+
     /**
      * Constructs a {@link SampleSize} and checks for exceptional cases.
      * @throws MetricParameterException if the metric could not be constructed
@@ -80,7 +83,7 @@ public final class SampleSizeTest
 
         //Build the metric
         final SampleSizeBuilder<SingleValuedPairs> b = new SampleSize.SampleSizeBuilder<>();
-        b.setOutputFactory(outF);
+        b.setOutputFactory( outF );
         final SampleSize<SingleValuedPairs> ss = b.build();
 
         //Check exceptions
@@ -89,11 +92,10 @@ public final class SampleSizeTest
             ss.apply( null );
             fail( "Expected an exception on null input." );
         }
-        catch(MetricInputException e)
-        {          
+        catch ( MetricInputException e )
+        {
         }
-    }    
-    
-    
+    }
+
 
 }

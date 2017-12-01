@@ -43,7 +43,7 @@ public final class ConfigMapper
     {
         if ( Objects.isNull( configName ) )
         {
-            throw new MetricConfigurationException( "Unable to map a null input identifier to a name metric." );
+            throw new MetricConfigurationException( "Unable to map a null input identifier to a named metric." );
         }
         buildMap();
         //All valid metrics

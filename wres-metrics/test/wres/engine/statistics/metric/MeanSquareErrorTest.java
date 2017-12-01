@@ -65,7 +65,7 @@ public final class MeanSquareErrorTest
 
         //Check the parameters
         assertTrue( "Unexpected name for the Mean Square Error.",
-                    mse.getName().equals( metaFac.getMetricName( MetricConstants.MEAN_SQUARE_ERROR ) ) );
+                    mse.getName().equals( MetricConstants.MEAN_SQUARE_ERROR.toString() ) );
         assertTrue( "The Mean Square Error is decomposable.", mse.isDecomposable() );
         assertTrue( "The Mean Square Error is not a skill score.", !mse.isSkillScore() );
         assertTrue( "Expected no decomposition for the Mean Square Error.",

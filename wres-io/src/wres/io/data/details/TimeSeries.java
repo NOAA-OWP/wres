@@ -178,7 +178,8 @@ public final class TimeSeries
         script += "				AND TS.measurementunit_id = " + measurementUnitID + NEWLINE;
         script += "				AND PS.project_id = " + this.projectID + NEWLINE;
         script += "             AND PS.member = " + this.inputName + NEWLINE;
-		script += "		)" + NEWLINE;
+        script += "             AND FS.source_id = " + this.sourceID + NEWLINE;
+        script += "		)" + NEWLINE;
 		script += "		RETURNING timeseries_id" + NEWLINE;
 		script += ")" + NEWLINE;
 		script += "SELECT timeseries_id" + NEWLINE;
@@ -202,6 +203,7 @@ public final class TimeSeries
         script += "         WHERE FS.forecast_id = TS.timeseries_id" + NEWLINE;
         script += "             AND PS.project_id = " + this.projectID + NEWLINE;
         script += "             AND PS.member = " + this.inputName + NEWLINE;
+        script += "             AND FS.source_id = " + this.sourceID + NEWLINE;
         script += ");";
 
         timeSeriesID = Database.getResult(script, "timeseries_id");
