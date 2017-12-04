@@ -67,7 +67,6 @@ import wres.io.config.ConfigHelper;
 import wres.io.config.ProjectConfigPlus;
 import wres.io.config.SystemSettings;
 import wres.io.retrieval.InputGenerator;
-import wres.io.utilities.NoDataException;
 import wres.io.writing.ChartWriter;
 import wres.io.writing.ChartWriter.ChartWritingException;
 import wres.io.writing.CommaSeparated;
