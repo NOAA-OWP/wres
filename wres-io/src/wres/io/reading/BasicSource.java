@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
@@ -384,6 +385,29 @@ public abstract class BasicSource
             }
         }
         return this.hash;
+    }
+
+    /**
+     * Returns a more specific hash than file hash alone, includes variable
+     * and location. Depends on the hash of the file already having been
+     * computed.
+     * @param variable The variable specified by the project config
+     * @param location The location specified by the project config
+     * @return a specific hash combining file, variable, location
+     * @throws IOException when anything goes wrong getting file hash
+     * @throws UnsupportedOperationException when file hash not computed yet
+     * @throws NullPointerException when any args are null
+     */
+    protected String getSpecificHash( String variable, String location )
+            throws IOException
+    {
+        Objects.requireNonNull( variable );
+        Objects.requireNonNull( location );
+
+        String fileHash = this.getHash();
+        String toHash = fileHash + "," + variable + "," + location;
+        byte[] bytes = toHash.getBytes();
+        return Strings.getMD5Checksum( bytes );
     }
 
     /**
