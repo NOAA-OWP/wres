@@ -37,6 +37,7 @@ import wres.io.reading.waterml.timeseries.TimeSeriesValue;
 import wres.io.reading.waterml.timeseries.TimeSeriesValues;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
+import wres.util.FormattedStopwatch;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
 import wres.util.Time;
@@ -136,6 +137,17 @@ public class USGSReader extends BasicSource
 
         List<String> foundLocations = new ArrayList<>(  );
 
+        try
+        {
+            LOGGER.debug( "There are a grand total of {} different locations that we want to save data to.",
+                          this.getProjectDetails().getFeatures().size() );
+        }
+        catch ( SQLException e )
+        {
+            LOGGER.error(Strings.getStackTrace( e ));
+            throw new IOException( "Features for the project could not be accessed.", e );
+        }
+
         for (TimeSeries series : this.response.getValue().getTimeSeries())
         {
             foundLocations.add(series.getSourceInfo().getSiteCode()[0].getValue());
@@ -151,6 +163,17 @@ public class USGSReader extends BasicSource
             throw new IOException( "Locations without official data from the " +
                                    "USGS could not be removed from the total " +
                                    "list of locations to evaluate.", e );
+        }
+
+        try
+        {
+            LOGGER.debug( "Data for {} different locations have been saved.",
+                          this.getProjectDetails().getFeatures().size() );
+        }
+        catch ( SQLException e )
+        {
+            LOGGER.error(Strings.getStackTrace( e ));
+            throw new IOException( "Features for the project could not be accessed.", e );
         }
 
         try
@@ -233,7 +256,14 @@ public class USGSReader extends BasicSource
             Invocation.Builder invocationBuilder =
                     webTarget.request( MediaType.APPLICATION_JSON );
 
+            FormattedStopwatch stopwatch = new FormattedStopwatch();
+            stopwatch.start();
+
             this.response = invocationBuilder.get( Response.class );
+
+            stopwatch.stop();
+
+            LOGGER.info( "It took {} to load the USGS data.", stopwatch.getFormattedDuration() );
         }
         catch (IOException e)
         {
@@ -478,9 +508,13 @@ public class USGSReader extends BasicSource
             this.variablePositionIDs = new TreeMap<>(  );
         }
 
+        FeatureDetails details;
+
         if (!this.variablePositionIDs.containsKey( gageID ))
         {
-            FeatureDetails details =
+            try
+            {
+                details =
                         wres.util.Collections.find( this.getProjectDetails()
                                                         .getFeatures(),
                                                     feature ->
@@ -493,6 +527,11 @@ public class USGSReader extends BasicSource
                 this.variablePositionIDs.put( gageID,
                                               details.getVariablePositionID(
                                                       this.getVariableID() ) );
+            }
+            catch (Exception e)
+            {
+                LOGGER.debug( Strings.getStackTrace( e ) );
+            }
         }
 
         return this.variablePositionIDs.get( gageID );
@@ -554,6 +593,8 @@ public class USGSReader extends BasicSource
                 }
 
                 this.getProjectDetails().getFeatures().remove( invalidFeature );
+                LOGGER.trace("The location '{}' was removed from the project because it didn't have valid USGS data.",
+                             invalidFeature.toString());
                 return;
             }
             catch ( SQLException e )
@@ -583,7 +624,9 @@ public class USGSReader extends BasicSource
                     }
 
                     this.getProjectDetails().getFeatures().remove( invalidFeature );
-                    return;
+                    LOGGER.trace("The location '{}' was removed from the project because it didn't have valid USGS data.",
+                                 invalidFeature.toString());
+                    continue;
                 }
                 catch ( SQLException e )
                 {
@@ -616,6 +659,8 @@ public class USGSReader extends BasicSource
                 }
             }
         }
+
+        LOGGER.trace("A USGS time series has been saved for location '{}'", gageID);
     }
 
     private void performUpserts() throws SQLException
@@ -634,6 +679,7 @@ public class USGSReader extends BasicSource
             Database.ingest(statement);
 
             ProgressMonitor.increment();
+            LOGGER.trace("USGS data has been submitted to the database queue.");
         }
     }
 
