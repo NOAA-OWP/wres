@@ -7,9 +7,13 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -26,7 +30,7 @@ import wres.config.generated.DataSourceConfig;
 import wres.io.concurrency.Executor;
 import wres.io.concurrency.ForecastSaver;
 import wres.io.concurrency.ObservationSaver;
-import wres.io.concurrency.WRESRunnable;
+import wres.io.concurrency.WRESCallable;
 import wres.io.concurrency.ZippedPIXMLIngest;
 import wres.io.config.ConfigHelper;
 import wres.io.config.SystemSettings;
@@ -62,22 +66,22 @@ public class ZippedSource extends BasicSource {
         return executor;
     }
 
-    private void addIngestTask (Runnable task)
+    private void addIngestTask ( Callable<List<String>> task )
     {
         this.addIngestTask(readerService.submit(task));
     }
 
-    private void addIngestTask(Future result)
+    private void addIngestTask( Future<List<String>> result )
     {
         this.tasks.add(result);
     }
 
-    private Future getIngestTask()
+    private Future<List<String>> getIngestTask()
     {
         return tasks.poll();
     }
 
-    private final Queue<Future> tasks = new LinkedList<>();
+    private final Queue<Future<List<String>>> tasks = new LinkedList<>();
 
     private final Queue<String> savedFiles = new LinkedList<>();
 
@@ -93,19 +97,21 @@ public class ZippedSource extends BasicSource {
     }
 
 	@Override
-	public void saveForecast() throws IOException
+	public List<String> saveForecast() throws IOException
     {
-	    issue(true);
+	    return issue( true );
 	}
 
 	@Override
-	public void saveObservation() throws IOException
+	public List<String> saveObservation() throws IOException
     {
-	    issue(false);
+	    return issue( false );
 	}
 
-	private void issue(boolean isForecast)
+	private List<String> issue(boolean isForecast)
     {
+        List<String> result = new ArrayList<>();
+
         FileInputStream fileStream = null;
         BufferedInputStream bufferedFile = null;
         GzipCompressorInputStream decompressedFileStream = null;
@@ -133,10 +139,22 @@ public class ZippedSource extends BasicSource {
                 ProgressMonitor.completeStep();
             }
 
-            Future ingestTask = this.getIngestTask();
+            Future<List<String>> ingestTask = this.getIngestTask();
+
             while (ingestTask != null)
             {
-                ingestTask.get();
+                List<String> innerResult = ingestTask.get();
+
+                if ( innerResult != null )
+                {
+                    result.addAll( innerResult );
+                }
+                else
+                {
+                    // TODO: demote or remove this message when we fix the issue
+                    LOGGER.warn( "Unexpected null value in ZippedSource class (1). See also Database class?" );
+                }
+
                 ingestTask = this.getIngestTask();
             }
 
@@ -144,7 +162,18 @@ public class ZippedSource extends BasicSource {
 
             while (ingestTask != null)
             {
-                ingestTask.get();
+                List<String> innerResult = ingestTask.get();
+
+                if ( innerResult != null )
+                {
+                    result.addAll( innerResult );
+                }
+                else
+                {
+                    // TODO: demote or remove this message when we fix the issue
+                    LOGGER.warn( "Unexpected null value in ZippedSource class (2). See also Database class?" );
+                }
+
                 ingestTask = Database.getStoredIngestTask();
             }
 
@@ -215,6 +244,8 @@ public class ZippedSource extends BasicSource {
                 }
             }
         }
+
+        return Collections.unmodifiableList( result );
     }
 
     private void processFile(TarArchiveEntry source,
@@ -262,7 +293,7 @@ public class ZippedSource extends BasicSource {
             LOGGER.debug( message, archivedFileName );
         }
 
-        WRESRunnable ingest;
+        WRESCallable<List<String>> ingest;
 
         if (sourceType == SourceType.PI_XML)
         {
@@ -304,10 +335,9 @@ public class ZippedSource extends BasicSource {
                 ingest.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
 
                 ProgressMonitor.increment();
-                Future task = Executor.execute(ingest);
+                Future<List<String>> task = Executor.submit( ingest );
                 this.addIngestTask(task);
             }
-
         }
     }
 

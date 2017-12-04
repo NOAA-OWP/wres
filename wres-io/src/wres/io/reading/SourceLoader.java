@@ -6,12 +6,17 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,7 +33,6 @@ import wres.io.data.caching.Features;
 import wres.io.data.caching.Projects;
 import wres.io.data.details.FeatureDetails;
 import wres.io.data.details.ProjectDetails;
-import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
 import wres.util.Internal;
 import wres.util.ProgressMonitor;
@@ -60,7 +64,7 @@ public class SourceLoader
      * @throws IOException when no data is found
      * @throws IngestException when getting project details fails
      */
-    public List<Future> load() throws IOException
+    public List<Future<List<String>>> load() throws IOException
     {
         try
         {
@@ -73,7 +77,7 @@ public class SourceLoader
                     e );
         }
 
-        List<Future> savingFiles = new ArrayList<>();
+        List<Future<List<String>>> savingFiles = new ArrayList<>();
 
         savingFiles.addAll(loadConfig(getLeftSource()));
         savingFiles.addAll(loadConfig(getRightSource()));
@@ -90,10 +94,10 @@ public class SourceLoader
      * @throws NoDataException Thrown if an invalid source of data was
      * encountered
      */
-    private List<Future> loadConfig(DataSourceConfig config)
+    private List<Future<List<String>>> loadConfig( DataSourceConfig config )
             throws NoDataException
     {
-        List<Future> savingFiles = new ArrayList<>();
+        List<Future<List<String>>> savingFiles = new ArrayList<>();
         ProgressMonitor.increment();
 
         if (config != null) {
@@ -106,7 +110,7 @@ public class SourceLoader
                         throw new IllegalArgumentException( "USGS data cannot be used to supply forecasts." );
                     }
 
-                    savingFiles.add(Executor.execute( new ObservationSaver( "usgs",
+                    savingFiles.add( Executor.submit( new ObservationSaver( "usgs",
                                                                             this.projectDetails,
                                                                             config,
                                                                             source,
@@ -126,15 +130,20 @@ public class SourceLoader
                 }
                 else if (Files.isDirectory(sourcePath)) {
 
-                    List<Future> tasks = loadDirectory(sourcePath, source, config);
+                    List<Future<List<String>>> tasks = loadDirectory( sourcePath,
+                                                                      source,
+                                                                      config );
 
                     if (tasks != null)
                     {
-                        savingFiles.addAll(tasks);
+                        savingFiles.addAll( tasks );
                     }
                 }
-                else if (Files.isRegularFile(sourcePath)) {
-                    Future task = saveFile(sourcePath, source, config);
+                else if ( Files.isRegularFile( sourcePath ) )
+                {
+                    Future<List<String>> task = saveFile( sourcePath,
+                                                          source,
+                                                          config );
 
                     if (task != null)
                     {
@@ -150,7 +159,7 @@ public class SourceLoader
 
         ProgressMonitor.completeStep();
 
-        return savingFiles;
+        return Collections.unmodifiableList( savingFiles );
     }
 
     /**
@@ -163,11 +172,11 @@ public class SourceLoader
      *                         evaluated
      * @return A listing of asynchronous tasks dispatched to ingest data
      */
-    private List<Future> loadDirectory(Path directory,
-                                       DataSourceConfig.Source source,
-                                       DataSourceConfig dataSourceConfig)
+    private List<Future<List<String>>> loadDirectory( Path directory,
+                                                      DataSourceConfig.Source source,
+                                                      DataSourceConfig dataSourceConfig )
     {
-        List<Future> results = new ArrayList<>();
+        List<Future<List<String>>> results = new ArrayList<>();
         Stream<Path> files;
 
         ProgressMonitor.increment();
@@ -191,7 +200,9 @@ public class SourceLoader
 
                 if (Files.isRegularFile(path))
                 {
-                    Future task = saveFile(path, source, dataSourceConfig);
+                    Future<List<String>> task = saveFile( path,
+                                                          source,
+                                                          dataSourceConfig );
 
                     if (task != null)
                     {
@@ -209,7 +220,7 @@ public class SourceLoader
 
         ProgressMonitor.completeStep();
 
-        return results;
+        return Collections.unmodifiableList( results );
     }
 
     /**
@@ -219,21 +230,29 @@ public class SourceLoader
      * @param filePath
      * @return Future if task was created, null otherwise.
      */
-    private Future saveFile(Path filePath, DataSourceConfig.Source source, DataSourceConfig dataSourceConfig)
+    private Future<List<String>> saveFile( Path filePath,
+                                           DataSourceConfig.Source source,
+                                           DataSourceConfig dataSourceConfig )
     {
         String absolutePath = filePath.toAbsolutePath().toString();
-        Future task = null;
+        Future<List<String>> task = null;
 
         ProgressMonitor.increment();
 
-        if (shouldIngest(absolutePath, source, dataSourceConfig))
+        Pair<Boolean,String> checkIngest = shouldIngest( absolutePath,
+                                                         source,
+                                                         dataSourceConfig );
+
+        boolean shouldIngest = checkIngest.getLeft();
+
+        if ( shouldIngest )
         {
             try
             {
                 if (ConfigHelper.isForecast(dataSourceConfig))
                 {
                     LOGGER.trace("Loading {} as forecast data...", absolutePath);
-                    task = Executor.execute(new ForecastSaver(absolutePath,
+                    task = Executor.submit( new ForecastSaver( absolutePath,
                                                               this.projectDetails,
                                                               dataSourceConfig,
                                                               source,
@@ -242,7 +261,7 @@ public class SourceLoader
                 else
                 {
                     LOGGER.trace("Loading {} as Observation data...");
-                    task = Executor.execute(new ObservationSaver(absolutePath,
+                    task = Executor.submit( new ObservationSaver( absolutePath,
                                                                  this.projectDetails,
                                                                  dataSourceConfig,
                                                                  source,
@@ -259,6 +278,45 @@ public class SourceLoader
             String message = "Data will not be loaded from {}. That data is either not valid input data or is ";
             message += "already in the database.";
             LOGGER.debug(message, absolutePath);
+
+            // Fake a future, return result immediately.
+            task = new Future<List<String>>()
+            {
+                @Override
+                public boolean cancel( boolean b )
+                {
+                    return false;
+                }
+
+                @Override
+                public boolean isCancelled()
+                {
+                    return false;
+                }
+
+                @Override
+                public boolean isDone()
+                {
+                    return true;
+                }
+
+                @Override
+                public List<String> get()
+                        throws InterruptedException, ExecutionException
+                {
+                    List<String> result = new ArrayList<>( 1 );
+                    result.add( checkIngest.getRight() );
+                    return Collections.unmodifiableList( result );
+                }
+
+                @Override
+                public List<String> get( long l, TimeUnit timeUnit )
+                        throws InterruptedException, ExecutionException,
+                        TimeoutException
+                {
+                    return get();
+                }
+            };
         }
 
         ProgressMonitor.completeStep();
@@ -275,11 +333,11 @@ public class SourceLoader
      *               need to be ingested
      * @param dataSourceConfig The overall configuration indicating that the
      *                         file should be evaluated for ingestion
-     * @return Whether or not data within the file should be ingested
+     * @return Whether or not data within the file should be ingested (and hash)
      */
-    private boolean shouldIngest(String filePath,
-                                 DataSourceConfig.Source source,
-                                 DataSourceConfig dataSourceConfig)
+    private Pair<Boolean,String> shouldIngest( String filePath,
+                                               DataSourceConfig.Source source,
+                                               DataSourceConfig dataSourceConfig )
     {
         SourceType specifiedFormat = ReaderFactory.getFileType(source.getFormat());
         SourceType pathFormat = ReaderFactory.getFiletype(filePath);
@@ -291,22 +349,31 @@ public class SourceLoader
                           "determined that it is an archive that will need to " +
                           "be further evaluated.",
                           filePath);
-            return true;
+            return Pair.of( true, null );
         }
 
         boolean ingest = specifiedFormat == SourceType.UNDEFINED ||
                          specifiedFormat.equals(pathFormat) ||
                          this.projectDetails.isEmpty();
 
+        String hash = null;
+
         if (ingest)
         {
             try
             {
-                ingest = !dataExists(filePath, dataSourceConfig);
+                hash = Strings.getMD5Checksum( filePath );
+                ingest = !dataExists( hash, dataSourceConfig );
             }
-            catch (SQLException e) {
-                LOGGER.error(Strings.getStackTrace(e));
+            catch ( SQLException e )
+            {
+                LOGGER.warn( "Could not determine whether to ingest {}",
+                             filePath, e );
                 ingest = false;
+            }
+            catch ( IOException ioe )
+            {
+                throw new RuntimeException( "Problem reading file {}", ioe );
             }
 
             if (!ingest)
@@ -327,49 +394,39 @@ public class SourceLoader
                           pathFormat.toString());
         }
 
-        return ingest;
+        return Pair.of( ingest, hash );
     }
 
     /**
      * Determines if the indicated data already exists within the database
-     * @param sourceName The name of the file that might need to be ingested
+     * @param hash The hash of the file that might need to be ingested
      * @param dataSourceConfig The configuration for the set of data sources that
      *                         indicated that this file might need to be ingested
      * @return Whether or not the indicated data is already in the database
      * @throws SQLException Thrown if communcation with the database failed in
      * some way
      */
-    private boolean dataExists(String sourceName, DataSourceConfig dataSourceConfig)
+    private boolean dataExists(String hash, DataSourceConfig dataSourceConfig)
             throws SQLException
     {
         boolean exists;
 
-        try
+        // Check to see if the file has already been ingested for this project
+        exists = this.projectDetails.hasSource( hash, dataSourceConfig);
+
+        if ( !exists )
         {
-            String hash = Strings.getMD5Checksum( sourceName );
+            // Check to see if some other project has ingested this data
+            exists = DataSources.hasSource( hash );
 
-            // Check to see if the file has already been ingested for this project
-            exists = this.projectDetails.hasSource( hash, dataSourceConfig);
-
-            if (!exists)
+            // If the data was ingested by another project...
+            if ( exists )
             {
-                // Check to see if some other project has ingested this data
-                exists = DataSources.hasSource(hash);
-
-                // If the data was ingested by another project...
-                if (exists)
-                {
-                    // Add that source to this project
-                    this.projectDetails.addSource( hash, dataSourceConfig);
-                }
+                // Add that source to this project
+                this.projectDetails.addSource( hash, dataSourceConfig );
             }
         }
-        catch ( IOException e )
-        {
-            LOGGER.error("The filesystem is reporting that the found source doesn't exist.");
-            throw new RuntimeException( "The filesystem is reporting that the found source doesn't exist.", e );
-        }
-        
+
         return exists;
     }
 
