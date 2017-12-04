@@ -4,7 +4,7 @@
 
 	<plotTitle>
         <font family="Dialog" size="12" style="1"/>
-		<text>Reliability Diagram for Various Event @plotTitleVariable@ (Upper) and Sample Counts (Lower)
+		<text>@metricName@ for Various Event @plotTitleVariable@ (Upper) and Sample Counts (Lower)
 @locationName@.@variableName@.@primaryScenario@ @diagramInstanceDescription@
 		</text>
 	</plotTitle>

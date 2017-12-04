@@ -62,7 +62,8 @@ public abstract class ChartEngineFactory
      * Maintains information about the different {@link ScalarOutput} plot types, including defaults and expected
      * classes.
      */
-    private static EnumMap<PlotTypeSelection, PlotTypeInformation> scalarOutputPlotTypeInfoMap = new EnumMap<>(PlotTypeSelection.class);
+    private static EnumMap<PlotTypeSelection, PlotTypeInformation> scalarOutputPlotTypeInfoMap =
+            new EnumMap<>( PlotTypeSelection.class );
     static
     {
         scalarOutputPlotTypeInfoMap.put( PlotTypeSelection.LEAD_THRESHOLD,
@@ -136,14 +137,14 @@ public abstract class ChartEngineFactory
                                                                          "boxPlotOfErrors.xml" ) );
     }
 
-    
+
     /**
      * Per SonarLint, hiding the public constructor.
      */
     private ChartEngineFactory()
     {
     }
-    
+
     /**
      * @param metricId the metric identifier
      * @param plotType the plot type.  May be null.  If it is null, {@link PlotTypeSelection#LEAD_THRESHOLD} is used to access
@@ -218,7 +219,7 @@ public abstract class ChartEngineFactory
             //Legend title and lead time argument are specific to the plot.
             final String legendTitle = "Threshold";
             String legendUnitsText = "";
-            if (( input.hasQuantileThresholds() ) || ( input.keySetByThreshold().size() > 1 ))
+            if ( ( input.hasQuantileThresholds() ) || ( input.keySetByThreshold().size() > 1 ) )
             {
                 legendUnitsText += " [" + meta.getInputDimension() + "]";
             }
@@ -264,14 +265,14 @@ public abstract class ChartEngineFactory
                                                                         inputSlice,
                                                                         MetricDimension.FORECAST_PROBABILITY,
                                                                         MetricDimension.OBSERVED_RELATIVE_FREQUENCY,
-                                                                        "Forecast Probability",
-                                                                        "Observed Relative Frequency" ) );
+                                                                        MetricDimension.FORECAST_PROBABILITY.toString(),
+                                                                        MetricDimension.OBSERVED_RELATIVE_FREQUENCY.toString() ) );
         dataSources.add( new MultiVectorOutputDiagramXYChartDataSource( 1,
                                                                         inputSlice,
                                                                         MetricDimension.FORECAST_PROBABILITY,
                                                                         MetricDimension.SAMPLE_SIZE,
-                                                                        "Forecast Probability",
-                                                                        "Samples",
+                                                                        MetricDimension.FORECAST_PROBABILITY.toString(),
+                                                                        MetricDimension.SAMPLE_SIZE.toString(),
                                                                         1 ) );
         //Diagonal data source added so that it shows up in the legend.
         dataSources.add( constructConnectedPointsDataSource( 2,
@@ -334,7 +335,7 @@ public abstract class ChartEngineFactory
             //Legend title and lead time argument are specific to the plot.
             final String legendTitle = "Threshold";
             String legendUnitsText = "";
-            if ( ( input.hasQuantileThresholds() ) || ( input.keySetByThreshold().size() > 1 ))
+            if ( ( input.hasQuantileThresholds() ) || ( input.keySetByThreshold().size() > 1 ) )
             {
                 legendUnitsText += " [" + meta.getInputDimension() + "]";
             }
@@ -382,8 +383,8 @@ public abstract class ChartEngineFactory
                                                                         inputSlice,
                                                                         MetricDimension.PROBABILITY_OF_FALSE_DETECTION,
                                                                         MetricDimension.PROBABILITY_OF_DETECTION,
-                                                                        "Probability of False Detection",
-                                                                        "Probability of Detection" ) );
+                                                                        MetricDimension.PROBABILITY_OF_FALSE_DETECTION.toString(),
+                                                                        MetricDimension.PROBABILITY_OF_DETECTION.toString() ) );
         //Diagonal data source added so that it shows up in the legend.
         dataSources.add( constructConnectedPointsDataSource( 1,
                                                              0,
@@ -429,7 +430,7 @@ public abstract class ChartEngineFactory
         int[] diagonalDataSourceIndices = null;
         String axisToSquareAgainstDomain = null;
         final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> inputSlice;
-
+        
         //-----------------------------------------------------------------
         //QQ diagram for each lead time, thresholds in the legend.
         //-----------------------------------------------------------------
@@ -494,8 +495,9 @@ public abstract class ChartEngineFactory
                                                                inputSlice,
                                                                MetricDimension.OBSERVED_QUANTILES,
                                                                MetricDimension.PREDICTED_QUANTILES,
-                                                               "Observed @variableName@@inputUnitsText@",
-                                                               "Predicted @variableName@@inputUnitsText@" );
+                                                               MetricConstants.MetricDimension.OBSERVED_QUANTILES.toString()
+                                                                                                    + " @variableName@@inputUnitsText@",
+                                                               MetricConstants.MetricDimension.PREDICTED_QUANTILES.toString() + " @variableName@@inputUnitsText@" );
         //Diagonal data source added, but it won't show up in the legend since it uses features of WRESChartEngine.
         //Also squaring the axes.
         diagonalDataSourceIndices = new int[] { 1 };
@@ -606,7 +608,7 @@ public abstract class ChartEngineFactory
                                                                MetricDimension.RANK_ORDER,
                                                                MetricDimension.OBSERVED_RELATIVE_FREQUENCY,
                                                                "Bin Separating Ranked Eensemble Members",
-                                                               "Observed Relative Frequency" )
+                                                               MetricDimension.OBSERVED_RELATIVE_FREQUENCY.toString() )
                 {
                     @Override
                     protected
@@ -663,7 +665,7 @@ public abstract class ChartEngineFactory
         String templateName =
                 getNonNullMultiVectorOutputPlotTypeInformation( input.getMetadata().getMetricID(),
                                                                 usedPlotType ).getDefaultTemplateName();
-        if (userSpecifiedTemplateResourceName != null)
+        if ( userSpecifiedTemplateResourceName != null )
         {
             templateName = userSpecifiedTemplateResourceName;
         }
@@ -785,14 +787,6 @@ public abstract class ChartEngineFactory
         arguments.addArgument( "domainUnitsText", meta.getInputDimension().toString() );
         arguments.addArgument( "rangeUnitsText", meta.getDimension().toString() );
 
-        //Argument identifies observed or forecast for plot title usage (or elsewhere).
-        String obsOrFcstStr = "Observed";
-        if ( input.getMetadata().getMetricID() == MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE )
-        {
-            obsOrFcstStr = "Forecast";
-        }
-        arguments.addArgument( "obsOrFcst", obsOrFcstStr );
-
         //Add teh data source
         dataSources.add( new BoxPlotDiagramXYChartDataSource( 0, boxPlotData ) );
 
@@ -829,7 +823,7 @@ public abstract class ChartEngineFactory
         String templateName =
                 getNonNullMultiVectorOutputPlotTypeInformation( input.getMetadata().getMetricID(),
                                                                 null ).getDefaultTemplateName();
-        if (userSpecifiedTemplateResourceName != null)
+        if ( userSpecifiedTemplateResourceName != null )
         {
             templateName = userSpecifiedTemplateResourceName;
         }
@@ -946,7 +940,7 @@ public abstract class ChartEngineFactory
         //Build the source.
         XYChartDataSource source = null;
         String templateName = scalarOutputPlotTypeInfoMap.get( usedPlotType ).getDefaultTemplateName();
-        if (userSpecifiedTemplateResourceName != null)
+        if ( userSpecifiedTemplateResourceName != null )
         {
             templateName = userSpecifiedTemplateResourceName;
         }
@@ -983,11 +977,11 @@ public abstract class ChartEngineFactory
 
         //Build the ChartEngine instance.
         return generateChartEngine( Lists.newArrayList( source ),
-                                                        arguments,
-                                                        templateName,
-                                                        overrideParametersStr,
-                                                        null,
-                                                        null );
+                                    arguments,
+                                    templateName,
+                                    overrideParametersStr,
+                                    null,
+                                    null );
     }
 
     /**
@@ -1054,9 +1048,9 @@ public abstract class ChartEngineFactory
 
         //Build the ChartEngine instance.
         return ChartTools.buildChartEngine( Lists.newArrayList( source ),
-                                                                arguments,
-                                                                templateName,
-                                                                override );
+                                            arguments,
+                                            templateName,
+                                            override );
     }
 
     /**
