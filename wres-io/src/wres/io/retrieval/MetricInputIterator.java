@@ -4,10 +4,10 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.InvalidPropertiesFormatException;
 import java.util.Iterator;
+import java.util.List;
 import java.util.NavigableMap;
 import java.util.NoSuchElementException;
 import java.util.TreeMap;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import org.slf4j.Logger;
@@ -23,7 +23,6 @@ import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
 import wres.util.Collections;
-import wres.util.FormattedStopwatch;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
 
@@ -38,6 +37,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
     private final Feature feature;
 
     private final ProjectDetails projectDetails;
+    private final List<String> projectSources;
     private NavigableMap<String, Double> leftHandMap;
     private VectorOfDoubles climatology;
     private String earliestObservationDate;
@@ -96,12 +96,15 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
         return this.climatology;
     }
 
-    public MetricInputIterator( final ProjectConfig projectConfig, final Feature feature)
+    public MetricInputIterator( final ProjectConfig projectConfig,
+                                final Feature feature,
+                                final List<String> projectSources )
             throws SQLException, NoDataException,
             InvalidPropertiesFormatException
     {
         this.projectDetails = Projects.getProject( projectConfig );
         this.feature = feature;
+        this.projectSources = projectSources;
 
         this.createLeftHandCache();
 
@@ -188,7 +191,8 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
                                                                (String firstDate, String lastDate) -> {
                                                                    return Collections
                                                                            .getValuesInRange( this.leftHandMap, firstDate, lastDate );
-                                                               });
+                                                               },
+                                                               this.projectSources );
                 retriever.setFeature(feature);
                 retriever.setClimatology( this.getClimatology() );
                 retriever.setProgress( this.getWindowNumber() );

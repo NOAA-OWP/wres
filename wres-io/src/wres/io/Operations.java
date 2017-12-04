@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -20,13 +21,10 @@ import javax.xml.transform.TransformerException;
 
 import org.slf4j.LoggerFactory;
 
-import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
-import wres.config.generated.Format;
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.Executor;
 import wres.io.config.SystemSettings;
-import wres.io.data.caching.Features;
 import wres.io.data.caching.Projects;
 import wres.io.data.details.FeatureDetails;
 import wres.io.data.details.ProjectDetails;
@@ -35,7 +33,6 @@ import wres.io.reading.SourceLoader;
 import wres.io.reading.fews.PIXMLReader;
 import wres.io.utilities.Database;
 import wres.io.retrieval.InputGenerator;
-import wres.util.Collections;
 import wres.util.Strings;
 
 public final class Operations {
@@ -48,16 +45,30 @@ public final class Operations {
     {
     }
 
-    public static void ingest( ProjectConfig projectConfig )
+    /**
+     * Ingests and returns the hashes of source files involved in this project.
+     * @param projectConfig the projectConfig to ingest
+     * @return the hashes of files that are used in this project
+     * @throws IOException when anything goes wrong
+     */
+    public static List<String> ingest( ProjectConfig projectConfig )
             throws IOException
     {
+        List<String> projectSources = new ArrayList<>();
+
         SourceLoader loader = new SourceLoader(projectConfig);
         try {
             List<Future<List<String>>> ingestions = loader.load();
 
+            if ( LOGGER.isDebugEnabled() )
+            {
+                LOGGER.debug( ingestions.size() + " direct load results." );
+            }
+
             for (Future<List<String>> task : ingestions)
             {
-                task.get();
+                List<String> ingested = task.get();
+                projectSources.addAll( ingested );
             }
         }
         catch ( InterruptedException ie )
@@ -72,14 +83,19 @@ public final class Operations {
         finally
         {
             PIXMLReader.saveLeftoverForecasts();
-            Database.completeAllIngestTasks();
+            projectSources.addAll( Database.completeAllIngestTasks() );
         }
+
+        LOGGER.debug( "Here are the files ingested: {}", projectSources );
+
+        return Collections.unmodifiableList( projectSources );
     }
 
     public static InputGenerator getInputs(ProjectConfig projectConfig,
-                                           Feature feature)
+                                           Feature feature,
+                                           List<String> projectSources )
     {
-        return new InputGenerator(projectConfig, feature);
+        return new InputGenerator(projectConfig, feature, projectSources);
     }
 
     public static void install()
