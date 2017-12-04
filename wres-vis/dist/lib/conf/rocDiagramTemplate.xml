@@ -4,7 +4,7 @@
 
 	<plotTitle>
         <font family="Dialog" size="12" style="1"/>
-		<text>Relative Operating Characteristic Diagram for Various Event @plotTitleVariable@
+		<text>@metricName@ for Various Event @plotTitleVariable@
 @locationName@.@variableName@.@primaryScenario@ @diagramInstanceDescription@
 		</text>
 	</plotTitle>
