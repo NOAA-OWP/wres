@@ -1,7 +1,6 @@
 package wres.io.reading.usgs;
 
 import java.io.IOException;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -127,16 +126,7 @@ public class USGSReader extends BasicSource
         this.operationStartTime = Time.convertDateToString( OffsetDateTime.now() );
         this.load();
 
-        if (this.response == null ||
-            wres.util.Collections.exists(
-                    this.response.getValue().getTimeSeries(), (TimeSeries series) ->
-                            series.getValues() == null || series.getValues().length == 0 ) )
-        {
-            throw new IOException( "No USGS data could be loaded with the given configuration." );
-        }
-
         List<String> foundLocations = new ArrayList<>(  );
-
         for (TimeSeries series : this.response.getValue().getTimeSeries())
         {
             foundLocations.add(series.getSourceInfo().getSiteCode()[0].getValue());
@@ -202,6 +192,7 @@ public class USGSReader extends BasicSource
         Client client = null;
         try
         {
+
             client = ClientBuilder.newClient();
             WebTarget webTarget = client.target( USGS_URL );
 
@@ -478,16 +469,30 @@ public class USGSReader extends BasicSource
             this.variablePositionIDs = new TreeMap<>(  );
         }
 
+        FeatureDetails details = null;
+
         if (!this.variablePositionIDs.containsKey( gageID ))
         {
-            FeatureDetails details =
-                    wres.util.Collections.find( this.getProjectDetails().getFeatures(),
-                                                feature -> feature.getGageID() != null &&
-                                                           feature.getGageID().equalsIgnoreCase( gageID ) );
+            try
+            {
+                details =
+                        wres.util.Collections.find( this.getProjectDetails()
+                                                        .getFeatures(),
+                                                    feature ->
+                                                            feature.getGageID()
+                                                            != null &&
+                                                            feature.getGageID()
+                                                                   .equalsIgnoreCase(
+                                                                           gageID ) );
 
-            this.variablePositionIDs.put( gageID,
-                                          details.getVariablePositionID(
-                                                  this.getVariableID() ) );
+                this.variablePositionIDs.put( gageID,
+                                              details.getVariablePositionID(
+                                                      this.getVariableID() ) );
+            }
+            catch (Exception e)
+            {
+                LOGGER.debug( Strings.getStackTrace( e ) );
+            }
         }
 
         return this.variablePositionIDs.get( gageID );
