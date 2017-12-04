@@ -78,12 +78,12 @@ public final class RankHistogramTest
                     Arrays.equals( actualRanks, expectedRanks ) );
         assertTrue( "Difference between actual and expected relative frequencies.",
                     Arrays.equals( actualRFreqs, expectedRFreqs ) );
-        
+
         //Check the parameters
         assertTrue( "Unexpected name for the Rank Histogram.",
-                    rh.getName().equals( metaFac.getMetricName( MetricConstants.RANK_HISTOGRAM ) ) );
+                    rh.getName().equals( MetricConstants.RANK_HISTOGRAM.toString() ) );
     }
-    
+
     /**
      * Constructs a {@link RankHistogram} and compares the actual result to the expected result for a synthetic dataset
      * with ties.
@@ -98,18 +98,18 @@ public final class RankHistogramTest
         final DataFactory outF = DefaultDataFactory.getInstance();
         final MetadataFactory metaFac = outF.getMetadataFactory();
         b.setOutputFactory( outF );
-        b.setRNGForTies( new Random( 12345678) ); //Fixed seed in RNG
+        b.setRNGForTies( new Random( 12345678 ) ); //Fixed seed in RNG
         final RankHistogram rh = b.build();
-        
+
 
         //Generate some data using an RNG for a uniform U[0,1] distribution with a fixed seed
         final List<PairOfDoubleAndVectorOfDoubles> values = new ArrayList<>();
-        values.add( outF.pairOf( 2, new double[]{1,2,2,2,4,5,6,7,8} ) );
+        values.add( outF.pairOf( 2, new double[] { 1, 2, 2, 2, 4, 5, 6, 7, 8 } ) );
         final EnsemblePairs input = outF.ofEnsemblePairs( values, metaFac.getMetadata() );
 
         //Check the results       
         final MultiVectorOutput actual = rh.apply( input );
-        
+
         double[] actualRanks = actual.get( MetricDimension.RANK_ORDER ).getDoubles();
         double[] actualRFreqs = actual.get( MetricDimension.OBSERVED_RELATIVE_FREQUENCY ).getDoubles();
         double[] expectedRanks = new double[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
@@ -118,10 +118,10 @@ public final class RankHistogramTest
 
         //Check the first pair of quantiles, which should map to the first entry, since the lower bound is unknown
         assertTrue( "Difference between actual and expected rank positions.",
-                                        Arrays.equals( actualRanks, expectedRanks ) );
+                    Arrays.equals( actualRanks, expectedRanks ) );
         assertTrue( "Difference between actual and expected relative frequencies.",
                     Arrays.equals( actualRFreqs, expectedRFreqs ) );
-    }       
+    }
 
     /**
      * Constructs a {@link RankHistogram} and checks for exceptional cases.
@@ -144,8 +144,8 @@ public final class RankHistogramTest
             rh.apply( null );
             fail( "Expected an exception on null input." );
         }
-        catch(MetricInputException e)
-        {          
+        catch ( MetricInputException e )
+        {
         }
-    } 
+    }
 }

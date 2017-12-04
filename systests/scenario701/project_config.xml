@@ -13,7 +13,7 @@
         </left>
         <right label="NWM Short Range">
             <type>single valued forecasts</type>
-            <source format="netCDF">systests/data/channel_rt/short_range/</source>
+            <source format="netCDF">../data/channel_rt/short_range/</source>
             <variable>streamflow</variable>
         </right>
     </inputs>
@@ -31,7 +31,7 @@
     </pair>
     <outputs>
         <metric> <name>mean error</name> </metric>
-        <metric><name>correlation pearsons</name></metric>
+        <metric><name>pearson correlation coefficient</name></metric>
         <metric><name>mean absolute error</name></metric>
         <metric><name>bias fraction</name></metric>
         <metric><name>coefficient of determination</name></metric>
@@ -41,17 +41,17 @@
 
         <!-- This can end up pulling a MOUNTAIN of data
         <destination type="pairs" decimalFormat="0.000000">
-            <path>output/scenario701/</path>
+            <path>output/</path>
         </destination>
         -->
 
         <destination type="numeric" decimalFormat="0.000000">
-            <path>output/scenario701/</path>
+            <path>output/</path>
         </destination>
 
         <!-- Just as with pairs, this can end up creating a mountain of data
         <destination type="graphic">
-            <path>output/scenario701/</path>
+            <path>output/</path>
             <graphical width="800" height="600">
                 <plotType>lead threshold</plotType>
             </graphical>

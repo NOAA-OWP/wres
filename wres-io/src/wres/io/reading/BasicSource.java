@@ -18,7 +18,6 @@ import wres.io.config.ConfigHelper;
 import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.Database;
 import wres.util.Internal;
-import wres.util.NotImplementedException;
 import wres.util.Strings;
 
 /**
@@ -45,7 +44,7 @@ public abstract class BasicSource
     /**
      * Saves data within the source file as a forecast
      */
-    public void saveForecast() throws IOException
+    public List<String> saveForecast() throws IOException
 	{
 		throw new IOException("Forecasts may not be saved using this type of source.");
 	}
@@ -54,7 +53,7 @@ public abstract class BasicSource
     /**
      * Saves data within the source file as an observation
      */
-    public void saveObservation() throws IOException
+    public List<String> saveObservation() throws IOException
 	{
 		throw new IOException("Observations may not be saved using this type of source.");
 	}
@@ -351,6 +350,7 @@ public abstract class BasicSource
      * Retrieves the results of the asynchrous hashing operation for the file
      * @return The MD5 hash of the contents of the current source file
      * @throws IOException when anything goes wrong while getting the hash
+     * @throws UnsupportedOperationException when hash was not previously requested?
      */
     protected String getHash() throws IOException
     {
@@ -376,8 +376,10 @@ public abstract class BasicSource
             }
             else
             {
-                throw new NotImplementedException(
-                        "No hashing operation was created during file ingestion. No hash could be retrieved."
+                throw new UnsupportedOperationException(
+                        "No hashing operation was created during file ingestion"
+                                + " for file '" + this.getAbsoluteFilename()
+                                + "'. No hash could be retrieved."
                 );
             }
         }

@@ -57,7 +57,7 @@ class CoefficientOfDetermination extends CorrelationPearsons
     @Override
     public MetricConstants getCollectionOf()
     {
-        return MetricConstants.CORRELATION_PEARSONS;
+        return MetricConstants.PEARSON_CORRELATION_COEFFICIENT;
     }
 
     /**

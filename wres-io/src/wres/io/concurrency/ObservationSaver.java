@@ -19,7 +19,8 @@ import wres.util.Internal;
  * @author Christopher Tubbs
  */
 @Internal(exclusivePackage = "wres.io")
-public class ObservationSaver extends WRESRunnable {
+public class ObservationSaver extends WRESCallable<List<String>>
+{
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ObservationSaver.class);
 
@@ -43,7 +44,8 @@ public class ObservationSaver extends WRESRunnable {
 	 * @see java.lang.Runnable#run()
 	 */
 	@Override
-    public void execute() {
+    public List<String> execute()
+	{
 		BasicSource source;
 
 		try {
@@ -56,7 +58,8 @@ public class ObservationSaver extends WRESRunnable {
             source.setSpecifiedFeatures( this.specifiedFeatures );
 
             source.setProjectDetails( this.projectDetails );
-			source.saveObservation();
+
+            return source.saveObservation();
 		}
         catch (IOException ioe)
         {
