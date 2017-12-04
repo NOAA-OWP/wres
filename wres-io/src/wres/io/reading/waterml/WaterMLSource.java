@@ -95,7 +95,7 @@ public class WaterMLSource extends BasicSource
     }
 
     @Override
-    public void saveObservation() throws IOException
+    public List<String> saveObservation() throws IOException
     {
 
         List<String> foundLocations = new ArrayList<>(  );
@@ -125,6 +125,7 @@ public class WaterMLSource extends BasicSource
         {
             throw new IOException( "USGS observations could not be saved.", e );
         }
+        return foundLocations;
     }
 
     private void enforceValidFeatures(List<String> foundLocations)

@@ -4,14 +4,14 @@
     <inputs>
         <left>
             <type>observations</type>
-            <source>systests/smalldata/DRRC2QINE_FAKE_19850430.xml</source>
+            <source>../smalldata/DRRC2QINE_FAKE_19850430.xml</source>
             <variable>QINE</variable>
         </left>
         <right>
             <type>ensemble forecasts</type>
-            <source>systests/smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
-            <source>systests/smalldata/1985043013_DRRC2FAKE1_forecast.xml</source>
-            <source>systests/smalldata/1985043014_DRRC2FAKE1_forecast.xml</source>
+            <source>../smalldata/1985043012_DRRC2FAKE1_forecast.xml</source>
+            <source>../smalldata/1985043013_DRRC2FAKE1_forecast.xml</source>
+            <source>../smalldata/1985043014_DRRC2FAKE1_forecast.xml</source>
             <variable>SQIN</variable>
         </right>
     </inputs>
@@ -40,11 +40,11 @@
         <metric><name>sample size</name></metric>
 
         <destination type="pairs" decimalFormat="0.000000">
-            <path>output/scenario500/</path>
+            <path>output</path>
         </destination>
 
         <destination type="numeric" decimalFormat="0.000000">
-            <path>output/scenario500/</path>
+            <path>output</path>
         </destination>
 
     </outputs>

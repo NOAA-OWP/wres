@@ -6,10 +6,10 @@
     <inputs>
         <left label="Observations">
             <type>observations</type>
-            <source format="datacard" zoneOffset="CST" unit="CFS" locationId="GLOO2">systests/data/singleValuedEx_ABRFC_ARCFUL_OBS/GLOO2X.QINE.19951101.20170905.datacard</source>
-            <source format="datacard" zoneOffset="CST" unit="CFS" locationId="ANTO2">systests/data/singleValuedEx_ABRFC_ARCFUL_OBS/ANTO2X.QINE.20071001.20170905.datacard</source>
-            <source format="datacard" zoneOffset="CST" unit="CFS" locationId="ARCT2">systests/data/singleValuedEx_ABRFC_ARCFUL_OBS/ARCT2X.QINE.19951101.20170905.datacard</source>
-            <source format="datacard" zoneOffset="CST" unit="CFS" locationId="BLUO2">systests/data/singleValuedEx_ABRFC_ARCFUL_OBS/BLUO2X.QINE.19951101.20170905.datacard</source>
+            <source format="datacard" zoneOffset="CST" unit="CFS" locationId="GLOO2">../data/singleValuedEx_ABRFC_ARCFUL_OBS/GLOO2X.QINE.19951101.20170905.datacard</source>
+            <source format="datacard" zoneOffset="CST" unit="CFS" locationId="ANTO2">../data/singleValuedEx_ABRFC_ARCFUL_OBS/ANTO2X.QINE.20071001.20170905.datacard</source>
+            <source format="datacard" zoneOffset="CST" unit="CFS" locationId="ARCT2">../data/singleValuedEx_ABRFC_ARCFUL_OBS/ARCT2X.QINE.19951101.20170905.datacard</source>
+            <source format="datacard" zoneOffset="CST" unit="CFS" locationId="BLUO2">../data/singleValuedEx_ABRFC_ARCFUL_OBS/BLUO2X.QINE.19951101.20170905.datacard</source>
             <variable>QINE</variable>
 
             <existingTimeAggregation>
@@ -21,7 +21,7 @@
         <right label="Operational Single-Valued Forecasts" >
             <type>single valued forecasts</type>
             <source all="false" format="PI-XML" missingValue="-999.0"
-                recursive="false" unit="CMS">systests/data/singleValuedEx_ABRFC_ARCFUL_QINE</source>
+                recursive="false" unit="CMS">../data/singleValuedEx_ABRFC_ARCFUL_QINE</source>
             <variable>QINE</variable>
     
             <existingTimeAggregation>
@@ -56,10 +56,10 @@
         <metric><name>mean error</name></metric>
         <metric><name>sample size</name></metric>
         <destination type="pairs" decimalFormat="0.000000">
-            <path>output/scenario401/</path>
+            <path>output</path>
         </destination>
         <destination type="numeric" decimalFormat="0.000000">
-            <path>output/scenario401/</path>
+            <path>output</path>
         </destination>
         <!--
         <destination type="graphic">
