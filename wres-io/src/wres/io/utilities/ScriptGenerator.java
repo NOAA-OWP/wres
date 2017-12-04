@@ -14,7 +14,6 @@ import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Ensembles;
-import wres.io.data.caching.Projects;
 import wres.io.data.details.ProjectDetails;
 import wres.util.Collections;
 import wres.util.Internal;
@@ -35,7 +34,8 @@ public final class ScriptGenerator
     public static String generateLoadDatasourceScript(final ProjectDetails projectDetails,
                                                       final DataSourceConfig dataSourceConfig,
                                                       final Feature feature,
-                                                      final int progress)
+                                                      final int progress,
+                                                      final List<String> projectSources )
             throws SQLException, InvalidPropertiesFormatException,
             NoDataException
     {
@@ -134,6 +134,7 @@ public final class ScriptGenerator
                       .append(NEWLINE);
             }
 
+            /*
             script.append("     AND EXISTS (").append(NEWLINE);
             script.append("         SELECT 1").append(NEWLINE);
             script.append("         FROM wres.ProjectSource PS").append(NEWLINE);
@@ -150,6 +151,18 @@ public final class ScriptGenerator
             {
                 script.append(ProjectDetails.BASELINE_MEMBER);
             }
+            */
+
+            StringJoiner sourceIds = new StringJoiner("' ,'", " ('", "') " );
+            projectSources.forEach( sourceIds::add );
+
+            script.append("     AND EXISTS (").append(NEWLINE);
+            script.append("         SELECT 1").append(NEWLINE);
+            script.append("         FROM wres.Source S").append(NEWLINE);
+            script.append("         INNER JOIN wres.ForecastSource FS").append(NEWLINE);
+            script.append("             ON FS.source_id = S.source_id").append(NEWLINE);
+            script.append("         WHERE S.hash in ").append( sourceIds.toString() ).append(NEWLINE);
+
             script.append(NEWLINE);
 
             script.append("         AND FS.forecast_id = TS.timeseries_id").append(NEWLINE);
