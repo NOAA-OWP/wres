@@ -1,6 +1,6 @@
-package wres.io.reading.usgs.waterml.variable;
+package wres.io.reading.waterml.variable;
 
-import wres.io.reading.usgs.waterml.query.QueryNote;
+import wres.io.reading.waterml.query.QueryNote;
 
 public class Variable
 {

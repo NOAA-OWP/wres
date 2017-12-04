@@ -4,16 +4,13 @@ import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
 import java.util.Stack;
 import java.util.TreeMap;
 
+import org.apache.commons.math3.util.Precision;
 import org.slf4j.Logger;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
@@ -34,10 +31,10 @@ import wres.io.data.details.FeatureDetails;
 import wres.io.data.details.VariableDetails;
 import wres.io.reading.BasicSource;
 import wres.io.reading.IngestException;
-import wres.io.reading.usgs.waterml.Response;
-import wres.io.reading.usgs.waterml.timeseries.TimeSeries;
-import wres.io.reading.usgs.waterml.timeseries.TimeSeriesValue;
-import wres.io.reading.usgs.waterml.timeseries.TimeSeriesValues;
+import wres.io.reading.waterml.Response;
+import wres.io.reading.waterml.timeseries.TimeSeries;
+import wres.io.reading.waterml.timeseries.TimeSeriesValue;
+import wres.io.reading.waterml.timeseries.TimeSeriesValues;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
 import wres.util.Collections;
@@ -57,6 +54,10 @@ public class USGSReader extends BasicSource
 
     private static final String EARLIEST_DATE = "epoch";
     private static final String LATEST_DATE = "now";
+    /**
+     * Epsilon value used to test floating point equivalency
+     */
+    private static final double EPSILON = 0.0000001;
 
     private static final String UPSERT =
             "WITH upsert AS" + System.lineSeparator() +
@@ -93,27 +94,6 @@ public class USGSReader extends BasicSource
             this.gageID = gageID;
             this.observationTime = observationTime;
             this.value = value;
-        }
-
-        public void addToUpsert( PreparedStatement upsertStatement)
-                throws SQLException
-        {
-
-            upsertStatement.setDouble( 1, this.value );
-            upsertStatement.setInt( 2, getVariablePositionID(gageID) );
-            upsertStatement.setString( 3, this.observationTime );
-            upsertStatement.setInt( 4, getSourceID() );
-
-            upsertStatement.setInt( 5, getVariablePositionID(gageID) );
-            upsertStatement.setString( 6, this.observationTime );
-            upsertStatement.setDouble( 7, this.value );
-            upsertStatement.setInt( 8, getSourceID() );
-
-            upsertStatement.setInt( 9, getVariablePositionID(gageID) );
-            upsertStatement.setString( 10, this.observationTime );
-            upsertStatement.setInt( 11, getSourceID() );
-
-            upsertStatement.addBatch();
         }
 
         public Object[] getParameters() throws SQLException
@@ -493,15 +473,29 @@ public class USGSReader extends BasicSource
             this.variablePositionIDs = new TreeMap<>(  );
         }
 
+        FeatureDetails details = null;
+
         if (!this.variablePositionIDs.containsKey( gageID ))
         {
-            FeatureDetails details =
-                    Collections.find( this.getProjectDetails().getFeatures(),
-                                      feature -> feature.getGageID() != null &&
-                                                 feature.getGageID().equalsIgnoreCase( gageID ) );
+            try
+            {
+                details =
+                        Collections.find( this.getProjectDetails()
+                                              .getFeatures(),
+                                          feature -> feature.getGageID() != null
+                                                     &&
+                                                     feature.getGageID()
+                                                            .equalsIgnoreCase(
+                                                                    gageID ) );
 
-            this.variablePositionIDs.put(gageID,
-                                         details.getVariablePositionID( this.getVariableID() ));
+                this.variablePositionIDs.put( gageID,
+                                              details.getVariablePositionID(
+                                                      this.getVariableID() ) );
+            }
+            catch (Exception e)
+            {
+                LOGGER.debug( Strings.getStackTrace( e ) );
+            }
         }
 
         return this.variablePositionIDs.get( gageID );
@@ -607,9 +601,17 @@ public class USGSReader extends BasicSource
             {
                 try
                 {
+                    Double readValue = value.getValue();
+
+                    if (series.getVariable().getNoDataValue() != null &&
+                        Precision.equals(readValue, series.getVariable().getNoDataValue(), EPSILON))
+                    {
+                        readValue = null;
+                    }
+
                     this.addValue( series.getSourceInfo().getSiteCode()[0].getValue(),
                                    value.getDateTime(),
-                                   value.getValue() );
+                                   readValue );
                 }
                 catch ( SQLException e )
                 {
@@ -662,10 +664,6 @@ public class USGSReader extends BasicSource
         return sourceID;
     }
 
-    // This should be transformed from the feature table if the lid or anything
-    // other than gageID is given
-    private String gageID = "01646500";
-
     // If daily values were used, start and end date cannot have minutes or timezones
     // While these are hardcoded, they will need to be specified from the config
     // date must be separated by T, negative timezone will need to be separated by %2b
@@ -679,7 +677,7 @@ public class USGSReader extends BasicSource
     private Integer sourceID;
     private String hash;
 
-    private Stack<UpsertValue> upsertValues = new Stack<>();
+    private final Stack<UpsertValue> upsertValues = new Stack<>();
 
     // "00060" corresponds to a specific type of discharge. We need a list and
     // a way to transform user specifications about variable, time aggregation,

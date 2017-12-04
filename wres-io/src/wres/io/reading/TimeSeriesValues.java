@@ -16,9 +16,9 @@ import wres.util.Strings;
  * Facilitates a shared location for copying forecast timeseries values to
  * the database
  */
-public class TimeSeriesValues
+public final class TimeSeriesValues
 {
-    private static TimeSeriesValues ourInstance = new TimeSeriesValues();
+    private static final TimeSeriesValues ourInstance = new TimeSeriesValues();
 
     public static TimeSeriesValues getInstance()
     {

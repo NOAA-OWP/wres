@@ -1,4 +1,4 @@
-package wres.io.reading.usgs.waterml.variable;
+package wres.io.reading.waterml.variable;
 
 public class VariableOptions
 {

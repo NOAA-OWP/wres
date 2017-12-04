@@ -571,15 +571,6 @@ public final class PIXMLReader extends XMLReader
 						}
 					}
 				}
-				else if (localName.equalsIgnoreCase("stationName"))
-				{
-				    // TODO: Set the featureName on a FeatureDetails object; don't just store the stationName
-					//	If we are at the tag for the name of the station, save it to the location
-					currentStationName = XML.getXMLText(reader);
-					this.currentVariablePositionID = null;
-					this.currentTimeSeriesID = null;
-					this.currentTimeSeries = null;
-				}
 				else if(localName.equalsIgnoreCase("units"))
 				{
 					//	If we are at the tag for the units, save it to the measurement units
@@ -1154,11 +1145,6 @@ public final class PIXMLReader extends XMLReader
 	private String currentLID = null;
 	
 	/**
-	 * The name of the station tied to the feature that the forecast/observation is for
-	 */
-	private String currentStationName = null;
-	
-	/**
 	 * The name of the ensemble currently being parsed
 	 */
 	private String currentEnsembleName = null;
@@ -1181,7 +1167,7 @@ public final class PIXMLReader extends XMLReader
     /**
      * The hash code for the source file
      */
-	private String hash;
+	private final String hash;
 
 	private final ProjectDetails projectDetails;
 

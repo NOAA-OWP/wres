@@ -942,7 +942,39 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
         return new FeatureKey( null, null, null, huc );
     }
 
-	public static class FeatureKey implements Comparable<FeatureKey>
+    @Override
+    public boolean equals( Object obj )
+    {
+        boolean equals = false;
+
+        if (obj instanceof FeatureDetails)
+        {
+            FeatureDetails other = (FeatureDetails)obj;
+
+            if (this.comid != null && other.comid != null)
+            {
+                equals = this.comid.equals( other.comid );
+            }
+            else if (Strings.hasValue(this.lid) && Strings.hasValue(other.lid))
+            {
+                equals = this.lid.equalsIgnoreCase( other.lid );
+            }
+            else if (Strings.hasValue( this.gageID ) && Strings.hasValue( other.gageID ))
+            {
+                equals = this.gageID.equalsIgnoreCase( other.gageID );
+            }
+        }
+
+        return equals;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( this.getLid(), this.getGageID(), this.getComid() );
+    }
+
+    public static class FeatureKey implements Comparable<FeatureKey>
     {
         private final Integer comid;
         private final String lid;

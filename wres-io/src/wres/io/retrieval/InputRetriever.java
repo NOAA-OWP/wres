@@ -394,10 +394,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             }
         }
 
-        List<PairOfDoubleAndVectorOfDoubles> unmodifiablePairs =
-                Collections.unmodifiableList( pairs );
-
-        return unmodifiablePairs;
+        return Collections.unmodifiableList( pairs );
     }
 
     private List<PairOfDoubleAndVectorOfDoubles> addPair( List<PairOfDoubleAndVectorOfDoubles> pairs,
