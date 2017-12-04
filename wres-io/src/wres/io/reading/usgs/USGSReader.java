@@ -478,33 +478,16 @@ public class USGSReader extends BasicSource
             this.variablePositionIDs = new TreeMap<>(  );
         }
 
-        FeatureDetails details = null;
-
         if (!this.variablePositionIDs.containsKey( gageID ))
         {
-            try
-            {
-                details =
-                        Collections.find( this.getProjectDetails()
-                                              .getFeatures(),
-                                          feature -> feature.getGageID() != null
-                                                     &&
-                                                     feature.getGageID()
-                                                            .equalsIgnoreCase(
-                                                                    gageID ) );
             FeatureDetails details =
                     wres.util.Collections.find( this.getProjectDetails().getFeatures(),
                                                 feature -> feature.getGageID() != null &&
                                                            feature.getGageID().equalsIgnoreCase( gageID ) );
 
-                this.variablePositionIDs.put( gageID,
-                                              details.getVariablePositionID(
-                                                      this.getVariableID() ) );
-            }
-            catch (Exception e)
-            {
-                LOGGER.debug( Strings.getStackTrace( e ) );
-            }
+            this.variablePositionIDs.put( gageID,
+                                          details.getVariablePositionID(
+                                                  this.getVariableID() ) );
         }
 
         return this.variablePositionIDs.get( gageID );
