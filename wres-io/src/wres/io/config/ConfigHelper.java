@@ -42,6 +42,7 @@ import wres.datamodel.time.TimeWindow;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.Projects;
 import wres.io.data.caching.Variables;
+import wres.io.data.details.FeatureDetails;
 import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.Database;
 import wres.util.Collections;
@@ -72,19 +73,6 @@ public class ConfigHelper
         }
 
         return hasProbabilityThreshold;
-    }
-
-    /**
-     *
-     * @param projectConfig the project configuration
-     * @param currentLead the current lead time
-     * @return the lead time in hours
-     * @throws InvalidPropertiesFormatException Thrown if the time aggregation unit is not supported
-     */
-    public static int getLead(ProjectConfig projectConfig, int currentLead) throws InvalidPropertiesFormatException {
-        TimeAggregationConfig timeAggregationConfig = ConfigHelper.getTimeAggregation( projectConfig );
-        double count = 1.0 * currentLead * timeAggregationConfig.getPeriod();
-        return Time.unitsToHours(timeAggregationConfig.getUnit().name(), count).intValue();
     }
 
     public static Integer getVariableID(DataSourceConfig dataSourceConfig) throws SQLException
@@ -625,6 +613,10 @@ public class ConfigHelper
 
         if ( feature != null )
         {
+            if (Strings.hasValue( feature.getName() ))
+            {
+                description = feature.getName();
+            }
             if ( feature.getLocationId() != null
                  && !feature.getLocationId()
                             .trim()
@@ -632,23 +624,16 @@ public class ConfigHelper
             {
                 description = feature.getLocationId();
             }
-            else if ( feature.getHuc() != null
-                      && !feature.getHuc()
-                                 .trim()
-                                 .isEmpty() )
-            {
-                description = feature.getHuc();
-            }
-            else if ( feature.getComid() != null )
-            {
-                description = String.valueOf( feature.getComid() );
-            }
             else if ( feature.getGageId() != null
                       && !feature.getGageId()
                                  .trim()
                                  .isEmpty() )
             {
                 description = feature.getGageId();
+            }
+            else if ( feature.getComid() != null )
+            {
+                description = String.valueOf( feature.getComid() );
             }
         }
 

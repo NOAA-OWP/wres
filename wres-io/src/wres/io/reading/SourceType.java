@@ -15,6 +15,7 @@ public enum SourceType {
 	NETCDF,
 	PI_XML,
 	USGS,
+	WATERML,
 	ARCHIVE,
 	UNDEFINED
 }

@@ -1,4 +1,4 @@
-package wres.io.reading.usgs.waterml.timeseries;
+package wres.io.reading.waterml.timeseries;
 
 public class Location
 {

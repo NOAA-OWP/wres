@@ -28,7 +28,7 @@ import wres.util.Internal;
 @Internal(exclusivePackage = "wres.io")
 public class XMLReader 
 {
-    private String filename;
+    private final String filename;
     private final boolean findOnClasspath;
     private final InputStream inputStream;
     private XMLInputFactory factory = null;

@@ -1,4 +1,4 @@
-package wres.io.reading.usgs.waterml.query;
+package wres.io.reading.waterml.query;
 
 public class QueryNote
 {

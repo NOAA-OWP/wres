@@ -1,4 +1,4 @@
-package wres.io.reading.usgs.waterml;
+package wres.io.reading.waterml;
 
 import javax.xml.bind.annotation.XmlRootElement;
 

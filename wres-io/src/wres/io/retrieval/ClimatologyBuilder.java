@@ -225,9 +225,9 @@ class ClimatologyBuilder
     //private Future<DataSet> futureValues;
     private VectorOfDoubles climatology;
     private Map<Integer, UnitConversions.Conversion> conversions;
-    private ProjectDetails projectDetails;
-    private DataSourceConfig dataSourceConfig;
-    private Feature feature;
+    private final ProjectDetails projectDetails;
+    private final DataSourceConfig dataSourceConfig;
+    private final Feature feature;
 
     public ClimatologyBuilder(ProjectDetails projectDetails, DataSourceConfig dataSourceConfig, Feature feature)
             throws IOException

@@ -1,7 +1,7 @@
-package wres.io.reading.usgs.waterml;
+package wres.io.reading.waterml;
 
-import wres.io.reading.usgs.waterml.query.QueryInfo;
-import wres.io.reading.usgs.waterml.timeseries.TimeSeries;
+import wres.io.reading.waterml.query.QueryInfo;
+import wres.io.reading.waterml.timeseries.TimeSeries;
 
 public class ResponseValue
 {

@@ -1,6 +1,6 @@
-package wres.io.reading.usgs.waterml.timeseries;
+package wres.io.reading.waterml.timeseries;
 
-import wres.io.reading.usgs.waterml.variable.Variable;
+import wres.io.reading.waterml.variable.Variable;
 
 public class TimeSeries
 {

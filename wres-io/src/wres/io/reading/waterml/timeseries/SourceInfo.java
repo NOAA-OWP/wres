@@ -1,6 +1,6 @@
-package wres.io.reading.usgs.waterml.timeseries;
+package wres.io.reading.waterml.timeseries;
 
-import wres.io.reading.usgs.waterml.query.QueryNote;
+import wres.io.reading.waterml.query.QueryNote;
 
 public class SourceInfo
 {
