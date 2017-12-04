@@ -12,7 +12,6 @@ import wres.io.data.details.ProjectDetails;
 import wres.io.reading.BasicSource;
 import wres.io.reading.ReaderFactory;
 import wres.util.Internal;
-import wres.util.Strings;
 
 /**
  * Saves the forecast at the indicated path asynchronously
@@ -20,7 +19,7 @@ import wres.util.Strings;
  * @author Christopher Tubbs
  */
 @Internal(exclusivePackage = "wres.io")
-public class ForecastSaver extends WRESRunnable
+public class ForecastSaver extends WRESCallable<List<String>>
 {
 	private static final Logger LOGGER = LoggerFactory.getLogger(ForecastSaver.class);
 
@@ -44,7 +43,8 @@ public class ForecastSaver extends WRESRunnable
 	 * @see java.lang.Runnable#run()
 	 */
 	@Override
-    public void execute() {
+    public List<String> execute()
+    {
 		try
 		{
 			BasicSource source = ReaderFactory.getReader(this.filepath);
@@ -57,7 +57,7 @@ public class ForecastSaver extends WRESRunnable
 
 			source.setProjectDetails( this.projectDetails );
 
-			source.saveForecast();
+            return source.saveForecast();
 		}
         catch ( IOException e )
         {

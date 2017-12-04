@@ -2,6 +2,9 @@ package wres.io.reading.fews;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import wres.io.data.caching.DataSources;
 import wres.io.reading.BasicSource;
@@ -27,7 +30,7 @@ public class FEWSSource extends BasicSource
 	}
 
 	@Override
-	public void saveForecast() throws IOException
+	public List<String> saveForecast() throws IOException
     {
         try
         {
@@ -55,10 +58,15 @@ public class FEWSSource extends BasicSource
                              + ", encountered an issue.";
             throw new IngestException( message, se );
         }
+
+        List<String> result = new ArrayList<>( 1 );
+        result.add( this.getHash() );
+        return Collections.unmodifiableList( result );
     }
 
     @Override
-	public void saveObservation() throws IOException {
+	public List<String> saveObservation() throws IOException
+    {
         try
         {
             if ( !DataSources.hasSource( this.getHash() ) )
@@ -85,6 +93,10 @@ public class FEWSSource extends BasicSource
                              + ", encountered an issue.";
             throw new IngestException( message, se );
         }
+
+        List<String> result = new ArrayList<>( 1 );
+        result.add( this.getHash() );
+        return Collections.unmodifiableList( result );
     }
 
 }

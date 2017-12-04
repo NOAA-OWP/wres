@@ -13,7 +13,7 @@
         </left>
         <right label="NWM Short Range">
             <type>single valued forecasts</type>
-            <source format="netCDF">../data/channel_rt/short_range/</source>
+            <source format="netCDF">systests/data/channel_rt/short_range/</source>
             <variable>streamflow</variable>
         </right>
     </inputs>
@@ -40,15 +40,15 @@
         <metric> <name>sample size</name> </metric>
 
         <destination type="pairs" decimalFormat="0.000000">
-            <path>output/</path>
+            <path>output/scenario700/</path>
         </destination>
 
         <destination type="numeric" decimalFormat="0.000000">
-            <path>output/</path>
+            <path>output/scenario700/</path>
         </destination>
 
         <destination type="graphic">
-            <path>output/</path>
+            <path>output/scenario700/</path>
             <!--Optional: -->
             <graphical width="800" height="600">
                 <plotType>lead threshold</plotType>

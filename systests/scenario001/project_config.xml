@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<project label="ExampleProject">
+<project label="ExampleProject" name="scenario001">
 
     <inputs>
         <left label="">
             <type>simulations</type>
             <source all="true" format="PI-XML" missingValue="-999.0" 
-                recursive="true" unit="">../data/DRRC2QINE.xml</source>
+                recursive="true" unit="">systests/data/DRRC2QINE.xml</source>
             <variable>QINE</variable>
 
         </left>
         <right label="HEFS">
             <type>ensemble forecasts</type>
             <source all="false" format="PI-XML" missingValue="-999.0"
-                recursive="false" unit="">../data/drrc2ForecastsOneMonth/</source>
+                recursive="false" unit="">systests/data/drrc2ForecastsOneMonth/</source>
             <variable>SQIN</variable>
 
         </right>
@@ -43,14 +43,14 @@
         <metric> <name>sample size</name> </metric>
 
         <destination type="pairs" decimalFormat="0.000000">
-            <path>output</path>
+            <path>output/scenario001/</path>
         </destination>
 
         <destination type="numeric" decimalFormat="0.000000">
-            <path>output</path>
+            <path>output/scenario001/</path>
         </destination>
         <destination type="graphic">
-            <path>output</path>
+            <path>output/scenario001/</path>
             <graphical width="800" height="600">
                 <plotType>lead threshold</plotType>
             </graphical>

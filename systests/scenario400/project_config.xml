@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- This is a test of real, baseline validation streamflows verified through WRES where the obs is 24-h
      and the forecasts are 6-h.  Time aggregation is needed. -->
-<project label="ExampleProject" name="Single Valued Test">
+<project label="ExampleProject" name="scenario400">
 
     <inputs>
         <left label="Observations">
             <type>observations</type>
-            <source format="datacard" zoneOffset="CST" unit="CFS" >../data/singleValuedEx_ABRFC_ARCFUL_OBS/GLOO2X.QINE.19951101.20170905.datacard</source>
+            <source format="datacard" zoneOffset="CST" unit="CFS" >systests/data/singleValuedEx_ABRFC_ARCFUL_OBS/GLOO2X.QINE.19951101.20170905.datacard</source>
             <variable>QINE</variable>
             <existingTimeAggregation>
                 <function>avg</function>
@@ -17,7 +17,7 @@
         <right label="Operational Single-Valued Forecasts" >
             <type>single valued forecasts</type>
             <source all="false" format="PI-XML" missingValue="-999.0"
-                recursive="false" unit="CMS">../data/singleValuedEx_ABRFC_ARCFUL_QINE</source>
+                recursive="false" unit="CMS">systests/data/singleValuedEx_ABRFC_ARCFUL_QINE</source>
             <variable>QINE</variable>
             <existingTimeAggregation>
                 <function>avg</function>
@@ -48,10 +48,10 @@
         <metric><name>mean error</name></metric>
         <metric><name>sample size</name></metric>
         <destination type="pairs" decimalFormat="0.000000">
-            <path>output</path>
+            <path>output/scenario400/</path>
         </destination>
         <destination type="numeric" decimalFormat="0.000000">
-            <path>output</path>
+            <path>output/scenario400/</path>
         </destination>
         <!--
         <destination type="graphic">

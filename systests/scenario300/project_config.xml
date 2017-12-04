@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <!-- This is a test of verifying forecast MAPX vs obs MAP using a value threshold to break out the 0s from non-zeros. -->
-<project label="ExampleProject">
+<project label="ExampleProject" name="scenario300">
 
     <inputs>
         <left label="">
             <type>observations</type>
             <source all="true" format="PI-XML" missingValue="-999.0" 
-                recursive="true" unit="">../data/abrfcExample/LGNN5_MAP.xml</source>
+                recursive="true" unit="">systests/data/abrfcExample/LGNN5_MAP.xml</source>
             <variable>MAP</variable>
 
 <!-- At some point, this should not be necessary.  However, for now, it informs the WRES what the time step of the incoming data is, more or less. -->
@@ -21,7 +21,7 @@
         <right label="HEFS">
             <type>ensemble forecasts</type>
             <source all="false" format="PI-XML" missingValue="-999.0"
-                recursive="false" unit="">../data/abrfcExample/LGNN5_precip_1yr.tgz</source>
+                recursive="false" unit="">systests/data/abrfcExample/LGNN5_precip_1yr.tgz</source>
             <variable>MAPX</variable>
 
 <!-- See the note above. -->   
@@ -63,13 +63,13 @@
         <metric> <name>reliability diagram</name> </metric>
         <metric> <name>sample size</name> </metric>
         <destination type="numeric" decimalFormat="0.000000">
-            <path>output</path>
+            <path>output/scenario300/</path>
         </destination>
         <destination type="pairs" decimalFormat="0.000000">
-            <path>output</path>
+            <path>output/scenario300/</path>
         </destination>
         <destination type="graphic">
-            <path>output/</path>
+            <path>output/scenario300/</path>
             <graphical width="800" height="600">
                 <plotType>lead threshold</plotType>
             </graphical>

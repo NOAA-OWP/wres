@@ -13,7 +13,7 @@
         </left>
         <right label="NWM Short Range">
             <type>single valued forecasts</type>
-            <source format="netCDF">../data/channel_rt/short_range/</source>
+            <source format="netCDF">systests/data/channel_rt/short_range/</source>
             <variable>streamflow</variable>
         </right>
     </inputs>
@@ -46,7 +46,7 @@
         -->
 
         <destination type="numeric" decimalFormat="0.000000">
-            <path>output/</path>
+            <path>output/scenario701/</path>
         </destination>
 
         <!-- Just as with pairs, this can end up creating a mountain of data

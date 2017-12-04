@@ -15,7 +15,6 @@
     <pair label="Pairs by location and lead time"> <!-- required for unit -->
         <unit>CMS</unit>
         <feature locationId="DRRC2" />
-        <leadHours minimum="1" maximum="24" />
         <grouping>feature,lead_time</grouping><!-- optional? default feature,lead_time? -->
         <desiredTimeAggregation>
             <function>avg</function>
