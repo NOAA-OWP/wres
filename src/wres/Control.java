@@ -226,7 +226,7 @@ public class Control implements Function<String[], Integer>
                       projectConfigPlus.getPath() );
 
         // Need to ingest first
-        Operations.ingest(projectConfig);
+        List<String> availableSources = Operations.ingest(projectConfig);
 
         LOGGER.debug( "Finished ingest for project {}...",
                       projectConfigPlus.getPath() );
@@ -247,6 +247,7 @@ public class Control implements Function<String[], Integer>
                 ProgressMonitor.resetMonitor();
                 processFeature( feature,
                                 projectConfigPlus,
+                                availableSources,
                                 pairExecutor,
                                 thresholdExecutor,
                                 metricExecutor );
@@ -271,6 +272,7 @@ public class Control implements Function<String[], Integer>
      */
     private void processFeature( final Feature feature,
                                  final ProjectConfigPlus projectConfigPlus,
+                                 final List<String> projectSources,
                                  final ExecutorService pairExecutor,
                                  final ExecutorService thresholdExecutor,
                                  final ExecutorService metricExecutor )
@@ -305,7 +307,8 @@ public class Control implements Function<String[], Integer>
 
         // Build an InputGenerator for the next feature
         InputGenerator metricInputs = Operations.getInputs( projectConfig,
-                                                            feature );
+                                                            feature,
+                                                            projectSources );
 
         // Queue the various tasks by lead time (lead time is the pooling dimension for metric calculation here)
         final List<CompletableFuture<?>> listOfFutures = new ArrayList<>(); //List of futures to test for completion

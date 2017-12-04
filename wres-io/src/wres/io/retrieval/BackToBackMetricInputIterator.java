@@ -209,11 +209,13 @@ final class BackToBackMetricInputIterator extends MetricInputIterator
         return BackToBackMetricInputIterator.LOGGER;
     }
 
-    BackToBackMetricInputIterator( ProjectConfig projectConfig, Feature feature)
+    BackToBackMetricInputIterator( ProjectConfig projectConfig,
+                                   Feature feature,
+                                   List<String> projectSources )
             throws SQLException, InvalidPropertiesFormatException,
             NoDataException
     {
-        super(projectConfig, feature);
+        super( projectConfig, feature, projectSources );
     }
 
     @Override
