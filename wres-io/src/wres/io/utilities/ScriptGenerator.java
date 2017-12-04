@@ -134,7 +134,6 @@ public final class ScriptGenerator
                       .append(NEWLINE);
             }
 
-            /*
             script.append("     AND EXISTS (").append(NEWLINE);
             script.append("         SELECT 1").append(NEWLINE);
             script.append("         FROM wres.ProjectSource PS").append(NEWLINE);
@@ -151,8 +150,8 @@ public final class ScriptGenerator
             {
                 script.append(ProjectDetails.BASELINE_MEMBER);
             }
-            */
 
+            /*
             StringJoiner sourceIds = new StringJoiner("' ,'", " ('", "') " );
             projectSources.forEach( sourceIds::add );
 
@@ -162,6 +161,7 @@ public final class ScriptGenerator
             script.append("         INNER JOIN wres.ForecastSource FS").append(NEWLINE);
             script.append("             ON FS.source_id = S.source_id").append(NEWLINE);
             script.append("         WHERE S.hash in ").append( sourceIds.toString() ).append(NEWLINE);
+            */
 
             script.append(NEWLINE);
 
