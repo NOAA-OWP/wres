@@ -1,5 +1,6 @@
 package wres.io.reading;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -91,11 +92,11 @@ public class SourceLoader
      * determines what needs to be ingested
      * @param config The configuration for a set of datasources
      * @return A listing of asynchronous tasks dispatched to ingest data
-     * @throws NoDataException Thrown if an invalid source of data was
-     * encountered
+     * @throws FileNotFoundException when a source file is not found
+     * @throws IOException when a source file was not readable
      */
     private List<Future<List<String>>> loadConfig( DataSourceConfig config )
-            throws NoDataException
+            throws IOException
     {
         List<Future<List<String>>> savingFiles = new ArrayList<>();
         ProgressMonitor.increment();
@@ -124,9 +125,19 @@ public class SourceLoader
 
                 if (!Files.exists( sourcePath ))
                 {
-                    throw new NoDataException( "The path: '" +
-                                               source.getValue() +
-                                               "' is not a valid source of data.");
+                    throw new FileNotFoundException( "The path: '" +
+                                                     sourcePath +
+                                                     "' was not found.");
+                }
+                else if ( !Files.isReadable( sourcePath ) )
+                {
+                    throw new IOException( "The path: '" + sourcePath
+                                           + "' was not readable. Please set "
+                                           + "the permissions of that path to "
+                                           + "readable for user '"
+                                           + System.getProperty( "user.name" )
+                                           + "' or run WRES as a user with read"
+                                           + " permissions on that path." );
                 }
                 else if (Files.isDirectory(sourcePath)) {
 
