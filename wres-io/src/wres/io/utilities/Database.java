@@ -114,12 +114,14 @@ public final class Database {
 	 */
 	private static void storeIngestTask(Future task)
 	{
+		LOGGER.debug( "Storing ingest task raw Future as {}", task );
 		Database.storedIngestTasks.add(task);
 	}
 
 	public static Future<?> ingest(WRESRunnable ingestTask)
 	{
 		Future<?> result = Database.execute( ingestTask );
+		LOGGER.debug( "Storing ingest task WRESRunnable as {}", result );
 		Database.storeIngestTask( result );
 		return result;
 	}
@@ -127,6 +129,7 @@ public final class Database {
 	public static <U> Future<U> ingest(WRESCallable<U> ingestTask)
 	{
 		Future<U> result = Database.submit( ingestTask );
+		LOGGER.debug( "Storing ingest task WRESCallable as {}", result );
 		Database.storeIngestTask( result );
 		return result;
 	}
@@ -333,6 +336,7 @@ public final class Database {
 
     /**
      * Loops through all stored ingest tasks and ensures that they all complete
+	 * @return the list of resulting ingested file identifiers
      * @throws IngestException if the ingest fails or is interrupted
      */
     public static List<String> completeAllIngestTasks() throws IngestException
@@ -371,10 +375,10 @@ public final class Database {
                         {
                             result.addAll( singleResult );
                         }
-                        else
+                        else if ( LOGGER.isDebugEnabled() )
                         {
-                            // TODO: remove or demote message after fix issue
-                            LOGGER.warn( "An unexpected null value in Database class." );
+                            LOGGER.debug( "A null value was returned in the "
+                                          + "Database class. Task: {}", task );
                         }
 					}
 					catch (ExecutionException e)

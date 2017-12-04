@@ -31,6 +31,7 @@ import wres.io.concurrency.Executor;
 import wres.io.concurrency.ForecastSaver;
 import wres.io.concurrency.ObservationSaver;
 import wres.io.concurrency.WRESCallable;
+import wres.io.concurrency.WRESRunnable;
 import wres.io.concurrency.ZippedPIXMLIngest;
 import wres.io.config.ConfigHelper;
 import wres.io.config.SystemSettings;
@@ -149,10 +150,11 @@ public class ZippedSource extends BasicSource {
                 {
                     result.addAll( innerResult );
                 }
-                else
+                else if ( LOGGER.isDebugEnabled() )
                 {
-                    // TODO: demote or remove this message when we fix the issue
-                    LOGGER.warn( "Unexpected null value in ZippedSource class (1). See also Database class?" );
+                    LOGGER.debug( "A null value was returned in the "
+                                  + "ZippedSource class (1). See also "
+                                  + "Database class? Task: {}", ingestTask );
                 }
 
                 ingestTask = this.getIngestTask();
@@ -168,10 +170,11 @@ public class ZippedSource extends BasicSource {
                 {
                     result.addAll( innerResult );
                 }
-                else
+                else if ( LOGGER.isDebugEnabled() )
                 {
-                    // TODO: demote or remove this message when we fix the issue
-                    LOGGER.warn( "Unexpected null value in ZippedSource class (2). See also Database class?" );
+                    LOGGER.debug( "A null value was returned in the "
+                                  + "ZippedSource class (2). See also "
+                                  + "Database class? Task: {}", ingestTask );
                 }
 
                 ingestTask = Database.getStoredIngestTask();
