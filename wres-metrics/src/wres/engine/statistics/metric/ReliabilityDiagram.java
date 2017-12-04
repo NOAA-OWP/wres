@@ -95,7 +95,7 @@ class ReliabilityDiagram extends Metric<DiscreteProbabilityPairs, MultiVectorOut
         Map<MetricDimension, double[]> output = new EnumMap<>( MetricDimension.class );
         output.put( MetricDimension.FORECAST_PROBABILITY,
                     fProbFinal.stream().mapToDouble( Double::doubleValue ).toArray() );
-        output.put( MetricDimension.OBSERVED_GIVEN_FORECAST_PROBABILITY,
+        output.put( MetricDimension.OBSERVED_RELATIVE_FREQUENCY,
                     oProbFinal.stream().mapToDouble( Double::doubleValue ).toArray() );
         output.put( MetricDimension.SAMPLE_SIZE, samples );
         final MetricOutputMetadata metOut = getMetadata( s, s.getData().size(), MetricConstants.MAIN, null );

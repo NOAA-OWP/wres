@@ -76,7 +76,7 @@ public final class IndexOfAgreementTest
 
         //Check the parameters
         assertTrue( "Unexpected name for the Index of Agreement.",
-                    ioa.getName().equals( metaFac.getMetricName( MetricConstants.INDEX_OF_AGREEMENT ) ) );
+                    ioa.getName().equals( MetricConstants.INDEX_OF_AGREEMENT.toString() ) );
         assertTrue( "The Index of Agreement is not decomposable.", !ioa.isDecomposable() );
         assertTrue( "The Index of Agreement is a skill score.", ioa.isSkillScore() );
         assertTrue( "Expected no decomposition for the Index of Agreement.",

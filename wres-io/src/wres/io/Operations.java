@@ -53,9 +53,9 @@ public final class Operations {
     {
         SourceLoader loader = new SourceLoader(projectConfig);
         try {
-            List<Future> ingestions = loader.load();
+            List<Future<List<String>>> ingestions = loader.load();
 
-            for (Future task : ingestions)
+            for (Future<List<String>> task : ingestions)
             {
                 task.get();
             }

@@ -89,7 +89,7 @@ public final class MetricFactoryTest
         metF.ofSingleValuedScalar( MetricConstants.MEAN_ABSOLUTE_ERROR );
         metF.ofSingleValuedScalar( MetricConstants.MEAN_ERROR );
         metF.ofSingleValuedScalar( MetricConstants.ROOT_MEAN_SQUARE_ERROR );
-        metF.ofSingleValuedScalar( MetricConstants.CORRELATION_PEARSONS );
+        metF.ofSingleValuedScalar( MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
         metF.ofSingleValuedScalar( MetricConstants.COEFFICIENT_OF_DETERMINATION );
         metF.ofSingleValuedScalar( MetricConstants.INDEX_OF_AGREEMENT );
         metF.ofSingleValuedScalar( MetricConstants.SAMPLE_SIZE );
@@ -208,7 +208,7 @@ public final class MetricFactoryTest
     @Test
     public void test8OfBoxPlot() throws MetricParameterException
     {
-        metF.ofEnsembleBoxPlot( MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED );
+        metF.ofEnsembleBoxPlot( MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE );
         try
         {
             metF.ofEnsembleBoxPlot( MetricConstants.MAIN );
@@ -370,7 +370,7 @@ public final class MetricFactoryTest
     @Test
     public void test17OfEnsembleBoxPlotCollection() throws MetricParameterException
     {
-        metF.ofEnsembleBoxPlotCollection( MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST );
+        metF.ofEnsembleBoxPlotCollection( MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE );
         try
         {
             metF.ofEnsembleBoxPlotCollection( MetricConstants.MAIN );

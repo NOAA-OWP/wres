@@ -9,7 +9,6 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
-import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.outputs.ScalarOutput;
 import wres.engine.statistics.metric.MeanAbsoluteError.MeanAbsoluteErrorBuilder;
 import wres.engine.statistics.metric.MeanError.MeanErrorBuilder;
@@ -64,13 +63,12 @@ public final class MetricTest
         //Build a metric
         final MeanErrorBuilder b = new MeanError.MeanErrorBuilder();
         final DataFactory outF = DefaultDataFactory.getInstance();
-        final MetadataFactory metaFac = outF.getMetadataFactory();
         b.setOutputFactory( outF );
         final MeanError me = b.build();
 
         //Check for equality of names
         assertTrue( "Unexpected metric name.",
-                    metaFac.getMetricName( MetricConstants.MEAN_ERROR ).equals( me.toString() ) );
+                    MetricConstants.MEAN_ERROR.toString().equals( me.toString() ) );
     }
 
     /**

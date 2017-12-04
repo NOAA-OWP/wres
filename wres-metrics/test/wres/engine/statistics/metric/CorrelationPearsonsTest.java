@@ -54,7 +54,7 @@ public final class CorrelationPearsonsTest
         final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getData().size(),
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension(),
-                                                                   MetricConstants.CORRELATION_PEARSONS,
+                                                                   MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
                                                                    MetricConstants.MAIN );
 
         //Compute normally
@@ -68,7 +68,7 @@ public final class CorrelationPearsonsTest
 
         //Check the parameters
         assertTrue( "Unexpected name for Pearson's correlation coefficient.",
-                    rho.getName().equals( metaFac.getMetricName( MetricConstants.CORRELATION_PEARSONS ) ) );
+                    rho.getName().equals( MetricConstants.PEARSON_CORRELATION_COEFFICIENT.toString() ) );
         assertTrue( "Pearson's correlation is not decomposable.", !rho.isDecomposable() );
         assertTrue( "Pearson's correlation is not a skill score.", !rho.isSkillScore() );
         assertTrue( "Pearson's correlation cannot be decomposed.",
@@ -107,7 +107,7 @@ public final class CorrelationPearsonsTest
             rho.apply( outF.ofSingleValuedPairs( list, metaFac.getOutputMetadata( 1,
                                                                                   metaFac.getDimension(),
                                                                                   metaFac.getDimension(),
-                                                                                  MetricConstants.CORRELATION_PEARSONS ) ) );
+                                                                                  MetricConstants.PEARSON_CORRELATION_COEFFICIENT ) ) );
             fail( "Expected a checked exception on invalid inputs: insufficient pairs." );
         }
         catch ( MetricCalculationException e )
