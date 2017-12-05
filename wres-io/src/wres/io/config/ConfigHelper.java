@@ -16,7 +16,6 @@ import java.util.ArrayList;
 import java.util.InvalidPropertiesFormatException;
 import java.util.List;
 import java.util.Objects;
-import java.util.StringJoiner;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -32,6 +31,7 @@ import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.DurationUnit;
 import wres.config.generated.Feature;
+import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.TimeAggregationConfig;
@@ -42,7 +42,6 @@ import wres.datamodel.time.TimeWindow;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.Projects;
 import wres.io.data.caching.Variables;
-import wres.io.data.details.FeatureDetails;
 import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.Database;
 import wres.util.Collections;
@@ -1077,5 +1076,43 @@ public class ConfigHelper
         s.append( " )");
 
         return s.toString();
+    }
+
+
+    /**
+     * Given a config and a data source, return which kind the datasource is
+     * @param projectConfig the project config the source belongs to
+     * @param config the config we wonder about
+     * @return left or right or baseline
+     * @throws IllegalArgumentException when the config doesn't belong to project
+     */
+
+    public static LeftOrRightOrBaseline getLeftOrRightOrBaseline( ProjectConfig projectConfig,
+                                                                  DataSourceConfig config )
+    {
+        DataSourceConfig left = projectConfig.getInputs().getLeft();
+        DataSourceConfig right = projectConfig.getInputs().getRight();
+        DataSourceConfig baseline = projectConfig.getInputs().getBaseline();
+
+        if ( config.equals( left ) )
+        {
+            return LeftOrRightOrBaseline.LEFT;
+        }
+        else if ( config.equals( right ) )
+        {
+            return LeftOrRightOrBaseline.RIGHT;
+        }
+        else if ( config.equals( baseline ) )
+        {
+            return LeftOrRightOrBaseline.BASELINE;
+        }
+        else
+        {
+            // This means either .equals doesn't work or the caller has a bug.
+            throw new IllegalArgumentException( "The project configuration "
+                                                + projectConfig
+                                                + " doesn't seem to contain the"
+                                                + " source config " + config );
+        }
     }
 }
