@@ -594,7 +594,7 @@ public class USGSReader extends BasicSource
 
                 this.getProjectDetails().getFeatures().remove( invalidFeature );
                 LOGGER.trace("The location '{}' was removed from the project because it didn't have valid USGS data.",
-                             invalidFeature.toString());
+                             String.valueOf(invalidFeature));
                 return;
             }
             catch ( SQLException e )
@@ -625,7 +625,7 @@ public class USGSReader extends BasicSource
 
                     this.getProjectDetails().getFeatures().remove( invalidFeature );
                     LOGGER.trace("The location '{}' was removed from the project because it didn't have valid USGS data.",
-                                 invalidFeature.toString());
+                                 String.valueOf(invalidFeature));
                     continue;
                 }
                 catch ( SQLException e )
