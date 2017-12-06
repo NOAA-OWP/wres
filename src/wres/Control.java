@@ -94,6 +94,8 @@ public class Control implements Function<String[], Integer>
      */
     public Integer apply(final String[] args)
     {
+        Integer result = MainFunctions.FAILURE;
+
         // Unmarshal the configurations
         final List<ProjectConfigPlus> projectConfiggies = getProjects(args);
 
@@ -167,15 +169,17 @@ public class Control implements Function<String[], Integer>
                                       metricExecutor );
 
             }
-            return 0;
+
+            result = 0;
+            //return 0;
         }
         catch ( WresProcessingException | IOException e )
         {
 
             LOGGER.error( "Could not complete project execution:", e );
 
-
-            return -1;
+            result = -1;
+            //return -1;
         }
         // Shutdown
         finally
@@ -187,6 +191,12 @@ public class Control implements Function<String[], Integer>
 
                 Long completionPercent = Math.min( Math.round( completion ), 100L );
 
+                if (completionPercent < 10)
+                {
+                    result = -1;
+                }
+
+                // System.out is used because we don't need the formatting in the log
                 System.out.println();
                 LOGGER.info("{}% of all indicated features were evaluated successfully.",
                             completionPercent);
@@ -197,6 +207,8 @@ public class Control implements Function<String[], Integer>
             shutDownGracefully(thresholdExecutor);
             shutDownGracefully(pairExecutor);
         }
+
+        return result;
     }
 
     /**
