@@ -19,7 +19,7 @@
             <creationDate>2017-09-22</creationDate>
             <creationTime>17:20:00</creationTime>
         </header>
-        <event date="1985-04-30" time="13:00:00" value="100000.0" flag="0"/>
+        <event date="1985-04-30" time="13:00:00" value="10.0" flag="0"/>
         <event date="1985-04-30" time="14:00:00" value="20.0" flag="0"/>
         <event date="1985-04-30" time="15:00:00" value="30.0" flag="0"/>
         <event date="1985-04-30" time="16:00:00" value="40.0" flag="0"/>
