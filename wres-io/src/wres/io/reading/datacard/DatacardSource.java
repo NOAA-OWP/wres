@@ -11,8 +11,6 @@ import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.time.LocalDateTime;
@@ -23,6 +21,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
+import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.CopyExecutor;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DataSources;
@@ -30,6 +29,7 @@ import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
 import wres.io.reading.BasicSource;
+import wres.io.reading.IngestResult;
 import wres.io.reading.InvalidInputDataException;
 import wres.io.utilities.Database;
 import wres.util.ProgressMonitor;
@@ -46,11 +46,13 @@ public class DatacardSource extends BasicSource
     private String currentLocationId;
 
 	/**
-	 * 
+     * @param projectConfig the ProjectConfig causing ingest
 	 * @param filename the file name
 	 */
-    public DatacardSource(String filename)
+    public DatacardSource( ProjectConfig projectConfig,
+                           String filename)
     {
+        super( projectConfig );
 		setFilename(filename);
 		this.setHash();
 	}
@@ -97,7 +99,7 @@ public class DatacardSource extends BasicSource
 	}
 
 	@Override
-	public List<String> saveObservation() throws IOException
+    public List<IngestResult> saveObservation() throws IOException
     {
 		Path path = Paths.get(getFilename());
 										
@@ -308,15 +310,6 @@ public class DatacardSource extends BasicSource
 			} //end of loop for all value lines
 			
 			save();
-
-			try
-			{
-	        	this.getProjectDetails().addSource( this.getHash(), getDataSourceConfig() );
-			}
-            catch( SQLException e )
-	        {
-                throw new IOException( "Failed to add source for datacard.", e );
-	        }
 		}
         catch ( ProjectConfigException pce )
         {
@@ -329,9 +322,10 @@ public class DatacardSource extends BasicSource
                          entryCount );
 		}
 
-        List<String> result = new ArrayList<>( 1 );
-        result.add( this.getHash() );
-        return Collections.unmodifiableList( result );
+        return IngestResult.singleItemListFrom( this.getProjectConfig(),
+                                                this.getDataSourceConfig(),
+                                                this.getHash(),
+                                                false );
 	}
 
 	public void save()

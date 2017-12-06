@@ -1,10 +1,10 @@
 package wres.io.reading;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import wres.config.generated.Format;
+import wres.config.generated.ProjectConfig;
 import wres.io.reading.fews.FEWSSource;
 import wres.io.reading.nwm.NWMSource;
 import wres.io.reading.usgs.USGSReader;
@@ -20,8 +20,10 @@ import wres.util.Strings;
 @Internal(exclusivePackage = "wres.io")
 public class ReaderFactory {
     private ReaderFactory(){}
-    
-	public static BasicSource getReader(String filename) throws IOException
+
+    public static BasicSource getReader( ProjectConfig projectConfig,
+                                         String filename )
+            throws IOException
 	{
 		SourceType typeOfFile = getFiletype(filename);
 		
@@ -30,19 +32,23 @@ public class ReaderFactory {
 		switch (typeOfFile)
         {
 			case DATACARD:
-				source = new DatacardSource(filename);
+                source = new DatacardSource( projectConfig,
+                                             filename );
 				break;
             case ARCHIVE:
-                source = new ZippedSource(filename);
-                break;
+                source = new ZippedSource( projectConfig,
+                                           filename );
+				break;
 			case NETCDF:
-				source = new NWMSource( filename);
+                source = new NWMSource( projectConfig,
+                                        filename );
 				break;
 			case PI_XML:
-				source = new FEWSSource(filename);
+                source = new FEWSSource( projectConfig,
+                                         filename );
 				break;
             case USGS:
-                source = new USGSReader();
+                source = new USGSReader( projectConfig );
                 break;
 			default:
 				String message = "The file '%s' is not a valid data file.";

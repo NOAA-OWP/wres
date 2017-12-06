@@ -13,10 +13,10 @@ import org.slf4j.Logger;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
+import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.Executor;
 import wres.io.concurrency.WRESCallable;
 import wres.io.config.ConfigHelper;
-import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.Database;
 import wres.util.Internal;
 import wres.util.Strings;
@@ -40,12 +40,19 @@ public abstract class BasicSource
      * Epsilon value used to test floating point equivalency
      */
     protected static final double EPSILON = 0.0000001;
-	
+
+    protected final ProjectConfig projectConfig;
+
+    protected BasicSource( ProjectConfig projectConfig )
+    {
+        this.projectConfig = projectConfig;
+    }
+
 	@SuppressWarnings("static-method")
     /**
      * Saves data within the source file as a forecast
      */
-    public List<String> saveForecast() throws IOException
+    public List<IngestResult> saveForecast() throws IOException
 	{
 		throw new IOException("Forecasts may not be saved using this type of source.");
 	}
@@ -54,7 +61,7 @@ public abstract class BasicSource
     /**
      * Saves data within the source file as an observation
      */
-    public List<String> saveObservation() throws IOException
+    public List<IngestResult> saveObservation() throws IOException
 	{
 		throw new IOException("Observations may not be saved using this type of source.");
 	}
@@ -115,6 +122,11 @@ public abstract class BasicSource
         return this.sourceConfig;
     }
 
+    protected ProjectConfig getProjectConfig()
+    {
+        return this.projectConfig;
+    }
+
     /**
      * Sets the specific features to ingest. Only the described features should
      * be ingested
@@ -155,32 +167,10 @@ public abstract class BasicSource
 	private String absoluteFilename;
 
     /**
-     * Details linking a configured project to details within the database
-     */
-	private ProjectDetails projectDetails;
-
-    /**
      * Represents a value that should be ignored from the source material
      */
     private Double missingValue;
 
-    /**
-     * Sets the details linking a configured project to data within the database
-     * @param projectDetails The details linking the configured project to
-     *                       the database
-     */
-	public void setProjectDetails(ProjectDetails projectDetails)
-    {
-        this.projectDetails = projectDetails;
-    }
-
-    /**
-     * @return Details describing data that pertains to the configured project
-     */
-    protected ProjectDetails getProjectDetails()
-    {
-        return this.projectDetails;
-    }
 
     /**
      * @return The name of the variable to ingest
@@ -333,10 +323,12 @@ public abstract class BasicSource
 
                 ingest = !dataExists(filePath, contentHash);
 
+                /* TODO: understand if this is needful (jfb)
                 if (!ingest && !this.projectDetails.hasSource( contentHash, this.getDataSourceConfig() ))
                 {
                     this.projectDetails.addSource( contentHash, this.getDataSourceConfig() );
                 }
+                */
             }
             catch (SQLException | IOException e)
             {

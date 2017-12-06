@@ -2,13 +2,13 @@ package wres.io.reading.fews;
 
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
+import wres.config.generated.ProjectConfig;
 import wres.io.data.caching.DataSources;
 import wres.io.reading.BasicSource;
 import wres.io.reading.IngestException;
+import wres.io.reading.IngestResult;
 import wres.util.Internal;
 
 /**
@@ -19,19 +19,23 @@ import wres.util.Internal;
 public class FEWSSource extends BasicSource
 {
 	/**
-	 * Constructor that sets the filename 
+     * Constructor that sets the filename
+     * @param projectConfig the ProjectConfig causing ingest
 	 * @param filename The name of the source file
 	 */
     @Internal(exclusivePackage = "wres.io")
-	public FEWSSource(String filename)
-	{
+    public FEWSSource( ProjectConfig projectConfig,
+                       String filename )
+    {
+        super( projectConfig );
 		this.setFilename(filename);
 		this.setHash();
 	}
 
 	@Override
-	public List<String> saveForecast() throws IOException
+    public List<IngestResult> saveForecast() throws IOException
     {
+        boolean wasFoundInCache;
         try
         {
             // TODO: This will break if we have the source but not the variable/location
@@ -39,16 +43,16 @@ public class FEWSSource extends BasicSource
             {
                 PIXMLReader sourceReader = new PIXMLReader( this.getFilename(),
                                                             true,
-                                                            this.getHash(),
-                                                            this.getProjectDetails() );
+                                                            this.getHash() );
                 sourceReader.setDataSourceConfig( this.getDataSourceConfig() );
                 sourceReader.setSpecifiedFeatures( this.getSpecifiedFeatures() );
                 sourceReader.setSourceConfig( this.getSourceConfig() );
                 sourceReader.parse();
+                wasFoundInCache = false;
             }
             else
             {
-                this.getProjectDetails().addSource( this.getHash(), getDataSourceConfig() );
+                wasFoundInCache = true;
             }
         }
         catch ( SQLException se )
@@ -59,14 +63,16 @@ public class FEWSSource extends BasicSource
             throw new IngestException( message, se );
         }
 
-        List<String> result = new ArrayList<>( 1 );
-        result.add( this.getHash() );
-        return Collections.unmodifiableList( result );
+        return IngestResult.singleItemListFrom( this.getProjectConfig(),
+                                                this.getDataSourceConfig(),
+                                                this.getHash(),
+                                                wasFoundInCache );
     }
 
     @Override
-	public List<String> saveObservation() throws IOException
+    public List<IngestResult> saveObservation() throws IOException
     {
+        boolean wasFoundInCache;
         try
         {
             if ( !DataSources.hasSource( this.getHash() ) )
@@ -74,16 +80,16 @@ public class FEWSSource extends BasicSource
                 PIXMLReader sourceReader =
                         new PIXMLReader( this.getAbsoluteFilename(),
                                          false,
-                                         this.getHash(),
-                                         this.getProjectDetails() );
+                                         this.getHash() );
                 sourceReader.setDataSourceConfig( this.getDataSourceConfig() );
                 sourceReader.setSpecifiedFeatures( this.getSpecifiedFeatures() );
                 sourceReader.setSourceConfig( this.getSourceConfig() );
                 sourceReader.parse();
+                wasFoundInCache = false;
             }
             else
             {
-                this.getProjectDetails().addSource( this.getHash(), getDataSourceConfig() );
+                wasFoundInCache = true;
             }
         }
         catch ( SQLException se )
@@ -94,9 +100,10 @@ public class FEWSSource extends BasicSource
             throw new IngestException( message, se );
         }
 
-        List<String> result = new ArrayList<>( 1 );
-        result.add( this.getHash() );
-        return Collections.unmodifiableList( result );
+        return IngestResult.singleItemListFrom( this.getProjectConfig(),
+                                                this.getDataSourceConfig(),
+                                                this.getHash(),
+                                                wasFoundInCache );
     }
 
 }

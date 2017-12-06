@@ -2,8 +2,6 @@ package wres.io.reading.nwm;
 
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -11,9 +9,11 @@ import org.slf4j.LoggerFactory;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
 
+import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.WRESRunnable;
 import wres.io.data.caching.Variables;
 import wres.io.reading.BasicSource;
+import wres.io.reading.IngestResult;
 import wres.io.utilities.Database;
 import wres.util.Internal;
 import wres.util.NetCDF;
@@ -30,40 +30,45 @@ public class NWMSource extends BasicSource
     private static final Logger LOGGER = LoggerFactory.getLogger(NWMSource.class);
 
 	/**
-	 * 
+     *
+     * @param projectConfig the ProjectConfig causing ingest
 	 * @param filename the file name
 	 */
 	@Internal(exclusivePackage = "wres.io")
-	public NWMSource( String filename)
+    public NWMSource( ProjectConfig projectConfig,
+                      String filename )
     {
+        super( projectConfig );
 		this.setFilename(filename);
 		this.setHash();
 	}
 
 	@Override
-	public List<String> saveObservation() throws IOException
+    public List<IngestResult> saveObservation() throws IOException
 	{
 		try ( NetcdfFile source = getSource() )
 		{
 			save( source );
 		}
 
-        List<String> result = new ArrayList<>( 1 );
-        result.add( this.getHash() );
-        return Collections.unmodifiableList( result );
+        return IngestResult.singleItemListFrom( this.getProjectConfig(),
+                                                this.getDataSourceConfig(),
+                                                this.getHash(),
+                                                false );
 	}
 
 	@Override
-	public List<String> saveForecast() throws IOException
+    public List<IngestResult> saveForecast() throws IOException
 	{
 		try (NetcdfFile source = getSource())
 		{
 			save( source );
 		}
 
-        List<String> result = new ArrayList<>( 1 );
-        result.add( this.getHash() );
-        return Collections.unmodifiableList( result );
+        return IngestResult.singleItemListFrom( this.getProjectConfig(),
+                                                this.getDataSourceConfig(),
+                                                this.getHash(),
+                                                false );
 	}
 
 	private void save(NetcdfFile source)
@@ -87,7 +92,7 @@ public class NWMSource extends BasicSource
                     saver = new VectorNWMValueSaver( this.getFilename(),
 													 this.getFutureHash(),
 													 this.dataSourceConfig,
-													 this.getProjectDetails());
+                                                     this.getProjectConfig() );
                 }
 
                 saver.setOnRun(ProgressMonitor.onThreadStartHandler());

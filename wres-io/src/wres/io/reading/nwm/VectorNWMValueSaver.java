@@ -23,6 +23,7 @@ import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
 
 import wres.config.generated.DataSourceConfig;
+import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.CopyExecutor;
 import wres.io.concurrency.WRESRunnable;
 import wres.io.config.ConfigHelper;
@@ -32,7 +33,6 @@ import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
 import wres.io.data.details.TimeSeries;
-import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.Database;
 import wres.util.Internal;
 import wres.util.NetCDF;
@@ -163,7 +163,7 @@ class VectorNWMValueSaver extends WRESRunnable
     private Integer variableID;
     private final Future<String> futureHash;
     private String hash;
-    private final ProjectDetails projectDetails;
+    private final ProjectConfig projectConfig;
     private final DataSourceConfig dataSourceConfig;
     private Integer measurementUnitID;
     private Integer sourceID;
@@ -173,7 +173,7 @@ class VectorNWMValueSaver extends WRESRunnable
     public VectorNWMValueSaver( String filename,
                                 Future<String> futureHash,
                                 DataSourceConfig dataSourceConfig,
-                                ProjectDetails projectDetails)
+                                ProjectConfig projectConfig)
     {
         if (filename == null || filename.isEmpty())
         {
@@ -186,7 +186,7 @@ class VectorNWMValueSaver extends WRESRunnable
 
         this.filePath = Paths.get(filename);
         this.futureHash = futureHash;
-        this.projectDetails = projectDetails;
+        this.projectConfig = projectConfig;
         this.dataSourceConfig = dataSourceConfig;
     }
 
@@ -301,63 +301,13 @@ class VectorNWMValueSaver extends WRESRunnable
                                                  this.getLead(),
                                                  this.getHash());
 
-        // Create the script to add the source to the project if it isn't
-        // already attached
-        String insertProjectSource = "INSERT INTO wres.ProjectSource (project_id, source_id, member)" + NEWLINE;
-        insertProjectSource += "SELECT " +
-                               this.projectDetails.getId() + ", " +
-                               this.getSourceID() + ", " +
-                               this.getMember() +
-                               NEWLINE;
-        insertProjectSource += "WHERE NOT EXISTS (" + NEWLINE;
-        insertProjectSource += "    SELECT 1" + NEWLINE;
-        insertProjectSource += "    FROM wres.ProjectSource" + NEWLINE;
-        insertProjectSource += "    WHERE project_id = " + this.projectDetails.getId() + NEWLINE;
-        insertProjectSource += "        AND source_id = " + this.getSourceID() + NEWLINE;
-        insertProjectSource += "        AND member = " + this.getMember() + NEWLINE;
-        insertProjectSource += ");";
-
         // If this is a forecast file, we also need to attach the source
         // to the time series it belongs to
         if (this.isForecast())
         {
-            // Create the script to add this source file to all time series
-            // that it contributes to
-            /*String forecastSourceInsert =
-                    "INSERT INTO wres.ForecastSource (forecast_id, source_id)"
-                    + NEWLINE;
-            forecastSourceInsert +=
-                    "SELECT TS.timeseries_id, " + this.sourceID + NEWLINE;
-            forecastSourceInsert += "FROM wres.TimeSeries TS" + NEWLINE;
-            forecastSourceInsert +=
-                    "INNER JOIN wres.VariablePosition VP" + NEWLINE;
-            forecastSourceInsert +=
-                    "   ON TS.variableposition_id = VP.variableposition_id"
-                    + NEWLINE;
-            forecastSourceInsert +=
-                    "WHERE TS.ensemble_id = " + this.getEnsembleID() + NEWLINE;
-            forecastSourceInsert += "   AND TS.initialization_date = '" + NetCDF
-                    .getInitializedTime( this.getSource() ) + "'" + NEWLINE;
-            forecastSourceInsert += "   AND TS.measurementunit_id = "
-                                    + this.getMeasurementUnitID() + NEWLINE;
-            forecastSourceInsert +=
-                    "   AND VP.variable_id = " + this.getVariableID() + NEWLINE;
-            forecastSourceInsert += "   AND NOT EXISTS (" + NEWLINE;
-            forecastSourceInsert += "  SELECT 1" + NEWLINE;
-            forecastSourceInsert += "  FROM wres.ForecastSource FS" + NEWLINE;
-            forecastSourceInsert +=
-                    "  WHERE FS.source_id = " + this.sourceID + NEWLINE;
-            forecastSourceInsert +=
-                    "      AND FS.forecast_id = TS.timeseries_id" + NEWLINE;
-            forecastSourceInsert += ");";
-
-            // Attach the source to its time series
-            Database.execute( forecastSourceInsert );*/
             this.addForecastSource();
         }
 
-        // Attach the source to the project
-        Database.execute( insertProjectSource );
     }
 
     private void addForecastSource() throws IOException, SQLException
@@ -576,29 +526,6 @@ class VectorNWMValueSaver extends WRESRunnable
         return ConfigHelper.isForecast( this.dataSourceConfig );
     }
 
-    /**
-     * @return The member identifier for the data in relation to the left,
-     * right, or baseline section of the evaluation equation
-     */
-    private String getMember()
-    {
-        String member;
-
-        if (this.projectDetails.getRight().equals( this.dataSourceConfig ))
-        {
-            member = ProjectDetails.RIGHT_MEMBER;
-        }
-        else if (this.projectDetails.getLeft().equals( this.dataSourceConfig ))
-        {
-            member = ProjectDetails.LEFT_MEMBER;
-        }
-        else
-        {
-            member = ProjectDetails.BASELINE_MEMBER;
-        }
-
-        return member;
-    }
 
     /**
      * Determines if a given value is valid value, not filler
@@ -906,19 +833,10 @@ class VectorNWMValueSaver extends WRESRunnable
                                 NEWLINE +
                                 "       ON FS.forecast_id = TS.timeseries_id"
                                 + NEWLINE +
-                                "INNER JOIN wres.ProjectSource PS"
-                                + NEWLINE +
-                                "       ON PS.source_id = FS.source_id"
-                                + NEWLINE +
                                 "INNER JOIN wres.Feature F" + NEWLINE +
                                 "     ON F.feature_id = VP.x_position" + NEWLINE
                                 +
-                                "WHERE PS.project_id = "
-                                + this.projectDetails.getId()
-                                + NEWLINE +
-                                "   AND PS.member = " + this.getMember()
-                                + NEWLINE +
-                                "     AND TS.initialization_date = '" +
+                                "WHERE TS.initialization_date = '" +
                                 NetCDF.getInitializedTime( this.getSource() ) + "'"
                                 + NEWLINE +
                                 "     AND F.nwm_index IS NOT NULL;";

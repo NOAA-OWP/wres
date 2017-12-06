@@ -8,18 +8,19 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
-import wres.io.data.details.ProjectDetails;
+import wres.config.generated.ProjectConfig;
 import wres.io.reading.BasicSource;
+import wres.io.reading.IngestResult;
 import wres.io.reading.ReaderFactory;
 import wres.util.Internal;
 
 /**
  * Saves the forecast at the indicated path asynchronously
- * 
+ *
  * @author Christopher Tubbs
  */
 @Internal(exclusivePackage = "wres.io")
-public class ForecastSaver extends WRESCallable<List<String>>
+public class ForecastSaver extends WRESCallable<List<IngestResult>>
 {
 	private static final Logger LOGGER = LoggerFactory.getLogger(ForecastSaver.class);
 
@@ -27,7 +28,7 @@ public class ForecastSaver extends WRESCallable<List<String>>
 
     @Internal(exclusivePackage = "wres.io")
 	public ForecastSaver(String filepath,
-						 ProjectDetails projectDetails,
+                         ProjectConfig projectConfig,
 						 DataSourceConfig dataSourceConfig,
 						 DataSourceConfig.Source sourceConfig,
 						 List<Feature> specifiedFeatures)
@@ -36,26 +37,25 @@ public class ForecastSaver extends WRESCallable<List<String>>
         this.sourceConfig = sourceConfig;
         this.filepath = filepath;
         this.specifiedFeatures = specifiedFeatures;
-        this.projectDetails = projectDetails;
+        this.projectConfig = projectConfig;
     }
 
 	/* (non-Javadoc)
 	 * @see java.lang.Runnable#run()
 	 */
 	@Override
-    public List<String> execute()
+    public List<IngestResult> execute()
     {
 		try
 		{
-			BasicSource source = ReaderFactory.getReader(this.filepath);
+            BasicSource source = ReaderFactory.getReader( this.projectConfig,
+                                                          this.filepath );
 
 			source.setDataSourceConfig(this.dataSourceConfig);
 
 			source.setSourceConfig( this.sourceConfig );
 
 			source.setSpecifiedFeatures(this.specifiedFeatures);
-
-			source.setProjectDetails( this.projectDetails );
 
             return source.saveForecast();
 		}
@@ -71,7 +71,7 @@ public class ForecastSaver extends WRESCallable<List<String>>
 	private final String filepath;
 	private final DataSourceConfig dataSourceConfig;
 	private final List<Feature> specifiedFeatures;
-	private final ProjectDetails projectDetails;
+    private final ProjectConfig projectConfig;
 
     @Override
     protected Logger getLogger () {

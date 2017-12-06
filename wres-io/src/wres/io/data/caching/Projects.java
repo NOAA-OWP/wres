@@ -3,12 +3,19 @@ package wres.io.data.caching;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.generated.DatasourceType;
+import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
+import wres.io.config.ConfigHelper;
 import wres.io.data.details.ProjectDetails;
+import wres.io.reading.IngestResult;
 import wres.io.utilities.Database;
 import wres.util.Internal;
 
@@ -35,11 +42,17 @@ public class Projects extends Cache<ProjectDetails, Integer> {
         }
     }
 
-    public static ProjectDetails getProject( ProjectConfig projectConfig)
+    public static ProjectDetails getProject( ProjectConfig projectConfig,
+                                             List<String> leftHashes,
+                                             List<String> rightHashes,
+                                             List<String> baselineHashes )
             throws SQLException
     {
         ProjectDetails details = null;
-        Integer inputCode = ProjectDetails.hash( projectConfig );
+        Integer inputCode = ProjectDetails.hash( projectConfig,
+                                                 leftHashes,
+                                                 rightHashes,
+                                                 baselineHashes );
 
         if (Projects.getCache().hasID( inputCode ))
         {
@@ -48,7 +61,8 @@ public class Projects extends Cache<ProjectDetails, Integer> {
 
         if (details == null)
         {
-            details = new ProjectDetails(projectConfig);
+            details = new ProjectDetails( projectConfig,
+                                          inputCode );
             Projects.getCache().addElement( details );
         }
 
@@ -110,5 +124,137 @@ public class Projects extends Cache<ProjectDetails, Integer> {
                 Database.returnHighPriorityConnection(connection);
             }
         }
+    }
+
+    /**
+     * Convert a projectConfig and a raw list of IngestResult into ProjectDetails
+     * @param projectConfig the config that produced the ingest results
+     * @param ingestResults the ingest results
+     * @return the ProjectDetails to use
+     * @throws SQLException when ProjectDetails construction goes wrong
+     * @throws IllegalArgumentException when an IngestResult does not have left/right/baseline information
+     */
+    public static ProjectDetails getProjectFromIngest( ProjectConfig projectConfig,
+                                                       List<IngestResult> ingestResults )
+            throws SQLException
+    {
+        List<String> leftHashes = new ArrayList<>();
+        List<String> rightHashes = new ArrayList<>();
+        List<String> baselineHashes = new ArrayList<>();
+
+        for ( IngestResult ingestResult : ingestResults )
+        {
+            if ( ingestResult.getLeftOrRightOrBaseline()
+                             .equals( LeftOrRightOrBaseline.LEFT ) )
+            {
+                leftHashes.add( ingestResult.getHash() );
+            }
+            else if ( ingestResult.getLeftOrRightOrBaseline()
+                                  .equals( LeftOrRightOrBaseline.RIGHT ) )
+            {
+                rightHashes.add( ingestResult.getHash() );
+            }
+            else if ( ingestResult.getLeftOrRightOrBaseline()
+                                  .equals( LeftOrRightOrBaseline.BASELINE ) )
+            {
+                baselineHashes.add( ingestResult.getHash() );
+            }
+            else
+            {
+                throw new IllegalArgumentException( "An ingest result did not "
+                                                    + "have left/right/baseline"
+                                                    + " associated with it: "
+                                                    + ingestResult );
+            }
+        }
+
+        List<String> finalLeftHashes = Collections.unmodifiableList( leftHashes );
+        List<String> finalRightHashes = Collections.unmodifiableList( rightHashes );
+        List<String> finalBaselineHashes = Collections.unmodifiableList( baselineHashes );
+        ProjectDetails details = Projects.getProject( projectConfig,
+                                                      finalLeftHashes,
+                                                      finalRightHashes,
+                                                      finalBaselineHashes );
+
+        DatasourceType leftType = projectConfig.getInputs()
+                                               .getLeft()
+                                               .getType();
+        DatasourceType rightType = projectConfig.getInputs()
+                                                .getRight()
+                                                .getType();
+
+        DatasourceType baselineType = DatasourceType.OBSERVATIONS;
+
+        if ( ConfigHelper.hasBaseline( projectConfig ) )
+        {
+            baselineType = projectConfig.getInputs()
+                                        .getBaseline()
+                                        .getType();
+        }
+
+        for ( IngestResult ingestResult : ingestResults )
+        {
+            boolean isForecast;
+
+            if ( ingestResult.getLeftOrRightOrBaseline()
+                             .equals( LeftOrRightOrBaseline.LEFT ) )
+            {
+                if ( leftType.equals( DatasourceType.ENSEMBLE_FORECASTS )
+                     || leftType.equals( DatasourceType.SINGLE_VALUED_FORECASTS ) )
+                {
+                    isForecast = true;
+                }
+                else
+                {
+                    isForecast = false;
+                }
+            }
+            else if ( ingestResult.getLeftOrRightOrBaseline()
+                                  .equals( LeftOrRightOrBaseline.RIGHT ) )
+            {
+                if ( rightType.equals( DatasourceType.ENSEMBLE_FORECASTS )
+                     || rightType.equals( DatasourceType.SINGLE_VALUED_FORECASTS ) )
+                {
+                    isForecast = true;
+                }
+                else
+                {
+                    isForecast = false;
+                }
+            }
+            else if ( ingestResult.getLeftOrRightOrBaseline()
+                                  .equals( LeftOrRightOrBaseline.BASELINE ) )
+            {
+                if ( baselineType.equals( DatasourceType.ENSEMBLE_FORECASTS )
+                     || baselineType.equals( DatasourceType.SINGLE_VALUED_FORECASTS ) )
+                {
+                    isForecast = true;
+                }
+                else
+                {
+                    isForecast = false;
+                }
+            }
+            else
+            {
+                throw new UnsupportedOperationException( "Ingest result didn't "
+                                                         + "say left or right "
+                                                         + "or baseline!" );
+            }
+
+            if ( isForecast )
+            {
+                details.addForecastSource( ingestResult.getHash(),
+                                           "'" + ingestResult.getLeftOrRightOrBaseline()
+                                                       .value() + "'" );
+            }
+            else
+            {
+                details.addObservationSource( ingestResult.getHash(),
+                                              "'" + ingestResult.getLeftOrRightOrBaseline()
+                                                          .value() + "'" );
+            }
+        }
+        return details;
     }
 }

@@ -177,9 +177,8 @@ public class DataCardSourceTest
         String filePath = current + "/testinput/datacard/short_HOPR1SNE.QME.OBS";
 
         // TODO: Modify the other classes (CopyExecutor, Database, etc) rather than the datacard source to get truer results
-        source = PowerMockito.spy(new wres.io.reading.datacard.DatacardSource(filePath));
+        source = PowerMockito.spy(new wres.io.reading.datacard.DatacardSource( projectConfig, filePath ));
 
-        source.setProjectDetails( new ProjectDetails( projectConfig ) );
         source.setDataSourceConfig(config);
         Whitebox.setInternalState( source, "variablePositionID", 123 );
         Whitebox.setInternalState( source, "currentMeasurementUnitID", 456 );
@@ -261,9 +260,8 @@ public class DataCardSourceTest
         String filePath = current + "/testinput/datacard/short_CCRN6.MAP06_short_record";
 
         // TODO: Modify the other classes (CopyExecutor, Database, etc) rather than the datacard source to get truer results
-        source = PowerMockito.spy(new wres.io.reading.datacard.DatacardSource(filePath));
+        source = PowerMockito.spy(new wres.io.reading.datacard.DatacardSource( projectConfig, filePath ));
 
-        source.setProjectDetails( new ProjectDetails( projectConfig ) );
         source.setDataSourceConfig(config);
         Whitebox.setInternalState( source, "variablePositionID", 123 );
         Whitebox.setInternalState( source, "currentMeasurementUnitID", 456 );

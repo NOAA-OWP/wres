@@ -3,7 +3,6 @@ package wres.io.retrieval;
 import java.sql.SQLException;
 import java.util.InvalidPropertiesFormatException;
 import java.util.Iterator;
-import java.util.List;
 import java.util.concurrent.Future;
 
 import org.slf4j.Logger;
@@ -13,6 +12,7 @@ import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.inputs.MetricInput;
 import wres.io.config.ConfigHelper;
+import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.NoDataException;
 import wres.util.NotImplementedException;
 
@@ -26,16 +26,16 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>>
 
     public InputGenerator( ProjectConfig projectConfig,
                            Feature feature,
-                           List<String> projectSources )
+                           ProjectDetails projectDetails )
     {
         this.projectConfig = projectConfig;
         this.feature = feature;
-        this.projectSources = projectSources;
+        this.projectDetails = projectDetails;
     }
 
     private final ProjectConfig projectConfig;
     private final Feature feature;
-    private final List<String> projectSources;
+    private final ProjectDetails projectDetails;
 
     @Override
     public Iterator<Future<MetricInput<?>>> iterator()
@@ -45,7 +45,7 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>>
         try {
             iterator =  new BackToBackMetricInputIterator( this.projectConfig,
                                                            this.feature,
-                                                           this.projectSources );
+                                                           this.projectDetails );
         }
         catch (SQLException | NotImplementedException | InvalidPropertiesFormatException e)
         {

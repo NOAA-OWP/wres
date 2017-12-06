@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
 import wres.config.generated.Format;
+import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.Executor;
 import wres.io.concurrency.ForecastSaver;
@@ -31,10 +32,7 @@ import wres.io.concurrency.ObservationSaver;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Features;
-import wres.io.data.caching.Projects;
 import wres.io.data.details.FeatureDetails;
-import wres.io.data.details.ProjectDetails;
-import wres.io.utilities.NoDataException;
 import wres.util.Internal;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
@@ -65,24 +63,13 @@ public class SourceLoader
      * @throws IOException when no data is found
      * @throws IngestException when getting project details fails
      */
-    public List<Future<List<String>>> load() throws IOException
+    public List<Future<List<IngestResult>>> load() throws IOException
     {
-        try
-        {
-            this.projectDetails = Projects.getProject( this.projectConfig );
-        }
-        catch ( SQLException e )
-        {
-            throw new IngestException(
-                    "While loading project details, an issue occured",
-                    e );
-        }
+        List<Future<List<IngestResult>>> savingFiles = new ArrayList<>();
 
-        List<Future<List<String>>> savingFiles = new ArrayList<>();
-
-        savingFiles.addAll(loadConfig(getLeftSource()));
-        savingFiles.addAll(loadConfig(getRightSource()));
-        savingFiles.addAll(loadConfig(getBaseLine()));
+        savingFiles.addAll(loadConfig(getLeftSource(), LeftOrRightOrBaseline.LEFT));
+        savingFiles.addAll(loadConfig(getRightSource(), LeftOrRightOrBaseline.RIGHT ));
+        savingFiles.addAll(loadConfig(getBaseLine(), LeftOrRightOrBaseline.BASELINE ));
 
         return savingFiles;
     }
@@ -95,10 +82,12 @@ public class SourceLoader
      * @throws FileNotFoundException when a source file is not found
      * @throws IOException when a source file was not readable
      */
-    private List<Future<List<String>>> loadConfig( DataSourceConfig config )
+    private List<Future<List<IngestResult>>> loadConfig( DataSourceConfig config,
+                                                         LeftOrRightOrBaseline leftOrRightOrBaseline )
             throws IOException
     {
-        List<Future<List<String>>> savingFiles = new ArrayList<>();
+        List<Future<List<IngestResult>>> savingFiles = new ArrayList<>();
+
         ProgressMonitor.increment();
 
         if (config != null) {
@@ -112,7 +101,7 @@ public class SourceLoader
                     }
 
                     savingFiles.add( Executor.submit( new ObservationSaver( "usgs",
-                                                                            this.projectDetails,
+                                                                            this.projectConfig,
                                                                             config,
                                                                             source,
                                                                             this.projectConfig
@@ -141,20 +130,18 @@ public class SourceLoader
                 }
                 else if (Files.isDirectory(sourcePath)) {
 
-                    List<Future<List<String>>> tasks = loadDirectory( sourcePath,
-                                                                      source,
-                                                                      config );
+                    List<Future<List<IngestResult>>> tasks =
+                            loadDirectory( sourcePath,
+                                           source,
+                                           config );
 
-                    if (tasks != null)
-                    {
-                        savingFiles.addAll( tasks );
-                    }
+                    savingFiles.addAll( tasks );
                 }
                 else if ( Files.isRegularFile( sourcePath ) )
                 {
-                    Future<List<String>> task = saveFile( sourcePath,
-                                                          source,
-                                                          config );
+                    Future<List<IngestResult>> task = saveFile( sourcePath,
+                                                                source,
+                                                                config );
 
                     if (task != null)
                     {
@@ -183,11 +170,11 @@ public class SourceLoader
      *                         evaluated
      * @return A listing of asynchronous tasks dispatched to ingest data
      */
-    private List<Future<List<String>>> loadDirectory( Path directory,
-                                                      DataSourceConfig.Source source,
-                                                      DataSourceConfig dataSourceConfig )
+    private List<Future<List<IngestResult>>> loadDirectory( Path directory,
+                                                            DataSourceConfig.Source source,
+                                                            DataSourceConfig dataSourceConfig )
     {
-        List<Future<List<String>>> results = new ArrayList<>();
+        List<Future<List<IngestResult>>> results = new ArrayList<>();
         Stream<Path> files;
 
         ProgressMonitor.increment();
@@ -211,9 +198,9 @@ public class SourceLoader
 
                 if (Files.isRegularFile(path))
                 {
-                    Future<List<String>> task = saveFile( path,
-                                                          source,
-                                                          dataSourceConfig );
+                    Future<List<IngestResult>> task = saveFile( path,
+                                                                source,
+                                                                dataSourceConfig );
 
                     if (task != null)
                     {
@@ -241,12 +228,12 @@ public class SourceLoader
      * @param filePath
      * @return Future if task was created, null otherwise.
      */
-    private Future<List<String>> saveFile( Path filePath,
-                                           DataSourceConfig.Source source,
-                                           DataSourceConfig dataSourceConfig )
+    private Future<List<IngestResult>> saveFile( Path filePath,
+                                                 DataSourceConfig.Source source,
+                                                 DataSourceConfig dataSourceConfig )
     {
         String absolutePath = filePath.toAbsolutePath().toString();
-        Future<List<String>> task = null;
+        Future<List<IngestResult>> task = null;
 
         ProgressMonitor.increment();
 
@@ -264,7 +251,7 @@ public class SourceLoader
                 {
                     LOGGER.trace("Loading {} as forecast data...", absolutePath);
                     task = Executor.submit( new ForecastSaver( absolutePath,
-                                                              this.projectDetails,
+                                                               this.projectConfig,
                                                               dataSourceConfig,
                                                               source,
                                                               this.getSpecifiedFeatures() ) );
@@ -273,7 +260,7 @@ public class SourceLoader
                 {
                     LOGGER.trace("Loading {} as Observation data...");
                     task = Executor.submit( new ObservationSaver( absolutePath,
-                                                                 this.projectDetails,
+                                                                  this.projectConfig,
                                                                  dataSourceConfig,
                                                                  source,
                                                                  this.getSpecifiedFeatures() ));
@@ -291,7 +278,7 @@ public class SourceLoader
             LOGGER.debug(message, absolutePath);
 
             // Fake a future, return result immediately.
-            task = new Future<List<String>>()
+            task = new Future<List<IngestResult>>()
             {
                 @Override
                 public boolean cancel( boolean b )
@@ -312,16 +299,19 @@ public class SourceLoader
                 }
 
                 @Override
-                public List<String> get()
+                public List<IngestResult> get()
                         throws InterruptedException, ExecutionException
                 {
-                    List<String> result = new ArrayList<>( 1 );
-                    result.add( checkIngest.getRight() );
+                    List<IngestResult> result =
+                            IngestResult.singleItemListFrom( projectConfig,
+                                                             dataSourceConfig,
+                                                             checkIngest.getRight(),
+                                                             true );
                     return Collections.unmodifiableList( result );
                 }
 
                 @Override
-                public List<String> get( long l, TimeUnit timeUnit )
+                public List<IngestResult> get( long l, TimeUnit timeUnit )
                         throws InterruptedException, ExecutionException,
                         TimeoutException
                 {
@@ -364,8 +354,7 @@ public class SourceLoader
         }
 
         boolean ingest = specifiedFormat == SourceType.UNDEFINED ||
-                         specifiedFormat.equals(pathFormat) ||
-                         this.projectDetails.isEmpty();
+                         specifiedFormat.equals(pathFormat);
 
         String hash = null;
 
@@ -420,25 +409,7 @@ public class SourceLoader
     private boolean dataExists(String hash, DataSourceConfig dataSourceConfig)
             throws SQLException
     {
-        boolean exists;
-
-        // Check to see if the file has already been ingested for this project
-        exists = this.projectDetails.hasSource( hash, dataSourceConfig);
-
-        if ( !exists )
-        {
-            // Check to see if some other project has ingested this data
-            exists = DataSources.hasSource( hash );
-
-            // If the data was ingested by another project...
-            if ( exists )
-            {
-                // Add that source to this project
-                this.projectDetails.addSource( hash, dataSourceConfig );
-            }
-        }
-
-        return exists;
+        return DataSources.hasSource( hash );
     }
 
     /**
@@ -511,9 +482,4 @@ public class SourceLoader
      */
     private final ProjectConfig projectConfig;
 
-    /**
-     * The collection of data in the database linking data for the project that
-     * might have already been ingested
-     */
-    private ProjectDetails projectDetails;
 }

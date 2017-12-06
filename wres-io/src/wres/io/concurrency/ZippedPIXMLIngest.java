@@ -13,9 +13,10 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
+import wres.config.generated.ProjectConfig;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DataSources;
-import wres.io.data.details.ProjectDetails;
+import wres.io.reading.IngestResult;
 import wres.io.reading.fews.PIXMLReader;
 import wres.util.Internal;
 import wres.util.Strings;
@@ -24,7 +25,7 @@ import wres.util.Strings;
  * Created by ctubbs on 7/19/17.
  */
 @Internal(exclusivePackage = "wres.io")
-public final class ZippedPIXMLIngest extends WRESCallable<List<String>>
+public final class ZippedPIXMLIngest extends WRESCallable<List<IngestResult>>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ZippedPIXMLIngest.class);
 
@@ -33,7 +34,7 @@ public final class ZippedPIXMLIngest extends WRESCallable<List<String>>
     private final List<Feature> specifiedFeatures;
     private final DataSourceConfig dataSourceConfig;
     private final DataSourceConfig.Source sourceConfig;
-    private final ProjectDetails projectDetails;
+    private final ProjectConfig projectConfig;
 
     @Internal(exclusivePackage = "wres.io")
     public ZippedPIXMLIngest ( final String fileName,
@@ -41,20 +42,21 @@ public final class ZippedPIXMLIngest extends WRESCallable<List<String>>
                                final DataSourceConfig dataSourceConfig,
                                final DataSourceConfig.Source sourceConfig,
                                final List<Feature> specifiedFeatures,
-                               final ProjectDetails projectDetails)
+                               final ProjectConfig projectConfig )
     {
         this.fileName = fileName;
         this.content = content;
         this.dataSourceConfig = dataSourceConfig;
         this.sourceConfig = sourceConfig;
         this.specifiedFeatures = specifiedFeatures;
-        this.projectDetails = projectDetails;
+        this.projectConfig = projectConfig;
     }
 
     @Override
-    public List<String> execute ()
+    public List<IngestResult> execute ()
     {
-        List<String> result = new ArrayList<>( 1 );
+        List<IngestResult> result = new ArrayList<>( 1 );
+        boolean wasFoundInCache;
 
         try
         {
@@ -67,21 +69,26 @@ public final class ZippedPIXMLIngest extends WRESCallable<List<String>>
                     PIXMLReader reader = new PIXMLReader(this.fileName,
                                                          input,
                                                          ConfigHelper.isForecast(this.dataSourceConfig),
-                                                         hash,
-                                                         this.projectDetails);
+                                                         hash );
 
                     reader.setSpecifiedFeatures(this.specifiedFeatures);
                     reader.setDataSourceConfig(this.dataSourceConfig);
                     reader.setSourceConfig( this.sourceConfig );
                     reader.parse();
+                    wasFoundInCache = false;
                 }
             }
             else
             {
-                this.projectDetails.addSource( hash, this.dataSourceConfig );
+                wasFoundInCache = true;
             }
 
-            result.add( hash );
+            IngestResult ingestResult = IngestResult.from( this.getProjectConfig(),
+                                                           this.getDataSourceConfig(),
+                                                           hash,
+                                                           wasFoundInCache );
+
+            result.add( ingestResult );
         }
         catch ( SQLException | IOException  e )
         {
@@ -95,4 +102,15 @@ public final class ZippedPIXMLIngest extends WRESCallable<List<String>>
     protected Logger getLogger () {
         return ZippedPIXMLIngest.LOGGER;
     }
+
+    private DataSourceConfig getDataSourceConfig()
+    {
+        return this.dataSourceConfig;
+    }
+
+    private ProjectConfig getProjectConfig()
+    {
+        return this.projectConfig;
+    }
+
 }
