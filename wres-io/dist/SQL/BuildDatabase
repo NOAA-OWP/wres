@@ -91,6 +91,14 @@ else
     psql -U $1 -d $3 -h $2 -f IndexQueue.sql >/dev/null
 
     echo ''
+    echo 'Adding wres.USGSParameter...'
+    psql -U $1 -d $3 -h $2 -f wres.USGSParameter.sql >/dev/null
+
+    echo ''
+    echo 'Adding wres.VariableByFeature...'
+    psql -U $1 -d $3 -h $2 -f wres.VariableByFeature.sql >/dev/null
+
+    echo ''
     echo 'Creating the schema for dynamically generated partitions...'
     psql -U $1 -d $3 -h $2 -c "CREATE SCHEMA IF NOT EXISTS partitions AUTHORIZATION wres;" >/dev/null
 fi
