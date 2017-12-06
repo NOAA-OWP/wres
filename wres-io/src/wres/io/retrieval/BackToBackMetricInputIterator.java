@@ -15,6 +15,7 @@ import wres.config.generated.ProjectConfig;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.UnitConversions;
+import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
 import wres.util.Collections;
@@ -211,11 +212,11 @@ final class BackToBackMetricInputIterator extends MetricInputIterator
 
     BackToBackMetricInputIterator( ProjectConfig projectConfig,
                                    Feature feature,
-                                   List<String> projectSources )
+                                   ProjectDetails projectDetails )
             throws SQLException, InvalidPropertiesFormatException,
             NoDataException
     {
-        super( projectConfig, feature, projectSources );
+        super( projectConfig, feature, projectDetails );
     }
 
     @Override

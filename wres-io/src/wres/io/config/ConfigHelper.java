@@ -40,7 +40,6 @@ import wres.config.generated.TimeAggregationMode;
 import wres.datamodel.time.ReferenceTime;
 import wres.datamodel.time.TimeWindow;
 import wres.io.data.caching.Features;
-import wres.io.data.caching.Projects;
 import wres.io.data.caching.Variables;
 import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.Database;
@@ -175,14 +174,13 @@ public class ConfigHelper
                                   timeAggregationConfig.getPeriod() );
     }
 
-    public static Integer getLeadOffset( ProjectConfig projectConfig, Feature feature )
+    public static Integer getLeadOffset( ProjectDetails projectDetails, Feature feature )
             throws InvalidPropertiesFormatException, SQLException
     {
+        ProjectConfig projectConfig = projectDetails.getProjectConfig();
         Integer offset;
         String newline = System.lineSeparator();
         int width = getWindowWidth( projectConfig ).intValue();
-
-        ProjectDetails projectDetails = Projects.getProject( projectConfig );
 
         String leftVariablepositionClause =
                 ConfigHelper.getVariablePositionClause( feature,

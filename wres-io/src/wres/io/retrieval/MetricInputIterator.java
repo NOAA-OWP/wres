@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.InvalidPropertiesFormatException;
 import java.util.Iterator;
-import java.util.List;
 import java.util.NavigableMap;
 import java.util.NoSuchElementException;
 import java.util.TreeMap;
@@ -18,11 +17,9 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.VectorOfDoubles;
 import wres.io.config.ConfigHelper;
-import wres.io.data.caching.Projects;
 import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
-import wres.util.Collections;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
 
@@ -37,7 +34,6 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
     private final Feature feature;
 
     private final ProjectDetails projectDetails;
-    private final List<String> projectSources;
     private NavigableMap<String, Double> leftHandMap;
     private VectorOfDoubles climatology;
     private String earliestObservationDate;
@@ -98,13 +94,14 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
 
     public MetricInputIterator( final ProjectConfig projectConfig,
                                 final Feature feature,
-                                final List<String> projectSources )
+                                final ProjectDetails projectDetails )
             throws SQLException, NoDataException,
             InvalidPropertiesFormatException
     {
-        this.projectDetails = Projects.getProject( projectConfig );
+
+        this.projectDetails = projectDetails;
+
         this.feature = feature;
-        this.projectSources = projectSources;
 
         this.createLeftHandCache();
 
@@ -189,10 +186,9 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
                 // TODO: Pass the leftHandMap instead of the function
                 InputRetriever retriever = new InputRetriever( this.getProjectDetails(),
                                                                (String firstDate, String lastDate) -> {
-                                                                   return Collections
+                                                                   return wres.util.Collections
                                                                            .getValuesInRange( this.leftHandMap, firstDate, lastDate );
-                                                               },
-                                                               this.projectSources );
+                                                               } );
                 retriever.setFeature(feature);
                 retriever.setClimatology( this.getClimatology() );
                 retriever.setProgress( this.getWindowNumber() );

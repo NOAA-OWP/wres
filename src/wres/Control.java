@@ -66,6 +66,8 @@ import wres.io.Operations;
 import wres.io.config.ConfigHelper;
 import wres.io.config.ProjectConfigPlus;
 import wres.io.config.SystemSettings;
+import wres.io.reading.IngestException;
+import wres.io.reading.IngestResult;
 import wres.io.retrieval.InputGenerator;
 import wres.io.writing.ChartWriter;
 import wres.io.writing.ChartWriter.ChartWritingException;
@@ -225,7 +227,7 @@ public class Control implements Function<String[], Integer>
                       projectConfigPlus.getPath() );
 
         // Need to ingest first
-        List<String> availableSources = Operations.ingest(projectConfig);
+        List<IngestResult> availableSources = Operations.ingest( projectConfig);
 
         LOGGER.debug( "Finished ingest for project {}...",
                       projectConfigPlus.getPath() );
@@ -271,7 +273,7 @@ public class Control implements Function<String[], Integer>
      */
     private void processFeature( final Feature feature,
                                  final ProjectConfigPlus projectConfigPlus,
-                                 final List<String> projectSources,
+                                 final List<IngestResult> projectSources,
                                  final ExecutorService pairExecutor,
                                  final ExecutorService thresholdExecutor,
                                  final ExecutorService metricExecutor )
@@ -305,9 +307,18 @@ public class Control implements Function<String[], Integer>
         }
 
         // Build an InputGenerator for the next feature
-        InputGenerator metricInputs = Operations.getInputs( projectConfig,
-                                                            feature,
-                                                            projectSources );
+        InputGenerator metricInputs = null;
+        try
+        {
+            metricInputs = Operations.getInputs( projectConfig,
+                                                 feature,
+                                                 projectSources );
+        }
+        catch ( IngestException e )
+        {
+            throw new WresProcessingException( "While attempting to get "
+                                               + "metric inputs:", e );
+        }
 
         // Queue the various tasks by lead time (lead time is the pooling dimension for metric calculation here)
         final List<CompletableFuture<?>> listOfFutures = new ArrayList<>(); //List of futures to test for completion

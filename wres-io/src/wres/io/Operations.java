@@ -22,13 +22,16 @@ import javax.xml.transform.TransformerException;
 import org.slf4j.LoggerFactory;
 
 import wres.config.generated.Feature;
+import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.Executor;
 import wres.io.config.SystemSettings;
+import wres.io.data.caching.Features;
 import wres.io.data.caching.Projects;
 import wres.io.data.details.FeatureDetails;
 import wres.io.data.details.ProjectDetails;
 import wres.io.reading.IngestException;
+import wres.io.reading.IngestResult;
 import wres.io.reading.SourceLoader;
 import wres.io.reading.fews.PIXMLReader;
 import wres.io.utilities.Database;
@@ -48,26 +51,26 @@ public final class Operations {
     /**
      * Ingests and returns the hashes of source files involved in this project.
      * @param projectConfig the projectConfig to ingest
-     * @return the hashes of files that are used in this project
+     * @return the list of results from ingesting this project
      * @throws IOException when anything goes wrong
      */
-    public static List<String> ingest( ProjectConfig projectConfig )
+    public static List<IngestResult> ingest( ProjectConfig projectConfig )
             throws IOException
     {
-        List<String> projectSources = new ArrayList<>();
+        List<IngestResult> projectSources = new ArrayList<>();
 
         SourceLoader loader = new SourceLoader(projectConfig);
         try {
-            List<Future<List<String>>> ingestions = loader.load();
+            List<Future<List<IngestResult>>> ingestions = loader.load();
 
             if ( LOGGER.isDebugEnabled() )
             {
                 LOGGER.debug( ingestions.size() + " direct load results." );
             }
 
-            for (Future<List<String>> task : ingestions)
+            for (Future<List<IngestResult>> task : ingestions)
             {
-                List<String> ingested = task.get();
+                List<IngestResult> ingested = task.get();
                 projectSources.addAll( ingested );
             }
         }
@@ -93,9 +96,20 @@ public final class Operations {
 
     public static InputGenerator getInputs(ProjectConfig projectConfig,
                                            Feature feature,
-                                           List<String> projectSources )
+                                           List<IngestResult> projectSources )
+            throws IngestException
     {
-        return new InputGenerator(projectConfig, feature, projectSources);
+        try
+        {
+            ProjectDetails projectDetails =
+                    Projects.getProjectFromIngest( projectConfig,
+                                                   projectSources );
+            return new InputGenerator( projectConfig, feature, projectDetails );
+        }
+        catch ( SQLException se )
+        {
+            throw new IngestException( "While creating project details:", se );
+        }
     }
 
     public static void install()
@@ -270,12 +284,10 @@ public final class Operations {
     public static Feature[] decomposeFeatures(ProjectConfig projectConfig)
             throws SQLException
     {
-        ProjectDetails project = Projects.getProject(projectConfig);
-
         // TODO: Would it be better to use a stream?
         Set<Feature> atomicFeatures = new HashSet<>();
 
-        for (FeatureDetails details : project.getFeatures())
+        for (FeatureDetails details : Features.getAllDetails( projectConfig ))
         {
             // Check if the feature has any intersecting values
 
@@ -284,4 +296,5 @@ public final class Operations {
 
         return atomicFeatures.toArray( new Feature[atomicFeatures.size()] );
     }
+
 }

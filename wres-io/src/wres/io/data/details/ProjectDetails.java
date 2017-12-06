@@ -6,11 +6,16 @@ import java.sql.SQLException;
 import java.time.MonthDay;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.InvalidPropertiesFormatException;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.SortedMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,7 +35,6 @@ import wres.io.data.caching.Variables;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
 import wres.io.utilities.ScriptGenerator;
-import wres.util.Collections;
 import wres.util.Internal;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
@@ -76,7 +80,10 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
 
     private final Object LOAD_LOCK = new Object();
 
-    public static Integer hash(ProjectConfig projectConfig)
+    public static Integer hash( final ProjectConfig projectConfig,
+                                final List<String> leftHashesIngested,
+                                final List<String> rightHashesIngested,
+                                final List<String> baselineHashesIngested )
     {
         StringBuilder hashBuilder = new StringBuilder(  );
 
@@ -93,14 +100,13 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
             hashBuilder.append(ensembleCondition.getQualifier());
         }
 
-        for ( DataSourceConfig.Source source : left.getSource())
-        {
-            if (source.getFormat() != null)
-            {
-                hashBuilder.append( source.getFormat().value() );
-            }
+        // Sort for deterministic hash result for same list of ingested
+        List<String> sortedLeftHashes =
+                ProjectDetails.copyAndSort( leftHashesIngested );
 
-            hashBuilder.append(source.getValue());
+        for ( String leftHash : sortedLeftHashes )
+        {
+            hashBuilder.append( leftHash );
         }
 
         hashBuilder.append(left.getVariable().getValue());
@@ -115,14 +121,13 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
             hashBuilder.append(ensembleCondition.getQualifier());
         }
 
-        for ( DataSourceConfig.Source source : right.getSource())
-        {
-            if (source.getFormat() != null)
-            {
-                hashBuilder.append( source.getFormat().value() );
-            }
+        // Sort for deterministic hash result for same list of ingested
+        List<String> sortedRightHashes =
+                ProjectDetails.copyAndSort( rightHashesIngested );
 
-            hashBuilder.append(source.getValue());
+        for ( String rightHash : sortedRightHashes )
+        {
+            hashBuilder.append( rightHash );
         }
 
         hashBuilder.append(right.getVariable().getValue());
@@ -140,14 +145,14 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
                 hashBuilder.append(ensembleCondition.getQualifier());
             }
 
-            for ( DataSourceConfig.Source source : baseline.getSource())
-            {
-                if (source.getFormat() != null)
-                {
-                    hashBuilder.append( source.getFormat().value() );
-                }
 
-                hashBuilder.append(source.getValue());
+            // Sort for deterministic hash result for same list of ingested
+            List<String> sortedBaselineHashes =
+                    ProjectDetails.copyAndSort( baselineHashesIngested );
+
+            for ( String baselineHash : sortedBaselineHashes )
+            {
+                hashBuilder.append( baselineHash );
             }
 
             hashBuilder.append(baseline.getVariable().getValue());
@@ -163,16 +168,24 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return hashBuilder.toString().hashCode();
     }
 
-    public ProjectDetails(ProjectConfig projectConfig)
+    public ProjectDetails( ProjectConfig projectConfig,
+                           Integer inputCode )
     {
+        Objects.requireNonNull( projectConfig );
+        Objects.requireNonNull( inputCode );
         this.projectConfig = projectConfig;
-        this.inputCode = ProjectDetails.hash( this.projectConfig );
+        this.inputCode = inputCode;
     }
 
     @Override
     public Integer getKey()
     {
         return this.getInputCode();
+    }
+
+    public ProjectConfig getProjectConfig()
+    {
+        return this.projectConfig;
     }
 
     public String getInputName(DataSourceConfig dataSourceConfig)
@@ -503,8 +516,8 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         }
         else if (offsetIsMissing)
         {
-            Integer leadOffset = ConfigHelper.getLeadOffset( this.projectConfig,
-                                                          feature);
+            Integer leadOffset = ConfigHelper.getLeadOffset( this,
+                                                             feature);
 
             if (leadOffset == null)
             {
@@ -699,6 +712,10 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         }
     }
 
+    /**
+     * Returns unique identifier for this project's config+data
+     * @return The unique ID
+     */
     private Integer getInputCode()
     {
         return this.inputCode;
@@ -935,8 +952,8 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
 
         synchronized ( LOAD_LOCK )
         {
-            return Collections.exists( sources,
-                                       hash -> hash.equals( foundHash ));
+            return wres.util.Collections.exists( sources,
+                                                 hash -> hash.equals( foundHash ));
         }
     }
 
@@ -1111,4 +1128,13 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     {
         return this.getInputCode();
     }
+
+    private static List<String> copyAndSort( List<String> someList )
+    {
+        List<String> result = new ArrayList<>( someList.size() );
+        result.addAll( someList );
+        result.sort( Comparator.naturalOrder() );
+        return Collections.unmodifiableList( result );
+    }
+
 }

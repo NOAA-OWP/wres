@@ -37,7 +37,6 @@ import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
-import wres.io.data.details.ProjectDetails;
 import wres.io.data.details.TimeSeries;
 import wres.io.reading.IngestException;
 import wres.io.reading.InvalidInputDataException;
@@ -101,24 +100,26 @@ public final class PIXMLReader extends XMLReader
 	 * @param filename The path to the file to read
 	 * @param isForecast Whether or not the reader is for forecast data
 	 * @param hash the hash code for the source
-	 * @param projectDetails the project details
 	 */
     @Internal(exclusivePackage = "wres.io")
-	public PIXMLReader(String filename, boolean isForecast, String hash, ProjectDetails projectDetails)
+    public PIXMLReader( String filename,
+                        boolean isForecast,
+                        String hash )
 	{
 		super(filename);
 		this.isForecast = isForecast;
 		this.hash = hash;
-		this.projectDetails = projectDetails;
 	}
 
     @Internal(exclusivePackage = "wres.io")
-	public PIXMLReader(String filename, InputStream inputStream, boolean isForecast, String hash, ProjectDetails projectDetails)
+    public PIXMLReader( String filename,
+                        InputStream inputStream,
+                        boolean isForecast,
+                        String hash )
 	{
 		super(filename, inputStream);
 		this.isForecast = isForecast;
 		this.hash = hash;
-		this.projectDetails = projectDetails;
 	}
 
 	@Override
@@ -165,31 +166,6 @@ public final class PIXMLReader extends XMLReader
 			}
 		}
 	}
-
-    @Override
-    protected void completeParsing()
-            throws IOException
-    {
-        if ( this.hash != null && !this.hash.trim().isEmpty() )
-        {
-            try
-			{
-				this.projectDetails.addSource( this.hash,
-											   this.dataSourceConfig );
-			}
-            catch ( SQLException se )
-            {
-                String message = "Could not save data source information for "
-                                 + this.getFilename();
-                throw new IngestException( message, se );
-            }
-        }
-        else
-        {
-            LOGGER.debug( "No data could be ingested from '{}'.",
-                          this.getFilename());
-        }
-    }
 
     /**
      * Parses offset hours from a reader that is positioned on "timeZone" tag.
@@ -778,9 +754,7 @@ public final class PIXMLReader extends XMLReader
                     = OffsetDateTime.of( this.getForecastDate(),
                                          this.getZoneOffset() );
             this.currentTimeSeries =
-                    new TimeSeries( this.projectDetails.getId(),
-									this.projectDetails.getInputName( this.getDataSourceConfig() ),
-									this.getSourceID(),
+                    new TimeSeries( this.getSourceID(),
                                     forecastFullDateTime.format( FORMATTER ) );
         }
         return this.currentTimeSeries;
@@ -1168,8 +1142,6 @@ public final class PIXMLReader extends XMLReader
      * The hash code for the source file
      */
 	private final String hash;
-
-	private final ProjectDetails projectDetails;
 
     private String getHash()
     {

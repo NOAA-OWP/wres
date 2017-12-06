@@ -37,6 +37,7 @@ import wres.io.concurrency.WRESCallable;
 import wres.io.concurrency.WRESRunnable;
 import wres.io.config.SystemSettings;
 import wres.io.reading.IngestException;
+import wres.io.reading.IngestResult;
 import wres.io.reading.TimeSeriesValues;
 import wres.util.FormattedStopwatch;
 import wres.util.ProgressMonitor;
@@ -97,13 +98,13 @@ public final class Database {
 	/**
 	 * A queue containing tasks used to ingest data into the database
 	 */
-    private static final LinkedBlockingQueue<Future<List<String>>> storedIngestTasks =
+    private static final LinkedBlockingQueue<Future<List<IngestResult>>> storedIngestTasks =
 			new LinkedBlockingQueue<>();
 
 	/**
 	 * @return Either the first value in the ingest queue or null if none exist
 	 */
-    public static Future<List<String>> getStoredIngestTask()
+    public static Future<List<IngestResult>> getStoredIngestTask()
     {
 		return storedIngestTasks.poll();
 	}
@@ -339,20 +340,20 @@ public final class Database {
 	 * @return the list of resulting ingested file identifiers
      * @throws IngestException if the ingest fails or is interrupted
      */
-    public static List<String> completeAllIngestTasks() throws IngestException
+    public static List<IngestResult> completeAllIngestTasks() throws IngestException
     {
 	    if (LOGGER.isTraceEnabled())
         {
             LOGGER.trace( "Now completing all issued ingest tasks..." );
         }
 
-        List<String> result = new ArrayList<>();
+        List<IngestResult> result = new ArrayList<>();
 
         // This will gather all left over timeseries values that haven't
         // been sent to the database yet.
         TimeSeriesValues.complete();
 
-		Future<List<String>> task;
+		Future<List<IngestResult>> task;
 
 	    boolean shouldAnalyze = false;
 
@@ -369,7 +370,7 @@ public final class Database {
 				{
 					try
                     {
-						List<String> singleResult = task.get();
+						List<IngestResult> singleResult = task.get();
 
                         if ( singleResult != null )
                         {

@@ -8,8 +8,9 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
-import wres.io.data.details.ProjectDetails;
+import wres.config.generated.ProjectConfig;
 import wres.io.reading.BasicSource;
+import wres.io.reading.IngestResult;
 import wres.io.reading.ReaderFactory;
 import wres.util.Internal;
 
@@ -19,7 +20,7 @@ import wres.util.Internal;
  * @author Christopher Tubbs
  */
 @Internal(exclusivePackage = "wres.io")
-public class ObservationSaver extends WRESCallable<List<String>>
+public class ObservationSaver extends WRESCallable<List<IngestResult>>
 {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ObservationSaver.class);
@@ -28,14 +29,14 @@ public class ObservationSaver extends WRESCallable<List<String>>
 
     @Internal(exclusivePackage = "wres.io")
 	public ObservationSaver(String filepath,
-                            ProjectDetails projectDetails,
+                            ProjectConfig ProjectConfig,
                             DataSourceConfig dataSourceConfig,
 							DataSourceConfig.Source sourceConfig,
                             List<Feature> specifiedFeatures)
     {
         this.dataSourceConfig = dataSourceConfig;
 		this.sourceConfig = sourceConfig;
-        this.projectDetails = projectDetails;
+        this.projectConfig = ProjectConfig;
         this.specifiedFeatures = specifiedFeatures;
         this.filepath = filepath;
     }
@@ -44,20 +45,19 @@ public class ObservationSaver extends WRESCallable<List<String>>
 	 * @see java.lang.Runnable#run()
 	 */
 	@Override
-    public List<String> execute()
+    public List<IngestResult> execute()
 	{
 		BasicSource source;
 
 		try {
-			source = ReaderFactory.getReader(this.filepath);
+            source = ReaderFactory.getReader( this.projectConfig,
+                                              this.filepath );
 
             source.setDataSourceConfig(this.dataSourceConfig);
 
 			source.setSourceConfig( this.sourceConfig );
 
             source.setSpecifiedFeatures( this.specifiedFeatures );
-
-            source.setProjectDetails( this.projectDetails );
 
             return source.saveObservation();
 		}
@@ -72,7 +72,7 @@ public class ObservationSaver extends WRESCallable<List<String>>
 	private final String filepath;
 	private final List<Feature> specifiedFeatures;
 	private final DataSourceConfig dataSourceConfig;
-	private final ProjectDetails projectDetails;
+    private final ProjectConfig projectConfig;
 
 	@Override
 	protected Logger getLogger () {

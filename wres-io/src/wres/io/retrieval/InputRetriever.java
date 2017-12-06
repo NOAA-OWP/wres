@@ -52,16 +52,12 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(InputRetriever.class);
 
-    private final List<String> projectSources;
-
     @Internal(exclusivePackage = "wres.io")
     public InputRetriever ( ProjectDetails projectDetails,
-                            BiFunction<String, String, List<Double>> getLeftValues,
-                            List<String> projectSources )
+                            BiFunction<String, String, List<Double>> getLeftValues )
     {
         this.projectDetails = projectDetails;
         this.getLeftValues = getLeftValues;
-        this.projectSources = projectSources;
     }
 
     public void setFeature(Feature feature)
@@ -240,8 +236,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                 this.rightLoadScript = ScriptGenerator.generateLoadDatasourceScript( this.projectDetails,
                                                                                      dataSourceConfig,
                                                                                      this.feature,
-                                                                                     this.progress,
-                                                                                     this.projectSources );
+                                                                                     this.progress );
             }
             loadScript = this.rightLoadScript;
         }
@@ -252,8 +247,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                 this.baselineLoadScript = ScriptGenerator.generateLoadDatasourceScript( this.projectDetails,
                                                                                         dataSourceConfig,
                                                                                         this.feature,
-                                                                                        this.progress,
-                                                                                        this.projectSources );
+                                                                                        this.progress );
             }
             loadScript = this.baselineLoadScript;
         }

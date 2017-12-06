@@ -27,11 +27,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.generated.DataSourceConfig;
+import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.Executor;
 import wres.io.concurrency.ForecastSaver;
 import wres.io.concurrency.ObservationSaver;
 import wres.io.concurrency.WRESCallable;
-import wres.io.concurrency.WRESRunnable;
 import wres.io.concurrency.ZippedPIXMLIngest;
 import wres.io.config.ConfigHelper;
 import wres.io.config.SystemSettings;
@@ -67,51 +67,54 @@ public class ZippedSource extends BasicSource {
         return executor;
     }
 
-    private void addIngestTask ( Callable<List<String>> task )
+    private void addIngestTask ( Callable<List<IngestResult>> task )
     {
         this.addIngestTask(readerService.submit(task));
     }
 
-    private void addIngestTask( Future<List<String>> result )
+    private void addIngestTask( Future<List<IngestResult>> result )
     {
         this.tasks.add(result);
     }
 
-    private Future<List<String>> getIngestTask()
+    private Future<List<IngestResult>> getIngestTask()
     {
         return tasks.poll();
     }
 
-    private final Queue<Future<List<String>>> tasks = new LinkedList<>();
+    private final Queue<Future<List<IngestResult>>> tasks = new LinkedList<>();
 
     private final Queue<String> savedFiles = new LinkedList<>();
 
 	/**
 	 * Constructor that sets the filename
+     * @param projectConfig the project config causing this ingest
 	 * @param filename The name of the source file
 	 */
     @Internal(exclusivePackage = "wres.io")
-	public ZippedSource (String filename)
+    public ZippedSource ( ProjectConfig projectConfig,
+                          String filename )
 	{
+        super( projectConfig );
 	    this.setFilename(filename);
 	    this.directoryPath = Paths.get(filename).toAbsolutePath().getParent().toString();
     }
 
 	@Override
-	public List<String> saveForecast() throws IOException
+    public List<IngestResult> saveForecast() throws IOException
     {
 	    return issue( true );
 	}
 
 	@Override
-	public List<String> saveObservation() throws IOException
+    public List<IngestResult> saveObservation() throws IOException
     {
 	    return issue( false );
 	}
 
-	private List<String> issue(boolean isForecast)
+    private List<IngestResult> issue(boolean isForecast)
     {
-        List<String> result = new ArrayList<>();
+        List<IngestResult> result = new ArrayList<>();
 
         FileInputStream fileStream = null;
         BufferedInputStream bufferedFile = null;
@@ -140,11 +143,11 @@ public class ZippedSource extends BasicSource {
                 ProgressMonitor.completeStep();
             }
 
-            Future<List<String>> ingestTask = this.getIngestTask();
+            Future<List<IngestResult>> ingestTask = this.getIngestTask();
 
             while (ingestTask != null)
             {
-                List<String> innerResult = ingestTask.get();
+                List<IngestResult> innerResult = ingestTask.get();
 
                 if ( innerResult != null )
                 {
@@ -164,7 +167,7 @@ public class ZippedSource extends BasicSource {
 
             while (ingestTask != null)
             {
-                List<String> innerResult = ingestTask.get();
+                List<IngestResult> innerResult = ingestTask.get();
 
                 if ( innerResult != null )
                 {
@@ -296,7 +299,7 @@ public class ZippedSource extends BasicSource {
             LOGGER.debug( message, archivedFileName );
         }
 
-        WRESCallable<List<String>> ingest;
+        WRESCallable<List<IngestResult>> ingest;
 
         if (sourceType == SourceType.PI_XML)
         {
@@ -305,7 +308,7 @@ public class ZippedSource extends BasicSource {
                                            this.getDataSourceConfig(),
                                            originalSource,
                                            this.getSpecifiedFeatures(),
-                                           this.getProjectDetails());
+                                           this.getProjectConfig() );
 
             ingest.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
             ProgressMonitor.increment();
@@ -321,7 +324,7 @@ public class ZippedSource extends BasicSource {
                 if (isForecast)
                 {
                     ingest = new ForecastSaver(archivedFileName,
-                                               this.getProjectDetails(),
+                                               this.getProjectConfig(),
                                                this.getDataSourceConfig(),
                                                originalSource,
                                                this.getSpecifiedFeatures());
@@ -329,7 +332,7 @@ public class ZippedSource extends BasicSource {
                 else
                 {
                     ingest = new ObservationSaver(archivedFileName,
-                                                  this.getProjectDetails(),
+                                                  this.getProjectConfig(),
                                                   this.getDataSourceConfig(),
                                                   originalSource,
                                                   this.getSpecifiedFeatures());
@@ -338,7 +341,7 @@ public class ZippedSource extends BasicSource {
                 ingest.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
 
                 ProgressMonitor.increment();
-                Future<List<String>> task = Executor.submit( ingest );
+                Future<List<IngestResult>> task = Executor.submit( ingest );
                 this.addIngestTask(task);
             }
         }
