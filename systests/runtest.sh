@@ -2,6 +2,22 @@
 # Arguments specify scenario subdirectories of systests and can be more than one.  It will look through the 
 #   arguments provided in order.
 
+# Read the options, which is currently only one: -l to indicate a run of latest. 
+latest=0
+while getopts "l" option; do
+     case "${option}"
+     in
+         l) latest=1;
+     esac
+done
+shift $((OPTIND -1))
+
+# Handle a latest run request by clearing out the working rls
+if [[ "$latest" == 1 ]]; then
+    echo "Removing the working release link, ~/wresTestScriptWorkingRelease, if it exists so that the latest release of WRES is used."
+    rm -f ~/wresTestScriptWorkingRelease
+fi
+
 # Always cd to the directory containing this script to execute!
 if [ ! -f runtest.sh ]; then
     echo "You are not in the directory that contains this run script.  Aborting..."
