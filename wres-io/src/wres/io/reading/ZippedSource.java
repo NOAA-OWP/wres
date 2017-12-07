@@ -19,10 +19,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -280,10 +282,59 @@ public class ZippedSource extends BasicSource {
             return;
         }
 
-        if (originalSource == null || !this.shouldIngest( archivedFileName, originalSource, content ) )
+        if ( originalSource == null )
         {
-            LOGGER.trace( "'{}' is not being ingested because its data already exists within the database." );
+            LOGGER.trace( "'{}' is not being ingested because its data source is null", source );
             return;
+        }
+
+        Pair<Boolean, String> checkIngest =
+                this.shouldIngest( archivedFileName, originalSource, content );
+        if ( !checkIngest.getLeft() )
+        {
+            LOGGER.trace( "'{}' is not being ingested because was already found", source );
+            // Fake a future, return result immediately.
+            Future<List<IngestResult>> ingest = new Future<List<IngestResult>>()
+            {
+                @Override
+                public boolean cancel( boolean b )
+                {
+                    return false;
+                }
+
+                @Override
+                public boolean isCancelled()
+                {
+                    return false;
+                }
+
+                @Override
+                public boolean isDone()
+                {
+                    return true;
+                }
+
+                @Override
+                public List<IngestResult> get()
+                        throws InterruptedException, ExecutionException
+                {
+                    List<IngestResult> result =
+                            IngestResult.singleItemListFrom( projectConfig,
+                                                             dataSourceConfig,
+                                                             checkIngest.getRight(),
+                                                             true );
+                    return Collections.unmodifiableList( result );
+                }
+
+                @Override
+                public List<IngestResult> get( long l, TimeUnit timeUnit )
+                        throws InterruptedException, ExecutionException,
+                        TimeoutException
+                {
+                    return get();
+                }
+            };
+            this.addIngestTask( ingest );
         }
         else
         {
