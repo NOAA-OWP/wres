@@ -13,7 +13,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.SortedMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -650,7 +652,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
             return;
         }
 
-        this.addSource( sourceID, member );
+        //this.addSource( sourceID, member );
 
         if (member.equalsIgnoreCase( ProjectDetails.LEFT_MEMBER ))
         {
@@ -682,7 +684,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
             return;
         }
 
-        this.addSource( sourceID, member );
+        //this.addSource( sourceID, member );
 
         String script = "SELECT FS.forecast_id" + NEWLINE +
                         "FROM wres.ForecastSource FS" + NEWLINE +

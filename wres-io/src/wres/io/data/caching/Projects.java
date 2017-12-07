@@ -6,6 +6,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.StringJoiner;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -192,6 +193,10 @@ public class Projects extends Cache<ProjectDetails, Integer> {
                                         .getType();
         }
 
+        String copyHeader = "wres.ProjectSource (project_id, source_id, member)";
+        String delimiter = "|";
+        StringJoiner copyStatement = new StringJoiner( NEWLINE );
+
         // TODO: would likely be faster using pg copy or using an executor
 
         for ( IngestResult ingestResult : ingestResults )
@@ -263,7 +268,17 @@ public class Projects extends Cache<ProjectDetails, Integer> {
                                               "'" + ingestResult.getLeftOrRightOrBaseline()
                                                           .value() + "'" );
             }
+            Integer sourceID =
+                DataSources.getActiveSourceID( ingestResult.getHash() );
+            copyStatement.add( details.getId() + delimiter
+                               + sourceID + delimiter
+                               + ingestResult.getLeftOrRightOrBaseline().value() );
         }
+
+        String allCopyValues = copyStatement.toString();
+        LOGGER.trace( "Full copy statement: {}", allCopyValues );
+        Database.copy( copyHeader, allCopyValues, delimiter );
+
         return details;
     }
 }
