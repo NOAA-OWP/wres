@@ -192,6 +192,8 @@ public class Projects extends Cache<ProjectDetails, Integer> {
                                         .getType();
         }
 
+        // TODO: would likely be faster using pg copy or using an executor
+
         for ( IngestResult ingestResult : ingestResults )
         {
             boolean isForecast;
@@ -240,6 +242,13 @@ public class Projects extends Cache<ProjectDetails, Integer> {
                 throw new UnsupportedOperationException( "Ingest result didn't "
                                                          + "say left or right "
                                                          + "or baseline!" );
+            }
+
+            if ( LOGGER.isTraceEnabled() )
+            {
+                LOGGER.trace( "Gluing ingested source {} to project {}",
+                              ingestResult,
+                              details.getId() );
             }
 
             if ( isForecast )

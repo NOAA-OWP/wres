@@ -65,7 +65,7 @@ public final class Operations {
 
             if ( LOGGER.isDebugEnabled() )
             {
-                LOGGER.debug( ingestions.size() + " direct load results." );
+                LOGGER.debug( ingestions.size() + " direct ingest results." );
             }
 
             for (Future<List<IngestResult>> task : ingestions)
@@ -86,7 +86,12 @@ public final class Operations {
         finally
         {
             PIXMLReader.saveLeftoverForecasts();
-            projectSources.addAll( Database.completeAllIngestTasks() );
+            List<IngestResult> leftovers = Database.completeAllIngestTasks();
+            if ( LOGGER.isDebugEnabled() )
+            {
+                LOGGER.debug( leftovers.size() + " indirect ingest results" );
+            }
+            projectSources.addAll( leftovers );
         }
 
         LOGGER.debug( "Here are the files ingested: {}", projectSources );
