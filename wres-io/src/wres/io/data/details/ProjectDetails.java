@@ -13,9 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.SortedMap;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentSkipListMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,16 +25,13 @@ import wres.config.generated.Feature;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.TimeAggregationConfig;
-import wres.io.concurrency.SQLExecutor;
 import wres.io.config.ConfigHelper;
-import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.Variables;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
 import wres.io.utilities.ScriptGenerator;
 import wres.util.Internal;
-import wres.util.ProgressMonitor;
 import wres.util.Strings;
 import wres.util.Time;
 
@@ -560,156 +555,6 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     public String getProjectName()
     {
         return this.projectConfig.getName();
-    }
-
-    public void addSource( String hash, DataSourceConfig dataSourceConfig)
-            throws SQLException
-    {
-        if (!Strings.hasValue( hash ))
-        {
-            throw new IllegalArgumentException( "Attempting to save " +
-                                                "a non-existent set of " +
-                                                "data to a project is " +
-                                                "not a valid operation." );
-        }
-
-        String member;
-
-        if ( ConfigHelper.isLeft( dataSourceConfig, projectConfig ))
-        {
-            member = ProjectDetails.LEFT_MEMBER;
-        }
-        else if ( ConfigHelper.isRight( dataSourceConfig, projectConfig ))
-        {
-            member = ProjectDetails.RIGHT_MEMBER;
-        }
-        else
-        {
-            member = ProjectDetails.BASELINE_MEMBER;
-        }
-
-        if (ConfigHelper.isForecast( dataSourceConfig ))
-        {
-            this.addForecastSource( hash, member );
-        }
-        else
-        {
-            this.addObservationSource( hash, member );
-        }
-    }
-
-    // TODO: Convert to database function
-    private void addSource(Integer sourceID, String member)
-    {
-        if (member == null ||
-            !(member.equalsIgnoreCase( ProjectDetails.LEFT_MEMBER ) ||
-              member.equalsIgnoreCase( ProjectDetails.RIGHT_MEMBER ) ||
-              member.equalsIgnoreCase( ProjectDetails.BASELINE_MEMBER )))
-        {
-            throw new IllegalArgumentException( "The member " +
-                                                member +
-                                                " is not a valid member for source data." );
-        }
-
-        if (sourceID == null)
-        {
-            throw new IllegalArgumentException( "Attempting to add a " +
-                                                "non-existant source to a " +
-                                                "project is not a valid operation." );
-        }
-
-        String script =
-                "INSERT INTO wres.ProjectSource (project_id, source_id, member)"
-                + NEWLINE +
-                "SELECT " + this.projectID + ", " +
-                sourceID + ", " +
-                member +
-                NEWLINE +
-                "WHERE NOT EXISTS (" + NEWLINE +
-                "     SELECT 1" + NEWLINE +
-                "     FROM wres.ProjectSource PS" + NEWLINE +
-                "     WHERE project_id = " + this.projectID + NEWLINE +
-                "         AND source_id = " + sourceID + NEWLINE +
-                "         AND member = " + member + NEWLINE +
-                ");";
-
-        SQLExecutor executor = new SQLExecutor( script );
-        executor.setOnRun( ProgressMonitor.onThreadStartHandler() );
-        executor.setOnComplete( ProgressMonitor.onThreadCompleteHandler() );
-        Database.execute( executor );
-    }
-
-    public void addObservationSource(String hash, String member) throws SQLException
-    {
-        Integer sourceID = DataSources.getActiveSourceID( hash );
-
-        if (sourceID == null)
-        {
-            LOGGER.warn( "Source data could not be attached to '{}' " +
-                         "as {} data because no data was ever ingested for it.",
-                         this.getProjectName(),
-                         member);
-            return;
-        }
-
-        //this.addSource( sourceID, member );
-
-        if (member.equalsIgnoreCase( ProjectDetails.LEFT_MEMBER ))
-        {
-            this.getLeftHashes().putIfAbsent( sourceID, hash );
-            this.getLeftSources().add(sourceID);
-        }
-        else if (member.equalsIgnoreCase( ProjectDetails.RIGHT_MEMBER ))
-        {
-            this.getRightHashes().putIfAbsent( sourceID, hash );
-            this.getRightSources().add( sourceID );
-        }
-        else
-        {
-            this.getBaselineHashes().putIfAbsent( sourceID, hash );
-            this.getBaselineSources().add( sourceID );
-        }
-    }
-
-    public void addForecastSource(String hash, String member) throws SQLException
-    {
-        Integer sourceID = DataSources.getActiveSourceID( hash );
-
-        if (sourceID == null)
-        {
-            LOGGER.warn( "Source data could not be attached to '{}' " +
-                         "as {} data because no data was ever ingested for it.",
-                         this.getProjectName(),
-                         member);
-            return;
-        }
-
-        //this.addSource( sourceID, member );
-
-        String script = "SELECT FS.forecast_id" + NEWLINE +
-                        "FROM wres.ForecastSource FS" + NEWLINE +
-                        "WHERE FS.source_id = " + sourceID + ";";
-
-        Integer forecastID = Database.getResult( script, "forecast_id");
-
-        if (member.equalsIgnoreCase( ProjectDetails.LEFT_MEMBER ))
-        {
-            this.getLeftForecastIDs().add( forecastID );
-            this.getLeftSources().add(sourceID);
-            this.getLeftHashes().putIfAbsent( sourceID, hash );
-        }
-        else if (member.equalsIgnoreCase( ProjectDetails.RIGHT_MEMBER ))
-        {
-            this.getRightForecastIDs().add( forecastID );
-            this.getRightSources().add( sourceID );
-            this.getRightHashes().putIfAbsent( sourceID, hash );
-        }
-        else
-        {
-            this.getBaselineForecastIDs().add( forecastID );
-            this.getBaselineSources().add( sourceID );
-            this.getBaselineHashes().putIfAbsent( sourceID, hash );
-        }
     }
 
     /**
