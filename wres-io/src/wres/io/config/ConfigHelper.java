@@ -436,7 +436,7 @@ public class ConfigHelper
      * @param config the project configuration
      * @return the most narrow "earliest" date, null otherwise
      */
-    public static LocalDateTime getEarliestDateTimeFromDataSources(ProjectConfig config)
+    public static Instant getEarliestDateTimeFromDataSources(ProjectConfig config)
     {
         if ( config.getPair() == null )
         {
@@ -456,7 +456,7 @@ public class ConfigHelper
                 earliest = config.getPair()
                                  .getDates()
                                  .getEarliest();
-                return LocalDateTime.parse( earliest );
+                return Instant.parse( earliest );
             }
             catch ( DateTimeParseException dtpe )
             {
@@ -467,7 +467,7 @@ public class ConfigHelper
                 {
                     LOGGER.warn( "Correct the date \"{}\" near line {} column "
                                  + "{} to ISO8601 format such as "
-                                 + "\"2017-06-27T16:16\"",
+                                 + "\"2017-06-27T16:16:00Z\"",
                                  earliest,
                                  config.getPair()
                                        .getDates()
@@ -486,7 +486,7 @@ public class ConfigHelper
             String messageId = "no_earliest_date";
             if (LOGGER.isInfoEnabled() && ConfigHelper.messageSendPutIfAbsent(config, messageId))
             {
-                LOGGER.info( "No \"earliest\" date found in project. Use <dates earliest=\"2017-06-27T16:14\" latest=\"2017-07-06T11:35\" /> under <pair> (near line {} column {} of project file) to specify an earliest date.",
+                LOGGER.info( "No \"earliest\" date found in project. Use <dates earliest=\"2017-06-27T16:14:00Z\" latest=\"2017-07-06T11:35:00Z\" /> under <pair> (near line {} column {} of project file) to specify an earliest date.",
                              config.getPair()
                                    .sourceLocation()
                                    .getLineNumber(),
@@ -505,7 +505,7 @@ public class ConfigHelper
      * @param config the project configuration
      * @return the most narrow "latest" date, null otherwise.
      */
-    public static LocalDateTime getLatestDateTimeFromDataSources(ProjectConfig config)
+    public static Instant getLatestDateTimeFromDataSources(ProjectConfig config)
     {
         if ( config.getPair() == null )
         {
@@ -525,7 +525,7 @@ public class ConfigHelper
                 latest = config.getPair()
                                .getDates()
                                .getLatest();
-                return LocalDateTime.parse( latest );
+                return Instant.parse( latest );
             }
             catch ( DateTimeParseException dtpe )
             {
@@ -536,7 +536,7 @@ public class ConfigHelper
                 {
                     LOGGER.warn( "Correct the date \"{}\" after line {} col {} "
                                  + "to ISO8601 format such as "
-                                 + "\"2017-06-27T16:16\"",
+                                 + "\"2017-06-27T16:16:00Z\"",
                                  latest,
                                  config.getPair()
                                        .getDates()
@@ -555,7 +555,7 @@ public class ConfigHelper
             String messageId = "no_latest_date";
             if (LOGGER.isInfoEnabled() && ConfigHelper.messageSendPutIfAbsent(config, messageId))
             {
-                LOGGER.info( "No \"latest\" date found in project. Use <dates earliest=\"2017-06-27T16:14\" latest=\"2017-07-06T11:35\" />  under <pair> (near line {} col {} of project file) to specify a latest date.",
+                LOGGER.info( "No \"latest\" date found in project. Use <dates earliest=\"2017-06-27T16:14:00Z\" latest=\"2017-07-06T11:35:00Z\" />  under <pair> (near line {} col {} of project file) to specify a latest date.",
                              config.getPair()
                                    .sourceLocation()
                                    .getLineNumber(),
