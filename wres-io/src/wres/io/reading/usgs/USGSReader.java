@@ -2,6 +2,7 @@ package wres.io.reading.usgs;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -390,7 +391,7 @@ public class USGSReader extends BasicSource
                 throw new IOException( "An existing time aggregation must be defined to ingest USGS data." );
             }
 
-            LocalDateTime earliest = ConfigHelper.getEarliestDateTimeFromDataSources( this.getProjectConfig() );
+            Instant earliest = ConfigHelper.getEarliestDateTimeFromDataSources( this.getProjectConfig() );
             if ( earliest == null)
             {
                 this.startDate = EARLIEST_DATE;
@@ -426,7 +427,7 @@ public class USGSReader extends BasicSource
                 throw new IOException( "An existing time aggregation must be defined to ingest USGS data." );
             }
 
-            LocalDateTime latest = ConfigHelper.getLatestDateTimeFromDataSources( this.getProjectConfig() );
+            Instant latest = ConfigHelper.getLatestDateTimeFromDataSources( this.getProjectConfig() );
             if ( latest == null )
             {
                 this.endDate = LATEST_DATE;
