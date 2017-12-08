@@ -11,10 +11,8 @@ import java.util.StringJoiner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.generated.DatasourceType;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
-import wres.io.config.ConfigHelper;
 import wres.io.data.details.ProjectDetails;
 import wres.io.reading.IngestResult;
 import wres.io.utilities.Database;
@@ -177,97 +175,12 @@ public class Projects extends Cache<ProjectDetails, Integer> {
                                                       finalRightHashes,
                                                       finalBaselineHashes );
 
-        DatasourceType leftType = projectConfig.getInputs()
-                                               .getLeft()
-                                               .getType();
-        DatasourceType rightType = projectConfig.getInputs()
-                                                .getRight()
-                                                .getType();
-
-        DatasourceType baselineType = DatasourceType.OBSERVATIONS;
-
-        if ( ConfigHelper.hasBaseline( projectConfig ) )
-        {
-            baselineType = projectConfig.getInputs()
-                                        .getBaseline()
-                                        .getType();
-        }
-
         String copyHeader = "wres.ProjectSource (project_id, source_id, member)";
         String delimiter = "|";
         StringJoiner copyStatement = new StringJoiner( NEWLINE );
 
-        // TODO: would likely be faster using pg copy or using an executor
-
         for ( IngestResult ingestResult : ingestResults )
         {
-            boolean isForecast;
-
-            if ( ingestResult.getLeftOrRightOrBaseline()
-                             .equals( LeftOrRightOrBaseline.LEFT ) )
-            {
-                if ( leftType.equals( DatasourceType.ENSEMBLE_FORECASTS )
-                     || leftType.equals( DatasourceType.SINGLE_VALUED_FORECASTS ) )
-                {
-                    isForecast = true;
-                }
-                else
-                {
-                    isForecast = false;
-                }
-            }
-            else if ( ingestResult.getLeftOrRightOrBaseline()
-                                  .equals( LeftOrRightOrBaseline.RIGHT ) )
-            {
-                if ( rightType.equals( DatasourceType.ENSEMBLE_FORECASTS )
-                     || rightType.equals( DatasourceType.SINGLE_VALUED_FORECASTS ) )
-                {
-                    isForecast = true;
-                }
-                else
-                {
-                    isForecast = false;
-                }
-            }
-            else if ( ingestResult.getLeftOrRightOrBaseline()
-                                  .equals( LeftOrRightOrBaseline.BASELINE ) )
-            {
-                if ( baselineType.equals( DatasourceType.ENSEMBLE_FORECASTS )
-                     || baselineType.equals( DatasourceType.SINGLE_VALUED_FORECASTS ) )
-                {
-                    isForecast = true;
-                }
-                else
-                {
-                    isForecast = false;
-                }
-            }
-            else
-            {
-                throw new UnsupportedOperationException( "Ingest result didn't "
-                                                         + "say left or right "
-                                                         + "or baseline!" );
-            }
-
-            if ( LOGGER.isTraceEnabled() )
-            {
-                LOGGER.trace( "Gluing ingested source {} to project {}",
-                              ingestResult,
-                              details.getId() );
-            }
-
-            if ( isForecast )
-            {
-                details.addForecastSource( ingestResult.getHash(),
-                                           "'" + ingestResult.getLeftOrRightOrBaseline()
-                                                       .value() + "'" );
-            }
-            else
-            {
-                details.addObservationSource( ingestResult.getHash(),
-                                              "'" + ingestResult.getLeftOrRightOrBaseline()
-                                                          .value() + "'" );
-            }
             Integer sourceID =
                 DataSources.getActiveSourceID( ingestResult.getHash() );
             copyStatement.add( details.getId() + delimiter
