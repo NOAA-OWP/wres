@@ -34,6 +34,7 @@ import wres.config.generated.Feature;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.ProjectConfig;
+import wres.config.generated.RollingWindowFocus;
 import wres.config.generated.TimeAggregationConfig;
 import wres.config.generated.TimeAggregationFunction;
 import wres.config.generated.TimeAggregationMode;
@@ -91,12 +92,16 @@ public class ConfigHelper
 
         if (timeAggregationConfig == null)
         {
-            timeAggregationConfig = new TimeAggregationConfig( TimeAggregationFunction.AVG,
-                                                               1,
-                                                               null,
-                                                               DurationUnit.HOUR,
-                                                               "",
-                                                               TimeAggregationMode.BACK_TO_BACK);
+            timeAggregationConfig = new TimeAggregationConfig(
+                    TimeAggregationFunction.AVG,
+                    1,
+                    1,
+                    1,
+                    DurationUnit.HOUR,
+                    "",
+                    TimeAggregationMode.BACK_TO_BACK,
+                    RollingWindowFocus.CENTER
+            );
         }
 
         return timeAggregationConfig;
