@@ -8,7 +8,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.DecimalFormat;
 import java.util.Arrays;
-import java.util.List;
 import java.util.StringJoiner;
 
 import org.slf4j.Logger;

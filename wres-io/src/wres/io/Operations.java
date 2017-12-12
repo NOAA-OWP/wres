@@ -22,7 +22,6 @@ import javax.xml.transform.TransformerException;
 import org.slf4j.LoggerFactory;
 
 import wres.config.generated.Feature;
-import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.Executor;
 import wres.io.config.SystemSettings;
@@ -65,7 +64,7 @@ public final class Operations {
 
             if ( LOGGER.isDebugEnabled() )
             {
-                LOGGER.debug( ingestions.size() + " direct load results." );
+                LOGGER.debug( ingestions.size() + " direct ingest results." );
             }
 
             for (Future<List<IngestResult>> task : ingestions)
@@ -86,7 +85,12 @@ public final class Operations {
         finally
         {
             PIXMLReader.saveLeftoverForecasts();
-            projectSources.addAll( Database.completeAllIngestTasks() );
+            List<IngestResult> leftovers = Database.completeAllIngestTasks();
+            if ( LOGGER.isDebugEnabled() )
+            {
+                LOGGER.debug( leftovers.size() + " indirect ingest results" );
+            }
+            projectSources.addAll( leftovers );
         }
 
         LOGGER.debug( "Here are the files ingested: {}", projectSources );
