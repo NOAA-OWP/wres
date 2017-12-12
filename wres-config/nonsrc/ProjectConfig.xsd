@@ -158,6 +158,15 @@
         </xs:restriction>
     </xs:simpleType>
 
+    <!-- Determines where the focus of a rolling window lies -->
+    <xs:simpleType name="rollingWindowFocus">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="left"/>
+            <xs:enumeration value="center" />
+            <xs:enumeration value="right" />
+        </xs:restriction>
+    </xs:simpleType>
+
     <!-- Thresholds need to specify probabilities and an operator. -->
     <xs:complexType name="probabilityThreshold">
 
@@ -364,12 +373,14 @@
 
         <xs:sequence>
             <xs:element name="function" type="timeAggregationFunction" default="avg" />
-            <xs:element name="period" type="duration"/>
-            <xs:element name="frequency" type="duration" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="span" type="xs:int" minOccurs="0" />
+            <xs:element name="period" type="duration" default="1" />
+            <xs:element name="frequency" type="duration" minOccurs="0"/>
             <xs:element name="unit" type="durationUnit" default="hour" />
         </xs:sequence>
         <xs:attribute name="label" type="xs:string" />
         <xs:attribute name="mode" type="timeAggregationMode" />
+        <xs:attribute name="focus" type="rollingWindowFocus" default="center" />
     </xs:complexType>
 
     <xs:simpleType name="spaceAggregationFunction">
