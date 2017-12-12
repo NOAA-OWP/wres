@@ -8,6 +8,7 @@ import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.util.Precision;
 import org.slf4j.Logger;
 
@@ -297,20 +298,21 @@ public abstract class BasicSource
      * @param source The configuration indicating the location of the file
      * @param contents optional read contents from the source file. Used when
      *                 the source originates from an archive.
-     * @return Whether or not to ingest the file
+     * @return Whether or not to ingest the file and the resulting hash
      */
-    protected boolean shouldIngest( String filePath, DataSourceConfig.Source source, byte[] contents )
+    protected Pair<Boolean,String> shouldIngest( String filePath, DataSourceConfig.Source source, byte[] contents )
     {
         SourceType specifiedFormat = ReaderFactory.getFileType(source.getFormat());
         SourceType pathFormat = ReaderFactory.getFiletype(filePath);
 
         boolean ingest = specifiedFormat == SourceType.UNDEFINED || specifiedFormat.equals(pathFormat);
 
+        String contentHash = null;
+
         if (ingest)
         {
             try
             {
-                String contentHash = null;
 
                 if (contents != null)
                 {
@@ -322,13 +324,6 @@ public abstract class BasicSource
                 }
 
                 ingest = !dataExists(filePath, contentHash);
-
-                /* TODO: understand if this is needful (jfb)
-                if (!ingest && !this.projectDetails.hasSource( contentHash, this.getDataSourceConfig() ))
-                {
-                    this.projectDetails.addSource( contentHash, this.getDataSourceConfig() );
-                }
-                */
             }
             catch (SQLException | IOException e)
             {
@@ -336,7 +331,7 @@ public abstract class BasicSource
             }
         }
 
-        return ingest;
+        return Pair.of( ingest, contentHash );
     }
 
     /**

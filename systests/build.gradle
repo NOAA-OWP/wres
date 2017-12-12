@@ -1,0 +1,37 @@
+plugins
+{
+    // for ability to use git ids for versioning jar files:
+    id 'org.ajoberstar.grgit' version '1.7.2'
+}
+
+apply plugin: 'distribution'
+
+// Each module does not need a version update unless code in it has changed.
+def gitCommit = grgit.log(paths: [project.name], maxCommits:1).find()
+def gitCommitId = gitCommit.id
+def gitCommitDate = gitCommit.getDate()
+
+def gitIsClean = grgit.status().isClean()
+
+version = gitCommitDate.format('yyyyMMdd') + '-' + gitCommitId[0..6]
+if (!gitIsClean)
+{
+    version = version + '-dev'
+}
+
+distributions
+{
+    main
+    {
+        contents
+        {
+            from('.')
+            {
+                include '*.sh'
+                include 'scenario*/project_config.xml'
+                include 'scenario*/benchmarks/**'
+                include 'smalldata/**'
+            }
+        }
+    }
+}

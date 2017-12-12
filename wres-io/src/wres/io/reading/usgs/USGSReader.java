@@ -2,11 +2,13 @@ package wres.io.reading.usgs;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Stack;
 import java.util.TreeMap;
 
@@ -22,7 +24,6 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DurationUnit;
-import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
 import wres.io.Operations;
 import wres.io.concurrency.StatementRunner;
@@ -33,6 +34,7 @@ import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.USGSParameters;
 import wres.io.data.caching.Variables;
+import wres.io.data.details.FeatureDetails;
 import wres.io.data.details.VariableDetails;
 import wres.io.reading.BasicSource;
 import wres.io.reading.IngestException;
@@ -263,15 +265,15 @@ public class USGSReader extends BasicSource
 
         if (this.getSpecifiedFeatures().size() > 0)
         {
-            for ( Feature feature : this.getSpecifiedFeatures() )
+            for ( FeatureDetails feature : Features.getAllDetails( this.getProjectConfig() ) )
             {
-                if ( Strings.hasValue( feature.getGageId()) && !Strings.hasValue( ID ))
+                if ( Strings.hasValue( feature.getGageID()) && !Strings.hasValue( ID ))
                 {
-                    ID = feature.getGageId();
+                    ID = feature.getGageID();
                 }
-                else if (Strings.hasValue( feature.getGageId() ))
+                else if (Strings.hasValue( feature.getGageID() ))
                 {
-                    ID += "," + feature.getGageId();
+                    ID += "," + feature.getGageID();
                 }
             }
         }
@@ -389,7 +391,7 @@ public class USGSReader extends BasicSource
                 throw new IOException( "An existing time aggregation must be defined to ingest USGS data." );
             }
 
-            LocalDateTime earliest = ConfigHelper.getEarliestDateTimeFromDataSources( this.getProjectConfig() );
+            Instant earliest = ConfigHelper.getEarliestDateTimeFromDataSources( this.getProjectConfig() );
             if ( earliest == null)
             {
                 this.startDate = EARLIEST_DATE;
@@ -425,7 +427,7 @@ public class USGSReader extends BasicSource
                 throw new IOException( "An existing time aggregation must be defined to ingest USGS data." );
             }
 
-            LocalDateTime latest = ConfigHelper.getLatestDateTimeFromDataSources( this.getProjectConfig() );
+            Instant latest = ConfigHelper.getLatestDateTimeFromDataSources( this.getProjectConfig() );
             if ( latest == null )
             {
                 this.endDate = LATEST_DATE;
@@ -475,24 +477,24 @@ public class USGSReader extends BasicSource
             this.variablePositionIDs = new TreeMap<>(  );
         }
 
-        Feature details;
+        FeatureDetails details;
 
         if (!this.variablePositionIDs.containsKey( gageID ))
         {
             try
             {
                 details =
-                        wres.util.Collections.find( this.getSpecifiedFeatures(),
+                        wres.util.Collections.find( this.getFeatureDetailsSet(),
                                                     feature ->
-                                                            feature.getGageId()
+                                                            feature.getGageID()
                                                             != null &&
-                                                            feature.getGageId()
+                                                            feature.getGageID()
                                                                    .equalsIgnoreCase(
                                                                            gageID ) );
-                Integer featureID = Features.getVariablePositionID( details,
-                                                                    this.getVariableID() );
+
                 this.variablePositionIDs.put( gageID,
-                                              featureID );
+                                              details.getVariablePositionID(
+                                                      this.getVariableID() ) );
             }
             catch (Exception e)
             {
@@ -558,40 +560,62 @@ public class USGSReader extends BasicSource
 
         if (series.getValues().length == 0)
         {
-            Feature invalidFeature = null;
+            FeatureDetails invalidFeature = null;
 
-            for ( Feature feature : this.getSpecifiedFeatures() )
+            try
             {
-                if (Strings.hasValue( feature.getGageId() ) && feature.getGageId().equalsIgnoreCase( gageID ))
+                for ( FeatureDetails feature : this.getFeatureDetailsSet())
                 {
-                    invalidFeature = feature;
-                    break;
-                }
-            }
-
-            LOGGER.trace("The location '{}' was removed from the project because it didn't have valid USGS data.",
-                         String.valueOf(invalidFeature));
-            return;
-        }
-
-        for (TimeSeriesValues valueSet : series.getValues())
-        {
-            if (valueSet.getValue().length == 0)
-            {
-                Feature invalidFeature = null;
-
-                for ( Feature feature : this.getSpecifiedFeatures() )
-                {
-                    if (Strings.hasValue( feature.getGageId() ) && feature.getGageId().equalsIgnoreCase( gageID ))
+                    if (Strings.hasValue( feature.getGageID() ) && feature.getGageID().equalsIgnoreCase( gageID ))
                     {
                         invalidFeature = feature;
                         break;
                     }
                 }
 
+                this.getFeatureDetailsSet().remove( invalidFeature );
                 LOGGER.trace("The location '{}' was removed from the project because it didn't have valid USGS data.",
+                             String.valueOf(invalidFeature));
+                return;
+            }
+            catch ( SQLException e )
+            {
+                throw new IOException( "Could not iterate through available " +
+                                       "features in order to avoid processing " +
+                                       "the invalid location '" + gageID + "'" ,
+                                       e);
+            }
+        }
+
+        for (TimeSeriesValues valueSet : series.getValues())
+        {
+            if (valueSet.getValue().length == 0)
+            {
+                FeatureDetails invalidFeature = null;
+
+                try
+                {
+                    for (FeatureDetails feature : this.getFeatureDetailsSet() )
+                    {
+                        if (Strings.hasValue( feature.getGageID() ) && feature.getGageID().equalsIgnoreCase( gageID ))
+                        {
+                            invalidFeature = feature;
+                            break;
+                        }
+                    }
+
+                    this.getFeatureDetailsSet().remove( invalidFeature );
+                    LOGGER.trace("The location '{}' was removed from the project because it didn't have valid USGS data.",
                                  String.valueOf(invalidFeature));
                     continue;
+                }
+                catch ( SQLException e )
+                {
+                    throw new IOException( "Could not iterate through available " +
+                                           "features in order to avoid processing " +
+                                           "the invalid location '" + gageID + "'" ,
+                                           e);
+                }
             }
 
             for (TimeSeriesValue value : valueSet.getValue())
@@ -665,6 +689,16 @@ public class USGSReader extends BasicSource
         return sourceID;
     }
 
+    private Set<FeatureDetails> getFeatureDetailsSet()
+            throws SQLException
+    {
+        if ( this.featureDetailsSet == null )
+        {
+            this.featureDetailsSet = Features.getAllDetails( this.getProjectConfig() );
+        }
+        return this.featureDetailsSet;
+    }
+
     // If daily values were used, start and end date cannot have minutes or timezones
     // While these are hardcoded, they will need to be specified from the config
     // date must be separated by T, negative timezone will need to be separated by %2b
@@ -689,4 +723,5 @@ public class USGSReader extends BasicSource
     private Response response;
 
     private String operationStartTime;
+    private Set<FeatureDetails> featureDetailsSet;
 }

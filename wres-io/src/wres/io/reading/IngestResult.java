@@ -100,4 +100,12 @@ public class IngestResult
     {
         return this.foundAlready;
     }
+
+    @Override
+    public String toString()
+    {
+        return "hash: " + this.getHash() + ", "
+               + "db cache hit? " + this.wasFoundAlready() + ", "
+               + "l/r/b: " + getLeftOrRightOrBaseline().value();
+    }
 }
