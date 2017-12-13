@@ -661,9 +661,9 @@ public final class Database {
 		}
 		catch (SQLException | IOException error)
 		{
-			LOGGER.error("Data could not be copied to the database:");
-			LOGGER.error(Strings.truncate(values));
-			LOGGER.error("");
+			LOGGER.debug("Data could not be copied to the database:");
+			LOGGER.debug(Strings.truncate(values));
+			LOGGER.debug("");
 
 			throw new CopyException("Data could not be copied: " + error.getMessage(), error);
 		}

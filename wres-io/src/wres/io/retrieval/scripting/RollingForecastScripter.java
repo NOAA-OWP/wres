@@ -1,0 +1,41 @@
+package wres.io.retrieval.scripting;
+
+import java.sql.SQLException;
+import java.util.InvalidPropertiesFormatException;
+
+import wres.config.generated.DataSourceConfig;
+import wres.config.generated.Feature;
+import wres.io.data.details.ProjectDetails;
+import wres.io.utilities.NoDataException;
+import wres.util.NotImplementedException;
+
+class RollingForecastScripter extends Scripter
+{
+    protected RollingForecastScripter( ProjectDetails projectDetails,
+                                       DataSourceConfig dataSourceConfig,
+                                       Feature feature,
+                                       int progress )
+    {
+        super( projectDetails, dataSourceConfig, feature, progress );
+    }
+
+    @Override
+    String formScript() throws SQLException, InvalidPropertiesFormatException,
+            NoDataException
+    {
+        throw new NotImplementedException( "Scripts for loading rolling forecasts have not been written yet." );
+        //return null;
+    }
+
+    @Override
+    String getBaseDateName()
+    {
+        return null;
+    }
+
+    @Override
+    String getValueDate()
+    {
+        return null;
+    }
+}
