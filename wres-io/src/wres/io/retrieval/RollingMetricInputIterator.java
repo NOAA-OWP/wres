@@ -142,6 +142,13 @@ public class RollingMetricInputIterator extends MetricInputIterator
     }
 
     @Override
+    protected Integer getWindowCount() throws NoDataException, SQLException,
+            InvalidPropertiesFormatException
+    {
+        return super.getWindowCount();
+    }
+
+    @Override
     Logger getLogger()
     {
         return LOGGER;

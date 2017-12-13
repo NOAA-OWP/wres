@@ -489,6 +489,11 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return function;
     }
 
+    public TimeAggregationConfig getAggregation()
+    {
+        return this.projectConfig.getPair().getDesiredTimeAggregation();
+    }
+
     public String getDesiredMeasurementUnit()
     {
         return String.valueOf(this.projectConfig.getPair().getUnit());

@@ -379,7 +379,7 @@
             <xs:element name="unit" type="durationUnit" default="hour" />
         </xs:sequence>
         <xs:attribute name="label" type="xs:string" />
-        <xs:attribute name="mode" type="timeAggregationMode" />
+        <xs:attribute name="mode" type="timeAggregationMode" default="back-to-back" />
         <xs:attribute name="focus" type="rollingWindowFocus" default="center" />
     </xs:complexType>
 

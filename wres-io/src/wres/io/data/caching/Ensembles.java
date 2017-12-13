@@ -12,6 +12,7 @@ import java.util.TreeMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.generated.EnsembleCondition;
 import wres.io.data.details.EnsembleDetails;
 import wres.io.data.details.EnsembleDetails.EnsembleKey;
 import wres.io.utilities.Database;
@@ -65,6 +66,12 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
 		return Ensembles.getCache().getID( ensemble.getName(),
                                            ensemble.getTMinus(),
                                            ensemble.getQualifier() );
+	}
+
+	public static Integer getEnsembleID( EnsembleCondition ensemble)
+			throws SQLException
+	{
+		return Ensembles.getCache().getID( ensemble.getName(), ensemble.getMemberId(), ensemble.getQualifier() );
 	}
 	
 	/**

@@ -36,9 +36,9 @@ import wres.io.concurrency.WRESCallable;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.UnitConversions;
 import wres.io.data.details.ProjectDetails;
+import wres.io.retrieval.scripting.Scripter;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
-import wres.io.utilities.ScriptGenerator;
 import wres.io.writing.PairWriter;
 import wres.util.Internal;
 import wres.util.Strings;
@@ -233,10 +233,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         {
             if (this.rightLoadScript == null)
             {
-                this.rightLoadScript = ScriptGenerator.generateLoadDatasourceScript( this.projectDetails,
-                                                                                     dataSourceConfig,
-                                                                                     this.feature,
-                                                                                     this.progress );
+                this.rightLoadScript = Scripter.getLoadScript( this.projectDetails, dataSourceConfig, feature, progress );
             }
             loadScript = this.rightLoadScript;
         }
@@ -244,10 +241,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         {
             if (this.baselineLoadScript == null)
             {
-                this.baselineLoadScript = ScriptGenerator.generateLoadDatasourceScript( this.projectDetails,
-                                                                                        dataSourceConfig,
-                                                                                        this.feature,
-                                                                                        this.progress );
+                this.baselineLoadScript = Scripter.getLoadScript( this.projectDetails, dataSourceConfig, this.feature, this.progress );
             }
             loadScript = this.baselineLoadScript;
         }
@@ -269,7 +263,6 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         String date = null;
 
         Map<Integer, List<Double>> rightValues = new TreeMap<>();
-        Map<Integer, UnitConversions.Conversion> conversionMap = new TreeMap<>(  );
 
         /**
          * Task #39440
@@ -483,14 +476,6 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         Double leftAggregation =
                 wres.util.Collections.aggregate( leftValues,
                                                  this.projectDetails.getAggregationFunction() );
-
-        /*if ( leftAggregation.isNaN())
-        {
-            LOGGER.debug("The left value aggregated to NaN and could not form a pair from the dates '{}' to '{}'.",
-                         firstDate,
-                         date);
-            return null;
-        }*/
 
         Double[] rightAggregation = new Double[rightValues.size()];
 
