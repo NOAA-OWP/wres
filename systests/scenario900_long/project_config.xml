@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- This is a test of real, baseline validation streamflows verified through WRES where the obs is 24-h
-     and the forecasts are 6-h.  Time aggregation is needed. -->
-<project label="ExampleProject" name="HEFS">
+     and the forecasts are 6-h.  Time aggregation is needed.  It is a full baseline validation data set. -->
+<project label="ExampleProject" name="scenario900_long">
 
     <inputs>
         <left label="">
@@ -18,7 +18,7 @@
         <right label="HEFS" >
             <type>ensemble forecasts</type>
             <source all="false" format="PI-XML" missingValue="-999.0"
-                recursive="false" unit="">../data/abrfcExample/LGNN5_Streamflow_hefs_Baseline_Validation_19850101_20160106.tgz</source>
+                recursive="false" unit="">../data/archive/baselineValidationExample/LGNN5_Streamflow_hefs_Baseline_Validation_19850101_20160106.tgz</source>
             <variable>QINE</variable>
             <existingTimeAggregation>
                 <function>avg</function>
