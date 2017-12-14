@@ -119,6 +119,18 @@ class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implement
         store.keySet().forEach( a -> returnMe.add( a.getRight() ) );
         return Collections.unmodifiableSet( returnMe );
     }
+    
+    @Override
+    public Set<Long> keySetByLeadTimeInHours()
+    {
+        final Set<Long> returnMe = new TreeSet<>();
+        for ( TimeWindow next : keySetByTime() )
+        {
+            returnMe.add( next.getEarliestLeadTimeInHours() );
+            returnMe.add( next.getLatestLeadTimeInHours() );
+        }
+        return Collections.unmodifiableSet( returnMe );
+    }    
 
     @Override
     public int size()
@@ -191,7 +203,7 @@ class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implement
         } );
         if ( b.store.isEmpty() )
         {
-            throw new MetricOutputException( "No metric outputs match the specified criteria on forecast lead time." );
+            throw new MetricOutputException( "No metric outputs match the specified criteria on time window." );
         }
         return b.build();
     }
@@ -217,6 +229,25 @@ class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implement
         return b.build();
     }
 
+
+    @Override
+    public MetricOutputMapByTimeAndThreshold<T> filterByLeadTimeInHours( long leadHours )
+    {
+        final Builder<T> b = new Builder<>();
+        store.forEach( ( key, value ) -> {
+            if ( key.getLeft().getEarliestLeadTimeInHours() == leadHours
+                 || key.getLeft().getLatestLeadTimeInHours() == leadHours )
+            {
+                b.put( key, value );
+            }
+        } );
+        if ( b.store.isEmpty() )
+        {
+            throw new MetricOutputException( "No metric outputs match the specified criteria on forecast lead time." );
+        }
+        return b.build();
+    }
+    
     @Override
     public MetricOutputMetadata getMetadata()
     {
@@ -253,17 +284,17 @@ class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implement
          * The data store.
          */
         private final ConcurrentMap<Pair<TimeWindow, Threshold>, T> store = new ConcurrentSkipListMap<>();
-        
+
         /**
          * The metadata.
          */
-        
+
         private MetricOutputMetadata overrideMeta;
-        
+
         /**
          * The reference metadata.
          */
-        
+
         private MetricOutputMetadata referenceMetadata;
 
         /**
