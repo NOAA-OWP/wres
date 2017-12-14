@@ -49,7 +49,7 @@ public final class MetricProcessorEnsemblePairsByTimeTest
             ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
             MetricProcessorEnsemblePairsByTime processor =
                     (MetricProcessorEnsemblePairsByTime) MetricFactory.getInstance( dataFactory )
-                                                                          .getMetricProcessorByLeadTime( config );
+                                                                          .getMetricProcessorByTime( config );
             EnsemblePairs pairs = MetricTestDataFactory.getEnsemblePairsOne();
             MetricOutputForProjectByTimeAndThreshold results = processor.apply( pairs );
             MetricOutputMapByTimeAndThreshold<ScalarOutput> bias = results.getScalarOutput()
@@ -108,7 +108,7 @@ public final class MetricProcessorEnsemblePairsByTimeTest
             ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
             MetricProcessor<MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
-                                 .getMetricProcessorByLeadTime( config,
+                                 .getMetricProcessorByTime( config,
                                                                 MetricOutputGroup.values() );
             EnsemblePairs pairs = MetricTestDataFactory.getEnsemblePairsOne();
             processor.apply( pairs );
@@ -302,7 +302,7 @@ public final class MetricProcessorEnsemblePairsByTimeTest
             ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
             MetricProcessor<MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
-                                 .getMetricProcessorByLeadTime( config,
+                                 .getMetricProcessorByTime( config,
                                                                 MetricOutputGroup.SCALAR );
             EnsemblePairs pairs = MetricTestDataFactory.getEnsemblePairsOne();
             processor.apply( pairs );
@@ -499,7 +499,7 @@ public final class MetricProcessorEnsemblePairsByTimeTest
                                      .getProjectConfig();
             MetricProcessor<MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
-                                 .getMetricProcessorByLeadTime( config,
+                                 .getMetricProcessorByTime( config,
                                                                 MetricOutputGroup.SCALAR );
             processor.apply( null );
             fail( "Expected a checked exception on processing the project configuration '" + testOne + "'." );
@@ -516,7 +516,7 @@ public final class MetricProcessorEnsemblePairsByTimeTest
                                      .getProjectConfig();
             MetricProcessor<MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
-                                 .getMetricProcessorByLeadTime( config,
+                                 .getMetricProcessorByTime( config,
                                                                 MetricOutputGroup.SCALAR );
             processor.apply( MetricTestDataFactory.getEnsemblePairsTwo() );
             fail( "Expected a checked exception on processing the project configuration '" + testTwo
@@ -539,7 +539,7 @@ public final class MetricProcessorEnsemblePairsByTimeTest
                                      .getProjectConfig();
             MetricProcessor<MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
-                                 .getMetricProcessorByLeadTime( config,
+                                 .getMetricProcessorByTime( config,
                                                                 MetricOutputGroup.SCALAR );
             processor.apply( MetricTestDataFactory.getEnsemblePairsTwo() );
             fail( "Expected a checked exception on processing the project configuration '" + testThree
@@ -562,7 +562,7 @@ public final class MetricProcessorEnsemblePairsByTimeTest
                                      .getProjectConfig();
             MetricProcessor<MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
-                                 .getMetricProcessorByLeadTime( config,
+                                 .getMetricProcessorByTime( config,
                                                                 MetricOutputGroup.SCALAR );
             processor.apply( MetricTestDataFactory.getEnsemblePairsTwo() );
             fail( "Expected a checked exception on processing the project configuration '" + testFour
@@ -585,7 +585,7 @@ public final class MetricProcessorEnsemblePairsByTimeTest
                                      .getProjectConfig();
             MetricProcessor<MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
-                                 .getMetricProcessorByLeadTime( config,
+                                 .getMetricProcessorByTime( config,
                                                                 MetricOutputGroup.SCALAR );
             processor.apply( MetricTestDataFactory.getEnsemblePairsTwo() );
             fail( "Expected a checked exception on processing the project configuration '" + testFive
@@ -608,7 +608,7 @@ public final class MetricProcessorEnsemblePairsByTimeTest
                                      .getProjectConfig();
             MetricProcessor<MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
-                                 .getMetricProcessorByLeadTime( config,
+                                 .getMetricProcessorByTime( config,
                                                                 MetricOutputGroup.SCALAR );
             processor.apply( MetricTestDataFactory.getEnsemblePairsTwo() );
             fail( "Expected a checked exception on processing the project configuration '" + testSix
@@ -639,7 +639,7 @@ public final class MetricProcessorEnsemblePairsByTimeTest
             ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
             MetricProcessor<MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
-                                 .getMetricProcessorByLeadTime( config,
+                                 .getMetricProcessorByTime( config,
                                                                 MetricOutputGroup.values() );
             //Check for the expected number of metrics
             //One fewer than total, as sample size appears in both ensemble and single-valued
@@ -670,7 +670,7 @@ public final class MetricProcessorEnsemblePairsByTimeTest
             ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
             MetricProcessor<MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
-                                 .getMetricProcessorByLeadTime( config,
+                                 .getMetricProcessorByTime( config,
                                                                 MetricOutputGroup.values() );
             EnsemblePairs pairs = MetricTestDataFactory.getEnsemblePairsOneWithMissings();
             processor.apply( pairs );

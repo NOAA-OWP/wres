@@ -99,11 +99,11 @@ public class MetricFactory
      * @throws MetricConfigurationException if the metrics are configured incorrectly
      */
 
-    public MetricProcessorByTime getMetricProcessorByLeadTime( final ProjectConfig config,
+    public MetricProcessorByTime getMetricProcessorByTime( final ProjectConfig config,
                                                                final MetricOutputGroup... mergeList )
             throws MetricConfigurationException
     {
-        return getMetricProcessorByLeadTime( config, null, null, mergeList );
+        return getMetricProcessorByTime( config, null, null, mergeList );
     }
 
     /**
@@ -122,7 +122,7 @@ public class MetricFactory
      * @throws MetricConfigurationException if the metrics are configured incorrectly
      */
 
-    public MetricProcessorByTime getMetricProcessorByLeadTime( final ProjectConfig config,
+    public MetricProcessorByTime getMetricProcessorByTime( final ProjectConfig config,
                                                                final ExecutorService thresholdExecutor,
                                                                final ExecutorService metricExecutor,
                                                                final MetricOutputGroup... mergeList )

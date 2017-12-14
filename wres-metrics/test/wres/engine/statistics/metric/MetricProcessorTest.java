@@ -39,11 +39,11 @@ public final class MetricProcessorTest
             ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
             MetricProcessor<MetricOutputForProjectByTimeAndThreshold> trueProcessor =
                     MetricFactory.getInstance( metIn )
-                                 .getMetricProcessorByLeadTime( config,
+                                 .getMetricProcessorByTime( config,
                                                                 MetricOutputGroup.values() );
             MetricProcessor<MetricOutputForProjectByTimeAndThreshold> falseProcessor =
                     MetricFactory.getInstance( metIn )
-                                 .getMetricProcessorByLeadTime( config );
+                                 .getMetricProcessorByTime( config );
             //Check for storage
             assertTrue( "Expected a metric processor that stores metric outputs.",
                         trueProcessor.willStoreMetricOutput() == true );
@@ -77,7 +77,7 @@ public final class MetricProcessorTest
             ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
             MetricProcessor<MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
-                                 .getMetricProcessorByLeadTime( config,
+                                 .getMetricProcessorByTime( config,
                                                                 MetricOutputGroup.values() );
             //Check for existence of metrics
             assertTrue( "Expected metrics for '" + MetricInputGroup.SINGLE_VALUED
