@@ -306,7 +306,7 @@ public class Control implements Function<String[], Integer>
         MetricProcessorByTime processor = null;
         try
         {
-            processor = MetricFactory.getInstance(DATA_FACTORY).getMetricProcessorByLeadTime(projectConfig,
+            processor = MetricFactory.getInstance(DATA_FACTORY).getMetricProcessorByTime(projectConfig,
                                                                                    thresholdExecutor,          
                                                                                    metricExecutor,
                                                                                    MetricOutputGroup.SCALAR,
@@ -332,7 +332,7 @@ public class Control implements Function<String[], Integer>
                                                + "metric inputs:", e );
         }
 
-        // Queue the various tasks by lead time (lead time is the pooling dimension for metric calculation here)
+        // Queue the various tasks by time window (time window is the pooling dimension for metric calculation here)
         final List<CompletableFuture<?>> listOfFutures = new ArrayList<>(); //List of futures to test for completion
         int inputCount = 0;
 
@@ -347,7 +347,7 @@ public class Control implements Function<String[], Integer>
                 // 2. Compute the metrics
                 // 3. Process any intermediate verification results
                 final CompletableFuture<Void> c =
-                        CompletableFuture.supplyAsync( new PairsByLeadProcessor(
+                        CompletableFuture.supplyAsync( new PairsByTimeWindowProcessor(
                                                                nextInput ),
                                                        pairExecutor )
                                          .thenApplyAsync( processor,
@@ -570,7 +570,7 @@ public class Control implements Function<String[], Integer>
     }
 
     /**
-     * Processes a set of charts associated with {@link ScalarOutput} across multiple metrics, forecast lead times, and
+     * Processes a set of charts associated with {@link ScalarOutput} across multiple metrics, time windows, and
      * thresholds, stored in a {@link MetricOutputMultiMapByTimeAndThreshold}.
      * 
      * @param feature the feature for which the chart is defined
@@ -644,7 +644,7 @@ public class Control implements Function<String[], Integer>
     }
 
     /**
-     * Processes a set of charts associated with {@link VectorOutput} across multiple metrics, forecast lead times, and
+     * Processes a set of charts associated with {@link VectorOutput} across multiple metrics, time windows, and
      * thresholds, stored in a {@link MetricOutputMultiMapByTimeAndThreshold}. these.
      * 
      * @param feature the feature for which the chart is defined
@@ -724,7 +724,7 @@ public class Control implements Function<String[], Integer>
     }
 
     /**
-     * Processes a set of charts associated with {@link MultiVectorOutput} across multiple metrics, forecast lead times,
+     * Processes a set of charts associated with {@link MultiVectorOutput} across multiple metrics, time windows,
      * and thresholds, stored in a {@link MetricOutputMultiMapByTimeAndThreshold}.
      * 
      * @param feature the feature for which the chart is defined
@@ -813,8 +813,8 @@ public class Control implements Function<String[], Integer>
     }
     
     /**
-     * Processes a set of charts associated with {@link BoxPlotOutput} across multiple metrics, forecast lead times,
-     * and thresholds, stored in a {@link MetricOutputMultiMapByTimeAndThreshold}.
+     * Processes a set of charts associated with {@link BoxPlotOutput} across multiple metrics, time window, and 
+     * thresholds, stored in a {@link MetricOutputMultiMapByTimeAndThreshold}.
      * 
      * @param feature the feature for which the chart is defined
      * @param projectConfigPlus the project configuration
@@ -941,7 +941,7 @@ public class Control implements Function<String[], Integer>
     /**
      * Task that waits for pairs to arrive and then returns them.
      */
-    private static class PairsByLeadProcessor implements Supplier<MetricInput<?>>
+    private static class PairsByTimeWindowProcessor implements Supplier<MetricInput<?>>
     {
         /**
          * The future metric input.
@@ -954,7 +954,7 @@ public class Control implements Function<String[], Integer>
          * @param input the future metric input
          */
 
-        private PairsByLeadProcessor(final Future<MetricInput<?>> input)
+        private PairsByTimeWindowProcessor(final Future<MetricInput<?>> input)
         {
             this.input = input;
         }
@@ -968,7 +968,7 @@ public class Control implements Function<String[], Integer>
                 nextInput = input.get();
                 if(LOGGER.isDebugEnabled())
                 {
-                    LOGGER.debug("Completed processing of pairs for feature '{}' at lead time {}.",
+                    LOGGER.debug("Completed processing of pairs for feature '{}' and time window {}.",
                                 nextInput.getMetadata().getIdentifier().getGeospatialID(),
                                 nextInput.getMetadata().getTimeWindow());
                 }
@@ -1049,14 +1049,14 @@ public class Control implements Function<String[], Integer>
                         if ( Objects.nonNull( meta ) )
                         {
                             LOGGER.debug( "Completed processing of intermediate metrics results for feature '{}' "
-                                          + "at lead time {}.",
+                                          + "and time window {}.",
                                           meta.getIdentifier().getGeospatialID(),
                                           meta.getTimeWindow() );
                         }
                         else
                         {
-                            LOGGER.debug( "Completed processing of intermediate metrics results for feature '{}' at "
-                                          + "unknown lead time {}.",
+                            LOGGER.debug( "Completed processing of intermediate metrics results for feature '{}' with "
+                                          + "unknown time window.",
                                           feature.getLocationId() );
                         }
                     }
