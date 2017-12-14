@@ -176,7 +176,7 @@ class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implement
     }
 
     @Override
-    public MetricOutputMapWithBiKey<TimeWindow, Threshold, T> sliceByFirst( final TimeWindow first )
+    public MetricOutputMapWithBiKey<TimeWindow, Threshold, T> filterByFirst( final TimeWindow first )
     {
         if ( Objects.isNull( first ) )
         {
@@ -197,7 +197,7 @@ class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implement
     }
 
     @Override
-    public MetricOutputMapWithBiKey<TimeWindow, Threshold, T> sliceBySecond( final Threshold second )
+    public MetricOutputMapWithBiKey<TimeWindow, Threshold, T> filterBySecond( final Threshold second )
     {
         if ( Objects.isNull( second ) )
         {

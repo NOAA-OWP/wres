@@ -716,7 +716,7 @@ public class Chart2DTestOutput extends TestCase
                                  { 0.95, 13685.0 }, { 0.99, 26648.0 } };
         for ( final double[] next : allow )
         {
-            combine.add( full.sliceByThreshold( outputFactory.getQuantileThreshold( next[1],
+            combine.add( full.filterByThreshold( outputFactory.getQuantileThreshold( next[1],
                                                                                     next[0],
                                                                                     Operator.GREATER ) ) );
         }
@@ -738,7 +738,7 @@ public class Chart2DTestOutput extends TestCase
         final int[] allow = new int[] { 42, 258, 474, 690 };
         for ( final int next : allow )
         {
-            combine.add( full.sliceByTime( TimeWindow.of( Instant.MIN,
+            combine.add( full.filterByTime( TimeWindow.of( Instant.MIN,
                                                           Instant.MAX,
                                                           ReferenceTime.VALID_TIME,
                                                           next) ) );
