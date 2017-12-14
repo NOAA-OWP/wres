@@ -19,7 +19,7 @@ public interface MetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>>
 {
 
     /**
-     * Filter by forecast lead time.
+     * Filter by time.
      * 
      * @param timeWindow the forecast lead time
      * @return the submap
@@ -74,7 +74,26 @@ public interface MetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>>
     {
         return keySetByThreshold().stream().anyMatch( Threshold::isQuantile );
     }
+    
+    /**
+     * Filters by lead time in hours. Returns all outputs whose {@link TimeWindow#getEarliestLeadTimeInHours()} or
+     * {@link TimeWindow#getLatestLeadTimeInHours()} matches the specified lead time in hours.
+     * 
+     * @param leadHours the lead time in hours
+     * @return the submap
+     */
+    
+    MetricOutputMapByTimeAndThreshold<T> filterByLeadTimeInHours( long leadHours );
 
+    /**
+     * Returns the unique lead times associated with the {@link TimeWindow} for which the outputs are defined. Checks
+     * both the {@link TimeWindow#getEarliestLeadTimeInHours()} and the {@link TimeWindow#getLatestLeadTimeInHours()}.
+     * 
+     * @return a view of the lead times in hours
+     */
+
+    Set<Long> keySetByLeadTimeInHours();
+    
     /**
      * Returns the {@link MetricOutputMetadata} associated with all {@link MetricOutput} in the store. This may contain
      * more (optional) information than the (required) metadata associated with the individual outputs. However, all

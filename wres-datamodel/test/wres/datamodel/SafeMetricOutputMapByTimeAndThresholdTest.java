@@ -3,6 +3,8 @@ package wres.datamodel;
 import static org.junit.Assert.assertTrue;
 
 import java.time.Instant;
+import java.util.Set;
+import java.util.TreeSet;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
@@ -29,7 +31,7 @@ public final class SafeMetricOutputMapByTimeAndThresholdTest
      */
 
     @Test
-    public void test1ConstructAndSlice()
+    public void test1ConstructAndFilter()
     {
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
         final MetricOutputMapByTimeAndThreshold<ScalarOutput> results =
@@ -37,23 +39,33 @@ public final class SafeMetricOutputMapByTimeAndThresholdTest
 
         //Acquire a submap by threshold = 531.88 and lead time = 42
         final TimeWindow timeWindow = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                              Instant.parse( "2010-12-31T11:59:59Z" ),
-                                              ReferenceTime.VALID_TIME,
-                                              42 );
+                                                     Instant.parse( "2010-12-31T11:59:59Z" ),
+                                                     ReferenceTime.VALID_TIME,
+                                                     42 );
         final Threshold q = outputFactory.getQuantileThreshold( 531.88, 0.005, Operator.GREATER );
         final Pair<TimeWindow, Threshold> testKeyOne = Pair.of( timeWindow, q );
         final MetricOutputMapByTimeAndThreshold<ScalarOutput> subMap =
                 results.filterByTime( timeWindow ).filterByThreshold( q );
+
+        //Check the results
+        final double actualOne = subMap.get( testKeyOne ).getData();
+        final double expectedOne = 0.026543876961751534;
+        assertTrue( "Unexpected output from data slice [" + actualOne
+                    + ","
+                    + expectedOne
+                    + "].",
+                    Double.compare( actualOne, expectedOne ) == 0 );
+
         //Slice by threshold = 531.88
         final MetricOutputMapByTimeAndThreshold<ScalarOutput> subMap2 = results.filterByThreshold( q );
 
         //Acquire a submap by threshold = all data and lead time = 714
         final TimeWindow timeWindowTwo = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                     Instant.parse( "2010-12-31T11:59:59Z" ),
-                                                     ReferenceTime.VALID_TIME,
-                                                     714 );
-        
-        
+                                                        Instant.parse( "2010-12-31T11:59:59Z" ),
+                                                        ReferenceTime.VALID_TIME,
+                                                        714 );
+
+
         final Threshold q2 = outputFactory.getQuantileThreshold( Double.NEGATIVE_INFINITY,
                                                                  Double.NEGATIVE_INFINITY,
                                                                  Operator.GREATER );
@@ -63,16 +75,9 @@ public final class SafeMetricOutputMapByTimeAndThresholdTest
         final MetricOutputMapByTimeAndThreshold<ScalarOutput> subMap3 = results.filterByTime( timeWindowTwo )
                                                                                .filterByThreshold( q2 );
 
-        //Check the results
-        final double actualOne = subMap.get( testKeyOne ).getData();
-        final double expectedOne = 0.026543876961751534;
         final double actualTwo = subMap3.get( testKeyTwo ).getData();
         final double expectedTwo = 0.005999378857020621;
-        assertTrue( "Unexpected output from data slice [" + actualOne
-                    + ","
-                    + expectedOne
-                    + "].",
-                    Double.compare( actualOne, expectedOne ) == 0 );
+
         assertTrue( "Unexpected output from data slice [" + actualTwo
                     + ","
                     + expectedTwo
@@ -84,6 +89,25 @@ public final class SafeMetricOutputMapByTimeAndThresholdTest
                     + "].",
                     subMap2.size() == 29 );
         assertTrue( "Expected quantile thresholds in store.", subMap.hasQuantileThresholds() );
+
+        //Filter by lead times directly        
+        final MetricOutputMapByTimeAndThreshold<ScalarOutput> subMap4 =
+                results.filterByLeadTimeInHours( 42 ).filterByThreshold( q );
+        final double actualThree = subMap4.get( testKeyOne ).getData();
+        final double expectedThree = expectedOne;
+        assertTrue( "Unexpected output from data slice [" + actualThree
+                    + ","
+                    + expectedThree
+                    + "].",
+                    Double.compare( actualThree, expectedThree ) == 0 );
+        //Check number of lead times
+        Set<Long> benchmarkTimes = new TreeSet<>();
+        for(int i = 0; i < 29; i++)
+        {
+            benchmarkTimes.add( 42L + i*24 );
+        }
+        assertTrue( "Unexpected lead times in dataset.",
+                   results.keySetByLeadTimeInHours().equals( benchmarkTimes ) );
 
     }
 

@@ -21,7 +21,7 @@ extends MetricOutputMap<Pair<S, T>, U>
      * 
      * @param key the key by which to slice
      * @return a submap whose keys meet the condition
-     * @throws IllegalArgumentException if no mappings match the input logic
+     * @throws MetricOutputException if no mappings match the input logic
      */
     
     MetricOutputMapWithBiKey<S,T,U> filterByFirst(S key);
@@ -31,7 +31,7 @@ extends MetricOutputMap<Pair<S, T>, U>
      *
      * @param key the key by which to slice
      * @return a submap whose keys meet the condition
-     * @throws IllegalArgumentException if no mappings match the input logic
+     * @throws MetricOutputException if no mappings match the input logic
      */
     
     MetricOutputMapWithBiKey<S,T,U> filterBySecond(T key);    
