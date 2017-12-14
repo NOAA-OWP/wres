@@ -448,8 +448,10 @@ public final class Database {
 		{
 			SQL_TASKS.shutdown();
 			while (!SQL_TASKS.isTerminated());
-            CONNECTION_POOL.close();
-		}
+        }
+
+        CONNECTION_POOL.close();
+        HIGH_PRIORITY_CONNECTION_POOL.close();
 	}
 
 
@@ -477,13 +479,14 @@ public final class Database {
             List<Runnable> abandonedDbTasks = SQL_TASKS.shutdownNow();
             abandoned.addAll( abandonedDbTasks );
             CONNECTION_POOL.close();
+            HIGH_PRIORITY_CONNECTION_POOL.close();
             Thread.currentThread().interrupt();
         }
 
         List<Runnable> abandonedMore = SQL_TASKS.shutdownNow();
         abandoned.addAll( abandonedMore );
         CONNECTION_POOL.close();
-
+        HIGH_PRIORITY_CONNECTION_POOL.close();
         return abandoned;
     }
 
