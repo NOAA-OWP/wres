@@ -107,6 +107,17 @@ for scenarioName in $*; do
     fi
 
     # ============================================================
+    # Run the "before" script if it exists and is executable.
+    # ============================================================
+
+    before_script="before.sh"
+    if [[ -x $before_script ]]
+    then
+        echo "$echoPrefix Found a script to run before this test. Running it."
+        ./$before_script
+    fi
+
+    # ============================================================
     # Execute the project.
     # ============================================================
 
@@ -133,6 +144,19 @@ for scenarioName in $*; do
         echo "$echoPrefix Test completed in $(($endsec - $startsec)) seconds" | tee /dev/stderr
         continue
     fi
+
+
+    # ============================================================
+    # Run the "after" script if it exists and is executable.
+    # ============================================================
+
+    after_script="after.sh"
+    if [[ -x $after_script ]]
+    then
+        echo "$echoPrefix Found a script to run after this test. Running it."
+        ./$after_script
+    fi
+
 
     # ====================================================
     # Benchmark comparisons.
