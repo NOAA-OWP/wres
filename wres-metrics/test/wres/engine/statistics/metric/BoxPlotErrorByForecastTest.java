@@ -17,10 +17,10 @@ import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.metadata.ReferenceTime;
+import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.MetricOutputMetadata;
-import wres.datamodel.time.ReferenceTime;
-import wres.datamodel.time.TimeWindow;
 import wres.engine.statistics.metric.BoxPlotErrorByForecast.BoxPlotErrorByForecastBuilder;
 
 /**

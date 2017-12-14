@@ -1,4 +1,4 @@
-package wres.datamodel.time;
+package wres.datamodel.metadata;
 
 /**
  * An enumeration of reference time systems.

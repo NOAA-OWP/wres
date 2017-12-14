@@ -15,12 +15,12 @@ import java.util.concurrent.ConcurrentSkipListMap;
 
 import org.apache.commons.lang3.tuple.Pair;
 
+import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.MetricOutputException;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMapWithBiKey;
 import wres.datamodel.outputs.MetricOutputMetadata;
-import wres.datamodel.time.TimeWindow;
 
 /**
  * Immutable map of {@link MetricOutput} stored by {@link TimeWindow} and {@link Threshold} in their natural order.

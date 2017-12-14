@@ -4,7 +4,6 @@ import java.util.Objects;
 
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.Dimension;
-import wres.datamodel.time.TimeWindow;
 
 /**
  * A class that stores the metadata associated with metric data (inputs and outputs).
