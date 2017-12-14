@@ -16,6 +16,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.SafeMetricOutputMultiMapByTimeAndThreshold.SafeMetricOutputMultiMapByTimeAndThresholdBuilder;
+import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.MatrixOutput;
 import wres.datamodel.outputs.MetricOutput;
@@ -27,7 +28,6 @@ import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold.MetricOutpu
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.ScalarOutput;
 import wres.datamodel.outputs.VectorOutput;
-import wres.datamodel.time.TimeWindow;
 
 /**
  * <p>

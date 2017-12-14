@@ -6,7 +6,6 @@ import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.Dimension;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.outputs.MetricOutputMetadata;
-import wres.datamodel.time.TimeWindow;
 
 /**
  * A factory class for producing metadata.

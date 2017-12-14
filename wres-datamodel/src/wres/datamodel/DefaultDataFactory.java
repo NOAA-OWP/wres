@@ -26,6 +26,7 @@ import wres.datamodel.inputs.pairs.RegularTimeSeriesOfSingleValuedPairs.RegularT
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.MapKey;
 import wres.datamodel.outputs.MatrixOutput;
@@ -38,7 +39,6 @@ import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.ScalarOutput;
 import wres.datamodel.outputs.VectorOutput;
-import wres.datamodel.time.TimeWindow;
 
 /**
  * A default factory class for producing metric inputs.
