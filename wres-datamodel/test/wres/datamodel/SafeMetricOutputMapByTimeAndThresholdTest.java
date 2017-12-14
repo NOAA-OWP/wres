@@ -43,9 +43,9 @@ public final class SafeMetricOutputMapByTimeAndThresholdTest
         final Threshold q = outputFactory.getQuantileThreshold( 531.88, 0.005, Operator.GREATER );
         final Pair<TimeWindow, Threshold> testKeyOne = Pair.of( timeWindow, q );
         final MetricOutputMapByTimeAndThreshold<ScalarOutput> subMap =
-                results.sliceByTime( timeWindow ).sliceByThreshold( q );
+                results.filterByTime( timeWindow ).filterByThreshold( q );
         //Slice by threshold = 531.88
-        final MetricOutputMapByTimeAndThreshold<ScalarOutput> subMap2 = results.sliceByThreshold( q );
+        final MetricOutputMapByTimeAndThreshold<ScalarOutput> subMap2 = results.filterByThreshold( q );
 
         //Acquire a submap by threshold = all data and lead time = 714
         final TimeWindow timeWindowTwo = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
@@ -60,8 +60,8 @@ public final class SafeMetricOutputMapByTimeAndThresholdTest
         final Pair<TimeWindow, Threshold> testKeyTwo = Pair.of( timeWindowTwo, q2 );
 
         //Slice by threshold = all data
-        final MetricOutputMapByTimeAndThreshold<ScalarOutput> subMap3 = results.sliceByTime( timeWindowTwo )
-                                                                               .sliceByThreshold( q2 );
+        final MetricOutputMapByTimeAndThreshold<ScalarOutput> subMap3 = results.filterByTime( timeWindowTwo )
+                                                                               .filterByThreshold( q2 );
 
         //Check the results
         final double actualOne = subMap.get( testKeyOne ).getData();

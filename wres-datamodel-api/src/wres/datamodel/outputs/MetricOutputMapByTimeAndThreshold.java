@@ -19,27 +19,27 @@ public interface MetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>>
 {
 
     /**
-     * Slice by forecast lead time.
+     * Filter by forecast lead time.
      * 
      * @param timeWindow the forecast lead time
      * @return the submap
      */
 
-    default MetricOutputMapByTimeAndThreshold<T> sliceByTime( final TimeWindow timeWindow )
+    default MetricOutputMapByTimeAndThreshold<T> filterByTime( final TimeWindow timeWindow )
     {
-        return (MetricOutputMapByTimeAndThreshold<T>) sliceByFirst( timeWindow );
+        return (MetricOutputMapByTimeAndThreshold<T>) filterByFirst( timeWindow );
     }
 
     /**
-     * Slice by threshold.
+     * Filter by threshold.
      * 
      * @param threshold the threshold
      * @return the submap
      */
 
-    default MetricOutputMapByTimeAndThreshold<T> sliceByThreshold( final Threshold threshold )
+    default MetricOutputMapByTimeAndThreshold<T> filterByThreshold( final Threshold threshold )
     {
-        return (MetricOutputMapByTimeAndThreshold<T>) sliceBySecond( threshold );
+        return (MetricOutputMapByTimeAndThreshold<T>) filterBySecond( threshold );
     }
 
     /**

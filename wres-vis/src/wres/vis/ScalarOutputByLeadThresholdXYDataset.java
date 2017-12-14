@@ -50,7 +50,7 @@ public class ScalarOutputByLeadThresholdXYDataset extends WRESAbstractXYDataset<
         final List<MetricOutputMapByTimeAndThreshold<ScalarOutput>> data = new ArrayList<>();
         for(final Threshold key: rawData.keySetByThreshold())
         {
-            data.add(rawData.sliceByThreshold(key));
+            data.add(rawData.filterByThreshold(key));
         }
         setPlotData(data);
     }

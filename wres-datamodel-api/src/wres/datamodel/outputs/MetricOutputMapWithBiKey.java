@@ -24,7 +24,7 @@ extends MetricOutputMap<Pair<S, T>, U>
      * @throws IllegalArgumentException if no mappings match the input logic
      */
     
-    MetricOutputMapWithBiKey<S,T,U> sliceByFirst(S key);
+    MetricOutputMapWithBiKey<S,T,U> filterByFirst(S key);
     
     /**
      * Returns a submap whose entries correspond to the second key in the {@link Pair}.
@@ -34,7 +34,7 @@ extends MetricOutputMap<Pair<S, T>, U>
      * @throws IllegalArgumentException if no mappings match the input logic
      */
     
-    MetricOutputMapWithBiKey<S,T,U> sliceBySecond(T key);    
+    MetricOutputMapWithBiKey<S,T,U> filterBySecond(T key);    
     
     /**
      * Returns a set view of the first key in the {@link Pair}.

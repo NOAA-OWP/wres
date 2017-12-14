@@ -210,7 +210,7 @@ public abstract class ChartEngineFactory
         if ( usedPlotType.equals( PlotTypeSelection.LEAD_THRESHOLD ) )
         {
 
-            inputSlice = input.sliceByTime( (TimeWindow) inputKeyInstance );
+            inputSlice = input.filterByTime( (TimeWindow) inputKeyInstance );
 
             //Setup the default arguments.
             final MetricOutputMetadata meta = inputSlice.getMetadata();
@@ -236,7 +236,7 @@ public abstract class ChartEngineFactory
         else if ( usedPlotType.equals( PlotTypeSelection.THRESHOLD_LEAD ) )
         {
             inputSlice =
-                    input.sliceByThreshold( (Threshold) inputKeyInstance );
+                    input.filterByThreshold( (Threshold) inputKeyInstance );
 
             //Setup the default arguments.
             final MetricOutputMetadata meta = inputSlice.getMetadata();
@@ -326,7 +326,7 @@ public abstract class ChartEngineFactory
         if ( usedPlotType.equals( PlotTypeSelection.LEAD_THRESHOLD ) )
         {
             inputSlice =
-                    input.sliceByTime( (TimeWindow) inputKeyInstance );
+                    input.filterByTime( (TimeWindow) inputKeyInstance );
 
             //Setup the default arguments.
             final MetricOutputMetadata meta = inputSlice.getMetadata();
@@ -353,7 +353,7 @@ public abstract class ChartEngineFactory
         else if ( usedPlotType.equals( PlotTypeSelection.THRESHOLD_LEAD ) )
         {
             inputSlice =
-                    input.sliceByThreshold( (Threshold) inputKeyInstance );
+                    input.filterByThreshold( (Threshold) inputKeyInstance );
 
             //Setup the default arguments.
             final MetricOutputMetadata meta = inputSlice.getMetadata();
@@ -437,7 +437,7 @@ public abstract class ChartEngineFactory
         if ( usedPlotType.equals( PlotTypeSelection.LEAD_THRESHOLD ) )
         {
             inputSlice =
-                    input.sliceByTime( (TimeWindow) inputKeyInstance );
+                    input.filterByTime( (TimeWindow) inputKeyInstance );
 
             //Setup the default arguments.
             final MetricOutputMetadata meta = inputSlice.getMetadata();
@@ -464,7 +464,7 @@ public abstract class ChartEngineFactory
         else if ( usedPlotType.equals( PlotTypeSelection.THRESHOLD_LEAD ) )
         {
             inputSlice =
-                    input.sliceByThreshold( (Threshold) inputKeyInstance );
+                    input.filterByThreshold( (Threshold) inputKeyInstance );
 
             //Setup the default arguments.
             final MetricOutputMetadata meta = inputSlice.getMetadata();
@@ -549,7 +549,7 @@ public abstract class ChartEngineFactory
         if ( usedPlotType.equals( PlotTypeSelection.LEAD_THRESHOLD ) )
         {
             inputSlice =
-                    input.sliceByTime( (TimeWindow) inputKeyInstance );
+                    input.filterByTime( (TimeWindow) inputKeyInstance );
 
             //Setup the default arguments.
             final MetricOutputMetadata meta = inputSlice.getMetadata();
@@ -576,7 +576,7 @@ public abstract class ChartEngineFactory
         else if ( usedPlotType.equals( PlotTypeSelection.THRESHOLD_LEAD ) )
         {
             inputSlice =
-                    input.sliceByThreshold( (Threshold) inputKeyInstance );
+                    input.filterByThreshold( (Threshold) inputKeyInstance );
 
             //Setup the default arguments.
             final MetricOutputMetadata meta = inputSlice.getMetadata();
