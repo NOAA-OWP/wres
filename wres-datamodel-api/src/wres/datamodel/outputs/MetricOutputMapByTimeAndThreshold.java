@@ -3,7 +3,7 @@ package wres.datamodel.outputs;
 import java.util.Set;
 
 import wres.datamodel.Threshold;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.metadata.TimeWindow;
 
 /**
  * A sorted map of {@link MetricOutput} associated with a single metric. The results are stored by {@link TimeWindow}
