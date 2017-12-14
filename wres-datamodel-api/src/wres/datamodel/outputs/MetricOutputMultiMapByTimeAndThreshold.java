@@ -10,7 +10,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Threshold;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.metadata.TimeWindow;
 
 /**
  * A map of {@link MetricOutputMapByTimeAndThreshold} stored by metric identifier. Implements the same read-only API as the
