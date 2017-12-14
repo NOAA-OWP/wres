@@ -1,4 +1,4 @@
-# Executes all standard system tests scenarios; i.e., scenario*.  It does not run the manualScenario* tests.
+# Executes all system tests scenario which are part of the automated build.
 # Run this within the Git cloned directory .../wres/systests, where the runtest.sh script is found.
 
 # Read the options, which is currently only one: -l to indicate a run of latest. 
@@ -29,14 +29,15 @@ logFileName="wresSysTestResults_$(date +"%Y%m%d_%H%M%S").txt"
 # Prep the log file.
 touch $logFileName
 echo "System test results for scenarios:" > $logFileName
-ls -d scenario* >> $logFileName
+ls -d scenario0* scenario1* scenario2* scenario3* scenario4* scenario5* scenario6* >> $logFileName
 
 echo "System test results for scenarios:" 
-ls -d scenario*
+ls -d scenario0* scenario1* scenario2* scenario3* scenario4* scenario5* scenario6*
 
 # Run and time the run.
 startsec=$(date +%s)
 
+# The tests to perform are entered manually on this line.
 ./runtest.sh scenario0* scenario1* scenario2* scenario3* scenario4* scenario5* scenario6* >> $logFileName
 
 endsec=$(date +%s)
