@@ -35,7 +35,7 @@ public final class MetricProcessorEnsemblePairsByTimeTest
 
     /**
      * Tests the construction of a {@link MetricProcessorEnsemblePairsByTime} and application of
-     * {@link MetricProcessorEnsemblePairsByTime#apply(wres.datamodel.inputs.pairs.EnsemblePairs)} to configuration obtained from
+     * {@link MetricProcessorEnsemblePairsByTime#apply(wres.datamodel.inputs.MetricInput)} to configuration obtained from
      * testinput/metricProcessorEnsemblePairsTest/test1ApplyNoThresholds.xml and pairs obtained from
      * {@link MetricTestDataFactory#getEnsemblePairsOne()}.
      */
@@ -93,7 +93,7 @@ public final class MetricProcessorEnsemblePairsByTimeTest
 
     /**
      * Tests the construction of a {@link MetricProcessorEnsemblePairsByTime} and application of
-     * {@link MetricProcessorEnsemblePairsByTime#apply(wres.datamodel.inputs.pairs.EnsemblePairs)} to configuration obtained from
+     * {@link MetricProcessorEnsemblePairsByTime#apply(wres.datamodel.inputs.MetricInput)} to configuration obtained from
      * testinput/metricProcessorEnsemblePairsTest/test2ApplyWithValueThresholds.xml and pairs obtained from
      * {@link MetricTestDataFactory#getEnsemblePairsOne()}.
      */
@@ -287,7 +287,7 @@ public final class MetricProcessorEnsemblePairsByTimeTest
 
     /**
      * Tests the construction of a {@link MetricProcessorEnsemblePairsByTime} and application of
-     * {@link MetricProcessorEnsemblePairsByTime#apply(wres.datamodel.inputs.pairs.EnsemblePairs)} to configuration obtained from
+     * {@link MetricProcessorEnsemblePairsByTime#apply(wres.datamodel.inputs.MetricInput)} to configuration obtained from
      * testinput/metricProcessorEnsemblePairsTest/test3ApplyWithProbabilityThresholds.xml and pairs obtained from
      * {@link MetricTestDataFactory#getEnsemblePairsOne()}.
      */
@@ -655,7 +655,7 @@ public final class MetricProcessorEnsemblePairsByTimeTest
     
     /**
      * Tests the construction of a {@link MetricProcessorEnsemblePairsByTime} and application of
-     * {@link MetricProcessorEnsemblePairsByTime#apply(wres.datamodel.inputs.pairs.EnsemblePairs)} to configuration 
+     * {@link MetricProcessorEnsemblePairsByTime#apply(wres.datamodel.inputs.MetricInput)} to configuration 
      * obtained from testinput/metricProcessorEnsemblePairsTest/test2ApplyWithValueThresholds.xml and pairs obtained 
      * from {@link MetricTestDataFactory#getEnsemblePairsOneWithMissings()}.
      */

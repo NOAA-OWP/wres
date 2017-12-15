@@ -233,7 +233,7 @@ class MetricProcessorSingleValuedPairsByTime extends MetricProcessorByTime
      * @param input the input pairs
      * @param futures the metric futures
      * @param threshold the threshold
-     * @throws MetricCalculationException if the metrics cannot be computed
+     * @return a MetricCalculationException for information if the threshold cannot be computed
      */
 
     private MetricCalculationException processDichotomousThreshold( TimeWindow timeWindow,
@@ -290,8 +290,7 @@ class MetricProcessorSingleValuedPairsByTime extends MetricProcessorByTime
 
     /**
      * Validates the {@link DichotomousPairs} and throws an exception if the smaller of the number of 
-     * occurrences ({@link VectorOfBooleans#} = 0) or non-occurrences ({@link PairOfDoubles#getItemOne()} = 1)
-     * is less than the {@link this.minimumSampleSize}.
+     * occurrences or non-occurrences is less than the {@link #minimumSampleSize}.
      * 
      * @param subset the data to validate
      * @param threshold the threshold used to localize the error message

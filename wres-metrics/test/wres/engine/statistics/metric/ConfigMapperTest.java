@@ -23,7 +23,7 @@ public final class ConfigMapperTest
 
     /**
      * Tests the {@link ConfigMapper#from(wres.config.generated.MetricConfigName)}.
-     * @throws MetricConfigurationException 
+     * @throws MetricConfigurationException if a mapping could not be created
      */
 
     @Test
@@ -43,32 +43,25 @@ public final class ConfigMapperTest
     
     /**
      * Tests the {@link ConfigMapper#from(ThresholdOperator)}.
-     * @throws MetricConfigurationException 
+     * @throws MetricConfigurationException if a mapping could not be created
      */
 
     @Test
-    public void test2From()
+    public void test2From() throws MetricConfigurationException
     {
-        try
-        {
-            assertTrue( "Failed to convert '" + ThresholdOperator.GREATER_THAN
-                        + "'.",
-                        ConfigMapper.from( ThresholdOperator.GREATER_THAN ) == Operator.GREATER );
-            assertTrue( "Failed to convert '" + ThresholdOperator.LESS_THAN
-                        + "'.",
-                        ConfigMapper.from( ThresholdOperator.LESS_THAN ) == Operator.LESS );
-            assertTrue( "Failed to convert '" + ThresholdOperator.GREATER_THAN_OR_EQUAL_TO
-                        + "'.",
-                        ConfigMapper.from( ThresholdOperator.GREATER_THAN_OR_EQUAL_TO ) == Operator.GREATER_EQUAL );
-            assertTrue( "Failed to convert '" + ThresholdOperator.LESS_THAN_OR_EQUAL_TO
-                        + "'.",
-                        ConfigMapper.from( ThresholdOperator.LESS_THAN_OR_EQUAL_TO ) == Operator.LESS_EQUAL );
-        }
-        catch ( MetricConfigurationException e )
-        {
-            fail( "Unexpected exception on mapping metric names." );
-        }
-    }    
+        assertTrue( "Failed to convert '" + ThresholdOperator.GREATER_THAN
+                    + "'.",
+                    ConfigMapper.from( ThresholdOperator.GREATER_THAN ) == Operator.GREATER );
+        assertTrue( "Failed to convert '" + ThresholdOperator.LESS_THAN
+                    + "'.",
+                    ConfigMapper.from( ThresholdOperator.LESS_THAN ) == Operator.LESS );
+        assertTrue( "Failed to convert '" + ThresholdOperator.GREATER_THAN_OR_EQUAL_TO
+                    + "'.",
+                    ConfigMapper.from( ThresholdOperator.GREATER_THAN_OR_EQUAL_TO ) == Operator.GREATER_EQUAL );
+        assertTrue( "Failed to convert '" + ThresholdOperator.LESS_THAN_OR_EQUAL_TO
+                    + "'.",
+                    ConfigMapper.from( ThresholdOperator.LESS_THAN_OR_EQUAL_TO ) == Operator.LESS_EQUAL );
+    }
     
     /**
      * Tests the {@link ConfigMapper} for checked exceptions.

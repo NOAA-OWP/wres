@@ -244,7 +244,7 @@ class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?>>
                                                                                                         .getCollectionInput( s ),
                                                                                                  metricPool );
             //Using the future dependent result, compute a future of each of the independent results
-            x.forEach( y -> metricFutures.put( y.getID(), baseFuture.thenApplyAsync( y::apply, metricPool ) ) );
+            x.forEach( y -> metricFutures.put( y.getID(), baseFuture.thenApplyAsync( y::aggregate, metricPool ) ) );
         };
 
         //Compute the collectable metrics    
@@ -284,6 +284,7 @@ class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?>>
      * 
      * @return the output for each metric, contained in a collection
      * @throws InterruptedException if the calculation is interrupted
+     * @throws ExecutionException if the execution fails
      */
 
     private MetricOutputMapByMetric<T> callInternal() throws ExecutionException, InterruptedException

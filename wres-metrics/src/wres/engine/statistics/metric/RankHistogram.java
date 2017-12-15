@@ -13,12 +13,12 @@ import java.util.stream.IntStream;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
+import wres.datamodel.Slicer;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.outputs.MetricOutputMetadata;
 import wres.datamodel.outputs.MultiVectorOutput;
-import wres.datamodel.Slicer;
 
 /**
  * <p>Computes the probability (as a relative fraction) that the observation falls between any two ranked ensemble 
@@ -112,6 +112,7 @@ class RankHistogram extends Metric<EnsemblePairs, MultiVectorOutput>
          * Optionally, assign a random number generator for resolving ties.
          * 
          * @param rng the random number generator
+         * @return the builder
          */
         RankHistogramBuilder setRNGForTies( Random rng )
         {

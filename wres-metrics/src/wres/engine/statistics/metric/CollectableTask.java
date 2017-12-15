@@ -57,7 +57,7 @@ implements Callable<U>
         {
             throw new MetricInputException("Specify non-null input to the '"+this+"'.");
         }
-        return metric.apply(in);
+        return metric.aggregate(in);
     }
 
 }

@@ -22,7 +22,7 @@ import wres.datamodel.outputs.VectorOutput;
 import wres.engine.statistics.metric.ContinuousRankedProbabilitySkillScore.CRPSSBuilder;
 
 /**
- * Tests the {@link ContinousRankedProbabilitySkillScore}.
+ * Tests the {@link ContinuousRankedProbabilitySkillScore}.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
@@ -32,7 +32,7 @@ public final class ContinousRankedProbabilitySkillScoreTest
 {
 
     /**
-     * Constructs a {@link ContinousRankedProbabilitySkillScore} and compares the actual result to the expected result 
+     * Constructs a {@link ContinuousRankedProbabilitySkillScore} and compares the actual result to the expected result 
      * for a scenario without  missing data. Also, checks the parameters of the metric.
      * @throws MetricParameterException if the metric could not be constructed 
      */
@@ -95,7 +95,7 @@ public final class ContinousRankedProbabilitySkillScoreTest
     }
 
     /**
-     * Constructs a {@link ContinousRankedProbabilitySkillScore} and checks for exceptional cases.
+     * Constructs a {@link ContinuousRankedProbabilitySkillScore} and checks for exceptional cases.
      * @throws MetricParameterException if the metric could not be constructed 
      */
 

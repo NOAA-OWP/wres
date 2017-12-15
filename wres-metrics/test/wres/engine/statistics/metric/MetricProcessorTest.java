@@ -60,9 +60,10 @@ public final class MetricProcessorTest
      * Tests all methods related to whether metrics exist in a {@link MetricProcessor}, namely:
      * 
      * <ol>
-     * <li>{@link MetricProcessor#hasMetrics(wres.datamodel.MetricConstants.MetricInputGroup, MetricOutputGroup)}</li>
+     * <li>{@link MetricProcessor#hasMetrics(wres.datamodel.MetricConstants.MetricInputGroup, 
+     * wres.datamodel.MetricConstants.MetricOutputGroup)}</li>
      * <li>{@link MetricProcessor#hasMetrics(wres.datamodel.MetricConstants.MetricInputGroup)}</li>
-     * <li>{@link MetricProcessor#hasMetrics(MetricOutputGroup)}</li>
+     * <li>{@link MetricProcessor#hasMetrics(wres.datamodel.MetricConstants.MetricOutputGroup)}</li>
      * <li>{@link MetricProcessor#hasThresholdMetrics()}</li>
      * </ol>
      */

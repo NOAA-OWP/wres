@@ -21,7 +21,7 @@ import wres.datamodel.outputs.VectorOutput;
 import wres.engine.statistics.metric.ContinuousRankedProbabilityScore.CRPSBuilder;
 
 /**
- * Tests the {@link ContinousRankedProbabilityScore}.
+ * Tests the {@link ContinuousRankedProbabilityScore}.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
@@ -31,7 +31,7 @@ public final class ContinousRankedProbabilityScoreTest
 {
 
     /**
-     * Constructs a {@link ContinousRankedProbabilityScore} and compares the actual result to the expected result for
+     * Constructs a {@link ContinuousRankedProbabilityScore} and compares the actual result to the expected result for
      * a scenario without missing data. Also, checks the parameters of the metric.
      * @throws MetricParameterException if the metric could not be constructed
      */
@@ -86,7 +86,7 @@ public final class ContinousRankedProbabilityScoreTest
     }
 
     /**
-     * Constructs a {@link ContinousRankedProbabilityScore} and compares the actual result to the expected result for
+     * Constructs a {@link ContinuousRankedProbabilityScore} and compares the actual result to the expected result for
      * a scenario without  missing data.
      * @throws MetricParameterException if the metric could not be constructed
      */
@@ -131,7 +131,7 @@ public final class ContinousRankedProbabilityScoreTest
     }
     
     /**
-     * Constructs a {@link ContinousRankedProbabilityScore} and compares the actual result to the expected result for
+     * Constructs a {@link ContinuousRankedProbabilityScore} and compares the actual result to the expected result for
      * a scenario where the observed value overlaps one ensemble member. This exposes a mistake in the Hersbach (2000) 
      * paper where rows 1 and 3 of table/eqn. 26 should be inclusive bounds.
      * @throws MetricParameterException if the metric could not be constructed 
@@ -172,7 +172,7 @@ public final class ContinousRankedProbabilityScoreTest
     }    
     
     /**
-     * Constructs a {@link ContinousRankedProbabilityScore} and checks for exceptional cases.
+     * Constructs a {@link ContinuousRankedProbabilityScore} and checks for exceptional cases.
      * @throws MetricParameterException if the metric could not be constructed
      */
 

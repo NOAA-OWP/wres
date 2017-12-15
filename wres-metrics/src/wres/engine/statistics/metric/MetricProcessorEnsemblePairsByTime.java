@@ -391,7 +391,7 @@ class MetricProcessorEnsemblePairsByTime extends MetricProcessorByTime
      * @param futures the metric futures
      * @param outGroup the metric output type
      * @param threshold the threshold
-     * @throws MetricCalculationException if the metrics cannot be computed
+     * @return a MetricCalculationException for information if the threshold failed
      */
 
     private MetricCalculationException processEnsembleThreshold( TimeWindow timeWindow,
@@ -528,7 +528,7 @@ class MetricProcessorEnsemblePairsByTime extends MetricProcessorByTime
      * @param futures the metric futures
      * @param outGroup the metric output type
      * @param threshold the threshold
-     * @throws MetricCalculationException if the metrics cannot be computed
+     * @return an exception for information if the calculation failed
      */
 
     private MetricCalculationException processDiscreteProbabilityThreshold( TimeWindow timeWindow,
@@ -623,7 +623,7 @@ class MetricProcessorEnsemblePairsByTime extends MetricProcessorByTime
     /**
      * Validates the {@link DiscreteProbabilityPairs} and throws an exception if the smaller of the number of 
      * occurrences ({@link PairOfDoubles#getItemOne()} = 0) or non-occurrences ({@link PairOfDoubles#getItemOne()} = 1) 
-     * is less than the {@link this.minimumSampleSize}.
+     * is less than the {@link #minimumSampleSize}.
      * 
      * @param subset the data to validate
      * @param threshold the threshold used to localize the error message

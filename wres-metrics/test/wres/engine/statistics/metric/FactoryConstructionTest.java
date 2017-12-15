@@ -42,6 +42,7 @@ public final class FactoryConstructionTest
     /**
      * Test the construction of a factory class.
      * 
+     * @param <S> the generic type of the class
      * @param singletonClass the class to test
      * @throws SecurityException if reflection fails
      * @throws NoSuchMethodException if reflection fails

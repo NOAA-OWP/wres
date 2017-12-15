@@ -8,12 +8,12 @@ import java.util.Set;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
+import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.MetricOutputMetadata;
-import wres.datamodel.VectorOfDoubles;
 
 /**
  * An abstract base class for plotting (the errors associated with) ensemble forecasts as a box. Each pair generates
@@ -41,6 +41,7 @@ abstract class BoxPlot
     /**
      * Creates a box from a {@link PairOfDoubleAndVectorOfDoubles}.
      * 
+     * @param pair the pair
      * @return a box
      * @throws MetricCalculationException if the box cannot be constructed
      */

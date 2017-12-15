@@ -526,7 +526,7 @@ public abstract class MetricProcessorByTime extends MetricProcessor<MetricOutput
      * @param futures the metric futures
      * @param outGroup the metric output type
      * @param threshold the threshold
-     * @throws MetricCalculationException if the metrics cannot be computed
+     * @return a MetricCalculationException for information if the metrics cannot be computed
      */
 
     private MetricCalculationException processSingleValuedThreshold( TimeWindow timeWindow,
