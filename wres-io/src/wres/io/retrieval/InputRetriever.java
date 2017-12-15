@@ -70,6 +70,11 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         this.progress = progress;
     }
 
+    public void setSequenceStep( int sequenceStep )
+    {
+        this.sequenceStep = sequenceStep;
+    }
+
     public void setClimatology(VectorOfDoubles climatology)
     {
         this.climatology = climatology;
@@ -528,6 +533,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
     private String rightLoadScript;
     private int leadOffset;
     private int progress;
+    private int sequenceStep;
     private final ProjectDetails projectDetails;
     private Feature feature;
     private final BiFunction<String, String, List<Double>> getLeftValues;
