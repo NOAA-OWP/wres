@@ -94,7 +94,7 @@ implements Score, Collectable<SingleValuedPairs, ScalarOutput, ScalarOutput>
     }
 
     @Override
-    public ScalarOutput apply(ScalarOutput output)
+    public ScalarOutput aggregate(ScalarOutput output)
     {
         return output;
     }

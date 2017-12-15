@@ -39,7 +39,7 @@ public final class MetricProcessorSingleValuedPairsByTimeTest
 
     /**
      * Tests the construction of a {@link MetricProcessorSingleValuedPairsByTime} and application of
-     * {@link MetricProcessorSingleValuedPairsByTime#apply(wres.datamodel.inputs.pairs.SingleValuedPairs)} to 
+     * {@link MetricProcessorSingleValuedPairsByTime#apply(wres.datamodel.inputs.MetricInput)} to 
      * configuration obtained from testinput/metricProcessorSingleValuedPairsTest/test1ApplyNoThresholds.xml and pairs 
      * obtained from {@link MetricTestDataFactory#getSingleValuedPairsFour()}.
      */
@@ -94,7 +94,7 @@ public final class MetricProcessorSingleValuedPairsByTimeTest
 
     /**
      * Tests the construction of a {@link MetricProcessorSingleValuedPairsByTime} and application of
-     * {@link MetricProcessorSingleValuedPairsByTime#apply(wres.datamodel.inputs.pairs.SingleValuedPairs)} to 
+     * {@link MetricProcessorSingleValuedPairsByTime#apply(wres.datamodel.inputs.MetricInput)} to 
      * configuration obtained from testinput/metricProcessorSingleValuedPairsTest/test1ApplyNoThresholds.xml and 
      * pairs obtained from {@link MetricTestDataFactory#getSingleValuedPairsFour()}. Tests the output for multiple 
      * calls with separate forecast lead times.

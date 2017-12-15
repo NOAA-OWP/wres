@@ -18,7 +18,7 @@ import wres.datamodel.metadata.Metadata;
 import wres.datamodel.time.TimeSeries;
 
 /**
- * Illustration of the {@link TimeSeries} API using a {@link RegularTimeSeriesOfSingleValudPairs}.
+ * Illustration of the {@link TimeSeries} API using a {@link RegularTimeSeriesOfSingleValuedPairs}.
  * 
  * @author james.brown@hydrosolved.com
  */

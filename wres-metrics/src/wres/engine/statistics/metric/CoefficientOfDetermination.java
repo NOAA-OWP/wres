@@ -22,7 +22,7 @@ class CoefficientOfDetermination extends CorrelationPearsons
     @Override
     public ScalarOutput apply(SingleValuedPairs s)
     {
-        return apply(getCollectionInput(s));
+        return aggregate(getCollectionInput(s));
     }
 
     @Override
@@ -32,7 +32,7 @@ class CoefficientOfDetermination extends CorrelationPearsons
     }
 
     @Override
-    public ScalarOutput apply(ScalarOutput output)
+    public ScalarOutput aggregate(ScalarOutput output)
     {
         MetricOutputMetadata in = output.getMetadata();
         MetricOutputMetadata meta = getDataFactory().getMetadataFactory().getOutputMetadata(in.getSampleSize(),

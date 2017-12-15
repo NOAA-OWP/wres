@@ -4,13 +4,12 @@ import java.util.Objects;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
-import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.PairedInput;
 import wres.datamodel.outputs.ScalarOutput;
 
 /**
- * Constructs a {@link Metric} that returns the {@link MetricInput#size()}.
+ * Constructs a {@link Metric} that returns the sample size.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
