@@ -15,10 +15,10 @@ import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.metadata.ReferenceTime;
+import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.MetricOutputMetadata;
 import wres.datamodel.outputs.ScalarOutput;
-import wres.datamodel.time.ReferenceTime;
-import wres.datamodel.time.TimeWindow;
 import wres.engine.statistics.metric.IndexOfAgreement.IndexOfAgreementBuilder;
 
 /**

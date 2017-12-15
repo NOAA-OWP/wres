@@ -5,9 +5,9 @@ import java.util.List;
 
 import org.jfree.data.xy.AbstractXYDataset;
 
+import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.ScalarOutput;
-import wres.datamodel.time.TimeWindow;
 
 /**
  * An {@link AbstractXYDataset} that wraps a {@link MetricOutputMapByTimeAndThreshold} which contains a set of
@@ -50,7 +50,7 @@ public class ScalarOutputByThresholdLeadXYDataset extends WRESAbstractXYDataset<
         final List<MetricOutputMapByTimeAndThreshold<ScalarOutput>> data = new ArrayList<>();
         for(final TimeWindow lead: rawData.keySetByTime())
         {
-            data.add(rawData.sliceByTime(lead));
+            data.add(rawData.filterByTime(lead));
         }
         setPlotData(data);
     }

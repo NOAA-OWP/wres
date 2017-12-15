@@ -39,14 +39,14 @@ import wres.datamodel.Threshold.Operator;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.metadata.ReferenceTime;
+import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMetadata;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.ScalarOutput;
 import wres.datamodel.outputs.VectorOutput;
-import wres.datamodel.time.ReferenceTime;
-import wres.datamodel.time.TimeWindow;
 
 /**
  * Tests the construction of a 3D chart of metric outputs. The building of the charts and images is tested via the unit
@@ -716,7 +716,7 @@ public class Chart2DTestOutput extends TestCase
                                  { 0.95, 13685.0 }, { 0.99, 26648.0 } };
         for ( final double[] next : allow )
         {
-            combine.add( full.sliceByThreshold( outputFactory.getQuantileThreshold( next[1],
+            combine.add( full.filterByThreshold( outputFactory.getQuantileThreshold( next[1],
                                                                                     next[0],
                                                                                     Operator.GREATER ) ) );
         }
@@ -738,7 +738,7 @@ public class Chart2DTestOutput extends TestCase
         final int[] allow = new int[] { 42, 258, 474, 690 };
         for ( final int next : allow )
         {
-            combine.add( full.sliceByTime( TimeWindow.of( Instant.MIN,
+            combine.add( full.filterByTime( TimeWindow.of( Instant.MIN,
                                                           Instant.MAX,
                                                           ReferenceTime.VALID_TIME,
                                                           next) ) );

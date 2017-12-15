@@ -22,11 +22,11 @@ class EquitableThreatScore extends ContingencyTableScore<DichotomousPairs>
     @Override
     public ScalarOutput apply(final DichotomousPairs s)
     {
-        return apply(getCollectionInput(s));
+        return aggregate(getCollectionInput(s));
     }
 
     @Override
-    public ScalarOutput apply(final MatrixOutput output)
+    public ScalarOutput aggregate(final MatrixOutput output)
     {
         if(Objects.isNull(output))
         {

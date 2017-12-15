@@ -100,7 +100,7 @@ public final class EquitableThreatScoreTest
         //Check the exceptions
         try
         {
-            ets.apply( (MatrixOutput) null );
+            ets.aggregate( (MatrixOutput) null );
             fail( "Expected an exception on null input." );
         }
         catch ( MetricInputException e )

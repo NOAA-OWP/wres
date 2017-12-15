@@ -22,11 +22,11 @@ class PeirceSkillScore<S extends MulticategoryPairs> extends ContingencyTableSco
     @Override
     public ScalarOutput apply(final S s)
     {
-        return apply(getCollectionInput(s));
+        return aggregate(getCollectionInput(s));
     }
 
     @Override
-    public ScalarOutput apply(final MatrixOutput output)
+    public ScalarOutput aggregate(final MatrixOutput output)
     {
         //Check the input
         isContingencyTable(output, this);

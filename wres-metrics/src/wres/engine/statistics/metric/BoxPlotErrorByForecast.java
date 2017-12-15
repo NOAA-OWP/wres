@@ -7,11 +7,11 @@ import java.util.function.ToDoubleFunction;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
+import wres.datamodel.Slicer;
+import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.outputs.BoxPlotOutput;
-import wres.datamodel.Slicer;
-import wres.datamodel.VectorOfDoubles;
 
 /**
  * An concrete implementation of a {@link BoxPlot} that plots the ensemble forecast errors (right - left) against 
@@ -117,6 +117,7 @@ class BoxPlotErrorByForecast extends BoxPlot
          * Sets the dimension for the domain axis.
          * 
          * @param domainDimension the domain axis dimension
+         * @return the builder
          */
         BoxPlotErrorByForecastBuilder setDomainDimension( MetricDimension domainDimension )
         {

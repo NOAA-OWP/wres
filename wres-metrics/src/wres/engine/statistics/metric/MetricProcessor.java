@@ -347,10 +347,10 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
      * {@link MetricInputGroup#DISCRETE_PROBABILITY}</li>
      * <li>If the right side contains {@link DatasourceType#ENSEMBLE_FORECASTS} and thresholds are not defined: returns
      * all metrics that consume {@link MetricInputGroup#ENSEMBLE} and {@link MetricInputGroup#SINGLE_VALUED}</li>
-     * <li>If the right side contains {@link DatasourceType#SIMPLE_FORECASTS} and thresholds are defined: returns
+     * <li>If the right side contains {@link DatasourceType#SINGLE_VALUED_FORECASTS} and thresholds are defined: returns
      * all metrics that consume {@link MetricInputGroup#SINGLE_VALUED} and {@link MetricInputGroup#DICHOTOMOUS}</li>
-     * <li>If the right side contains {@link DatasourceType#SIMPLE_FORECASTS} and thresholds are not defined: returns
-     * all metrics that consume {@link MetricInputGroup#SINGLE_VALUED}.</li>
+     * <li>If the right side contains {@link DatasourceType#SINGLE_VALUED_FORECASTS} and thresholds are not defined: 
+     * returns all metrics that consume {@link MetricInputGroup#SINGLE_VALUED}.</li>
      * </ol>
      * 
      * TODO: implement multicategory metrics.
@@ -741,7 +741,7 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
     /**
      * Validates the outputs configuration and throws a {@link MetricConfigurationException} if the validation fails
      * 
-     * @param output the output configuration
+     * @param outputs the outputs configuration
      * @throws MetricConfigurationException if thresholds are configured incorrectly
      */
 
