@@ -29,6 +29,7 @@ import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
@@ -36,7 +37,6 @@ import wres.datamodel.outputs.MetricOutputMapByMetric;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.ScalarOutput;
 import wres.datamodel.outputs.VectorOutput;
-import wres.datamodel.time.TimeWindow;
 import wres.engine.statistics.metric.MetricProcessorByTime.MetricFuturesByTime.MetricFuturesByTimeBuilder;
 
 /**
@@ -391,7 +391,7 @@ class MetricProcessorEnsemblePairsByTime extends MetricProcessorByTime
      * @param futures the metric futures
      * @param outGroup the metric output type
      * @param threshold the threshold
-     * @throws MetricCalculationException if the metrics cannot be computed
+     * @return a MetricCalculationException for information if the threshold failed
      */
 
     private MetricCalculationException processEnsembleThreshold( TimeWindow timeWindow,
@@ -528,7 +528,7 @@ class MetricProcessorEnsemblePairsByTime extends MetricProcessorByTime
      * @param futures the metric futures
      * @param outGroup the metric output type
      * @param threshold the threshold
-     * @throws MetricCalculationException if the metrics cannot be computed
+     * @return an exception for information if the calculation failed
      */
 
     private MetricCalculationException processDiscreteProbabilityThreshold( TimeWindow timeWindow,
@@ -623,7 +623,7 @@ class MetricProcessorEnsemblePairsByTime extends MetricProcessorByTime
     /**
      * Validates the {@link DiscreteProbabilityPairs} and throws an exception if the smaller of the number of 
      * occurrences ({@link PairOfDoubles#getItemOne()} = 0) or non-occurrences ({@link PairOfDoubles#getItemOne()} = 1) 
-     * is less than the {@link this.minimumSampleSize}.
+     * is less than the {@link #minimumSampleSize}.
      * 
      * @param subset the data to validate
      * @param threshold the threshold used to localize the error message

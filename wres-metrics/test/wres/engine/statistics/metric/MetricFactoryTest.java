@@ -241,7 +241,7 @@ public final class MetricFactoryTest
     }
 
     /**
-     * Tests {@link MetricFactory#OfDiscreteProbabilityVectorCollection(MetricConstants...)}. 
+     * Tests {@link MetricFactory#ofDiscreteProbabilityVectorCollection(MetricConstants...)}. 
      * @throws MetricParameterException if the metric construction fails 
      */
     @Test
@@ -281,7 +281,7 @@ public final class MetricFactoryTest
     
     /**
      * Tests {@link MetricFactory#ofDiscreteProbabilityMultiVectorCollection(MetricConstants...)}. 
-     * @throws MetricParameterException 
+     * @throws MetricParameterException if the metric collection could not be constructed
      */
     @Test
     public void test13OfDiscreteProbabilityMultiVectorCollection() throws MetricParameterException
@@ -426,7 +426,7 @@ public final class MetricFactoryTest
         {
             ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathSingleValued ) ).getProjectConfig();
             MetricFactory.getInstance( DefaultDataFactory.getInstance() )
-                         .getMetricProcessorByLeadTime( config, (MetricOutputGroup) null );
+                         .getMetricProcessorByTime( config, (MetricOutputGroup) null );
         }
         catch ( Exception e )
         {
@@ -438,7 +438,7 @@ public final class MetricFactoryTest
         {
             ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathEnsemble ) ).getProjectConfig();
             MetricFactory.getInstance( DefaultDataFactory.getInstance() )
-                         .getMetricProcessorByLeadTime( config, (MetricOutputGroup) null );
+                         .getMetricProcessorByTime( config, (MetricOutputGroup) null );
         }
         catch ( Exception e )
         {

@@ -23,8 +23,8 @@ import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
-import wres.datamodel.time.ReferenceTime;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.metadata.ReferenceTime;
+import wres.datamodel.metadata.TimeWindow;
 
 /**
  * Factory class for generating test datasets for metric calculations.

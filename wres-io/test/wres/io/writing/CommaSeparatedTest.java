@@ -28,12 +28,12 @@ import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Threshold;
 import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.metadata.ReferenceTime;
+import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMapByMetric;
 import wres.datamodel.outputs.MetricOutputMetadata;
 import wres.datamodel.outputs.ScalarOutput;
-import wres.datamodel.time.ReferenceTime;
-import wres.datamodel.time.TimeWindow;
 
 // uncomment these if we figure out what was wrong with powermockito setup
 //@RunWith( PowerMockRunner.class )

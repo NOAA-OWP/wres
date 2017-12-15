@@ -39,11 +39,11 @@ public final class MetricProcessorTest
             ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
             MetricProcessor<MetricOutputForProjectByTimeAndThreshold> trueProcessor =
                     MetricFactory.getInstance( metIn )
-                                 .getMetricProcessorByLeadTime( config,
+                                 .getMetricProcessorByTime( config,
                                                                 MetricOutputGroup.values() );
             MetricProcessor<MetricOutputForProjectByTimeAndThreshold> falseProcessor =
                     MetricFactory.getInstance( metIn )
-                                 .getMetricProcessorByLeadTime( config );
+                                 .getMetricProcessorByTime( config );
             //Check for storage
             assertTrue( "Expected a metric processor that stores metric outputs.",
                         trueProcessor.willStoreMetricOutput() == true );
@@ -60,9 +60,10 @@ public final class MetricProcessorTest
      * Tests all methods related to whether metrics exist in a {@link MetricProcessor}, namely:
      * 
      * <ol>
-     * <li>{@link MetricProcessor#hasMetrics(wres.datamodel.MetricConstants.MetricInputGroup, MetricOutputGroup)}</li>
+     * <li>{@link MetricProcessor#hasMetrics(wres.datamodel.MetricConstants.MetricInputGroup, 
+     * wres.datamodel.MetricConstants.MetricOutputGroup)}</li>
      * <li>{@link MetricProcessor#hasMetrics(wres.datamodel.MetricConstants.MetricInputGroup)}</li>
-     * <li>{@link MetricProcessor#hasMetrics(MetricOutputGroup)}</li>
+     * <li>{@link MetricProcessor#hasMetrics(wres.datamodel.MetricConstants.MetricOutputGroup)}</li>
      * <li>{@link MetricProcessor#hasThresholdMetrics()}</li>
      * </ol>
      */
@@ -77,7 +78,7 @@ public final class MetricProcessorTest
             ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
             MetricProcessor<MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
-                                 .getMetricProcessorByLeadTime( config,
+                                 .getMetricProcessorByTime( config,
                                                                 MetricOutputGroup.values() );
             //Check for existence of metrics
             assertTrue( "Expected metrics for '" + MetricInputGroup.SINGLE_VALUED

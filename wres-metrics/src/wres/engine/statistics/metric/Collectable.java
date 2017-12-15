@@ -7,11 +7,12 @@ import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.MetricOutputMetadata;
 
 /**
- * An interface that allows for a {@link Metric} to be computed from an intermediate {@link MetricOutput}, thereby
+ * An interface that allows for a final metric output to be aggregated from an intermediate output, thereby
  * avoiding the need to recompute intermediate outputs that are common to several metrics. See also
  * {@link MetricCollection}, which collects together metrics with common dependencies and exploits this interface to
  * share intermediate outputs between them. There is no value in implementing this interface unless there are two or
- * more metrics that share a common ancestry.
+ * more metrics that share a common ancestry. Use {@link #aggregate(MetricOutput)} to compute the aggregate output
+ * from the intermediate output.
  * 
  * @param <S> the input type
  * @param <T> the intermediate output type
@@ -24,7 +25,7 @@ interface Collectable<S extends MetricInput<?>, T extends MetricOutput<?>, U ext
 {
 
     /**
-     * Computes a metric with an intermediate result, contained in a {@link MetricOutput}.
+     * Aggregates the final metric output from an intermediate output.
      * 
      * @param output the intermediate input from which the metric result will be computed
      * @return the metric result
@@ -32,11 +33,11 @@ interface Collectable<S extends MetricInput<?>, T extends MetricOutput<?>, U ext
      * @throws MetricInputException if the prescribed input is unexpected
      */
 
-    U apply(T output);
+    U aggregate(T output);
 
     /**
-     * Returns the result whose method {@link Metric#apply(wres.datamodel.inputs.MetricInput)} provides the input to
-     * {@link #apply(MetricOutput)}. Ensure that the {@link Metric#getID()} associated with the
+     * Returns the result whose method {@link Metric#apply(MetricInput)} provides the input to
+     * {@link #aggregate(MetricOutput)}. Ensure that the {@link Metric#getID()} associated with the
      * {@link MetricOutputMetadata} of the output corresponds to that of the implementing class and not the caller.
      * 
      * @param input the metric input

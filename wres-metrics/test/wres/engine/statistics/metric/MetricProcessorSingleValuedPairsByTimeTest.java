@@ -18,11 +18,11 @@ import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.metadata.ReferenceTime;
+import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.ScalarOutput;
-import wres.datamodel.time.ReferenceTime;
-import wres.datamodel.time.TimeWindow;
 import wres.io.config.ProjectConfigPlus;
 
 /**
@@ -39,7 +39,7 @@ public final class MetricProcessorSingleValuedPairsByTimeTest
 
     /**
      * Tests the construction of a {@link MetricProcessorSingleValuedPairsByTime} and application of
-     * {@link MetricProcessorSingleValuedPairsByTime#apply(wres.datamodel.inputs.pairs.SingleValuedPairs)} to 
+     * {@link MetricProcessorSingleValuedPairsByTime#apply(wres.datamodel.inputs.MetricInput)} to 
      * configuration obtained from testinput/metricProcessorSingleValuedPairsTest/test1ApplyNoThresholds.xml and pairs 
      * obtained from {@link MetricTestDataFactory#getSingleValuedPairsFour()}.
      */
@@ -52,7 +52,7 @@ public final class MetricProcessorSingleValuedPairsByTimeTest
         {
             ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
             MetricProcessor<MetricOutputForProjectByTimeAndThreshold> processor = MetricFactory.getInstance( dataFactory )
-                                                                                            .getMetricProcessorByLeadTime( config,
+                                                                                            .getMetricProcessorByTime( config,
                                                                                                                            Executors.newSingleThreadExecutor(),
                                                                                                                            null,
                                                                                                                            (MetricOutputGroup[]) null );
@@ -94,7 +94,7 @@ public final class MetricProcessorSingleValuedPairsByTimeTest
 
     /**
      * Tests the construction of a {@link MetricProcessorSingleValuedPairsByTime} and application of
-     * {@link MetricProcessorSingleValuedPairsByTime#apply(wres.datamodel.inputs.pairs.SingleValuedPairs)} to 
+     * {@link MetricProcessorSingleValuedPairsByTime#apply(wres.datamodel.inputs.MetricInput)} to 
      * configuration obtained from testinput/metricProcessorSingleValuedPairsTest/test1ApplyNoThresholds.xml and 
      * pairs obtained from {@link MetricTestDataFactory#getSingleValuedPairsFour()}. Tests the output for multiple 
      * calls with separate forecast lead times.
@@ -110,7 +110,7 @@ public final class MetricProcessorSingleValuedPairsByTimeTest
             ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
             MetricProcessor<MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
-                                 .getMetricProcessorByLeadTime( config,
+                                 .getMetricProcessorByTime( config,
                                                                 MetricOutputGroup.values() );
             SingleValuedPairs pairs = MetricTestDataFactory.getSingleValuedPairsFour();
             final MetadataFactory metFac = metIn.getMetadataFactory();
@@ -168,7 +168,7 @@ public final class MetricProcessorSingleValuedPairsByTimeTest
             ProjectConfig config = ProjectConfigPlus.from( Paths.get( testOne ) ).getProjectConfig();
             MetricProcessor<MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
-                                 .getMetricProcessorByLeadTime( config,
+                                 .getMetricProcessorByTime( config,
                                                                 MetricOutputGroup.SCALAR );
             processor.apply( null );
             fail( "Expected a checked exception on processing the project configuration '" + testOne + "'." );
@@ -189,7 +189,7 @@ public final class MetricProcessorSingleValuedPairsByTimeTest
             ProjectConfig config = ProjectConfigPlus.from( Paths.get( testTwo ) ).getProjectConfig();
             MetricProcessor<MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
-                                 .getMetricProcessorByLeadTime( config,
+                                 .getMetricProcessorByTime( config,
                                                                 MetricOutputGroup.SCALAR );
             processor.apply( MetricTestDataFactory.getSingleValuedPairsSix() );
             fail( "Expected a checked exception on processing the project configuration '" + testTwo
@@ -212,7 +212,7 @@ public final class MetricProcessorSingleValuedPairsByTimeTest
             ProjectConfig config = ProjectConfigPlus.from( Paths.get( testThree ) ).getProjectConfig();
             MetricProcessor<MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
-                                 .getMetricProcessorByLeadTime( config,
+                                 .getMetricProcessorByTime( config,
                                                                 MetricOutputGroup.SCALAR );
             processor.apply( MetricTestDataFactory.getSingleValuedPairsSix() );
             fail( "Expected a checked exception on processing the project configuration '" + testThree
@@ -235,7 +235,7 @@ public final class MetricProcessorSingleValuedPairsByTimeTest
             ProjectConfig config = ProjectConfigPlus.from( Paths.get( testFour ) ).getProjectConfig();
             MetricProcessor<MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
-                                 .getMetricProcessorByLeadTime( config,
+                                 .getMetricProcessorByTime( config,
                                                                 MetricOutputGroup.SCALAR );
             processor.apply( MetricTestDataFactory.getSingleValuedPairsSix() );
             fail( "Expected a checked exception on processing the project configuration '" + testFour
@@ -258,7 +258,7 @@ public final class MetricProcessorSingleValuedPairsByTimeTest
             ProjectConfig config = ProjectConfigPlus.from( Paths.get( testFive ) ).getProjectConfig();
             MetricProcessor<MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
-                                 .getMetricProcessorByLeadTime( config,
+                                 .getMetricProcessorByTime( config,
                                                                 MetricOutputGroup.SCALAR );
             processor.apply( MetricTestDataFactory.getSingleValuedPairsSix() );
             fail( "Expected a checked exception on processing the project configuration '" + testFive
@@ -281,7 +281,7 @@ public final class MetricProcessorSingleValuedPairsByTimeTest
             ProjectConfig config = ProjectConfigPlus.from( Paths.get( testSix ) ).getProjectConfig();
             MetricProcessor<MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
-                                 .getMetricProcessorByLeadTime( config,
+                                 .getMetricProcessorByTime( config,
                                                                 MetricOutputGroup.SCALAR );
             processor.apply( MetricTestDataFactory.getSingleValuedPairsSix() );
             fail( "Expected a checked exception on processing the project configuration '" + testSix
@@ -304,7 +304,7 @@ public final class MetricProcessorSingleValuedPairsByTimeTest
             ProjectConfig config = ProjectConfigPlus.from( Paths.get( testSeven ) ).getProjectConfig();
             MetricProcessor<MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
-                                 .getMetricProcessorByLeadTime( config,
+                                 .getMetricProcessorByTime( config,
                                                                 MetricOutputGroup.SCALAR );
             processor.apply( MetricTestDataFactory.getSingleValuedPairsSix() );
             fail( "Expected a checked exception on processing the project configuration '" + testSeven
@@ -327,7 +327,7 @@ public final class MetricProcessorSingleValuedPairsByTimeTest
             ProjectConfig config = ProjectConfigPlus.from( Paths.get( testEight ) ).getProjectConfig();
             MetricProcessor<MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
-                                 .getMetricProcessorByLeadTime( config,
+                                 .getMetricProcessorByTime( config,
                                                                 MetricOutputGroup.SCALAR );
             processor.apply( MetricTestDataFactory.getSingleValuedPairsSix() );
             fail( "Expected a checked exception on processing the project configuration '" + testEight
@@ -350,7 +350,7 @@ public final class MetricProcessorSingleValuedPairsByTimeTest
             ProjectConfig config = ProjectConfigPlus.from( Paths.get( testNine ) ).getProjectConfig();
             MetricProcessor<MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
-                                 .getMetricProcessorByLeadTime( config,
+                                 .getMetricProcessorByTime( config,
                                                                 MetricOutputGroup.SCALAR );
             processor.apply( MetricTestDataFactory.getSingleValuedPairsFour() );
             fail( "Expected a checked exception on processing the project configuration '" + testNine
@@ -381,7 +381,7 @@ public final class MetricProcessorSingleValuedPairsByTimeTest
             ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
             MetricProcessor<MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
-                                 .getMetricProcessorByLeadTime( config,
+                                 .getMetricProcessorByTime( config,
                                                                 MetricOutputGroup.values() );
             //Check for the expected number of metrics
             assertTrue( "Unexpected number of metrics.",

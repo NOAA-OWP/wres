@@ -24,6 +24,7 @@ import wres.datamodel.Threshold;
 import wres.datamodel.inputs.MetricInputSliceException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
@@ -32,7 +33,6 @@ import wres.datamodel.outputs.MetricOutputMapByMetric;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.ScalarOutput;
 import wres.datamodel.outputs.VectorOutput;
-import wres.datamodel.time.TimeWindow;
 
 /**
  * A {@link MetricProcessor} that processes and stores metric results by {@link TimeWindow}.
@@ -526,7 +526,7 @@ public abstract class MetricProcessorByTime extends MetricProcessor<MetricOutput
      * @param futures the metric futures
      * @param outGroup the metric output type
      * @param threshold the threshold
-     * @throws MetricCalculationException if the metrics cannot be computed
+     * @return a MetricCalculationException for information if the metrics cannot be computed
      */
 
     private MetricCalculationException processSingleValuedThreshold( TimeWindow timeWindow,

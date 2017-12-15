@@ -1,4 +1,4 @@
-package wres.datamodel.time;
+package wres.datamodel.metadata;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -7,11 +7,12 @@ import java.util.Objects;
 import java.util.StringJoiner;
 
 /**
- * <p>A partition of two time lines in which a sample is collated for the purposes of a statistical calculation. The 
- * first timeline is absolute (UTC), and is defined by an earliest time and a latest time in a specified reference time 
- * system. The reference time system is either valid time or forecast issue time. The second timeline is relative, 
- * and comprises an earliest forecast lead time and a latest forecast lead time. A {@link TimeWindow} represents the 
- * intersection of these two timelines, i.e. it contains elements that are common to (the partition of) each timeline.</p> 
+ * <p>Metadata that describes the partition of two time lines in which a sample is collated for the purposes of a 
+ * statistical calculation. The first timeline is absolute (UTC), and is defined by an earliest time and a latest time 
+ * in a specified reference time system. The reference time system is either valid time or forecast issue time. The 
+ * second timeline is relative, and comprises an earliest forecast lead time and a latest forecast lead time. A 
+ * {@link TimeWindow} represents the intersection of these two timelines, i.e. it contains elements that are common to 
+ * (the partition of) each timeline.</p> 
  * 
  * <p>In summary, a {@link TimeWindow} comprises the following required elements:</p>
  * 

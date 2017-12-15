@@ -81,7 +81,7 @@ public final class PeirceSkillScoreTest
         //Test exceptions
         try
         {
-            ps.apply( outF.ofMatrixOutput( new double[][] { { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 } }, m1 ) );
+            ps.aggregate( outF.ofMatrixOutput( new double[][] { { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 } }, m1 ) );
             fail( "Expected an exception on construction with a a non-square matrix." );
         }
         catch ( final Exception e )
@@ -129,7 +129,7 @@ public final class PeirceSkillScoreTest
         //Test exceptions
         try
         {
-            ps.apply( outF.ofMatrixOutput( new double[][] { { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 } },
+            ps.aggregate( outF.ofMatrixOutput( new double[][] { { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 } },
                                            m1 ) );
             fail( "Expected a zero sum product." );
         }

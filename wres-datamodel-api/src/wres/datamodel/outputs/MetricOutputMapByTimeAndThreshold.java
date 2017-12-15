@@ -3,7 +3,7 @@ package wres.datamodel.outputs;
 import java.util.Set;
 
 import wres.datamodel.Threshold;
-import wres.datamodel.time.TimeWindow;
+import wres.datamodel.metadata.TimeWindow;
 
 /**
  * A sorted map of {@link MetricOutput} associated with a single metric. The results are stored by {@link TimeWindow}
@@ -19,27 +19,27 @@ public interface MetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>>
 {
 
     /**
-     * Slice by forecast lead time.
+     * Filter by time.
      * 
      * @param timeWindow the forecast lead time
      * @return the submap
      */
 
-    default MetricOutputMapByTimeAndThreshold<T> sliceByTime( final TimeWindow timeWindow )
+    default MetricOutputMapByTimeAndThreshold<T> filterByTime( final TimeWindow timeWindow )
     {
-        return (MetricOutputMapByTimeAndThreshold<T>) sliceByFirst( timeWindow );
+        return (MetricOutputMapByTimeAndThreshold<T>) filterByFirst( timeWindow );
     }
 
     /**
-     * Slice by threshold.
+     * Filter by threshold.
      * 
      * @param threshold the threshold
      * @return the submap
      */
 
-    default MetricOutputMapByTimeAndThreshold<T> sliceByThreshold( final Threshold threshold )
+    default MetricOutputMapByTimeAndThreshold<T> filterByThreshold( final Threshold threshold )
     {
-        return (MetricOutputMapByTimeAndThreshold<T>) sliceBySecond( threshold );
+        return (MetricOutputMapByTimeAndThreshold<T>) filterBySecond( threshold );
     }
 
     /**
@@ -74,7 +74,26 @@ public interface MetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>>
     {
         return keySetByThreshold().stream().anyMatch( Threshold::isQuantile );
     }
+    
+    /**
+     * Filters by lead time in hours. Returns all outputs whose {@link TimeWindow#getEarliestLeadTimeInHours()} or
+     * {@link TimeWindow#getLatestLeadTimeInHours()} matches the specified lead time in hours.
+     * 
+     * @param leadHours the lead time in hours
+     * @return the submap
+     */
+    
+    MetricOutputMapByTimeAndThreshold<T> filterByLeadTimeInHours( long leadHours );
 
+    /**
+     * Returns the unique lead times associated with the {@link TimeWindow} for which the outputs are defined. Checks
+     * both the {@link TimeWindow#getEarliestLeadTimeInHours()} and the {@link TimeWindow#getLatestLeadTimeInHours()}.
+     * 
+     * @return a view of the lead times in hours
+     */
+
+    Set<Long> keySetByLeadTimeInHours();
+    
     /**
      * Returns the {@link MetricOutputMetadata} associated with all {@link MetricOutput} in the store. This may contain
      * more (optional) information than the (required) metadata associated with the individual outputs. However, all
