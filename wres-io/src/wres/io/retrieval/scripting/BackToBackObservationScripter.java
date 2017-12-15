@@ -29,10 +29,21 @@ class BackToBackObservationScripter extends Scripter
 
         this.applyValueDate();
 
+        // EXTRACT(epoch FROM O.observation_time - {zero_date})/3600
+        // will yield the number of hours between the observation time and the
+        // zero date. If you mod that by the length of the period, you
+        // will reveal each member from the aggregate group. If the window
+        // period is one, they will all have the same number. Increment that
+        // and you'll start getting agg_hours of 0, 1, 2, 3, etc. If the
+        // highest agg_hour is 3, you'll know that you want to group values
+        // with agg_hours 0, 1, 2, and 3 together. Once you reach the next 0
+        // or the end of the result set, you will group those together for
+        // aggregation (like finding the average of each) and reset the
+        // grouping of values for the next set to aggregate
         this.addLine(
                 "    (EXTRACT(epoch FROM O.observation_time - ",
                 this.getZeroDate(),
-                ")/3600):: int % ",
+                ")/3600)::int % ",
                 this.getWindowPeriod(),
                 " AS agg_hour,"
         );

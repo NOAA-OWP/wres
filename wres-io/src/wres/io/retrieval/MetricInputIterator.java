@@ -43,6 +43,8 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
     private NavigableMap<String, Double> leftHandMap;
     private VectorOfDoubles climatology;
     private String earliestObservationDate;
+    private int sequenceStep;
+    private int finalSequenceStep = 0;
 
     protected int getWindowNumber()
     {
@@ -51,7 +53,30 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
 
     protected void incrementWindowNumber()
     {
-        this.windowNumber++;
+        if (this.sequenceStep < this.finalSequenceStep)
+        {
+            this.incrementSequenceStep();
+        }
+        else
+        {
+            this.setSequenceStep( 0 );
+            this.windowNumber++;
+        }
+    }
+
+    protected void incrementSequenceStep()
+    {
+        sequenceStep++;
+    }
+
+    protected void setSequenceStep(int sequenceStep)
+    {
+        this.sequenceStep = sequenceStep;
+    }
+
+    protected void setFinalSequenceStep(int finalSequenceStep)
+    {
+        this.finalSequenceStep = finalSequenceStep;
     }
 
     protected Integer getWindowCount() throws NoDataException, SQLException,
@@ -378,6 +403,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
                 retriever.setProgress( this.getWindowNumber() );
                 retriever.setLeadOffset( this.getProjectDetails()
                                              .getLeadOffset( this.getFeature() ) );
+                retriever.setSequenceStep( this.sequenceStep );
                 retriever.setOnRun( ProgressMonitor.onThreadStartHandler() );
                 retriever.setOnComplete( ProgressMonitor.onThreadCompleteHandler() );
 
