@@ -13,7 +13,7 @@ import wres.datamodel.MetricConstants.ScoreOutputGroup;
  * @since 0.1
  */
 
-interface Score
+public interface Score
 {
 
     /**
