@@ -16,6 +16,7 @@ import wres.datamodel.inputs.pairs.RegularTimeSeriesOfSingleValuedPairs.RegularT
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.time.TimeSeries;
+import wres.engine.statistics.metric.singlevalued.MeanError;
 
 /**
  * Illustration of the {@link TimeSeries} API using a {@link RegularTimeSeriesOfSingleValuedPairs}.

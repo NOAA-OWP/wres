@@ -18,7 +18,7 @@ import wres.datamodel.inputs.pairs.PairOfDoubles;
  * @since 0.1
  */
 
-class FunctionFactory
+public class FunctionFactory
 {
     
     /**

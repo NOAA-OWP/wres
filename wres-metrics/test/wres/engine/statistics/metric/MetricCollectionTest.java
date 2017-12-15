@@ -23,6 +23,7 @@ import wres.datamodel.outputs.MetricOutputMapByMetric;
 import wres.datamodel.outputs.ScalarOutput;
 import wres.datamodel.outputs.VectorOutput;
 import wres.engine.statistics.metric.MetricCollection.MetricCollectionBuilder;
+import wres.engine.statistics.metric.singlevalued.DoubleErrorScore;
 
 /**
  * Tests the {@link MetricCollection}.
@@ -668,7 +669,7 @@ public class MetricCollectionTest
         private static class MeanErrorExceptionBuilder extends DoubleErrorScoreBuilder<SingleValuedPairs>
         {
             @Override
-            protected MeanErrorException build() throws MetricParameterException
+            public MeanErrorException build() throws MetricParameterException
             {
                 return new MeanErrorException();
             }
