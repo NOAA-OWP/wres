@@ -246,7 +246,7 @@ public abstract class Scripter
     {
         if ( this.getProjectDetails().getEarliestIssueDate() != null)
         {
-            this.add("    AND ", this.getValueDate());
+            this.add("    AND ", this.getBaseDateName());
             this.applyTimeShift();
             this.addLine( " >= '", this.getProjectDetails().getEarliestIssueDate(), "'" );
         }
@@ -256,9 +256,9 @@ public abstract class Scripter
     {
         if ( this.getProjectDetails().getLatestIssueDate() != null)
         {
-            this.add("    AND ", this.getValueDate());
+            this.add("    AND ", this.getBaseDateName());
             this.applyTimeShift();
-            this.addLine( " >= '", this.getProjectDetails().getLatestIssueDate(), "'" );
+            this.addLine( " <= '", this.getProjectDetails().getLatestIssueDate(), "'" );
         }
     }
 
