@@ -25,6 +25,7 @@ import wres.config.generated.Feature;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.TimeAggregationConfig;
+import wres.config.generated.TimeAggregationMode;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.Variables;
@@ -60,6 +61,9 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     private final Map<Integer, String> baselineHashes = new ConcurrentHashMap<>(  );
     private final Map<Feature, Integer> lastLeads = new ConcurrentHashMap<>(  );
     private final Map<Feature, Integer> leadOffsets = new ConcurrentHashMap<>(  );
+    private final Map<Feature, String> zeroDates = new ConcurrentHashMap<>(  );
+    private final Map<Feature, String> initialRollingDates = new ConcurrentHashMap<>(  );
+    private final Map<Feature, Integer> rollingWindowCounts = new ConcurrentHashMap<>(  );
 
     private final List<Integer> leftSources = new ArrayList<>(  );
     private final List<Integer> rightSources = new ArrayList<>(  );
@@ -73,6 +77,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
 
     private final int inputCode;
 
+    private final Object ROLLING_LOCK = new Object();
     private final Object LOAD_LOCK = new Object();
 
     public static Integer hash( final ProjectConfig projectConfig,
@@ -557,6 +562,73 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return this.leadOffsets.get( feature );
     }
 
+    public String getInitialRollingDate(Feature feature)
+            throws SQLException, InvalidPropertiesFormatException
+    {
+        synchronized ( ROLLING_LOCK )
+        {
+            if (!this.initialRollingDates.containsKey( feature ))
+            {
+                this.addRollingFeature( feature );
+            }
+        }
+
+        return this.initialRollingDates.get(feature);
+    }
+
+    public Integer getRollingWindowCount(Feature feature)
+            throws SQLException, InvalidPropertiesFormatException
+    {
+        if ( this.getAggregation().getMode() != TimeAggregationMode.ROLLING)
+        {
+            return -1;
+        }
+
+        synchronized ( ROLLING_LOCK )
+        {
+            if (!this.rollingWindowCounts.containsKey( feature ))
+            {
+                this.addRollingFeature( feature );
+            }
+        }
+
+        return this.rollingWindowCounts.get( feature );
+    }
+
+    private void addRollingFeature(Feature feature)
+            throws SQLException, InvalidPropertiesFormatException
+    {
+        String rollingScript = ScriptGenerator.formInitialRollingDataScript( this, feature );
+
+        Connection connection = null;
+        ResultSet resultSet = null;
+
+        try
+        {
+            connection = Database.getHighPriorityConnection();
+            resultSet = Database.getResults( connection, rollingScript );
+
+            if (resultSet.isBeforeFirst())
+            {
+                resultSet.next();
+                this.initialRollingDates.put( feature, Database.getValue( resultSet,  "min") );
+                this.rollingWindowCounts.put( feature, Database.getValue( resultSet, "window_count" ));
+            }
+        }
+        finally
+        {
+            if (resultSet != null)
+            {
+                resultSet.close();
+            }
+
+            if (connection != null)
+            {
+                Database.returnHighPriorityConnection( connection );
+            }
+        }
+    }
+
     public String getProjectName()
     {
         return this.projectConfig.getName();
@@ -948,10 +1020,19 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
 
     public String getZeroDate(DataSourceConfig sourceConfig, Feature feature) throws SQLException
     {
-        String script = ScriptGenerator.generateZeroDateScript( this.projectConfig,
+        synchronized ( this.zeroDates )
+        {
+            if (!this.zeroDates.containsKey( feature ))
+            {
+                String script =
+                        ScriptGenerator.generateZeroDateScript( this,
                                                                 sourceConfig,
-                                                                feature);
-        return "'" + Database.getResult( script, "zero_date" ) + "'";
+                                                                feature );
+                this.zeroDates.put(feature, "'" + Database.getResult( script, "zero_date" ) + "'");
+            }
+        }
+
+        return this.zeroDates.get(feature);
     }
 
     public boolean usesProbabilityThresholds()

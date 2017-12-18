@@ -238,7 +238,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         {
             if (this.rightLoadScript == null)
             {
-                this.rightLoadScript = Scripter.getLoadScript( this.projectDetails, dataSourceConfig, feature, progress );
+                this.rightLoadScript = Scripter.getLoadScript( this.projectDetails, dataSourceConfig, feature, progress, this.sequenceStep );
             }
             loadScript = this.rightLoadScript;
         }
@@ -246,7 +246,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         {
             if (this.baselineLoadScript == null)
             {
-                this.baselineLoadScript = Scripter.getLoadScript( this.projectDetails, dataSourceConfig, this.feature, this.progress );
+                this.baselineLoadScript = Scripter.getLoadScript( this.projectDetails, dataSourceConfig, this.feature, this.progress, this.sequenceStep );
             }
             loadScript = this.baselineLoadScript;
         }

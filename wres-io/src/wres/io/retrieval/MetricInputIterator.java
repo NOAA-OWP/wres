@@ -42,7 +42,6 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
     private final ProjectDetails projectDetails;
     private NavigableMap<String, Double> leftHandMap;
     private VectorOfDoubles climatology;
-    private String earliestObservationDate;
     private int sequenceStep;
     private int finalSequenceStep = 0;
 
@@ -53,7 +52,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
 
     protected void incrementWindowNumber()
     {
-        if (this.sequenceStep < this.finalSequenceStep)
+        if (this.sequenceStep <= this.finalSequenceStep)
         {
             this.incrementSequenceStep();
         }
@@ -142,6 +141,8 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
                                        " the evaluation could be loaded. " +
                                        "Please check your specifications." );
         }
+
+        this.finalSequenceStep = this.projectDetails.getRollingWindowCount( feature );
 
         // TODO: This needs a better home
         // x2; 1 step for retrieval, 1 step for calculation

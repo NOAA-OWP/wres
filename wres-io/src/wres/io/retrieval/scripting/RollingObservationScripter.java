@@ -14,9 +14,10 @@ class RollingObservationScripter extends Scripter
     protected RollingObservationScripter( ProjectDetails projectDetails,
                                           DataSourceConfig dataSourceConfig,
                                           Feature feature,
-                                          int progress )
+                                          int progress,
+                                          int sequenceStep)
     {
-        super( projectDetails, dataSourceConfig, feature, progress );
+        super( projectDetails, dataSourceConfig, feature, progress, sequenceStep );
     }
 
     @Override
