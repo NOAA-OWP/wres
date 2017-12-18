@@ -2,9 +2,8 @@ package wres.datamodel.outputs;
 
 import java.util.List;
 
-import wres.datamodel.MetricConstants;
-import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.MetricConstants.MetricDimension;
+import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 
 /**

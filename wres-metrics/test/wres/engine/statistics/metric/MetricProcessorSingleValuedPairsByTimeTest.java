@@ -71,6 +71,9 @@ public final class MetricProcessorSingleValuedPairsByTimeTest
                     results.getScalarOutput().get( MetricConstants.MEAN_ERROR );
             MetricOutputMapByTimeAndThreshold<ScalarOutput> rmse = results.getScalarOutput()
                                                                        .get( MetricConstants.ROOT_MEAN_SQUARE_ERROR );
+            MetricOutputMapByTimeAndThreshold<ScalarOutput> ve = results.getScalarOutput()
+                    .get( MetricConstants.VOLUMETRIC_EFFICIENCY );
+
             //Test contents
             assertTrue( "Unexpected difference in " + MetricConstants.BIAS_FRACTION,
                         bias.getValue( 0 ).getData().equals( 1.6666666666666667 ) );
@@ -84,7 +87,8 @@ public final class MetricProcessorSingleValuedPairsByTimeTest
                         me.getValue( 0 ).getData().equals( 5.0 ) );
             assertTrue( "Unexpected difference in " + MetricConstants.ROOT_MEAN_SQUARE_ERROR,
                         rmse.getValue( 0 ).getData().equals( 5.0 ) );
-
+            assertTrue( "Unexpected difference in " + MetricConstants.VOLUMETRIC_EFFICIENCY,
+                        ve.getValue( 0 ).getData().equals( -0.6666666666666666 ) );
         }
         catch ( Exception e )
         {

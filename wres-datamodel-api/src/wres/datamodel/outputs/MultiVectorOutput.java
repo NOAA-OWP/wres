@@ -2,9 +2,8 @@ package wres.datamodel.outputs;
 
 import java.util.Map;
 
-import wres.datamodel.MetricConstants;
-import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.MetricConstants.MetricDimension;
+import wres.datamodel.VectorOfDoubles;
 
 /**
  * One or more vectors that are explicitly mapped to elements in {@link MetricDimension}.
