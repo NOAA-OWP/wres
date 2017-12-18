@@ -12,11 +12,11 @@ import wres.engine.statistics.metric.MetricParameterException;
 
 /**
  * <p>The {@link VolumetricEfficiency} (VE) accumulates the observations (VO) and, separately, it accumulates the 
- * absolute errors of the predictions (VE). It then expresses the difference between the two as a fraction of the 
- * accumulated observations, i.e. VE = (VO - VE) / VO.</p> 
+ * absolute errors of the predictions (VP). It then expresses the difference between the two as a fraction of the 
+ * accumulated observations, i.e. VE = (VO - VP) / VO.</p> 
  * 
- * <p>A score of 1 denotes perfect efficiency and a score of 0 denotes a VE that matches the VO. The lower bound of 
- * the measure is <code>-Inf</code> and a score below zero indicates a VE that exceeds the VO.</p>
+ * <p>A score of 1 denotes perfect efficiency and a score of 0 denotes a VP that matches the VO. The lower bound of 
+ * the measure is <code>-Inf</code> and a score below zero indicates a VP that exceeds the VO.</p>
  *
  * @author james.brown@hydrosolved.com
  * @version 0.1
