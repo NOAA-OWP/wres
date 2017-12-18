@@ -17,16 +17,17 @@ class BackToBackForecastScripter extends Scripter
     protected BackToBackForecastScripter( ProjectDetails projectDetails,
                                           DataSourceConfig dataSourceConfig,
                                           Feature feature,
-                                          int progress )
+                                          int progress,
+                                          int sequenceStep)
     {
-        super( projectDetails, dataSourceConfig, feature, progress );
+        super( projectDetails, dataSourceConfig, feature, progress, sequenceStep );
     }
 
     @Override
     String formScript() throws SQLException, InvalidPropertiesFormatException,
             NoDataException
     {
-        this.add("SELECT");
+        this.add("SELECT ");
         this.applyValueDate();
         this.addLine("    FV.lead - ",
                      this.getProjectDetails().getLead( this.getProgress() - 1 ) +

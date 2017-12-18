@@ -16,9 +16,10 @@ class BackToBackObservationScripter extends Scripter
     protected BackToBackObservationScripter( ProjectDetails projectDetails,
                                              DataSourceConfig dataSourceConfig,
                                              Feature feature,
-                                             int progress )
+                                             int progress,
+                                             int sequenceStep)
     {
-        super( projectDetails, dataSourceConfig, feature, progress );
+        super( projectDetails, dataSourceConfig, feature, progress, sequenceStep );
     }
 
     @Override
@@ -59,7 +60,7 @@ class BackToBackObservationScripter extends Scripter
 
         this.applySeasonConstraint();
 
-        return null;
+        return this.getScript();
     }
 
     @Override
@@ -118,7 +119,7 @@ class BackToBackObservationScripter extends Scripter
     @Override
     String getBaseDateName()
     {
-        return "O.observation_date";
+        return "O.observation_time";
     }
 
     @Override

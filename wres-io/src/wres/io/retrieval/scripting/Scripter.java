@@ -18,23 +18,26 @@ public abstract class Scripter
     protected Scripter( ProjectDetails projectDetails,
                         DataSourceConfig dataSourceConfig,
                         Feature feature,
-                        int progress )
+                        int progress,
+                        int sequenceStep )
     {
         this.projectDetails = projectDetails;
         this.dataSourceConfig = dataSourceConfig;
         this.feature = feature;
         this.progress = progress;
+        this.sequenceStep = sequenceStep;
     }
 
     public static String getLoadScript( ProjectDetails projectDetails,
                                         DataSourceConfig dataSourceConfig,
                                         Feature feature,
-                                        int progress )
+                                        int progress,
+                                        int sequenceStep)
             throws NoDataException, SQLException,
             InvalidPropertiesFormatException
     {
-        Scripter loadScripter = null;
-        String script = null;
+        Scripter loadScripter;
+        String script;
 
         TimeAggregationMode mode = projectDetails.getAggregation().getMode();
         boolean isForecast = ConfigHelper.isForecast( dataSourceConfig );
@@ -48,7 +51,8 @@ public abstract class Scripter
                             projectDetails,
                             dataSourceConfig,
                             feature,
-                            progress
+                            progress,
+                            sequenceStep
                     );
                 }
                 else
@@ -57,7 +61,8 @@ public abstract class Scripter
                             projectDetails,
                             dataSourceConfig,
                             feature,
-                            progress
+                            progress,
+                            sequenceStep
                     );
                 }
                 break;
@@ -68,7 +73,8 @@ public abstract class Scripter
                             projectDetails,
                             dataSourceConfig,
                             feature,
-                            progress
+                            progress,
+                            sequenceStep
                     );
                 }
                 else
@@ -77,7 +83,8 @@ public abstract class Scripter
                             projectDetails,
                             dataSourceConfig,
                             feature,
-                            progress
+                            progress,
+                            sequenceStep
                     );
                 }
                 break;
@@ -129,6 +136,11 @@ public abstract class Scripter
     protected int getProgress()
     {
         return this.progress;
+    }
+
+    protected int getSequenceStep()
+    {
+        return this.sequenceStep;
     }
 
     protected Integer getVariableID() throws SQLException
@@ -295,6 +307,7 @@ public abstract class Scripter
     private final DataSourceConfig dataSourceConfig;
     private final Feature feature;
     private final int progress;
+    private final int sequenceStep;
 
     private Integer variableID;
     private String variablePositionClause;
