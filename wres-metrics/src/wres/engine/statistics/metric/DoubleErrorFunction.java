@@ -11,6 +11,6 @@ import wres.datamodel.inputs.pairs.PairOfDoubles;
  * @version 0.1
  * @since 0.1
  */
-interface DoubleErrorFunction extends ToDoubleFunction<PairOfDoubles>
+public interface DoubleErrorFunction extends ToDoubleFunction<PairOfDoubles>
 {
 }

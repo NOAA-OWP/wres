@@ -20,20 +20,50 @@ import wres.datamodel.outputs.MatrixOutput;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.ScalarOutput;
 import wres.datamodel.outputs.VectorOutput;
-import wres.engine.statistics.metric.BoxPlotErrorByForecast.BoxPlotErrorByForecastBuilder;
-import wres.engine.statistics.metric.BoxPlotErrorByObserved.BoxPlotErrorByObservedBuilder;
-import wres.engine.statistics.metric.ContinuousRankedProbabilityScore.CRPSBuilder;
-import wres.engine.statistics.metric.ContinuousRankedProbabilitySkillScore.CRPSSBuilder;
-import wres.engine.statistics.metric.FrequencyBias.FrequencyBiasBuilder;
-import wres.engine.statistics.metric.IndexOfAgreement.IndexOfAgreementBuilder;
-import wres.engine.statistics.metric.KlingGuptaEfficiency.KlingGuptaEfficiencyBuilder;
 import wres.engine.statistics.metric.Metric.MetricBuilder;
 import wres.engine.statistics.metric.MetricCollection.MetricCollectionBuilder;
-import wres.engine.statistics.metric.RankHistogram.RankHistogramBuilder;
-import wres.engine.statistics.metric.RelativeOperatingCharacteristicDiagram.RelativeOperatingCharacteristicBuilder;
-import wres.engine.statistics.metric.RelativeOperatingCharacteristicScore.RelativeOperatingCharacteristicScoreBuilder;
-import wres.engine.statistics.metric.ReliabilityDiagram.ReliabilityDiagramBuilder;
 import wres.engine.statistics.metric.SampleSize.SampleSizeBuilder;
+import wres.engine.statistics.metric.categorical.ContingencyTable;
+import wres.engine.statistics.metric.categorical.CriticalSuccessIndex;
+import wres.engine.statistics.metric.categorical.EquitableThreatScore;
+import wres.engine.statistics.metric.categorical.FrequencyBias;
+import wres.engine.statistics.metric.categorical.FrequencyBias.FrequencyBiasBuilder;
+import wres.engine.statistics.metric.categorical.PeirceSkillScore;
+import wres.engine.statistics.metric.categorical.ProbabilityOfDetection;
+import wres.engine.statistics.metric.categorical.ProbabilityOfFalseDetection;
+import wres.engine.statistics.metric.discreteprobability.BrierScore;
+import wres.engine.statistics.metric.discreteprobability.BrierSkillScore;
+import wres.engine.statistics.metric.discreteprobability.RelativeOperatingCharacteristicDiagram;
+import wres.engine.statistics.metric.discreteprobability.RelativeOperatingCharacteristicDiagram.RelativeOperatingCharacteristicBuilder;
+import wres.engine.statistics.metric.discreteprobability.RelativeOperatingCharacteristicScore;
+import wres.engine.statistics.metric.discreteprobability.RelativeOperatingCharacteristicScore.RelativeOperatingCharacteristicScoreBuilder;
+import wres.engine.statistics.metric.discreteprobability.ReliabilityDiagram;
+import wres.engine.statistics.metric.discreteprobability.ReliabilityDiagram.ReliabilityDiagramBuilder;
+import wres.engine.statistics.metric.ensemble.BoxPlotErrorByForecast;
+import wres.engine.statistics.metric.ensemble.BoxPlotErrorByForecast.BoxPlotErrorByForecastBuilder;
+import wres.engine.statistics.metric.ensemble.BoxPlotErrorByObserved;
+import wres.engine.statistics.metric.ensemble.BoxPlotErrorByObserved.BoxPlotErrorByObservedBuilder;
+import wres.engine.statistics.metric.ensemble.ContinuousRankedProbabilityScore;
+import wres.engine.statistics.metric.ensemble.ContinuousRankedProbabilityScore.CRPSBuilder;
+import wres.engine.statistics.metric.ensemble.ContinuousRankedProbabilitySkillScore;
+import wres.engine.statistics.metric.ensemble.ContinuousRankedProbabilitySkillScore.CRPSSBuilder;
+import wres.engine.statistics.metric.ensemble.RankHistogram;
+import wres.engine.statistics.metric.ensemble.RankHistogram.RankHistogramBuilder;
+import wres.engine.statistics.metric.singlevalued.BiasFraction;
+import wres.engine.statistics.metric.singlevalued.CoefficientOfDetermination;
+import wres.engine.statistics.metric.singlevalued.CorrelationPearsons;
+import wres.engine.statistics.metric.singlevalued.IndexOfAgreement;
+import wres.engine.statistics.metric.singlevalued.IndexOfAgreement.IndexOfAgreementBuilder;
+import wres.engine.statistics.metric.singlevalued.KlingGuptaEfficiency;
+import wres.engine.statistics.metric.singlevalued.KlingGuptaEfficiency.KlingGuptaEfficiencyBuilder;
+import wres.engine.statistics.metric.singlevalued.MeanAbsoluteError;
+import wres.engine.statistics.metric.singlevalued.MeanError;
+import wres.engine.statistics.metric.singlevalued.MeanSquareError;
+import wres.engine.statistics.metric.singlevalued.MeanSquareErrorSkillScore;
+import wres.engine.statistics.metric.singlevalued.QuantileQuantileDiagram;
+import wres.engine.statistics.metric.singlevalued.RootMeanSquareError;
+import wres.engine.statistics.metric.singlevalued.VolumetricEfficiency;
+import wres.engine.statistics.metric.singlevalued.VolumetricEfficiency.VolumetricEfficiencyBuilder;
 
 /**
  * <p>
@@ -623,6 +653,8 @@ public class MetricFactory
                 return ofSampleSize();
             case INDEX_OF_AGREEMENT:
                 return ofIndexOfAgreement();
+            case VOLUMETRIC_EFFICIENCY:
+                return ofVolumetricEfficiency();
             default:
                 throw new IllegalArgumentException( error + " '" + metric + "'." );
         }
@@ -896,7 +928,7 @@ public class MetricFactory
      * @throws MetricParameterException if one or more parameter values is incorrect 
      */
 
-    BiasFraction ofBiasFraction() throws MetricParameterException
+    public BiasFraction ofBiasFraction() throws MetricParameterException
     {
         return (BiasFraction) new BiasFraction.BiasFractionBuilder().setOutputFactory( outputFactory ).build();
     }
@@ -908,7 +940,7 @@ public class MetricFactory
      * @throws MetricParameterException if one or more parameter values is incorrect 
      */
 
-    BrierScore ofBrierScore() throws MetricParameterException
+    public BrierScore ofBrierScore() throws MetricParameterException
     {
         return (BrierScore) new BrierScore.BrierScoreBuilder().setOutputFactory( outputFactory ).build();
     }
@@ -920,7 +952,7 @@ public class MetricFactory
      * @throws MetricParameterException if one or more parameter values is incorrect 
      */
 
-    BrierSkillScore ofBrierSkillScore() throws MetricParameterException
+    public BrierSkillScore ofBrierSkillScore() throws MetricParameterException
     {
         return (BrierSkillScore) new BrierSkillScore.BrierSkillScoreBuilder().setOutputFactory( outputFactory ).build();
     }
@@ -932,7 +964,7 @@ public class MetricFactory
      * @throws MetricParameterException if one or more parameter values is incorrect
      */
 
-    CorrelationPearsons ofCoefficientOfDetermination() throws MetricParameterException
+    public CorrelationPearsons ofCoefficientOfDetermination() throws MetricParameterException
     {
         return (CoefficientOfDetermination) new CoefficientOfDetermination.CoefficientOfDeterminationBuilder().setOutputFactory( outputFactory )
                                                                                                               .build();
@@ -945,7 +977,7 @@ public class MetricFactory
      * @throws MetricParameterException if one or more parameter values is incorrect
      */
 
-    ContingencyTable<MulticategoryPairs> ofContingencyTable() throws MetricParameterException
+    public ContingencyTable<MulticategoryPairs> ofContingencyTable() throws MetricParameterException
     {
         return (ContingencyTable<MulticategoryPairs>) new ContingencyTable.ContingencyTableBuilder<>().setOutputFactory( outputFactory )
                                                                                                       .build();
@@ -958,7 +990,7 @@ public class MetricFactory
      * @throws MetricParameterException if one or more parameter values is incorrect
      */
 
-    CorrelationPearsons ofCorrelationPearsons() throws MetricParameterException
+    public CorrelationPearsons ofCorrelationPearsons() throws MetricParameterException
     {
         return (CorrelationPearsons) new CorrelationPearsons.CorrelationPearsonsBuilder().setOutputFactory( outputFactory )
                                                                                          .build();
@@ -971,7 +1003,7 @@ public class MetricFactory
      * @throws MetricParameterException if one or more parameter values is incorrect 
      */
 
-    CriticalSuccessIndex ofCriticalSuccessIndex() throws MetricParameterException
+    public CriticalSuccessIndex ofCriticalSuccessIndex() throws MetricParameterException
     {
         return (CriticalSuccessIndex) new CriticalSuccessIndex.CriticalSuccessIndexBuilder().setOutputFactory( outputFactory )
                                                                                             .build();
@@ -984,7 +1016,7 @@ public class MetricFactory
      * @throws MetricParameterException if one or more parameter values is incorrect 
      */
 
-    EquitableThreatScore ofEquitableThreatScore() throws MetricParameterException
+    public EquitableThreatScore ofEquitableThreatScore() throws MetricParameterException
     {
         return (EquitableThreatScore) new EquitableThreatScore.EquitableThreatScoreBuilder().setOutputFactory( outputFactory )
                                                                                             .build();
@@ -997,7 +1029,7 @@ public class MetricFactory
      * @throws MetricParameterException if one or more parameter values is incorrect 
      */
 
-    MeanAbsoluteError ofMeanAbsoluteError() throws MetricParameterException
+    public MeanAbsoluteError ofMeanAbsoluteError() throws MetricParameterException
     {
         return (MeanAbsoluteError) new MeanAbsoluteError.MeanAbsoluteErrorBuilder().setOutputFactory( outputFactory )
                                                                                    .build();
@@ -1010,7 +1042,7 @@ public class MetricFactory
      * @throws MetricParameterException if one or more parameter values is incorrect
      */
 
-    MeanError ofMeanError() throws MetricParameterException
+    public MeanError ofMeanError() throws MetricParameterException
     {
         return (MeanError) new MeanError.MeanErrorBuilder().setOutputFactory( outputFactory ).build();
     }
@@ -1022,7 +1054,7 @@ public class MetricFactory
      * @throws MetricParameterException if one or more parameter values is incorrect 
      */
 
-    MeanSquareError<SingleValuedPairs> ofMeanSquareError() throws MetricParameterException
+    public MeanSquareError<SingleValuedPairs> ofMeanSquareError() throws MetricParameterException
     {
         return (MeanSquareError<SingleValuedPairs>) new MeanSquareError.MeanSquareErrorBuilder<>().setOutputFactory( outputFactory )
                                                                                                   .build();
@@ -1035,7 +1067,7 @@ public class MetricFactory
      * @throws MetricParameterException if one or more parameter values is incorrect
      */
 
-    MeanSquareErrorSkillScore<SingleValuedPairs> ofMeanSquareErrorSkillScore() throws MetricParameterException
+    public MeanSquareErrorSkillScore<SingleValuedPairs> ofMeanSquareErrorSkillScore() throws MetricParameterException
     {
         return (MeanSquareErrorSkillScore<SingleValuedPairs>) new MeanSquareErrorSkillScore.MeanSquareErrorSkillScoreBuilder<>().setOutputFactory( outputFactory )
                                                                                                                                 .build();
@@ -1048,7 +1080,7 @@ public class MetricFactory
      * @throws MetricParameterException if one or more parameter values is incorrect
      */
 
-    PeirceSkillScore<DichotomousPairs> ofPeirceSkillScore() throws MetricParameterException
+    public PeirceSkillScore<DichotomousPairs> ofPeirceSkillScore() throws MetricParameterException
     {
         return (PeirceSkillScore<DichotomousPairs>) new PeirceSkillScore.PeirceSkillScoreBuilder<DichotomousPairs>().setOutputFactory( outputFactory )
                                                                                                                     .build();
@@ -1061,7 +1093,7 @@ public class MetricFactory
      * @throws MetricParameterException if one or more parameter values is incorrect 
      */
 
-    PeirceSkillScore<MulticategoryPairs> ofPeirceSkillScoreMulti() throws MetricParameterException
+    public PeirceSkillScore<MulticategoryPairs> ofPeirceSkillScoreMulti() throws MetricParameterException
     {
         return (PeirceSkillScore<MulticategoryPairs>) new PeirceSkillScore.PeirceSkillScoreBuilder<MulticategoryPairs>().setOutputFactory( outputFactory )
                                                                                                                         .build();
@@ -1074,7 +1106,7 @@ public class MetricFactory
      * @throws MetricParameterException if one or more parameter values is incorrect
      */
 
-    ProbabilityOfDetection ofProbabilityOfDetection() throws MetricParameterException
+    public ProbabilityOfDetection ofProbabilityOfDetection() throws MetricParameterException
     {
         return (ProbabilityOfDetection) new ProbabilityOfDetection.ProbabilityOfDetectionBuilder().setOutputFactory( outputFactory )
                                                                                                   .build();
@@ -1087,7 +1119,7 @@ public class MetricFactory
      * @throws MetricParameterException if one or more parameter values is incorrect
      */
 
-    ProbabilityOfFalseDetection ofProbabilityOfFalseDetection() throws MetricParameterException
+    public ProbabilityOfFalseDetection ofProbabilityOfFalseDetection() throws MetricParameterException
     {
         return (ProbabilityOfFalseDetection) new ProbabilityOfFalseDetection.ProbabilityOfFalseDetectionBuilder().setOutputFactory( outputFactory )
                                                                                                                  .build();
@@ -1100,7 +1132,7 @@ public class MetricFactory
      * @throws MetricParameterException if one or more parameter values is incorrect 
      */
 
-    QuantileQuantileDiagram ofQuantileQuantileDiagram() throws MetricParameterException
+    public QuantileQuantileDiagram ofQuantileQuantileDiagram() throws MetricParameterException
     {
         return (QuantileQuantileDiagram) new QuantileQuantileDiagram.QuantileQuantileDiagramBuilder().setOutputFactory( outputFactory )
                                                                                                      .build();
@@ -1113,7 +1145,7 @@ public class MetricFactory
      * @throws MetricParameterException if one or more parameter values is incorrect 
      */
 
-    RootMeanSquareError ofRootMeanSquareError() throws MetricParameterException
+    public RootMeanSquareError ofRootMeanSquareError() throws MetricParameterException
     {
         return (RootMeanSquareError) new RootMeanSquareError.RootMeanSquareErrorBuilder().setOutputFactory( outputFactory )
                                                                                          .build();
@@ -1126,7 +1158,7 @@ public class MetricFactory
      * @throws MetricParameterException if one or more parameter values is incorrect
      */
 
-    ReliabilityDiagram ofReliabilityDiagram() throws MetricParameterException
+    public ReliabilityDiagram ofReliabilityDiagram() throws MetricParameterException
     {
         return (ReliabilityDiagram) new ReliabilityDiagramBuilder().setOutputFactory( outputFactory ).build();
     }
@@ -1138,7 +1170,7 @@ public class MetricFactory
      * @throws MetricParameterException if one or more parameter values is incorrect
      */
 
-    RelativeOperatingCharacteristicDiagram ofRelativeOperatingCharacteristic() throws MetricParameterException
+    public RelativeOperatingCharacteristicDiagram ofRelativeOperatingCharacteristic() throws MetricParameterException
     {
         return (RelativeOperatingCharacteristicDiagram) new RelativeOperatingCharacteristicBuilder().setOutputFactory( outputFactory )
                                                                                                     .build();
@@ -1151,7 +1183,7 @@ public class MetricFactory
      * @throws MetricParameterException if one or more parameter values is incorrect
      */
 
-    RelativeOperatingCharacteristicScore ofRelativeOperatingCharacteristicScore() throws MetricParameterException
+    public RelativeOperatingCharacteristicScore ofRelativeOperatingCharacteristicScore() throws MetricParameterException
     {
         return (RelativeOperatingCharacteristicScore) new RelativeOperatingCharacteristicScoreBuilder().setOutputFactory( outputFactory )
                                                                                                        .build();
@@ -1164,7 +1196,7 @@ public class MetricFactory
      * @throws MetricParameterException if one or more parameter values is incorrect
      */
 
-    ContinuousRankedProbabilityScore ofContinuousRankedProbabilityScore() throws MetricParameterException
+    public ContinuousRankedProbabilityScore ofContinuousRankedProbabilityScore() throws MetricParameterException
     {
         return (ContinuousRankedProbabilityScore) new CRPSBuilder().setOutputFactory( outputFactory ).build();
     }
@@ -1176,7 +1208,7 @@ public class MetricFactory
      * @throws MetricParameterException if one or more parameter values is incorrect
      */
 
-    ContinuousRankedProbabilityScore ofContinuousRankedProbabilitySkillScore() throws MetricParameterException
+    public ContinuousRankedProbabilityScore ofContinuousRankedProbabilitySkillScore() throws MetricParameterException
     {
         return (ContinuousRankedProbabilitySkillScore) new CRPSSBuilder().setOutputFactory( outputFactory ).build();
     }
@@ -1188,7 +1220,7 @@ public class MetricFactory
      * @throws MetricParameterException if one or more parameter values is incorrect
      */
 
-    IndexOfAgreement ofIndexOfAgreement() throws MetricParameterException
+    public IndexOfAgreement ofIndexOfAgreement() throws MetricParameterException
     {
         return (IndexOfAgreement) new IndexOfAgreementBuilder().setOutputFactory( outputFactory ).build();
     }
@@ -1200,7 +1232,7 @@ public class MetricFactory
      * @throws MetricParameterException if one or more parameter values is incorrect
      */
 
-    KlingGuptaEfficiency ofKlingGuptaEfficiency() throws MetricParameterException
+    public KlingGuptaEfficiency ofKlingGuptaEfficiency() throws MetricParameterException
     {
         return (KlingGuptaEfficiency) new KlingGuptaEfficiencyBuilder().setOutputFactory( outputFactory ).build();
     }
@@ -1225,7 +1257,7 @@ public class MetricFactory
      * @throws MetricParameterException if one or more parameter values is incorrect
      */
 
-    RankHistogram ofRankHistogram() throws MetricParameterException
+    public RankHistogram ofRankHistogram() throws MetricParameterException
     {
         return (RankHistogram) new RankHistogramBuilder().setOutputFactory( outputFactory ).build();
     }
@@ -1237,7 +1269,7 @@ public class MetricFactory
      * @throws MetricParameterException if one or more parameter values is incorrect
      */
 
-    FrequencyBias ofFrequencyBias() throws MetricParameterException
+    public FrequencyBias ofFrequencyBias() throws MetricParameterException
     {
         return (FrequencyBias) new FrequencyBiasBuilder().setOutputFactory( outputFactory ).build();
     }
@@ -1249,7 +1281,7 @@ public class MetricFactory
      * @throws MetricParameterException if one or more parameter values is incorrect
      */
 
-    BoxPlotErrorByObserved ofBoxPlotErrorByObserved() throws MetricParameterException
+    public BoxPlotErrorByObserved ofBoxPlotErrorByObserved() throws MetricParameterException
     {
         return (BoxPlotErrorByObserved) new BoxPlotErrorByObservedBuilder().setOutputFactory( outputFactory ).build();
     }
@@ -1261,10 +1293,22 @@ public class MetricFactory
      * @throws MetricParameterException if one or more parameter values is incorrect
      */
 
-    BoxPlotErrorByForecast ofBoxPlotErrorByForecast() throws MetricParameterException
+    public BoxPlotErrorByForecast ofBoxPlotErrorByForecast() throws MetricParameterException
     {
         return (BoxPlotErrorByForecast) new BoxPlotErrorByForecastBuilder().setOutputFactory( outputFactory ).build();
     }
+    
+    /**
+     * Return a default {@link VolumetricEfficiency} function.
+     * 
+     * @return a default {@link VolumetricEfficiency} function
+     * @throws MetricParameterException if one or more parameter values is incorrect
+     */
+
+    public VolumetricEfficiency ofVolumetricEfficiency() throws MetricParameterException
+    {
+        return (VolumetricEfficiency) new VolumetricEfficiencyBuilder().setOutputFactory( outputFactory ).build();
+    }    
 
     /**
      * Hidden constructor.

@@ -140,7 +140,7 @@ public abstract class Metric<S extends MetricInput<?>, T extends MetricOutput<?>
          * @return the builder
          */
 
-        protected MetricBuilder<P, Q> setOutputFactory( final DataFactory dataFactory )
+        public MetricBuilder<P, Q> setOutputFactory( final DataFactory dataFactory )
         {
             this.dataFactory = dataFactory;
             return this;
@@ -174,7 +174,7 @@ public abstract class Metric<S extends MetricInput<?>, T extends MetricOutput<?>
      * @return the metadata
      */
 
-    MetricOutputMetadata getMetadata( final MetricInput<?> input,
+    protected MetricOutputMetadata getMetadata( final MetricInput<?> input,
                                       final int sampleSize,
                                       final MetricConstants componentID,
                                       final DatasetIdentifier baselineID )

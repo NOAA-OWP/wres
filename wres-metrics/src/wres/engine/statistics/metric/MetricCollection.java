@@ -20,6 +20,7 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.MetricOutputMapByMetric;
+import wres.engine.statistics.metric.categorical.ContingencyTable;
 
 /**
  * <p>
@@ -52,7 +53,7 @@ import wres.datamodel.outputs.MetricOutputMapByMetric;
  * @since 0.1
  */
 
-class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?>>
+public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?>>
         implements Function<S, MetricOutputMapByMetric<T>>, Callable<MetricOutputMapByMetric<T>>
 {
 

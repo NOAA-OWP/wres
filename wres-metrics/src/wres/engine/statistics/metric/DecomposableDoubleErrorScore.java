@@ -4,18 +4,17 @@ import java.util.Objects;
 
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInput;
-import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.outputs.VectorOutput;
 
 /**
- * A generic implementation of an error score for {@link SingleValuedPairs} that is decomposable.
+ * A generic implementation of an error score for that is decomposable.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
  * @since 0.1
  */
 
-abstract class DecomposableDoubleErrorScore<S extends MetricInput<?>> extends Metric<S, VectorOutput>
+public abstract class DecomposableDoubleErrorScore<S extends MetricInput<?>> extends Metric<S, VectorOutput>
         implements Score
 {
 
@@ -41,7 +40,7 @@ abstract class DecomposableDoubleErrorScore<S extends MetricInput<?>> extends Me
      * A {@link MetricBuilder} to build the metric.
      */
 
-    static abstract class DecomposableDoubleErrorScoreBuilder<S extends MetricInput<?>>
+    public static abstract class DecomposableDoubleErrorScoreBuilder<S extends MetricInput<?>>
             extends
             MetricBuilder<S, VectorOutput>
     {
@@ -49,7 +48,7 @@ abstract class DecomposableDoubleErrorScore<S extends MetricInput<?>> extends Me
          * The type of metric decomposition. See {@link ScoreOutputGroup}.
          */
 
-        ScoreOutputGroup decompositionID = ScoreOutputGroup.NONE;
+        private ScoreOutputGroup decompositionID = ScoreOutputGroup.NONE;
 
         /**
          * Sets the decomposition identifier.
@@ -58,7 +57,7 @@ abstract class DecomposableDoubleErrorScore<S extends MetricInput<?>> extends Me
          * @return the builder
          */
 
-        DecomposableDoubleErrorScoreBuilder<S> setDecompositionID( final ScoreOutputGroup decompositionID )
+        public DecomposableDoubleErrorScoreBuilder<S> setDecompositionID( final ScoreOutputGroup decompositionID )
         {
             this.decompositionID = decompositionID;
             return this;
@@ -72,7 +71,7 @@ abstract class DecomposableDoubleErrorScore<S extends MetricInput<?>> extends Me
      * @throws MetricParameterException if one or more parameters is invalid
      */
 
-    DecomposableDoubleErrorScore( final DecomposableDoubleErrorScoreBuilder<S> builder ) throws MetricParameterException
+    protected DecomposableDoubleErrorScore( final DecomposableDoubleErrorScoreBuilder<S> builder ) throws MetricParameterException
     {
         super( builder );
         this.decompositionID = builder.decompositionID;
