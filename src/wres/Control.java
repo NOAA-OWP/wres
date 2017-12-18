@@ -956,6 +956,7 @@ public class Control implements Function<String[], Integer>
 
         private PairsByTimeWindowProcessor(final Future<MetricInput<?>> input)
         {
+            Objects.requireNonNull( input, "Specify a non-null input for the processor." );
             this.input = input;
         }
 
@@ -1015,6 +1016,8 @@ public class Control implements Function<String[], Integer>
 
         private IntermediateResultProcessor(final Feature feature, final ProjectConfigPlus projectConfigPlus)
         {
+            Objects.requireNonNull( feature, "Specify a non-null feature for the processor." );
+            Objects.requireNonNull( projectConfigPlus, "Specify a non-null configuration for the processor." );
             this.projectConfigPlus = projectConfigPlus;
             this.feature = feature;
         }

@@ -41,6 +41,7 @@
     <metric><name>bias fraction</name></metric>
     <metric><name>coefficient of determination</name></metric>
     <metric><name>root mean square error</name></metric>
+    <metric><name>volumetric efficiency</name></metric>
     <destination type="numeric">/home/jesse/text_output"</destination>
     <destination type="graphic"><path>/tmp/</path>
     <!--Optional:-->

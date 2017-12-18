@@ -200,6 +200,12 @@ public enum MetricConstants
     SAMPLE_SIZE( MetricInputGroup.SINGLE_VALUED, MetricInputGroup.ENSEMBLE, MetricOutputGroup.SCALAR ),
 
     /**
+     * Identifier for the Volumetric Efficiency.
+     */
+    
+    VOLUMETRIC_EFFICIENCY ( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCALAR ),
+    
+    /**
      * Indicator for no decomposition.
      */
 
