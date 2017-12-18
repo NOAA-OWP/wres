@@ -62,6 +62,8 @@ import wres.engine.statistics.metric.singlevalued.MeanSquareError;
 import wres.engine.statistics.metric.singlevalued.MeanSquareErrorSkillScore;
 import wres.engine.statistics.metric.singlevalued.QuantileQuantileDiagram;
 import wres.engine.statistics.metric.singlevalued.RootMeanSquareError;
+import wres.engine.statistics.metric.singlevalued.VolumetricEfficiency;
+import wres.engine.statistics.metric.singlevalued.VolumetricEfficiency.VolumetricEfficiencyBuilder;
 
 /**
  * <p>
@@ -651,6 +653,8 @@ public class MetricFactory
                 return ofSampleSize();
             case INDEX_OF_AGREEMENT:
                 return ofIndexOfAgreement();
+            case VOLUMETRIC_EFFICIENCY:
+                return ofVolumetricEfficiency();
             default:
                 throw new IllegalArgumentException( error + " '" + metric + "'." );
         }
@@ -1293,6 +1297,18 @@ public class MetricFactory
     {
         return (BoxPlotErrorByForecast) new BoxPlotErrorByForecastBuilder().setOutputFactory( outputFactory ).build();
     }
+    
+    /**
+     * Return a default {@link VolumetricEfficiency} function.
+     * 
+     * @return a default {@link VolumetricEfficiency} function
+     * @throws MetricParameterException if one or more parameter values is incorrect
+     */
+
+    public VolumetricEfficiency ofVolumetricEfficiency() throws MetricParameterException
+    {
+        return (VolumetricEfficiency) new VolumetricEfficiencyBuilder().setOutputFactory( outputFactory ).build();
+    }    
 
     /**
      * Hidden constructor.

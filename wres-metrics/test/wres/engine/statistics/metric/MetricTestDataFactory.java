@@ -154,9 +154,12 @@ public final class MetricTestDataFactory
     }
 
     /**
-     * Returns a small test dataset with predictions and corresponding observations from location "103.1" from
-     * https://github.com/NVE/RunoffTestData. The data are stored in
-     * testinput/metricTestDataFactory/getSingleValuedPairsFive.asc
+     * <p>Returns a small test dataset with predictions and corresponding observations from location "103.1" from
+     * https://github.com/NVE/RunoffTestData. The data are stored in:</p>
+     *  
+     * <p>testinput/metricTestDataFactory/getSingleValuedPairsFive.asc</p>
+     * 
+     * <p>The observations are in the first column and the predictions are in the second column.</p>
      * 
      * @return single-valued pairs
      * @throws IOException if the read fails
