@@ -227,7 +227,7 @@ public abstract class ChartEngineFactory
             arguments.addArgument( "legendTitle", legendTitle );
             arguments.addArgument( "legendUnitsText", legendUnitsText );
             arguments.addArgument( "diagramInstanceDescription", "at Lead Hour " + key );
-            arguments.addArgument( "plotTitleVariable", "Lead Times" );
+            arguments.addArgument( "plotTitleVariable", "Thresholds" );
         }
 
         //-----------------------------------------------------------------
@@ -250,7 +250,7 @@ public abstract class ChartEngineFactory
                                                                  + " ("
                                                                  + meta.getInputDimension()
                                                                  + ")" );
-            arguments.addArgument( "plotTitleVariable", "Thresholds" );
+            arguments.addArgument( "plotTitleVariable", "Lead Times" );
         }
 
         //This is an error, since there are only two allowable types of reliability diagrams.
@@ -344,7 +344,7 @@ public abstract class ChartEngineFactory
             arguments.addArgument( "legendUnitsText", legendUnitsText );
             arguments.addArgument( "diagramInstanceDescription",
                                    "at Lead Hour " + key );
-            arguments.addArgument( "plotTitleVariable", "Lead Times" );
+            arguments.addArgument( "plotTitleVariable", "Thresholds" );
         }
 
         //-----------------------------------------------------------------
@@ -369,7 +369,7 @@ public abstract class ChartEngineFactory
                                                                  + " ("
                                                                  + meta.getInputDimension()
                                                                  + ")" );
-            arguments.addArgument( "plotTitleVariable", "Thresholds" );
+            arguments.addArgument( "plotTitleVariable", "Lead Times" );
         }
 
         //This is an error, since there are only two allowable types of reliability diagrams.
@@ -455,7 +455,7 @@ public abstract class ChartEngineFactory
             arguments.addArgument( "legendUnitsText", legendUnitsText );
             arguments.addArgument( "diagramInstanceDescription",
                                    "at Lead Hour " + key );
-            arguments.addArgument( "plotTitleVariable", "Lead Times" );
+            arguments.addArgument( "plotTitleVariable", "Thresholds" );
         }
 
         //-----------------------------------------------------------------
@@ -480,7 +480,7 @@ public abstract class ChartEngineFactory
                                                                  + " ("
                                                                  + meta.getInputDimension()
                                                                  + ")" );
-            arguments.addArgument( "plotTitleVariable", "Thresholds" );
+            arguments.addArgument( "plotTitleVariable", "Lead Times" );
         }
 
         //This is an error, since there are only two allowable types of reliability diagrams.
@@ -567,7 +567,7 @@ public abstract class ChartEngineFactory
             arguments.addArgument( "legendUnitsText", legendUnitsText );
             arguments.addArgument( "diagramInstanceDescription",
                                    "at Lead Hour " + key );
-            arguments.addArgument( "plotTitleVariable", "Lead Times" );
+            arguments.addArgument( "plotTitleVariable", "Thresholds" );
         }
 
         //-----------------------------------------------------------------
@@ -592,7 +592,7 @@ public abstract class ChartEngineFactory
                                                                  + " ("
                                                                  + meta.getInputDimension()
                                                                  + ")" );
-            arguments.addArgument( "plotTitleVariable", "Thresholds" );
+            arguments.addArgument( "plotTitleVariable", "Lead Times" );
         }
 
         //This is an error, since there are only two allowable types of reliability diagrams.
