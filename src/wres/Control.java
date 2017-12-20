@@ -399,8 +399,7 @@ public class Control implements Function<String[], Integer>
             System.err.println("");
             String message = "Error while processing feature "
                              + ConfigHelper.getFeatureDescription( feature );
-            LOGGER.error(message);
-            LOGGER.error(e.getMessage());
+            LOGGER.error(message, e);
             System.err.println("");
 
             // TODO: This is commented out experimentally; The app should not die
@@ -416,7 +415,7 @@ public class Control implements Function<String[], Integer>
         else if ( LOGGER.isInfoEnabled() )
         {
             String description = ConfigHelper.getFeatureDescription( feature );
-            LOGGER.info( "No cached outputs to generate for feature: '"
+            LOGGER.info( "No metric results generated for feature: '"
                          + description + "'" );
         }
     }
