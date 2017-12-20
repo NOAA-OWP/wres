@@ -484,7 +484,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
 
         Double[] rightAggregation = new Double[rightValues.size()];
 
-        byte memberIndex = 0;
+        int memberIndex = 0;
         for (List<Double> values : rightValues.values())
         {
             rightAggregation[memberIndex] =

@@ -8,7 +8,7 @@
         <file>${user.home}/wres_logs/wres.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
           <!-- Roll over when a new day starts. -->
-          <fileNamePattern>${user.home}/wres_logs/wres.%d{YYYY-MM-dd}.log</fileNamePattern>
+          <fileNamePattern>${user.home}/wres_logs/wres.%d{yyyy-MM-dd}.log</fileNamePattern>
           <!-- Keep at most 10 years of rolled files (see next comment) -->
           <maxHistory>3653</maxHistory>
           <!-- When size of all rolled files exceeds 256MB, delete oldest files,
@@ -19,7 +19,7 @@
         <encoder>
           <!-- %exception{full}: full stacktrace in log file.
                %X{pid}: pid disambiguates multiple wres processes running. -->
-          <pattern>%d{YYYY-MM-dd'T'HH:mm:ss.SSSZ} %X{pid} [%thread] %level %logger - %msg%n%exception{full}</pattern>
+          <pattern>%d{yyyy-MM-dd'T'HH:mm:ss.SSSZ} %X{pid} [%thread] %level %logger - %msg%n%exception{full}</pattern>
         </encoder>
     </appender>
 
