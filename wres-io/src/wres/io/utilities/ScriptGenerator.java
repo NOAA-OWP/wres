@@ -61,9 +61,9 @@ public final class ScriptGenerator
         script.append("                    ON PS.source_id = FS.source_id").append(NEWLINE);
         script.append("                WHERE PS.project_id = ").append(projectDetails.getId()).append(NEWLINE);
         script.append("                    AND PS.member = 'right'").append(NEWLINE);
-        script.append("                    AND FS.forecast_id = TS.forecast_id").append(NEWLINE);
+        script.append("                    AND FS.forecast_id = TS.timeseries_id").append(NEWLINE);
         script.append("            )");
-        script.append("        ) AS F,").append(NEWLINE);
+        script.append("        ) AS F").append(NEWLINE);
         script.append("    CROSS JOIN (").append(NEWLINE);
         script.append("        SELECT MIN(O.observation_time), MAX(O.observation_time)").append(NEWLINE);
         script.append("        FROM wres.Observation O").append(NEWLINE);
@@ -81,7 +81,8 @@ public final class ScriptGenerator
         script.append("                WHERE PS.project_id = ").append(projectDetails.getId()).append(NEWLINE);
         script.append("                    AND PS.member = 'left'").append(NEWLINE);
         script.append("                    AND PS.source_id = O.source_id").append(NEWLINE);
-        script.append("        ) AS O").append(NEWLINE);
+        script.append("        )").append(NEWLINE);
+        script.append("    ) AS O").append(NEWLINE);
         script.append(")").append(NEWLINE);
         script.append("SELECT MIN(TS.initialization_date),").append(NEWLINE);
         script.append("    EXTRACT( epoch FROM AGE( MAX(TS.initialization_date), MIN(TS.initialization_date))) / (3600 *");
