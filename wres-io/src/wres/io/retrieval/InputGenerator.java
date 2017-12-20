@@ -42,10 +42,27 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>>
     {
         // TODO: Evaluate what kind of MetricInputIterator to return.
         Iterator<Future<MetricInput<?>>> iterator = null;
-        try {
-            iterator =  new BackToBackMetricInputIterator( this.projectConfig,
-                                                           this.feature,
-                                                           this.projectDetails );
+        try
+        {
+            switch (this.projectDetails.getAggregation().getMode())
+            {
+                case ROLLING:
+                    iterator = new RollingMetricInputIterator( this.projectConfig,
+                                                               this.feature,
+                                                               this.projectDetails );
+                    break;
+                case BACK_TO_BACK:
+                    iterator =  new BackToBackMetricInputIterator( this.projectConfig,
+                                                                   this.feature,
+                                                                   this.projectDetails );
+                    break;
+                default:
+                    throw new NotImplementedException( "The aggregation mode of '" +
+                                                       String.valueOf(
+                                                               this.projectDetails.getAggregation()
+                                                                                  .getMode() ) +
+                                                       "' has not been implemented." );
+            }
         }
         catch (SQLException | NotImplementedException | InvalidPropertiesFormatException e)
         {

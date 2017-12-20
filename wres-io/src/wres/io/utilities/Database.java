@@ -1048,7 +1048,7 @@ public final class Database {
 		catch (SQLException error)
 		{
 			LOGGER.error("The following SQL query failed:");
-			LOGGER.error(formatQueryForOutput(query));
+			LOGGER.error(Strings.truncate(query));
 			LOGGER.error(Strings.getStackTrace(error));
 			throw error;
 		}

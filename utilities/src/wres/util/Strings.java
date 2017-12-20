@@ -22,7 +22,7 @@ public final class Strings
 {
 	private static final Logger LOGGER = LoggerFactory.getLogger( Strings.class );
 
-	private final static int TRUNCATE_SIZE = 1000;
+	private final static int TRUNCATE_SIZE = 2000;
 
     private Strings(){}
 	
