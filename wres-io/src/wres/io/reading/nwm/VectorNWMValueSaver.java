@@ -935,6 +935,15 @@ class VectorNWMValueSaver extends WRESRunnable
         // Find the factor with which to scale all read values
         double scaleFactor = NetCDF.getScaleFactor(var);
 
+        // Find the smallest possible value
+        double minimumValue = NetCDF.getMinimumValue( var );
+
+        // Find the largest possible value
+        double maximumValue = NetCDF.getMaximumValue( var );
+
+        // Find the offset for all values
+        double offset = NetCDF.getAddOffset( var );
+
         // Get the mapping between the soon to be read array indices and the
         // IDs for its spatial and variable identifiers
         Map<Integer, Integer> variableIndices = this.getIndexMapping();
@@ -956,14 +965,20 @@ class VectorNWMValueSaver extends WRESRunnable
             {
                 // Get the ID for the location and variable for this index
                 Integer positionIndex = variableIndices.get(index);
-                Double value = values.getDouble( index ) * scaleFactor;
+                Double value = values.getDouble( index );
 
-                if ( Precision.equals( value, this.getMissingValue(), EPSILON ) )
+                if ( Precision.equals( value, this.getMissingValue(), EPSILON ) ||
+                     value > maximumValue ||
+                     value < minimumValue )
                 {
                     value = null;
                 }
+                else
+                {
+                    value = (value * scaleFactor) + offset;
+                }
 
-                // Scale the read value and send it to be saved
+                // send it to be saved
                 this.addValuesToSave(positionIndex, value);
             }
         }

@@ -26,6 +26,7 @@ import wres.config.generated.Format;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.TimeAggregationConfig;
+import wres.config.generated.TimeAggregationMode;
 import wres.io.config.ProjectConfigPlus;
 import wres.util.Strings;
 
@@ -396,6 +397,9 @@ public class Validation
                                            pairConfig )
                  && result;
 
+        result = Validation.isModeValid( projectConfigPlus, pairConfig)
+                 && result;
+
         return result;
     }
 
@@ -677,6 +681,66 @@ public class Validation
         }
 
         return result;
+    }
+
+    private static boolean isModeValid( ProjectConfigPlus projectConfigPlus, PairConfig pairConfig)
+    {
+        boolean valid = true;
+
+        if ( pairConfig.getDesiredTimeAggregation().getMode() == TimeAggregationMode.ROLLING)
+        {
+            TimeAggregationConfig aggregationConfig = pairConfig.getDesiredTimeAggregation();
+            String warning = "";
+
+            if (aggregationConfig.getFrequency() == null)
+            {
+                valid = false;
+                warning = "The frequency (the rate at which a new rolling " +
+                          "window is generated) must be set in order to use " +
+                          "rolling windows.";
+            }
+            else if (aggregationConfig.getFrequency() < 1)
+            {
+                valid = false;
+                warning = "A frequency of " +
+                          String.valueOf( aggregationConfig.getFrequency() ) +
+                          " is not valid; it must be at least 1 in order to " +
+                          "move on to the next window.";
+            }
+
+            if (aggregationConfig.getSpan() == null)
+            {
+                valid = false;
+
+                if (Strings.hasValue( warning ))
+                {
+                    warning += System.lineSeparator();
+                }
+
+                warning += "The span of the window for rolling aggregation " +
+                           "must be set in order to perform rolling aggregation.";
+            }
+            else if (aggregationConfig.getSpan() < 1)
+            {
+                valid = false;
+
+                if (Strings.hasValue( warning ))
+                {
+                    warning += System.lineSeparator();
+                }
+
+                warning += "The span of a window for rolling aggregation " +
+                           "must be at least 1 in order to perform rolling " +
+                           "aggregation.";
+            }
+
+            if (!valid)
+            {
+                LOGGER.warn( warning );
+            }
+        }
+
+        return valid;
     }
 
     private static boolean areDataSourceConfigsValid( ProjectConfigPlus projectConfigPlus )
