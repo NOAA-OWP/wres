@@ -97,11 +97,16 @@ for scenarioName in $*; do
     # ============================================================
 
     # Do the clean if CLEAN is found in the scenario directory.
+    if [ -z "$WRES_DB_NAME" ]
+    then
+    	export WRES_DB_NAME=wrestest1
+    	export WRES_LOG_LEVEL=info
+    fi
     if [ -f CLEAN ]; then
         echo "$echoPrefix Cleaning the database: ../wres.sh cleandatabase ..."
         ../wres.sh cleandatabase
         if [[ $? != 0 ]]; then
-            echo "$echoPrefix WRES clean failed; see above.  Something is wrong with the database.  Aborting all tests..." | tee /dev/stderr
+            echo "$echoPrefix WRES clean failed; see above.  Something is wrong with the database $WRES_DB_NAME.  Aborting all tests..." | tee /dev/stderr
             exit 1
         fi
     fi
