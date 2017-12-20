@@ -168,7 +168,7 @@ for scenarioName in $*; do
     ls *.csv *.png > dirListing.txt 2>/dev/null 
     if [ -f ../$benchDirName/dirListing.txt ]; then
         echo "$echoPrefix Comparing listing with benchmark expected contents: diff dirListing.txt  ../$benchDirName/dirListing.txt"  
-        diff dirListing.txt ../$benchDirName/dirListing.txt | tee /dev/stderr
+        diff --brief dirListing.txt ../$benchDirName/dirListing.txt | tee /dev/stderr
     else 
         echo "$echoPrefix No benchmark directory listing to compare against.  Cannot compare expected output listing." | tee /dev/stderr
     fi

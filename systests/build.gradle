@@ -29,6 +29,8 @@ distributions
             {
                 include '*.sh'
                 include 'scenario*/project_config.xml'
+                include 'scenario*/CLEAN'
+                include 'scenario*/FAILS'
                 include 'scenario*/benchmarks/**'
                 include 'smalldata/**'
             }
