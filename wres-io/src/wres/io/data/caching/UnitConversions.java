@@ -3,8 +3,9 @@ package wres.io.data.caching;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,7 +13,6 @@ import org.slf4j.LoggerFactory;
 import static wres.io.data.caching.Cache.NEWLINE;
 
 import wres.io.utilities.Database;
-import wres.util.Collections;
 import wres.util.NotImplementedException;
 import wres.util.Strings;
 
@@ -20,12 +20,53 @@ public final class UnitConversions
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(UnitConversions.class);
 
+    private static class ConversionKey
+    {
+        @Override
+        public int hashCode()
+        {
+            return Objects.hash( this.toUnitName, this.fromUnitID );
+        }
+
+        @Override
+        public boolean equals( Object obj )
+        {
+            boolean equal = false;
+
+            if (obj instanceof ConversionKey)
+            {
+                ConversionKey other = (ConversionKey)obj;
+
+                equal = this.toUnitName.equalsIgnoreCase( other.toUnitName );
+
+                equal = equal && this.fromUnitID == other.fromUnitID;
+            }
+
+            return equal;
+        }
+
+        private final String toUnitName;
+        private final int fromUnitID;
+
+        private ConversionKey( String toUnitName, int fromUnitID )
+        {
+            this.toUnitName = toUnitName;
+            this.fromUnitID = fromUnitID;
+        }
+
+        private ConversionKey (ResultSet row) throws SQLException
+        {
+            this.toUnitName = Database.getValue( row, "unit_name" );
+            this.fromUnitID = Database.getValue( row, "from_unit" );
+        }
+    }
+
     private static UnitConversions INTERNAL_CACHE = null;
     private static final Object CACHE_LOCK = new Object();
-    private final List<Conversion> conversionList;
+    private final Map<ConversionKey, Conversion> conversionMap;
 
-
-    private static UnitConversions getCache () {
+    private static UnitConversions getCache ()
+    {
         synchronized (CACHE_LOCK)
         {
             if (INTERNAL_CACHE == null)
@@ -36,9 +77,9 @@ public final class UnitConversions
         }
     }
 
-    private UnitConversions () {
-        List<Conversion> conversions = new ArrayList<>();
-
+    private UnitConversions ()
+    {
+        this.conversionMap = new ConcurrentHashMap<>(  );
         Connection connection = null;
         ResultSet conversionRows = null;
 
@@ -50,24 +91,28 @@ public final class UnitConversions
             script += "     ON M.measurementunit_id = UC.to_unit;";
 
             connection = Database.getHighPriorityConnection();
-            conversionRows = Database.getResults(connection, script);//"SELECT * FROM wres.UnitConversion;");
+            conversionRows = Database.getResults(connection, script);
 
             while (conversionRows.next())
             {
-                conversions.add(new Conversion(conversionRows));
+                this.conversionMap.put(new ConversionKey( conversionRows ),
+                                       new Conversion( conversionRows ));
             }
         }
-        catch (SQLException e) {
+        catch (SQLException e)
+        {
             LOGGER.error(Strings.getStackTrace(e));
         }
         finally
         {
             if (conversionRows != null)
             {
-                try {
+                try
+                {
                     conversionRows.close();
                 }
-                catch (SQLException e) {
+                catch (SQLException e)
+                {
                     LOGGER.error(Strings.getStackTrace(e));
                 }
             }
@@ -77,76 +122,43 @@ public final class UnitConversions
                 Database.returnHighPriorityConnection(connection);
             }
         }
-        this.conversionList = conversions;
     }
 
     public static double convert(double value, int fromMeasurementUnitID, String toMeasurementUnit) throws SQLException
     {
-        //int toMeasurementUnitID = MeasurementUnits.getMeasurementUnitID(toMeasurementUnit);
+        Conversion conversion = getConversion( fromMeasurementUnitID, toMeasurementUnit );
 
-        Conversion conversion = getConversion( fromMeasurementUnitID, toMeasurementUnit ); //getConversion(fromMeasurementUnitID, toMeasurementUnitID);
-
-        if (conversion == null) {
+        if (conversion == null)
+        {
             throw new NotImplementedException("There is not currently a conversion from the measurement unit " +
                                                       String.valueOf(fromMeasurementUnitID) +
                                                       " to the measurement unit " +
                                                         toMeasurementUnit);
-                                                      //String.valueOf(toMeasurementUnitID));
         }
         return conversion.convert(value);
     }
 
     public static Conversion getConversion(final int fromID, final String desiredName)
     {
-        return Collections.find(getCache().conversionList, (Conversion conversion) -> {
-           return conversion.getFromID() == fromID && conversion.getDesiredName().equalsIgnoreCase( desiredName );
-        });
-    }
-
-    private static Conversion getConversion(final int fromID, final int toID)
-    {
-        return Collections.find(getCache().conversionList, (Conversion conversion) -> {
-            return conversion.getFromID() == fromID && conversion.getToID() == toID;
-        });
+        return getCache().conversionMap.get(new ConversionKey( desiredName, fromID ));
     }
 
     public static class Conversion
     {
-        private final int fromID;
-        private final int toID;
-        private final String toName;
         private final double factor;
         private final double initial_offset;
         private final double final_offset;
 
         public Conversion (ResultSet row) throws SQLException
         {
-            this.fromID = row.getInt("from_unit");
-            this.toID = row.getInt("to_unit");
             this.factor = row.getDouble("factor");
             this.initial_offset = row.getDouble("initial_offset");
             this.final_offset = row.getDouble("final_offset");
-            this.toName = row.getString("unit_name");
         }
 
         public double convert(double value)
         {
             return ((value + this.initial_offset) * this.factor) + this.final_offset;
-        }
-
-        public int getFromID()
-        {
-            return this.fromID;
-        }
-
-        public int getToID()
-        {
-            return this.toID;
-        }
-
-        public String getDesiredName()
-        {
-            return this.toName;
         }
     }
 }

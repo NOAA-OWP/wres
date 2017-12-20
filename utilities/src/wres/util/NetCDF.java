@@ -309,6 +309,34 @@ public final class NetCDF {
         return scaleFactor;
     }
 
+    public static double getMinimumValue(Variable var)
+    {
+        double minimum = -Double.MAX_VALUE;
+
+        Attribute range = NetCDF.getVariableAttribute( var, "valid_range" );
+
+        if (range != null)
+        {
+            minimum = range.getNumericValue( 0 ).doubleValue();
+        }
+
+        return minimum;
+    }
+
+    public static double getMaximumValue(Variable var)
+    {
+        double maximum = Double.MAX_VALUE;
+
+        Attribute range = NetCDF.getVariableAttribute( var, "valid_range" );
+
+        if (range != null)
+        {
+            maximum = range.getNumericValue( 1 ).doubleValue();
+        }
+
+        return maximum;
+    }
+
     public static double getAddOffset(Variable var)
     {
         double addOffset = 0.0;
