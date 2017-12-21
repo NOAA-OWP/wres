@@ -15,6 +15,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,6 +75,8 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     private Integer leftVariableID = null;
     private Integer rightVariableID = null;
     private Integer baselineVariableID = null;
+
+    private boolean performedInsert;
 
     private final int inputCode;
 
@@ -921,16 +924,42 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
                         "     )" + NEWLINE +
                         "     RETURNING project_id" + NEWLINE +
                         ")" + NEWLINE +
-                        "SELECT project_id" + NEWLINE +
+                        "SELECT project_id, TRUE as wasInserted" + NEWLINE +
                         "FROM new_project" + NEWLINE +
                         NEWLINE +
                         "UNION" + NEWLINE +
                         NEWLINE +
-                        "SELECT project_id" + NEWLINE +
+                        "SELECT project_id, FALSE as wasInserted" + NEWLINE +
                         "FROM wres.Project P" + NEWLINE +
                         "WHERE P.input_code = " + this.getInputCode() + ";";
 
         return script;
+    }
+
+
+    @Override
+    public void save() throws SQLException
+    {
+        String[] tablesToLock = { "wres.project" };
+        Pair<Integer,Boolean> databaseResult
+                = Database.getResult( this.getInsertSelectStatement(),
+                                      this.getIDName(),
+                                      tablesToLock );
+
+        if ( LOGGER.isDebugEnabled() )
+        {
+            LOGGER.debug( "Did I create Project ID {}? {}",
+                          databaseResult.getLeft(),
+                          databaseResult.getRight() );
+        }
+
+        this.setID( databaseResult.getLeft() );
+        this.performedInsert = databaseResult.getRight();
+    }
+
+    public boolean performedInsert()
+    {
+        return this.performedInsert;
     }
 
     public Integer getLastLead(Feature feature) throws SQLException

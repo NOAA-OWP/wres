@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.StringJoiner;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,13 +42,14 @@ public class Projects extends Cache<ProjectDetails, Integer> {
         }
     }
 
-    public static ProjectDetails getProject( ProjectConfig projectConfig,
-                                             List<String> leftHashes,
-                                             List<String> rightHashes,
-                                             List<String> baselineHashes )
+    public static Pair<ProjectDetails,Boolean> getProject( ProjectConfig projectConfig,
+                                                           List<String> leftHashes,
+                                                           List<String> rightHashes,
+                                                           List<String> baselineHashes )
             throws SQLException
     {
         ProjectDetails details = null;
+        boolean thisCallCausedInsert = false;
         Integer inputCode = ProjectDetails.hash( projectConfig,
                                                  leftHashes,
                                                  rightHashes,
@@ -55,18 +57,34 @@ public class Projects extends Cache<ProjectDetails, Integer> {
 
         if (Projects.getCache().hasID( inputCode ))
         {
+            LOGGER.debug( "Found project with key {} in cache.", inputCode );
             details = Projects.getCache().get( Projects.getCache().getID( inputCode )  );
         }
 
         if (details == null)
         {
+            LOGGER.debug( "Did NOT find project with key {} in cache.",
+                          inputCode );
+
             details = new ProjectDetails( projectConfig,
                                           inputCode );
+
+            // Caller cannot trust the boolean flag on the details since we are
+            // caching the exact details object. Only the creator of the details
+            // can reliably say "hey I was the one who caused this row to be
+            // inserted."
             Projects.getCache().addElement( details );
+
+            // addElement will call .save() on the details, which then allows us
+            // to interrogate the same details object we passed in. Maybe this
+            // should be more direct.
+            thisCallCausedInsert = details.performedInsert();
+            LOGGER.debug( "Did the ProjectDetails created by this Thread insert into the database first? {}",
+                          thisCallCausedInsert );
         }
 
 
-        return details;
+        return Pair.of( details, thisCallCausedInsert );
     }
 
     @Override
@@ -170,27 +188,47 @@ public class Projects extends Cache<ProjectDetails, Integer> {
         List<String> finalLeftHashes = Collections.unmodifiableList( leftHashes );
         List<String> finalRightHashes = Collections.unmodifiableList( rightHashes );
         List<String> finalBaselineHashes = Collections.unmodifiableList( baselineHashes );
-        ProjectDetails details = Projects.getProject( projectConfig,
-                                                      finalLeftHashes,
-                                                      finalRightHashes,
-                                                      finalBaselineHashes );
+        Pair<ProjectDetails,Boolean> detailsResult =
+                Projects.getProject( projectConfig,
+                                     finalLeftHashes,
+                                     finalRightHashes,
+                                     finalBaselineHashes );
+        ProjectDetails details = detailsResult.getLeft();
 
-        String copyHeader = "wres.ProjectSource (project_id, source_id, member)";
-        String delimiter = "|";
-        StringJoiner copyStatement = new StringJoiner( NEWLINE );
-
-        for ( IngestResult ingestResult : ingestResults )
+        if ( detailsResult.getRight() )
         {
-            Integer sourceID =
-                DataSources.getActiveSourceID( ingestResult.getHash() );
-            copyStatement.add( details.getId() + delimiter
-                               + sourceID + delimiter
-                               + ingestResult.getLeftOrRightOrBaseline().value() );
-        }
+            if ( LOGGER.isDebugEnabled() )
+            {
+                LOGGER.debug( "Found that this Thread is responsible for "
+                              + "wres.ProjectSource rows for project {}",
+                              details.getId() );
+            }
 
-        String allCopyValues = copyStatement.toString();
-        LOGGER.trace( "Full copy statement: {}", allCopyValues );
-        Database.copy( copyHeader, allCopyValues, delimiter );
+            // If we just created the Project, we are responsible for relating
+            // project to source. Otherwise we trust it is present.
+            String copyHeader = "wres.ProjectSource (project_id, source_id, member)";
+            String delimiter = "|";
+            StringJoiner copyStatement = new StringJoiner( NEWLINE );
+
+            for ( IngestResult ingestResult : ingestResults )
+            {
+                Integer sourceID =
+                    DataSources.getActiveSourceID( ingestResult.getHash() );
+                copyStatement.add( details.getId() + delimiter
+                                   + sourceID + delimiter
+                                   + ingestResult.getLeftOrRightOrBaseline().value() );
+            }
+
+            String allCopyValues = copyStatement.toString();
+            LOGGER.trace( "Full copy statement: {}", allCopyValues );
+            Database.copy( copyHeader, allCopyValues, delimiter );
+        }
+        else if ( LOGGER.isDebugEnabled() )
+        {
+            LOGGER.debug( "Found that this Thread is NOT responsible for "
+                          + "wres.ProjectSource rows for project {}",
+                          details.getId() );
+        }
 
         return details;
     }
