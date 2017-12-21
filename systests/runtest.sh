@@ -100,7 +100,6 @@ for scenarioName in $*; do
     if [ -z "$WRES_DB_NAME" ]
     then
     	export WRES_DB_NAME=wrestest1
-    	export WRES_LOG_LEVEL=info
     fi
     if [ -f CLEAN ]; then
         echo "$echoPrefix Cleaning the database: ../wres.sh cleandatabase ..."
