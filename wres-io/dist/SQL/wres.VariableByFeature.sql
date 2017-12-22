@@ -14,7 +14,8 @@ SELECT  VP.variableposition_id,
         huc,
         feature_name,
         latitude,
-        longitude
+        longitude,
+        V.variable_id
 FROM wres.VariablePosition VP
 INNER JOIN wres.Variable V
 	ON V.variable_id = VP.variable_id

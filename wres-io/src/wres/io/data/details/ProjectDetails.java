@@ -80,8 +80,8 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
 
     private final int inputCode;
 
-    private final Object ROLLING_LOCK = new Object();
-    private final Object LOAD_LOCK = new Object();
+    private static final Object ROLLING_LOCK = new Object();
+    private static final Object LOAD_LOCK = new Object();
 
     public static Integer hash( final ProjectConfig projectConfig,
                                 final List<String> leftHashesIngested,

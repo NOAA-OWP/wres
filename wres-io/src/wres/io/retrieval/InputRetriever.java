@@ -3,7 +3,6 @@ package wres.io.retrieval;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.InvalidPropertiesFormatException;
@@ -421,8 +420,6 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             PairOfDoubleAndVectorOfDoubles pair = this.getPair( valueDate, rightValues );
             if (pair != null)
             {
-                // TODO: This now pulls back the correct values, but now the date
-                // represents the valid time, not the basis time. Convert.
                 writePair( valueDate, pair, dataSourceConfig );
                 pairs.add( pair );
             }
@@ -445,13 +442,11 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
 
         // This will help us determine when the window will end
         int windowNumber = this.progress + 1;
-        Double windowWidth = 1.0;
+        Double windowWidth;
         Double lastLead = 0.0;
         // If this is a simulation, there are no windows, so set to 0
         if ( !ConfigHelper.isForecast( sourceConfig ))
         {
-            windowNumber = 0;
-            windowWidth = 0.0;
             lastLead = 0.0;
         }
         else
