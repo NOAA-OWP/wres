@@ -45,6 +45,10 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
     private VectorOfDoubles climatology;
     private int sequenceStep;
     private int finalSequenceStep = 0;
+
+    // This is just for debugging. This is safe for removal and doesn't drive any logic
+    // Use Case: "I expect this run to create 15 inputs. It actually generated 612.
+    // Something is wrong."
     private int inputCounter;
 
     protected int getWindowNumber()

@@ -28,6 +28,7 @@ class RollingForecastScripter extends Scripter
     String formScript() throws SQLException, InvalidPropertiesFormatException,
             NoDataException
     {
+        // TODO: Break out into separate functions
         this.addLine("WITH forecasts AS");
         this.addLine("(");
         this.addLine("    SELECT F.basis_time,");
@@ -43,8 +44,15 @@ class RollingForecastScripter extends Scripter
         Double halfSpan = TimeHelper.unitsToHours( this.getProjectDetails().getAggregationUnit(), this.getProjectDetails().getAggregation().getSpan() ) / 2;
 
         this.addLine( "        AND F.feature_id = ", Features.getFeatureID(this.getFeature()));
-        this.addLine( "        AND F.lead > ", this.getProgress() * this.getProjectDetails().getAggregationPeriod());
-        this.addLine( "        AND F.lead <= ", (this.getProgress() + 1) * this.getProjectDetails().getAggregationPeriod() );
+        this.addLine( "        AND F.lead > ", this.getProgress() );
+        this.add( "        AND F.lead <= ");
+        this.addLine(
+                this.getProgress() +
+                TimeHelper.unitsToHours(
+                        this.getProjectDetails().getAggregationUnit(),
+                        this.getProjectDetails().getAggregationPeriod()
+                )
+        );
 
         // TODO: Update this to handle left and right focused windows
         this.add( "        AND F.basis_time >= ('", this.getInitialRollingDate(), "'::timestamp without time zone + (INTERVAL '1 HOUR' * ");
