@@ -1,8 +1,14 @@
 package wres.io.data.details;
 
+import java.sql.SQLException;
 import java.util.Objects;
 
+import org.apache.commons.lang3.tuple.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import wres.io.data.details.SourceDetails.SourceKey;
+import wres.io.utilities.Database;
 import wres.util.Internal;
 import wres.util.Time;
 
@@ -13,12 +19,15 @@ import wres.util.Time;
 @Internal(exclusivePackage = "wres.io")
 public class SourceDetails extends CachedDetail<SourceDetails, SourceKey> {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger( SourceDetails.class );
+
 	private String sourcePath = null;
 	private String outputTime = null;
 	private Integer lead = null;
 	private Integer sourceID = null;
 	private String hash = null;
 	private SourceKey key = null;
+	private boolean performedInsert;
 
 	/**
 	 * Constructor
@@ -136,17 +145,42 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey> {
 		script += "		)" + NEWLINE;
 		script += "		RETURNING source_id" + NEWLINE;
 		script += ")" + NEWLINE;
-		script += "SELECT source_id" + NEWLINE;
+        script += "SELECT source_id, TRUE as wasInserted" + NEWLINE;
 		script += "FROM new_source" + NEWLINE + NEWLINE;
 		script += "";
 		script += "UNION" + NEWLINE + NEWLINE;
 		script += "";
-		script += "SELECT source_id" + NEWLINE;
+        script += "SELECT source_id, FALSE as wasInserted" + NEWLINE;
 		script += "FROM wres.Source" + NEWLINE;
 		script += "WHERE hash = '" + this.hash + "';" + NEWLINE;
 
 		return script;
 	}
+
+    @Override
+    public void save() throws SQLException
+    {
+        String[] tablesToLock = { "wres.source" };
+        Pair<Integer,Boolean> databaseResult
+                = Database.getResult( this.getInsertSelectStatement(),
+                                      this.getIDName(),
+                                      tablesToLock );
+
+        if ( LOGGER.isTraceEnabled() )
+        {
+            LOGGER.trace( "Did I create Source ID {}? {}",
+                          databaseResult.getLeft(),
+                          databaseResult.getRight() );
+        }
+
+        this.setID( databaseResult.getLeft() );
+        this.performedInsert = databaseResult.getRight();
+    }
+
+    public boolean performedInsert()
+    {
+        return this.performedInsert;
+    }
 
 	public static SourceKey createKey(String sourcePath, String sourceTime, Integer lead, String hash)
 	{
