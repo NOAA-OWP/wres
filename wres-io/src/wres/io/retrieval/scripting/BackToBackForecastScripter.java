@@ -105,8 +105,8 @@ class BackToBackForecastScripter extends Scripter
         {
             int includeCount = 0;
             int excludeCount = 0;
-            StringJoiner include = new StringJoiner(",", "ANY('{", "}::integer[])");
-            StringJoiner exclude = new StringJoiner(",", "ANY('{", "}::integer[])");
+            StringJoiner include = new StringJoiner(",", "ANY('{", "}'::integer[])");
+            StringJoiner exclude = new StringJoiner(",", "ANY('{", "}'::integer[])");
 
             for ( EnsembleCondition condition : this.getDataSourceConfig().getEnsemble())
             {

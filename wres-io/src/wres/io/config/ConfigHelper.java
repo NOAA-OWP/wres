@@ -7,8 +7,8 @@ import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.time.DateTimeException;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.time.MonthDay;
+import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
@@ -46,7 +46,7 @@ import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.Database;
 import wres.util.Collections;
 import wres.util.Strings;
-import wres.util.Time;
+import wres.util.TimeHelper;
 
 public class ConfigHelper
 {
@@ -175,8 +175,8 @@ public class ConfigHelper
             throws InvalidPropertiesFormatException
     {
         TimeAggregationConfig timeAggregationConfig = projectConfig.getPair().getDesiredTimeAggregation();
-        return Time.unitsToHours( timeAggregationConfig.getUnit().value(),
-                                  timeAggregationConfig.getPeriod() );
+        return TimeHelper.unitsToHours( timeAggregationConfig.getUnit().value(),
+                                        timeAggregationConfig.getPeriod() );
     }
 
     public static Integer getLeadOffset( ProjectDetails projectDetails, Feature feature )
@@ -860,14 +860,81 @@ public class ConfigHelper
      * @throws DateTimeParseException if the configuration contains dates that cannot be parsed
      */
 
-    public static TimeWindow getTimeWindow( ProjectDetails projectDetails, long lead, ChronoUnit leadUnits )
+    public static TimeWindow getTimeWindow( ProjectDetails projectDetails, long lead, int sequenceStep, Feature feature, ChronoUnit leadUnits )
+            throws InvalidPropertiesFormatException, SQLException
     {
         Objects.requireNonNull( projectDetails );
+        TimeWindow windowMetadata;
 
-        //Valid dates available
-        if ( projectDetails.getEarliestDate() != null && projectDetails.getLatestDate() != null)
+        if (projectDetails.getAggregation().getMode() == TimeAggregationMode.ROLLING)
         {
-            return TimeWindow.of( Instant.parse( projectDetails.getEarliestDate() ),
+            // Determine how many hours into the sequence this window is
+            double frequencyOffset = TimeHelper.unitsToHours( projectDetails.getAggregationUnit(),
+                                                              projectDetails.getAggregation().getFrequency()) *
+                                     sequenceStep;
+
+            // Get the first date that matching data for a feature is valid
+            String focusDate = projectDetails.getInitialRollingDate( feature );
+
+            // Add the lead time to the focus date to get to where this set of
+            // sequences really starts
+            focusDate = TimeHelper.plus( focusDate, projectDetails.getAggregationUnit(), lead );
+
+            // Add the frequency offset to focus date to jump to the correct
+            // sequence
+            focusDate = TimeHelper.plus( focusDate, "hours", frequencyOffset );
+
+            String firstDate;
+            String lastDate;
+
+            if (projectDetails.getAggregation().getFocus() == RollingWindowFocus.CENTER)
+            {
+                // Since the focus is in the center of the window, our first
+                // date is half the span before the focus and our last date
+                // is half the span after
+                double halfSpan = projectDetails.getAggregation().getSpan() / 2;
+                firstDate = TimeHelper.minus( focusDate,
+                                              projectDetails.getAggregationUnit(),
+                                              halfSpan );
+                lastDate = TimeHelper.plus( focusDate,
+                                            projectDetails.getAggregationUnit(),
+                                            halfSpan);
+            }
+            else if (projectDetails.getAggregation().getFocus() == RollingWindowFocus.LEFT)
+            {
+                // Since the focus is on the left of the window, our first date
+                // is actually the focus, while the last date is the entire
+                // span after it
+                firstDate = focusDate;
+                lastDate = TimeHelper.plus( focusDate,
+                                            projectDetails.getAggregationUnit(),
+                                            projectDetails.getAggregation().getSpan());
+            }
+            else
+            {
+                // Since the focus is on the right of the window, our first date
+                // is the entire span prior to the focus and the last date is
+                // the focus itself
+                firstDate = TimeHelper.minus( focusDate,
+                                              projectDetails.getAggregationUnit(),
+                                              projectDetails.getAggregation().getSpan() );
+                lastDate = focusDate;
+            }
+
+            OffsetDateTime first = TimeHelper.convertStringToDate( firstDate );
+            OffsetDateTime last = TimeHelper.convertStringToDate( lastDate );
+
+            windowMetadata = TimeWindow.of( first.toInstant(),
+                                            last.toInstant(),
+                                            ReferenceTime.ISSUE_TIME,
+                                            lead - projectDetails.getAggregationPeriod(),
+                                            lead,
+                                            leadUnits);
+        }
+        //Valid dates available
+        else if ( projectDetails.getEarliestDate() != null && projectDetails.getLatestDate() != null)
+        {
+            windowMetadata = TimeWindow.of( Instant.parse( projectDetails.getEarliestDate() ),
                                   Instant.parse( projectDetails.getLatestDate() ),
                                   ReferenceTime.VALID_TIME,
                                   lead,
@@ -877,18 +944,25 @@ public class ConfigHelper
         //Issue dates available
         else if ( projectDetails.getEarliestIssueDate() != null && projectDetails.getLatestIssueDate() != null )
         {
-            return TimeWindow.of( Instant.parse( projectDetails.getEarliestIssueDate() ),
-                                  Instant.parse( projectDetails.getLatestIssueDate() ),
-                                  ReferenceTime.ISSUE_TIME,
-                                  lead,
-                                  lead,
-                                  leadUnits );
+            windowMetadata = TimeWindow.of( Instant.parse( projectDetails.getEarliestIssueDate() ),
+                                            Instant.parse( projectDetails.getLatestIssueDate() ),
+                                            ReferenceTime.ISSUE_TIME,
+                                            lead,
+                                            lead,
+                                            leadUnits );
         }
         //No dates available
         else
         {
-            return TimeWindow.of( Instant.MIN, Instant.MAX, ReferenceTime.VALID_TIME, lead, lead, leadUnits );
+            windowMetadata = TimeWindow.of( Instant.MIN,
+                                            Instant.MAX,
+                                            ReferenceTime.VALID_TIME,
+                                            lead,
+                                            lead,
+                                            leadUnits );
         }
+
+        return windowMetadata;
     }
 
     /**

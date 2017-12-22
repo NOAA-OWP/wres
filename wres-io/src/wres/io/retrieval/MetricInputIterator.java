@@ -17,6 +17,7 @@ import org.slf4j.Logger;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
+import wres.config.generated.TimeAggregationMode;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.VectorOfDoubles;
 import wres.io.config.ConfigHelper;
@@ -44,6 +45,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
     private VectorOfDoubles climatology;
     private int sequenceStep;
     private int finalSequenceStep = 0;
+    private int inputCounter;
 
     protected int getWindowNumber()
     {
@@ -52,7 +54,11 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
 
     protected void incrementWindowNumber()
     {
-        if (this.sequenceStep <= this.finalSequenceStep)
+        if (this.windowNumber < 0)
+        {
+            this.windowNumber = 0;
+        }
+        else if (this.sequenceStep < this.finalSequenceStep)
         {
             this.incrementSequenceStep();
         }
@@ -336,15 +342,46 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
         {
             if (ConfigHelper.isForecast( this.getRight() ))
             {
-                int nextWindowNumber = this.getWindowNumber() + 1;
-                int beginning = this.getProjectDetails().getLead(nextWindowNumber) +
-                                   this.getProjectDetails().getLeadOffset( this.getFeature() );
-                int end = this.getProjectDetails().getLead(nextWindowNumber + 1) +
-                             this.getProjectDetails().getLeadOffset( this.getFeature() );
+                next = this.finalSequenceStep > 0 && this.sequenceStep + 1 < this.finalSequenceStep;
 
-                next = beginning < this.getProjectDetails().getLastLead( this.getFeature() ) &&
-                       end >= this.getProjectDetails().getMinimumLeadHour() &&
-                       end <= this.getProjectDetails().getLastLead( this.getFeature() );
+                if (!next)
+                {
+                    int nextWindowNumber = this.getWindowNumber() + 1;
+
+                    Integer beginning;
+                    Integer end;
+
+                    if ( this.getProjectDetails().getAggregation().getMode() == TimeAggregationMode.BACK_TO_BACK)
+                    {
+                        beginning =
+                                this.getProjectDetails()
+                                    .getLead( nextWindowNumber )
+                                +
+                                this.getProjectDetails()
+                                    .getLeadOffset( this.getFeature() );
+                        end = this.getProjectDetails()
+                                      .getLead( nextWindowNumber + 1 ) +
+                                  this.getProjectDetails()
+                                      .getLeadOffset( this.getFeature() );
+                    }
+                    else
+                    {
+                        end = this.getProjectDetails().getAggregationPeriod() + nextWindowNumber;
+                        beginning = nextWindowNumber;
+                    }
+
+                    int lastLead = this.getProjectDetails().getLastLead( this.getFeature() );
+
+                    next = beginning < lastLead &&
+                           end >= this.getProjectDetails().getMinimumLeadHour()
+                           &&
+                           end <= lastLead;
+
+                    if (!next)
+                    {
+                        this.getLogger().debug( "There is nothing left to iterate over." );
+                    }
+                }
             }
             else
             {
@@ -380,6 +417,11 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
                                    "iterate over.");
         }
 
+        if (!next)
+        {
+            this.getLogger().debug( "We are done iterating." );
+        }
+
         return next;
     }
 
@@ -390,6 +432,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
 
         if (this.hasNext())
         {
+            this.inputCounter++;
             this.incrementWindowNumber();
             try
             {

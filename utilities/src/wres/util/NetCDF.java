@@ -121,8 +121,8 @@ public final class NetCDF {
                                                        "' is not valid National Water Model Data.");
         }
 
-        OffsetDateTime initialization = Time.convertStringToDate(NetCDF.getInitializedTime(file));
-        OffsetDateTime valid = Time.convertStringToDate(NetCDF.getValidTime(file));
+        OffsetDateTime initialization = TimeHelper.convertStringToDate( NetCDF.getInitializedTime( file));
+        OffsetDateTime valid = TimeHelper.convertStringToDate( NetCDF.getValidTime( file));
 
         return ((Long)initialization.until(valid, ChronoUnit.HOURS)).intValue();
     }

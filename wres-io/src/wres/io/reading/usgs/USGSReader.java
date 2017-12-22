@@ -3,7 +3,6 @@ package wres.io.reading.usgs;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -48,7 +47,7 @@ import wres.io.utilities.NoDataException;
 import wres.util.FormattedStopwatch;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
-import wres.util.Time;
+import wres.util.TimeHelper;
 
 public class USGSReader extends BasicSource
 {
@@ -137,7 +136,7 @@ public class USGSReader extends BasicSource
     @Override
     public List<IngestResult> saveObservation() throws IOException
     {
-        this.operationStartTime = Time.convertDateToString( OffsetDateTime.now() );
+        this.operationStartTime = TimeHelper.convertDateToString( OffsetDateTime.now() );
         this.load();
 
         if (this.response == null ||
@@ -401,13 +400,13 @@ public class USGSReader extends BasicSource
                 this.startDate = earliest.toString();
             }
 
-            this.startDate = Time.normalize( this.startDate );
+            this.startDate = TimeHelper.normalize( this.startDate );
 
             switch (this.dataSourceConfig.getExistingTimeAggregation().getUnit())
             {
                 case DAY:
                     // No time or time zone information is allowed
-                    this.startDate = Time.convertStringDateTimeToDate( this.startDate );
+                    this.startDate = TimeHelper.convertStringDateTimeToDate( this.startDate );
                     break;
                 default:
                     // The space inbetween the date and time needs to be split with a T
@@ -437,13 +436,13 @@ public class USGSReader extends BasicSource
                 this.endDate = latest.toString();
             }
 
-            this.endDate = Time.normalize( this.endDate );
+            this.endDate = TimeHelper.normalize( this.endDate );
 
             switch (this.dataSourceConfig.getExistingTimeAggregation().getUnit())
             {
                 case DAY:
                     // No time or time zone information is allowed
-                    this.endDate = Time.convertStringDateTimeToDate( this.endDate );
+                    this.endDate = TimeHelper.convertStringDateTimeToDate( this.endDate );
                     break;
                 default:
                     // The space inbetween the date and time needs to be split with a T
@@ -544,7 +543,7 @@ public class USGSReader extends BasicSource
     {
         this.upsertValues.add(
                 new UpsertValue( gageID,
-                                 Time.normalize( observationTime ),
+                                 TimeHelper.normalize( observationTime ),
                                  value )
         );
 

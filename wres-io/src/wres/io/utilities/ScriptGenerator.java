@@ -5,20 +5,14 @@ package wres.io.utilities;
 
 import java.sql.SQLException;
 import java.util.InvalidPropertiesFormatException;
-import java.util.List;
-import java.util.StringJoiner;
 
 import wres.config.generated.DataSourceConfig;
-import wres.config.generated.EnsembleCondition;
 import wres.config.generated.Feature;
-import wres.config.generated.ProjectConfig;
 import wres.config.generated.RollingWindowFocus;
 import wres.io.config.ConfigHelper;
-import wres.io.data.caching.Ensembles;
 import wres.io.data.details.ProjectDetails;
-import wres.util.Collections;
 import wres.util.Internal;
-import wres.util.Time;
+import wres.util.TimeHelper;
 
 /**
  * @author Christopher Tubbs
@@ -54,6 +48,23 @@ public final class ScriptGenerator
         script.append("            MAX(TS.initialization_date)").append(NEWLINE);
         script.append("        FROM wres.TimeSeries TS").append(NEWLINE);
         script.append("        WHERE ").append(timeSeriesVariablePosition).append(NEWLINE);
+
+        if (projectDetails.getEarliestIssueDate() != null)
+        {
+            script.append("            AND TS.initialization_date >= '")
+                  .append(projectDetails.getEarliestIssueDate())
+                  .append("'")
+                  .append(NEWLINE);
+        }
+
+        if (projectDetails.getLatestIssueDate() != null)
+        {
+            script.append("            AND TS.initialization_date <= '")
+                  .append(projectDetails.getLatestIssueDate())
+                  .append("'")
+                  .append(NEWLINE);
+        }
+
         script.append("            AND EXISTS (").append(NEWLINE);
         script.append("                SELECT 1").append(NEWLINE);
         script.append("                FROM wres.ForecastSource FS").append(NEWLINE);
@@ -84,15 +95,13 @@ public final class ScriptGenerator
         script.append("        )").append(NEWLINE);
         script.append("    ) AS O").append(NEWLINE);
         script.append(")").append(NEWLINE);
-        script.append("SELECT MIN(TS.initialization_date),").append(NEWLINE);
-        script.append("    EXTRACT( epoch FROM AGE( MAX(TS.initialization_date), MIN(TS.initialization_date))) / (3600 *");
-        script.append(Time.unitsToHours( projectDetails.getAggregationUnit(), projectDetails.getAggregation().getFrequency() ));
-        script.append(") AS window_count").append(NEWLINE);
+        script.append("SELECT MIN(TS.initialization_date)::text,").append(NEWLINE);
+        script.append("    ( EXTRACT( epoch FROM AGE( MAX(TS.initialization_date), MIN(TS.initialization_date))) / (3600 *");
+        script.append( TimeHelper.unitsToHours( projectDetails.getAggregationUnit(), projectDetails.getAggregation().getFrequency() ));
+        script.append("))::int AS window_count").append(NEWLINE);
         script.append("FROM wres.TimeSeries TS").append(NEWLINE);
         script.append("CROSS JOIN earliest_latest EL").append(NEWLINE);
         script.append("WHERE ").append(timeSeriesVariablePosition).append(NEWLINE);
-
-        // TODO: Here, we're splitting the window in two. This works with the
 
         if ( projectDetails.getAggregation().getFocus() == RollingWindowFocus.CENTER)
         {

@@ -9,7 +9,7 @@ import wres.config.generated.Feature;
 import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.NoDataException;
 import wres.util.Collections;
-import wres.util.Time;
+import wres.util.TimeHelper;
 
 class BackToBackObservationScripter extends Scripter
 {
@@ -87,7 +87,7 @@ class BackToBackObservationScripter extends Scripter
     {
         if (this.windowPeriod == null)
         {
-            this.windowPeriod = Time.unitsToHours(
+            this.windowPeriod = TimeHelper.unitsToHours(
                     this.getProjectDetails().getAggregationUnit(),
                     this.getProjectDetails().getAggregationPeriod()
             ).intValue();

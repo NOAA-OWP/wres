@@ -5,21 +5,15 @@ import wres.config.generated.Feature;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.VectorOfDoubles;
-import wres.io.concurrency.SQLExecutor;
-import wres.io.concurrency.WRESCallable;
 import wres.io.concurrency.WRESRunnable;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.UnitConversions;
 import wres.io.data.details.ProjectDetails;
-import wres.io.utilities.DataSet;
 import wres.io.utilities.Database;
-import wres.io.utilities.NoDataException;
 import wres.util.Collections;
 import wres.util.Strings;
-import wres.util.Time;
 
 import java.io.IOException;
-import java.security.InvalidParameterException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -49,7 +43,7 @@ class ClimatologyBuilder
     {
         public DateRange(String beginning, String end)
         {
-            /*if (!Time.isTimestamp( beginning ))
+            /*if (!TimeHelper.isTimestamp( beginning ))
             {
                 throw new InvalidParameterException (
                         "The value '" +
@@ -57,7 +51,7 @@ class ClimatologyBuilder
                         "' must be formatted as a timestamp to build a date range."
                 );
             }
-            else if (!Time.isTimestamp( end ))
+            else if (!TimeHelper.isTimestamp( end ))
             {
                 throw new InvalidParameterException (
                         "The value '" +

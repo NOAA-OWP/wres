@@ -6,8 +6,10 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.sql.SQLException;
 import java.text.DecimalFormat;
 import java.util.Arrays;
+import java.util.InvalidPropertiesFormatException;
 import java.util.StringJoiner;
 
 import org.slf4j.Logger;
@@ -16,22 +18,27 @@ import org.slf4j.LoggerFactory;
 import wres.config.ProjectConfigException;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.Feature;
+import wres.config.generated.TimeAggregationMode;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.io.concurrency.WRESCallable;
 import wres.io.config.ConfigHelper;
+import wres.io.data.details.ProjectDetails;
+import wres.util.TimeHelper;
 
 public class PairWriter extends WRESCallable<Boolean>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( PairWriter.class );
     private static final Object PAIR_OUTPUT_LOCK = new Object();
-    private static final String OUTPUT_HEADER = "Feature,Date,Window,Left,Right";
+    private static final String OUTPUT_HEADER = "Feature,Date,Lead,Window,Left,Right";
     private static final String DELIMITER = ",";
     private static final String PAIR_FILENAME = "/pairs.csv";
     private static final String BASELINE_FILENAME = "/baseline_pairs.csv";
 
+    // TODO: Actually guard this static variable
     /** Guarded by PAIR_OUTPUT_LOCK */
     private static boolean headerHasBeenWritten = false;
 
+    // TODO: Actually guard this static variable
     /** Guarded by BASELINE_PAIR_OUTPUT_LOCK */
     private static boolean baselineHeaderHasBeenWritten = false;
 
@@ -41,15 +48,20 @@ public class PairWriter extends WRESCallable<Boolean>
     private final int windowNum;
     private final PairOfDoubleAndVectorOfDoubles pair;
     private final boolean isBaseline;
+    private final int sequenceStep;
+    private final ProjectDetails projectDetails;
 
-    // TODO: This needs to be cleaned up; this is far too many parameters
-    // Maybe required setters?
+    private DecimalFormat formatter;
+
+    // TODO: IMPLEMENT BUILDER
     public PairWriter( DestinationConfig destinationConfig,
                        String date,
                        Feature feature,
                        int windowNum,
                        PairOfDoubleAndVectorOfDoubles pair,
-                       boolean isBaseline)
+                       boolean isBaseline,
+                       int sequenceStep,
+                       ProjectDetails projectDetails)
     {
         this.destinationConfig = destinationConfig;
         this.date = date;
@@ -57,12 +69,13 @@ public class PairWriter extends WRESCallable<Boolean>
         this.windowNum = windowNum;
         this.pair = pair;
         this.isBaseline = isBaseline;
+        this.sequenceStep = sequenceStep;
+        this.projectDetails = projectDetails;
     }
 
     @Override
     protected Boolean execute() throws IOException, ProjectConfigException
     {
-
         boolean success = false;
 
         File directoryFromDestinationConfig =
@@ -77,15 +90,6 @@ public class PairWriter extends WRESCallable<Boolean>
         else
         {
             actualFileDestination += PAIR_FILENAME;
-        }
-
-        DecimalFormat formatter = null;
-        String configuredFormat = this.getDestinationConfig().getDecimalFormat();
-
-        if ( configuredFormat != null && !configuredFormat.isEmpty() )
-        {
-            formatter = new DecimalFormat();
-            formatter.applyPattern( configuredFormat );
         }
 
         synchronized ( PAIR_OUTPUT_LOCK )
@@ -115,64 +119,50 @@ public class PairWriter extends WRESCallable<Boolean>
                     PairWriter.headerHasBeenWritten = true;
                 }
 
-                PairOfDoubleAndVectorOfDoubles pair = this.getPair();
-
                 StringJoiner line = new StringJoiner( DELIMITER );
-                StringJoiner arrayJoiner = new StringJoiner( DELIMITER );
 
                 line.add( ConfigHelper.getFeatureDescription( this.getFeature() ) );
-                line.add( this.getDate() );
+                line.add( this.getPairingDate() );
 
-                // Convert from 0 index to 1 index for easier representation
-                // i.e. first window, second, third, ...
-                // instead of: zeroth window, first, second, third, ...
-                line.add( String.valueOf( this.getWindowNum() + 1 ) );
+                line.add( String.valueOf( this.getLeadHour() ) );
 
-                double left = pair.getItemOne();
+                line.add( this.getWindow() );
 
-                if ( Double.compare( left, Double.NaN ) == 0 )
-                {
-                    line.add( "NaN" );
-                }
-                else if ( formatter != null )
-                {
-                    line.add( formatter.format( left ) );
-                }
-                else
-                {
-                    line.add( String.valueOf( left ) );
-                }
+                line.add(this.getLeftValue());
 
-                double[] rightValues = pair.getItemTwo();
-
-                Arrays.sort( rightValues );
-
-                for ( Double rightValue : rightValues )
-                {
-                    if ( rightValue.isNaN() )
-                    {
-                        arrayJoiner.add( "NaN" );
-                    }
-                    else if ( formatter != null )
-                    {
-                        arrayJoiner.add( formatter.format( rightValue ) );
-                    }
-                    else
-                    {
-                        arrayJoiner.add( String.valueOf( rightValue ) );
-                    }
-                }
-
-                line.add( arrayJoiner.toString() );
+                line.add(this.getRightValues());
 
                 writer.write( line.toString() );
                 writer.newLine();
 
                 success = true;
             }
+            catch ( SQLException e )
+            {
+                LOGGER.error("Pairs could not be written for " +
+                             ConfigHelper.getFeatureDescription( this.feature ),
+                             e);
+            }
         }
 
         return success;
+    }
+
+    private String getPairingDate() throws InvalidPropertiesFormatException
+    {
+        String pairingDate;
+
+        if (this.projectDetails.getAggregation().getMode() == TimeAggregationMode.ROLLING)
+        {
+            // We need to derive the basis time from the lead, and date
+            pairingDate = TimeHelper.minus( date, "hour", this.getLeadHour() );
+        }
+        else
+        {
+            pairingDate = date;
+        }
+
+        return pairingDate;
     }
 
     @Override
@@ -222,9 +212,53 @@ public class PairWriter extends WRESCallable<Boolean>
         return this.date;
     }
 
+    private double getLeadHour() throws InvalidPropertiesFormatException
+    {
+        // This defines back-to-back. This doesn't work for rolling.
+        // Given a 4 hour period, back-to-back would yield 4 then 8,
+        // but so will rolling, which should be 4 then 5
+        double lead;
+
+        if (this.projectDetails.getAggregation().getMode() == TimeAggregationMode.ROLLING)
+        {
+            lead = this.getWindowNum() +
+                   TimeHelper.unitsToHours( this.projectDetails.getAggregationUnit(),
+                                            this.projectDetails.getAggregationPeriod() );
+        }
+        else
+        {
+            lead = TimeHelper.unitsToHours( this.projectDetails.getAggregationUnit(),
+                                            this.projectDetails.getAggregationPeriod() ) *
+                   ( this.getWindowNum() + 1 );
+        }
+
+        return lead;
+    }
+
     private Feature getFeature()
     {
         return this.feature;
+    }
+
+    private String getWindow()
+            throws SQLException, InvalidPropertiesFormatException
+    {
+
+        int window = this.getWindowNum();
+
+        if (this.projectDetails.getAggregation().getMode() == TimeAggregationMode.ROLLING)
+        {
+            // This doesn't quite work. When rolling over to the next
+            // lead, it stays at the largest value prior. For instance,
+            // if the number goes from 1 through 5, the next window for
+            // the next lead will then be 5.
+            window *= (this.projectDetails.getRollingWindowCount( this.feature ) + 1);
+            window += this.sequenceStep;
+        }
+
+        window++;
+
+        return String.valueOf(window);
     }
 
     private int getWindowNum()
@@ -232,8 +266,67 @@ public class PairWriter extends WRESCallable<Boolean>
         return this.windowNum;
     }
 
-    private PairOfDoubleAndVectorOfDoubles getPair()
+    private String getLeftValue()
     {
-        return this.pair;
+
+        double leftValue = pair.getItemOne();
+        String left;
+
+        if ( Double.compare( leftValue, Double.NaN ) == 0 )
+        {
+            left = "NaN";
+        }
+        else if ( this.getFormatter() != null )
+        {
+            left = this.getFormatter().format( leftValue );
+        }
+        else
+        {
+            left = String.valueOf( leftValue ) ;
+        }
+
+        return left;
+    }
+
+    private String getRightValues()
+    {
+        double[] rightValues = pair.getItemTwo();
+        StringJoiner arrayJoiner = new StringJoiner( DELIMITER );
+
+        Arrays.sort( rightValues );
+
+        for ( Double rightValue : rightValues )
+        {
+            if ( rightValue.isNaN() )
+            {
+                arrayJoiner.add( "NaN" );
+            }
+            else if ( formatter != null )
+            {
+                arrayJoiner.add( formatter.format( rightValue ) );
+            }
+            else
+            {
+                arrayJoiner.add( String.valueOf( rightValue ) );
+            }
+        }
+
+        return arrayJoiner.toString();
+    }
+
+    private DecimalFormat getFormatter()
+    {
+        if (this.formatter == null)
+        {
+            String configuredFormat = this.getDestinationConfig().getDecimalFormat();
+
+            if ( configuredFormat != null && !configuredFormat.isEmpty() )
+            {
+                this.formatter = new DecimalFormat();
+                this.formatter.applyPattern( configuredFormat );
+            }
+        }
+
+        return this.formatter;
     }
 }

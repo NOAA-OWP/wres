@@ -20,6 +20,7 @@ import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.Feature;
+import wres.config.generated.TimeAggregationMode;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.DefaultDataFactory;
@@ -42,7 +43,7 @@ import wres.io.utilities.NoDataException;
 import wres.io.writing.PairWriter;
 import wres.util.Internal;
 import wres.util.Strings;
-import wres.util.Time;
+import wres.util.TimeHelper;
 
 /**
  * Created by ctubbs on 7/17/17.
@@ -143,13 +144,26 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         }
         catch ( Exception error )
         {
-            LOGGER.debug( Strings.getStackTrace( error ) );
+            String message = "Error occured while calculating pairs for";
+
+            if (this.projectDetails.getAggregation().getMode() == TimeAggregationMode.ROLLING)
+            {
+                message += " sequence ";
+                message += String.valueOf( this.sequenceStep );
+                message += " for";
+            }
+
+            message += " lead time ";
+            message += String.valueOf( this.progress );
+
+            LOGGER.debug( message, error );
             throw error;
         }
         return input;
     }
 
-    private MetricInput<?> createInput() throws NoDataException
+    private MetricInput<?> createInput() throws NoDataException, SQLException,
+            InvalidPropertiesFormatException
     {
         MetricInput<?> input = null;
 
@@ -265,7 +279,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         ResultSet resultSet = null;
 
         Integer aggHour = null;
-        String date = null;
+        String valueDate = null;
 
         Map<Integer, List<Double>> rightValues = new TreeMap<>();
 
@@ -356,14 +370,14 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                  */
                 if (aggHour != null && resultSet.getInt( "agg_hour" ) <= aggHour)
                 {
-                    pairs = this.addPair( pairs, date, rightValues, dataSourceConfig );
+                    pairs = this.addPair( pairs, valueDate, rightValues, dataSourceConfig );
 
                     rightValues = new TreeMap<>(  );
                 }
 
                 aggHour = resultSet.getInt( "agg_hour" );
 
-                date = resultSet.getString("value_date");
+                valueDate = resultSet.getString("value_date");
 
                 Double[] measurements = (Double[])resultSet.getArray("measurements").getArray();
 
@@ -377,7 +391,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                 }
             }
 
-            pairs = this.addPair( pairs, date, rightValues, dataSourceConfig );
+            pairs = this.addPair( pairs, valueDate, rightValues, dataSourceConfig );
         }
         finally
         {
@@ -396,7 +410,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
     }
 
     private List<PairOfDoubleAndVectorOfDoubles> addPair( List<PairOfDoubleAndVectorOfDoubles> pairs,
-                                                          String date,
+                                                          String valueDate,
                                                           Map<Integer, List<Double>> rightValues,
                                                           DataSourceConfig dataSourceConfig)
             throws ProjectConfigException, NoDataException,
@@ -404,10 +418,12 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
     {
         if (rightValues.size() > 0)
         {
-            PairOfDoubleAndVectorOfDoubles pair = this.getPair( date, rightValues );
+            PairOfDoubleAndVectorOfDoubles pair = this.getPair( valueDate, rightValues );
             if (pair != null)
             {
-                writePair( date, pair, dataSourceConfig );
+                // TODO: This now pulls back the correct values, but now the date
+                // represents the valid time, not the basis time. Convert.
+                writePair( valueDate, pair, dataSourceConfig );
                 pairs.add( pair );
             }
         }
@@ -415,6 +431,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
     }
 
     private Metadata buildMetadata (DataFactory dataFactory, DataSourceConfig sourceConfig)
+            throws SQLException, InvalidPropertiesFormatException
     {
         MetadataFactory metadataFactory = dataFactory.getMetadataFactory();
         Dimension dim = metadataFactory.getDimension( this.projectDetails.getDesiredMeasurementUnit());
@@ -429,17 +446,27 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         // This will help us determine when the window will end
         int windowNumber = this.progress + 1;
         Double windowWidth = 1.0;
+        Double lastLead = 0.0;
         // If this is a simulation, there are no windows, so set to 0
         if ( !ConfigHelper.isForecast( sourceConfig ))
         {
             windowNumber = 0;
             windowWidth = 0.0;
+            lastLead = 0.0;
         }
         else
         {
             try
             {
-                windowWidth = this.projectDetails.getWindowWidth() * 1.0;
+                if (this.projectDetails.getAggregation().getMode() == TimeAggregationMode.ROLLING)
+                {
+                    lastLead = (this.projectDetails.getAggregationPeriod() + this.progress) * 1.0;
+                }
+                else
+                {
+                    windowWidth = this.projectDetails.getWindowWidth() * 1.0;
+                    lastLead = ( windowNumber * windowWidth ) + leadOffset;
+                }
             }
             catch ( InvalidPropertiesFormatException e )
             {
@@ -448,11 +475,12 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             }
         }
 
-        Double lastLead = ( windowNumber * windowWidth ) + leadOffset;
         return metadataFactory.getMetadata( dim,
                                             datasetIdentifier,
                                             ConfigHelper.getTimeWindow( this.projectDetails,
                                                                         lastLead.longValue(),
+                                                                        this.sequenceStep,
+                                                                        this.feature,
                                                                         ChronoUnit.HOURS ) );
     }
 
@@ -466,11 +494,13 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             throw new NoDataException( "No values could be retrieved to pair with with any possible set of left values ." );
         }
 
-        String firstDate = Time.minus( date,
-                                       this.projectDetails.getAggregationUnit(),
-                                       this.projectDetails.getAggregationPeriod());
+        // This works for both rolling and back-to-back because of how the grouping of agg_hours works
+        String firstDate = TimeHelper.minus( date,
+                                             this.projectDetails.getAggregationUnit(),
+                                             this.projectDetails.getAggregationPeriod());
+        String lastDate = date;
 
-        List<Double> leftValues = this.getLeftValues.apply( firstDate, date );
+        List<Double> leftValues = this.getLeftValues.apply( firstDate, lastDate );
 
         if (leftValues == null || leftValues.size() == 0)
         {
@@ -524,7 +554,9 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                                                this.feature,
                                                this.progress,
                                                pair,
-                                               isBaseline );
+                                               isBaseline,
+                                               this.sequenceStep,
+                                               this.projectDetails);
             Executor.submitHighPriorityTask( saver);
         }
     }

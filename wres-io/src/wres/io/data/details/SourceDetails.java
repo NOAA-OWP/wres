@@ -4,7 +4,7 @@ import java.util.Objects;
 
 import wres.io.data.details.SourceDetails.SourceKey;
 import wres.util.Internal;
-import wres.util.Time;
+import wres.util.TimeHelper;
 
 /**
  * Details about a source of observation or forecast data
@@ -150,7 +150,7 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey> {
 
 	public static SourceKey createKey(String sourcePath, String sourceTime, Integer lead, String hash)
 	{
-	    return new SourceKey(sourcePath, Time.normalize(sourceTime), lead, hash);
+	    return new SourceKey( sourcePath, TimeHelper.normalize( sourceTime), lead, hash);
 	}
 
 	public static class SourceKey implements Comparable<SourceKey>
