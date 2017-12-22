@@ -39,6 +39,18 @@ class BackToBackForecastScripter extends Scripter
         this.addLine( "INNER JOIN wres.ForecastValue FV");
         this.addLine( "    ON FV.timeseries_id = TS.timeseries_id" );
 
+        this.addLine( "INNER JOIN wres.ForecastSource AS FS" );
+        this.addLine( "    ON FS.forecast_id = TS.timeseries_id" );
+        this.addLine( "INNER JOIN wres.ProjectSource AS PS" );
+        this.addLine( "    ON PS.source_id = FS.source_id" );
+
+        // Source is needed due to NWM having the lead information
+        this.addLine( "INNER JOIN wres.Source as S" );
+        this.addLine( "    ON S.source_id = PS.source_id" );
+        // S.lead IS NULL when using "a forecast came from a file", whereas
+        // S.lead = FV.lead when using "a forecast came from several files"
+        this.addLine( "        AND ( S.lead IS NULL OR S.lead = FV.lead )" );
+
         this.applyVariablePositionClause();
         this.applyLeadQualifier();
 
@@ -51,7 +63,7 @@ class BackToBackForecastScripter extends Scripter
 
         this.applySeasonConstraint();
 
-        this.applyProjectExistenceCheck();
+        this.applyProjectConstraint();
         this.applyGrouping();
         this.applyOrdering();
 
@@ -93,7 +105,7 @@ class BackToBackForecastScripter extends Scripter
         if (this.validTimeCalculation == null)
         {
             this.validTimeCalculation = this.getBaseDateName() +
-                                        " + INTERVAL '1 HOUR' * lead";
+                                        " + INTERVAL '1 HOUR' * FV.lead";
         }
         return this.validTimeCalculation;
     }
@@ -134,17 +146,10 @@ class BackToBackForecastScripter extends Scripter
         }
     }
 
-    private void applyProjectExistenceCheck()
+    private void applyProjectConstraint()
     {
-        this.addLine("    AND EXISTS (");
-        this.addLine("        SELECT 1");
-        this.addLine("        FROM wres.ProjectSource PS");
-        this.addLine("        INNER JOIN wres.ForecastSource FS");
-        this.addLine("            ON FS.source_id = PS.source_id");
-        this.addLine("        WHERE PS.project_id = ", this.getProjectDetails().getId());
-        this.addLine("            AND PS.member = ", this.getMember());
-        this.addLine("            AND FS.forecast_id = TS.timeseries_id");
-        this.addLine("    )");
+        this.addLine( "    AND PS.project_id = ", this.getProjectDetails().getId() );
+        this.addLine( "    AND PS.member = ", this.getMember());
     }
 
     private void applyGrouping()

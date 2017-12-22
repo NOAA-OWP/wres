@@ -37,6 +37,7 @@ import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
+import wres.io.data.details.SourceDetails;
 import wres.io.data.details.TimeSeries;
 import wres.io.reading.IngestException;
 import wres.io.reading.InvalidInputDataException;
@@ -83,6 +84,9 @@ public final class PIXMLReader extends XMLReader
 
     private DataSourceConfig.Source sourceConfig;
 
+    // Start by assuming we must ingest
+    private boolean inChargeOfIngest = true;
+
 	private static String createForecastValuePartition(Integer leadTime) throws SQLException {
 
 		if (leadTime == null)
@@ -126,6 +130,14 @@ public final class PIXMLReader extends XMLReader
 	protected void parseElement( XMLStreamReader reader )
 			throws IOException
 	{
+        // Must determine if in charge of ingest
+        if ( !inChargeOfIngest )
+        {
+            LOGGER.debug( "This PIXMLReader yields for source {}", hash );
+            // How to close without going through all elements?
+            return;
+        }
+
 		if (reader.isStartElement())
 		{
             String localName = reader.getLocalName();
@@ -348,10 +360,19 @@ public final class PIXMLReader extends XMLReader
                                                   dateTime );
             int leadTimeInHours = (int) leadTime.toHours();
 
-            PIXMLReader.addForecastEvent( this.getValueToSave( value ),
-                                          leadTimeInHours,
-                                          getTimeSeriesID() );
-
+            // MAGIC HAPPENS HERE:
+            // getTimeSeriesID checks to see if we need to continue ingesting
+            Integer timeSeriesID = getTimeSeriesID();
+            if ( inChargeOfIngest )
+            {
+                PIXMLReader.addForecastEvent( this.getValueToSave( value ),
+                                              leadTimeInHours,
+                                              timeSeriesID );
+            }
+            else
+            {
+                LOGGER.debug( "This PIXMLReader yields for source {}", hash );
+            }
         }
         else
         {
@@ -756,6 +777,10 @@ public final class PIXMLReader extends XMLReader
             this.currentTimeSeries =
                     new TimeSeries( this.getSourceID(),
                                     forecastFullDateTime.format( FORMATTER ) );
+
+            LOGGER.trace( "Created time series {} in reader of {} because currentTimeSeries was null.",
+                          this.currentTimeSeries,
+                          this.hash);
         }
         return this.currentTimeSeries;
     }
@@ -795,10 +820,60 @@ public final class PIXMLReader extends XMLReader
 										   this.getZoneOffset() );
                 output_time = actualStartDate.format( FORMATTER );
 			}
-			currentSourceID = DataSources.getSourceID(getFilename(),
-													  output_time,
-													  null,
-													  this.getHash());
+
+            // Cannot do hasSource because it mutates database and hides info!
+            /*
+            if ( DataSources.hasSource( this.getHash() ) )
+            {
+                if ( LOGGER.isTraceEnabled() )
+                {
+                    LOGGER.trace( "DataSources said it hasSource {}",
+                                  this.getHash() );
+                }
+                else
+                {
+                    LOGGER.trace( "DataSources said NOT hasSource {}",
+                                  this.getHash() );
+                }
+            }
+            */
+
+            // In order to interrogate the Cache, we need the key, not the
+            // actual SourceDetails class itself.
+
+            SourceDetails.SourceKey deetsKey =
+                    new SourceDetails.SourceKey( this.getFilename(),
+                                                 output_time,
+                                                 null,
+                                                 this.getHash() );
+
+            // Ask the cache "do you have this source?"
+            boolean wasInCache = DataSources.isCached( deetsKey );
+            boolean wasThisReaderTheOneThatInserted = false;
+            SourceDetails deets = null;
+
+            if ( !wasInCache )
+            {
+                // We *might* be the one in charge of doing this source ingest.
+                deets = new SourceDetails( deetsKey );
+                deets.save();
+                if ( deets.performedInsert() )
+                {
+                    // Now we have the definitive answer from the database.
+                    wasThisReaderTheOneThatInserted = true;
+
+                    // Now that ball is in our court we should put in cache
+                    DataSources.put( deets );
+                    // // Older, implicit way:
+                    // DataSources.hasSource( this.getHash() );
+                }
+            }
+
+            // Regardless of whether we were the ones or not, get it from cache
+            currentSourceID = DataSources.getActiveSourceID( this.getHash() );
+
+            // Mark whether this reader is the one to perform ingest or yield.
+            inChargeOfIngest = wasThisReaderTheOneThatInserted;
 		}
 		return currentSourceID;
 	}
