@@ -3,6 +3,10 @@ package wres.io.reading;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.LeftOrRightOrBaseline;
@@ -86,6 +90,26 @@ public class IngestResult
         return Collections.unmodifiableList( result );
     }
 
+
+    /**
+     * Wrap a single item list of "already-found-in-database" ingest result in
+     * a Future for easy consumption by the ingest classes.
+     * @param projectConfig the project configuration
+     * @param dataSourceConfig the data source configuration
+     * @param hash the hash of the individual source
+     * @return an immediately-returning Future
+     */
+
+    public static Future<List<IngestResult>> fakeFutureSingleItemListFrom( ProjectConfig projectConfig,
+                                                                           DataSourceConfig dataSourceConfig,
+                                                                           String hash )
+    {
+        return FakeFutureListOfIngestResults.from( projectConfig,
+                                                   dataSourceConfig,
+                                                   hash );
+    }
+
+
     public LeftOrRightOrBaseline getLeftOrRightOrBaseline()
     {
         return this.leftOrRightOrBaseline;
@@ -107,5 +131,72 @@ public class IngestResult
         return "hash: " + this.getHash() + ", "
                + "db cache hit? " + this.wasFoundAlready() + ", "
                + "l/r/b: " + getLeftOrRightOrBaseline().value();
+    }
+
+
+    /**
+     * For convenience of those clients needing an immediately-returning Future
+     * this encapsulates an "already-found" IngestResult in a Future List.
+     */
+
+    private static class FakeFutureListOfIngestResults implements Future<List<IngestResult>>
+    {
+        private final List<IngestResult> results;
+
+        private FakeFutureListOfIngestResults( IngestResult result )
+        {
+            List<IngestResult> results = new ArrayList<>( 1 );
+            results.add( result );
+            this.results = Collections.unmodifiableList( results );
+        }
+
+        public static FakeFutureListOfIngestResults from( ProjectConfig projectConfig,
+                                                          DataSourceConfig dataSourceConfig,
+                                                          String hash )
+        {
+            IngestResult results = IngestResult.from( projectConfig,
+                                                      dataSourceConfig,
+                                                      hash,
+                                                      true );
+            return new FakeFutureListOfIngestResults( results );
+        }
+
+        @Override
+        public boolean cancel( boolean b )
+        {
+            return false;
+        }
+
+        @Override
+        public boolean isCancelled()
+        {
+            return false;
+        }
+
+        @Override
+        public boolean isDone()
+        {
+            return true;
+        }
+
+        @Override
+        public List<IngestResult> get()
+                throws InterruptedException, ExecutionException
+        {
+            return this.getResults();
+        }
+
+        @Override
+        public List<IngestResult> get( long l, TimeUnit timeUnit )
+                throws InterruptedException, ExecutionException,
+                TimeoutException
+        {
+            return get();
+        }
+
+        private List<IngestResult> getResults()
+        {
+            return this.results;
+        }
     }
 }
