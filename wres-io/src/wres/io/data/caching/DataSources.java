@@ -55,6 +55,12 @@ public class DataSources extends Cache<SourceDetails, SourceKey> {
 		return getCache().getID(path, outputTime, lead, hash);
 	}
 
+    public static boolean isCached( SourceDetails.SourceKey key )
+    {
+        return DataSources.getCache()
+                          .hasID( key );
+    }
+
 	public static boolean hasSource(String hash) throws SQLException
     {
         return DataSources.getActiveSourceID( hash ) != null;
@@ -120,6 +126,11 @@ public class DataSources extends Cache<SourceDetails, SourceKey> {
         }
 
         return id;
+    }
+
+    public static void put( SourceDetails sourceDetails )
+    {
+        DataSources.getCache().add( sourceDetails );
     }
 	
 	/**

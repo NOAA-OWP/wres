@@ -146,7 +146,7 @@ public final class TimeSeries
     private void save() throws SQLException
 	{
 		String script = "";
-		
+
 		script += "WITH new_timeseries AS" + NEWLINE;
 		script += "(" + NEWLINE;
 		script += "		INSERT INTO wres.TimeSeries (variableposition_id, ensemble_id, measurementunit_id, initialization_date)" + NEWLINE;
@@ -159,8 +159,6 @@ public final class TimeSeries
 		script += "			FROM wres.TimeSeries TS" + NEWLINE;
 		script += "			INNER JOIN wres.ForecastSource FS" + NEWLINE;
 		script += "				ON FS.forecast_id = TS.timeseries_id" + NEWLINE;
-		script += "         INNER JOIN wres.ProjectSource PS" + NEWLINE;
-		script += "             ON PS.source_id = FS.source_id" + NEWLINE;
 		script += "			WHERE TS.variableposition_id = " + variablePositionID + NEWLINE;
 		script += "				AND TS.ensemble_id = " + ensembleID + NEWLINE;
 		script += "             AND TS.initialization_date = '" + this.initializationDate + "'" + NEWLINE;
@@ -168,13 +166,24 @@ public final class TimeSeries
         script += "             AND FS.source_id = " + this.sourceID + NEWLINE;
         script += "		)" + NEWLINE;
 		script += "		RETURNING timeseries_id" + NEWLINE;
-		script += ")" + NEWLINE;
-		script += "SELECT timeseries_id" + NEWLINE;
-		script += "FROM new_timeseries" + NEWLINE + NEWLINE;
+        script += ")," + NEWLINE;
+        // Only create the forecast source as part of the transaction that has
+        // created the timeseries id. This strategy does not apply to NWM data.
+        script += "new_forecastsource AS" + NEWLINE;
+        script += "(" + NEWLINE;
+        script += "     INSERT INTO wres.ForecastSource (forecast_id, source_id)" + NEWLINE;
+        script += "          SELECT timeseries_id, " + this.sourceID + NEWLINE;
+        script += "          FROM new_timeseries" + NEWLINE;
+        script += "          WHERE timeseries_id IS NOT NULL" + NEWLINE;
+        // Note: forecastsource.forecast_id is fk to timeseries.timeseries_id
+        script += "     RETURNING forecast_id" + NEWLINE;
+        script += ")" + NEWLINE;
+        script += "SELECT forecast_id AS timeseries_id, TRUE as wasInserted" + NEWLINE;
+        script += "FROM new_forecastsource" + NEWLINE + NEWLINE;
 		script += "";
 		script += "UNION" + NEWLINE + NEWLINE;
 		script += "";
-		script += "SELECT timeseries_id" + NEWLINE;
+        script += "SELECT timeseries_id, FALSE as wasInserted" + NEWLINE;
 		script += "FROM wres.TimeSeries TS" + NEWLINE;
 		script += "INNER JOIN wres.ForecastSource FS" + NEWLINE;
 		script += "		ON FS.forecast_id = TS.timeseries_id" + NEWLINE;
@@ -189,28 +198,7 @@ public final class TimeSeries
         script += "             AND FS.source_id = " + this.sourceID + NEWLINE;
         script += ");";
 
-        timeSeriesID = Database.getResult(script, "timeseries_id");
-		this.saveTimeSeriesSource();
-	}
-
-    /**
-     * Links metadata for a data source to this time series
-     * @throws SQLException Thrown if the time series and its source could not
-     * be properly linked
-     */
-    private void saveTimeSeriesSource() throws SQLException
-    {
-        String script = "";
-        script += "INSERT INTO wres.ForecastSource (forecast_id, source_id)" + NEWLINE;
-        script += "SELECT " + this.timeSeriesID + ", " + this.sourceID + NEWLINE;
-        script += "WHERE NOT EXISTS (" + NEWLINE;
-        script += "     SELECT 1" + NEWLINE;
-        script += "     FROM wres.ForecastSource" + NEWLINE;
-        script += "     WHERE forecast_id = " + this.timeSeriesID + NEWLINE;
-        script += "         AND source_id = " + this.sourceID + NEWLINE;
-        script += ");";
-
-        Database.execute(script);
+        timeSeriesID = Database.getResult( script, "timeseries_id" );
     }
 
     /**

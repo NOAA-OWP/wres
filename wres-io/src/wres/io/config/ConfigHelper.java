@@ -132,7 +132,7 @@ public class ConfigHelper
             int end = projectDetails.getLead( windowNumber + 1 );
 
             qualifier = String.valueOf(end + offset);
-            qualifier += " >= lead AND lead > ";
+            qualifier += " >= FV.lead AND FV.lead > ";
             qualifier += String.valueOf(beginning + offset);
         }
         else
@@ -140,7 +140,7 @@ public class ConfigHelper
             // We add the plus one because the value yielded by
             // getLead(projectDetails, windowNumber) grants us the first exclusive
             // value, not the first inclusive value
-            qualifier = "lead = " + ( projectDetails.getLead(windowNumber) + 1);
+            qualifier = "FV.lead = " + ( projectDetails.getLead(windowNumber) + 1);
         }
 
         return qualifier;
