@@ -1,6 +1,7 @@
 package wres.datamodel;
 
 import java.io.File;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -82,7 +83,7 @@ public final class DataModelTestDataFactory
                 final TimeWindow timeWindow = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                              Instant.parse( "2010-12-31T11:59:59Z" ),
                                                              ReferenceTime.VALID_TIME,
-                                                             (int) leadTime );
+                                                             Duration.ofHours( (int) leadTime ) );
                 final MetricResultByThreshold t =
                         (MetricResultByThreshold) data.getResult( timeWindow.getLatestLeadTimeInHours() );
                 final Iterator<MetricResultKey> e = t.getIterator();
@@ -158,7 +159,7 @@ public final class DataModelTestDataFactory
                 final TimeWindow timeWindow = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                              Instant.parse( "2010-12-31T11:59:59Z" ),
                                                              ReferenceTime.VALID_TIME,
-                                                             (int) leadTime );
+                                                             Duration.ofHours( (int) leadTime ) );
                 final MetricResultByThreshold t =
                         (MetricResultByThreshold) data.getResult( timeWindow.getLatestLeadTimeInHours() );
                 final Iterator<MetricResultKey> e = t.getIterator();
@@ -227,7 +228,7 @@ public final class DataModelTestDataFactory
         final TimeWindow timeWindow = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                      Instant.parse( "2010-12-31T11:59:59Z" ),
                                                      ReferenceTime.VALID_TIME,
-                                                     1 );
+                                                     Duration.ofHours( 1 ) );
         //Fake lead time and threshold
         builder.addScalarOutput( factory.getMapKeyByTimeThreshold( timeWindow, 23.0, Operator.GREATER ),
                                  CompletableFuture.completedFuture( in ) );
