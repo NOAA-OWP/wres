@@ -7,6 +7,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.sql.Connection;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -15,6 +16,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.StringJoiner;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -24,6 +26,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.postgresql.PGConnection;
 import org.postgresql.copy.CopyManager;
 import org.slf4j.Logger;
@@ -115,14 +118,12 @@ public final class Database {
 	 */
 	private static void storeIngestTask(Future task)
 	{
-		LOGGER.debug( "Storing ingest task raw Future as {}", task );
 		Database.storedIngestTasks.add(task);
 	}
 
 	public static Future<?> ingest(WRESRunnable ingestTask)
 	{
 		Future<?> result = Database.execute( ingestTask );
-		LOGGER.debug( "Storing ingest task WRESRunnable as {}", result );
 		Database.storeIngestTask( result );
 		return result;
 	}
@@ -130,7 +131,6 @@ public final class Database {
 	public static <U> Future<U> ingest(WRESCallable<U> ingestTask)
 	{
 		Future<U> result = Database.submit( ingestTask );
-		LOGGER.debug( "Storing ingest task WRESCallable as {}", result );
 		Database.storeIngestTask( result );
 		return result;
 	}
@@ -376,9 +376,9 @@ public final class Database {
                         {
                             result.addAll( singleResult );
                         }
-                        else if ( LOGGER.isDebugEnabled() )
+                        else if ( LOGGER.isTraceEnabled() )
                         {
-                            LOGGER.debug( "A null value was returned in the "
+                            LOGGER.trace( "A null value was returned in the "
                                           + "Database class. Task: {}", task );
                         }
 					}
@@ -404,6 +404,12 @@ public final class Database {
         {
             Database.addNewIndexes();
             Database.refreshStatistics( false );
+        }
+
+        if ( LOGGER.isDebugEnabled() )
+        {
+            LOGGER.debug( "completeAllIngestTasks returning {} results.",
+                          result.size() );
         }
 
         return Collections.unmodifiableList( result );
@@ -733,6 +739,7 @@ public final class Database {
 		}*/
 	}
 
+
     /**
      * Returns the first value in the labeled column from the query
      * @param query The query used to select the value
@@ -744,51 +751,146 @@ public final class Database {
      * unsuccessful.
      */
 	@SuppressWarnings("unchecked")
-	public static <T> T getResult(final String query, String label) throws SQLException
+    public static <T> T getResult( final String query,
+                                   final String label )
+            throws SQLException
+    {
+        return (T) Database.getResult( query, label, null ).getLeft();
+    }
+
+
+    /**
+     * Returns the first value in the labeled column from the query
+     * @param query The query used to select the value
+     * @param label The name of the column containing the data to retrieve
+     * @param <T> The type of data that should exist within the indicated column
+     * @param tablesToLock acquire an exclusive lock on these tables (can be
+     *                     either null or empty if caller desires no locks)
+     * @return The value in the indicated column from the first row of data.
+     * Null is returned if no data was found.
+     * The right hand boolean value of the pair indicates whether an insert was
+     * performed during retrieval: true if insert happened, false otherwise
+     * @throws SQLException Thrown if communication with the database was
+     * unsuccessful.
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> Pair<T,Boolean> getResult( final String query,
+                                                 final String label,
+                                                 final String[] tablesToLock )
+            throws SQLException
 	{
 		Connection connection = null;
+        Statement lockStatement = null;
 		Statement statement = null;
 		ResultSet results = null;
 		T result = null;
+        String lockQuery = null;
+        Boolean wasRowInserted = false;
 
-        if (LOGGER.isTraceEnabled())
-        {
-            LOGGER.trace( "" );
-            LOGGER.trace(query);
-            LOGGER.trace("");
-        }
+        boolean shouldLock = tablesToLock != null && tablesToLock.length > 0;
 
         try {
             connection = getConnection();
 
+            if ( shouldLock )
+            {
+                connection.setAutoCommit( false );
+                lockStatement = connection.createStatement();
+                lockStatement.setFetchSize( 1 );
+
+                StringJoiner tables = new StringJoiner(", ");
+
+                // Caller is responsible for correct order of locking
+                for ( String table : tablesToLock )
+                {
+                    tables.add( table );
+                }
+                lockQuery = "LOCK TABLE " + tables.toString()
+                            + " IN ACCESS EXCLUSIVE MODE";
+
+                LOGGER.trace( lockQuery );
+            }
+
+            if ( LOGGER.isTraceEnabled() )
+            {
+                LOGGER.trace( query );
+            }
+
             statement = connection.createStatement();
             statement.setFetchSize(1);
 
+            // Must this happen after the last statement is created? Doesn't
+            // seem to matter.
+            if ( shouldLock )
+            {
+                lockStatement.execute( lockQuery );
+            }
+
             results = statement.executeQuery(query);
 
-            if (results.isBeforeFirst()) {
+            ResultSetMetaData metaData = results.getMetaData();
+
+            if ( results.isBeforeFirst() )
+            {
                 results.next();
                 result = (T) results.getObject(label);
             }
-        } catch (SQLException error) {
-            LOGGER.error("The following SQL call failed:");
-            LOGGER.error(formatQueryForOutput(query));
+
+            // If the CTE results in a second column, it should be "wasInserted"
+            if ( metaData.getColumnCount() == 2)
+            {
+                wasRowInserted =
+                        ( Boolean ) results.getObject( "wasInserted" );
+            }
+
+            if ( shouldLock )
+            {
+                connection.commit();
+            }
+        }
+        catch ( SQLException error )
+        {
+            LOGGER.error("The following SQL call failed: {}{}", NEWLINE, query, error );
+
+            if ( shouldLock && connection != null )
+            {
+                if ( lockQuery != null )
+                {
+                    LOGGER.error( "The lock statement may have failed: {}{}",
+                                  NEWLINE, lockQuery );
+                }
+                LOGGER.warn( "About to roll back" );
+                connection.rollback();
+                LOGGER.warn( "Finished rolling back" );
+            }
             throw error;
         } finally {
             if (results != null) {
                 results.close();
             }
 
-            if (statement != null) {
+            if ( lockStatement != null && !lockStatement.isClosed() )
+            {
+                lockStatement.close();
+            }
+
+            if ( statement != null && !statement.isClosed() )
+            {
                 statement.close();
             }
 
             if (connection != null) {
+                if ( shouldLock )
+                {
+                    connection.setAutoCommit( true );
+                }
                 returnConnection(connection);
             }
         }
 
-		return result;
+        LOGGER.trace( "Result of query: {}", result );
+
+        return Pair.of( result, wasRowInserted );
 	}
 
     /**
@@ -877,8 +979,7 @@ public final class Database {
 		}
 		catch (SQLException error)
 		{
-			LOGGER.error("The following query failed:");
-			LOGGER.error(query);
+            LOGGER.error( "The following query failed:{}{}", NEWLINE, query );
 			throw error;
 		}
 		finally
@@ -937,8 +1038,7 @@ public final class Database {
 		}
 		catch (SQLException error)
 		{
-			LOGGER.error( "The following query failed:" );
-			LOGGER.error(formatQueryForOutput( query ));
+            LOGGER.error( "The following query failed:{}{}", NEWLINE, query );
 			throw error;
 		}
 		finally
@@ -1047,9 +1147,7 @@ public final class Database {
 		}
 		catch (SQLException error)
 		{
-			LOGGER.error("The following SQL query failed:");
-			LOGGER.error(Strings.truncate(query));
-			LOGGER.error(Strings.getStackTrace(error));
+            LOGGER.error( "The following SQL query failed:{}{}", NEWLINE, query, error );
 			throw error;
 		}
         return results; 

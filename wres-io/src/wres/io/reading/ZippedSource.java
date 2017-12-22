@@ -76,6 +76,7 @@ public class ZippedSource extends BasicSource {
 
     private void addIngestTask( Future<List<IngestResult>> result )
     {
+        LOGGER.trace( "Added Future {} to this.tasks", result );
         this.tasks.add(result);
     }
 
@@ -294,47 +295,12 @@ public class ZippedSource extends BasicSource {
         {
             LOGGER.trace( "'{}' is not being ingested because was already found", source );
             // Fake a future, return result immediately.
-            Future<List<IngestResult>> ingest = new Future<List<IngestResult>>()
-            {
-                @Override
-                public boolean cancel( boolean b )
-                {
-                    return false;
-                }
-
-                @Override
-                public boolean isCancelled()
-                {
-                    return false;
-                }
-
-                @Override
-                public boolean isDone()
-                {
-                    return true;
-                }
-
-                @Override
-                public List<IngestResult> get()
-                        throws InterruptedException, ExecutionException
-                {
-                    List<IngestResult> result =
-                            IngestResult.singleItemListFrom( projectConfig,
-                                                             dataSourceConfig,
-                                                             checkIngest.getRight(),
-                                                             true );
-                    return Collections.unmodifiableList( result );
-                }
-
-                @Override
-                public List<IngestResult> get( long l, TimeUnit timeUnit )
-                        throws InterruptedException, ExecutionException,
-                        TimeoutException
-                {
-                    return get();
-                }
-            };
+            Future<List<IngestResult>> ingest =
+                    IngestResult.fakeFutureSingleItemListFrom( projectConfig,
+                                                               dataSourceConfig,
+                                                               checkIngest.getRight() );
             this.addIngestTask( ingest );
+            return;
         }
         else
         {

@@ -20,3 +20,6 @@ INNER JOIN wres.Variable V
 	ON V.variable_id = VP.variable_id
 INNER JOIN wres.Feature F
 	ON F.feature_id = VP.x_position;
+	
+ALTER TABLE wres.variablebyfeature
+	OWNER TO wres;

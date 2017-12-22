@@ -4,6 +4,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.Executors;
 
@@ -124,7 +125,7 @@ public final class MetricProcessorSingleValuedPairsByTimeTest
                 final TimeWindow window = TimeWindow.of( Instant.MIN,
                                                          Instant.MAX,
                                                          ReferenceTime.VALID_TIME,
-                                                         i );
+                                                         Duration.ofHours( i ) );
                 final Metadata meta = metFac.getMetadata( metFac.getDimension( "CMS" ),
                                                           metFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ),
                                                           window );

@@ -3,6 +3,7 @@ package wres.engine.statistics.metric.ensemble;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,7 +24,6 @@ import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.MetricOutputMetadata;
 import wres.engine.statistics.metric.MetricParameterException;
-import wres.engine.statistics.metric.ensemble.BoxPlotErrorByObserved;
 import wres.engine.statistics.metric.ensemble.BoxPlotErrorByObserved.BoxPlotErrorByObservedBuilder;
 
 /**
@@ -54,7 +54,7 @@ public final class BoxPlotErrorByObservedTest
         final TimeWindow window = TimeWindow.of( Instant.MIN,
                                                  Instant.MAX,
                                                  ReferenceTime.VALID_TIME,
-                                                 24 );
+                                                 Duration.ofHours( 24 ) );
         final Metadata meta = metFac.getMetadata( metFac.getDimension( "MM/DAY" ),
                                                   metFac.getDatasetIdentifier( "A", "MAP" ),
                                                   window );

@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -146,7 +147,7 @@ public final class MetricTestDataFactory
         final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                  Instant.parse( "2010-12-31T11:59:59Z" ),
                                                  ReferenceTime.VALID_TIME,
-                                                 1 );
+                                                 Duration.ofHours( 1 ) );
         final Metadata meta = metFac.getMetadata(metFac.getDimension("CMS"),
                                                  metFac.getDatasetIdentifier("DRRC2", "SQIN", "HEFS"),
                                                  window);
@@ -184,7 +185,7 @@ public final class MetricTestDataFactory
         final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                  Instant.parse( "2010-12-31T11:59:59Z" ),
                                                  ReferenceTime.VALID_TIME,
-                                                 24 );
+                                                 Duration.ofHours( 24 ) );
         final Metadata meta = metFac.getMetadata(metFac.getDimension("MM/DAY"),
                                                  metFac.getDatasetIdentifier("103.1", "QME", "NVE"),
                                                  window);
@@ -208,7 +209,7 @@ public final class MetricTestDataFactory
         final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                  Instant.parse( "2010-12-31T11:59:59Z" ),
                                                  ReferenceTime.VALID_TIME,
-                                                 24 );
+                                                 Duration.ofHours( 24 ) );
         final Metadata meta = metFac.getMetadata(metFac.getDimension("MM/DAY"),
                                                  metFac.getDatasetIdentifier("A", "MAP"),
                                                  window);
@@ -244,7 +245,7 @@ public final class MetricTestDataFactory
         final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                  Instant.parse( "2010-12-31T11:59:59Z" ),
                                                  ReferenceTime.VALID_TIME,
-                                                 24 );
+                                                 Duration.ofHours( 24 ) );
         final Metadata meta = metFac.getMetadata(metFac.getDimension("CMS"),
                                                  metFac.getDatasetIdentifier("DRRC2", "SQIN", "HEFS"),
                                                  window);
@@ -287,7 +288,7 @@ public final class MetricTestDataFactory
         final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                  Instant.parse( "2010-12-31T11:59:59Z" ),
                                                  ReferenceTime.VALID_TIME,
-                                                 24 );
+                                                 Duration.ofHours( 24 ) );
         final Metadata meta = metFac.getMetadata( metFac.getDimension( "CMS" ),
                                                   metFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ),
                                                   window );
@@ -313,7 +314,7 @@ public final class MetricTestDataFactory
         final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                  Instant.parse( "2010-12-31T11:59:59Z" ),
                                                  ReferenceTime.VALID_TIME,
-                                                 24 );
+                                                 Duration.ofHours( 24 ) );
         final Metadata meta = metFac.getMetadata(metFac.getDimension("MM/DAY"),
                                                  metFac.getDatasetIdentifier("A", "MAP"),
                                                  window);

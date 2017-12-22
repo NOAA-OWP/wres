@@ -1,7 +1,7 @@
 package wres.datamodel;
 
+import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 
@@ -434,7 +434,6 @@ public interface DataFactory
      * @param referenceTime the reference time system
      * @param earliestLead the earliest lead time
      * @param latestLead the latest lead time
-     * @param leadUnits the lead time units
      * @return a time window
      * @throws IllegalArgumentException if the latestTime is before (i.e. smaller than) the earliestTime or the 
      *            latestLeadTime is before (i.e. smaller than) the earliestLeadTime.  
@@ -443,18 +442,17 @@ public interface DataFactory
     default TimeWindow ofTimeWindow( Instant earliestTime,
                                      Instant latestTime,
                                      ReferenceTime referenceTime,
-                                     int earliestLead,
-                                     int latestLead,
-                                     ChronoUnit leadUnits )
+                                     Duration earliestLead,
+                                     Duration latestLead )
     {
-        return TimeWindow.of( earliestTime, latestTime, referenceTime, earliestLead, latestLead, leadUnits );
+        return TimeWindow.of( earliestTime, latestTime, referenceTime, earliestLead, latestLead );
     }
 
     /**
      * <p>Constructs a {@link TimeWindow} that comprises the intersection of two timelines, namely the UTC timeline and
      * forecast lead time. Here, the forecast lead time is zero.</p>
      * 
-     * <p>Also see {@link #ofTimeWindow(Instant, Instant, ReferenceTime, int, int, ChronoUnit)}.</p>
+     * <p>Also see {@link #ofTimeWindow(Instant, Instant, ReferenceTime, Duration, Duration)}.</p>
      * 
      * @param earliestTime the earliest time
      * @param latestTime the latest time
@@ -467,7 +465,7 @@ public interface DataFactory
                                      Instant latestTime,
                                      ReferenceTime referenceTime )
     {
-        return ofTimeWindow( earliestTime, latestTime, referenceTime, 0, 0, ChronoUnit.HOURS );
+        return TimeWindow.of( earliestTime, latestTime, referenceTime, Duration.ofHours( 0 ) );
     }
 
     /**

@@ -95,8 +95,12 @@ else
     psql -U $1 -d $3 -h $2 -f wres.USGSParameter.sql >/dev/null
 
     echo ''
-    echo 'Adding wres.VariableByFeature...'
+    echo 'Adding the wres.VariableByFeature view...'
     psql -U $1 -d $3 -h $2 -f wres.VariableByFeature.sql >/dev/null
+
+    echo ''
+    echo 'Adding the wres.forecasts view...'
+    psql -U $1 -d $3 -h $2 -f wres.forecasts.sql >/dev/null
 
     echo ''
     echo 'Creating the schema for dynamically generated partitions...'
