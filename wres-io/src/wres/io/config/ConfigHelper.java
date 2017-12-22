@@ -6,8 +6,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.time.DateTimeException;
+import java.time.Duration;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.time.MonthDay;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeParseException;
@@ -870,9 +870,8 @@ public class ConfigHelper
             return TimeWindow.of( Instant.parse( projectDetails.getEarliestDate() ),
                                   Instant.parse( projectDetails.getLatestDate() ),
                                   ReferenceTime.VALID_TIME,
-                                  lead,
-                                  lead,
-                                  leadUnits );
+                                  Duration.ofHours( lead ),
+                                  Duration.ofHours( lead ) );
         }
         //Issue dates available
         else if ( projectDetails.getEarliestIssueDate() != null && projectDetails.getLatestIssueDate() != null )
@@ -880,14 +879,14 @@ public class ConfigHelper
             return TimeWindow.of( Instant.parse( projectDetails.getEarliestIssueDate() ),
                                   Instant.parse( projectDetails.getLatestIssueDate() ),
                                   ReferenceTime.ISSUE_TIME,
-                                  lead,
-                                  lead,
-                                  leadUnits );
+                                  Duration.ofHours( lead ),
+                                  Duration.ofHours( lead ) );
         }
         //No dates available
         else
         {
-            return TimeWindow.of( Instant.MIN, Instant.MAX, ReferenceTime.VALID_TIME, lead, lead, leadUnits );
+            Duration leadTime = Duration.ofHours( lead );
+            return TimeWindow.of( Instant.MIN, Instant.MAX, ReferenceTime.VALID_TIME, leadTime, leadTime );
         }
     }
 

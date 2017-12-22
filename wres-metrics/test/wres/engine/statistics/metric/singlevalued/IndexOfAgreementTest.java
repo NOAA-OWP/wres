@@ -4,6 +4,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.time.Instant;
 
 import org.junit.Test;
@@ -21,7 +22,6 @@ import wres.datamodel.outputs.MetricOutputMetadata;
 import wres.datamodel.outputs.ScalarOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
-import wres.engine.statistics.metric.singlevalued.IndexOfAgreement;
 import wres.engine.statistics.metric.singlevalued.IndexOfAgreement.IndexOfAgreementBuilder;
 
 /**
@@ -61,7 +61,7 @@ public final class IndexOfAgreementTest
         final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                  Instant.parse( "2010-12-31T11:59:59Z" ),
                                                  ReferenceTime.VALID_TIME,
-                                                 24 );
+                                                 Duration.ofHours( 24 ) );
         final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getData().size(),
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension( "MM/DAY" ),

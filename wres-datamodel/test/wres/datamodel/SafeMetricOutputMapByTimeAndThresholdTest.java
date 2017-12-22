@@ -2,6 +2,7 @@ package wres.datamodel;
 
 import static org.junit.Assert.assertTrue;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Set;
 import java.util.TreeSet;
@@ -41,7 +42,7 @@ public final class SafeMetricOutputMapByTimeAndThresholdTest
         final TimeWindow timeWindow = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                      Instant.parse( "2010-12-31T11:59:59Z" ),
                                                      ReferenceTime.VALID_TIME,
-                                                     42 );
+                                                     Duration.ofHours( 42 ) );
         final Threshold q = outputFactory.getQuantileThreshold( 531.88, 0.005, Operator.GREATER );
         final Pair<TimeWindow, Threshold> testKeyOne = Pair.of( timeWindow, q );
         final MetricOutputMapByTimeAndThreshold<ScalarOutput> subMap =
@@ -63,7 +64,7 @@ public final class SafeMetricOutputMapByTimeAndThresholdTest
         final TimeWindow timeWindowTwo = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                         Instant.parse( "2010-12-31T11:59:59Z" ),
                                                         ReferenceTime.VALID_TIME,
-                                                        714 );
+                                                        Duration.ofHours( 714 ) );
 
 
         final Threshold q2 = outputFactory.getQuantileThreshold( Double.NEGATIVE_INFINITY,
