@@ -97,18 +97,7 @@ public abstract class Scripter
                                                    "' is not supported." );
         }
 
-        if ( loadScripter != null)
-        {
-            script = loadScripter.formScript();
-        }
-        else
-        {
-            throw new NoDataException( "No data can be pulled from the " +
-                                       "database; Please check your project " +
-                                       "configuration's mode of aggregation." );
-        }
-
-        return script;
+        return loadScripter.formScript();
     }
 
     abstract String formScript() throws SQLException,

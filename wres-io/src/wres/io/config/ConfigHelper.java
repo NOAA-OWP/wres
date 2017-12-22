@@ -897,7 +897,7 @@ public class ConfigHelper
                 // Since the focus is in the center of the window, our first
                 // date is half the span before the focus and our last date
                 // is half the span after
-                double halfSpan = projectDetails.getAggregation().getSpan() / 2;
+                double halfSpan = projectDetails.getAggregation().getSpan() / 2.0;
                 firstDate = TimeHelper.minus( focusDate,
                                               projectDetails.getAggregationUnit(),
                                               halfSpan );

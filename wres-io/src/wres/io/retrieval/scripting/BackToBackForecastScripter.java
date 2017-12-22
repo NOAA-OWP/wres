@@ -112,8 +112,7 @@ class BackToBackForecastScripter extends Scripter
 
     private void applyEnsembleConstraint() throws SQLException
     {
-        if (this.getDataSourceConfig().getEnsemble() != null &&
-            this.getDataSourceConfig().getEnsemble().size() > 0)
+        if ( !this.getDataSourceConfig().getEnsemble().isEmpty() )
         {
             int includeCount = 0;
             int excludeCount = 0;

@@ -58,9 +58,8 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>>
                     break;
                 default:
                     throw new NotImplementedException( "The aggregation mode of '" +
-                                                       String.valueOf(
-                                                               this.projectDetails.getAggregation()
-                                                                                  .getMode() ) +
+                                                       this.projectDetails.getAggregation()
+                                                                                  .getMode() +
                                                        "' has not been implemented." );
             }
         }
