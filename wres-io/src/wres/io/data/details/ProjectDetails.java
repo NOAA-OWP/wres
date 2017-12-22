@@ -34,7 +34,7 @@ import wres.io.utilities.NoDataException;
 import wres.io.utilities.ScriptGenerator;
 import wres.util.Internal;
 import wres.util.Strings;
-import wres.util.Time;
+import wres.util.TimeHelper;
 
 /**
  * Wrapper object linking a project configuration and the data needed to form
@@ -1004,7 +1004,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     {
         TimeAggregationConfig
                 timeAggregationConfig = ConfigHelper.getTimeAggregation( projectConfig );
-        return Time.unitsToHours( timeAggregationConfig.getUnit().name(),
+        return TimeHelper.unitsToHours( timeAggregationConfig.getUnit().name(),
                                   1.0 * windowNumber * timeAggregationConfig.getPeriod()).intValue();
     }
 

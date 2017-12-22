@@ -60,19 +60,19 @@ public class FormattedStopwatch {
 		
 		if (milliseconds >= 3600000)
 		{
-			hours = Time.hoursFromMilliseconds( milliseconds );
+			hours = TimeHelper.hoursFromMilliseconds( milliseconds );
 			milliseconds = milliseconds - (3600000 * hours);
 		}
 
 		if (milliseconds > 60000)
 		{
-		    minutes = Time.minutesFromMilliseconds(milliseconds);
+		    minutes = TimeHelper.minutesFromMilliseconds( milliseconds);
 		    milliseconds = milliseconds - (60000 * minutes); 
 		}
 		
 		if (milliseconds > 1000)
 		{
-			seconds = Time.secondsFromMilliseconds( milliseconds );
+			seconds = TimeHelper.secondsFromMilliseconds( milliseconds );
 		}
 
 		if (hours > 0)
@@ -101,7 +101,7 @@ public class FormattedStopwatch {
 		String start = "";
 
 		if (this.startTime != null) {
-			start =  Time.convertDateToString(this.startTime);
+			start =  TimeHelper.convertDateToString( this.startTime);
 		}
 
 		return start;
@@ -113,7 +113,7 @@ public class FormattedStopwatch {
 
 		if (this.stopTime != null)
 		{
-			stop = Time.convertDateToString(this.stopTime);
+			stop = TimeHelper.convertDateToString( this.stopTime);
 		}
 
 		return stop;

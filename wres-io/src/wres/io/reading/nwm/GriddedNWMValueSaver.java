@@ -27,6 +27,7 @@ import wres.util.Internal;
 import wres.util.NotImplementedException;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
+import wres.util.TimeHelper;
 
 /**
  * Executes the database copy operation for every value in the passed in string
@@ -461,8 +462,8 @@ class GriddedNWMValueSaver extends WRESRunnable
             String outputTime = attr.getStringValue().replaceAll("_", " ");
 
             if (range.equalsIgnoreCase("analysis")) {
-                OffsetDateTime originalAssimTime = wres.util.Time.convertStringToDate(outputTime).minusHours(lead);
-                outputTime = wres.util.Time.convertDateToString(originalAssimTime);
+                OffsetDateTime originalAssimTime = TimeHelper.convertStringToDate( outputTime).minusHours( lead);
+                outputTime = TimeHelper.convertDateToString( originalAssimTime);
             }
 
             this.sourceID = DataSources.getSourceID(this.fileName,

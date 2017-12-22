@@ -27,7 +27,6 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
-import wres.config.generated.EnsembleCondition;
 import wres.config.generated.Feature;
 import wres.io.concurrency.CopyExecutor;
 import wres.io.config.ConfigHelper;
@@ -46,7 +45,7 @@ import wres.util.Collections;
 import wres.util.Internal;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
-import wres.util.Time;
+import wres.util.TimeHelper;
 import wres.util.XML;
 
 /**
@@ -586,7 +585,7 @@ public final class PIXMLReader extends XMLReader
 						}
 					}
 					
-					timeStep = Time.unitsToHours(unit, multiplier).intValue();
+					timeStep = TimeHelper.unitsToHours( unit, multiplier).intValue();
 				}
 				else if (localName.equalsIgnoreCase("parameterId"))
 				{
@@ -826,47 +825,6 @@ public final class PIXMLReader extends XMLReader
         return approved;
     }
     
-    private boolean ensembleIsApproved (final String name, final String ensembleMemberID) {
-	    boolean approved = true;
-
-	    // If there is a configuration for approved ensembles...
-	    if (this.getDataSourceConfig() != null &&
-                this.getDataSourceConfig().getEnsemble() != null &&
-                this.getDataSourceConfig().getEnsemble().size() > 0)
-        {
-            // Determine if there are instructions to ignore specific ensembles
-            final boolean exclusions = Collections.exists(this.getDataSourceConfig().getEnsemble(), EnsembleCondition::isExclude);
-
-            // If the configuration has an exclusion clause...
-            if (exclusions)
-            {
-                // Approve if there are no instructions to exclude this ensemble
-                approved = !Collections.exists(this.getDataSourceConfig().getEnsemble(),
-                                               (EnsembleCondition ensemble) ->
-                                                       ensemble.isExclude() &&
-                                                       ensemble.getName().equalsIgnoreCase(name) &&
-                                                       ensemble.getMemberId().equalsIgnoreCase(ensembleMemberID) );
-            }
-            else
-            {
-                // Only approve if the ensemble has explicit inclusion specified
-                approved = Collections.exists(this.getDataSourceConfig().getEnsemble(),
-                                              (EnsembleCondition ensemble) ->
-                                                      ensemble.isExclude() &&
-                                                      ensemble.getName().equalsIgnoreCase(name) &&
-                                                      ensemble.getMemberId().equalsIgnoreCase(ensembleMemberID)
-                );
-            }
-        }
-
-        if (!approved)
-		{
-			LOGGER.error("The ensemble with the name {} and ensemblemember id of {} was not approved.", name, ensembleMemberID);
-		}
-
-        return approved;
-    }
-    
     private boolean featureIsApproved (final String lid)
     {
 	    boolean approved = true;
@@ -889,15 +847,6 @@ public final class PIXMLReader extends XMLReader
     
     private boolean seriesIsApproved ()
     {
-        boolean ensembleApproved = this.ensembleIsApproved(this.currentEnsembleName, this.currentEnsembleMemberID);
-
-        if (!ensembleApproved)
-        {
-            LOGGER.debug( "The encounted ensemble (ID: {}, Member: {}) is not approved for this ingest.",
-                          String.valueOf( this.currentEnsembleName),
-                          String.valueOf( this.currentEnsembleMemberID ));
-        }
-
         boolean featureApproved = this.featureIsApproved(this.currentLID);
 
         if (!featureApproved)
@@ -914,7 +863,7 @@ public final class PIXMLReader extends XMLReader
                           String.valueOf(this.currentVariableName));
         }
         
-        return featureApproved && variableApproved && ensembleApproved;
+        return featureApproved && variableApproved;
     }
 
     /**

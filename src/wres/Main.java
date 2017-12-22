@@ -18,7 +18,7 @@ import wres.io.Operations;
 import wres.util.Collections;
 import wres.util.FormattedStopwatch;
 import wres.util.Strings;
-import wres.util.Time;
+import wres.util.TimeHelper;
 
 /**
  * @author Christopher Tubbs
@@ -81,11 +81,11 @@ public class Main {
         process += processId;
         LOGGER.info(process);
 
-        LOGGER.info("Beginning operation: '" +
-                                   operation +
-                                   "' at " +
-                                   Time.convertDateToString(OffsetDateTime.now()) +
-                                   "...");
+        LOGGER.info( "Beginning operation: '" +
+                     operation +
+                     "' at " +
+                     TimeHelper.convertDateToString( OffsetDateTime.now()) +
+                     "...");
         watch.start();
 
         // The following two are for logging run information to the database.

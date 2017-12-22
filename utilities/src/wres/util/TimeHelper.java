@@ -16,7 +16,7 @@ import java.util.TreeMap;
  * Helper class containing functions used to interpret and modify time data
  * parsed from various data sources (most, in not all, of which are strings)
  */
-public final class Time
+public final class TimeHelper
 {
     /**
      * The global format for dates is {@value}
@@ -37,9 +37,13 @@ public final class Time
         Map<String, Double> mapping = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         
         mapping.put("second", 1/3600.0);
+        mapping.put("seconds", 1/3600.0);
         mapping.put("hour", 1.0);
+        mapping.put("hours", 1.0);
         mapping.put("day", 24.0);
+        mapping.put("days", 24.0);
         mapping.put("minute", 1/60.0);
+        mapping.put("minutes", 1/60.0);
         mapping.put("s", 1/3600.0);
         mapping.put("hr", 1.0);
         mapping.put("min", 1/60.0);
@@ -216,7 +220,7 @@ public final class Time
 
     public static String convertStringDateTimeToDate(String datetime)
     {
-        OffsetDateTime actualDateTime = Time.convertStringToDate( datetime );
+        OffsetDateTime actualDateTime = TimeHelper.convertStringToDate( datetime );
         LocalDate actualDate = actualDateTime.toLocalDate();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DATE_FORMAT);
         return actualDate.format(formatter);
@@ -255,9 +259,9 @@ public final class Time
     {
         Objects.requireNonNull( date );
 
-        OffsetDateTime absoluteDate = Time.convertStringToDate(date);
+        OffsetDateTime absoluteDate = TimeHelper.convertStringToDate( date);
         absoluteDate = absoluteDate.withOffsetSameInstant( ZoneOffset.UTC );
-        return Time.convertDateToString(absoluteDate);
+        return TimeHelper.convertDateToString( absoluteDate);
     }
 
     /**
@@ -281,10 +285,27 @@ public final class Time
         }
 
         // Convert to hours, then convert to seconds
-        Double amountToSubtract = Time.unitsToHours( unit, amount ) * 3600;
+        Double amountToSubtract = TimeHelper.unitsToHours( unit, amount ) * 3600;
         OffsetDateTime actualTime = convertStringToDate( time );
         return convertDateToString(
                 actualTime.minusSeconds( amountToSubtract.longValue() )
         );
+    }
+
+    public static String plus(String time, String unit, double amount) throws InvalidPropertiesFormatException
+    {
+        if (time == null)
+        {
+            throw new IllegalArgumentException( String.valueOf( amount ) +
+                                                " " + String.valueOf(unit) +
+                                                " could not be added to " +
+                                                "a nonexistent time." );
+        }
+
+        // Convert to hours, then convert to seconds
+        Double amountToAdd = TimeHelper.unitsToHours( unit, amount) * 3600;
+        OffsetDateTime actualTime = TimeHelper.convertStringToDate( time );
+
+        return TimeHelper.convertDateToString( actualTime.plusSeconds( amountToAdd.longValue() ) );
     }
 }
