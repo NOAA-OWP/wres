@@ -2,7 +2,6 @@ package wres.datamodel.metadata;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 import java.util.StringJoiner;
 
@@ -22,7 +21,6 @@ import java.util.StringJoiner;
  * <li>The reference time system (valid time or issue time)
  * <li>The earliest forecast lead time</li>
  * <li>The latest forecast lead time</li>
- * <li>The units associated with the lead times</li>
  * </ol>
  * 
  * <p>When describing a sample that does not comprise forecasts, the reference time should be valid time, and the 
@@ -67,21 +65,14 @@ public final class TimeWindow implements Comparable<TimeWindow>
      * both be zero.
      */
 
-    private final long earliestLead;
+    private final Duration earliestLead;
 
     /**
-     * The latest forecast lead time associated with the time window in {@link leadUnits} units. If the 
-     * {@link TimeWindow} does not represent a forecast, the {@link #earliestLead} and {@link #latestLead} should 
-     * both be zero. 
+     * The latest forecast lead time associated with the time window. If the {@link TimeWindow} does not represent a 
+     * forecast, the {@link #earliestLead} and {@link #latestLead} should both be zero. 
      */
 
-    private final long latestLead;
-
-    /**
-     * The {@link ChronoUnit} of the {@link #earliestLead} and {@link #latestLead}.
-     */
-
-    private final ChronoUnit leadUnits;
+    private final Duration latestLead;
 
     /**
      * Constructs a {@link TimeWindow}.
@@ -91,7 +82,6 @@ public final class TimeWindow implements Comparable<TimeWindow>
      * @param referenceTime the reference time for the earliestTime and latestTime
      * @param earliestLead the earliest lead time
      * @param latestLead the latest lead time
-     * @param leadUnits the lead time units
      * @return a time window
      * @throws IllegalArgumentException if the latestTime is before (i.e. smaller than) the earliestTime or the 
      *            latestLead is before (i.e. smaller than) the earliestLead
@@ -100,16 +90,15 @@ public final class TimeWindow implements Comparable<TimeWindow>
     public static TimeWindow of( Instant earliestTime,
                                  Instant latestTime,
                                  ReferenceTime referenceTime,
-                                 long earliestLead,
-                                 long latestLead,
-                                 ChronoUnit leadUnits )
+                                 Duration earliestLead,
+                                 Duration latestLead )
     {
-        return new TimeWindow( earliestTime, latestTime, referenceTime, earliestLead, latestLead, leadUnits );
+        return new TimeWindow( earliestTime, latestTime, referenceTime, earliestLead, latestLead );
     }
 
     /**
      * Constructs a {@link TimeWindow} where the {@link #earliestLead} and {@link #latestLead} both 
-     * have the same value and the {@link #leadUnits} are {@link ChronoUnit#HOURS}.
+     * have the same value.
      * 
      * @param earliestTime the earliest time
      * @param latestTime the latest time
@@ -119,15 +108,14 @@ public final class TimeWindow implements Comparable<TimeWindow>
      * @throws IllegalArgumentException if the latestTime is before (i.e. smaller than) the earliestTime
      */
 
-    public static TimeWindow of( Instant earliestTime, Instant latestTime, ReferenceTime referenceTime, long lead )
+    public static TimeWindow of( Instant earliestTime, Instant latestTime, ReferenceTime referenceTime, Duration lead )
     {
-        return new TimeWindow( earliestTime, latestTime, referenceTime, lead, lead, ChronoUnit.HOURS );
+        return new TimeWindow( earliestTime, latestTime, referenceTime, lead, lead );
     }
 
     /**
      * Constructs a {@link TimeWindow} where the {@link #earliestLead} and {@link #latestLead} are both 
-     * zero, the {@link #leadUnits} are {@link ChronoUnit#HOURS} and the {@link #referenceTime} is 
-     * {@link ReferenceTime#VALID_TIME}.
+     * zero and the {@link #referenceTime} is {@link ReferenceTime#VALID_TIME}.
      * 
      * @param earliestTime the earliest time
      * @param latestTime the latest time
@@ -137,7 +125,8 @@ public final class TimeWindow implements Comparable<TimeWindow>
 
     public static TimeWindow of( Instant earliestTime, Instant latestTime )
     {
-        return new TimeWindow( earliestTime, latestTime, ReferenceTime.VALID_TIME, 0, 0, ChronoUnit.HOURS );
+        Duration zero = Duration.ofHours( 0 );
+        return new TimeWindow( earliestTime, latestTime, ReferenceTime.VALID_TIME, zero, zero );
     }
 
     @Override
@@ -158,17 +147,12 @@ public final class TimeWindow implements Comparable<TimeWindow>
         {
             return compare;
         }
-        compare = Long.compare( earliestLead, o.earliestLead );
+        compare = earliestLead.compareTo( o.earliestLead );
         if ( compare != 0 )
         {
             return compare;
         }
-        compare = Long.compare( latestLead, o.latestLead );
-        if ( compare != 0 )
-        {
-            return compare;
-        }    
-        return leadUnits.compareTo( o.leadUnits );
+        return latestLead.compareTo( o.latestLead );
     }
 
     @Override
@@ -181,9 +165,8 @@ public final class TimeWindow implements Comparable<TimeWindow>
         TimeWindow in = (TimeWindow) o;
         boolean timesEqual = in.earliestTime.equals( earliestTime ) && in.latestTime.equals( latestTime )
                              && in.referenceTime.equals( referenceTime );
-        return timesEqual && earliestLead == in.earliestLead
-               && latestLead == in.latestLead
-               && leadUnits.equals( in.leadUnits );
+        return timesEqual && earliestLead.equals( in.earliestLead )
+               && latestLead.equals( in.latestLead );
     }
 
     @Override
@@ -193,8 +176,7 @@ public final class TimeWindow implements Comparable<TimeWindow>
                              latestTime,
                              referenceTime,
                              earliestLead,
-                             latestLead,
-                             leadUnits );
+                             latestLead );
     }
 
     @Override
@@ -204,8 +186,8 @@ public final class TimeWindow implements Comparable<TimeWindow>
         sj.add( earliestTime.toString() )
           .add( latestTime.toString() )
           .add( referenceTime.toString() )
-          .add( Long.toString( earliestLead ) + " " + leadUnits )
-          .add( Long.toString( latestLead ) + " " + leadUnits );
+          .add( earliestLead.toString() )
+          .add( latestLead.toString() );
         return sj.toString();
     }
 
@@ -265,25 +247,23 @@ public final class TimeWindow implements Comparable<TimeWindow>
     }
 
     /**
-     * Returns the earliest forecast lead time in {@link #leadUnits} or zero if the time window does not describe 
-     * forecasts.
+     * Returns the earliest forecast lead time.
      * 
      * @return the earliest lead time
      */
 
-    public long getEarliestLeadTime()
+    public Duration getEarliestLeadTime()
     {
         return earliestLead;
     }
 
     /**
-     * Returns the latest forecast lead time in {@link #leadUnits} or zero if the time window does not describe 
-     * forecasts.
+     * Returns the latest forecast lead time.
      * 
      * @return the latest lead time
      */
 
-    public long getLatestLeadTime()
+    public Duration getLatestLeadTime()
     {
         return latestLead;
     }
@@ -296,7 +276,7 @@ public final class TimeWindow implements Comparable<TimeWindow>
 
     public long getEarliestLeadTimeInHours()
     {
-        return Duration.of( earliestLead, leadUnits ).toHours();
+        return earliestLead.toHours();
     }
 
     /**
@@ -307,7 +287,7 @@ public final class TimeWindow implements Comparable<TimeWindow>
 
     public long getLatestLeadTimeInHours()
     {
-        return Duration.of( latestLead, leadUnits ).toHours();
+        return latestLead.toHours();
     }
 
     /**
@@ -318,7 +298,7 @@ public final class TimeWindow implements Comparable<TimeWindow>
 
     public long getEarliestLeadTimeInSeconds()
     {
-        return Duration.of( earliestLead, leadUnits ).getSeconds();
+        return earliestLead.getSeconds();
     }
 
     /**
@@ -329,18 +309,7 @@ public final class TimeWindow implements Comparable<TimeWindow>
 
     public long getLatestLeadTimeInSeconds()
     {
-        return Duration.of( latestLead, leadUnits ).getSeconds();
-    }
-
-    /**
-     * Returns the {@link ChronoUnit} associated with the lead times.
-     * 
-     * @return the units of the lead times
-     */
-
-    public ChronoUnit getLeadUnits()
-    {
-        return leadUnits;
+        return latestLead.getSeconds();
     }
 
     /**
@@ -359,16 +328,15 @@ public final class TimeWindow implements Comparable<TimeWindow>
     private TimeWindow( Instant earliestTime,
                         Instant latestTime,
                         ReferenceTime referenceTime,
-                        long earliestLead,
-                        long latestLead,
-                        ChronoUnit leadUnits )
+                        Duration earliestLead,
+                        Duration latestLead )
     {
         if ( latestTime.isBefore( earliestTime ) )
         {
             throw new IllegalArgumentException( "Cannot define a time window whose latest time is before its "
                                                 + "earliest time." );
         }
-        if ( Duration.of( latestLead, leadUnits ).compareTo( Duration.of( earliestLead, leadUnits ) ) < 0 )
+        if ( latestLead.compareTo( earliestLead ) < 0 )
         {
             throw new IllegalArgumentException( "Cannot define a time window whose latest lead time is before its "
                                                 + "earliest lead time." );
@@ -378,7 +346,6 @@ public final class TimeWindow implements Comparable<TimeWindow>
         this.referenceTime = referenceTime;
         this.earliestLead = earliestLead;
         this.latestLead = latestLead;
-        this.leadUnits = leadUnits;
     }
 
 }

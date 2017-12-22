@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.StringJoiner;
 
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
@@ -94,6 +95,28 @@ class SafeEnsemblePairs implements EnsemblePairs
     public Iterator<PairOfDoubleAndVectorOfDoubles> iterator()
     {
         return mainInput.iterator();
+    }
+
+    @Override
+    public String toString()
+    {
+        StringJoiner join = new StringJoiner( System.lineSeparator() );
+        join.add( "Main pairs:" );
+        mainInput.forEach( a -> join.add( a.toString() ) );
+        if ( hasBaseline() )
+        {
+            join.add( "" ).add( "Baseline pairs:" );
+            baselineInput.forEach( a -> join.add( a.toString() ) );
+        }
+        if ( hasClimatology() )
+        {
+            join.add( "" ).add( "Climatology:" );
+            for ( Double next : climatology.getDoubles() )
+            {
+                join.add( next.toString() );
+            }
+        }
+        return join.toString();
     }
 
     /**

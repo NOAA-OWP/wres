@@ -2,8 +2,8 @@ package wres.vis;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumMap;
@@ -741,7 +741,7 @@ public class Chart2DTestOutput extends TestCase
             combine.add( full.filterByTime( TimeWindow.of( Instant.MIN,
                                                           Instant.MAX,
                                                           ReferenceTime.VALID_TIME,
-                                                          next) ) );
+                                                          Duration.ofHours( next ) ) ) );
         }
         return outputFactory.combine( combine );
     }
@@ -798,9 +798,7 @@ public class Chart2DTestOutput extends TestCase
                     TimeWindow window = TimeWindow.of( Instant.MIN,
                                                        Instant.MAX,
                                                        ReferenceTime.VALID_TIME,
-                                                       (int) leadTime,
-                                                       (int) leadTime,
-                                                       ChronoUnit.HOURS );
+                                                       Duration.ofHours( (long) leadTime ) );
                     final Pair<TimeWindow, Threshold> key = Pair.of( window, q );
 
                     //Build the scalar result
@@ -873,9 +871,7 @@ public class Chart2DTestOutput extends TestCase
                     TimeWindow window = TimeWindow.of( Instant.MIN,
                                                        Instant.MAX,
                                                        ReferenceTime.VALID_TIME,
-                                                       (int) leadTime,
-                                                       (int) leadTime,
-                                                       ChronoUnit.HOURS );
+                                                       Duration.ofHours( (long) leadTime ) );
                     final Pair<TimeWindow, Threshold> key = Pair.of( window, q );
 
                     //Build the scalar result
@@ -969,9 +965,7 @@ public class Chart2DTestOutput extends TestCase
                         TimeWindow window = TimeWindow.of( Instant.MIN,
                                                            Instant.MAX,
                                                            ReferenceTime.VALID_TIME,
-                                                           (int) leadTime,
-                                                           (int) leadTime,
-                                                           ChronoUnit.HOURS );
+                                                           Duration.ofHours( (long) leadTime ) );
                         final Pair<TimeWindow, Threshold> key = Pair.of( window, q );
 
                         //Build the result
@@ -1083,9 +1077,7 @@ public class Chart2DTestOutput extends TestCase
                         TimeWindow window = TimeWindow.of( Instant.MIN,
                                                            Instant.MAX,
                                                            ReferenceTime.VALID_TIME,
-                                                           (int) leadTime,
-                                                           (int) leadTime,
-                                                           ChronoUnit.HOURS );
+                                                           Duration.ofHours( (long) leadTime ) );
                         final Pair<TimeWindow, Threshold> key = Pair.of( window, q );
 
                         //Build the result
@@ -1183,9 +1175,7 @@ public class Chart2DTestOutput extends TestCase
                     TimeWindow window = TimeWindow.of( Instant.MIN,
                                                        Instant.MAX,
                                                        ReferenceTime.VALID_TIME,
-                                                       (int) leadTime,
-                                                       (int) leadTime,
-                                                       ChronoUnit.HOURS );
+                                                       Duration.ofHours( (long) leadTime ) );
                     final Pair<TimeWindow, Threshold> key = Pair.of( window, q );
 
                     //Build the result
@@ -1266,9 +1256,7 @@ public class Chart2DTestOutput extends TestCase
                 TimeWindow window = TimeWindow.of( Instant.MIN,
                                                    Instant.MAX,
                                                    ReferenceTime.VALID_TIME,
-                                                   (int) leadTime,
-                                                   (int) leadTime,
-                                                   ChronoUnit.HOURS );
+                                                   Duration.ofHours( (long) leadTime ) );
                 final Pair<TimeWindow, Threshold> key = Pair.of( window, threshold );
                 final DoubleMatrix2DResult t = (DoubleMatrix2DResult) data.getResult( leadTime );
                 final double[][] qq = t.getResult().toArray();
@@ -1334,9 +1322,7 @@ public class Chart2DTestOutput extends TestCase
                 TimeWindow window = TimeWindow.of( Instant.MIN,
                                                    Instant.MAX,
                                                    ReferenceTime.VALID_TIME,
-                                                   (int) leadTime,
-                                                   (int) leadTime,
-                                                   ChronoUnit.HOURS );
+                                                   Duration.ofHours( (long) leadTime ) );
                 final Pair<TimeWindow, Threshold> key = Pair.of( window, threshold );
                 final DoubleMatrix2DResult t = (DoubleMatrix2DResult) data.getResult( leadTime );
                 final double[][] bp = t.getResult().toArray();
@@ -1412,9 +1398,7 @@ public class Chart2DTestOutput extends TestCase
                 TimeWindow window = TimeWindow.of( Instant.MIN,
                                                    Instant.MAX,
                                                    ReferenceTime.VALID_TIME,
-                                                   (int) leadTime,
-                                                   (int) leadTime,
-                                                   ChronoUnit.HOURS );
+                                                   Duration.ofHours( (long) leadTime ) );
                 final Pair<TimeWindow, Threshold> key = Pair.of( window, threshold );
                 final DoubleMatrix2DResult t = (DoubleMatrix2DResult) data.getResult( leadTime );
                 final double[][] bp = t.getResult().toArray();

@@ -480,8 +480,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                                             ConfigHelper.getTimeWindow( this.projectDetails,
                                                                         lastLead.longValue(),
                                                                         this.sequenceStep,
-                                                                        this.feature,
-                                                                        ChronoUnit.HOURS ) );
+                                                                        this.feature) );
     }
 
     private PairOfDoubleAndVectorOfDoubles getPair(String date,

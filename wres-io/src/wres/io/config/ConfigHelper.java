@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.time.DateTimeException;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.MonthDay;
 import java.time.OffsetDateTime;
@@ -854,13 +855,12 @@ public class ConfigHelper
      * 
      * @param projectDetails the project configuration
      * @param lead the earliest and latest lead time
-     * @param leadUnits the lead time units
      * @return a time window 
      * @throws NullPointerException if the config is null
      * @throws DateTimeParseException if the configuration contains dates that cannot be parsed
      */
 
-    public static TimeWindow getTimeWindow( ProjectDetails projectDetails, long lead, int sequenceStep, Feature feature, ChronoUnit leadUnits )
+    public static TimeWindow getTimeWindow( ProjectDetails projectDetails, long lead, int sequenceStep, Feature feature)
             throws InvalidPropertiesFormatException, SQLException
     {
         Objects.requireNonNull( projectDetails );
@@ -868,6 +868,11 @@ public class ConfigHelper
 
         if (projectDetails.getAggregation().getMode() == TimeAggregationMode.ROLLING)
         {
+            // Defines logic for left focused, center focused, and right focused
+            // rolling windows. Initially, the differences between the three will
+            // be minute, but those differences will grow once different variables
+            // used by other projects are introduced.
+
             // Determine how many hours into the sequence this window is
             double frequencyOffset = TimeHelper.unitsToHours( projectDetails.getAggregationUnit(),
                                                               projectDetails.getAggregation().getFrequency()) *
@@ -927,9 +932,8 @@ public class ConfigHelper
             windowMetadata = TimeWindow.of( first.toInstant(),
                                             last.toInstant(),
                                             ReferenceTime.ISSUE_TIME,
-                                            lead - projectDetails.getAggregationPeriod(),
-                                            lead,
-                                            leadUnits);
+                                            Duration.ofHours( lead ),
+                                            Duration.ofHours( lead ) );
         }
         //Valid dates available
         else if ( projectDetails.getEarliestDate() != null && projectDetails.getLatestDate() != null)
@@ -937,29 +941,23 @@ public class ConfigHelper
             windowMetadata = TimeWindow.of( Instant.parse( projectDetails.getEarliestDate() ),
                                   Instant.parse( projectDetails.getLatestDate() ),
                                   ReferenceTime.VALID_TIME,
-                                  lead,
-                                  lead,
-                                  leadUnits );
+                                  Duration.ofHours( lead ),
+                                  Duration.ofHours( lead ) );
         }
         //Issue dates available
         else if ( projectDetails.getEarliestIssueDate() != null && projectDetails.getLatestIssueDate() != null )
         {
-            windowMetadata = TimeWindow.of( Instant.parse( projectDetails.getEarliestIssueDate() ),
-                                            Instant.parse( projectDetails.getLatestIssueDate() ),
-                                            ReferenceTime.ISSUE_TIME,
-                                            lead,
-                                            lead,
-                                            leadUnits );
+            return TimeWindow.of( Instant.parse( projectDetails.getEarliestIssueDate() ),
+                                  Instant.parse( projectDetails.getLatestIssueDate() ),
+                                  ReferenceTime.ISSUE_TIME,
+                                  Duration.ofHours( lead ),
+                                  Duration.ofHours( lead ) );
         }
         //No dates available
         else
         {
-            windowMetadata = TimeWindow.of( Instant.MIN,
-                                            Instant.MAX,
-                                            ReferenceTime.VALID_TIME,
-                                            lead,
-                                            lead,
-                                            leadUnits );
+            Duration leadTime = Duration.ofHours( lead );
+            return TimeWindow.of( Instant.MIN, Instant.MAX, ReferenceTime.VALID_TIME, leadTime, leadTime );
         }
 
         return windowMetadata;

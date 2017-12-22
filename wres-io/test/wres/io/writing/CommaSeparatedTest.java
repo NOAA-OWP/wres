@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -97,7 +98,7 @@ public class CommaSeparatedTest
                 outputBuilder =
                 outputFactory.ofMetricOutputForProjectByTimeAndThreshold();
 
-        TimeWindow timeOne = TimeWindow.of( Instant.MIN, Instant.MAX, ReferenceTime.VALID_TIME, 1 );
+        TimeWindow timeOne = TimeWindow.of( Instant.MIN, Instant.MAX, ReferenceTime.VALID_TIME, Duration.ofHours( 1 ) );
 
         // Output requires a future... which requires a metadata...
         // which requires a datasetidentifier..

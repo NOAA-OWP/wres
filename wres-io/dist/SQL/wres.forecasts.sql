@@ -17,3 +17,6 @@ INNER JOIN wres.ForecastValue FV
 	ON FV.timeseries_id = TS.timeseries_id
 INNER JOIN wres.VariableByFeature VBF
 	ON VBF.variableposition_id = TS.variableposition_id;
+
+ALTER TABLE wres.Forecasts
+	OWNER TO wres;

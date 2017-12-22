@@ -278,49 +278,16 @@ public class SourceLoader
             LOGGER.debug(message, absolutePath);
 
             // Fake a future, return result immediately.
-            task = new Future<List<IngestResult>>()
-            {
-                @Override
-                public boolean cancel( boolean b )
-                {
-                    return false;
-                }
-
-                @Override
-                public boolean isCancelled()
-                {
-                    return false;
-                }
-
-                @Override
-                public boolean isDone()
-                {
-                    return true;
-                }
-
-                @Override
-                public List<IngestResult> get()
-                        throws InterruptedException, ExecutionException
-                {
-                    List<IngestResult> result =
-                            IngestResult.singleItemListFrom( projectConfig,
-                                                             dataSourceConfig,
-                                                             checkIngest.getRight(),
-                                                             true );
-                    return Collections.unmodifiableList( result );
-                }
-
-                @Override
-                public List<IngestResult> get( long l, TimeUnit timeUnit )
-                        throws InterruptedException, ExecutionException,
-                        TimeoutException
-                {
-                    return get();
-                }
-            };
+            task = IngestResult.fakeFutureSingleItemListFrom( projectConfig,
+                                                              dataSourceConfig,
+                                                              checkIngest.getRight() );
         }
 
         ProgressMonitor.completeStep();
+
+        LOGGER.trace( "saveFile returning task {} for filePath {}",
+                      task,
+                      filePath);
 
         return task;
     }
