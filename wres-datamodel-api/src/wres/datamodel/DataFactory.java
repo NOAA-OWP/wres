@@ -443,8 +443,8 @@ public interface DataFactory
     default TimeWindow ofTimeWindow( Instant earliestTime,
                                      Instant latestTime,
                                      ReferenceTime referenceTime,
-                                     int earliestLead,
-                                     int latestLead,
+                                     long earliestLead,
+                                     long latestLead,
                                      ChronoUnit leadUnits )
     {
         return TimeWindow.of( earliestTime, latestTime, referenceTime, earliestLead, latestLead, leadUnits );
@@ -454,7 +454,7 @@ public interface DataFactory
      * <p>Constructs a {@link TimeWindow} that comprises the intersection of two timelines, namely the UTC timeline and
      * forecast lead time. Here, the forecast lead time is zero.</p>
      * 
-     * <p>Also see {@link #ofTimeWindow(Instant, Instant, ReferenceTime, int, int, ChronoUnit)}.</p>
+     * <p>Also see {@link #ofTimeWindow(Instant, Instant, ReferenceTime, long, long, ChronoUnit)}.</p>
      * 
      * @param earliestTime the earliest time
      * @param latestTime the latest time
