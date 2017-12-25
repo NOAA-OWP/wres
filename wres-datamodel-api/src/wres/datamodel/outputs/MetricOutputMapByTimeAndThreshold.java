@@ -3,6 +3,7 @@ package wres.datamodel.outputs;
 import java.util.Set;
 
 import wres.datamodel.Threshold;
+import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
 
 /**

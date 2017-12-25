@@ -1,8 +1,8 @@
-package wres.datamodel.outputs;
+package wres.datamodel.metadata;
 
 import wres.datamodel.Dimension;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.metadata.Metadata;
+import wres.datamodel.outputs.MetricOutput;
 
 /**
  * A class that stores the metadata associated with a {@link MetricOutput}.

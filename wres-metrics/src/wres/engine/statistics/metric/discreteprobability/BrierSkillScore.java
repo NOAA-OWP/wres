@@ -7,7 +7,7 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
-import wres.datamodel.outputs.MetricOutputMetadata;
+import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.VectorOutput;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricParameterException;

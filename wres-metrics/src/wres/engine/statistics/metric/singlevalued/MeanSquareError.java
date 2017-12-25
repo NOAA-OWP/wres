@@ -5,7 +5,7 @@ import java.util.Objects;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
-import wres.datamodel.outputs.MetricOutputMetadata;
+import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.VectorOutput;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricParameterException;

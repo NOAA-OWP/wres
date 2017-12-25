@@ -6,9 +6,9 @@ import java.util.Objects;
 
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
+import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.MetricOutputException;
-import wres.datamodel.outputs.MetricOutputMetadata;
 
 /**
  * Immutable implementation of a store for box plot outputs.

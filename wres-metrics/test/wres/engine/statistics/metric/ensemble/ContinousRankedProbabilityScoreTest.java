@@ -16,7 +16,7 @@ import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.metadata.MetadataFactory;
-import wres.datamodel.outputs.MetricOutputMetadata;
+import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.VectorOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.ensemble.ContinuousRankedProbabilityScore;

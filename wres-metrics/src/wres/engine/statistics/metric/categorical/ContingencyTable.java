@@ -8,8 +8,8 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.VectorOfBooleans;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.MulticategoryPairs;
+import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MatrixOutput;
-import wres.datamodel.outputs.MetricOutputMetadata;
 import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricParameterException;
 

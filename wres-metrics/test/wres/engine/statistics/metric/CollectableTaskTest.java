@@ -14,8 +14,8 @@ import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MatrixOutput;
-import wres.datamodel.outputs.MetricOutputMetadata;
 import wres.datamodel.outputs.ScalarOutput;
 
 /**

@@ -5,7 +5,6 @@ import java.util.Objects;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.Dimension;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.outputs.MetricOutputMetadata;
 
 /**
  * A factory class for producing metadata.

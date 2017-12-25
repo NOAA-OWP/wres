@@ -3,8 +3,8 @@ package wres.engine.statistics.metric;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.MetricInputException;
+import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MetricOutput;
-import wres.datamodel.outputs.MetricOutputMetadata;
 
 /**
  * An interface that allows for a final metric output to be aggregated from an intermediate output, thereby
