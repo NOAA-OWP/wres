@@ -6,9 +6,9 @@ import java.util.StringJoiner;
 
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.MetricOutput;
-import wres.datamodel.outputs.MetricOutputMetadata;
 
 /**
  * A factory class for constructing {@link Metadata} and associated objects.

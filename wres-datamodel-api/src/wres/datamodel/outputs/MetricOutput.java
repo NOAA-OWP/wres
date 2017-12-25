@@ -1,5 +1,7 @@
 package wres.datamodel.outputs;
 
+import wres.datamodel.metadata.MetricOutputMetadata;
+
 /**
  * <p>
  * An interface for metric outputs and associated metadata.

@@ -855,9 +855,13 @@ public class ConfigHelper
      * 
      * @param projectDetails the project configuration
      * @param lead the earliest and latest lead time
+     * @param sequenceStep the position of the window within a sequence
+     * @param feature the feature
      * @return a time window 
      * @throws NullPointerException if the config is null
      * @throws DateTimeParseException if the configuration contains dates that cannot be parsed
+     * @throws InvalidPropertiesFormatException if dates could not be established
+     * @throws SQLException if the anchor date for the rolling windows could not be established
      */
 
     public static TimeWindow getTimeWindow( ProjectDetails projectDetails, long lead, int sequenceStep, Feature feature)

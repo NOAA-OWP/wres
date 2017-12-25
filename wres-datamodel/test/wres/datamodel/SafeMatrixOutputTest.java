@@ -5,8 +5,8 @@ import static org.junit.Assert.assertTrue;
 import org.junit.Test;
 
 import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MatrixOutput;
-import wres.datamodel.outputs.MetricOutputMetadata;
 
 /**
  * Tests the {@link SafeMatrixOutput}.

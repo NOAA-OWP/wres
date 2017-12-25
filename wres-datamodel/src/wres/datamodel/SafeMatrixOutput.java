@@ -3,9 +3,9 @@ package wres.datamodel;
 import java.util.Arrays;
 import java.util.Objects;
 
+import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MatrixOutput;
 import wres.datamodel.outputs.MetricOutputException;
-import wres.datamodel.outputs.MetricOutputMetadata;
 
 /**
  * An immutable matrix of outputs associated with a metric. The number of elements and the order in which they are
