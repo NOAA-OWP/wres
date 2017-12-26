@@ -238,8 +238,8 @@ class ClimatologyBuilder
         }
         catch (SQLException e)
         {
-            throw new IOException( "The earliest date to retrieve " +
-                                   "climatological data for could not be " +
+            throw new IOException( "The earliest date from which to retrieve " +
+                                   "climatological data could not be " +
                                    "determined.",
                                    e );
         }

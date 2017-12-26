@@ -9,6 +9,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.text.DecimalFormat;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Map;
 import java.util.Objects;
 import java.util.SortedMap;
@@ -25,6 +27,7 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Threshold;
+import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.MapKey;
 import wres.datamodel.outputs.MetricOutputAccessException;
@@ -47,6 +50,15 @@ public class CommaSeparated
 
     private static final String HEADER_DELIMITER = " ";
 
+    /**
+     * Earliest possible time window to index the header.
+     */
+    
+    private static final TimeWindow HEADER_INDEX = TimeWindow.of( Instant.MIN,
+                                                                  Instant.MIN,
+                                                                  ReferenceTime.VALID_TIME,
+                                                                  Duration.ofSeconds( Long.MIN_VALUE ) );
+    
     /**
      * Write numerical outputs to CSV files.
      *
@@ -86,7 +98,7 @@ public class CommaSeparated
             if ( d.getType() == DestinationType.NUMERIC )
             {
 
-                SortedMap<Integer, StringJoiner> rows =
+                SortedMap<TimeWindow, StringJoiner> rows =
                         CommaSeparated.getNumericRows( d, storedMetricOutput );
 
                 File outputDirectory = ConfigHelper.getDirectoryFromDestinationConfig( d );
@@ -110,7 +122,6 @@ public class CommaSeparated
         }
     }
 
-
     /**
      * Get numeric rows for a DestinationConfig
      * @param d the config to build intermediate rows from
@@ -119,7 +130,7 @@ public class CommaSeparated
      * @throws IOException when retrieval from storedMetricOutput fails
      */
 
-    private static SortedMap<Integer, StringJoiner> getNumericRows(
+    private static SortedMap<TimeWindow, StringJoiner> getNumericRows(
             DestinationConfig d,
             MetricOutputForProjectByTimeAndThreshold storedMetricOutput )
             throws IOException
@@ -133,7 +144,7 @@ public class CommaSeparated
             formatter.applyPattern( d.getDecimalFormat() );
         }
 
-        SortedMap<Integer, StringJoiner> rows = new TreeMap<>();
+        SortedMap<TimeWindow, StringJoiner> rows = new TreeMap<>();
 
         MetricOutputMultiMapByTimeAndThreshold<ScalarOutput> scalarOutput = null;
         MetricOutputMultiMapByTimeAndThreshold<VectorOutput> vectorOutput = null;
@@ -150,7 +161,7 @@ public class CommaSeparated
 
         if ( scalarOutput != null ) // currently requiring some scalar output
         {
-            SortedMap<Integer, StringJoiner> intermediate =
+            SortedMap<TimeWindow, StringJoiner> intermediate =
                     CommaSeparated.getScalarRows( scalarOutput, formatter );
 
             if ( vectorOutput != null )
@@ -160,7 +171,7 @@ public class CommaSeparated
                                                     formatter );
             }
 
-            for ( Map.Entry<Integer, StringJoiner> e : intermediate.entrySet() )
+            for ( Map.Entry<TimeWindow, StringJoiner> e : intermediate.entrySet() )
             {
                 rows.put ( e.getKey(), e.getValue() );
             }
@@ -177,14 +188,17 @@ public class CommaSeparated
      * @return a SortedMap
      */
 
-    private static SortedMap<Integer, StringJoiner> getScalarRows(
+    private static SortedMap<TimeWindow, StringJoiner> getScalarRows(
             MetricOutputMultiMapByTimeAndThreshold<ScalarOutput> output,
             DecimalFormat formatter )
     {
-        SortedMap<Integer, StringJoiner> rows = new TreeMap<>();
+        SortedMap<TimeWindow, StringJoiner> rows = new TreeMap<>();
         StringJoiner headerRow = new StringJoiner( "," );
 
-        headerRow.add( "LEAD" + HEADER_DELIMITER + "HOUR" );
+        headerRow.add( "EARLIEST" + HEADER_DELIMITER + "TIME" )
+                 .add( "LATEST" + HEADER_DELIMITER + "TIME" )
+                 .add( "EARLIEST" + HEADER_DELIMITER + "LEAD" + HEADER_DELIMITER + "HOUR" )
+                 .add( "LATEST" + HEADER_DELIMITER + "LEAD" + HEADER_DELIMITER + "HOUR" );
         for ( Map.Entry<MapKey<MetricConstants>,
                 MetricOutputMapByTimeAndThreshold<ScalarOutput>> m
                 : output.entrySet() )
@@ -198,18 +212,17 @@ public class CommaSeparated
 
                 for ( TimeWindow timeWindow : m.getValue().keySetByTime() )
                 {
-                    //TODO: allow for the full specification of a time window in the 
-                    //output, including for a lead time that is not an integer number 
-                    //of hours
-                    int leadTime = (int) timeWindow.getLatestLeadTimeInHours();                    
-                    if ( rows.get( leadTime ) == null )
+                    if ( !rows.containsKey( timeWindow ) )
                     {
                         StringJoiner row = new StringJoiner( "," );
-                        row.add( Integer.toString( leadTime ) );
-                        rows.put( leadTime, row );
+                        row.add( timeWindow.getEarliestTime().toString() );
+                        row.add( timeWindow.getLatestTime().toString() );
+                        row.add( Long.toString( timeWindow.getEarliestLeadTimeInHours() ) );
+                        row.add( Long.toString( timeWindow.getLatestLeadTimeInHours() ) );
+                        rows.put( timeWindow, row );
                     }
 
-                    StringJoiner row = rows.get( leadTime );
+                    StringJoiner row = rows.get( timeWindow );
 
                     // To maintain rectangular CSV output, construct keys using
                     // both dimensions. If we do not find a value, use NA.
@@ -238,10 +251,10 @@ public class CommaSeparated
             }
         }
 
-        SortedMap<Integer,StringJoiner> result = new TreeMap<>();
-        result.put(Integer.MIN_VALUE, headerRow);
+        SortedMap<TimeWindow,StringJoiner> result = new TreeMap<>();
+        result.put( HEADER_INDEX, headerRow );
 
-        for ( Map.Entry<Integer, StringJoiner> e : rows.entrySet() )
+        for ( Map.Entry<TimeWindow, StringJoiner> e : rows.entrySet() )
         {
             result.put( e.getKey(), e.getValue() );
         }
@@ -260,11 +273,11 @@ public class CommaSeparated
      */
 
     private static void appendVectorColumns(
-            SortedMap<Integer, StringJoiner> existingRows,
+            SortedMap<TimeWindow, StringJoiner> existingRows,
             MetricOutputMultiMapByTimeAndThreshold<VectorOutput> output,
             DecimalFormat formatter )
     {
-        StringJoiner headerRow = existingRows.get( Integer.MIN_VALUE );
+        StringJoiner headerRow = existingRows.get( HEADER_INDEX );
 
         for ( Map.Entry<MapKey<MetricConstants>,
                 MetricOutputMapByTimeAndThreshold<VectorOutput>> m
@@ -290,20 +303,15 @@ public class CommaSeparated
 
                     for ( TimeWindow timeWindow : m.getValue().keySetByTime() )
                     {
-                        //TODO: assume a time window is an integer number of hours
-                        //until this writer can handle more general windows
-                        StringJoiner row = existingRows.get( (int) timeWindow.getLatestLeadTimeInHours() );
+                        StringJoiner row = existingRows.get( timeWindow );
 
                         if ( row == null )
                         {
-                            //TODO: make this error message generic when the 
-                            //writer can handle more general time windows, 
-                            //i.e. call TimeWindow.toString()
                             String message = "Expected MetricOutput to have "
                                              + "consistent dimensions between the "
                                              + "vector and scalar outputs. When "
-                                             + "looking for leadtime "
-                                             + timeWindow.getLatestLeadTimeInHours()
+                                             + "looking for time window "
+                                             + timeWindow
                                              + ", could not find it in scalar output.";
                             throw new IllegalStateException( message );
                         }

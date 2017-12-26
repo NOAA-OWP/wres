@@ -885,9 +885,12 @@ public class ConfigHelper
             // Get the first date that matching data for a feature is valid
             String focusDate = projectDetails.getInitialRollingDate( feature );
 
+            // TODO: add the lead time to the focus date when the rolling windows 
+            // are defined in valid time. For issue time, do not add the lead time
+            
             // Add the lead time to the focus date to get to where this set of
             // sequences really starts
-            focusDate = TimeHelper.plus( focusDate, projectDetails.getAggregationUnit(), lead );
+            //focusDate = TimeHelper.plus( focusDate, projectDetails.getAggregationUnit(), lead );
 
             // Add the frequency offset to focus date to jump to the correct
             // sequence

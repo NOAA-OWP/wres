@@ -200,15 +200,17 @@ public final class ScriptGenerator
 
         if (projectDetails.getEarliestDate() != null)
         {
-            script.append("     AND O.observation_time >= ")
+            script.append("     AND O.observation_time >= '")
                   .append(projectDetails.getEarliestDate())
+                  .append( "'" )
                   .append(NEWLINE);
         }
 
         if (projectDetails.getLatestDate() != null)
         {
-            script.append("     AND O.observation_time <= ")
+            script.append("     AND O.observation_time <= '")
                   .append(projectDetails.getLatestDate())
+                  .append( "'" )
                   .append(NEWLINE);
         }
 
