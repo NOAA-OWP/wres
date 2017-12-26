@@ -145,9 +145,9 @@ public class IngestResult
 
         private FakeFutureListOfIngestResults( IngestResult result )
         {
-            List<IngestResult> results = new ArrayList<>( 1 );
-            results.add( result );
-            this.results = Collections.unmodifiableList( results );
+            List<IngestResult> theResults = new ArrayList<>( 1 );
+            theResults.add( result );
+            this.results = Collections.unmodifiableList( theResults );
         }
 
         public static FakeFutureListOfIngestResults from( ProjectConfig projectConfig,
