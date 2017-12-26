@@ -25,6 +25,7 @@ import wres.config.generated.EnsembleCondition;
 import wres.config.generated.Feature;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
+import wres.config.generated.RollingWindowConfig;
 import wres.config.generated.TimeAggregationConfig;
 import wres.config.generated.TimeAggregationMode;
 import wres.io.config.ConfigHelper;
@@ -501,6 +502,26 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     {
         return this.projectConfig.getPair().getDesiredTimeAggregation();
     }
+    
+    public RollingWindowConfig getRollingWindow()
+    {
+        return this.projectConfig.getPair().getRollingWindow();
+    }    
+    
+    public String getRollingWindowUnit()
+    {
+        String unit = null;
+
+        if (this.projectConfig.getPair().getRollingWindow() != null)
+        {
+            unit = this.projectConfig.getPair()
+                                     .getRollingWindow()
+                                     .getUnit()
+                                     .value();
+        }
+
+        return unit;
+    }    
 
     public String getDesiredMeasurementUnit()
     {
