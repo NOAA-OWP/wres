@@ -28,6 +28,7 @@ import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
+import wres.io.data.details.SourceDetails;
 import wres.io.reading.BasicSource;
 import wres.io.reading.IngestResult;
 import wres.io.reading.InvalidInputDataException;
@@ -44,6 +45,8 @@ public class DatacardSource extends BasicSource
 	private static final Double[] IGNORABLE_VALUES = {-998.0, -999.0, -9999.0};
 
     private String currentLocationId;
+
+    private boolean inChargeOfIngest;
 
 	/**
      * @param projectConfig the ProjectConfig causing ingest
@@ -101,6 +104,25 @@ public class DatacardSource extends BasicSource
 	@Override
     public List<IngestResult> saveObservation() throws IOException
     {
+        try
+        {
+            // This sets inChargeOfIngest (there may be a better way to do it).
+            this.getSourceID();
+        }
+        catch ( SQLException se )
+        {
+            throw new IOException( "While retrieving source ID:", se );
+        }
+
+        if ( !this.inChargeOfIngest )
+        {
+            // Yield to another ingester task, say it was already found.
+            return IngestResult.singleItemListFrom( this.getProjectConfig(),
+                                                    this.getDataSourceConfig(),
+                                                    this.getHash(),
+                                                    true );
+        }
+
 		Path path = Paths.get(getFilename());
 										
 		try (BufferedReader reader = Files.newBufferedReader(path))
@@ -416,12 +438,41 @@ public class DatacardSource extends BasicSource
 				this.creationDateTime = getFileCreationDateTime();
 			}
 
-			currentSourceID = DataSources.getSourceID( getFilename(),
-													   this.creationDateTime,
-													   null,
-                                                       this.getHash() );
+            SourceDetails.SourceKey deetsKey =
+                    new SourceDetails.SourceKey( this.getFilename(),
+                                                 this.creationDateTime,
+                                                 null,
+                                                 this.getHash() );
+
+            boolean wasInCache = DataSources.isCached( deetsKey );
+            boolean wasThisReaderTheOneThatInserted = false;
+            SourceDetails deets = null;
+
+
+            if ( !wasInCache )
+            {
+                // We *might* be the one in charge of doing this source ingest.
+                deets = new SourceDetails( deetsKey );
+                deets.save();
+                if ( deets.performedInsert() )
+                {
+                    // Now we have the definitive answer from the database.
+                    wasThisReaderTheOneThatInserted = true;
+
+                    // Now that ball is in our court we should put in cache
+                    DataSources.put( deets );
+                    // // Older, implicit way:
+                    // DataSources.hasSource( this.getHash() );
+                }
+            }
+
+            // Mark whether this reader is the one to perform ingest or yield.
+            inChargeOfIngest = wasThisReaderTheOneThatInserted;
+
+            // Regardless of whether we were the ones or not, get it from cache
+            currentSourceID = DataSources.getActiveSourceID( this.getHash() );
 		}
-		
+
 		return currentSourceID;
 	}
 	
