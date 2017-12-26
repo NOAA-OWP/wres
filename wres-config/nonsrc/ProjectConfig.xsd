@@ -373,23 +373,14 @@
         </xs:annotation>
 
         <xs:sequence>
-            <xs:element name="function" type="timeAggregationFunction" default="avg" />
-            <xs:element name="span" type="xs:int" minOccurs="0" />
-            <xs:element name="period" type="duration" default="1" />
-            <xs:element name="frequency" type="duration" minOccurs="0"/>
+            <xs:element name="function" type="timeAggregationFunction" default="avg" minOccurs="1" maxOccurs="1"/>
+            <xs:element name="period" type="duration" minOccurs="1" maxOccurs="1"/>
+            <xs:element name="frequency" type="duration" minOccurs="0" maxOccurs="1"/>
             <xs:element name="unit" type="durationUnit" default="hour" />
         </xs:sequence>
         <xs:attribute name="label" type="xs:string" />
         <xs:attribute name="mode" type="timeAggregationMode" default="back-to-back" />
-        <xs:attribute name="focus" type="rollingWindowFocus" default="center" />
     </xs:complexType>
-
-    <xs:simpleType name="spaceAggregationFunction">
-        <xs:restriction base="xs:string">
-            <xs:enumeration value="scale" />
-        </xs:restriction>
-    </xs:simpleType>
-
 
     <xs:complexType name="spaceAggregation">
 
@@ -413,6 +404,29 @@
         <xs:attribute name="earliest" type="xs:string" />
         <xs:attribute name="latest" type="xs:string" />
     </xs:complexType>
+
+    <xs:complexType name="rollingWindow">
+
+        <!-- for class naming using xjc-->
+        <xs:annotation>
+            <xs:appinfo>
+                <jaxb:class name="RollingWindowConfig" />
+            </xs:appinfo>
+        </xs:annotation>
+
+        <xs:sequence>
+            <xs:element name="period" type="duration" minOccurs="1" maxOccurs="1" />
+            <xs:element name="frequency" type="duration" minOccurs="1" maxOccurs="1"/>
+            <xs:element name="unit" type="durationUnit" minOccurs="1" maxOccurs="1" default="hour"/>
+        </xs:sequence>
+        <xs:attribute name="focus" type="rollingWindowFocus" default="center" />
+    </xs:complexType>
+
+    <xs:simpleType name="spaceAggregationFunction">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="scale" />
+        </xs:restriction>
+    </xs:simpleType>
 
     <xs:complexType name="pair">
 
@@ -446,6 +460,7 @@
             <xs:element name="values" type="doubleBoundsType" minOccurs="0" />
 
             <xs:element name="grouping" type="xs:string" minOccurs="0" maxOccurs="1" />
+            <xs:element name="rollingWindow" type="rollingWindow" minOccurs="0" maxOccurs="1"/>
             <xs:element name="desiredTimeAggregation" type="timeAggregation" />
 
             <!-- idea here is mask is a WKT, or optionally a filename,

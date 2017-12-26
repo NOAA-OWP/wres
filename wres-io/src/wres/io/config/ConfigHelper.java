@@ -94,15 +94,12 @@ public class ConfigHelper
         if (timeAggregationConfig == null)
         {
             timeAggregationConfig = new TimeAggregationConfig(
-                    TimeAggregationFunction.AVG,
-                    1,
-                    1,
-                    1,
-                    DurationUnit.HOUR,
-                    "",
-                    TimeAggregationMode.BACK_TO_BACK,
-                    RollingWindowFocus.CENTER
-            );
+                                                               TimeAggregationFunction.AVG,
+                                                               1,
+                                                               1,
+                                                               DurationUnit.HOUR,
+                                                               "",
+                                                               TimeAggregationMode.BACK_TO_BACK );
         }
 
         return timeAggregationConfig;
@@ -853,6 +850,9 @@ public class ConfigHelper
      * the associated formatting requirement. Validation of dates should be conducted at the earliest 
      * opportunity, which may be well before this point.</p>
      * 
+     * TODO: update this method to handle an earliest lead time and a latest lead time. Currently assumes both are 
+     * the same.
+     * 
      * @param projectDetails the project configuration
      * @param lead the earliest and latest lead time
      * @param sequenceStep the position of the window within a sequence
@@ -870,7 +870,7 @@ public class ConfigHelper
         Objects.requireNonNull( projectDetails );
         TimeWindow windowMetadata;
 
-        if (projectDetails.getAggregation().getMode() == TimeAggregationMode.ROLLING)
+        if ( projectDetails.getRollingWindow() != null )
         {
             // Defines logic for left focused, center focused, and right focused
             // rolling windows. Initially, the differences between the three will
@@ -878,8 +878,8 @@ public class ConfigHelper
             // used by other projects are introduced.
 
             // Determine how many hours into the sequence this window is
-            double frequencyOffset = TimeHelper.unitsToHours( projectDetails.getAggregationUnit(),
-                                                              projectDetails.getAggregation().getFrequency()) *
+            double frequencyOffset = TimeHelper.unitsToHours( projectDetails.getRollingWindowUnit(),
+                                                              projectDetails.getRollingWindow().getFrequency()) *
                                      sequenceStep;
 
             // Get the first date that matching data for a feature is valid
@@ -890,7 +890,7 @@ public class ConfigHelper
             
             // Add the lead time to the focus date to get to where this set of
             // sequences really starts
-            //focusDate = TimeHelper.plus( focusDate, projectDetails.getAggregationUnit(), lead );
+            //focusDate = TimeHelper.plus( focusDate, projectDetails.getRollingWindowUnit(), lead );
 
             // Add the frequency offset to focus date to jump to the correct
             // sequence
@@ -899,28 +899,28 @@ public class ConfigHelper
             String firstDate;
             String lastDate;
 
-            if (projectDetails.getAggregation().getFocus() == RollingWindowFocus.CENTER)
+            if (projectDetails.getRollingWindow().getFocus() == RollingWindowFocus.CENTER)
             {
                 // Since the focus is in the center of the window, our first
-                // date is half the span before the focus and our last date
-                // is half the span after
-                double halfSpan = projectDetails.getAggregation().getSpan() / 2.0;
+                // date is half the period before the focus and our last date
+                // is half the period after
+                double halfPeriod = projectDetails.getRollingWindow().getPeriod() / 2.0;
                 firstDate = TimeHelper.minus( focusDate,
-                                              projectDetails.getAggregationUnit(),
-                                              halfSpan );
+                                              projectDetails.getRollingWindowUnit(),
+                                              halfPeriod );
                 lastDate = TimeHelper.plus( focusDate,
-                                            projectDetails.getAggregationUnit(),
-                                            halfSpan);
+                                            projectDetails.getRollingWindowUnit(),
+                                            halfPeriod);
             }
-            else if (projectDetails.getAggregation().getFocus() == RollingWindowFocus.LEFT)
+            else if (projectDetails.getRollingWindow().getFocus() == RollingWindowFocus.LEFT)
             {
                 // Since the focus is on the left of the window, our first date
                 // is actually the focus, while the last date is the entire
-                // span after it
+                // period after it
                 firstDate = focusDate;
                 lastDate = TimeHelper.plus( focusDate,
-                                            projectDetails.getAggregationUnit(),
-                                            projectDetails.getAggregation().getSpan());
+                                            projectDetails.getRollingWindowUnit(),
+                                            projectDetails.getRollingWindow().getPeriod());
             }
             else
             {
@@ -928,8 +928,8 @@ public class ConfigHelper
                 // is the entire span prior to the focus and the last date is
                 // the focus itself
                 firstDate = TimeHelper.minus( focusDate,
-                                              projectDetails.getAggregationUnit(),
-                                              projectDetails.getAggregation().getSpan() );
+                                              projectDetails.getRollingWindowUnit(),
+                                              projectDetails.getRollingWindow().getPeriod() );
                 lastDate = focusDate;
             }
 
