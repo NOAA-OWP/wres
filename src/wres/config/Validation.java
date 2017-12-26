@@ -708,7 +708,7 @@ public class Validation
                           "move on to the next window.";
             }
 
-            if (aggregationConfig.getSpan() == null)
+            if ( aggregationConfig.getPeriod() < 1 )
             {
                 valid = false;
 
@@ -717,19 +717,7 @@ public class Validation
                     warning += System.lineSeparator();
                 }
 
-                warning += "The span of the window for rolling aggregation " +
-                           "must be set in order to perform rolling aggregation.";
-            }
-            else if (aggregationConfig.getSpan() < 1)
-            {
-                valid = false;
-
-                if (Strings.hasValue( warning ))
-                {
-                    warning += System.lineSeparator();
-                }
-
-                warning += "The span of a window for rolling aggregation " +
+                warning += "The period of a window for rolling aggregation " +
                            "must be at least 1 in order to perform rolling " +
                            "aggregation.";
             }

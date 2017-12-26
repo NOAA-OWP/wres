@@ -24,11 +24,15 @@
         <leadHours minimum="1" maximum="5" />
         <issuedDates latest="1985-06-07T12:00:00Z" />
         <grouping>feature,lead_time</grouping>
+        <rollingWindow>
+            <period>48</period>
+            <frequency>24</frequency>
+            <unit>hour</unit>
+        </rollingWindow>
         <desiredTimeAggregation mode="rolling">
             <function>avg</function>
-            <span>48</span>
             <period>4</period>
-            <frequency>24</frequency>
+            <frequency>1</frequency>
             <unit>hour</unit>
         </desiredTimeAggregation>
     </pair>
