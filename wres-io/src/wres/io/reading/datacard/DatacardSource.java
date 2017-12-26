@@ -415,11 +415,11 @@ public class DatacardSource extends BasicSource
 			{
 				this.creationDateTime = getFileCreationDateTime();
 			}
-						
+
 			currentSourceID = DataSources.getSourceID( getFilename(),
 													   this.creationDateTime,
 													   null,
-													   Strings.getMD5Checksum(getFilename()));
+                                                       this.getHash() );
 		}
 		
 		return currentSourceID;
