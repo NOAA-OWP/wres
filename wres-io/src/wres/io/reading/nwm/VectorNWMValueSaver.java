@@ -32,6 +32,7 @@ import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
+import wres.io.data.details.SourceDetails;
 import wres.io.data.details.TimeSeries;
 import wres.io.utilities.Database;
 import wres.util.Internal;
@@ -168,6 +169,7 @@ class VectorNWMValueSaver extends WRESRunnable
     private Integer measurementUnitID;
     private Integer sourceID;
     private Double missingValue;
+    private boolean inChargeOfIngest;
 
     @Internal(exclusivePackage = "wres.io")
     public VectorNWMValueSaver( String filename,
@@ -270,6 +272,7 @@ class VectorNWMValueSaver extends WRESRunnable
     }
 
     /**
+     * Side effect: sets inChargeOfIngest, a flag to say whether to save values
      * @return The id for the source file in the database
      * @throws IOException Thrown if communication with the source file failed
      * @throws SQLException Thrown if an error occurred while accessing the database
@@ -279,10 +282,39 @@ class VectorNWMValueSaver extends WRESRunnable
     {
         if (this.sourceID == null)
         {
-            this.sourceID = DataSources.getSourceID( this.filePath.toAbsolutePath().toString(),
-                                                     NetCDF.getInitializedTime( this.getSource() ),
-                                                     this.getLead(),
-                                                     this.getHash());
+            SourceDetails.SourceKey deetsKey =
+                    new SourceDetails.SourceKey( this.filePath.toAbsolutePath().toString(),
+                                                 NetCDF.getInitializedTime( this.getSource() ),
+                                                 this.getLead(),
+                                                 this.getHash() );
+
+            // Ask the cache "do you have this source?"
+            boolean wasInCache = DataSources.isCached( deetsKey );
+            boolean wasThisReaderTheOneThatInserted = false;
+            SourceDetails deets = null;
+
+            if ( !wasInCache )
+            {
+                // We *might* be the one in charge of doing this source ingest.
+                deets = new SourceDetails( deetsKey );
+                deets.save();
+                if ( deets.performedInsert() )
+                {
+                    // Now we have the definitive answer from the database.
+                    wasThisReaderTheOneThatInserted = true;
+
+                    // Now that ball is in our court we should put in cache
+                    DataSources.put( deets );
+                    // // Older, implicit way:
+                    // DataSources.hasSource( this.getHash() );
+                }
+            }
+
+            // Regardless of whether we were the ones or not, get it from cache
+            this.sourceID = DataSources.getActiveSourceID( this.getHash() );
+
+            // Mark whether this reader is the one to perform ingest or yield.
+            this.inChargeOfIngest = wasThisReaderTheOneThatInserted;
         }
         return this.sourceID;
     }
@@ -296,10 +328,7 @@ class VectorNWMValueSaver extends WRESRunnable
     private void addSource() throws IOException, SQLException
     {
         // Get the ID for the source file
-        this.sourceID = DataSources.getSourceID( this.filePath.toAbsolutePath().toString(),
-                                                 NetCDF.getInitializedTime( this.getSource() ),
-                                                 this.getLead(),
-                                                 this.getHash());
+        this.getSourceID();
 
         // If this is a forecast file, we also need to attach the source
         // to the time series it belongs to
@@ -951,6 +980,13 @@ class VectorNWMValueSaver extends WRESRunnable
         // Ensure that metadata for this file is added linked to the appropriate
         // time series
         this.addSource();
+
+        if ( !this.inChargeOfIngest )
+        {
+            LOGGER.debug( "This VectorNWMValueSaver yields for source {}",
+                          this.hash );
+            return;
+        }
 
         // Read all of the values from the NetCDF source at once
         Array values = var.read();
