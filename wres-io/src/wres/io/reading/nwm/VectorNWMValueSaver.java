@@ -331,8 +331,9 @@ class VectorNWMValueSaver extends WRESRunnable
         this.getSourceID();
 
         // If this is a forecast file, we also need to attach the source
-        // to the time series it belongs to
-        if (this.isForecast())
+        // to the time series it belongs to, but only if this is the instance
+        // in charge of ingest.
+        if ( this.isForecast() && this.inChargeOfIngest )
         {
             this.addForecastSource();
         }
