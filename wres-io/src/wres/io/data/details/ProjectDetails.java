@@ -603,7 +603,9 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     public Integer getRollingWindowCount(Feature feature)
             throws SQLException, InvalidPropertiesFormatException
     {
-        if ( this.getAggregation().getMode() != TimeAggregationMode.ROLLING)
+        //JBr: check for rolling window config, not aggregation mode
+        //if ( this.getAggregation().getMode() != TimeAggregationMode.ROLLING)
+        if ( this.getRollingWindow() == null )
         {
             return -1;
         }
