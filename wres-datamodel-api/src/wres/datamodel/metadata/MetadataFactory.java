@@ -25,7 +25,7 @@ public interface MetadataFactory
 
     default Metadata getMetadata()
     {
-        return getMetadata(getDimension());
+        return getMetadata( getDimension() );
     }
 
     /**
@@ -35,9 +35,9 @@ public interface MetadataFactory
      * @return a {@link Metadata} object
      */
 
-    default Metadata getMetadata(final Dimension dim)
+    default Metadata getMetadata( final Dimension dim )
     {
-        return getMetadata(dim, null, null);
+        return getMetadata( dim, null, null );
     }
 
     /**
@@ -48,9 +48,9 @@ public interface MetadataFactory
      * @return a {@link Metadata} object
      */
 
-    default Metadata getMetadata(final Dimension dim, final DatasetIdentifier identifier)
+    default Metadata getMetadata( final Dimension dim, final DatasetIdentifier identifier )
     {
-        return getMetadata(dim, identifier, null);
+        return getMetadata( dim, identifier, null );
     }
 
     /**
@@ -61,9 +61,9 @@ public interface MetadataFactory
      * @return a {@link Metadata} object
      */
 
-    default Metadata getMetadata(final Metadata input, final Dimension dim)
+    default Metadata getMetadata( final Metadata input, final Dimension dim )
     {
-        return getMetadata(dim, input.getIdentifier(), input.getTimeWindow());
+        return getMetadata( dim, input.getIdentifier(), input.getTimeWindow() );
     }
 
     /**
@@ -74,9 +74,9 @@ public interface MetadataFactory
      * @return a dataset identifier
      */
 
-    default DatasetIdentifier getDatasetIdentifier(final String geospatialID, final String variableID)
+    default DatasetIdentifier getDatasetIdentifier( final String geospatialID, final String variableID )
     {
-        return getDatasetIdentifier(geospatialID, variableID, null, null);
+        return getDatasetIdentifier( geospatialID, variableID, null, null );
     }
 
     /**
@@ -88,11 +88,11 @@ public interface MetadataFactory
      * @return a dataset identifier
      */
 
-    default DatasetIdentifier getDatasetIdentifier(final String geospatialID,
-                                                   final String variableID,
-                                                   final String scenarioID)
+    default DatasetIdentifier getDatasetIdentifier( final String geospatialID,
+                                                    final String variableID,
+                                                    final String scenarioID )
     {
-        return getDatasetIdentifier(geospatialID, variableID, scenarioID, null);
+        return getDatasetIdentifier( geospatialID, variableID, scenarioID, null );
     }
 
     /**
@@ -103,12 +103,12 @@ public interface MetadataFactory
      * @return a dataset identifier
      */
 
-    default DatasetIdentifier getDatasetIdentifier(DatasetIdentifier identifier, String baselineScenarioID)
+    default DatasetIdentifier getDatasetIdentifier( DatasetIdentifier identifier, String baselineScenarioID )
     {
-        return getDatasetIdentifier(identifier.getGeospatialID(),
-                                    identifier.getVariableID(),
-                                    identifier.getScenarioID(),
-                                    baselineScenarioID);
+        return getDatasetIdentifier( identifier.getGeospatialID(),
+                                     identifier.getVariableID(),
+                                     identifier.getScenarioID(),
+                                     baselineScenarioID );
     }
 
     /**
@@ -122,12 +122,12 @@ public interface MetadataFactory
      * @return a {@link MetricOutputMetadata} object
      */
 
-    default MetricOutputMetadata getOutputMetadata(final int sampleSize,
-                                                   final Dimension dim,
-                                                   final Dimension inputDim,
-                                                   final MetricConstants metricID)
+    default MetricOutputMetadata getOutputMetadata( final int sampleSize,
+                                                    final Dimension dim,
+                                                    final Dimension inputDim,
+                                                    final MetricConstants metricID )
     {
-        return getOutputMetadata(sampleSize, dim, inputDim, metricID, MetricConstants.MAIN, null, null);
+        return getOutputMetadata( sampleSize, dim, inputDim, metricID, MetricConstants.MAIN, null, null );
     }
 
     /**
@@ -142,13 +142,13 @@ public interface MetadataFactory
      * @return a {@link MetricOutputMetadata} object
      */
 
-    default MetricOutputMetadata getOutputMetadata(final int sampleSize,
-                                                   final Dimension dim,
-                                                   final Dimension inputDim,
-                                                   final MetricConstants metricID,
-                                                   final MetricConstants componentID)
+    default MetricOutputMetadata getOutputMetadata( final int sampleSize,
+                                                    final Dimension dim,
+                                                    final Dimension inputDim,
+                                                    final MetricConstants metricID,
+                                                    final MetricConstants componentID )
     {
-        return getOutputMetadata(sampleSize, dim, inputDim, metricID, componentID, null, null);
+        return getOutputMetadata( sampleSize, dim, inputDim, metricID, componentID, null, null );
     }
 
     /**
@@ -164,21 +164,21 @@ public interface MetadataFactory
      * @return a {@link MetricOutputMetadata} object
      */
 
-    default MetricOutputMetadata getOutputMetadata(final int sampleSize,
-                                                   final Dimension dim,
-                                                   final Metadata metadata,
-                                                   final MetricConstants metricID,
-                                                   final MetricConstants componentID)
+    default MetricOutputMetadata getOutputMetadata( final int sampleSize,
+                                                    final Dimension dim,
+                                                    final Metadata metadata,
+                                                    final MetricConstants metricID,
+                                                    final MetricConstants componentID )
     {
-        Objects.requireNonNull(metadata,
-                               "Specify a non-null source of input metadata from which to build the output metadata.");
-        return getOutputMetadata(sampleSize,
-                                 dim,
-                                 metadata.getDimension(),
-                                 metricID,
-                                 componentID,
-                                 metadata.getIdentifier(),
-                                 metadata.getTimeWindow());
+        Objects.requireNonNull( metadata,
+                                "Specify a non-null source of input metadata from which to build the output metadata." );
+        return getOutputMetadata( sampleSize,
+                                  dim,
+                                  metadata.getDimension(),
+                                  metricID,
+                                  componentID,
+                                  metadata.getIdentifier(),
+                                  metadata.getTimeWindow() );
     }
 
     /**
@@ -195,14 +195,14 @@ public interface MetadataFactory
      * @return a {@link MetricOutputMetadata} object
      */
 
-    default MetricOutputMetadata getOutputMetadata(final int sampleSize,
-                                                   final Dimension dim,
-                                                   final Dimension inputDim,
-                                                   final MetricConstants metricID,
-                                                   final MetricConstants componentID,
-                                                   final DatasetIdentifier identifier)
+    default MetricOutputMetadata getOutputMetadata( final int sampleSize,
+                                                    final Dimension dim,
+                                                    final Dimension inputDim,
+                                                    final MetricConstants metricID,
+                                                    final MetricConstants componentID,
+                                                    final DatasetIdentifier identifier )
     {
-        return getOutputMetadata(sampleSize, dim, inputDim, metricID, componentID, identifier, null);
+        return getOutputMetadata( sampleSize, dim, inputDim, metricID, componentID, identifier, null );
     }
 
     /**
@@ -213,15 +213,35 @@ public interface MetadataFactory
      * @return a {@link MetricOutputMetadata} object
      */
 
-    default MetricOutputMetadata getOutputMetadata(final MetricOutputMetadata source, final MetricConstants componentID)
+    default MetricOutputMetadata getOutputMetadata( final MetricOutputMetadata source,
+                                                    final MetricConstants componentID )
     {
-        return getOutputMetadata(source.getSampleSize(),
-                                 source.getDimension(),
-                                 source.getInputDimension(),
-                                 source.getMetricID(),
-                                 componentID,
-                                 source.getIdentifier(),
-                                 source.getTimeWindow());
+        return getOutputMetadata( source.getSampleSize(),
+                                  source.getDimension(),
+                                  source.getInputDimension(),
+                                  source.getMetricID(),
+                                  componentID,
+                                  source.getIdentifier(),
+                                  source.getTimeWindow() );
+    }
+
+    /**
+     * Builds a {@link MetricOutputMetadata} with an input source and an override for the {@link TimeWindow}.
+     * 
+     * @param source the input source
+     * @param timeWindow the time window
+     * @return a {@link MetricOutputMetadata} object
+     */
+
+    default MetricOutputMetadata getOutputMetadata( final MetricOutputMetadata source, final TimeWindow timeWindow )
+    {
+        return getOutputMetadata( source.getSampleSize(),
+                                  source.getDimension(),
+                                  source.getInputDimension(),
+                                  source.getMetricID(),
+                                  source.getMetricComponentID(),
+                                  source.getIdentifier(),
+                                  timeWindow );
     }
 
     /**
@@ -234,7 +254,7 @@ public interface MetadataFactory
      * @return a {@link Metadata} object
      */
 
-    Metadata getMetadata(final Dimension dim, final DatasetIdentifier identifier, TimeWindow timeWindow);
+    Metadata getMetadata( final Dimension dim, final DatasetIdentifier identifier, TimeWindow timeWindow );
 
     /**
      * Builds a default {@link MetricOutputMetadata} with a prescribed sample size, a {@link Dimension} for the output
@@ -251,13 +271,13 @@ public interface MetadataFactory
      * @return a {@link MetricOutputMetadata} object
      */
 
-    MetricOutputMetadata getOutputMetadata(final int sampleSize,
-                                           final Dimension dim,
-                                           final Dimension inputDim,
-                                           final MetricConstants metricID,
-                                           final MetricConstants componentID,
-                                           final DatasetIdentifier identifier,
-                                           final TimeWindow timeWindow);
+    MetricOutputMetadata getOutputMetadata( final int sampleSize,
+                                            final Dimension dim,
+                                            final Dimension inputDim,
+                                            final MetricConstants metricID,
+                                            final MetricConstants componentID,
+                                            final DatasetIdentifier identifier,
+                                            final TimeWindow timeWindow );
 
     /**
      * Returns a dataset identifier.
@@ -269,10 +289,10 @@ public interface MetadataFactory
      * @return a dataset identifier
      */
 
-    DatasetIdentifier getDatasetIdentifier(final String geospatialID,
-                                           final String variableID,
-                                           final String scenarioID,
-                                           final String baselineScenarioID);
+    DatasetIdentifier getDatasetIdentifier( final String geospatialID,
+                                            final String variableID,
+                                            final String scenarioID,
+                                            final String baselineScenarioID );
 
     /**
      * Returns a {@link Dimension} that is nominally dimensionless.
@@ -290,6 +310,6 @@ public interface MetadataFactory
      * @return a {@link Dimension}
      */
 
-    Dimension getDimension(final String dimension);
+    Dimension getDimension( final String dimension );
 
 }

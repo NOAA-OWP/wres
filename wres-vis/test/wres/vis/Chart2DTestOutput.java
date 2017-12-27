@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumMap;
@@ -1430,7 +1431,99 @@ public class Chart2DTestOutput extends TestCase
         //Return the results
         return outputFactory.ofMap( rawData );
     }    
-    
+
+    /**
+     * Returns a {@link MetricOutputMapByTimeAndThreshold} of {@link ScalarOutput} comprising the CRPSS for various
+     * rolling time windows at one threshold (all data). Corresponds to the use case in Redmine ticket #40785.
+     * 
+     * @return an output map of verification scores
+     */
+    private static MetricOutputMapByTimeAndThreshold<ScalarOutput> getScalarMetricOutputMapForRollingWindows()
+    {
+        final DataFactory outputFactory = DefaultDataFactory.getInstance();
+        final MetadataFactory metaFactory = outputFactory.getMetadataFactory();
+        final Map<Pair<TimeWindow, Threshold>, ScalarOutput> rawData = new TreeMap<>();
+
+        try
+        {
+            // Create the metric output metadata: add fake sample sizes as these are not available in the test input file
+            final MetricOutputMetadata meta = metaFactory.getOutputMetadata( 90,
+                                                                             metaFactory.getDimension(),
+                                                                             metaFactory.getDimension( "CMS" ),
+                                                                             MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
+                                                                             MetricConstants.MAIN,
+                                                                             metaFactory.getDatasetIdentifier( "DOSC1",
+                                                                                                               "STREAMFLOW",
+                                                                                                               "HEFS",
+                                                                                                               "ESP" ) );
+
+            // Rolling window parameters
+            Instant start = Instant.parse( "2015-12-01T00:00:00Z" );
+            Duration period = Duration.ofDays( 91 );
+            Duration frequency = Duration.ofDays( 30 );
+
+            // Threshold
+            final Threshold threshold = outputFactory.getQuantileThreshold( Double.NEGATIVE_INFINITY,
+                                                                            Double.NEGATIVE_INFINITY,
+                                                                            Operator.GREATER );
+
+            // Source data for the outputs
+            double[] sixHourOutputs = new double[] { 0.42, 0.32, 0.54, 0.56, 0.52, 0.82, 0.85, 0.63, 0.79, 0.86 };
+            double[] twelveHourOutputs = new double[] { 0.37, 0.29, 0.49, 0.53, 0.49, 0.61, 0.67, 0.59, 0.48, 0.52 };
+            double[] eighteenHourOutputs = new double[] { 0.28, 0.2, 0.29, 0.45, 0.36, 0.56, 0.48, 0.42, 0.295, 0.415 };
+            double[] twentyFourHourOutputs = new double[] { 0.14, 0.11, 0.13, 0.16, 0.15, 0.2, 0.23, 0.16, 0.22, 0.35 };
+
+            // Iterate through 10 rotations of the frequency
+            for ( int i = 0; i < 10; i++ )
+            {
+                Instant begin = start.plus( frequency.multipliedBy( i ) );
+                Instant end = begin.plus( period );
+                //Add the 6h data
+                TimeWindow sixHourWindow = TimeWindow.of( begin,
+                                                          end,
+                                                          ReferenceTime.ISSUE_TIME,
+                                                          Duration.ofHours( 6 ) );
+                ScalarOutput sixHourOutput =
+                        outputFactory.ofScalarOutput( sixHourOutputs[i],
+                                                      metaFactory.getOutputMetadata( meta, sixHourWindow ) );
+                rawData.put( Pair.of( sixHourWindow, threshold ), sixHourOutput );
+                //Add the 12h data
+                TimeWindow twelveHourWindow = TimeWindow.of( begin,
+                                                             end,
+                                                             ReferenceTime.ISSUE_TIME,
+                                                             Duration.ofHours( 12 ) );
+                ScalarOutput twelveHourOutput =
+                        outputFactory.ofScalarOutput( twelveHourOutputs[i],
+                                                      metaFactory.getOutputMetadata( meta, twelveHourWindow ) );
+                rawData.put( Pair.of( twelveHourWindow, threshold ), twelveHourOutput );
+                //Add the 18h data
+                TimeWindow eighteenHourWindow = TimeWindow.of( begin,
+                                                               end,
+                                                               ReferenceTime.ISSUE_TIME,
+                                                               Duration.ofHours( 18 ) );
+                ScalarOutput eighteenHourOutput =
+                        outputFactory.ofScalarOutput( eighteenHourOutputs[i],
+                                                      metaFactory.getOutputMetadata( meta, eighteenHourWindow ) );
+                rawData.put( Pair.of( eighteenHourWindow, threshold ), eighteenHourOutput );
+                //Add the 24h data
+                TimeWindow twentyFourHourWindow = TimeWindow.of( begin,
+                                                                 end,
+                                                                 ReferenceTime.ISSUE_TIME,
+                                                                 Duration.ofHours( 24 ) );
+                ScalarOutput twentyFourHourOutput =
+                        outputFactory.ofScalarOutput( twentyFourHourOutputs[i],
+                                                      metaFactory.getOutputMetadata( meta, twentyFourHourWindow ) );
+                rawData.put( Pair.of( twentyFourHourWindow, threshold ), twentyFourHourOutput );
+
+            }
+        }
+        catch ( final Exception e )
+        {
+            Assert.fail( "Test failed : " + e.getMessage() );
+        }
+        return outputFactory.ofMap( rawData );
+    }
+
     /**
      * The comparison sensitivity.
      */
@@ -1448,6 +1541,7 @@ public class Chart2DTestOutput extends TestCase
      */
     public static void main( final String[] args )
     {
+
         for ( final File file : FileTools.listFilesWithSuffix( new File( "testoutput/chart2DTest/" ), ".png" ) )
         {
             final File benchmarkFile = new File( "testinput/chart2DTest/benchmark." + file.getName() );
