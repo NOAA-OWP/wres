@@ -613,7 +613,6 @@ public class Control implements Function<String[], Integer>
                         templateResourceName = nextConfig.getTemplateResourceName();
                     }
                     final ChartEngine engine = ChartEngineFactory.buildGenericScalarOutputChartEngine(e.getValue(),
-                                                                                                      DATA_FACTORY,
                                                                                                       plotType,
                                                                                                       templateResourceName,
                                                                                                       graphicsString);

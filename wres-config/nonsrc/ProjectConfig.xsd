@@ -276,6 +276,7 @@
         <xs:restriction base="xs:string">
             <xs:enumeration value="lead threshold" />
             <xs:enumeration value="threshold lead" />
+	    <xs:enumeration value="pooling window" />
             <xs:enumeration value="single valued pairs" />
         </xs:restriction>
     </xs:simpleType>

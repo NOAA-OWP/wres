@@ -10,14 +10,14 @@ import wres.datamodel.outputs.ScalarOutput;
  * @version 0.1
  * @since 0.1
  */
-public class ScalarOutputByThresholdLeadXYChartDataSource extends WRESXYChartDataSource<MetricOutputMapByTimeAndThreshold<ScalarOutput>>
+public class ScalarOutputByThresholdAndLeadXYChartDataSource extends WRESXYChartDataSource<MetricOutputMapByTimeAndThreshold<ScalarOutput>>
 {
     /**
      * @param orderIndex The data source order index within the plotted chart. This impacts some aspects of the display,
      *            such as the rendering order, legend order, and so forth.
      * @param input The data for which to display a chart.
      */
-    public ScalarOutputByThresholdLeadXYChartDataSource(final int orderIndex,
+    public ScalarOutputByThresholdAndLeadXYChartDataSource(final int orderIndex,
                                                         final MetricOutputMapByTimeAndThreshold<ScalarOutput> input)
     {
         super(orderIndex, input, input.keySetByTime().size());
@@ -29,14 +29,14 @@ public class ScalarOutputByThresholdLeadXYChartDataSource extends WRESXYChartDat
     }
 
     @Override
-    protected ScalarOutputByThresholdLeadXYChartDataSource instantiateCopyOfDataSource()
+    protected ScalarOutputByThresholdAndLeadXYChartDataSource instantiateCopyOfDataSource()
     {
-        return new ScalarOutputByThresholdLeadXYChartDataSource(getDataSourceOrderIndex(), getInput());
+        return new ScalarOutputByThresholdAndLeadXYChartDataSource(getDataSourceOrderIndex(), getInput());
     }
 
     @Override
-    protected ScalarOutputByThresholdLeadXYDataset instantiateXYDataset()
+    protected ScalarOutputByThresholdAndLeadXYDataset instantiateXYDataset()
     {
-        return new ScalarOutputByThresholdLeadXYDataset(getInput());
+        return new ScalarOutputByThresholdAndLeadXYDataset(getInput());
     }
 }

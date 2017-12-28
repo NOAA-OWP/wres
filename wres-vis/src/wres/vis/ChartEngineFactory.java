@@ -74,6 +74,10 @@ public abstract class ChartEngineFactory
                                          new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
                                                                   ScalarOutput.class,
                                                                   "scalarOutputThresholdLeadTemplate.xml" ) );
+        scalarOutputPlotTypeInfoMap.put( PlotTypeSelection.POOLING_WINDOW,
+                                         new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
+                                                                  ScalarOutput.class,
+                                                                  "scalarOutputPoolingWindowTemplate.xml" ) );
     }
 
     /**
@@ -214,7 +218,7 @@ public abstract class ChartEngineFactory
 
             //Setup the default arguments.
             final MetricOutputMetadata meta = inputSlice.getMetadata();
-            arguments = buildDefaultMetricOutputPlotArgumentsProcessor( factory, meta );
+            arguments = buildDefaultMetricOutputPlotArgumentsProcessor( meta );
 
             //Legend title and lead time argument are specific to the plot.
             final String legendTitle = "Threshold";
@@ -240,7 +244,7 @@ public abstract class ChartEngineFactory
 
             //Setup the default arguments.
             final MetricOutputMetadata meta = inputSlice.getMetadata();
-            arguments = buildDefaultMetricOutputPlotArgumentsProcessor( factory, meta );
+            arguments = buildDefaultMetricOutputPlotArgumentsProcessor( meta );
 
             //Legend title and lead time argument are specific to the plot.
             arguments.addArgument( "legendTitle", "Lead Time" );
@@ -330,7 +334,7 @@ public abstract class ChartEngineFactory
 
             //Setup the default arguments.
             final MetricOutputMetadata meta = inputSlice.getMetadata();
-            arguments = buildDefaultMetricOutputPlotArgumentsProcessor( factory, meta );
+            arguments = buildDefaultMetricOutputPlotArgumentsProcessor( meta );
 
             //Legend title and lead time argument are specific to the plot.
             final String legendTitle = "Threshold";
@@ -357,7 +361,7 @@ public abstract class ChartEngineFactory
 
             //Setup the default arguments.
             final MetricOutputMetadata meta = inputSlice.getMetadata();
-            arguments = buildDefaultMetricOutputPlotArgumentsProcessor( factory, meta );
+            arguments = buildDefaultMetricOutputPlotArgumentsProcessor( meta );
 
             //Legend title and lead time argument are specific to the plot.
             arguments.addArgument( "legendTitle", "Lead Time" );
@@ -441,7 +445,7 @@ public abstract class ChartEngineFactory
 
             //Setup the default arguments.
             final MetricOutputMetadata meta = inputSlice.getMetadata();
-            arguments = buildDefaultMetricOutputPlotArgumentsProcessor( factory, meta );
+            arguments = buildDefaultMetricOutputPlotArgumentsProcessor( meta );
 
             //Legend title and lead time argument are specific to the plot.
             final String legendTitle = "Threshold";
@@ -468,7 +472,7 @@ public abstract class ChartEngineFactory
 
             //Setup the default arguments.
             final MetricOutputMetadata meta = inputSlice.getMetadata();
-            arguments = buildDefaultMetricOutputPlotArgumentsProcessor( factory, meta );
+            arguments = buildDefaultMetricOutputPlotArgumentsProcessor( meta );
 
             //Legend title and lead time argument are specific to the plot.
             arguments.addArgument( "legendTitle", "Lead Time" );
@@ -553,7 +557,7 @@ public abstract class ChartEngineFactory
 
             //Setup the default arguments.
             final MetricOutputMetadata meta = inputSlice.getMetadata();
-            arguments = buildDefaultMetricOutputPlotArgumentsProcessor( factory, meta );
+            arguments = buildDefaultMetricOutputPlotArgumentsProcessor( meta );
 
             //Legend title and lead time argument are specific to the plot.
             final String legendTitle = "Threshold";
@@ -580,7 +584,7 @@ public abstract class ChartEngineFactory
 
             //Setup the default arguments.
             final MetricOutputMetadata meta = inputSlice.getMetadata();
-            arguments = buildDefaultMetricOutputPlotArgumentsProcessor( factory, meta );
+            arguments = buildDefaultMetricOutputPlotArgumentsProcessor( meta );
 
             //Legend title and lead time argument are specific to the plot.
             arguments.addArgument( "legendTitle", "Lead Time" );
@@ -775,7 +779,7 @@ public abstract class ChartEngineFactory
 
         BoxPlotOutput boxPlotData = input.get( inputKeyInstance );
         final MetricOutputMetadata meta = boxPlotData.getMetadata();
-        arguments = buildDefaultMetricOutputPlotArgumentsProcessor( factory, meta );
+        arguments = buildDefaultMetricOutputPlotArgumentsProcessor( meta );
         arguments.addArgument( "diagramInstanceDescription",
                                "at Lead Hour " + inputKeyInstance.getLeft().getLatestLeadTimeInHours()
                                                              + " for "
@@ -887,7 +891,6 @@ public abstract class ChartEngineFactory
         for ( final Map.Entry<MetricConstants, MetricOutputMapByTimeAndThreshold<ScalarOutput>> entry : slicedInput.entrySet() )
         {
             final ChartEngine engine = buildGenericScalarOutputChartEngine( entry.getValue(),
-                                                                            factory,
                                                                             userSpecifiedPlotType,
                                                                             userSpecifiedTemplateResourceName,
                                                                             overrideParametersStr );
@@ -898,7 +901,6 @@ public abstract class ChartEngineFactory
 
     /**
      * @param input The metric output to plot.
-     * @param factory The data factory from which arguments will be identified.
      * @param userSpecifiedPlotType The plot type to generate.
      * @param userSpecifiedTemplateResourceName Name of the resource to load which provides the default template for
      *            chart construction. May be null to use default template identified in static map/table.
@@ -911,7 +913,6 @@ public abstract class ChartEngineFactory
      */
     public static ChartEngine
             buildGenericScalarOutputChartEngine( final MetricOutputMapByTimeAndThreshold<ScalarOutput> input,
-                                                 final DataFactory factory,
                                                  final PlotTypeSelection userSpecifiedPlotType,
                                                  final String userSpecifiedTemplateResourceName,
                                                  final String overrideParametersStr )
@@ -926,7 +927,7 @@ public abstract class ChartEngineFactory
 
         //Setup the default arguments.
         final MetricOutputMetadata meta = input.getMetadata();
-        final WRESArgumentProcessor arguments = buildDefaultMetricOutputPlotArgumentsProcessor( factory, meta );
+        final WRESArgumentProcessor arguments = buildDefaultMetricOutputPlotArgumentsProcessor( meta );
 
         //Setup plot specific arguments.
         final DatasetIdentifier identifier = meta.getIdentifier();
@@ -948,7 +949,7 @@ public abstract class ChartEngineFactory
         //Lead-threshold is the default.  This is for plots with the lead time on the domain axis and threshold in the legend.
         if ( usedPlotType.equals( PlotTypeSelection.LEAD_THRESHOLD ) )
         {
-            source = new ScalarOutputByLeadThresholdXYChartDataSource( 0, input );
+            source = new ScalarOutputByLeadAndThresholdXYChartDataSource( 0, input );
 
             //Legend title.
             final String legendTitle = "Thresholds";
@@ -963,11 +964,20 @@ public abstract class ChartEngineFactory
         //This is for plots with the threshold on the domain axis and lead time in the legend.
         else if ( usedPlotType.equals( PlotTypeSelection.THRESHOLD_LEAD ) )
         {
-            source = new ScalarOutputByThresholdLeadXYChartDataSource( 0, input );
+            source = new ScalarOutputByThresholdAndLeadXYChartDataSource( 0, input );
 
             //Legend title.
             arguments.addArgument( "legendTitle", "Lead Times" );
             arguments.addArgument( "legendUnitsText", " [hours]" );
+        }
+        //This is for plots that operate with sequences of time windows (e.g. rolling windows)
+        else if ( usedPlotType.equals( PlotTypeSelection.POOLING_WINDOW ) )
+        {
+            source = new ScalarOutputByPoolingWindowXYChartDataSource( 0, input );
+
+            //Legend title.
+            arguments.addArgument( "legendTitle", "Lead time [HOUR], Threshold " );
+            arguments.addArgument( "legendUnitsText","[" + meta.getInputDimension() + "]");
         }
         else
         {
@@ -1095,8 +1105,7 @@ public abstract class ChartEngineFactory
     /**
      * Setups up default arguments that are for metric output plots.
      */
-    private static WRESArgumentProcessor buildDefaultMetricOutputPlotArgumentsProcessor( final DataFactory factory,
-                                                                                         final MetricOutputMetadata meta )
+    private static WRESArgumentProcessor buildDefaultMetricOutputPlotArgumentsProcessor( final MetricOutputMetadata meta )
     {
         //Setup the arguments.
         final WRESArgumentProcessor arguments = new WRESArgumentProcessor();
@@ -1151,7 +1160,7 @@ public abstract class ChartEngineFactory
                                                        final String axisToSquareAgainstDomain )
             throws ChartEngineException
     {
-        //Load the template parameters.  This will first attempt to load them as a system resource on th class path and
+        //Load the template parameters.  This will first attempt to load them as a system resource on the class path and
         //then as a file from the file system.  If neither works, it throws an exception.
         final ChartDrawingParameters parameters = new ChartDrawingParameters();
         try
@@ -1190,7 +1199,7 @@ public abstract class ChartEngineFactory
                 }
             }
         }
-
+        
         return new WRESChartEngine( dataSources,
                                     arguments,
                                     parameters,

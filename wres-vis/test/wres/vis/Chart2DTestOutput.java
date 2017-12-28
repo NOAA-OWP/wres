@@ -1,5 +1,7 @@
 package wres.vis;
 
+import static org.junit.Assert.fail;
+
 import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
@@ -16,6 +18,8 @@ import java.util.concurrent.ConcurrentMap;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Assert;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import evs.io.xml.ProductFileIO;
 import evs.metric.parameters.DoubleProcedureParameter;
@@ -56,7 +60,7 @@ import wres.datamodel.outputs.VectorOutput;
  * @author hank.herr
  * @author james.brown@hydrosolved.com
  */
-public class Chart2DTestOutput extends TestCase
+public class Chart2DTestOutput
 {
 
     //TODO Note that test1 is within the Chart2DTestInput.java unit tests.  The two unit tests need to either be completely separate
@@ -68,6 +72,7 @@ public class Chart2DTestOutput extends TestCase
     /**
      * Generate a plot by lead time on the domain axis.
      */
+    @Test
     public void test2ScalarOutput()
     {
         final String scenarioName = "test2";
@@ -79,12 +84,9 @@ public class Chart2DTestOutput extends TestCase
 
         try
         {
-            //Get an implementation of the factory to use for testing.
-            final DataFactory factory = DefaultDataFactory.getInstance();
 
             //Call the factory.
             final ChartEngine engine = ChartEngineFactory.buildGenericScalarOutputChartEngine( input,
-                                                                                               factory,
                                                                                                PlotTypeSelection.LEAD_THRESHOLD,
                                                                                                null,
                                                                                                null );
@@ -102,6 +104,7 @@ public class Chart2DTestOutput extends TestCase
     /**
      * Generate a plot by threshold on the domain axis.
      */
+    @Test
     public void test3ScalarOutput()
     {
         final String scenarioName = "test3";
@@ -113,12 +116,9 @@ public class Chart2DTestOutput extends TestCase
 
         try
         {
-            //Get an implementation of the factory to use for testing.
-            final DataFactory factory = DefaultDataFactory.getInstance();
 
             //Call the factory.
             final ChartEngine engine = ChartEngineFactory.buildGenericScalarOutputChartEngine( input,
-                                                                                               factory,
                                                                                                PlotTypeSelection.THRESHOLD_LEAD,
                                                                                                null,
                                                                                                null );
@@ -136,6 +136,7 @@ public class Chart2DTestOutput extends TestCase
     /**
      * Generates multiple reliability diagrams, one for each lead time.
      */
+    @Test
     public void test4ReliabilityDiagramByLeadTime()
     {
         final String scenarioName = "test4";
@@ -195,6 +196,7 @@ public class Chart2DTestOutput extends TestCase
     /**
      * Generates multiple reliability diagrams, one for each threshold.
      */
+    @Test
     public void test5ReliabilityDiagramByThreshold()
     {
         final String scenarioName = "test5";
@@ -245,6 +247,7 @@ public class Chart2DTestOutput extends TestCase
     /**
      * Generates multiple plots, one for each vector index, by calling the scalar plots repeatedly.
      */
+    @Test
     public void test6VectorMetricOutput()
     {
         final String scenarioName = "test6";
@@ -291,6 +294,11 @@ public class Chart2DTestOutput extends TestCase
         }
     }
 
+    /**
+     * Generates a ROC diagram by lead time.
+     */
+    
+    @Test
     public void test7ROCDiagramByLeadTime()
     {
         final String scenarioName = "test7";
@@ -339,6 +347,10 @@ public class Chart2DTestOutput extends TestCase
         }
     }
 
+    /**
+     * Generates a ROC diagram by threshold.
+     */
+    @Test
     public void test8ROCDiagramByThreshold()
     {
         final String scenarioName = "test8";
@@ -387,6 +399,10 @@ public class Chart2DTestOutput extends TestCase
         }
     }
 
+    /**
+     * Generates a QQ diagram by lead time.
+     */
+    @Test
     public void test9QQDiagramByLeadTime()
     {
         final String scenarioName = "test9";
@@ -435,6 +451,10 @@ public class Chart2DTestOutput extends TestCase
         }
     }
 
+    /**
+     * Generates a QQ diagram by threshold.
+     */
+    @Test
     public void test10QQDiagramByThreshold()
     {
         final String scenarioName = "test10";
@@ -482,6 +502,10 @@ public class Chart2DTestOutput extends TestCase
         }
     }
 
+    /**
+     * Generates a rank histogram by lead time.
+     */
+    @Test
     public void test11RankHistogramByLeadtime()
     {
         final String scenarioName = "test11";
@@ -530,6 +554,11 @@ public class Chart2DTestOutput extends TestCase
         }
     }
 
+    /**
+     * Generates a rank histogram by threshold.
+     */
+    
+    @Test
     public void test12RankHistogramByThreshold()
     {
         final String scenarioName = "test12";
@@ -583,7 +612,11 @@ public class Chart2DTestOutput extends TestCase
         }
     }
 
-
+    /**
+     * Generates a box plot against observed values by lead time.
+     */
+    
+    @Test
     public void test13BoxPlotObsByLeadtime()
     {
         final String scenarioName = "test13";
@@ -642,7 +675,12 @@ public class Chart2DTestOutput extends TestCase
         }
     }
 
-    public void test14BoxPlotObsByLeadtime()
+    /**
+     * Generates a box plot against forecast values by lead time.
+     */
+    
+    @Test
+    public void test14BoxPlotForecastByLeadtime()
     {
         final String scenarioName = "test14";
         final String outputImageFileSuffix = scenarioName + "_output.png";
@@ -697,8 +735,42 @@ public class Chart2DTestOutput extends TestCase
             fail( "Unexpected exception: " + t.getMessage() );
         }
     }
-    
-    
+
+    /**
+     * Generate a plot by time window on the domain axis.
+     * 
+     * TODO: set to not ignore when NPE from library is fixed
+     */
+    @Ignore
+    @Test
+    public void test15ScalarOutput()
+    {
+        final String scenarioName = "test15";
+        final File outputImageFile = new File( "testoutput/chart2DTest/" + scenarioName + "_output.png" );
+        outputImageFile.delete();
+
+        //Construct some single-valued pairs
+        final MetricOutputMapByTimeAndThreshold<ScalarOutput> input = getScalarMetricOutputMapForRollingWindows();
+
+        try
+        {
+            
+            //Call the factory.
+            final ChartEngine engine = ChartEngineFactory.buildGenericScalarOutputChartEngine( input,
+                                                                                               PlotTypeSelection.POOLING_WINDOW,
+                                                                                               null,
+                                                                                               null );
+
+            //Generate the output file.
+            ChartTools.generateOutputImageFile( outputImageFile, engine.buildChart(), 800, 600 );
+        }
+        catch ( final Throwable t )
+        {
+            t.printStackTrace();
+            fail( "Unexpected exception: " + t.getMessage() );
+        }
+    }
+        
     /**
      * Returns a {@link MetricOutputMapByTimeAndThreshold} of {@link ScalarOutput} comprising the CRPSS for a subset of
      * thresholds and forecast lead times. Reads the input data from {@link #getScalarMetricOutputMapByLeadThreshold()}
