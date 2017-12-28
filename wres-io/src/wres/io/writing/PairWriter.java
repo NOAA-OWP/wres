@@ -18,7 +18,8 @@ import org.slf4j.LoggerFactory;
 import wres.config.ProjectConfigException;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.Feature;
-import wres.config.generated.TimeAggregationMode;
+import wres.config.generated.PoolingWindowConfig;
+import wres.config.generated.TimeWindowMode;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.io.concurrency.WRESCallable;
 import wres.io.config.ConfigHelper;
@@ -152,7 +153,7 @@ public class PairWriter extends WRESCallable<Boolean>
     {
         String pairingDate;
 
-        if (this.projectDetails.getAggregation().getMode() == TimeAggregationMode.ROLLING)
+        if (this.projectDetails.getAggregation().getMode() == TimeWindowMode.ROLLING)
         {
             // We need to derive the basis time from the lead, and date
             pairingDate = TimeHelper.minus( date, "hour", this.getLeadHour() );
@@ -219,7 +220,7 @@ public class PairWriter extends WRESCallable<Boolean>
         // but so will rolling, which should be 4 then 5
         double lead;
 
-        if (this.projectDetails.getAggregation().getMode() == TimeAggregationMode.ROLLING)
+        if (this.projectDetails.getAggregation().getMode() == TimeWindowMode.ROLLING)
         {
             lead = this.getWindowNum() +
                    TimeHelper.unitsToHours( this.projectDetails.getAggregationUnit(),
@@ -246,7 +247,8 @@ public class PairWriter extends WRESCallable<Boolean>
 
         int window = this.getWindowNum();
 
-        if (this.projectDetails.getAggregation().getMode() == TimeAggregationMode.ROLLING)
+        PoolingWindowConfig config = this.projectDetails.getPoolingWindow();
+        if ( config != null && config.getMode() == TimeWindowMode.ROLLING )
         {
             // This doesn't quite work. When rolling over to the next
             // lead, it stays at the largest value prior. For instance,

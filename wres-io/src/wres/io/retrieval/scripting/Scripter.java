@@ -5,7 +5,7 @@ import java.util.InvalidPropertiesFormatException;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
-import wres.config.generated.TimeAggregationMode;
+import wres.config.generated.TimeWindowMode;
 import wres.io.config.ConfigHelper;
 import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.NoDataException;
@@ -39,7 +39,7 @@ public abstract class Scripter
         Scripter loadScripter;
         String script;
 
-        TimeAggregationMode mode = projectDetails.getAggregation().getMode();
+        TimeWindowMode mode = projectDetails.getAggregation().getMode();
         boolean isForecast = ConfigHelper.isForecast( dataSourceConfig );
 
         switch ( mode )

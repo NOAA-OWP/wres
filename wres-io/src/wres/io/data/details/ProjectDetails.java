@@ -25,9 +25,9 @@ import wres.config.generated.EnsembleCondition;
 import wres.config.generated.Feature;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
-import wres.config.generated.RollingWindowConfig;
+import wres.config.generated.PoolingWindowConfig;
 import wres.config.generated.TimeAggregationConfig;
-import wres.config.generated.TimeAggregationMode;
+import wres.config.generated.TimeWindowMode;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.Variables;
@@ -503,19 +503,19 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return this.projectConfig.getPair().getDesiredTimeAggregation();
     }
     
-    public RollingWindowConfig getRollingWindow()
+    public PoolingWindowConfig getPoolingWindow()
     {
-        return this.projectConfig.getPair().getRollingWindow();
+        return this.projectConfig.getPair().getPoolingWindow();
     }    
     
-    public String getRollingWindowUnit()
+    public String getPoolingWindowUnit()
     {
         String unit = null;
 
-        if (this.projectConfig.getPair().getRollingWindow() != null)
+        if (this.projectConfig.getPair().getPoolingWindow() != null)
         {
             unit = this.projectConfig.getPair()
-                                     .getRollingWindow()
+                                     .getPoolingWindow()
                                      .getUnit()
                                      .value();
         }
@@ -604,8 +604,8 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
             throws SQLException, InvalidPropertiesFormatException
     {
         //JBr: check for rolling window config, not aggregation mode
-        //if ( this.getAggregation().getMode() != TimeAggregationMode.ROLLING)
-        if ( this.getRollingWindow() == null )
+        //if ( this.getAggregation().getMode() != TimeWindowMode.ROLLING)
+        if ( getPoolingWindow() == null || getPoolingWindow().getMode() != TimeWindowMode.ROLLING )
         {
             return -1;
         }

@@ -19,7 +19,7 @@ import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.Feature;
-import wres.config.generated.TimeAggregationMode;
+import wres.config.generated.TimeWindowMode;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.DefaultDataFactory;
@@ -145,7 +145,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         {
             String message = "Error occured while calculating pairs for";
 
-            if (this.projectDetails.getAggregation().getMode() == TimeAggregationMode.ROLLING)
+            if ( this.projectDetails.getPoolingWindow() != null )
             {
                 message += " sequence ";
                 message += String.valueOf( this.sequenceStep );
@@ -440,6 +440,10 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                                                                                    variableIdentifier,
                                                                                    sourceConfig.getLabel());
 
+        // TODO: this needs to be refactored to support additional types of 
+        // time aggregation, such as a pooling aggregation in which the 
+        // first and last lead times must be defined separately
+        
         // This will help us determine when the window will end
         int windowNumber = this.progress + 1;
         Double windowWidth;
@@ -453,7 +457,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         {
             try
             {
-                if (this.projectDetails.getAggregation().getMode() == TimeAggregationMode.ROLLING)
+                if (this.projectDetails.getAggregation().getMode() == TimeWindowMode.ROLLING)
                 {
                     lastLead = (this.projectDetails.getAggregationPeriod() + this.progress) * 1.0;
                 }
