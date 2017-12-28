@@ -3,6 +3,7 @@ package wres.vis;
 import java.util.Objects;
 
 import org.jfree.chart.JFreeChart;
+import org.jfree.data.xy.IntervalXYDataset;
 import org.jfree.data.xy.XYDataset;
 
 import com.google.common.base.Strings;
@@ -107,7 +108,7 @@ public abstract class WRESXYChartDataSource<T> extends DefaultXYChartDataSource
     /**
      * @return An instance of {@link WRESAbstractXYDataset} to use in building the {@link JFreeChart}.
      */
-    protected abstract WRESAbstractXYDataset<?, ?> instantiateXYDataset();
+    protected abstract IntervalXYDataset instantiateXYDataset();
     
     @Override
     public XYChartDataSource returnNewInstanceWithCopyOfInitialParameters() throws XYChartDataSourceException
@@ -120,22 +121,25 @@ public abstract class WRESXYChartDataSource<T> extends DefaultXYChartDataSource
     @Override
     protected XYDataset buildXYDataset(final DataSourceDrawingParameters parameters) throws XYChartDataSourceException
     {
-        final WRESAbstractXYDataset<?, ?> dataSet = instantiateXYDataset();
+        final IntervalXYDataset dataSet = instantiateXYDataset();
 
-        //Set the legend names based on the passed in parameters, which are fully processed.
-        //Legend names are set in the dataSet itself, which is why this must be done when the dataSet is created.
-        //I know... I don't like it either.
-        for(int i = 0; i < dataSet.getSeriesCount(); i++)
+        if ( dataSet instanceof WRESAbstractXYDataset )
         {
-            if(!Strings.isNullOrEmpty(parameters.getSeriesDrawingParametersForSeriesIndex(i).getNameInLegend()))
+            //Set the legend names based on the passed in parameters, which are fully processed.
+            //Legend names are set in the dataSet itself, which is why this must be done when the dataSet is created.
+            //I know... I don't like it either.
+            for ( int i = 0; i < dataSet.getSeriesCount(); i++ )
             {
-                dataSet.setOverrideLegendName(i,
-                                              parameters.getArguments()
-                                                        .replaceArgumentsInString(parameters.getSeriesDrawingParametersForSeriesIndex(i)
-                                                                                            .getArgumentReplacedNameInLegend()));
+                if ( !Strings.isNullOrEmpty( parameters.getSeriesDrawingParametersForSeriesIndex( i )
+                                                       .getNameInLegend() ) )
+                {
+                    ( (WRESAbstractXYDataset<?, ?>) dataSet ).setOverrideLegendName( i,
+                                                                                     parameters.getArguments()
+                                                                                               .replaceArgumentsInString( parameters.getSeriesDrawingParametersForSeriesIndex( i )
+                                                                                                                                    .getArgumentReplacedNameInLegend() ) );
+                }
             }
         }
-
         return dataSet;
     }
 }

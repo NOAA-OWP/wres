@@ -19,11 +19,11 @@ import wres.datamodel.outputs.ScalarOutput;
  * @since 0.1
  */
 
-public class ScalarOutputByThresholdLeadXYDataset extends WRESAbstractXYDataset<List<MetricOutputMapByTimeAndThreshold<ScalarOutput>>, MetricOutputMapByTimeAndThreshold<ScalarOutput>>
+public class ScalarOutputByThresholdAndLeadXYDataset extends WRESAbstractXYDataset<List<MetricOutputMapByTimeAndThreshold<ScalarOutput>>, MetricOutputMapByTimeAndThreshold<ScalarOutput>>
 {
     private static final long serialVersionUID = 1598160458133121056L;
 
-    public ScalarOutputByThresholdLeadXYDataset(final MetricOutputMapByTimeAndThreshold<ScalarOutput> input)
+    public ScalarOutputByThresholdAndLeadXYDataset(final MetricOutputMapByTimeAndThreshold<ScalarOutput> input)
     {
         super(input);
 
