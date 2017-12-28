@@ -477,20 +477,6 @@
         <xs:attribute name="label" type="xs:string" />
     </xs:complexType>
 
-    <xs:complexType name="dragons">
-        <xs:annotation>
-            <xs:appinfo>
-                <jaxb:class name="DragonsConfig" />
-            </xs:appinfo>
-        </xs:annotation>
-
-        <xs:sequence>
-            <xs:element name="fullIngest" type="xs:boolean" minOccurs="0" maxOccurs="1" />
-            <xs:element name="overwriteOldData" type="xs:boolean" minOccurs="0" maxOccurs="1" />
-        </xs:sequence>
-        <xs:attribute name="label" type="xs:string" />
-    </xs:complexType>
-
     <xs:element name="project">
         <xs:complexType>
 
@@ -525,8 +511,6 @@
                         </xs:sequence>
                     </xs:complexType>
                 </xs:element>
-
-                <xs:element name="hereBeDragons" type="dragons" minOccurs="0" maxOccurs="1" />
             </xs:sequence>
 
             <xs:attribute name="label" type="xs:string" />

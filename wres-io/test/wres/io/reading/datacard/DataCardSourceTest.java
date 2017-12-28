@@ -172,7 +172,6 @@ public class DataCardSourceTest
                                                          pairConfig,
                                                          null,
                                                          null,
-                                                         null,
                                                          null );
 
         String filePath = current + "/testinput/datacard/short_HOPR1SNE.QME.OBS";
@@ -254,7 +253,6 @@ public class DataCardSourceTest
 
         ProjectConfig projectConfig = new ProjectConfig( inputs,
                                                          pairConfig,
-                                                         null,
                                                          null,
                                                          null,
                                                          null );
