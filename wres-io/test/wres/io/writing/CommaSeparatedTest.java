@@ -204,8 +204,7 @@ public class CommaSeparatedTest
                                                          pairConfig,
                                                          outputsConfig,
                                                          null,
-                                                         null,
-                                                         "test");
+                                                         "test" );
 
         // Begin the actual test now that we have constructed dependencies.
         CommaSeparated.writeOutputFiles( projectConfig, feature, output );
