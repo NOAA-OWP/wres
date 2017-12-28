@@ -12,7 +12,6 @@ import wres.config.generated.TimeAnchor;
 import wres.io.config.ConfigHelper;
 import wres.io.data.details.ProjectDetails;
 import wres.util.Internal;
-import wres.util.TimeHelper;
 
 /**
  * @author Christopher Tubbs
@@ -96,27 +95,32 @@ public final class ScriptGenerator
         script.append("    ) AS O").append(NEWLINE);
         script.append(")").append(NEWLINE);
         script.append("SELECT MIN(TS.initialization_date)::text,").append(NEWLINE);
-        script.append("    ( EXTRACT( epoch FROM AGE( MAX(TS.initialization_date), MIN(TS.initialization_date))) / (3600 *");
-        script.append( TimeHelper.unitsToHours( projectDetails.getPoolingWindowUnit(), projectDetails.getPoolingWindow().getFrequency() ));
-        script.append("))::int AS window_count").append(NEWLINE);
+        script.append( "    ( EXTRACT( epoch FROM ( MAX( TS.initialization_date ) " )
+              .append( NEWLINE );
+        script.append( "                           - MIN( TS.initialization_date )" )
+              .append( NEWLINE );
+        script.append( "                           - INTERVAL '" );
+        script.append( projectDetails.getPoolingWindow().getPeriod() );
+        script.append( " " );
+        script.append( projectDetails.getPoolingWindow().getUnit().value() );
+        script.append( "' ) )").append( NEWLINE );
+        script.append( "     /").append( NEWLINE );
+        script.append( "     EXTRACT( epoch FROM ( INTERVAL '" );
+        script.append( projectDetails.getPoolingWindow().getFrequency() );
+        script.append( " " );
+        script.append( projectDetails.getPoolingWindow().getUnit().value() );
+        script.append( "' ) )" ).append( NEWLINE );
+        script.append( "    )::int + 1 AS window_count" ).append( NEWLINE );
         script.append("FROM wres.TimeSeries TS").append(NEWLINE);
         script.append("CROSS JOIN earliest_latest EL").append(NEWLINE);
         script.append("WHERE ").append(timeSeriesVariablePosition).append(NEWLINE);
 
         if ( projectDetails.getPoolingWindow().getAnchor() == TimeAnchor.CENTER)
         {
-            script.append("    AND TS.initialization_date - INTERVAL '")
-                  .append(projectDetails.getPoolingWindow().getPeriod() / 2)
-                  .append(" ")
-                  .append(projectDetails.getPoolingWindowUnit())
-                  .append("' >= EL.earliest")
-                  .append(NEWLINE);
-            script.append("    AND TS.initialization_date + INTERVAL '")
-                  .append(projectDetails.getPoolingWindow().getPeriod() / 2)
-                  .append(" ")
-                  .append(projectDetails.getPoolingWindowUnit())
-                  .append("' <= EL.latest")
-                  .append(NEWLINE);
+            script.append( "    AND TS.initialization_date >= EL.earliest" )
+                  .append( NEWLINE );
+            script.append( "    AND TS.initialization_date <= EL.latest" )
+                  .append( NEWLINE );
         }
         else if (projectDetails.getPoolingWindow().getAnchor() == TimeAnchor.LEFT)
         {
