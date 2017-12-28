@@ -24,9 +24,10 @@ import wres.config.generated.DurationUnit;
 import wres.config.generated.Feature;
 import wres.config.generated.Format;
 import wres.config.generated.PairConfig;
+import wres.config.generated.PoolingWindowConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.TimeAggregationConfig;
-import wres.config.generated.TimeAggregationMode;
+import wres.config.generated.TimeWindowMode;
 import wres.io.config.ProjectConfigPlus;
 import wres.util.Strings;
 
@@ -397,9 +398,12 @@ public class Validation
                                            pairConfig )
                  && result;
 
-        result = Validation.isModeValid( projectConfigPlus, pairConfig)
+        result = Validation.isDesiredTimeAggregationValid( pairConfig)
                  && result;
 
+        result = Validation.isPoolingWindowValid( pairConfig)
+                && result;
+        
         return result;
     }
 
@@ -683,54 +687,135 @@ public class Validation
         return result;
     }
 
-    private static boolean isModeValid( ProjectConfigPlus projectConfigPlus, PairConfig pairConfig)
+    private static boolean isDesiredTimeAggregationValid( PairConfig pairConfig )
     {
         boolean valid = true;
 
-        if ( pairConfig.getDesiredTimeAggregation().getMode() == TimeAggregationMode.ROLLING)
+        TimeAggregationConfig aggregationConfig = pairConfig.getDesiredTimeAggregation();
+        StringBuilder warning = new StringBuilder();
+
+        // Rolling window aggregation must have a non-null frequency
+        if ( aggregationConfig.getMode() == TimeWindowMode.ROLLING )
         {
-            TimeAggregationConfig aggregationConfig = pairConfig.getDesiredTimeAggregation();
-            String warning = "";
 
-            if (aggregationConfig.getFrequency() == null)
+            if ( aggregationConfig.getFrequency() == null )
             {
                 valid = false;
-                warning = "The frequency (the rate at which a new rolling " +
-                          "window is generated) must be set in order to use " +
-                          "rolling windows.";
+                warning.append( "The frequency (the rate at which a new rolling " +
+                                "window is generated) must be set in order to use "
+                                +
+                                "rolling windows for aggregation." );
             }
-            else if (aggregationConfig.getFrequency() < 1)
+        }
+        // Non-null frequency must be >= 1
+        if ( aggregationConfig.getFrequency() != null && aggregationConfig.getFrequency() < 1 )
+        {
+            valid = false;
+            
+            if ( warning.length() > 0 )
             {
-                valid = false;
-                warning = "A frequency of " +
-                          String.valueOf( aggregationConfig.getFrequency() ) +
-                          " is not valid; it must be at least 1 in order to " +
-                          "move on to the next window.";
+                warning.append( System.lineSeparator() );
             }
 
-            if ( aggregationConfig.getPeriod() < 1 )
+            warning.append( "A time aggregation frequency of " +
+                            aggregationConfig.getFrequency()
+                            +
+                            " is not valid; it must be at least 1 in order to "
+                            +
+                            "move on to the next window." );
+        }
+
+        if ( aggregationConfig.getPeriod() < 1 )
+        {
+            valid = false;
+
+            if ( warning.length() > 0 )
             {
-                valid = false;
-
-                if (Strings.hasValue( warning ))
-                {
-                    warning += System.lineSeparator();
-                }
-
-                warning += "The period of a window for rolling aggregation " +
-                           "must be at least 1 in order to perform rolling " +
-                           "aggregation.";
+                warning.append( System.lineSeparator() );
             }
 
-            if (!valid)
-            {
-                LOGGER.warn( warning );
-            }
+            warning.append( "The period of a window for time aggregation " +
+                            "must be at least 1." );
+        }
+
+        // TODO: validate time units
+        
+        if ( !valid )
+        {
+            LOGGER.warn( warning.toString() );
         }
 
         return valid;
     }
 
+    private static boolean isPoolingWindowValid( PairConfig pairConfig )
+    {
+        
+        //No pooling config
+        if( pairConfig.getPoolingWindow() == null )
+        {
+            return true;
+        }
+        
+        boolean valid = true;
+
+        PoolingWindowConfig poolingConfig = pairConfig.getPoolingWindow();
+        StringBuilder warning = new StringBuilder();
+
+        // Rolling window pooling must have a non-null frequency
+        if ( poolingConfig.getMode() == TimeWindowMode.ROLLING )
+        {
+
+            if ( poolingConfig.getFrequency() == null )
+            {
+                valid = false;
+                warning.append( "The frequency (the rate at which a new rolling " +
+                                "window is generated) must be set in order to use "
+                                +
+                                "rolling windows for pooling." );
+            }
+        }
+        // Non-null frequency must be >= 1
+        if ( poolingConfig.getFrequency() != null && poolingConfig.getFrequency() < 1 )
+        {
+            valid = false;
+            
+            if ( warning.length() > 0 )
+            {
+                warning.append( System.lineSeparator() );
+            }
+
+            warning.append( "A time pooling frequency of " +
+                            poolingConfig.getFrequency()
+                            +
+                            " is not valid; it must be at least 1 in order to "
+                            +
+                            "move on to the next window." );
+        }
+
+        if ( poolingConfig.getPeriod() < 1 )
+        {
+            valid = false;
+
+            if ( warning.length() > 0 )
+            {
+                warning.append( System.lineSeparator() );
+            }
+
+            warning.append( "The period of a window for time pooling " +
+                            "must be at least 1." );
+        }
+        
+        // TODO: validate time units
+
+        if ( !valid )
+        {
+            LOGGER.warn( warning.toString() );
+        }
+
+        return valid;
+    }    
+        
     private static boolean areDataSourceConfigsValid( ProjectConfigPlus projectConfigPlus )
     {
         boolean result = true;

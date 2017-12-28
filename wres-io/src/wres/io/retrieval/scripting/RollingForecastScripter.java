@@ -40,8 +40,8 @@ class RollingForecastScripter extends Scripter
         this.addLine("    FROM wres.Forecasts F");
         this.addLine("    WHERE F.variable_id = ", this.getVariableID());
 
-        Double frequency = TimeHelper.unitsToHours( this.getProjectDetails().getRollingWindowUnit(), this.getProjectDetails().getRollingWindow().getFrequency() );
-        Double halfSpan = TimeHelper.unitsToHours( this.getProjectDetails().getRollingWindowUnit(), this.getProjectDetails().getRollingWindow().getPeriod() ) / 2;
+        Double frequency = TimeHelper.unitsToHours( this.getProjectDetails().getPoolingWindowUnit(), this.getProjectDetails().getPoolingWindow().getFrequency() );
+        Double halfSpan = TimeHelper.unitsToHours( this.getProjectDetails().getPoolingWindowUnit(), this.getProjectDetails().getPoolingWindow().getPeriod() ) / 2;
 
         this.addLine( "        AND F.feature_id = ", Features.getFeatureID(this.getFeature()));
         this.addLine( "        AND F.lead > ", this.getProgress() );
@@ -56,7 +56,7 @@ class RollingForecastScripter extends Scripter
 
         // TODO: Update this to handle left and right focused windows
         this.add( "        AND F.basis_time >= ('", this.getInitialRollingDate(), "'::timestamp without time zone + (INTERVAL '1 HOUR' * ");
-        this.add( TimeHelper.unitsToHours( getProjectDetails().getRollingWindowUnit(), frequency ) );
+        this.add( TimeHelper.unitsToHours( getProjectDetails().getPoolingWindowUnit(), frequency ) );
         this.addLine(" ) * ", this.getSequenceStep(), ") - INTERVAL '", halfSpan, " HOUR'");
         this.add( "        AND F.basis_time <= ('", this.getInitialRollingDate() );
         this.add("'::timestamp without time zone + (INTERVAL '1 HOUR' * ", frequency, ") * ", this.getSequenceStep(), ") ");

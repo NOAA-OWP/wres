@@ -17,7 +17,7 @@ import org.slf4j.Logger;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
-import wres.config.generated.TimeAggregationMode;
+import wres.config.generated.TimeWindowMode;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.VectorOfDoubles;
 import wres.io.config.ConfigHelper;
@@ -355,7 +355,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
                     Integer beginning;
                     Integer end;
 
-                    if ( this.getProjectDetails().getAggregation().getMode() == TimeAggregationMode.BACK_TO_BACK)
+                    if ( this.getProjectDetails().getAggregation().getMode() == TimeWindowMode.BACK_TO_BACK)
                     {
                         beginning =
                                 this.getProjectDetails()

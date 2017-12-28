@@ -8,7 +8,7 @@ import java.util.InvalidPropertiesFormatException;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
-import wres.config.generated.RollingWindowFocus;
+import wres.config.generated.TimeAnchor;
 import wres.io.config.ConfigHelper;
 import wres.io.data.details.ProjectDetails;
 import wres.util.Internal;
@@ -97,43 +97,43 @@ public final class ScriptGenerator
         script.append(")").append(NEWLINE);
         script.append("SELECT MIN(TS.initialization_date)::text,").append(NEWLINE);
         script.append("    ( EXTRACT( epoch FROM AGE( MAX(TS.initialization_date), MIN(TS.initialization_date))) / (3600 *");
-        script.append( TimeHelper.unitsToHours( projectDetails.getRollingWindowUnit(), projectDetails.getRollingWindow().getFrequency() ));
+        script.append( TimeHelper.unitsToHours( projectDetails.getPoolingWindowUnit(), projectDetails.getPoolingWindow().getFrequency() ));
         script.append("))::int AS window_count").append(NEWLINE);
         script.append("FROM wres.TimeSeries TS").append(NEWLINE);
         script.append("CROSS JOIN earliest_latest EL").append(NEWLINE);
         script.append("WHERE ").append(timeSeriesVariablePosition).append(NEWLINE);
 
-        if ( projectDetails.getRollingWindow().getFocus() == RollingWindowFocus.CENTER)
+        if ( projectDetails.getPoolingWindow().getAnchor() == TimeAnchor.CENTER)
         {
             script.append("    AND TS.initialization_date - INTERVAL '")
-                  .append(projectDetails.getRollingWindow().getPeriod() / 2)
+                  .append(projectDetails.getPoolingWindow().getPeriod() / 2)
                   .append(" ")
-                  .append(projectDetails.getRollingWindowUnit())
+                  .append(projectDetails.getPoolingWindowUnit())
                   .append("' >= EL.earliest")
                   .append(NEWLINE);
             script.append("    AND TS.initialization_date + INTERVAL '")
-                  .append(projectDetails.getRollingWindow().getPeriod() / 2)
+                  .append(projectDetails.getPoolingWindow().getPeriod() / 2)
                   .append(" ")
-                  .append(projectDetails.getRollingWindowUnit())
+                  .append(projectDetails.getPoolingWindowUnit())
                   .append("' <= EL.latest")
                   .append(NEWLINE);
         }
-        else if (projectDetails.getRollingWindow().getFocus() == RollingWindowFocus.LEFT)
+        else if (projectDetails.getPoolingWindow().getAnchor() == TimeAnchor.LEFT)
         {
             script.append("    AND TS.initialization_date >= EL.earliest").append(NEWLINE);
             script.append("    AND TS.initialization_date + INTERVAL '");
-            script.append(projectDetails.getRollingWindow().getPeriod());
+            script.append(projectDetails.getPoolingWindow().getPeriod());
             script.append(" ");
-            script.append(projectDetails.getRollingWindowUnit());
+            script.append(projectDetails.getPoolingWindowUnit());
             script.append("' <= EL.latest");
             script.append(NEWLINE);
         }
         else
         {
             script.append("    AND TS.initialization_date - INTERVAL '");
-            script.append(projectDetails.getRollingWindow().getPeriod());
+            script.append(projectDetails.getPoolingWindow().getPeriod());
             script.append(" ");
-            script.append(projectDetails.getRollingWindowUnit());
+            script.append(projectDetails.getPoolingWindowUnit());
             script.append("' >= EL.earliest");
             script.append(NEWLINE);
             script.append("    AND TS.initialization_date <= EL.latest");
