@@ -4,7 +4,8 @@
 <chartDrawingParameters>
 
     <plotTitle>
-        <text>Single valued pairs for @primaryScenario@ predictions of @variableName@ at @locationName@</text>
+        <text>Single valued pairs for @primaryScenario@ predictions of @variableName@ at @locationName@
+Evaluation Period: @earliestDateToText(yyyy-MM-dd;GMT)@ - @latestDateToText(yyyy-MM-dd;GMT)@</text>
     </plotTitle>
     
     <datasourceDrawingParameters sourceIndex="0">

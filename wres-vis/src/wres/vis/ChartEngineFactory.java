@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -32,15 +31,12 @@ import ohd.hseb.charter.datasource.instances.NumericalXYChartDataSource;
 import ohd.hseb.charter.parameters.ChartDrawingParameters;
 import ohd.hseb.hefs.utils.arguments.ArgumentsProcessor;
 import ohd.hseb.hefs.utils.xml.XMLTools;
-import ohd.hseb.util.misc.HString;
 import wres.config.generated.PlotTypeSelection;
 import wres.datamodel.DataFactory;
-import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.Threshold;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
-import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
@@ -133,12 +129,12 @@ public abstract class ChartEngineFactory
                                                 PlotTypeSelection.LEAD_THRESHOLD, //Unimportant
                                                 new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
                                                                          BoxPlotOutput.class,
-                                                                         "boxPlotOfErrors.xml" ) );
+                                                                         "boxPlotOfErrorsTemplate.xml" ) );
         multiVectorOutputPlotTypeInfoTable.put( MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
                                                 PlotTypeSelection.LEAD_THRESHOLD, //Unimportant
                                                 new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
                                                                          BoxPlotOutput.class,
-                                                                         "boxPlotOfErrors.xml" ) );
+                                                                         "boxPlotOfErrorsTemplate.xml" ) );
     }
 
 
@@ -217,21 +213,8 @@ public abstract class ChartEngineFactory
             inputSlice = input.filterByTime( (TimeWindow) inputKeyInstance );
 
             //Setup the default arguments.
-            final MetricOutputMetadata meta = inputSlice.getMetadata();
-            arguments = buildDefaultMetricOutputPlotArgumentsProcessor( meta );
-
-            //Legend title and lead time argument are specific to the plot.
-            final String legendTitle = "Threshold";
-            String legendUnitsText = "";
-            if ( ( input.hasQuantileThresholds() ) || ( input.keySetByThreshold().size() > 1 ) )
-            {
-                legendUnitsText += " [" + meta.getInputDimension() + "]";
-            }
-            Object key = ( (TimeWindow) inputKeyInstance ).getLatestLeadTimeInHours();
-            arguments.addArgument( "legendTitle", legendTitle );
-            arguments.addArgument( "legendUnitsText", legendUnitsText );
-            arguments.addArgument( "diagramInstanceDescription", "at Lead Hour " + key );
-            arguments.addArgument( "plotTitleVariable", "Thresholds" );
+            arguments = new WRESArgumentProcessor( inputSlice );
+            arguments.addLeadThresholdArguments( inputSlice, (TimeWindow) inputKeyInstance );
         }
 
         //-----------------------------------------------------------------
@@ -243,18 +226,8 @@ public abstract class ChartEngineFactory
                     input.filterByThreshold( (Threshold) inputKeyInstance );
 
             //Setup the default arguments.
-            final MetricOutputMetadata meta = inputSlice.getMetadata();
-            arguments = buildDefaultMetricOutputPlotArgumentsProcessor( meta );
-
-            //Legend title and lead time argument are specific to the plot.
-            arguments.addArgument( "legendTitle", "Lead Time" );
-            arguments.addArgument( "legendUnitsText", " [hours]" );
-            arguments.addArgument( "diagramInstanceDescription",
-                                   "for Threshold " + ( (Threshold) inputKeyInstance ).toString()
-                                                                 + " ("
-                                                                 + meta.getInputDimension()
-                                                                 + ")" );
-            arguments.addArgument( "plotTitleVariable", "Lead Times" );
+            arguments = new WRESArgumentProcessor( inputSlice );
+            arguments.addThresholdLeadArguments( inputSlice, (Threshold) inputKeyInstance );
         }
 
         //This is an error, since there are only two allowable types of reliability diagrams.
@@ -333,22 +306,8 @@ public abstract class ChartEngineFactory
                     input.filterByTime( (TimeWindow) inputKeyInstance );
 
             //Setup the default arguments.
-            final MetricOutputMetadata meta = inputSlice.getMetadata();
-            arguments = buildDefaultMetricOutputPlotArgumentsProcessor( meta );
-
-            //Legend title and lead time argument are specific to the plot.
-            final String legendTitle = "Threshold";
-            String legendUnitsText = "";
-            if ( ( input.hasQuantileThresholds() ) || ( input.keySetByThreshold().size() > 1 ) )
-            {
-                legendUnitsText += " [" + meta.getInputDimension() + "]";
-            }
-            Object key = ( (TimeWindow) inputKeyInstance ).getLatestLeadTimeInHours();
-            arguments.addArgument( "legendTitle", legendTitle );
-            arguments.addArgument( "legendUnitsText", legendUnitsText );
-            arguments.addArgument( "diagramInstanceDescription",
-                                   "at Lead Hour " + key );
-            arguments.addArgument( "plotTitleVariable", "Thresholds" );
+            arguments = new WRESArgumentProcessor( inputSlice );
+            arguments.addLeadThresholdArguments( inputSlice, (TimeWindow) inputKeyInstance );
         }
 
         //-----------------------------------------------------------------
@@ -360,20 +319,8 @@ public abstract class ChartEngineFactory
                     input.filterByThreshold( (Threshold) inputKeyInstance );
 
             //Setup the default arguments.
-            final MetricOutputMetadata meta = inputSlice.getMetadata();
-            arguments = buildDefaultMetricOutputPlotArgumentsProcessor( meta );
-
-            //Legend title and lead time argument are specific to the plot.
-            arguments.addArgument( "legendTitle", "Lead Time" );
-            arguments.addArgument( "legendUnitsText", " [hours]" );
-            arguments.addArgument( "leadHour",
-                                   Long.toString( inputSlice.getKey( 0 ).getLeft().getLatestLeadTimeInHours() ) );
-            arguments.addArgument( "diagramInstanceDescription",
-                                   "for Threshold " + ( (Threshold) inputKeyInstance ).toString()
-                                                                 + " ("
-                                                                 + meta.getInputDimension()
-                                                                 + ")" );
-            arguments.addArgument( "plotTitleVariable", "Lead Times" );
+            arguments = new WRESArgumentProcessor( inputSlice );
+            arguments.addThresholdLeadArguments( inputSlice, (Threshold) inputKeyInstance );
         }
 
         //This is an error, since there are only two allowable types of reliability diagrams.
@@ -444,22 +391,8 @@ public abstract class ChartEngineFactory
                     input.filterByTime( (TimeWindow) inputKeyInstance );
 
             //Setup the default arguments.
-            final MetricOutputMetadata meta = inputSlice.getMetadata();
-            arguments = buildDefaultMetricOutputPlotArgumentsProcessor( meta );
-
-            //Legend title and lead time argument are specific to the plot.
-            final String legendTitle = "Threshold";
-            String legendUnitsText = "";
-            if ( ( input.hasQuantileThresholds() ) || ( input.keySetByThreshold().size() > 1 ) )
-            {
-                legendUnitsText += " [" + meta.getInputDimension() + "]";
-            }
-            Object key = ( (TimeWindow) inputKeyInstance ).getLatestLeadTimeInHours();
-            arguments.addArgument( "legendTitle", legendTitle );
-            arguments.addArgument( "legendUnitsText", legendUnitsText );
-            arguments.addArgument( "diagramInstanceDescription",
-                                   "at Lead Hour " + key );
-            arguments.addArgument( "plotTitleVariable", "Thresholds" );
+            arguments = new WRESArgumentProcessor( inputSlice );
+            arguments.addLeadThresholdArguments( inputSlice, (TimeWindow) inputKeyInstance );
         }
 
         //-----------------------------------------------------------------
@@ -471,20 +404,8 @@ public abstract class ChartEngineFactory
                     input.filterByThreshold( (Threshold) inputKeyInstance );
 
             //Setup the default arguments.
-            final MetricOutputMetadata meta = inputSlice.getMetadata();
-            arguments = buildDefaultMetricOutputPlotArgumentsProcessor( meta );
-
-            //Legend title and lead time argument are specific to the plot.
-            arguments.addArgument( "legendTitle", "Lead Time" );
-            arguments.addArgument( "legendUnitsText", " [hours]" );
-            arguments.addArgument( "leadHour",
-                                   Long.toString( inputSlice.getKey( 0 ).getLeft().getLatestLeadTimeInHours() ) );
-            arguments.addArgument( "diagramInstanceDescription",
-                                   "for Threshold " + ( (Threshold) inputKeyInstance ).toString()
-                                                                 + " ("
-                                                                 + meta.getInputDimension()
-                                                                 + ")" );
-            arguments.addArgument( "plotTitleVariable", "Lead Times" );
+            arguments = new WRESArgumentProcessor( inputSlice );
+            arguments.addThresholdLeadArguments( inputSlice, (Threshold) inputKeyInstance );
         }
 
         //This is an error, since there are only two allowable types of reliability diagrams.
@@ -500,8 +421,8 @@ public abstract class ChartEngineFactory
                                                                MetricDimension.OBSERVED_QUANTILES,
                                                                MetricDimension.PREDICTED_QUANTILES,
                                                                MetricConstants.MetricDimension.OBSERVED_QUANTILES.toString()
-                                                                                                    + " @variableName@@inputUnitsText@",
-                                                               MetricConstants.MetricDimension.PREDICTED_QUANTILES.toString() + " @variableName@@inputUnitsText@" );
+                                                                                                    + " @variableName@@inputUnitsLabelSuffix@",
+                                                               MetricConstants.MetricDimension.PREDICTED_QUANTILES.toString() + " @variableName@@inputUnitsLabelSuffix@" );
         //Diagonal data source added, but it won't show up in the legend since it uses features of WRESChartEngine.
         //Also squaring the axes.
         diagonalDataSourceIndices = new int[] { 1 };
@@ -556,22 +477,8 @@ public abstract class ChartEngineFactory
                     input.filterByTime( (TimeWindow) inputKeyInstance );
 
             //Setup the default arguments.
-            final MetricOutputMetadata meta = inputSlice.getMetadata();
-            arguments = buildDefaultMetricOutputPlotArgumentsProcessor( meta );
-
-            //Legend title and lead time argument are specific to the plot.
-            final String legendTitle = "Threshold";
-            String legendUnitsText = "";
-            if ( ( input.hasQuantileThresholds() ) || ( input.keySetByThreshold().size() > 1 ) )
-            {
-                legendUnitsText += " [" + meta.getInputDimension() + "]";
-            }
-            Object key = ( (TimeWindow) inputKeyInstance ).getLatestLeadTimeInHours();
-            arguments.addArgument( "legendTitle", legendTitle );
-            arguments.addArgument( "legendUnitsText", legendUnitsText );
-            arguments.addArgument( "diagramInstanceDescription",
-                                   "at Lead Hour " + key );
-            arguments.addArgument( "plotTitleVariable", "Thresholds" );
+            arguments = new WRESArgumentProcessor( inputSlice );
+            arguments.addLeadThresholdArguments( inputSlice, (TimeWindow) inputKeyInstance );
         }
 
         //-----------------------------------------------------------------
@@ -583,20 +490,8 @@ public abstract class ChartEngineFactory
                     input.filterByThreshold( (Threshold) inputKeyInstance );
 
             //Setup the default arguments.
-            final MetricOutputMetadata meta = inputSlice.getMetadata();
-            arguments = buildDefaultMetricOutputPlotArgumentsProcessor( meta );
-
-            //Legend title and lead time argument are specific to the plot.
-            arguments.addArgument( "legendTitle", "Lead Time" );
-            arguments.addArgument( "legendUnitsText", " [hours]" );
-            arguments.addArgument( "leadHour",
-                                   Long.toString( inputSlice.getKey( 0 ).getLeft().getLatestLeadTimeInHours() ) );
-            arguments.addArgument( "diagramInstanceDescription",
-                                   "for Threshold " + ( (Threshold) inputKeyInstance ).toString()
-                                                                 + " ("
-                                                                 + meta.getInputDimension()
-                                                                 + ")" );
-            arguments.addArgument( "plotTitleVariable", "Lead Times" );
+            arguments = new WRESArgumentProcessor( inputSlice );
+            arguments.addThresholdLeadArguments( inputSlice, (Threshold) inputKeyInstance );
         }
 
         //This is an error, since there are only two allowable types of reliability diagrams.
@@ -778,20 +673,9 @@ public abstract class ChartEngineFactory
         }
 
         BoxPlotOutput boxPlotData = input.get( inputKeyInstance );
-        final MetricOutputMetadata meta = boxPlotData.getMetadata();
-        arguments = buildDefaultMetricOutputPlotArgumentsProcessor( meta );
-        arguments.addArgument( "diagramInstanceDescription",
-                               "at Lead Hour " + inputKeyInstance.getLeft().getLatestLeadTimeInHours()
-                                                             + " for "
-                                                             + inputKeyInstance.getRight() );
-        arguments.addArgument( "probabilities",
-                               HString.buildStringFromArray( boxPlotData.getProbabilities().getDoubles(), ", " )
-                                      .replaceAll( "0.0,", "min," )
-                                      .replaceAll( "1.0", "max" ) );
-        arguments.addArgument( "domainUnitsText", meta.getInputDimension().toString() );
-        arguments.addArgument( "rangeUnitsText", meta.getDimension().toString() );
+        arguments = new WRESArgumentProcessor( inputKeyInstance, boxPlotData );
 
-        //Add teh data source
+        //Add the data source
         dataSources.add( new BoxPlotDiagramXYChartDataSource( 0, boxPlotData ) );
 
         //Build the ChartEngine instance.
@@ -927,16 +811,10 @@ public abstract class ChartEngineFactory
 
         //Setup the default arguments.
         final MetricOutputMetadata meta = input.getMetadata();
-        final WRESArgumentProcessor arguments = buildDefaultMetricOutputPlotArgumentsProcessor( meta );
+        final WRESArgumentProcessor arguments = new WRESArgumentProcessor( input );
 
         //Setup plot specific arguments.
-        final DatasetIdentifier identifier = meta.getIdentifier();
-        String baselineText = "";
-        if ( !Objects.isNull( identifier.getScenarioIDForBaseline() ) )
-        {
-            baselineText = " Against Predictions From " + identifier.getScenarioIDForBaseline();
-        }
-        arguments.addArgument( "baselineText", baselineText );
+        arguments.addBaselineArguments( meta );
 
         //Build the source.
         XYChartDataSource source = null;
@@ -950,34 +828,19 @@ public abstract class ChartEngineFactory
         if ( usedPlotType.equals( PlotTypeSelection.LEAD_THRESHOLD ) )
         {
             source = new ScalarOutputByLeadAndThresholdXYChartDataSource( 0, input );
-
-            //Legend title.
-            final String legendTitle = "Thresholds";
-            String legendUnitsText = "";
-            if ( ( input.hasQuantileThresholds() ) || ( input.keySetByThreshold().size() > 1 ) )
-            {
-                legendUnitsText += " [" + meta.getInputDimension() + "]";
-            }
-            arguments.addArgument( "legendTitle", legendTitle );
-            arguments.addArgument( "legendUnitsText", legendUnitsText );
+            arguments.addLeadThresholdArguments( input, null );
         }
         //This is for plots with the threshold on the domain axis and lead time in the legend.
         else if ( usedPlotType.equals( PlotTypeSelection.THRESHOLD_LEAD ) )
         {
             source = new ScalarOutputByThresholdAndLeadXYChartDataSource( 0, input );
-
-            //Legend title.
-            arguments.addArgument( "legendTitle", "Lead Times" );
-            arguments.addArgument( "legendUnitsText", " [hours]" );
+            arguments.addThresholdLeadArguments( input, null );
         }
         //This is for plots that operate with sequences of time windows (e.g. rolling windows)
         else if ( usedPlotType.equals( PlotTypeSelection.POOLING_WINDOW ) )
         {
             source = new ScalarOutputByPoolingWindowXYChartDataSource( 0, input );
-
-            //Legend title.
-            arguments.addArgument( "legendTitle", "Lead time [HOUR], Threshold " );
-            arguments.addArgument( "legendUnitsText","[" + meta.getInputDimension() + "]");
+            arguments.addPoolingWindowArguments( input );
         }
         else
         {
@@ -1021,20 +884,7 @@ public abstract class ChartEngineFactory
         final SingleValuedPairsXYChartDataSource source = new SingleValuedPairsXYChartDataSource( 0, input );
 
         //Setup the arguments.
-        final WRESArgumentProcessor arguments = new WRESArgumentProcessor();
-
-        //The following helper factory is part of the wres-datamodel, not the api. It will need to be supplied by 
-        //(i.e. dependency injected from) wres-core as a MetadataFactory, which is part of the API
-        final Metadata meta = input.getMetadata();
-        final DatasetIdentifier identifier = meta.getIdentifier();
-
-        //Setup fixed arguments.  This uses a special set since it is not metric output.
-        arguments.addArgument( "locationName", identifier.getGeospatialID() );
-        arguments.addArgument( "variableName", identifier.getVariableID() );
-        arguments.addArgument( "rangeAxisLabelPrefix", "Forecast" );
-        arguments.addArgument( "domainAxisLabelPrefix", "Observed" );
-        arguments.addArgument( "primaryScenario", identifier.getScenarioID() );
-        arguments.addArgument( "inputUnitsText", " [" + meta.getDimension() + "]" );
+        final WRESArgumentProcessor arguments = new WRESArgumentProcessor(input.getMetadata());
 
         //Process override parameters.
         ChartDrawingParameters override = null;
@@ -1100,38 +950,6 @@ public abstract class ChartEngineFactory
         {
             throw new IllegalStateException( "The DataSetXYChartDataSource does not throw exceptions, so how did I get here?" );
         }
-    }
-
-    /**
-     * Setups up default arguments that are for metric output plots.
-     */
-    private static WRESArgumentProcessor buildDefaultMetricOutputPlotArgumentsProcessor( final MetricOutputMetadata meta )
-    {
-        //Setup the arguments.
-        final WRESArgumentProcessor arguments = new WRESArgumentProcessor();
-        final DatasetIdentifier identifier = meta.getIdentifier();
-
-        //Setup fixed arguments.
-        arguments.addArgument( "locationName", identifier.getGeospatialID() );
-        arguments.addArgument( "variableName", identifier.getVariableID() );
-        arguments.addArgument( "primaryScenario", identifier.getScenarioID() );
-        arguments.addArgument( "metricName", meta.getMetricID().toString() );
-        arguments.addArgument( "metricShortName", meta.getMetricID().toString() );
-        arguments.addArgument( "outputUnitsText", " [" + meta.getDimension() + "]" );
-        arguments.addArgument( "inputUnitsText", " [" + meta.getInputDimension() + "]" );
-
-        //I could create a helper method to handle this wrapping, but I don't think this will be used outside of this context,
-        //so why bother?  (This relates to an email James wrote.)
-        if ( meta.getMetricComponentID().equals( MetricConstants.MAIN ) )
-        {
-            arguments.addArgument( "metricComponentNameSuffix", "" );
-        }
-        else
-        {
-            arguments.addArgument( "metricComponentNameSuffix", meta.getMetricComponentID().toString() );
-        }
-
-        return arguments;
     }
 
     /**

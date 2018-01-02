@@ -13,8 +13,8 @@ import wres.datamodel.outputs.MultiVectorOutput;
  * @since 0.1
  */
 public class MultiVectorOutputDiagramXYChartDataSource
-extends
-    WRESXYChartDataSource<MetricOutputMapByTimeAndThreshold<MultiVectorOutput>>
+        extends
+        WRESXYChartDataSource<MetricOutputMapByTimeAndThreshold<MultiVectorOutput>>
 {
     private final MetricDimension xConstant;
     private final MetricDimension yConstant;
@@ -28,20 +28,21 @@ extends
      * @param domainTitle the domain axis title
      * @param rangeTitle the range axis title
      */
-    public MultiVectorOutputDiagramXYChartDataSource(final int orderIndex,
-                                               final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> input,
-                                               final MetricDimension xConstant,
-                                               final MetricDimension yConstant,
-                                               final String domainTitle,
-                                               final String rangeTitle)
+    public MultiVectorOutputDiagramXYChartDataSource( final int orderIndex,
+                                                      final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> input,
+                                                      final MetricDimension xConstant,
+                                                      final MetricDimension yConstant,
+                                                      final String domainTitle,
+                                                      final String rangeTitle )
     {
-        super(orderIndex, input, input.keySet().size());
+        super( orderIndex, input, input.keySet().size() );
 
-        this.xConstant=xConstant;
-        this.yConstant=yConstant;
-        getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultDomainAxisTitle(domainTitle);
-        getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultRangeAxisTitle(rangeTitle);
-        WRESTools.applyDefaultJFreeChartColorSequence(getDefaultFullySpecifiedDataSourceDrawingParameters());
+        this.xConstant = xConstant;
+        this.yConstant = yConstant;
+        getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultDomainAxisTitle( domainTitle );
+        getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultRangeAxisTitle( rangeTitle );
+        WRESTools.applyDefaultJFreeChartColorSequence( getDefaultFullySpecifiedDataSourceDrawingParameters() );
+        WRESTools.applyDefaultJFreeChartShapeSequence( getDefaultFullySpecifiedDataSourceDrawingParameters() );
     }
 
 
@@ -55,23 +56,23 @@ extends
      * @param rangeTitle the range axis title
      * @param subPlotIndex the index for the sub-plot
      */
-    public MultiVectorOutputDiagramXYChartDataSource(final int orderIndex,
-                                               final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> input,
-                                               final MetricDimension xConstant,
-                                               final MetricDimension yConstant,
-                                               final String domainTitle,
-                                               final String rangeTitle,
-                                               final int subPlotIndex)
+    public MultiVectorOutputDiagramXYChartDataSource( final int orderIndex,
+                                                      final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> input,
+                                                      final MetricDimension xConstant,
+                                                      final MetricDimension yConstant,
+                                                      final String domainTitle,
+                                                      final String rangeTitle,
+                                                      final int subPlotIndex )
     {
-        this(orderIndex, input, xConstant, yConstant, domainTitle, rangeTitle);
-        getDefaultFullySpecifiedDataSourceDrawingParameters().setSubPlotIndex(subPlotIndex);
+        this( orderIndex, input, xConstant, yConstant, domainTitle, rangeTitle );
+        getDefaultFullySpecifiedDataSourceDrawingParameters().setSubPlotIndex( subPlotIndex );
     }
-    
+
     protected MetricDimension getXConstant()
     {
         return xConstant;
     }
-    
+
     protected MetricDimension getYConstant()
     {
         return yConstant;
@@ -80,19 +81,19 @@ extends
     @Override
     protected MultiVectorOutputDiagramXYChartDataSource instantiateCopyOfDataSource()
     {
-        return new MultiVectorOutputDiagramXYChartDataSource(getDataSourceOrderIndex(),
-                                                       getInput(),
-                                                       xConstant,
-                                                       yConstant,
-                                                       getDefaultFullySpecifiedDataSourceDrawingParameters().getDefaultDomainAxisTitle(),
-                                                       getDefaultFullySpecifiedDataSourceDrawingParameters().getDefaultRangeAxisTitle());
+        return new MultiVectorOutputDiagramXYChartDataSource( getDataSourceOrderIndex(),
+                                                              getInput(),
+                                                              xConstant,
+                                                              yConstant,
+                                                              getDefaultFullySpecifiedDataSourceDrawingParameters().getDefaultDomainAxisTitle(),
+                                                              getDefaultFullySpecifiedDataSourceDrawingParameters().getDefaultRangeAxisTitle() );
     }
 
     @Override
     protected MultiVectorOutputDiagramXYDataset instantiateXYDataset()
     {
-        return new MultiVectorOutputDiagramXYDataset(getInput(),
-                                                     xConstant,
-                                                     yConstant);
+        return new MultiVectorOutputDiagramXYDataset( getInput(),
+                                                      xConstant,
+                                                      yConstant );
     }
 }
