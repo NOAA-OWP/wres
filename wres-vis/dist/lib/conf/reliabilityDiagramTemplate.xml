@@ -6,7 +6,7 @@
         <font family="Dialog" size="12" style="1"/>
 		<text>@metricName@ for Various Event @plotTitleVariable@ (Upper) and Sample Counts (Lower)
 @locationName@.@variableName@.@primaryScenario@ @diagramInstanceDescription@
-Evaluation Period: @earliestDateToText(yyyy-MM-dd;GMT)@ - @latestDateToText(yyyy-MM-dd;GMT)@
+@referenceTime@ Evaluation Period: @earliestDateToText(yyyy-MM-dd;GMT)@ - @latestDateToText(yyyy-MM-dd;GMT)@
 		</text>
 	</plotTitle>
 	
