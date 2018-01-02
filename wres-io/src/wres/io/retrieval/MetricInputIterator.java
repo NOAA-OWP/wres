@@ -58,14 +58,21 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
 
     protected void incrementWindowNumber()
     {
+        // No incrementing has been done, so we just want to roll with
+        // window 0, sequence < 1
         if (this.windowNumber < 0)
         {
             this.windowNumber = 0;
         }
-        else if (this.sequenceStep < this.finalSequenceStep)
+        // If the next sequence is less than the final step, we increment the sequence
+        else if (this.sequenceStep + 1 < this.finalSequenceStep)
         {
             this.incrementSequenceStep();
         }
+        // Otherwise, we move on to the next window
+        // In terms of rolling aggregation, it means move on to the next
+        // sequence of lead hours (i.e. we were centered on lead 4,
+        // move on to lead 5)
         else
         {
             this.setSequenceStep( 0 );
@@ -434,18 +441,16 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
     {
         Future<MetricInput<?>> nextInput = null;
 
-        if (this.hasNext())
-        {
+        /*if (this.hasNext())
+        {*/
             this.inputCounter++;
             this.incrementWindowNumber();
             try
             {
                 // TODO: Pass the leftHandMap instead of the function
                 InputRetriever retriever = new InputRetriever( this.getProjectDetails(),
-                                                               (String firstDate, String lastDate) -> {
-                                                                   return wres.util.Collections
-                                                                           .getValuesInRange( this.leftHandMap, firstDate, lastDate );
-                                                               } );
+                                                               (String firstDate, String lastDate) -> Collections
+                                                                       .getValuesInRange( this.leftHandMap, firstDate, lastDate ) );
                 retriever.setFeature(feature);
                 retriever.setClimatology( this.getClimatology() );
                 retriever.setProgress( this.getWindowNumber() );
@@ -461,7 +466,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
             {
                 this.getLogger().error( Strings.getStackTrace( e ) );
             }
-        }
+        //}
 
         if (nextInput == null)
         {
