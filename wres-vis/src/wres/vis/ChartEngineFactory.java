@@ -129,12 +129,12 @@ public abstract class ChartEngineFactory
                                                 PlotTypeSelection.LEAD_THRESHOLD, //Unimportant
                                                 new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
                                                                          BoxPlotOutput.class,
-                                                                         "boxPlotOfErrors.xml" ) );
+                                                                         "boxPlotOfErrorsTemplate.xml" ) );
         multiVectorOutputPlotTypeInfoTable.put( MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
                                                 PlotTypeSelection.LEAD_THRESHOLD, //Unimportant
                                                 new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
                                                                          BoxPlotOutput.class,
-                                                                         "boxPlotOfErrors.xml" ) );
+                                                                         "boxPlotOfErrorsTemplate.xml" ) );
     }
 
 
