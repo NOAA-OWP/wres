@@ -102,7 +102,7 @@ public class Chart2DTestInput extends TestCase
         try
         {
             //The arguments processor for example purposes.
-            final WRESArgumentProcessor arguments = new WRESArgumentProcessor();
+            final WRESArgumentProcessor arguments = new WRESArgumentProcessor(pairs.getMetadata());
             arguments.addArgument("locationId", "AAAAA");
 
             //Build the ChartEngine instance.
