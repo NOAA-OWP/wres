@@ -10,33 +10,34 @@ import wres.datamodel.outputs.ScalarOutput;
  * @version 0.1
  * @since 0.1
  */
-public class ScalarOutputByLeadAndThresholdXYChartDataSource extends WRESXYChartDataSource<MetricOutputMapByTimeAndThreshold<ScalarOutput>>
+public class ScalarOutputByLeadAndThresholdXYChartDataSource
+        extends WRESXYChartDataSource<MetricOutputMapByTimeAndThreshold<ScalarOutput>>
 {
     /**
      * @param orderIndex The data source order index within the plotted chart. This impacts some aspects of the display,
      *            such as the rendering order, legend order, and so forth.
      * @param input The data for which to display a chart.
      */
-    public ScalarOutputByLeadAndThresholdXYChartDataSource(final int orderIndex,
-                                                        final MetricOutputMapByTimeAndThreshold<ScalarOutput> input)
+    public ScalarOutputByLeadAndThresholdXYChartDataSource( final int orderIndex,
+                                                            final MetricOutputMapByTimeAndThreshold<ScalarOutput> input )
     {
-        super(orderIndex, input, input.keySetByThreshold().size());
+        super( orderIndex, input, input.keySetByThreshold().size() );
 
-        //TODO Must make use of arguments that are provided by default.  How can I best ensure this?
-        getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultDomainAxisTitle("FORECAST LEAD TIME [HOUR]");
-        getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultRangeAxisTitle("@metricShortName@@metricComponentNameSuffix@@outputUnitsText@");
-        WRESTools.applyDefaultJFreeChartColorSequence(getDefaultFullySpecifiedDataSourceDrawingParameters());
+        getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultDomainAxisTitle( "FORECAST LEAD TIME [HOUR]" );
+        getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultRangeAxisTitle( "@metricShortName@@metricComponentNameSuffix@@outputUnitsLabelSuffix@" );
+        WRESTools.applyDefaultJFreeChartColorSequence( getDefaultFullySpecifiedDataSourceDrawingParameters() );
+        WRESTools.applyDefaultJFreeChartShapeSequence( getDefaultFullySpecifiedDataSourceDrawingParameters() );
     }
 
     @Override
     protected ScalarOutputByLeadAndThresholdXYChartDataSource instantiateCopyOfDataSource()
     {
-        return new ScalarOutputByLeadAndThresholdXYChartDataSource(getDataSourceOrderIndex(), getInput());
+        return new ScalarOutputByLeadAndThresholdXYChartDataSource( getDataSourceOrderIndex(), getInput() );
     }
 
     @Override
     protected ScalarOutputByLeadAndThresholdXYDataset instantiateXYDataset()
     {
-        return new ScalarOutputByLeadAndThresholdXYDataset(getInput());
+        return new ScalarOutputByLeadAndThresholdXYDataset( getInput() );
     }
 }

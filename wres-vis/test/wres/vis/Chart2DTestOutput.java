@@ -6,7 +6,6 @@ import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumMap;
@@ -18,7 +17,6 @@ import java.util.concurrent.ConcurrentMap;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import evs.io.xml.ProductFileIO;
@@ -29,7 +27,6 @@ import evs.metric.results.MetricResult;
 import evs.metric.results.MetricResultByLeadTime;
 import evs.metric.results.MetricResultByThreshold;
 import evs.metric.results.MetricResultKey;
-import junit.framework.TestCase;
 import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartTools;
 import ohd.hseb.hefs.utils.junit.FileComparisonUtilities;
@@ -741,7 +738,6 @@ public class Chart2DTestOutput
      * 
      * TODO: set to not ignore when NPE from library is fixed
      */
-    @Ignore
     @Test
     public void test15ScalarOutput()
     {

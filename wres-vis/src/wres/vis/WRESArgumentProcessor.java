@@ -1,7 +1,27 @@
 package wres.vis;
 
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Objects;
+
+import org.apache.commons.lang3.tuple.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import ohd.hseb.hefs.utils.arguments.Argument;
 import ohd.hseb.hefs.utils.arguments.DefaultArgumentsProcessor;
+import ohd.hseb.hefs.utils.datetime.HEFSTimeZoneTools;
 import ohd.hseb.hefs.utils.plugins.UniqueGenericParameterList;
+import ohd.hseb.util.misc.HCalendar;
+import ohd.hseb.util.misc.HString;
+import wres.datamodel.DatasetIdentifier;
+import wres.datamodel.MetricConstants;
+import wres.datamodel.Threshold;
+import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.MetricOutputMetadata;
+import wres.datamodel.metadata.TimeWindow;
+import wres.datamodel.outputs.BoxPlotOutput;
+import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 
 /**
  * WRES implementation of {@link DefaultArgumentsProcessor}. After constructing, arguments can be populated by calling
@@ -11,16 +31,286 @@ import ohd.hseb.hefs.utils.plugins.UniqueGenericParameterList;
  */
 public class WRESArgumentProcessor extends DefaultArgumentsProcessor
 {
-    //TODO This needs to be fleshed out.  Specifically, the constructor should take some kind of input to the charting process that 
-    //includes metadata and then map that metadata to arguments included here so that the XML template can use those arguments.
-    public WRESArgumentProcessor()
+    private static final Logger LOGGER = LoggerFactory.getLogger( ChartEngineFactory.class );
+    private final static String EARLIEST_DATE_TO_TEXT = "earliestDateToText";
+    private final static String LATEST_DATE_TO_TEXT = "latestDateToText";
+
+    private long earliestDateLong;
+    private long latestDateLong;
+
+    /**
+     * An arguments processor intended for use in displaying single-valued pairs.
+     * @param meta The metadata corresponding to a SingleValuedPairs instance.
+     */
+    public WRESArgumentProcessor( final Metadata meta )
     {
         super();
 
-        //Add arguments here.
+        //Setup fixed arguments.  This uses a special set since it is not metric output.
+        addArgument( "rangeAxisLabelPrefix", "Forecast" );
+        addArgument( "domainAxisLabelPrefix", "Observed" );
+        addArgument( "inputUnitsLabelSuffix", " [" + meta.getDimension() + "]" );
+        addArgument( "inputUnits", meta.getDimension().toString() );
 
-        //See the ExporterArgumentsProcessor for how to added functions arguments if needed, here.
+        if ( meta.hasIdentifier() )
+        {
+            final DatasetIdentifier identifier = meta.getIdentifier();
+            addArgument( "locationName", identifier.getGeospatialID() );
+            addArgument( "variableName", identifier.getVariableID() );
+            addArgument( "primaryScenario", identifier.getScenarioID() );
+        }
+
+        if ( meta.hasTimeWindow() )
+        {
+            earliestDateLong = meta.getTimeWindow().getEarliestTime().toEpochMilli();
+            latestDateLong = meta.getTimeWindow().getLatestTime().toEpochMilli();
+            addArgument( "referenceTime", meta.getTimeWindow().getReferenceTime().toString() ); //#44873
+        }
     }
+    
+    /**
+     * An arguments processor intended for use in displaying a box-plot of errors.
+     */
+    public WRESArgumentProcessor(Pair<TimeWindow, Threshold> inputKeyInstance, BoxPlotOutput displayPlotInput)
+    {
+
+        super();
+        
+        MetricOutputMetadata meta = displayPlotInput.getMetadata();
+        
+        //Setup fixed arguments.
+        addArgument( "metricName", meta.getMetricID().toString() );
+        addArgument( "metricShortName", meta.getMetricID().toString() );
+        addArgument( "outputUnits", meta.getDimension().toString() );
+        addArgument( "inputUnits", meta.getInputDimension().toString() );
+        addArgument( "outputUnitsLabelSuffix", " [" + meta.getDimension() + "]" );
+        addArgument( "inputUnitsLabelSuffix", " [" + meta.getInputDimension() + "]" );
+
+        if ( meta.hasIdentifier() )
+        {
+            final DatasetIdentifier identifier = meta.getIdentifier();
+            addArgument( "locationName", identifier.getGeospatialID() );
+            addArgument( "variableName", identifier.getVariableID() );
+            addArgument( "primaryScenario", identifier.getScenarioID() );
+        }
+
+        if ( meta.hasTimeWindow() )
+        {
+            earliestDateLong = meta.getTimeWindow().getEarliestTime().toEpochMilli();
+            latestDateLong = meta.getTimeWindow().getLatestTime().toEpochMilli();
+            addArgument( "referenceTime", meta.getTimeWindow().getReferenceTime().toString() ); //#44873
+        }
+
+        //I could create a helper method to handle this wrapping, but I don't think this will be used outside of this context,
+        //so why bother?  (This relates to an email James wrote.)
+        if ( meta.getMetricComponentID().equals( MetricConstants.MAIN ) )
+        {
+            addArgument( "metricComponentNameSuffix", "" );
+        }
+        else
+        {
+            addArgument( "metricComponentNameSuffix", meta.getMetricComponentID().toString() );
+        }
+        
+        addArgument( "diagramInstanceDescription",
+                     "at Lead Hour " + inputKeyInstance.getLeft().getLatestLeadTimeInHours()
+                                                   + " for "
+                                                   + inputKeyInstance.getRight() );
+        addArgument( "probabilities",
+                     HString.buildStringFromArray( displayPlotInput.getProbabilities().getDoubles(), ", " )
+                            .replaceAll( "0.0,", "min," )
+                            .replaceAll( "1.0", "max" ) );
+
+        initializeFunctionInformation();
+    }
+
+    /**
+     * An arguments processor intended for use in displaying metric output, whether scalar or vector.
+     */
+    public WRESArgumentProcessor(MetricOutputMapByTimeAndThreshold<?> displayedPlotInput)
+    {
+        super();
+        
+        MetricOutputMetadata meta = displayedPlotInput.getMetadata();
+        
+        //Setup fixed arguments.
+        addArgument( "metricName", meta.getMetricID().toString() );
+        addArgument( "metricShortName", meta.getMetricID().toString() );
+        addArgument( "outputUnits", meta.getDimension().toString() );
+        addArgument( "inputUnits", meta.getInputDimension().toString() );
+        addArgument( "outputUnitsLabelSuffix", " [" + meta.getDimension() + "]" );
+        addArgument( "inputUnitsLabelSuffix", " [" + meta.getInputDimension() + "]" );
+
+        if ( meta.hasIdentifier() )
+        {
+            final DatasetIdentifier identifier = meta.getIdentifier();
+            addArgument( "locationName", identifier.getGeospatialID() );
+            addArgument( "variableName", identifier.getVariableID() );
+            addArgument( "primaryScenario", identifier.getScenarioID() );
+        }
+
+        if ( meta.hasTimeWindow() )
+        {
+            earliestDateLong = displayedPlotInput.firstKey().getLeft().getEarliestTime().toEpochMilli();
+            latestDateLong = displayedPlotInput.lastKey().getLeft().getLatestTime().toEpochMilli();
+            addArgument( "referenceTime", meta.getTimeWindow().getReferenceTime().toString() ); //#44873
+        }
+
+        //I could create a helper method to handle this wrapping, but I don't think this will be used outside of this context,
+        //so why bother?  (This relates to an email James wrote.)
+        if ( meta.getMetricComponentID().equals( MetricConstants.MAIN ) )
+        {
+            addArgument( "metricComponentNameSuffix", "" );
+        }
+        else
+        {
+            addArgument( "metricComponentNameSuffix", meta.getMetricComponentID().toString() );
+        }
+
+        initializeFunctionInformation();
+    }
+
+    /**
+     * Adds arguments for plots where the lead time is on the domain axis and threshold is in the legend.
+     */
+    public void addLeadThresholdArguments( //MetricOutputMapByTimeAndThreshold<?> input,
+                                           MetricOutputMapByTimeAndThreshold<?> displayedPlotInput,
+                                           TimeWindow plotTimeWindow )
+    {
+        final MetricOutputMetadata meta = displayedPlotInput.getMetadata();
+
+        final String legendTitle = "Threshold";
+        String legendUnitsText = "";
+        if ( ( displayedPlotInput.hasQuantileThresholds() ) || ( displayedPlotInput.keySetByThreshold().size() > 1 ) )
+        {
+            legendUnitsText += " [" + meta.getInputDimension() + "]";
+        }
+
+        addArgument( "legendTitle", legendTitle );
+        addArgument( "legendUnitsText", legendUnitsText );
+        if ( plotTimeWindow != null )
+        {
+            Object key = plotTimeWindow.getLatestLeadTimeInHours();
+            addArgument( "diagramInstanceDescription", "at Lead Hour " + key );
+            addArgument( "plotTitleVariable", "Thresholds" );
+        }
+    }
+
+
+    /**
+     * Adds arguments for plots where the threshold value is on the domain axis and lead time is in the legend.
+     */
+    public void addThresholdLeadArguments( MetricOutputMapByTimeAndThreshold<?> displayedPlotInput,
+                                           Threshold threshold )
+    {
+        final MetricOutputMetadata meta = displayedPlotInput.getMetadata();
+
+        addArgument( "legendTitle", "Lead Time" );
+        addArgument( "legendUnitsText", " [hours]" );
+        if ( threshold != null )
+        {
+            addArgument( "diagramInstanceDescription",
+                         "for Threshold " + threshold.toString()
+                                                       + " ("
+                                                       + meta.getInputDimension()
+                                                       + ")" );
+            addArgument( "plotTitleVariable", "Lead Times" );
+        }
+    }
+
+    /**
+     * Adds arguments for plots where the pooling window (as in rolling window) is displayed along the domain axis 
+     * and the legend includes both lead time and threshold.
+     */
+    public void addPoolingWindowArguments( //MetricOutputMapByTimeAndThreshold<?> input,
+                                           MetricOutputMapByTimeAndThreshold<?> displayedPlotInput )
+    {
+        final MetricOutputMetadata meta = displayedPlotInput.getMetadata();
+
+        addArgument( "legendTitle", "Lead time [HOUR], Threshold " );
+        addArgument( "legendUnitsText", "[" + meta.getInputDimension() + "]" );
+    }
+
+    /**
+     * Adds arguments related to displaying the baseline for a skill score metric.
+     */
+    public void addBaselineArguments( MetricOutputMetadata meta )
+    {
+        final DatasetIdentifier identifier = meta.getIdentifier();
+        String baselineSuffix = "";
+        if ( !Objects.isNull( identifier.getScenarioIDForBaseline() ) )
+        {
+            baselineSuffix = " Against Predictions From " + identifier.getScenarioIDForBaseline();
+        }
+        addArgument( "baselineLabelSuffix", baselineSuffix );
+    }
+
+    private void initializeFunctionInformation()
+    {
+        this.addFunctionName( EARLIEST_DATE_TO_TEXT );
+        this.addFunctionName( LATEST_DATE_TO_TEXT );
+    }
+
+    /**
+     * Called to process a date-to-text argument function.
+     */
+    private String processDateFunction( final Argument argument, Long dateInMillis )
+    {
+        try
+        {
+            if ( argument.getFunctionParameterValues().size() == 2 )
+            {
+                final Calendar cal = HCalendar.computeCalendarFromMilliseconds( dateInMillis );
+                final String dateFormat = argument.getFunctionParameterValues().get( 0 );
+                final String timeZoneStr = argument.getFunctionParameterValues().get( 1 );
+                final SimpleDateFormat formatter = new SimpleDateFormat( dateFormat );
+                formatter.setTimeZone( HEFSTimeZoneTools.retrieveTimeZone( timeZoneStr ) );
+                return formatter.format( cal.getTime() );
+            }
+            else
+            {
+                LOGGER.warn( "Incorrect number of parameters specified for " + argument.getArgumentName()
+                             + " function; requires 2 arguments, the date format and time zone identifier." );
+                return null;
+            }
+        }
+        catch ( final IllegalArgumentException e )
+        {
+            LOGGER.warn( "Date format is invalid for " + argument.getArgumentName()
+                         + " function; message: "
+                         + e.getMessage() );
+            return null;
+        }
+    }
+
+    @Override
+    protected String evaluateFunctionValue( final Argument argument )
+    {
+        if ( argument.getArgumentName().equals( EARLIEST_DATE_TO_TEXT ) )
+        {
+            return this.processDateFunction( argument, earliestDateLong );
+        }
+        else if ( argument.getArgumentName().equals( LATEST_DATE_TO_TEXT ) )
+        {
+            return this.processDateFunction( argument, latestDateLong );
+        }
+        return null;
+    }
+
+    @Override
+    protected String[] getFunctionParameterNames( final String name )
+    {
+        if ( name.equals( EARLIEST_DATE_TO_TEXT ) )
+        {
+            return new String[] { "date format", "time zone" };
+        }
+        else if ( name.equals( LATEST_DATE_TO_TEXT ) )
+        {
+            return new String[] { "date format", "time zone" };
+        }
+        return null;
+    }
+
 
     /**
      * Convenience wrapper on {@link UniqueGenericParameterList#addParameter(String, String)} for the return of
@@ -29,8 +319,8 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * @param key the argument key
      * @param value the argument value
      */
-    public void addArgument(final String key, final String value)
+    public void addArgument( final String key, final String value )
     {
-        getArguments().addParameter(key, value);
+        getArguments().addParameter( key, value );
     }
 }

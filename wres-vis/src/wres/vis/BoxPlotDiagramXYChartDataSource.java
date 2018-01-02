@@ -18,9 +18,9 @@ public class BoxPlotDiagramXYChartDataSource
         super( orderIndex, input, input.getProbabilities().size() );
 
         getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultDomainAxisTitle( input.getDomainAxisDimension()
-                                                                                              .toString() + " [@domainUnitsText@]" );
+                                                                                              .toString() + "@inputUnitsLabelSuffix@" );
         getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultRangeAxisTitle( input.getRangeAxisDimension()
-                                                                                             .toString()  + " [@rangeUnitsText@]" );
+                                                                                             .toString()  + "@outputUnitsLabelSuffix@" );
         WRESTools.applyDefaultJFreeChartColorSequence( getDefaultFullySpecifiedDataSourceDrawingParameters() );
     }
 
