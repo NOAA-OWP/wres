@@ -219,7 +219,7 @@
         <dateAxis>
             <lowerBound date="2010-01-01" time="12:00:00"/>
             <upperBound date="2010-01-10" time="12:00:00"/>
-            <tickSpacing multiplier="" unit="uto"/>
+            <tickSpacing multiplier="" unit="auto"/>
             <tickFormat>MM/dd
 HH z</tickFormat>  <!-- Example of a two-line tick label. -->
             <tickStartHour>0</tickStartHour>

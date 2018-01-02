@@ -6,7 +6,6 @@
         <font family="Dialog" size="12" style="1"/>
 		<text>@metricName@@metricComponentNameSuffix@ for @primaryScenario@ predictions of @variableName@
 at @locationName@@baselineLabelSuffix@
-@referenceTime@ Evaluation Period: @earliestDateToText(yyyy-MM-dd;GMT)@ - @latestDateToText(yyyy-MM-dd;GMT)@
 		</text>
 	</plotTitle>
 
@@ -31,7 +30,7 @@ at @locationName@@baselineLabelSuffix@
     <!-- Domain axis tick labeling. -->
     <domainAxis>
         <dateAxis>
-            <tickFormat>yyyy-MM-dd</tickFormat>
+            <tickFormat>yyyy-MM-dd HH</tickFormat>
         </dateAxis>
     </domainAxis>
 

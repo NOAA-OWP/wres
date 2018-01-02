@@ -24,8 +24,8 @@ import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 
 /**
- * WRES implementation of {@link DefaultArgumentsProcessor}. After constructing, arguments can be populated by calling
- * {@link UniqueGenericParameterList#addParameter(String, String)} on the return value of {@link #getArguments()}.
+ * WRES implementation of {@link DefaultArgumentsProcessor}.  This is intended as a one-stop shop for setting all arguments necessary
+ * for wres-vis plot chart generation.  
  * 
  * @author Hank.Herr
  */
@@ -35,8 +35,15 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
     private final static String EARLIEST_DATE_TO_TEXT = "earliestDateToText";
     private final static String LATEST_DATE_TO_TEXT = "latestDateToText";
 
-    private long earliestDateLong;
-    private long latestDateLong;
+    /**
+     * Basis for earliestDateToText function.
+     */
+    private Long earliestDateLong = null;
+
+    /**
+     * Basis for latestDateToText function.
+     */
+    private Long latestDateLong = null;
 
     /**
      * An arguments processor intended for use in displaying single-valued pairs.
@@ -67,51 +74,21 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
             addArgument( "referenceTime", meta.getTimeWindow().getReferenceTime().toString() ); //#44873
         }
     }
-    
+
     /**
      * An arguments processor intended for use in displaying a box-plot of errors.
      */
-    public WRESArgumentProcessor(Pair<TimeWindow, Threshold> inputKeyInstance, BoxPlotOutput displayPlotInput)
+    public WRESArgumentProcessor( Pair<TimeWindow, Threshold> inputKeyInstance, BoxPlotOutput displayPlotInput )
     {
-
         super();
-        
         MetricOutputMetadata meta = displayPlotInput.getMetadata();
-        
-        //Setup fixed arguments.
-        addArgument( "metricName", meta.getMetricID().toString() );
-        addArgument( "metricShortName", meta.getMetricID().toString() );
-        addArgument( "outputUnits", meta.getDimension().toString() );
-        addArgument( "inputUnits", meta.getInputDimension().toString() );
-        addArgument( "outputUnitsLabelSuffix", " [" + meta.getDimension() + "]" );
-        addArgument( "inputUnitsLabelSuffix", " [" + meta.getInputDimension() + "]" );
-
-        if ( meta.hasIdentifier() )
-        {
-            final DatasetIdentifier identifier = meta.getIdentifier();
-            addArgument( "locationName", identifier.getGeospatialID() );
-            addArgument( "variableName", identifier.getVariableID() );
-            addArgument( "primaryScenario", identifier.getScenarioID() );
-        }
-
+        extractStandardArgumentsFromMetadata( meta );
         if ( meta.hasTimeWindow() )
         {
             earliestDateLong = meta.getTimeWindow().getEarliestTime().toEpochMilli();
             latestDateLong = meta.getTimeWindow().getLatestTime().toEpochMilli();
             addArgument( "referenceTime", meta.getTimeWindow().getReferenceTime().toString() ); //#44873
         }
-
-        //I could create a helper method to handle this wrapping, but I don't think this will be used outside of this context,
-        //so why bother?  (This relates to an email James wrote.)
-        if ( meta.getMetricComponentID().equals( MetricConstants.MAIN ) )
-        {
-            addArgument( "metricComponentNameSuffix", "" );
-        }
-        else
-        {
-            addArgument( "metricComponentNameSuffix", meta.getMetricComponentID().toString() );
-        }
-        
         addArgument( "diagramInstanceDescription",
                      "at Lead Hour " + inputKeyInstance.getLeft().getLatestLeadTimeInHours()
                                                    + " for "
@@ -120,19 +97,31 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
                      HString.buildStringFromArray( displayPlotInput.getProbabilities().getDoubles(), ", " )
                             .replaceAll( "0.0,", "min," )
                             .replaceAll( "1.0", "max" ) );
-
         initializeFunctionInformation();
     }
 
     /**
      * An arguments processor intended for use in displaying metric output, whether scalar or vector.
      */
-    public WRESArgumentProcessor(MetricOutputMapByTimeAndThreshold<?> displayedPlotInput)
+    public WRESArgumentProcessor( MetricOutputMapByTimeAndThreshold<?> displayedPlotInput )
     {
         super();
-        
         MetricOutputMetadata meta = displayedPlotInput.getMetadata();
-        
+        extractStandardArgumentsFromMetadata( meta );
+        if ( meta.hasTimeWindow() )
+        {
+            earliestDateLong = displayedPlotInput.firstKey().getLeft().getEarliestTime().toEpochMilli();
+            latestDateLong = displayedPlotInput.lastKey().getLeft().getLatestTime().toEpochMilli();
+            addArgument( "referenceTime", meta.getTimeWindow().getReferenceTime().toString() ); //#44873
+        }
+        initializeFunctionInformation();
+    }
+
+    /**
+     * Extracts the standard arguments that can be pulled from and interpreted consistently for any output meta data.  
+     */
+    private void extractStandardArgumentsFromMetadata( MetricOutputMetadata meta )
+    {
         //Setup fixed arguments.
         addArgument( "metricName", meta.getMetricID().toString() );
         addArgument( "metricShortName", meta.getMetricID().toString() );
@@ -149,13 +138,6 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
             addArgument( "primaryScenario", identifier.getScenarioID() );
         }
 
-        if ( meta.hasTimeWindow() )
-        {
-            earliestDateLong = displayedPlotInput.firstKey().getLeft().getEarliestTime().toEpochMilli();
-            latestDateLong = displayedPlotInput.lastKey().getLeft().getLatestTime().toEpochMilli();
-            addArgument( "referenceTime", meta.getTimeWindow().getReferenceTime().toString() ); //#44873
-        }
-
         //I could create a helper method to handle this wrapping, but I don't think this will be used outside of this context,
         //so why bother?  (This relates to an email James wrote.)
         if ( meta.getMetricComponentID().equals( MetricConstants.MAIN ) )
@@ -166,8 +148,6 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         {
             addArgument( "metricComponentNameSuffix", meta.getMetricComponentID().toString() );
         }
-
-        initializeFunctionInformation();
     }
 
     /**
@@ -256,6 +236,11 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
      */
     private String processDateFunction( final Argument argument, Long dateInMillis )
     {
+        if (dateInMillis == null)
+        {
+            LOGGER.warn( "Date for argument function " + argument.getArgumentName() + " is not provided with plotting meta data." );
+            return null;
+        }
         try
         {
             if ( argument.getFunctionParameterValues().size() == 2 )
