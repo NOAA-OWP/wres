@@ -27,6 +27,7 @@ import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.PoolingWindowConfig;
 import wres.config.generated.TimeAggregationConfig;
+import wres.config.generated.TimeAnchor;
 import wres.config.generated.TimeWindowMode;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Features;
@@ -637,7 +638,21 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
             if (resultSet.isBeforeFirst())
             {
                 resultSet.next();
-                this.initialRollingDates.put( feature, Database.getValue( resultSet,  "min") );
+
+                String min = Database.getValue(resultSet, "min");
+                Double span = TimeHelper.unitsToHours( this.getPoolingWindowUnit(), this.getPoolingWindow().getPeriod() );
+
+                // This will ensure that we gloss over partial windows
+                if ( this.getPoolingWindow().getAnchor() == TimeAnchor.CENTER)
+                {
+                    min = TimeHelper.plus( min, this.getPoolingWindowUnit(), span / 2);
+                }
+                else if (this.getPoolingWindow().getAnchor() == TimeAnchor.RIGHT)
+                {
+                    min = TimeHelper.plus( min, this.getPoolingWindowUnit(), span );
+                }
+
+                this.initialRollingDates.put( feature, min );
                 this.rollingWindowCounts.put( feature, Database.getValue( resultSet, "window_count" ));
             }
         }
