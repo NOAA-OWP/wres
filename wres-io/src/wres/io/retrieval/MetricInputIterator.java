@@ -441,32 +441,29 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
     {
         Future<MetricInput<?>> nextInput = null;
 
-        /*if (this.hasNext())
-        {*/
-            this.inputCounter++;
-            this.incrementWindowNumber();
-            try
-            {
-                // TODO: Pass the leftHandMap instead of the function
-                InputRetriever retriever = new InputRetriever( this.getProjectDetails(),
-                                                               (String firstDate, String lastDate) -> Collections
-                                                                       .getValuesInRange( this.leftHandMap, firstDate, lastDate ) );
-                retriever.setFeature(feature);
-                retriever.setClimatology( this.getClimatology() );
-                retriever.setProgress( this.getWindowNumber() );
-                retriever.setLeadOffset( this.getProjectDetails()
-                                             .getLeadOffset( this.getFeature() ) );
-                retriever.setSequenceStep( this.sequenceStep );
-                retriever.setOnRun( ProgressMonitor.onThreadStartHandler() );
-                retriever.setOnComplete( ProgressMonitor.onThreadCompleteHandler() );
+        this.inputCounter++;
+        this.incrementWindowNumber();
+        try
+        {
+            // TODO: Pass the leftHandMap instead of the function
+            InputRetriever retriever = new InputRetriever( this.getProjectDetails(),
+                                                           (String firstDate, String lastDate) -> Collections
+                                                                   .getValuesInRange( this.leftHandMap, firstDate, lastDate ) );
+            retriever.setFeature(feature);
+            retriever.setClimatology( this.getClimatology() );
+            retriever.setProgress( this.getWindowNumber() );
+            retriever.setLeadOffset( this.getProjectDetails()
+                                         .getLeadOffset( this.getFeature() ) );
+            retriever.setSequenceStep( this.sequenceStep );
+            retriever.setOnRun( ProgressMonitor.onThreadStartHandler() );
+            retriever.setOnComplete( ProgressMonitor.onThreadCompleteHandler() );
 
-                nextInput = Database.submit(retriever);
-            }
-            catch ( SQLException | IOException e )
-            {
-                this.getLogger().error( Strings.getStackTrace( e ) );
-            }
-        //}
+            nextInput = Database.submit(retriever);
+        }
+        catch ( SQLException | IOException e )
+        {
+            this.getLogger().error( Strings.getStackTrace( e ) );
+        }
 
         if (nextInput == null)
         {

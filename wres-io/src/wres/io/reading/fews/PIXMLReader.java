@@ -900,36 +900,8 @@ public final class PIXMLReader extends XMLReader
         return approved;
     }
     
-    private boolean featureIsApproved (final String lid)
-    {
-	    boolean approved = true;
-
-	    boolean hasLocations = Collections.exists(this.getSpecifiedFeatures(), (Feature feature) -> {
-            return feature.getLocationId() != null;
-        });
-
-	    if (hasLocations)
-        {
-            approved = Collections.exists(this.getSpecifiedFeatures(), (Feature feature) -> {
-                return feature.getLocationId() != null &&
-                       feature.getLocationId()
-                               .equalsIgnoreCase( lid );
-            });
-        }
-
-        return approved;
-    }
-    
     private boolean seriesIsApproved ()
     {
-        boolean featureApproved = this.featureIsApproved(this.currentLID);
-
-        if (!featureApproved)
-        {
-            LOGGER.debug( "The encountered feature ('{}') is not approved for this ingest.",
-                          String.valueOf( this.currentLID));
-        }
-
         boolean variableApproved = this.variableIsApproved(currentVariableName);
 
         if (!variableApproved)
@@ -938,7 +910,7 @@ public final class PIXMLReader extends XMLReader
                           String.valueOf(this.currentVariableName));
         }
         
-        return featureApproved && variableApproved;
+        return variableApproved;
     }
 
     /**
