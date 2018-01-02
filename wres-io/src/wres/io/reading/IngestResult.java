@@ -3,6 +3,7 @@ package wres.io.reading;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -29,6 +30,8 @@ public class IngestResult
                           String hash,
                           boolean foundAlready )
     {
+        Objects.requireNonNull( hash, "Ingester must include a hash." );
+        Objects.requireNonNull( leftOrRightOrBaseline, "Ingester must include left/right/baseline" );
         this.leftOrRightOrBaseline = leftOrRightOrBaseline;
         this.hash = hash;
         this.foundAlready = foundAlready;
