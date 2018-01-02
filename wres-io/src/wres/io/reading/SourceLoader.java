@@ -14,7 +14,6 @@ import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.stream.Stream;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -218,6 +217,8 @@ public class SourceLoader
         return Collections.unmodifiableList( results );
     }
 
+
+
     /**
      * saveFile returns Future on success, null in several cases.
      * Caller must expect null and handle it appropriately.
@@ -234,13 +235,11 @@ public class SourceLoader
 
         ProgressMonitor.increment();
 
-        Pair<Boolean,String> checkIngest = shouldIngest( absolutePath,
-                                                         source,
-                                                         dataSourceConfig );
+        FileEvaluation checkIngest = shouldIngest( absolutePath,
+                                                   source,
+                                                   dataSourceConfig );
 
-        boolean shouldIngest = checkIngest.getLeft();
-
-        if ( shouldIngest )
+        if ( checkIngest.shouldIngest() )
         {
             try
             {
@@ -270,14 +269,23 @@ public class SourceLoader
         }
         else
         {
-            String message = "Data will not be loaded from {}. That data is either not valid input data or is ";
-            message += "already in the database.";
-            LOGGER.debug(message, absolutePath);
+            if ( checkIngest.isValid() )
+            {
+                LOGGER.debug(
+                        "Data will not be loaded from '{}'. That data is already in the database",
+                        absolutePath );
 
-            // Fake a future, return result immediately.
-            task = IngestResult.fakeFutureSingleItemListFrom( projectConfig,
-                                                              dataSourceConfig,
-                                                              checkIngest.getRight() );
+                // Fake a future, return result immediately.
+                task = IngestResult.fakeFutureSingleItemListFrom( projectConfig,
+                                                                  dataSourceConfig,
+                                                                  checkIngest.getHash() );
+            }
+            else
+            {
+                LOGGER.warn( "Data will not be loaded from invalid file '{}'",
+                             absolutePath );
+                task = null;
+            }
         }
 
         ProgressMonitor.completeStep();
@@ -300,9 +308,9 @@ public class SourceLoader
      *                         file should be evaluated for ingestion
      * @return Whether or not data within the file should be ingested (and hash)
      */
-    private Pair<Boolean,String> shouldIngest( String filePath,
-                                               DataSourceConfig.Source source,
-                                               DataSourceConfig dataSourceConfig )
+    private FileEvaluation shouldIngest( String filePath,
+                                         DataSourceConfig.Source source,
+                                         DataSourceConfig dataSourceConfig )
     {
         SourceType specifiedFormat = ReaderFactory.getFileType(source.getFormat());
         SourceType pathFormat = ReaderFactory.getFiletype(filePath);
@@ -314,7 +322,7 @@ public class SourceLoader
                           "determined that it is an archive that will need to " +
                           "be further evaluated.",
                           filePath);
-            return Pair.of( true, null );
+            return new FileEvaluation( false, false, null );
         }
 
         boolean ingest = specifiedFormat == SourceType.UNDEFINED ||
@@ -356,9 +364,10 @@ public class SourceLoader
                           filePath,
                           specifiedFormat.toString(),
                           pathFormat.toString());
+            return new FileEvaluation( false, false, null );
         }
 
-        return Pair.of( ingest, hash );
+        return new FileEvaluation( true, ingest, hash );
     }
 
     /**
@@ -446,4 +455,39 @@ public class SourceLoader
      */
     private final ProjectConfig projectConfig;
 
+
+    /**
+     * A result of file evaluation containing whether the file was valid,
+     * whether the file should be ingested, and the hash if available.
+     */
+    private static class FileEvaluation
+    {
+        private final boolean isValid;
+        private final boolean shouldIngest;
+        private final String hash;
+
+        FileEvaluation( boolean isValid,
+                        boolean shouldIngest,
+                        String hash )
+        {
+            this.isValid = isValid;
+            this.shouldIngest = shouldIngest;
+            this.hash = hash;
+        }
+
+        public boolean isValid()
+        {
+            return this.isValid;
+        }
+
+        public boolean shouldIngest()
+        {
+            return this.shouldIngest;
+        }
+
+        public String getHash()
+        {
+            return this.hash;
+        }
+    }
 }
