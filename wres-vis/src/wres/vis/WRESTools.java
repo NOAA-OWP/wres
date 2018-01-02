@@ -6,6 +6,7 @@ import java.util.ArrayList;
 
 import org.jfree.chart.plot.DefaultDrawingSupplier;
 
+import ohd.hseb.charter.ChartConstants;
 import ohd.hseb.charter.ChartTools;
 import ohd.hseb.charter.parameters.DataSourceDrawingParameters;
 import ohd.hseb.hefs.utils.gui.tools.ColorTools;
@@ -53,6 +54,18 @@ public class WRESTools
             colorsToApply = ColorTools.buildColorPalette(seriesCount, Color.BLUE, Color.GREEN, Color.RED);
         }
         ChartTools.applyRotatingColorSchemeToSeries(colorsToApply, parameters);
+    }
+
+    
+    /**
+     * @param parameters The parameters to which the rotating shape scheme will be applied.
+     */
+    public static void applyDefaultJFreeChartShapeSequence(final DataSourceDrawingParameters parameters)
+    {
+        //Build a list of colors from the JFreeChart defaults and strip out the yellow shades. 
+        //Those shades do not show up well on white
+        final String[] p = ChartConstants.SHAPE_NAMES;
+        ChartTools.applyRotatingShapeSchemeToSeries( p, parameters );
     }
     
 }

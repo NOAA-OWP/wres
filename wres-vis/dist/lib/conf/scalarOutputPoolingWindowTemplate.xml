@@ -5,7 +5,8 @@
 	<plotTitle>
         <font family="Dialog" size="12" style="1"/>
 		<text>@metricName@@metricComponentNameSuffix@ for @primaryScenario@ predictions of @variableName@
-at @locationName@@baselineText@
+at @locationName@@baselineLabelSuffix@
+@referenceTime@ Evaluation Period: @earliestDateToText(yyyy-MM-dd;GMT)@ - @latestDateToText(yyyy-MM-dd;GMT)@
 		</text>
 	</plotTitle>
 
@@ -14,7 +15,7 @@ at @locationName@@baselineText@
 		<seriesDrawingParameters
 			createdIndexOfSeriesToModify="-1">
 			<nameInLegend></nameInLegend>
-            <shape>circle</shape>
+<!--            <shape>circle</shape>-->
 		</seriesDrawingParameters>
 	</datasourceDrawingParameters>
 
@@ -26,6 +27,13 @@ at @locationName@@baselineText@
 			</numericAxis>
 		</leftRangeAxis>
 	</subPlot>
+
+    <!-- Domain axis tick labeling. -->
+    <domainAxis>
+        <dateAxis>
+            <tickFormat>yyyy-MM-dd</tickFormat>
+        </dateAxis>
+    </domainAxis>
 
 	<!-- Horizontal line at zero, black with a stroke width of two. Because 
 		there is no default, all parameters must be specified. I should change that 

@@ -5,7 +5,9 @@
     <!-- One line plot title using arguments populated by chart factory. -->
     <plotTitle>
         <font family="Dialog" size="12" style="1"/>
-        <text>@metricName@ of Ensemble Forecast Errors for @locationName@.@variableName@.@primaryScenario@ @diagramInstanceDescription@
+        <text>@metricName@ of Ensemble Forecast Errors
+@locationName@.@variableName@.@primaryScenario@ @diagramInstanceDescription@
+Evaluation Period: @earliestDateToText(yyyy-MM-dd;GMT)@ - @latestDateToText(yyyy-MM-dd;GMT)@
         </text>
     </plotTitle>
     
