@@ -1,6 +1,7 @@
 package wres.vis;
 
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.util.Calendar;
 import java.util.Objects;
 
@@ -72,15 +73,21 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
 
         if ( meta.hasTimeWindow() )
         {
-            earliestDateLong = meta.getTimeWindow().getEarliestTime().toEpochMilli();
-            latestDateLong = meta.getTimeWindow().getLatestTime().toEpochMilli();
+            if ( meta.getTimeWindow().getEarliestTime().isAfter( Instant.MIN ) )
+            {
+                earliestDateLong = meta.getTimeWindow().getEarliestTime().toEpochMilli();
+            }
+            if ( meta.getTimeWindow().getLatestTime().isBefore( Instant.MAX ) )
+            {
+                latestDateLong = meta.getTimeWindow().getLatestTime().toEpochMilli();
+            }
             addArgument( "earliestLeadTimeHours", "" + meta.getTimeWindow().getEarliestLeadTimeInHours() );
             addArgument( "latestLeadTimeHours", "" + meta.getTimeWindow().getLatestLeadTimeInHours() );
             addArgument( "referenceTime", meta.getTimeWindow().getReferenceTime().toString() ); //#44873
         }
         else
         {
-            addArgument( "referenceTime", "");
+            addArgument( "referenceTime", "" );
         }
     }
 
@@ -98,15 +105,21 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         extractStandardArgumentsFromMetadata( meta );
         if ( meta.hasTimeWindow() )
         {
-            earliestDateLong = meta.getTimeWindow().getEarliestTime().toEpochMilli();
-            latestDateLong = meta.getTimeWindow().getLatestTime().toEpochMilli();
+            if ( meta.getTimeWindow().getEarliestTime().isAfter( Instant.MIN ) )
+            {
+                earliestDateLong = meta.getTimeWindow().getEarliestTime().toEpochMilli();
+            }
+            if ( meta.getTimeWindow().getLatestTime().isBefore( Instant.MAX ) )
+            {
+                latestDateLong = meta.getTimeWindow().getLatestTime().toEpochMilli();
+            }
             addArgument( "earliestLeadTimeHours", "" + meta.getTimeWindow().getEarliestLeadTimeInHours() );
             addArgument( "latestLeadTimeHours", "" + meta.getTimeWindow().getLatestLeadTimeInHours() );
             addArgument( "referenceTime", meta.getTimeWindow().getReferenceTime().toString() ); //#44873
         }
         else
         {
-            addArgument( "referenceTime", "");
+            addArgument( "referenceTime", "" );
         }
         addArgument( "diagramInstanceDescription",
                      "at Lead Hour " + inputKeyInstance.getLeft().getLatestLeadTimeInHours()
@@ -144,15 +157,21 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         }
         else if ( meta.hasTimeWindow() )
         {
-            earliestDateLong = meta.getTimeWindow().getEarliestTime().toEpochMilli();
-            latestDateLong = meta.getTimeWindow().getLatestTime().toEpochMilli();
+            if ( meta.getTimeWindow().getEarliestTime().isAfter( Instant.MIN ) )
+            {
+                earliestDateLong = meta.getTimeWindow().getEarliestTime().toEpochMilli();
+            }
+            if ( meta.getTimeWindow().getLatestTime().isBefore( Instant.MAX ) )
+            {
+                latestDateLong = meta.getTimeWindow().getLatestTime().toEpochMilli();
+            }
             addArgument( "earliestLeadTimeHours", "" + meta.getTimeWindow().getEarliestLeadTimeInHours() );
             addArgument( "latestLeadTimeHours", "" + meta.getTimeWindow().getLatestLeadTimeInHours() );
             addArgument( "referenceTime", meta.getTimeWindow().getReferenceTime().toString() ); //#44873
         }
-        else 
+        else
         {
-            addArgument( "referenceTime", "");
+            addArgument( "referenceTime", "" );
         }
 
         initializeFunctionInformation();
@@ -197,7 +216,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * @param displayedPlotInput the plot input
      * @param plotTimeWindow the time window
      */
-    public void addLeadThresholdArguments( 
+    public void addLeadThresholdArguments(
                                            MetricOutputMapByTimeAndThreshold<?> displayedPlotInput,
                                            TimeWindow plotTimeWindow )
     {
@@ -319,14 +338,26 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
             return null;
         }
     }
-    
-    private String processPoolingWindowFunction( final Argument argument)
+
+    private String processPoolingWindowFunction( final Argument argument )
     {
-        if ((earliestDateLong == null) || (latestDateLong == null))
+        if ( ( earliestDateLong == null ) && ( latestDateLong == null ) )
         {
             return "Window is Unconstrained";
         }
-        return this.processDateFunction( argument, earliestDateLong ) + " - " + this.processDateFunction( argument, latestDateLong );
+        else if ( earliestDateLong == null )
+        {
+            return "Before " + this.processDateFunction( argument, latestDateLong );
+        }
+        else if ( latestDateLong == null )
+        {
+            return "After " + this.processDateFunction( argument, earliestDateLong );
+        }
+        else
+        {
+            return this.processDateFunction( argument, earliestDateLong ) + " - "
+                   + this.processDateFunction( argument, latestDateLong );
+        }
     }
 
     @Override
@@ -340,7 +371,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         {
             return this.processDateFunction( argument, latestDateLong );
         }
-        else if ( argument.getArgumentName().equals( POOLING_WINDOW  ))
+        else if ( argument.getArgumentName().equals( POOLING_WINDOW ) )
         {
             return this.processPoolingWindowFunction( argument );
         }
