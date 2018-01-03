@@ -21,6 +21,7 @@ import wres.config.generated.DatasourceType;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
+import wres.config.generated.PoolingWindowConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Outputs;
 import wres.datamodel.DataFactory;
@@ -93,13 +94,13 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
      */
 
     static final Logger LOGGER = LoggerFactory.getLogger( MetricProcessor.class );
-    
+
     /**
      * Filter for admissible numerical data.
      */
 
     static final DoublePredicate ADMISSABLE_DATA = Double::isFinite;
-    
+
     /**
      * Instance of a {@link MetricFactory}.
      */
@@ -375,11 +376,19 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
             default:
                 throw new MetricConfigurationException( "Unexpected input identifier '" + group + "'." );
         }
-        //Remove CRPSS if no baseline available
+        //Remove CRPSS if no baseline is available
         DataSourceConfig baseline = config.getInputs().getBaseline();
         if ( Objects.isNull( baseline ) )
         {
             returnMe.remove( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE );
+        }
+        //Disallow non-score metrics when pooling window configuration is present, until this 
+        //is supported
+        PoolingWindowConfig windows = config.getPair().getPoolingWindow();
+        if ( Objects.nonNull( windows ) )
+        {
+            returnMe.removeIf( a -> ! ( a.isInGroup( MetricOutputGroup.SCALAR )
+                                        || a.isInGroup( MetricOutputGroup.VECTOR ) ) );
         }
         return returnMe;
     }

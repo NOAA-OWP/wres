@@ -62,7 +62,7 @@
         <destination type="graphic">
             <path>output/scenario012/</path>
             <graphical width="800" height="600">
-                <plotType>lead threshold</plotType>
+                <plotType>pooling window</plotType>
             </graphical>
         </destination>
     </outputs>
