@@ -7,8 +7,7 @@
         <font family="Dialog" size="12" style="1"/>
         <text>@metricName@ of Ensemble Forecast Errors
 @locationName@.@variableName@.@primaryScenario@ @diagramInstanceDescription@
-@referenceTime@ Evaluation Period: @earliestDateToText(yyyy-MM-dd;GMT)@ - @latestDateToText(yyyy-MM-dd;GMT)@
-        </text>
+@referenceTime@ Evaluation Period: @dataPoolingWindow(yyyy-MM-dd;GMT)@</text>
     </plotTitle>
     
     <!-- Shapes for all series. -->

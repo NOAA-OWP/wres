@@ -38,11 +38,6 @@ public class Chart2DTestInput extends TestCase
                                                  metFac.getDatasetIdentifier("DRRC2", "SQIN", "HEFS"));
         final SingleValuedPairs pairs = metIn.ofSingleValuedPairs(values, meta);
         
-        //TODO Ideas...
-        //Data identifier should be in the legend entry.
-        //Title should be basic text that does not vary by scatter plot.
-        //Series should be colored according to palette.
-
         //Construct the source from the pairs assigning it a data source order index of 0.  
         //The order index indicates the order in which the different sources are rendered.
 
