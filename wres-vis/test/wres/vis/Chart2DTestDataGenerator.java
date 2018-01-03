@@ -599,8 +599,8 @@ public abstract class Chart2DTestDataGenerator
     
                 //Set the lead time
                 final double leadTime = (Double) d.next().getKey();
-                TimeWindow window = TimeWindow.of( Instant.MIN,
-                                                   Instant.MAX,
+                TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                   Instant.parse( "2015-12-31T11:59:59Z" ),
                                                    ReferenceTime.VALID_TIME,
                                                    Duration.ofHours( (long) leadTime ) );
                 final Pair<TimeWindow, Threshold> key = Pair.of( window, threshold );
