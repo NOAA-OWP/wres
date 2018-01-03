@@ -271,11 +271,6 @@ public final class PIXMLReader extends XMLReader
 				if (localName.equalsIgnoreCase("header"))
 				{
 					parseHeader(reader);
-					if (!seriesIsApproved()) {
-					    LOGGER.debug( "The encountered time series is not approved by the specifications. Moving on." );
-					    XML.skipToEndTag(reader, "series");
-					    break;
-					}
 				}
 				else if(localName.equalsIgnoreCase("event"))
 				{
@@ -876,42 +871,6 @@ public final class PIXMLReader extends XMLReader
 		}
 		return currentSourceID;
 	}
-    
-    private boolean variableIsApproved (String name) {
-	    boolean approved = true;
-
-	    // If there is a specification for what variables to include
-	    if (this.getDataSourceConfig() != null &&
-                this.getDataSourceConfig().getVariable() != null &&
-                this.getDataSourceConfig().getVariable().getValue() != null)
-        {
-            // Approve if the passed in variable name matches that of the configured variable name
-            approved = this.getDataSourceConfig().getVariable().getValue().isEmpty() ||
-                    this.getDataSourceConfig().getVariable().getValue().equalsIgnoreCase(name);
-        }
-
-        if (!approved)
-        {
-            LOGGER.debug("The variable '{}' is not approved. The configuration says the variable should be: '{}'",
-                         name,
-                         this.getDataSourceConfig().getVariable().getValue());
-        }
-
-        return approved;
-    }
-    
-    private boolean seriesIsApproved ()
-    {
-        boolean variableApproved = this.variableIsApproved(currentVariableName);
-
-        if (!variableApproved)
-        {
-            LOGGER.debug( "The encountered variable ('{}') is not approved for this ingest.",
-                          String.valueOf(this.currentVariableName));
-        }
-        
-        return variableApproved;
-    }
 
     /**
      * @return The value specifying a value that is missing from the data set

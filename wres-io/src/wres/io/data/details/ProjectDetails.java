@@ -27,6 +27,7 @@ import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.PoolingWindowConfig;
 import wres.config.generated.TimeAggregationConfig;
+import wres.config.generated.TimeAggregationFunction;
 import wres.config.generated.TimeAnchor;
 import wres.config.generated.TimeWindowMode;
 import wres.io.config.ConfigHelper;
@@ -497,6 +498,14 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         }
 
         return function;
+    }
+
+    public boolean shouldAggregate()
+    {
+        return !TimeAggregationFunction.NONE.value()
+                                            .equalsIgnoreCase(
+                                                    this.getAggregationFunction()
+                                            );
     }
 
     public TimeAggregationConfig getAggregation()
