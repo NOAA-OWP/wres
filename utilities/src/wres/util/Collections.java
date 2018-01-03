@@ -402,6 +402,11 @@ public final class Collections
             );
         }
 
+        if (aggregatedValue == null)
+        {
+            aggregatedValue = Double.NaN;
+        }
+
         return aggregatedValue;
     }
 

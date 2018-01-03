@@ -19,6 +19,7 @@ import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.Feature;
+import wres.config.generated.TimeAggregationFunction;
 import wres.config.generated.TimeWindowMode;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DatasetIdentifier;
@@ -367,7 +368,20 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                  * we are using the agg_hour method instead of the more
                  * straight forward process.
                  */
-                if (aggHour != null && resultSet.getInt( "agg_hour" ) <= aggHour)
+
+                // TODO: The agg_hour doesn't always link basis times; see
+                // scenario400, where we have the same date for lead time 2
+                // for 7/27 and lead time 6 for 7/28. It tries to lump the
+                // two together, which crosses basis times.
+                // Consider adding an identity function that igores the
+                // agg_hour or bringing/lumping together based on basis time
+                // (probably a way better solution)
+                //
+                // See Bug #41816
+
+                if (aggHour != null &&
+                    (resultSet.getInt( "agg_hour" ) <= aggHour ||
+                     !this.projectDetails.shouldAggregate()))
                 {
                     pairs = this.addPair( pairs, valueDate, rightValues, dataSourceConfig );
 
@@ -448,6 +462,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         int windowNumber = this.progress + 1;
         Double windowWidth;
         Double lastLead = 0.0;
+
         // If this is a simulation, there are no windows, so set to 0
         if ( !ConfigHelper.isForecast( sourceConfig ))
         {
@@ -482,21 +497,36 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                                                                         this.feature) );
     }
 
-    private PairOfDoubleAndVectorOfDoubles getPair(String date,
+    private PairOfDoubleAndVectorOfDoubles getPair(String lastDate,
                                                    Map<Integer, List<Double>> rightValues)
             throws InvalidPropertiesFormatException, ProjectConfigException,
             NoDataException
     {
         if (rightValues == null || rightValues.size() == 0)
         {
-            throw new NoDataException( "No values could be retrieved to pair with with any possible set of left values ." );
+            throw new NoDataException( "No values could be retrieved to pair with with any possible set of left values." );
         }
 
-        // This works for both rolling and back-to-back because of how the grouping of agg_hours works
-        String firstDate = TimeHelper.minus( date,
-                                             this.projectDetails.getAggregationUnit(),
-                                             this.projectDetails.getAggregationPeriod());
-        String lastDate = date;
+        String firstDate;
+
+        if (this.projectDetails.shouldAggregate())
+        {
+            // This works for both rolling and back-to-back because of how the grouping of agg_hours works
+            firstDate = TimeHelper.minus( lastDate,
+                                          this.projectDetails.getAggregationUnit(),
+                                          this.projectDetails.getAggregationPeriod());
+        }
+        else
+        {
+            // If we aren't aggregating, we want a single instance instead of a range
+            // If we try to grab left values based on (lastDate, lastDate],
+            // we end up with no left hand values. We instead decrement a short
+            // period of time prior to ensure we end up with an actual range of
+            // values containing the one value
+            firstDate =  TimeHelper.minus( lastDate,
+                                           "minute",
+                                           1);
+        }
 
         List<Double> leftValues = this.getLeftValues.apply( firstDate, lastDate );
 
@@ -506,31 +536,37 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             return null;
         }
 
-        Double leftAggregation =
+        Double leftAggregation;
+
+        if (this.projectDetails.shouldAggregate())
+        {
+            leftAggregation =
                 wres.util.Collections.aggregate( leftValues,
                                                  this.projectDetails.getAggregationFunction() );
-
-        Double[] rightAggregation = new Double[rightValues.size()];
-
-        int memberIndex = 0;
-        for (List<Double> values : rightValues.values())
+        }
+        else
         {
-            rightAggregation[memberIndex] =
-                    wres.util.Collections.aggregate( values,
-                                                     this.projectDetails.getAggregationFunction() );
-            memberIndex++;
+            leftAggregation = leftValues.get( 0 );
         }
 
         List<Double> validAggregations = new ArrayList<>();
 
-        for (Double value : rightAggregation)
+        for (List<Double> values : rightValues.values())
         {
-            if (value == null)
+            if (this.projectDetails.shouldAggregate())
             {
-                value = Double.NaN;
+                validAggregations.add(
+                        wres.util.Collections.aggregate(
+                                values,
+                                this.projectDetails.getAggregationFunction()
+                        )
+                );
             }
-
-            validAggregations.add( value );
+            // If we aren't aggregating, just throw it in the collection and move on
+            else
+            {
+                validAggregations.addAll( values );
+            }
         }
 
         return DefaultDataFactory.getInstance().pairOf( leftAggregation,
