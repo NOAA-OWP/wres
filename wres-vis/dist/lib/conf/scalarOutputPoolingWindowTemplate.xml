@@ -5,8 +5,7 @@
 	<plotTitle>
         <font family="Dialog" size="12" style="1"/>
 		<text>@metricName@@metricComponentNameSuffix@ for @primaryScenario@ predictions of @variableName@
-at @locationName@@baselineLabelSuffix@
-		</text>
+at @locationName@@baselineLabelSuffix@</text>
 	</plotTitle>
 
 	<!-- Empty out the nameInLegend so that it uses the defaults; show scatter points. -->
@@ -14,7 +13,6 @@ at @locationName@@baselineLabelSuffix@
 		<seriesDrawingParameters
 			createdIndexOfSeriesToModify="-1">
 			<nameInLegend></nameInLegend>
-<!--            <shape>circle</shape>-->
 		</seriesDrawingParameters>
 	</datasourceDrawingParameters>
 
@@ -30,7 +28,7 @@ at @locationName@@baselineLabelSuffix@
     <!-- Domain axis tick labeling. -->
     <domainAxis>
         <dateAxis>
-            <tickFormat>yyyy-MM-dd HH</tickFormat>
+            <tickFormat>yyyy-MM-dd+HH</tickFormat>
         </dateAxis>
     </domainAxis>
 

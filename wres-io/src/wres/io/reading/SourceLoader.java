@@ -326,7 +326,7 @@ public class SourceLoader
                           "determined that it is an archive that will need to " +
                           "be further evaluated.",
                           filePath);
-            return new FileEvaluation( false, false, null );
+            return new FileEvaluation( true, true, null );
         }
 
         boolean ingest = specifiedFormat == SourceType.UNDEFINED ||
