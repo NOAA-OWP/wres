@@ -31,7 +31,9 @@ import wres.config.generated.PairConfig;
 import wres.config.generated.PlotTypeSelection;
 import wres.config.generated.PoolingWindowConfig;
 import wres.config.generated.ProjectConfig;
+import wres.config.generated.ProjectConfig.Inputs;
 import wres.config.generated.TimeAggregationConfig;
+import wres.config.generated.TimeAggregationFunction;
 import wres.config.generated.TimeWindowMode;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
@@ -547,7 +549,8 @@ public class Validation
                                            pairConfig )
                  && result;
 
-        result = Validation.isDesiredTimeAggregationValid( pairConfig)
+        result = Validation.isDesiredTimeAggregationValid( projectConfigPlus,
+                                                           pairConfig)
                  && result;
 
         result = Validation.isPoolingWindowValid( pairConfig)
@@ -692,7 +695,7 @@ public class Validation
         List<String> aliases = featureConfig.getAlias();
 
         // There aren't any aliases to validate, therefore valid
-        if (aliases == null || aliases.size() == 0)
+        if ( aliases == null || aliases.isEmpty() )
         {
             return result;
         }
@@ -836,7 +839,8 @@ public class Validation
         return result;
     }
 
-    private static boolean isDesiredTimeAggregationValid( PairConfig pairConfig )
+    private static boolean isDesiredTimeAggregationValid( ProjectConfigPlus projectConfigPlus,
+                                                          PairConfig pairConfig )
     {
         boolean valid = true;
 
@@ -844,17 +848,13 @@ public class Validation
         StringBuilder warning = new StringBuilder();
 
         // Rolling window aggregation must have a non-null frequency
-        if ( aggregationConfig.getMode() == TimeWindowMode.ROLLING )
+        if ( aggregationConfig.getMode() == TimeWindowMode.ROLLING && aggregationConfig.getFrequency() == null )
         {
-
-            if ( aggregationConfig.getFrequency() == null )
-            {
-                valid = false;
-                warning.append( "The frequency (the rate at which a new rolling " +
-                                "window is generated) must be set in order to use "
-                                +
-                                "rolling windows for aggregation." );
-            }
+            valid = false;
+            warning.append( "The frequency (the rate at which a new rolling " +
+                            "window is generated) must be set in order to use "
+                            +
+                            "rolling windows for aggregation." );
         }
         // Non-null frequency must be >= 1
         if ( aggregationConfig.getFrequency() != null && aggregationConfig.getFrequency() < 1 )
@@ -889,14 +889,124 @@ public class Validation
 
         // TODO: validate time units
         
-        if ( !valid )
+        if ( !valid && LOGGER.isWarnEnabled() )
         {
             LOGGER.warn( warning.toString() );
         }
+        
+        // Check that the time aggregation function is valid
+        valid = valid && isDesiredTimeAggregationFunctionValid( projectConfigPlus, pairConfig );
 
+        // Check that the time aggregation period is valid 
+        //valid = valid && isDesiredTimeAggregationPeriodValid( projectConfigPlus, pairConfig );
+        
         return valid;
     }
 
+    /**
+     * Returns true if the time aggregation function associated with the desiredTimeAggregation is valid given the time
+     * aggregation functions associated with the existingTimeAggregation for each source.
+     * 
+     * See Redmine issue 40389.
+     * 
+     * Not all attributes of a valid aggregation can be checked from the configuration alone, but some attributes, 
+     * notably whether the aggregation function is applicable, can be checked in advance. Having a valid time 
+     * aggregation function does not imply that the system actually supports it.
+     * 
+     * @param projectConfigPlus the project configuration
+     * @param pairConfig the pair configuration
+     * @return true if the time aggregation function associated with the desiredTimeAggregation is valid
+     */
+
+    private static boolean isDesiredTimeAggregationFunctionValid( ProjectConfigPlus projectConfigPlus,
+                                                                  PairConfig pairConfig )
+    {
+        boolean returnMe = true;
+        TimeAggregationFunction desired = pairConfig.getDesiredTimeAggregation().getFunction();
+        Inputs inputConfig = projectConfigPlus.getProjectConfig().getInputs();
+        // Time aggregation is a sum
+        if ( desired.equals( TimeAggregationFunction.SUM ) )
+        {
+            returnMe = isDesiredTimeAggregationSumValid( projectConfigPlus, inputConfig );
+        }
+        return returnMe;
+    }
+
+    /**
+     * Tests a desired time aggregation function that is a sum. Returns true if function is valid, given the input 
+     * configuration, false otherwise.
+     * 
+     * @param projectConfigPlus the project configuration
+     * @param inputConfig the input configuration
+     * @return true if the time aggregation function is valid, given the inputConfig
+     */    
+    
+    private static boolean isDesiredTimeAggregationSumValid( ProjectConfigPlus projectConfigPlus,
+                                                             Inputs inputConfig )
+    {
+        boolean returnMe = true;
+        String message = " When using a desired time aggregation of "
+                         + TimeAggregationFunction.SUM
+                         + ", the existing time aggregation on the {} must also be a "
+                         + TimeAggregationFunction.SUM
+                         + ".";
+        // Existing function for left must be a sum
+        if ( inputConfig.getLeft() != null && inputConfig.getLeft().getExistingTimeAggregation() != null
+             && !inputConfig.getLeft()
+                            .getExistingTimeAggregation()
+                            .getFunction()
+                            .equals( TimeAggregationFunction.SUM ) )
+        {
+            returnMe = false;
+            if ( LOGGER.isWarnEnabled() )
+            {
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                             + message,
+                             projectConfigPlus.getPath(),
+                             inputConfig.getLeft().getExistingTimeAggregation().sourceLocation().getLineNumber(),
+                             inputConfig.getLeft().getExistingTimeAggregation().sourceLocation().getColumnNumber(),
+                             "left" );
+            }
+        }
+        // Existing function for right must be a sum
+        if ( inputConfig.getRight() != null && inputConfig.getRight().getExistingTimeAggregation() != null
+             && !inputConfig.getRight()
+                       .getExistingTimeAggregation()
+                       .getFunction()
+                       .equals( TimeAggregationFunction.SUM ) )
+        {
+            returnMe = false;
+            if ( LOGGER.isWarnEnabled() )
+            {
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                             + message,
+                             projectConfigPlus.getPath(),
+                             inputConfig.getRight().getExistingTimeAggregation().sourceLocation().getLineNumber(),
+                             inputConfig.getRight().getExistingTimeAggregation().sourceLocation().getColumnNumber(),
+                             "right" );
+            }
+        }
+        // Existing function for baseline must be a sum
+        if ( inputConfig.getBaseline() != null && inputConfig.getBaseline().getExistingTimeAggregation() != null
+             && !inputConfig.getBaseline()
+                       .getExistingTimeAggregation()
+                       .getFunction()
+                       .equals( TimeAggregationFunction.SUM ) )
+        {
+            returnMe = false;
+            if ( LOGGER.isWarnEnabled() )
+            {
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                             + message,
+                             projectConfigPlus.getPath(),
+                             inputConfig.getLeft().getExistingTimeAggregation().sourceLocation().getLineNumber(),
+                             inputConfig.getLeft().getExistingTimeAggregation().sourceLocation().getColumnNumber(),
+                             "baseline" );
+            }
+        }
+        return returnMe;
+    }
+    
     private static boolean isPoolingWindowValid( PairConfig pairConfig )
     {
         
@@ -912,17 +1022,13 @@ public class Validation
         StringBuilder warning = new StringBuilder();
 
         // Rolling window pooling must have a non-null frequency
-        if ( poolingConfig.getMode() == TimeWindowMode.ROLLING )
+        if ( poolingConfig.getMode() == TimeWindowMode.ROLLING && poolingConfig.getFrequency() == null )
         {
-
-            if ( poolingConfig.getFrequency() == null )
-            {
-                valid = false;
-                warning.append( "The frequency (the rate at which a new rolling " +
-                                "window is generated) must be set in order to use "
-                                +
-                                "rolling windows for pooling." );
-            }
+            valid = false;
+            warning.append( "The frequency (the rate at which a new rolling " +
+                            "window is generated) must be set in order to use "
+                            +
+                            "rolling windows for pooling." );
         }
         // Non-null frequency must be >= 1
         if ( poolingConfig.getFrequency() != null && poolingConfig.getFrequency() < 1 )
@@ -957,7 +1063,7 @@ public class Validation
         
         // TODO: validate time units
 
-        if ( !valid )
+        if ( !valid && LOGGER.isWarnEnabled() )
         {
             LOGGER.warn( warning.toString() );
         }
