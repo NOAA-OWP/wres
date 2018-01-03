@@ -213,7 +213,7 @@ public abstract class ChartEngineFactory
             inputSlice = input.filterByTime( (TimeWindow) inputKeyInstance );
 
             //Setup the default arguments.
-            arguments = new WRESArgumentProcessor( inputSlice );
+            arguments = new WRESArgumentProcessor( inputSlice, usedPlotType );
             arguments.addLeadThresholdArguments( inputSlice, (TimeWindow) inputKeyInstance );
         }
 
@@ -226,7 +226,7 @@ public abstract class ChartEngineFactory
                     input.filterByThreshold( (Threshold) inputKeyInstance );
 
             //Setup the default arguments.
-            arguments = new WRESArgumentProcessor( inputSlice );
+            arguments = new WRESArgumentProcessor( inputSlice, usedPlotType );
             arguments.addThresholdLeadArguments( inputSlice, (Threshold) inputKeyInstance );
         }
 
@@ -306,7 +306,7 @@ public abstract class ChartEngineFactory
                     input.filterByTime( (TimeWindow) inputKeyInstance );
 
             //Setup the default arguments.
-            arguments = new WRESArgumentProcessor( inputSlice );
+            arguments = new WRESArgumentProcessor( inputSlice, usedPlotType );
             arguments.addLeadThresholdArguments( inputSlice, (TimeWindow) inputKeyInstance );
         }
 
@@ -319,7 +319,7 @@ public abstract class ChartEngineFactory
                     input.filterByThreshold( (Threshold) inputKeyInstance );
 
             //Setup the default arguments.
-            arguments = new WRESArgumentProcessor( inputSlice );
+            arguments = new WRESArgumentProcessor( inputSlice, usedPlotType );
             arguments.addThresholdLeadArguments( inputSlice, (Threshold) inputKeyInstance );
         }
 
@@ -391,7 +391,7 @@ public abstract class ChartEngineFactory
                     input.filterByTime( (TimeWindow) inputKeyInstance );
 
             //Setup the default arguments.
-            arguments = new WRESArgumentProcessor( inputSlice );
+            arguments = new WRESArgumentProcessor( inputSlice, usedPlotType );
             arguments.addLeadThresholdArguments( inputSlice, (TimeWindow) inputKeyInstance );
         }
 
@@ -404,7 +404,7 @@ public abstract class ChartEngineFactory
                     input.filterByThreshold( (Threshold) inputKeyInstance );
 
             //Setup the default arguments.
-            arguments = new WRESArgumentProcessor( inputSlice );
+            arguments = new WRESArgumentProcessor( inputSlice, usedPlotType );
             arguments.addThresholdLeadArguments( inputSlice, (Threshold) inputKeyInstance );
         }
 
@@ -477,7 +477,7 @@ public abstract class ChartEngineFactory
                     input.filterByTime( (TimeWindow) inputKeyInstance );
 
             //Setup the default arguments.
-            arguments = new WRESArgumentProcessor( inputSlice );
+            arguments = new WRESArgumentProcessor( inputSlice, usedPlotType );
             arguments.addLeadThresholdArguments( inputSlice, (TimeWindow) inputKeyInstance );
         }
 
@@ -490,7 +490,7 @@ public abstract class ChartEngineFactory
                     input.filterByThreshold( (Threshold) inputKeyInstance );
 
             //Setup the default arguments.
-            arguments = new WRESArgumentProcessor( inputSlice );
+            arguments = new WRESArgumentProcessor( inputSlice, usedPlotType );
             arguments.addThresholdLeadArguments( inputSlice, (Threshold) inputKeyInstance );
         }
 
@@ -811,7 +811,7 @@ public abstract class ChartEngineFactory
 
         //Setup the default arguments.
         final MetricOutputMetadata meta = input.getMetadata();
-        final WRESArgumentProcessor arguments = new WRESArgumentProcessor( input );
+        final WRESArgumentProcessor arguments = new WRESArgumentProcessor( input, usedPlotType );
 
         //Setup plot specific arguments.
         arguments.addBaselineArguments( meta );

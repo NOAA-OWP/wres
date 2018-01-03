@@ -5,8 +5,7 @@
 
     <plotTitle>
         <text>Single valued pairs for @primaryScenario@ predictions of @variableName@ at @locationName@
-@referenceTime@ Evaluation Period: @earliestDateToText(yyyy-MM-dd;GMT)@ - @latestDateToText(yyyy-MM-dd;GMT)@
-</text>
+@referenceTime@ Evaluation Period: @dataPoolingWindow(yyyy-MM-dd;GMT)@</text>
     </plotTitle>
     
     <datasourceDrawingParameters sourceIndex="0">

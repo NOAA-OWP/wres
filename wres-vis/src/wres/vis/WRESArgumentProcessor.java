@@ -14,6 +14,7 @@ import ohd.hseb.hefs.utils.datetime.HEFSTimeZoneTools;
 import ohd.hseb.hefs.utils.plugins.UniqueGenericParameterList;
 import ohd.hseb.util.misc.HCalendar;
 import ohd.hseb.util.misc.HString;
+import wres.config.generated.PlotTypeSelection;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Threshold;
@@ -34,6 +35,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
     private static final Logger LOGGER = LoggerFactory.getLogger( ChartEngineFactory.class );
     private final static String EARLIEST_DATE_TO_TEXT = "earliestDateToText";
     private final static String LATEST_DATE_TO_TEXT = "latestDateToText";
+    private final static String POOLING_WINDOW = "dataPoolingWindow";
 
     /**
      * Basis for earliestDateToText function.
@@ -46,7 +48,8 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
     private Long latestDateLong = null;
 
     /**
-     * An arguments processor intended for use in displaying single-valued pairs.
+     * An arguments processor intended for use in displaying single-valued pairs. It is assumed that there is 
+     * only a single time window associated with the data, specified in the meta data for the displayed plot input.
      * @param meta The metadata corresponding to a SingleValuedPairs instance.
      */
     public WRESArgumentProcessor( final Metadata meta )
@@ -71,12 +74,19 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         {
             earliestDateLong = meta.getTimeWindow().getEarliestTime().toEpochMilli();
             latestDateLong = meta.getTimeWindow().getLatestTime().toEpochMilli();
+            addArgument( "earliestLeadTimeHours", "" + meta.getTimeWindow().getEarliestLeadTimeInHours() );
+            addArgument( "latestLeadTimeHours", "" + meta.getTimeWindow().getLatestLeadTimeInHours() );
             addArgument( "referenceTime", meta.getTimeWindow().getReferenceTime().toString() ); //#44873
+        }
+        else
+        {
+            addArgument( "referenceTime", "");
         }
     }
 
     /**
-     * An arguments processor intended for use in displaying a box-plot of errors.
+     * An arguments processor intended for use in displaying a box-plot of errors.  It is assumed that there is 
+     * only a single time window associated with the data, specified in the meta data for the displayed plot input.
      */
     public WRESArgumentProcessor( Pair<TimeWindow, Threshold> inputKeyInstance, BoxPlotOutput displayPlotInput )
     {
@@ -87,7 +97,13 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         {
             earliestDateLong = meta.getTimeWindow().getEarliestTime().toEpochMilli();
             latestDateLong = meta.getTimeWindow().getLatestTime().toEpochMilli();
+            addArgument( "earliestLeadTimeHours", "" + meta.getTimeWindow().getEarliestLeadTimeInHours() );
+            addArgument( "latestLeadTimeHours", "" + meta.getTimeWindow().getLatestLeadTimeInHours() );
             addArgument( "referenceTime", meta.getTimeWindow().getReferenceTime().toString() ); //#44873
+        }
+        else
+        {
+            addArgument( "referenceTime", "");
         }
         addArgument( "diagramInstanceDescription",
                      "at Lead Hour " + inputKeyInstance.getLeft().getLatestLeadTimeInHours()
@@ -101,19 +117,38 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
     }
 
     /**
-     * An arguments processor intended for use in displaying metric output, whether scalar or vector.
+     * An arguments processor intended for use in displaying metric output FOR POOLING WINDOWS, whether scalar or vector.
      */
-    public WRESArgumentProcessor( MetricOutputMapByTimeAndThreshold<?> displayedPlotInput )
+    public WRESArgumentProcessor( MetricOutputMapByTimeAndThreshold<?> displayedPlotInput, PlotTypeSelection plotType )
     {
         super();
+
         MetricOutputMetadata meta = displayedPlotInput.getMetadata();
         extractStandardArgumentsFromMetadata( meta );
-        if ( meta.hasTimeWindow() )
+
+        if ( plotType.equals( PlotTypeSelection.POOLING_WINDOW ) )
         {
             earliestDateLong = displayedPlotInput.firstKey().getLeft().getEarliestTime().toEpochMilli();
             latestDateLong = displayedPlotInput.lastKey().getLeft().getLatestTime().toEpochMilli();
+            addArgument( "earliestLeadTimeHours",
+                         "" + displayedPlotInput.firstKey().getLeft().getEarliestLeadTimeInHours() );
+            addArgument( "latestLeadTimeHours",
+                         "" + displayedPlotInput.lastKey().getLeft().getLatestLeadTimeInHours() );
+            addArgument( "referenceTime", displayedPlotInput.firstKey().getLeft().getReferenceTime().toString() ); //#44873
+        }
+        else if ( meta.hasTimeWindow() )
+        {
+            earliestDateLong = meta.getTimeWindow().getEarliestTime().toEpochMilli();
+            latestDateLong = meta.getTimeWindow().getLatestTime().toEpochMilli();
+            addArgument( "earliestLeadTimeHours", "" + meta.getTimeWindow().getEarliestLeadTimeInHours() );
+            addArgument( "latestLeadTimeHours", "" + meta.getTimeWindow().getLatestLeadTimeInHours() );
             addArgument( "referenceTime", meta.getTimeWindow().getReferenceTime().toString() ); //#44873
         }
+        else 
+        {
+            addArgument( "referenceTime", "");
+        }
+
         initializeFunctionInformation();
     }
 
@@ -152,8 +187,10 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
 
     /**
      * Adds arguments for plots where the lead time is on the domain axis and threshold is in the legend.
+     * @param displayedPlotInput
+     * @param plotTimeWindow
      */
-    public void addLeadThresholdArguments( //MetricOutputMapByTimeAndThreshold<?> input,
+    public void addLeadThresholdArguments( 
                                            MetricOutputMapByTimeAndThreshold<?> displayedPlotInput,
                                            TimeWindow plotTimeWindow )
     {
@@ -179,6 +216,8 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
 
     /**
      * Adds arguments for plots where the threshold value is on the domain axis and lead time is in the legend.
+     * @param displayedPlotInput
+     * @param threshold
      */
     public void addThresholdLeadArguments( MetricOutputMapByTimeAndThreshold<?> displayedPlotInput,
                                            Threshold threshold )
@@ -201,6 +240,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
     /**
      * Adds arguments for plots where the pooling window (as in rolling window) is displayed along the domain axis 
      * and the legend includes both lead time and threshold.
+     * @param displayedPlotInput
      */
     public void addPoolingWindowArguments( //MetricOutputMapByTimeAndThreshold<?> input,
                                            MetricOutputMapByTimeAndThreshold<?> displayedPlotInput )
@@ -212,7 +252,8 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
     }
 
     /**
-     * Adds arguments related to displaying the baseline for a skill score metric.
+     * Adds arguments related to the baseline forecasts for skill scores.
+     * @param meta
      */
     public void addBaselineArguments( MetricOutputMetadata meta )
     {
@@ -233,12 +274,16 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
 
     /**
      * Called to process a date-to-text argument function.
+     * @param argument
+     * @param dateInMillis
+     * @return Date function processed value.
      */
     private String processDateFunction( final Argument argument, Long dateInMillis )
     {
-        if (dateInMillis == null)
+        if ( dateInMillis == null )
         {
-            LOGGER.warn( "Date for argument function " + argument.getArgumentName() + " is not provided with plotting meta data." );
+            LOGGER.warn( "Date for argument function " + argument.getArgumentName()
+                         + " is not provided with plotting meta data." );
             return null;
         }
         try
@@ -267,6 +312,15 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
             return null;
         }
     }
+    
+    private String processPoolingWindowFunction( final Argument argument)
+    {
+        if ((earliestDateLong == null) || (latestDateLong == null))
+        {
+            return "Window is Unconstrained";
+        }
+        return this.processDateFunction( argument, earliestDateLong ) + " - " + this.processDateFunction( argument, latestDateLong );
+    }
 
     @Override
     protected String evaluateFunctionValue( final Argument argument )
@@ -279,17 +333,17 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         {
             return this.processDateFunction( argument, latestDateLong );
         }
+        else if ( argument.getArgumentName().equals( POOLING_WINDOW  ))
+        {
+            return this.processPoolingWindowFunction( argument );
+        }
         return null;
     }
 
     @Override
     protected String[] getFunctionParameterNames( final String name )
     {
-        if ( name.equals( EARLIEST_DATE_TO_TEXT ) )
-        {
-            return new String[] { "date format", "time zone" };
-        }
-        else if ( name.equals( LATEST_DATE_TO_TEXT ) )
+        if ( name.equals( EARLIEST_DATE_TO_TEXT ) || name.equals( LATEST_DATE_TO_TEXT ) )
         {
             return new String[] { "date format", "time zone" };
         }
