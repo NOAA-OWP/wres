@@ -87,6 +87,9 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
     /**
      * An arguments processor intended for use in displaying a box-plot of errors.  It is assumed that there is 
      * only a single time window associated with the data, specified in the meta data for the displayed plot input.
+     * 
+     * @param inputKeyInstance the input key
+     * @param displayPlotInput the input data
      */
     public WRESArgumentProcessor( Pair<TimeWindow, Threshold> inputKeyInstance, BoxPlotOutput displayPlotInput )
     {
@@ -118,6 +121,9 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
 
     /**
      * An arguments processor intended for use in displaying metric output FOR POOLING WINDOWS, whether scalar or vector.
+     * 
+     * @param displayedPlotInput the plot input
+     * @param plotType the plot type
      */
     public WRESArgumentProcessor( MetricOutputMapByTimeAndThreshold<?> displayedPlotInput, PlotTypeSelection plotType )
     {
@@ -153,7 +159,8 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
     }
 
     /**
-     * Extracts the standard arguments that can be pulled from and interpreted consistently for any output meta data.  
+     * Extracts the standard arguments that can be pulled from and interpreted consistently for any output meta data. 
+     * @param meta the output metadata 
      */
     private void extractStandardArgumentsFromMetadata( MetricOutputMetadata meta )
     {
@@ -187,8 +194,8 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
 
     /**
      * Adds arguments for plots where the lead time is on the domain axis and threshold is in the legend.
-     * @param displayedPlotInput
-     * @param plotTimeWindow
+     * @param displayedPlotInput the plot input
+     * @param plotTimeWindow the time window
      */
     public void addLeadThresholdArguments( 
                                            MetricOutputMapByTimeAndThreshold<?> displayedPlotInput,
@@ -216,8 +223,8 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
 
     /**
      * Adds arguments for plots where the threshold value is on the domain axis and lead time is in the legend.
-     * @param displayedPlotInput
-     * @param threshold
+     * @param displayedPlotInput the plot input
+     * @param threshold the threshold
      */
     public void addThresholdLeadArguments( MetricOutputMapByTimeAndThreshold<?> displayedPlotInput,
                                            Threshold threshold )
@@ -240,7 +247,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
     /**
      * Adds arguments for plots where the pooling window (as in rolling window) is displayed along the domain axis 
      * and the legend includes both lead time and threshold.
-     * @param displayedPlotInput
+     * @param displayedPlotInput the plot input
      */
     public void addPoolingWindowArguments( //MetricOutputMapByTimeAndThreshold<?> input,
                                            MetricOutputMapByTimeAndThreshold<?> displayedPlotInput )
@@ -253,7 +260,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
 
     /**
      * Adds arguments related to the baseline forecasts for skill scores.
-     * @param meta
+     * @param meta the output metadata
      */
     public void addBaselineArguments( MetricOutputMetadata meta )
     {
@@ -274,9 +281,9 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
 
     /**
      * Called to process a date-to-text argument function.
-     * @param argument
-     * @param dateInMillis
-     * @return Date function processed value.
+     * @param argument the argument
+     * @param dateInMillis the time in milliseconds from the epoch
+     * @return Date function processed value
      */
     private String processDateFunction( final Argument argument, Long dateInMillis )
     {

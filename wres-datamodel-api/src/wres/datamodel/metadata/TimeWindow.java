@@ -214,6 +214,18 @@ public final class TimeWindow implements Comparable<TimeWindow>
     }
 
     /**
+     * Returns <code>true</code> if {@link #getEarliestTime()} returns {@link Instant#MIN} or 
+     * {@link #getLatestTime()} returns {@link Instant#MAX}, false otherwise.
+     * 
+     * @return true if the timeline is unbounded, false otherwise
+     */
+    
+    public boolean hasUnboundedTimes()
+    {
+        return earliestTime.equals( Instant.MIN ) || latestTime.equals( Instant.MAX );
+    }
+    
+    /**
      * Returns the mid-point on the UTC timeline between the {@link #earliestTime} and the {@link #latestTime}.
      * 
      * @return the mid-point on the UTC timeline
