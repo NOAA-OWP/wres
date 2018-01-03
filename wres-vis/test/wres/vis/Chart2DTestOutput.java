@@ -710,8 +710,6 @@ public class Chart2DTestOutput
 
     /**
      * Generate a plot by time window on the domain axis.
-     * 
-     * TODO: set to not ignore when NPE from library is fixed
      */
     @Test
     public void test15ScalarOutput()

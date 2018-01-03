@@ -607,11 +607,17 @@ public class Control implements Function<String[], Integer>
                     final MetricConfig nextConfig = getMetricConfiguration(e.getKey().getKey(), config);
                     PlotTypeSelection plotType = null;
                     String templateResourceName = null;
-                    if(!Objects.isNull(nextConfig))
+                    if(Objects.nonNull(nextConfig))
                     {
                         plotType = nextConfig.getPlotType();
+                        //Default to global type
+                        if ( Objects.isNull( plotType ) )
+                        {
+                            plotType = dest.getGraphical().getPlotType();
+                        }
                         templateResourceName = nextConfig.getTemplateResourceName();
                     }
+
                     final ChartEngine engine = ChartEngineFactory.buildGenericScalarOutputChartEngine(e.getValue(),
                                                                                                       plotType,
                                                                                                       templateResourceName,
@@ -679,9 +685,14 @@ public class Control implements Function<String[], Integer>
                     final MetricConfig nextConfig = getMetricConfiguration(e.getKey().getKey(), config);
                     PlotTypeSelection plotType = null;
                     String templateResourceName = null;
-                    if(!Objects.isNull(nextConfig))
+                    if(Objects.nonNull(nextConfig))
                     {
                         plotType = nextConfig.getPlotType();
+                        //Default to global type
+                        if ( Objects.isNull( plotType ) )
+                        {
+                            plotType = dest.getGraphical().getPlotType();
+                        }
                         templateResourceName = nextConfig.getTemplateResourceName();
                     }
                     final Map<Object, ChartEngine> engines =
@@ -760,9 +771,14 @@ public class Control implements Function<String[], Integer>
                     final MetricConfig nextConfig = getMetricConfiguration(e.getKey().getKey(), config);
                     PlotTypeSelection plotType = null;
                     String templateResourceName = null;
-                    if(!Objects.isNull(nextConfig))
+                    if(Objects.nonNull(nextConfig))
                     {
                         plotType = nextConfig.getPlotType();
+                        //Default to global type
+                        if ( Objects.isNull( plotType ) )
+                        {
+                            plotType = dest.getGraphical().getPlotType();
+                        }
                         templateResourceName = nextConfig.getTemplateResourceName();
                     }
 
@@ -848,7 +864,7 @@ public class Control implements Function<String[], Integer>
                     // Build the chart engine
                     final MetricConfig nextConfig = getMetricConfiguration(e.getKey().getKey(), config);
                     String templateResourceName = null;
-                    if(!Objects.isNull(nextConfig))
+                    if(Objects.nonNull(nextConfig))
                     {
                         templateResourceName = nextConfig.getTemplateResourceName();
                     }
