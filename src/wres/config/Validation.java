@@ -842,9 +842,16 @@ public class Validation
     private static boolean isDesiredTimeAggregationValid( ProjectConfigPlus projectConfigPlus,
                                                           PairConfig pairConfig )
     {
+        TimeAggregationConfig aggregationConfig = pairConfig.getDesiredTimeAggregation();
+
+        // No configuration, must be valid
+        if ( aggregationConfig == null )
+        {
+            return true;
+        }
+
         boolean valid = true;
 
-        TimeAggregationConfig aggregationConfig = pairConfig.getDesiredTimeAggregation();
         StringBuilder warning = new StringBuilder();
 
         // Rolling window aggregation must have a non-null frequency
