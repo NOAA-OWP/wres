@@ -421,7 +421,8 @@ public final class MetricFactoryTest
     public void test20MetricProcessor()
     {
         //Single-valued processor
-        String configPathSingleValued = "testinput/metricProcessorSingleValuedPairsTest/test1ApplyNoThresholds.xml";
+        String configPathSingleValued =
+                "testinput/metricProcessorSingleValuedPairsByTimeTest/test1ApplyNoThresholds.xml";
         try
         {
             ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathSingleValued ) ).getProjectConfig();
@@ -433,7 +434,7 @@ public final class MetricFactoryTest
             fail( "Unexpected exception on processing project configuration '" + configPathSingleValued + "'." );
         }
         //Ensemble processor        
-        String configPathEnsemble = "testinput/metricProcessorEnsemblePairsTest/test1ApplyNoThresholds.xml";
+        String configPathEnsemble = "testinput/metricProcessorEnsemblePairsByTimeTest/test1ApplyNoThresholds.xml";
         try
         {
             ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathEnsemble ) ).getProjectConfig();

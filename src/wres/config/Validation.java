@@ -11,11 +11,13 @@ import java.util.List;
 import java.util.Objects;
 import java.util.SortedSet;
 import java.util.concurrent.ConcurrentSkipListSet;
+
 import javax.xml.bind.ValidationEvent;
 
-import com.sun.xml.bind.Locatable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.sun.xml.bind.Locatable;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DateCondition;
@@ -23,11 +25,18 @@ import wres.config.generated.DestinationConfig;
 import wres.config.generated.DurationUnit;
 import wres.config.generated.Feature;
 import wres.config.generated.Format;
+import wres.config.generated.MetricConfig;
+import wres.config.generated.MetricConfigName;
 import wres.config.generated.PairConfig;
+import wres.config.generated.PlotTypeSelection;
 import wres.config.generated.PoolingWindowConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.TimeAggregationConfig;
 import wres.config.generated.TimeWindowMode;
+import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.MetricOutputGroup;
+import wres.engine.statistics.metric.ConfigMapper;
+import wres.engine.statistics.metric.MetricConfigurationException;
 import wres.io.config.ProjectConfigPlus;
 import wres.util.Strings;
 
@@ -130,10 +139,9 @@ public class Validation
 
         // Validate pair section
         result = Validation.isPairConfigValid( projectConfigPlus ) && result;
-
-        // Validate outputs are writeable directories
-        result = Validation.areAllOutputPathsWriteableDirectories( projectConfigPlus )
-                 && result;
+        
+        // Validate outputs section
+        result = Validation.isOutputConfigValid( projectConfigPlus ) && result;
 
         // Validate graphics portion
         result = Validation.isGraphicsPortionOfProjectValid( projectConfigPlus )
@@ -142,6 +150,112 @@ public class Validation
         return result;
     }
 
+    /**
+     * Validates the output portion of the project config.
+     * 
+     * @param projectConfigPlus the project configuration
+     * @return true if the output configuration is valid, false otherwise
+     * @throws NullPointerException when projectConfigPlus is null
+     */
+
+    private static boolean isOutputConfigValid( ProjectConfigPlus projectConfigPlus )
+    {
+        Objects.requireNonNull( projectConfigPlus, NON_NULL );
+
+        // Validate that outputs are writeable directories
+        boolean result = Validation.areAllOutputPathsWriteableDirectories( projectConfigPlus );
+
+        // Validate that metric configuration is internally consistent
+        result = result && Validation.isMetricConfigInternallyConsistent( projectConfigPlus );
+
+        // Check that each named metric is consistent with the other configuration
+        result = result && Validation.areMetricsConsistentWithOtherConfig( projectConfigPlus );
+
+        return result;
+    }
+
+    /**
+     * Checks that the metric configuration is internally consistent.
+     * 
+     * @param projectConfigPlus the project configuration
+     * @return true if the metric configuration is internally consistent, false otherwise
+     * @throws NullPointerException when projectConfigPlus is null
+     */
+
+    private static boolean isMetricConfigInternallyConsistent( ProjectConfigPlus projectConfigPlus )
+    {
+        Objects.requireNonNull( projectConfigPlus, NON_NULL );
+        // Cannot define specific metrics together with all valid
+        List<MetricConfig> metrics = projectConfigPlus.getProjectConfig().getOutputs().getMetric();
+        for ( MetricConfig next : metrics )
+        {
+            //Unnamed metric
+            if ( next.getName().equals( MetricConfigName.ALL_VALID ) && metrics.size() > 1 )
+            {
+                if ( LOGGER.isWarnEnabled() )
+                {
+                    LOGGER.warn( "In file {}, 'all valid' metrics cannot be requested alongside named metrics.",
+                                 projectConfigPlus.getPath() );
+                }
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Checks that the metric configuration is consistent with the other configuration.
+     *
+     * @param projectConfigPlus the project configuration
+     * @return true if the metric name is valid
+     * @throws NullPointerException when projectConfigPlus is null
+     */
+
+    private static boolean areMetricsConsistentWithOtherConfig( ProjectConfigPlus projectConfigPlus )
+    {
+        Objects.requireNonNull( projectConfigPlus, NON_NULL );
+
+        boolean result = true;
+
+        List<MetricConfig> metrics = projectConfigPlus.getProjectConfig().getOutputs().getMetric();
+        for ( MetricConfig next : metrics )
+        {
+            //Named metric
+            if ( !next.getName().equals( MetricConfigName.ALL_VALID ) )
+            {
+                try
+                {
+                    MetricConstants checkMe = ConfigMapper.from( next.getName() );
+
+                    //Check that the named metric is consistent with any pooling window configuration
+                    if ( projectConfigPlus.getProjectConfig().getPair().getPoolingWindow() != null && checkMe != null
+                         && ! ( checkMe.isInGroup( MetricOutputGroup.SCALAR )
+                                || checkMe.isInGroup( MetricOutputGroup.VECTOR ) ) )
+                    {
+                        result = false;
+                        if ( LOGGER.isWarnEnabled() )
+                        {
+                            LOGGER.warn( "In file {}, a metric named {} was requested, but is not allowed. "
+                                         + "Only verification scores are allowed in "
+                                         + "combination with a poolingWindow configuration.",
+                                         projectConfigPlus.getPath(),
+                                         next.getName() );
+                        }
+                    }
+                }
+                // Handle the situation where a metric is recognized by the xsd but not by the ConfigMapper. This is
+                // unlikely and implies an incomplete implementation of a metric by the system  
+                catch ( MetricConfigurationException e )
+                {
+                    LOGGER.error( "In file {}, a metric named {} was requested, but is not recognized by the system.",
+                                  projectConfigPlus.getPath(),
+                                  next.getName() );
+                    return false;
+                }
+            }
+        }
+        return result;
+    }
 
     /**
      * Validates outputs portion of project config have writeable directories.
@@ -237,9 +351,44 @@ public class Validation
 
         ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
 
-        for ( DestinationConfig d: projectConfig.getOutputs()
-                                                .getDestination() )
+        for ( DestinationConfig d : projectConfig.getOutputs()
+                                                 .getDestination() )
         {
+            // Check that the plot type is consistent with other configuration
+            if ( projectConfig.getPair().getPoolingWindow() != null && d.getGraphical() != null
+                 && d.getGraphical().getPlotType() != null
+                 && !d.getGraphical().getPlotType().equals( PlotTypeSelection.POOLING_WINDOW ) )
+            {
+                result = false;
+                if ( LOGGER.isWarnEnabled() )
+                {
+                    LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                                 + " Cannot use poolingWindow configuration with a plot type of {}.",
+                                 projectConfigPlus.getPath(),
+                                 d.sourceLocation().getLineNumber(),
+                                 d.sourceLocation()
+                                  .getColumnNumber(),
+                                 d.getGraphical().getPlotType() );
+                }
+            }
+            else if ( projectConfig.getPair().getPoolingWindow() == null && d.getGraphical() != null
+                      && d.getGraphical().getPlotType() != null
+                      &&
+                      d.getGraphical().getPlotType().equals( PlotTypeSelection.POOLING_WINDOW ) )
+            {
+                result = false;
+                if ( LOGGER.isWarnEnabled() )
+                {
+                    LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                                 + " Cannot define a plot type of {} without poolingWindow configuration.",
+                                 projectConfigPlus.getPath(),
+                                 d.sourceLocation().getLineNumber(),
+                                 d.sourceLocation()
+                                  .getColumnNumber(),
+                                 d.getGraphical().getPlotType() );
+                }
+            }
+
             String customString = projectConfigPlus.getGraphicsStrings()
                                                    .get( d );
 
