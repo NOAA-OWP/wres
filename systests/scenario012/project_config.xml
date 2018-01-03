@@ -6,13 +6,13 @@
         <left label="">
             <type>observations</type>
             <source all="true" format="PI-XML" missingValue="-999.0" 
-                recursive="true" unit="">systests/data/DRRC2QINE.xml</source>
+                recursive="true" unit="">../data/DRRC2QINE.xml</source>
             <variable>QINE</variable>
         </left>
         <right label="HEFS">
             <type>single valued forecasts</type>
             <source all="false" format="PI-XML" missingValue="-999.0"
-                recursive="false" unit="">systests/data/drrc2ForecastsOneMonth/</source>
+                recursive="false" unit="">../data/drrc2ForecastsOneMonth/</source>
             <variable>SQIN</variable>
             <ensemble name="HEFSENSPOST" member_id="2009" qualifier="SIM1" />
         </right>
@@ -54,13 +54,13 @@
             <name>mean error</name>
         </metric>
         <destination type="numeric" decimalFormat="0.000000">
-            <path>output/scenario012/</path>
+            <path>output</path>
         </destination>
         <destination type="pairs" decimalFormat="0.000000">
-            <path>output/scenario012/</path>
+            <path>output</path>
         </destination>
         <destination type="graphic">
-            <path>output/scenario012/</path>
+            <path>output</path>
             <graphical width="800" height="600">
                 <plotType>pooling window</plotType>
             </graphical>
