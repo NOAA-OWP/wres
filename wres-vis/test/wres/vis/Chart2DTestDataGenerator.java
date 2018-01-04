@@ -576,10 +576,15 @@ public abstract class Chart2DTestDataGenerator
             //Create the input file
             final File resultFile = new File( "testinput/chart2DTest/getQQDiagramByLeadThreshold.xml" );
             final MetricResultByLeadTime data = ProductFileIO.read( resultFile );
-    
+
             final Iterator<MetricResultKey> d = data.getIterator();
-    
+
             //Metric output metadata
+            TimeWindow windowMeta = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                   Instant.parse( "2015-12-31T11:59:59Z" ),
+                                                   ReferenceTime.VALID_TIME,
+                                                   Duration.ofHours( 24 ),
+                                                   Duration.ofHours( 120 ) );
             final MetricOutputMetadata meta = metaFactory.getOutputMetadata( 1000,
                                                                              metaFactory.getDimension(),
                                                                              metaFactory.getDimension( "MILLIMETER" ),
@@ -587,16 +592,19 @@ public abstract class Chart2DTestDataGenerator
                                                                              MetricConstants.MAIN,
                                                                              metaFactory.getDatasetIdentifier( "WGCM8",
                                                                                                                "PRECIPITATION",
-                                                                                                               "HEFS" ) );
+                                                                                                               "HEFS" ),
+                                                                             windowMeta );
+
+
             //Single threshold
             final Threshold threshold = outputFactory.getQuantileThreshold( Double.NEGATIVE_INFINITY,
                                                                             Double.NEGATIVE_INFINITY,
                                                                             Operator.GREATER );
-    
+
             //Iterate through the lead times.
             while ( d.hasNext() )
             {
-    
+
                 //Set the lead time
                 final double leadTime = (Double) d.next().getKey();
                 TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
@@ -606,15 +614,15 @@ public abstract class Chart2DTestDataGenerator
                 final Pair<TimeWindow, Threshold> key = Pair.of( window, threshold );
                 final DoubleMatrix2DResult t = (DoubleMatrix2DResult) data.getResult( leadTime );
                 final double[][] qq = t.getResult().toArray();
-    
+
                 final Map<MetricDimension, double[]> output = new EnumMap<>( MetricDimension.class );
                 output.put( MetricDimension.PREDICTED_QUANTILES, qq[0] );
                 output.put( MetricDimension.OBSERVED_QUANTILES, qq[1] );
                 final MultiVectorOutput value = outputFactory.ofMultiVectorOutput( output, meta );
-    
+
                 //Append result
                 rawData.put( key, value );
-    
+
             }
         }
         catch ( final Exception e )
