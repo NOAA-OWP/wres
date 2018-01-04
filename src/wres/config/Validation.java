@@ -1061,13 +1061,13 @@ public class Validation
         // TODO: flagging this as needing a broader conversation about times and use of the jdk: see #45094
         Duration desired = Duration.of( timeAgg.getPeriod(),
                                         ChronoUnit.valueOf( timeAgg.getUnit().toString().toUpperCase() + "S" ) );
-        if ( left != null )
+        if ( left != null && !left.getUnit().equals( DurationUnit.INSTANT ) )
         {
             Duration leftExists = Duration.of( left.getPeriod(),
                                                ChronoUnit.valueOf( left.getUnit().toString().toUpperCase() + "S" ) );
             returnMe = isDesiredTimeAggregationPeriodConsistent( projectConfigPlus, desired, leftExists, left, "left" );
         }
-        if ( right != null )
+        if ( right != null && !right.getUnit().equals( DurationUnit.INSTANT ) )
         {
             Duration rightExists = Duration.of( right.getPeriod(),
                                                 ChronoUnit.valueOf( right.getUnit().toString().toUpperCase() + "S" ) );
@@ -1078,7 +1078,7 @@ public class Validation
                                                                  "right" )
                        && returnMe;
         }
-        if ( baseline != null )
+        if ( baseline != null && !baseline.getUnit().equals( DurationUnit.INSTANT ) )
         {
             Duration baselineExists = Duration.of( baseline.getPeriod(),
                                                    ChronoUnit.valueOf( baseline.getUnit().toString().toUpperCase()
