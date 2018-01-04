@@ -28,7 +28,7 @@ configuration file and asking WRES to execute that project.
             <desiredTimeAggregation>
                 <function>avg</function>
                 <period>1</period>
-                <unit>hour</unit>
+                <unit>hours</unit>
             </desiredTimeAggregation>
         </pair>
 
