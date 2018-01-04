@@ -12,10 +12,6 @@
 	<!-- Shapes for all series. -->
 	<datasourceDrawingParameters sourceIndex="0">
 		<plotter>LineAndScatter</plotter>
-		<seriesDrawingParameters
-			createdIndexOfSeriesToModify="-1">
-            <shape>circle</shape>
-		</seriesDrawingParameters>
 	</datasourceDrawingParameters>
 
     <!-- The diagonal line series has a data source index of 1 for a Q-Q plot.  The createdIndexOfSeriesToModify must be -1. -->

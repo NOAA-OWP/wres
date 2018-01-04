@@ -15,10 +15,8 @@
         
         <!-- These settings become the default against which all other seriesDrawingParameters apply. -->
         <seriesDrawingParameters createdIndexOfSeriesToModify="-1">
-            <fillColor alpha="255" blue="0" green="0" red="255"/>
             <showInLegend>false</showInLegend>
             <includeInPlot>true</includeInPlot>
-            <shape>circle</shape>
             <shapeSize>1.0</shapeSize>
             <lineWidth>0.0</lineWidth>
             <shapeFilled>true</shapeFilled>
