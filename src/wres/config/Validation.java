@@ -515,7 +515,7 @@ public class Validation
                 pairConfig.getDesiredTimeAggregation();
 
         if ( aggregationConfig != null
-             && aggregationConfig.getUnit() == DurationUnit.INSTANT )
+             && aggregationConfig.getUnit() == DurationUnit.SECONDS )
         {
             if ( LOGGER.isWarnEnabled() )
             {
@@ -996,7 +996,7 @@ public class Validation
         boolean returnMe = true;
         // Existing aggregation cannot be an instant
         if ( inputConfig.getUnit()
-                        .equals( DurationUnit.INSTANT ) )
+                        .equals( DurationUnit.SECONDS ) )
         {
             returnMe = false;
             String message = " When using a desired time aggregation of "
@@ -1080,17 +1080,17 @@ public class Validation
         // This translation works for now: always?
         // TODO: flagging this as needing a broader conversation about times and use of the jdk: see #45094
         Duration desired = Duration.of( timeAgg.getPeriod(),
-                                        ChronoUnit.valueOf( timeAgg.getUnit().toString().toUpperCase() + "S" ) );
-        if ( left != null && !left.getUnit().equals( DurationUnit.INSTANT ) )
+                                        ChronoUnit.valueOf( timeAgg.getUnit().toString().toUpperCase() ) );
+        if ( left != null && !left.getUnit().equals( DurationUnit.SECONDS ) )
         {
             Duration leftExists = Duration.of( left.getPeriod(),
-                                               ChronoUnit.valueOf( left.getUnit().toString().toUpperCase() + "S" ) );
+                                               ChronoUnit.valueOf( left.getUnit().toString().toUpperCase() ) );
             returnMe = isDesiredTimeAggregationPeriodConsistent( projectConfigPlus, desired, leftExists, left, "left" );
         }
-        if ( right != null && !right.getUnit().equals( DurationUnit.INSTANT ) )
+        if ( right != null && !right.getUnit().equals( DurationUnit.SECONDS ) )
         {
             Duration rightExists = Duration.of( right.getPeriod(),
-                                                ChronoUnit.valueOf( right.getUnit().toString().toUpperCase() + "S" ) );
+                                                ChronoUnit.valueOf( right.getUnit().toString().toUpperCase() ) );
             returnMe = isDesiredTimeAggregationPeriodConsistent( projectConfigPlus,
                                                                  desired,
                                                                  rightExists,
@@ -1098,11 +1098,10 @@ public class Validation
                                                                  "right" )
                        && returnMe;
         }
-        if ( baseline != null && !baseline.getUnit().equals( DurationUnit.INSTANT ) )
+        if ( baseline != null && !baseline.getUnit().equals( DurationUnit.SECONDS ) )
         {
             Duration baselineExists = Duration.of( baseline.getPeriod(),
-                                                   ChronoUnit.valueOf( baseline.getUnit().toString().toUpperCase()
-                                                                       + "S" ) );
+                                                   ChronoUnit.valueOf( baseline.getUnit().toString().toUpperCase() ) );
             returnMe = isDesiredTimeAggregationPeriodConsistent( projectConfigPlus,
                                                                  desired,
                                                                  baselineExists,
@@ -1265,7 +1264,7 @@ public class Validation
         TimeAggregationConfig timeAggregation = dataSourceConfig.getExistingTimeAggregation();
 
         if ( timeAggregation != null
-             && timeAggregation.getUnit() == DurationUnit.INSTANT )
+             && timeAggregation.getUnit() == DurationUnit.SECONDS )
         {
             boolean instantMakesSense = true;
 
