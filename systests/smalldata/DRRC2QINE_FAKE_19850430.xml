@@ -4,7 +4,7 @@
     <series>
         <header>
             <type>instantaneous</type>
-            <locationId>DRRC2HSF</locationId>
+            <locationId>FAKE1</locationId>
             <parameterId>QINE</parameterId>
             <timeStep unit="second" multiplier="3600"/>
             <startDate date="1985-04-30" time="01:00:00"/>
