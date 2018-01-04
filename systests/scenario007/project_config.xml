@@ -48,6 +48,17 @@
             <path>output/</path>
             <graphical width="800" height="600">
                 <plotType>lead threshold</plotType>
+
+                <!-- Test of the capability to override chart template options in project configuration. -->
+                <config>
+                    <chartDrawingParameters>
+                        <plotTitle>
+                            <text>OVERRIDDEN CHART DRAWING PARAMETERS TEST!
+@referenceTime@ Evaluation Period: @dataPoolingWindow(yyyy-MM-dd;GMT)@</text>
+                        </plotTitle>
+                    </chartDrawingParameters>
+                </config>
+
             </graphical>
         </destination>
     </outputs>

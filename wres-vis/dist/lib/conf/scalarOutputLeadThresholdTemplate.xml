@@ -16,7 +16,6 @@ at @locationName@@baselineLabelSuffix@
 		<seriesDrawingParameters
 			createdIndexOfSeriesToModify="-1">
 			<nameInLegend></nameInLegend>
-            <shape>circle</shape>
 		</seriesDrawingParameters>
 	</datasourceDrawingParameters>
 

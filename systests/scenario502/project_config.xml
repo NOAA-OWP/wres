@@ -131,7 +131,7 @@
 
     <pair>
         <unit>CMS</unit>
-        <feature locationId="DRRC2" />
+        <feature locationId="FAKE1" />
         <desiredTimeAggregation>
             <function>avg</function>
             <period>1</period>

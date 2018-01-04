@@ -5,8 +5,10 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.DateTimeException;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.MonthDay;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Objects;
 import java.util.SortedSet;
@@ -842,9 +844,16 @@ public class Validation
     private static boolean isDesiredTimeAggregationValid( ProjectConfigPlus projectConfigPlus,
                                                           PairConfig pairConfig )
     {
+        TimeAggregationConfig aggregationConfig = pairConfig.getDesiredTimeAggregation();
+
+        // No configuration, must be valid
+        if ( aggregationConfig == null )
+        {
+            return true;
+        }
+
         boolean valid = true;
 
-        TimeAggregationConfig aggregationConfig = pairConfig.getDesiredTimeAggregation();
         StringBuilder warning = new StringBuilder();
 
         // Rolling window aggregation must have a non-null frequency
@@ -895,10 +904,10 @@ public class Validation
         }
         
         // Check that the time aggregation function is valid
-        valid = valid && isDesiredTimeAggregationFunctionValid( projectConfigPlus, pairConfig );
+        valid = isDesiredTimeAggregationFunctionValid( projectConfigPlus, pairConfig ) && valid;
 
         // Check that the time aggregation period is valid 
-        //valid = valid && isDesiredTimeAggregationPeriodValid( projectConfigPlus, pairConfig );
+        valid = isDesiredTimeAggregationPeriodValid( projectConfigPlus, pairConfig ) && valid;
         
         return valid;
     }
@@ -939,74 +948,223 @@ public class Validation
      * @param projectConfigPlus the project configuration
      * @param inputConfig the input configuration
      * @return true if the time aggregation function is valid, given the inputConfig
-     */    
-    
+     */
+
     private static boolean isDesiredTimeAggregationSumValid( ProjectConfigPlus projectConfigPlus,
                                                              Inputs inputConfig )
     {
         boolean returnMe = true;
-        String message = " When using a desired time aggregation of "
-                         + TimeAggregationFunction.SUM
-                         + ", the existing time aggregation on the {} must also be a "
-                         + TimeAggregationFunction.SUM
-                         + ".";
-        // Existing function for left must be a sum
-        if ( inputConfig.getLeft() != null && inputConfig.getLeft().getExistingTimeAggregation() != null
-             && !inputConfig.getLeft()
-                            .getExistingTimeAggregation()
-                            .getFunction()
+        // Sum for left must be valid
+        if ( inputConfig.getLeft() != null && inputConfig.getLeft().getExistingTimeAggregation() != null )
+        {
+            returnMe = isDesiredTimeAggregationSumValid( projectConfigPlus,
+                                                         inputConfig.getLeft().getExistingTimeAggregation(),
+                                                         "left" );
+        }
+        // Sum for right must be valid
+        if ( inputConfig.getRight() != null && inputConfig.getRight().getExistingTimeAggregation() != null )
+        {
+            returnMe = isDesiredTimeAggregationSumValid( projectConfigPlus,
+                                                         inputConfig.getRight().getExistingTimeAggregation(),
+                                                         "right" )
+                       && returnMe;
+        }
+        // Sum for baseline must be valid
+        if ( inputConfig.getBaseline() != null && inputConfig.getBaseline().getExistingTimeAggregation() != null )
+        {
+            returnMe = isDesiredTimeAggregationSumValid( projectConfigPlus,
+                                                         inputConfig.getBaseline().getExistingTimeAggregation(),
+                                                         "baseline" )
+                       && returnMe;
+        }
+        return returnMe;
+    }
+
+    /**
+     * Tests a desired time aggregation function that is a sum. Returns true if function is valid, given the 
+     * configuration for a specific input, false otherwise.
+     * 
+     * @param projectConfigPlus the project configuration
+     * @param inputConfig the input configuration
+     * @return true if the time aggregation function is valid, given the inputConfig
+     */    
+    
+    private static boolean isDesiredTimeAggregationSumValid( ProjectConfigPlus projectConfigPlus,
+                                                             TimeAggregationConfig inputConfig,
+                                                             String helper )
+    {
+        boolean returnMe = true;
+        // Existing aggregation cannot be an instant
+        if ( inputConfig.getUnit()
+                        .equals( DurationUnit.INSTANT ) )
+        {
+            returnMe = false;
+            String message = " When using a desired time aggregation of "
+                             + TimeAggregationFunction.SUM
+                             + ", the existing time aggregation on the {} cannot be instantaneous.";
+            if ( LOGGER.isWarnEnabled() )
+            {
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                             + message,
+                             projectConfigPlus.getPath(),
+                             inputConfig.sourceLocation().getLineNumber(),
+                             inputConfig.sourceLocation().getColumnNumber(),
+                             helper );
+            }
+        }
+        
+        // Existing function must be a sum
+        if ( !inputConfig.getFunction()
                             .equals( TimeAggregationFunction.SUM ) )
         {
             returnMe = false;
+            String message = " When using a desired time aggregation of "
+                    + TimeAggregationFunction.SUM
+                    + ", the existing time aggregation on the {} must also be a "
+                    + TimeAggregationFunction.SUM
+                    + ".";
             if ( LOGGER.isWarnEnabled() )
             {
                 LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
                              + message,
                              projectConfigPlus.getPath(),
-                             inputConfig.getLeft().getExistingTimeAggregation().sourceLocation().getLineNumber(),
-                             inputConfig.getLeft().getExistingTimeAggregation().sourceLocation().getColumnNumber(),
-                             "left" );
+                             inputConfig.sourceLocation().getLineNumber(),
+                             inputConfig.sourceLocation().getColumnNumber(),
+                             helper );
             }
         }
-        // Existing function for right must be a sum
-        if ( inputConfig.getRight() != null && inputConfig.getRight().getExistingTimeAggregation() != null
-             && !inputConfig.getRight()
-                       .getExistingTimeAggregation()
-                       .getFunction()
-                       .equals( TimeAggregationFunction.SUM ) )
+        return returnMe;
+    }    
+    
+    /**
+     * Returns true if the time aggregation period associated with the desiredTimeAggregation is valid given the time
+     * aggregation periods associated with the existingTimeAggregation for each source.
+     * 
+     * See Redmine issue 40389.
+     * 
+     * Not all attributes of a valid aggregation can be checked from the configuration alone, but some attributes, 
+     * can be checked in advance. Having a valid time aggregation period does not imply that the system actually 
+     * supports aggregation to that period.
+     * 
+     * @param projectConfigPlus the project configuration
+     * @param pairConfig the pair configuration
+     * @return true if the time aggregation period associated with the desiredTimeAggregation is valid
+     */
+
+    private static boolean isDesiredTimeAggregationPeriodValid( ProjectConfigPlus projectConfigPlus,
+                                                                PairConfig pairConfig )
+    {
+        // Only proceed if the desiredTimeAggregation is non-null and one or more existingTimeAggregation
+        // are non-null
+        TimeAggregationConfig timeAgg = pairConfig.getDesiredTimeAggregation();
+        Inputs input = projectConfigPlus.getProjectConfig().getInputs();
+        TimeAggregationConfig left = input.getLeft().getExistingTimeAggregation();
+        TimeAggregationConfig right = input.getRight().getExistingTimeAggregation();
+        TimeAggregationConfig baseline = null;
+        if ( input.getBaseline() != null )
+        {
+            baseline = input.getBaseline().getExistingTimeAggregation();
+        }
+        if ( timeAgg == null )
+        {
+            return true;
+        }
+        if ( left == null && right == null && baseline == null )
+        {
+            return true;
+        }
+
+        // Assume fine
+        boolean returnMe = true;
+
+        // This translation works for now: always?
+        // TODO: flagging this as needing a broader conversation about times and use of the jdk: see #45094
+        Duration desired = Duration.of( timeAgg.getPeriod(),
+                                        ChronoUnit.valueOf( timeAgg.getUnit().toString().toUpperCase() + "S" ) );
+        if ( left != null && !left.getUnit().equals( DurationUnit.INSTANT ) )
+        {
+            Duration leftExists = Duration.of( left.getPeriod(),
+                                               ChronoUnit.valueOf( left.getUnit().toString().toUpperCase() + "S" ) );
+            returnMe = isDesiredTimeAggregationPeriodConsistent( projectConfigPlus, desired, leftExists, left, "left" );
+        }
+        if ( right != null && !right.getUnit().equals( DurationUnit.INSTANT ) )
+        {
+            Duration rightExists = Duration.of( right.getPeriod(),
+                                                ChronoUnit.valueOf( right.getUnit().toString().toUpperCase() + "S" ) );
+            returnMe = isDesiredTimeAggregationPeriodConsistent( projectConfigPlus,
+                                                                 desired,
+                                                                 rightExists,
+                                                                 right,
+                                                                 "right" )
+                       && returnMe;
+        }
+        if ( baseline != null && !baseline.getUnit().equals( DurationUnit.INSTANT ) )
+        {
+            Duration baselineExists = Duration.of( baseline.getPeriod(),
+                                                   ChronoUnit.valueOf( baseline.getUnit().toString().toUpperCase()
+                                                                       + "S" ) );
+            returnMe = isDesiredTimeAggregationPeriodConsistent( projectConfigPlus,
+                                                                 desired,
+                                                                 baselineExists,
+                                                                 baseline,
+                                                                 "baseline" )
+                       && returnMe;
+        }
+        return returnMe;
+    }
+
+    /**
+     * Returns true if the desired aggregation period is consistent with the existing aggregation period, false 
+     * otherwise. A time aggregation may be valid in principle without being supported by the system in practice.
+     * 
+     * @param projectConfigPlus the project configuration
+     * @param desired the desired period
+     * @param existing the existing period
+     * @param helper a helper to locate the existing period being checked
+     * @param helperString a helper string to inform the user about the location
+     * @return true if the proposed time aggregation is valid, in principle
+     */
+
+    private static boolean isDesiredTimeAggregationPeriodConsistent( ProjectConfigPlus projectConfigPlus,
+                                                                     Duration desired,
+                                                                     Duration existing,
+                                                                     TimeAggregationConfig helper,
+                                                                     String helperString )
+    {
+        boolean returnMe = true;
+        // Disaggregation is not allowed
+        if ( desired.compareTo( existing ) < 0 )
         {
             returnMe = false;
             if ( LOGGER.isWarnEnabled() )
             {
                 LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                             + message,
+                             + " The desired time aggregation of the pairs is smaller than the existing time "
+                             + "aggregation of the {}: disaggregation is not supported.",
                              projectConfigPlus.getPath(),
-                             inputConfig.getRight().getExistingTimeAggregation().sourceLocation().getLineNumber(),
-                             inputConfig.getRight().getExistingTimeAggregation().sourceLocation().getColumnNumber(),
-                             "right" );
+                             helper.sourceLocation().getLineNumber(),
+                             helper.sourceLocation().getColumnNumber(),
+                             helperString );
             }
         }
-        // Existing function for baseline must be a sum
-        if ( inputConfig.getBaseline() != null && inputConfig.getBaseline().getExistingTimeAggregation() != null
-             && !inputConfig.getBaseline()
-                       .getExistingTimeAggregation()
-                       .getFunction()
-                       .equals( TimeAggregationFunction.SUM ) )
+        // Desired is not an integer multiple of existing
+        if ( desired.toMillis() % existing.toMillis() != 0 )
         {
             returnMe = false;
             if ( LOGGER.isWarnEnabled() )
             {
                 LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                             + message,
+                             + " The desired time aggregation of the pairs is not an integer multiple of the "
+                             + "existing time aggregation of the {}.",
                              projectConfigPlus.getPath(),
-                             inputConfig.getLeft().getExistingTimeAggregation().sourceLocation().getLineNumber(),
-                             inputConfig.getLeft().getExistingTimeAggregation().sourceLocation().getColumnNumber(),
-                             "baseline" );
+                             helper.sourceLocation().getLineNumber(),
+                             helper.sourceLocation().getColumnNumber(),
+                             helperString );
             }
         }
         return returnMe;
     }
-    
+
     private static boolean isPoolingWindowValid( PairConfig pairConfig )
     {
         
