@@ -14,7 +14,7 @@
             <existingTimeAggregation>
                 <function>sum</function>
                 <period>6</period>
-                <unit>hour</unit>
+                <unit>hours</unit>
             </existingTimeAggregation>
 
         </left>
@@ -27,7 +27,7 @@
             <existingTimeAggregation>
                 <function>sum</function>
                 <period>6</period>
-                <unit>hour</unit>
+                <unit>hours</unit>
             </existingTimeAggregation>
 
         </right>
@@ -41,7 +41,7 @@
         <desiredTimeAggregation>
             <function>sum</function>
             <period>24</period>
-            <unit>hour</unit>
+            <unit>hours</unit>
         </desiredTimeAggregation>
     </pair>
 

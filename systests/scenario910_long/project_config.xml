@@ -12,7 +12,7 @@
             <existingTimeAggregation>
                 <function>avg</function>
                 <period>24</period>
-                <unit>hour</unit>
+                <unit>hours</unit>
             </existingTimeAggregation>
         </left>
         <right label="HEFS" >
@@ -23,7 +23,7 @@
             <existingTimeAggregation>
                 <function>avg</function>
                 <period>1</period>
-                <unit>instant</unit>
+                <unit>seconds</unit>
             </existingTimeAggregation>
         </right>
     </inputs>
@@ -35,7 +35,7 @@
         <desiredTimeAggregation>
             <function>avg</function>
             <period>24</period>
-            <unit>hour</unit>
+            <unit>hours</unit>
         </desiredTimeAggregation>
     </pair>
 

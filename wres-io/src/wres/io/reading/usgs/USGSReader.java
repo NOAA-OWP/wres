@@ -347,7 +347,7 @@ public class USGSReader extends BasicSource
 
                 if ( this.getDataSourceConfig()
                          .getExistingTimeAggregation()
-                         .getUnit() == DurationUnit.INSTANT )
+                         .getUnit() == DurationUnit.SECONDS )
                 {
                     aggregation = "instant";
                 }
@@ -404,7 +404,7 @@ public class USGSReader extends BasicSource
 
             switch (this.dataSourceConfig.getExistingTimeAggregation().getUnit())
             {
-                case DAY:
+                case DAYS:
                     // No time or time zone information is allowed
                     this.startDate = TimeHelper.convertStringDateTimeToDate( this.startDate );
                     break;
@@ -440,7 +440,7 @@ public class USGSReader extends BasicSource
 
             switch (this.dataSourceConfig.getExistingTimeAggregation().getUnit())
             {
-                case DAY:
+                case DAYS:
                     // No time or time zone information is allowed
                     this.endDate = TimeHelper.convertStringDateTimeToDate( this.endDate );
                     break;
@@ -457,7 +457,7 @@ public class USGSReader extends BasicSource
     {
         String valueType;
 
-        if (this.dataSourceConfig.getExistingTimeAggregation().getUnit() == DurationUnit.DAY)
+        if (this.dataSourceConfig.getExistingTimeAggregation().getUnit() == DurationUnit.DAYS)
         {
             valueType = DAILY_VALUE;
         }
