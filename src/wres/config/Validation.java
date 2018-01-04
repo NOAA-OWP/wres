@@ -5,8 +5,10 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.DateTimeException;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.MonthDay;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Objects;
 import java.util.SortedSet;
@@ -902,10 +904,10 @@ public class Validation
         }
         
         // Check that the time aggregation function is valid
-        valid = valid && isDesiredTimeAggregationFunctionValid( projectConfigPlus, pairConfig );
+        valid = isDesiredTimeAggregationFunctionValid( projectConfigPlus, pairConfig ) && valid;
 
         // Check that the time aggregation period is valid 
-        //valid = valid && isDesiredTimeAggregationPeriodValid( projectConfigPlus, pairConfig );
+        valid = isDesiredTimeAggregationPeriodValid( projectConfigPlus, pairConfig ) && valid;
         
         return valid;
     }
@@ -1014,6 +1016,135 @@ public class Validation
         return returnMe;
     }
     
+    /**
+     * Returns true if the time aggregation period associated with the desiredTimeAggregation is valid given the time
+     * aggregation periods associated with the existingTimeAggregation for each source.
+     * 
+     * See Redmine issue 40389.
+     * 
+     * Not all attributes of a valid aggregation can be checked from the configuration alone, but some attributes, 
+     * can be checked in advance. Having a valid time aggregation period does not imply that the system actually 
+     * supports aggregation to that period.
+     * 
+     * @param projectConfigPlus the project configuration
+     * @param pairConfig the pair configuration
+     * @return true if the time aggregation period associated with the desiredTimeAggregation is valid
+     */
+
+    private static boolean isDesiredTimeAggregationPeriodValid( ProjectConfigPlus projectConfigPlus,
+                                                                PairConfig pairConfig )
+    {
+        // Only proceed if the desiredTimeAggregation is non-null and one or more existingTimeAggregation
+        // are non-null
+        TimeAggregationConfig timeAgg = pairConfig.getDesiredTimeAggregation();
+        Inputs input = projectConfigPlus.getProjectConfig().getInputs();
+        TimeAggregationConfig left = input.getLeft().getExistingTimeAggregation();
+        TimeAggregationConfig right = input.getRight().getExistingTimeAggregation();
+        TimeAggregationConfig baseline = null;
+        if ( input.getBaseline() != null )
+        {
+            baseline = input.getBaseline().getExistingTimeAggregation();
+        }
+        if ( timeAgg == null )
+        {
+            return true;
+        }
+        if ( left == null && right == null && baseline == null )
+        {
+            return true;
+        }
+
+        // Assume fine
+        boolean returnMe = true;
+
+        // This translation works for now: always?
+        // TODO: flagging this as needing a broader conversation about times and use of the jdk: see #45094
+        Duration desired = Duration.of( timeAgg.getPeriod(),
+                                        ChronoUnit.valueOf( timeAgg.getUnit().toString().toUpperCase() + "S" ) );
+        if ( left != null )
+        {
+            Duration leftExists = Duration.of( left.getPeriod(),
+                                               ChronoUnit.valueOf( left.getUnit().toString().toUpperCase() + "S" ) );
+            returnMe = isDesiredTimeAggregationPeriodConsistent( projectConfigPlus, desired, leftExists, left, "left" );
+        }
+        if ( right != null )
+        {
+            Duration rightExists = Duration.of( right.getPeriod(),
+                                                ChronoUnit.valueOf( right.getUnit().toString().toUpperCase() + "S" ) );
+            returnMe = isDesiredTimeAggregationPeriodConsistent( projectConfigPlus,
+                                                                 desired,
+                                                                 rightExists,
+                                                                 right,
+                                                                 "right" )
+                       && returnMe;
+        }
+        if ( baseline != null )
+        {
+            Duration baselineExists = Duration.of( baseline.getPeriod(),
+                                                   ChronoUnit.valueOf( baseline.getUnit().toString().toUpperCase()
+                                                                       + "S" ) );
+            returnMe = isDesiredTimeAggregationPeriodConsistent( projectConfigPlus,
+                                                                 desired,
+                                                                 baselineExists,
+                                                                 baseline,
+                                                                 "baseline" )
+                       && returnMe;
+        }
+        return returnMe;
+    }
+
+    /**
+     * Returns true if the desired aggregation period is consistent with the existing aggregation period, false 
+     * otherwise. A time aggregation may be valid in principle without being supported by the system in practice.
+     * 
+     * @param projectConfigPlus the project configuration
+     * @param desired the desired period
+     * @param existing the existing period
+     * @param helper a helper to locate the existing period being checked
+     * @param helperString a helper string to inform the user about the location
+     * @return true if the proposed time aggregation is valid, in principle
+     */
+
+    private static boolean isDesiredTimeAggregationPeriodConsistent( ProjectConfigPlus projectConfigPlus,
+                                                                     Duration desired,
+                                                                     Duration existing,
+                                                                     TimeAggregationConfig helper,
+                                                                     String helperString )
+    {
+        boolean returnMe = true;
+        // Disaggregation is not allowed
+        if ( desired.compareTo( existing ) < 0 )
+        {
+            returnMe = false;
+            if ( LOGGER.isWarnEnabled() )
+            {
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                             + " The desired time aggregation of the pairs is smaller than the existing time "
+                             + "aggregation of the {}: disaggregation is not supported.",
+                             projectConfigPlus.getPath(),
+                             helper.sourceLocation().getLineNumber(),
+                             helper.sourceLocation().getColumnNumber(),
+                             helperString );
+            }
+        }
+        // Desired is not an integer multiple of existing
+        if ( desired.toMillis() % existing.toMillis() != 0 )
+        {
+            returnMe = false;
+            if ( LOGGER.isWarnEnabled() )
+            {
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                             + " The desired time aggregation of the pairs is not an integer multiple of the "
+                             + "existing time aggregation of the {}.",
+                             projectConfigPlus.getPath(),
+                             helper.sourceLocation().getLineNumber(),
+                             helper.sourceLocation().getColumnNumber(),
+                             helperString );
+            }
+        }
+        return returnMe;
+    }
+
     private static boolean isPoolingWindowValid( PairConfig pairConfig )
     {
         
