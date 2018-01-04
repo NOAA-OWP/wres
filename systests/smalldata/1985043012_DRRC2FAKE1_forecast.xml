@@ -4,7 +4,7 @@
     <series>
         <header>
             <type>instantaneous</type>
-            <locationId>DRRC2FAKE1</locationId>
+            <locationId>FAKE1</locationId>
             <parameterId>SQIN</parameterId>
             <qualifierId>SIM1</qualifierId>
             <ensembleId>HEFSENSPOST</ensembleId>
@@ -29,7 +29,7 @@
     <series>
         <header>
             <type>instantaneous</type>
-            <locationId>DRRC2FAKE1</locationId>
+            <locationId>FAKE1</locationId>
             <parameterId>SQIN</parameterId>
             <qualifierId>SIM1</qualifierId>
             <ensembleId>HEFSENSPOST</ensembleId>
@@ -54,7 +54,7 @@
     <series>
         <header>
             <type>instantaneous</type>
-            <locationId>DRRC2FAKE1</locationId>
+            <locationId>FAKE1</locationId>
             <parameterId>SQIN</parameterId>
             <qualifierId>SIM1</qualifierId>
             <ensembleId>HEFSENSPOST</ensembleId>
