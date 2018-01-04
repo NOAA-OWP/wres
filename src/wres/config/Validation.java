@@ -948,73 +948,93 @@ public class Validation
      * @param projectConfigPlus the project configuration
      * @param inputConfig the input configuration
      * @return true if the time aggregation function is valid, given the inputConfig
-     */    
-    
+     */
+
     private static boolean isDesiredTimeAggregationSumValid( ProjectConfigPlus projectConfigPlus,
                                                              Inputs inputConfig )
     {
         boolean returnMe = true;
-        String message = " When using a desired time aggregation of "
-                         + TimeAggregationFunction.SUM
-                         + ", the existing time aggregation on the {} must also be a "
-                         + TimeAggregationFunction.SUM
-                         + ".";
-        // Existing function for left must be a sum
-        if ( inputConfig.getLeft() != null && inputConfig.getLeft().getExistingTimeAggregation() != null
-             && !inputConfig.getLeft()
-                            .getExistingTimeAggregation()
-                            .getFunction()
-                            .equals( TimeAggregationFunction.SUM ) )
+        // Sum for left must be valid
+        if ( inputConfig.getLeft() != null && inputConfig.getLeft().getExistingTimeAggregation() != null )
         {
-            returnMe = false;
-            if ( LOGGER.isWarnEnabled() )
-            {
-                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                             + message,
-                             projectConfigPlus.getPath(),
-                             inputConfig.getLeft().getExistingTimeAggregation().sourceLocation().getLineNumber(),
-                             inputConfig.getLeft().getExistingTimeAggregation().sourceLocation().getColumnNumber(),
-                             "left" );
-            }
+            returnMe = isDesiredTimeAggregationSumValid( projectConfigPlus,
+                                                         inputConfig.getLeft().getExistingTimeAggregation(),
+                                                         "left" );
         }
-        // Existing function for right must be a sum
-        if ( inputConfig.getRight() != null && inputConfig.getRight().getExistingTimeAggregation() != null
-             && !inputConfig.getRight()
-                       .getExistingTimeAggregation()
-                       .getFunction()
-                       .equals( TimeAggregationFunction.SUM ) )
+        // Sum for right must be valid
+        if ( inputConfig.getRight() != null && inputConfig.getRight().getExistingTimeAggregation() != null )
         {
-            returnMe = false;
-            if ( LOGGER.isWarnEnabled() )
-            {
-                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                             + message,
-                             projectConfigPlus.getPath(),
-                             inputConfig.getRight().getExistingTimeAggregation().sourceLocation().getLineNumber(),
-                             inputConfig.getRight().getExistingTimeAggregation().sourceLocation().getColumnNumber(),
-                             "right" );
-            }
+            returnMe = isDesiredTimeAggregationSumValid( projectConfigPlus,
+                                                         inputConfig.getRight().getExistingTimeAggregation(),
+                                                         "right" )
+                       && returnMe;
         }
-        // Existing function for baseline must be a sum
-        if ( inputConfig.getBaseline() != null && inputConfig.getBaseline().getExistingTimeAggregation() != null
-             && !inputConfig.getBaseline()
-                       .getExistingTimeAggregation()
-                       .getFunction()
-                       .equals( TimeAggregationFunction.SUM ) )
+        // Sum for baseline must be valid
+        if ( inputConfig.getBaseline() != null && inputConfig.getBaseline().getExistingTimeAggregation() != null )
         {
-            returnMe = false;
-            if ( LOGGER.isWarnEnabled() )
-            {
-                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                             + message,
-                             projectConfigPlus.getPath(),
-                             inputConfig.getLeft().getExistingTimeAggregation().sourceLocation().getLineNumber(),
-                             inputConfig.getLeft().getExistingTimeAggregation().sourceLocation().getColumnNumber(),
-                             "baseline" );
-            }
+            returnMe = isDesiredTimeAggregationSumValid( projectConfigPlus,
+                                                         inputConfig.getBaseline().getExistingTimeAggregation(),
+                                                         "baseline" )
+                       && returnMe;
         }
         return returnMe;
     }
+
+    /**
+     * Tests a desired time aggregation function that is a sum. Returns true if function is valid, given the 
+     * configuration for a specific input, false otherwise.
+     * 
+     * @param projectConfigPlus the project configuration
+     * @param inputConfig the input configuration
+     * @return true if the time aggregation function is valid, given the inputConfig
+     */    
+    
+    private static boolean isDesiredTimeAggregationSumValid( ProjectConfigPlus projectConfigPlus,
+                                                             TimeAggregationConfig inputConfig,
+                                                             String helper )
+    {
+        boolean returnMe = true;
+        // Existing aggregation cannot be an instant
+        if ( inputConfig.getUnit()
+                        .equals( DurationUnit.INSTANT ) )
+        {
+            returnMe = false;
+            String message = " When using a desired time aggregation of "
+                             + TimeAggregationFunction.SUM
+                             + ", the existing time aggregation on the {} cannot be instantaneous.";
+            if ( LOGGER.isWarnEnabled() )
+            {
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                             + message,
+                             projectConfigPlus.getPath(),
+                             inputConfig.sourceLocation().getLineNumber(),
+                             inputConfig.sourceLocation().getColumnNumber(),
+                             helper );
+            }
+        }
+        
+        // Existing function must be a sum
+        if ( !inputConfig.getFunction()
+                            .equals( TimeAggregationFunction.SUM ) )
+        {
+            returnMe = false;
+            String message = " When using a desired time aggregation of "
+                    + TimeAggregationFunction.SUM
+                    + ", the existing time aggregation on the {} must also be a "
+                    + TimeAggregationFunction.SUM
+                    + ".";
+            if ( LOGGER.isWarnEnabled() )
+            {
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                             + message,
+                             projectConfigPlus.getPath(),
+                             inputConfig.sourceLocation().getLineNumber(),
+                             inputConfig.sourceLocation().getColumnNumber(),
+                             helper );
+            }
+        }
+        return returnMe;
+    }    
     
     /**
      * Returns true if the time aggregation period associated with the desiredTimeAggregation is valid given the time
