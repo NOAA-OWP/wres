@@ -23,7 +23,7 @@
             <existingTimeAggregation>
                 <function>avg</function>
                 <period>1</period>
-                <unit>seconds</unit>
+                <unit>nanos</unit>
             </existingTimeAggregation>
         </right>
         <baseline label="ESP" >
@@ -34,7 +34,7 @@
             <existingTimeAggregation>
                 <function>avg</function>
                 <period>1</period>
-                <unit>seconds</unit>
+                <unit>nanos</unit>
             </existingTimeAggregation>
         </baseline>
 

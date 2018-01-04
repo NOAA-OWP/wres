@@ -15,7 +15,7 @@
             <existingTimeAggregation>
                 <function>avg</function>
                 <period>1</period>
-                <unit>seconds</unit>
+                <unit>nanos</unit>
             </existingTimeAggregation>
         </left>
         <right label="Operational Single-Valued Forecasts" >
@@ -27,7 +27,7 @@
             <existingTimeAggregation>
                 <function>avg</function>
                 <period>1</period>
-                <unit>seconds</unit>
+                <unit>nanos</unit>
             </existingTimeAggregation>
         </right>
     </inputs>

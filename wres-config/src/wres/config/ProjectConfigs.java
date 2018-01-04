@@ -5,7 +5,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
+import wres.config.generated.DurationUnit;
 import wres.config.generated.ProbabilityThresholdConfig;
+import wres.config.generated.TimeAggregationConfig;
 import wres.config.generated.ValueThresholdConfig;
 
 /**
@@ -98,6 +100,22 @@ public class ProjectConfigs
 
         // OK to avoid copying since this scope created result.
         return Collections.unmodifiableList( result );
+    }
+    
+    /**
+     * Returns true if the input contains instantaneous data, false otherwise. A {@link TimeAggregationConfig} is 
+     * considered instantaneous if the {@link TimeAggregationConfig#getPeriod()} is 1 and the 
+     * {@link TimeAggregationConfig#getUnit()} is {@link DurationUnit#NANOS}.
+     * 
+     * @param input the input to test
+     * @return true if the input aggregation denotes instantaneous data, false otherwise
+     * @throws NullPointerException if the input is null
+     */
+
+    public static boolean isInstantaneous( TimeAggregationConfig input )
+    {
+        Objects.requireNonNull( input, "Specify non-null input to check for instantanous data." );
+        return input.getUnit().equals( DurationUnit.NANOS ) && input.getPeriod() == 1;
     }
 
 }
