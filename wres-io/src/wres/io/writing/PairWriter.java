@@ -123,7 +123,7 @@ public class PairWriter extends WRESCallable<Boolean>
                 StringJoiner line = new StringJoiner( DELIMITER );
 
                 line.add( ConfigHelper.getFeatureDescription( this.getFeature() ) );
-                line.add( this.getPairingDate() );
+                line.add(this.date);
 
                 line.add( String.valueOf( this.getLeadHour() ) );
 
@@ -147,23 +147,6 @@ public class PairWriter extends WRESCallable<Boolean>
         }
 
         return success;
-    }
-
-    private String getPairingDate() throws InvalidPropertiesFormatException
-    {
-        String pairingDate;
-
-        if (this.projectDetails.getAggregation().getMode() == TimeWindowMode.ROLLING)
-        {
-            // We need to derive the basis time from the lead, and date
-            pairingDate = TimeHelper.minus( date, "hour", this.getLeadHour() );
-        }
-        else
-        {
-            pairingDate = date;
-        }
-
-        return pairingDate;
     }
 
     @Override
