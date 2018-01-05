@@ -51,6 +51,7 @@ public class PairWriter extends WRESCallable<Boolean>
     private final boolean isBaseline;
     private final int sequenceStep;
     private final ProjectDetails projectDetails;
+    private final int lead;
 
     private DecimalFormat formatter;
 
@@ -62,7 +63,8 @@ public class PairWriter extends WRESCallable<Boolean>
                        PairOfDoubleAndVectorOfDoubles pair,
                        boolean isBaseline,
                        int sequenceStep,
-                       ProjectDetails projectDetails)
+                       ProjectDetails projectDetails,
+                       int lead)
     {
         this.destinationConfig = destinationConfig;
         this.date = date;
@@ -72,6 +74,7 @@ public class PairWriter extends WRESCallable<Boolean>
         this.isBaseline = isBaseline;
         this.sequenceStep = sequenceStep;
         this.projectDetails = projectDetails;
+        this.lead = lead;
     }
 
     @Override
@@ -205,12 +208,16 @@ public class PairWriter extends WRESCallable<Boolean>
 
         if (this.projectDetails.getAggregation().getMode() == TimeWindowMode.ROLLING)
         {
-            lead = this.getWindowNum() +
-                   TimeHelper.unitsToHours( this.projectDetails.getAggregationUnit(),
-                                            this.projectDetails.getAggregationPeriod() );
+            // Rolling windows use explicit lead times
+            lead = this.lead;
         }
         else
         {
+            // Back to back windows have lead times relative to their starting point
+            // For instance, if there is an offset resulting in a 19 hour push,
+            // the actual lead times can be 20 through 43, which later get adjusted
+            // to look like 25 through 48. Since that is the first window,
+            // instead of being 25 through 48, it becomes 1 through 24
             lead = TimeHelper.unitsToHours( this.projectDetails.getAggregationUnit(),
                                             this.projectDetails.getAggregationPeriod() ) *
                    ( this.getWindowNum() + 1 );
@@ -228,7 +235,7 @@ public class PairWriter extends WRESCallable<Boolean>
             throws SQLException, InvalidPropertiesFormatException
     {
 
-        int window = this.getWindowNum();
+        int window = this.getWindowNum() / this.projectDetails.getAggregationFrequency();
 
         PoolingWindowConfig config = this.projectDetails.getPoolingWindow();
         if ( config != null && config.getMode() == TimeWindowMode.ROLLING )
@@ -237,7 +244,7 @@ public class PairWriter extends WRESCallable<Boolean>
             // lead, it stays at the largest value prior. For instance,
             // if the number goes from 1 through 5, the next window for
             // the next lead will then be 5.
-            window *= (this.projectDetails.getRollingWindowCount( this.feature ) + 1);
+            window *= (this.projectDetails.getRollingWindowCount( this.feature ));
             window += this.sequenceStep;
         }
 

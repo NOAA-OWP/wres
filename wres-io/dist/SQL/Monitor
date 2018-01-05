@@ -4,7 +4,7 @@ if [ $# -eq 0 ]; then
     echo 'usage: ./Monitor <Database username> [<host> <database name>]'
 else
     database=${3:-"wres"}
-    host=${2:-"***REMOVED***eds-dev1.***REMOVED***.***REMOVED***"}
+    host=${2:-"***REMOVED***rdb.***REMOVED***.***REMOVED***"}
     while true; do
         psql -U $1 -d $database -h $host -f TrackRequests.sql
         sleep 2
