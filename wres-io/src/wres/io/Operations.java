@@ -108,7 +108,7 @@ public final class Operations {
             ProjectDetails projectDetails =
                     Projects.getProjectFromIngest( projectConfig,
                                                    projectSources );
-            return new InputGenerator( projectConfig, feature, projectDetails );
+            return new InputGenerator( feature, projectDetails );
         }
         catch ( SQLException se )
         {

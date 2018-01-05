@@ -29,7 +29,7 @@ class BackToBackForecastScripter extends Scripter
     {
         this.add("SELECT ");
         this.applyValueDate();
-        this.addLine("    FV.lead AS agg_hour");
+        this.addLine("    FV.lead AS agg_hour,");
         this.addLine( "    ARRAY_AGG(FV.forecasted_value ORDER BY TS.ensemble_id) AS measurements," );
         this.addLine( "    TS.measurementunit_id" );
         this.addLine( "FROM wres.TimeSeries TS" );

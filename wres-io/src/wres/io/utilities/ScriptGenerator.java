@@ -27,7 +27,7 @@ public final class ScriptGenerator
     public static String formInitialRollingDataScript(
             ProjectDetails projectDetails,
             Feature feature)
-            throws SQLException, InvalidPropertiesFormatException
+            throws SQLException
     {
         StringBuilder script = new StringBuilder();
 

@@ -82,26 +82,6 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
 
 		return exists;
 	}
-
-	public static boolean gageIDExists(String gageID) throws SQLException
-    {
-        LOGGER.trace( "Checking if a gage with an id of {} has been defined...", gageID);
-
-        boolean exists = Features.getCache().hasID( FeatureDetails.keyOfGageID( gageID ) );
-
-        if (!exists)
-        {
-            String script = "SELECT EXISTS (" + NEWLINE +
-                            "    SELECT 1" + NEWLINE +
-                            "    FROM wres.Feature" + NEWLINE +
-                            "    WHERE gage_id = '" + gageID + "'" + NEWLINE +
-                            ");";
-
-            exists = Database.getResult(script, "exists");
-        }
-
-        return exists;
-    }
 	
 	/**
 	 * Returns the ID of a Feature from the global cache based on a full Feature specification
@@ -129,22 +109,6 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
             throws SQLException
     {
         return Features.getFeatureID( new FeatureDetails.FeatureKey( comid, lid, gageID, huc ));
-    }
-
-    public static Integer getFeatureIDByLocation(String lid, String featureName)
-            throws SQLException
-    {
-        LOGGER.trace("getFeatureID - args {} ; {}", lid, featureName);
-        FeatureDetails detail = new FeatureDetails();
-        detail.setLid( lid);
-        detail.setFeatureName( featureName );
-        return getFeatureID(detail);
-    }
-
-    public static Integer getFeatureIDByGageID(String gageID)
-            throws SQLException
-    {
-        return getFeatureID( FeatureDetails.keyOfGageID( gageID ) );
     }
 
     public static Integer getFeatureID(Feature feature) throws SQLException
@@ -494,22 +458,10 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         return features;
     }
 
-    public static Integer getVariablePositionID(Integer comid, String lid, String gageID, String huc, Integer variableID)
-            throws SQLException
-    {
-        return Features.getDetails( comid, lid, gageID, huc ).getVariablePositionID( variableID );
-    }
-
     public static Integer getVariablePositionIDByLID(String lid, Integer variableID)
             throws SQLException
     {
         return Features.getDetailsByLID( lid ).getVariablePositionID( variableID );
-    }
-
-    public static Integer getVariablePositionIDByGageID(String gageID, Integer variableID)
-            throws SQLException
-    {
-        return Features.getDetailsByGageID( gageID ).getVariablePositionID( variableID );
     }
 
     public static Integer getVariablePositionID(Feature feature, Integer variableID)

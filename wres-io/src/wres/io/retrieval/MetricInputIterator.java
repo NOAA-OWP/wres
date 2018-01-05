@@ -90,11 +90,6 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
         this.sequenceStep = sequenceStep;
     }
 
-    protected void setFinalSequenceStep(int finalSequenceStep)
-    {
-        this.finalSequenceStep = finalSequenceStep;
-    }
-
     protected Integer getWindowCount() throws NoDataException, SQLException,
             InvalidPropertiesFormatException
     {
@@ -139,8 +134,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
         return this.climatology;
     }
 
-    public MetricInputIterator( final ProjectConfig projectConfig,
-                                final Feature feature,
+    public MetricInputIterator( final Feature feature,
                                 final ProjectDetails projectDetails )
             throws SQLException, NoDataException,
             InvalidPropertiesFormatException

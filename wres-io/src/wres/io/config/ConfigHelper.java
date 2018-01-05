@@ -80,12 +80,6 @@ public class ConfigHelper
                                        dataSourceConfig.getVariable().getUnit());
     }
 
-    public static Boolean hasBaseline(ProjectConfig projectConfig)
-    {
-        return projectConfig.getInputs().getBaseline() != null &&
-                !projectConfig.getInputs().getBaseline().getSource().isEmpty();
-    }
-
     public static TimeAggregationConfig getTimeAggregation(ProjectConfig projectConfig)
     {
         TimeAggregationConfig timeAggregationConfig = projectConfig.getPair().getDesiredTimeAggregation();
@@ -425,12 +419,6 @@ public class ConfigHelper
     public static boolean isRight(DataSourceConfig dataSourceConfig, ProjectConfig projectConfig)
     {
         return projectConfig.getInputs().getRight().equals( dataSourceConfig );
-    }
-
-    public static boolean isBaseline(DataSourceConfig dataSourceConfig, ProjectConfig projectConfig)
-    {
-        return projectConfig.getInputs().getBaseline() != null &&
-               projectConfig.getInputs().getBaseline().equals( dataSourceConfig );
     }
 
     /**

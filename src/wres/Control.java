@@ -244,11 +244,6 @@ public class Control implements Function<String[], Integer>
         LOGGER.debug( "Finished ingest for project {}...",
                       projectConfigPlus.getPath() );
 
-        // TODO: Implement way of iterating through features correctly
-        /*Feature feature = projectConfig.getPair()
-                                       .getFeature()
-                                       .get( 0 );*/
-
         ProgressMonitor.setShowStepDescription( false );
 
         try

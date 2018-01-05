@@ -335,18 +335,6 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return shift;
     }
 
-    public int getBaselineTimeShift()
-    {
-        int shift = 0;
-
-        if (this.getBaseline().getTimeShift() != null)
-        {
-            shift = this.getBaseline().getTimeShift().getWidth();
-        }
-
-        return shift;
-    }
-
     public Double getMaximumValue()
     {
         Double maximum = Double.MAX_VALUE;
@@ -714,24 +702,6 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return this.leftForecastIDs;
     }
 
-    public List<Integer> getRightForecastIDs() throws SQLException
-    {
-        if (this.rightForecastIDs.size() == 0)
-        {
-            this.loadForecastIDs( ProjectDetails.RIGHT_MEMBER );
-        }
-        return this.rightForecastIDs;
-    }
-
-    public List<Integer> getBaselineForecastIDs() throws SQLException
-    {
-        if (this.hasBaseline() && this.baselineForecastIDs.size() == 0)
-        {
-            this.loadForecastIDs( ProjectDetails.BASELINE_MEMBER );
-        }
-        return this.baselineForecastIDs;
-    }
-
     private void loadForecastIDs(String member) throws SQLException
     {
 
@@ -888,66 +858,9 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         }
     }
 
-    public boolean isEmpty()
-    {
-        int sourceTotal = 0;
-
-        try
-        {
-            sourceTotal = this.getLeftSources().size() +
-                          this.getRightSources().size() +
-                          this.getBaselineSources().size();
-        }
-        catch ( SQLException e )
-        {
-            LOGGER.error( "Could not evaluate whether or not this project had data:" );
-            LOGGER.error( Strings.getStackTrace( e ) );
-        }
-        return sourceTotal == 0;
-    }
-
     public boolean hasBaseline()
     {
         return this.getBaseline() != null;
-    }
-
-    public boolean hasSource(String foundHash, DataSourceConfig dataSourceConfig)
-            throws SQLException
-    {
-        Collection<String> sources;
-
-        if ( ConfigHelper.isLeft( dataSourceConfig, projectConfig ))
-        {
-            sources = this.getLeftHashes().values();
-        }
-        else if ( ConfigHelper.isRight( dataSourceConfig, projectConfig ))
-        {
-            sources = this.getRightHashes().values();
-        }
-        else
-        {
-            sources = this.getBaselineHashes().values();
-        }
-
-        if (sources.size() == 0)
-        {
-            return false;
-        }
-
-        synchronized ( LOAD_LOCK )
-        {
-            return wres.util.Collections.exists( sources,
-                                                 hash -> hash.equals( foundHash ));
-        }
-    }
-
-    public boolean hasMatchingData(FeatureDetails feature)
-    {
-        boolean matchExists = false;
-
-        StringBuilder script = new StringBuilder();
-
-        return matchExists;
     }
 
     @Override

@@ -287,37 +287,4 @@ public class USGSParameters
 
         return matchingParameter;
     }
-
-    public static String getCode(String parameterName, String measurementUnit, String aggregationMethod)
-            throws SQLException
-    {
-        String code;
-        ParameterKey key = new ParameterKey( parameterName, measurementUnit, aggregationMethod );
-
-        if (USGSParameters.getParameterStore().containsKey( key ))
-        {
-            code = USGSParameters.getParameterStore().get( key ).getParameterCode();
-        }
-        else
-        {
-            String message = "There is not a known USGS parameter with the name '" +
-                             String.valueOf(parameterName) +
-                             "' and a measurement unit of " +
-                             String.valueOf(measurementUnit);
-
-            if (aggregationMethod.equalsIgnoreCase( "none" ))
-            {
-                message += " that is not aggregated.";
-            }
-            else
-            {
-                message += " that is aggregated by " + String.valueOf(aggregationMethod);
-            }
-
-            throw new IllegalArgumentException( message );
-
-        }
-
-        return code;
-    }
 }
