@@ -167,11 +167,6 @@ public abstract class BasicSource
      */
 	private String absoluteFilename;
 
-    /**
-     * Represents a value that should be ignored from the source material
-     */
-    private Double missingValue;
-
 
     /**
      * @return The name of the variable to ingest
@@ -372,29 +367,6 @@ public abstract class BasicSource
             }
         }
         return this.hash;
-    }
-
-    /**
-     * Returns a more specific hash than file hash alone, includes variable
-     * and location. Depends on the hash of the file already having been
-     * computed.
-     * @param variable The variable specified by the project config
-     * @param location The location specified by the project config
-     * @return a specific hash combining file, variable, location
-     * @throws IOException when anything goes wrong getting file hash
-     * @throws UnsupportedOperationException when file hash not computed yet
-     * @throws NullPointerException when any args are null
-     */
-    protected String getSpecificHash( String variable, String location )
-            throws IOException
-    {
-        Objects.requireNonNull( variable );
-        Objects.requireNonNull( location );
-
-        String fileHash = this.getHash();
-        String toHash = fileHash + "," + variable + "," + location;
-        byte[] bytes = toHash.getBytes();
-        return Strings.getMD5Checksum( bytes );
     }
 
     /**

@@ -139,19 +139,6 @@ public final class Variables extends Cache<VariableDetails, String>
 		return details;
 	}
 
-	public static String getVariablePositionPartitionName(Integer variableID)
-    {
-        if (variableID == null || variableID < 0)
-        {
-            throw new IllegalArgumentException("The variable indicated by " +
-                                                       String.valueOf(variableID) +
-                                                       " is not a valid variable.");
-        }
-
-        VariableDetails details = Variables.getCache().get(variableID);
-        return details.getVariablePositionPartitionName();
-    }
-
 	@Override
 	protected int getMaxDetails() {
 		return 100;

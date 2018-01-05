@@ -24,16 +24,13 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>>
 
     private static final Logger LOGGER = LoggerFactory.getLogger(InputGenerator.class);
 
-    public InputGenerator( ProjectConfig projectConfig,
-                           Feature feature,
+    public InputGenerator( Feature feature,
                            ProjectDetails projectDetails )
     {
-        this.projectConfig = projectConfig;
         this.feature = feature;
         this.projectDetails = projectDetails;
     }
 
-    private final ProjectConfig projectConfig;
     private final Feature feature;
     private final ProjectDetails projectDetails;
 
@@ -47,13 +44,11 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>>
             switch (this.projectDetails.getAggregation().getMode())
             {
                 case ROLLING:
-                    iterator = new RollingMetricInputIterator( this.projectConfig,
-                                                               this.feature,
+                    iterator = new RollingMetricInputIterator( this.feature,
                                                                this.projectDetails );
                     break;
                 case BACK_TO_BACK:
-                    iterator =  new BackToBackMetricInputIterator( this.projectConfig,
-                                                                   this.feature,
+                    iterator =  new BackToBackMetricInputIterator( this.feature,
                                                                    this.projectDetails );
                     break;
                 default:

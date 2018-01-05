@@ -37,7 +37,6 @@ public abstract class Scripter
             InvalidPropertiesFormatException
     {
         Scripter loadScripter;
-        String script;
 
         TimeWindowMode mode = projectDetails.getAggregation().getMode();
         boolean isForecast = ConfigHelper.isForecast( dataSourceConfig );

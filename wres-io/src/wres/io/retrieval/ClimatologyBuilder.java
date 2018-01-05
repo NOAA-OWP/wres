@@ -2,7 +2,6 @@ package wres.io.retrieval;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
-import wres.config.generated.TimeAggregationFunction;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.VectorOfDoubles;

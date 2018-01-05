@@ -922,24 +922,9 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
         return name;
     }
 
-    public static FeatureKey keyOfComid( Integer comid)
-    {
-        return new FeatureKey( comid, null, null, null );
-    }
-
     public static FeatureKey keyOfLid(String lid)
     {
         return new FeatureKey( null, lid, null, null );
-    }
-
-    public static FeatureKey keyOfGageID(String gageID)
-    {
-        return new FeatureKey( null, null, gageID, null );
-    }
-
-    public static FeatureKey keyOfHuc(String huc)
-    {
-        return new FeatureKey( null, null, null, huc );
     }
 
     @Override

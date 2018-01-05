@@ -48,17 +48,6 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
 			return INTERNAL_CACHE;
 		}
 	}
-	
-	/**
-	 * Returns the ID of an ensemble from the global cache on its name
-	 * @param name The name of the ensemble whose ID to retrieve
-	 * @return The ID of the Ensemble in question
-	 * @throws SQLException Thrown if the ID could not be retrieved from the database
-	 */
-	public static Integer getEnsembleID(String name) throws SQLException
-    {
-		return getCache().getID(name);
-	}
 
 	public static Integer getEnsembleID( NetCDF.Ensemble ensemble )
             throws SQLException

@@ -16,13 +16,12 @@ public class RollingMetricInputIterator extends MetricInputIterator
     private static final Logger LOGGER =
             LoggerFactory.getLogger(RollingMetricInputIterator.class);
 
-    RollingMetricInputIterator( ProjectConfig projectConfig,
-                                Feature feature,
+    RollingMetricInputIterator( Feature feature,
                                 ProjectDetails projectDetails )
             throws SQLException, InvalidPropertiesFormatException,
             NoDataException
     {
-        super( projectConfig, feature, projectDetails );
+        super( feature, projectDetails );
     }
 
     @Override
