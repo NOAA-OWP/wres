@@ -129,12 +129,12 @@ class SafeEnsemblePairs implements EnsemblePairs
         /**
          * Pairs.
          */
-        private List<PairOfDoubleAndVectorOfDoubles> mainInput;
+        List<PairOfDoubleAndVectorOfDoubles> mainInput;
 
         /**
          * Pairs for baseline.
          */
-        private List<PairOfDoubleAndVectorOfDoubles> baselineInput;
+        List<PairOfDoubleAndVectorOfDoubles> baselineInput;
 
         @Override
         public EnsemblePairsBuilder addData( final List<PairOfDoubleAndVectorOfDoubles> mainInput )
