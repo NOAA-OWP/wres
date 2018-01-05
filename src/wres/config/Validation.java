@@ -1076,8 +1076,6 @@ public class Validation
         // Assume fine
         boolean returnMe = true;
 
-        // This translation works for now: always?
-        // TODO: flagging this as needing a broader conversation about times and use of the jdk: see #45094
         Duration desired = Duration.of( timeAgg.getPeriod(),
                                         ChronoUnit.valueOf( timeAgg.getUnit().toString().toUpperCase() ) );
         if ( left != null && !ProjectConfigs.isInstantaneous( left ) )
