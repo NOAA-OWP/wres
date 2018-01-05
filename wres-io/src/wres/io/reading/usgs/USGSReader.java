@@ -152,7 +152,7 @@ public class USGSReader extends BasicSource
         try
         {
             LOGGER.debug( "There are a grand total of {} different locations that we want to save data to.",
-                          Operations.decomposeFeatures(this.getProjectConfig()).length );
+                          Operations.decomposeFeatures(this.getProjectConfig()).size() );
         }
         catch ( SQLException e )
         {

@@ -285,7 +285,7 @@ public final class Operations {
         return project.toString();
     }
 
-    public static Feature[] decomposeFeatures(ProjectConfig projectConfig)
+    public static Set<Feature> decomposeFeatures(ProjectConfig projectConfig)
             throws SQLException
     {
         // TODO: Would it be better to use a stream?
@@ -298,7 +298,7 @@ public final class Operations {
             atomicFeatures.add( details.toFeature() );
         }
 
-        return atomicFeatures.toArray( new Feature[atomicFeatures.size()] );
+        return Collections.unmodifiableSet( atomicFeatures );
     }
 
 }
