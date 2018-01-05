@@ -1235,6 +1235,19 @@ public final class Database {
 	}
 
     /**
+     * Truncates a query for output if the query is too long
+     * @param query The query to format
+     * @return The query formatted for friendly display on the screen
+     */
+	private static String formatQueryForOutput(String query)
+	{
+		if (query.length() > 1000) {
+			query = query.substring(0, 1000) + " (...)";
+		}
+		return query;
+	}
+
+    /**
      * @return A reference to the standard connection pool
      */
     public static ComboPooledDataSource getPool()
