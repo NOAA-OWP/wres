@@ -341,13 +341,15 @@
     </xs:simpleType>
     <xs:simpleType name="durationUnit">
         <xs:restriction base="xs:string">
-            <!-- Instantaneous only makes sense for describing existing, will
-                 need to validate at application level that it is not used for
-                 prescribing an aggregation. Also no more than 1 instant. -->
-            <xs:enumeration value="instant" />
-            <xs:enumeration value="minute" />
-            <xs:enumeration value="hour" />
-            <xs:enumeration value="day" />
+            <!-- Please note: these values are intentionally convertible to
+            java.time.temporal.ChronoUnit values. Please only add values to this
+            enum that can also be converted to java.time.temporal.ChronoUnit
+            Also note: we define an "instant" as 1 nanos. -->
+            <xs:enumeration value="nanos" />
+            <xs:enumeration value="seconds" />
+            <xs:enumeration value="minutes" />
+            <xs:enumeration value="hours" />
+            <xs:enumeration value="days" />
         </xs:restriction>
     </xs:simpleType>
 
@@ -371,7 +373,7 @@
             <xs:element name="function" type="timeAggregationFunction" default="avg" minOccurs="1" maxOccurs="1"/>
             <xs:element name="period" type="duration" minOccurs="1" maxOccurs="1"/>
             <xs:element name="frequency" type="duration" minOccurs="0" maxOccurs="1"/>
-            <xs:element name="unit" type="durationUnit" default="hour" />
+            <xs:element name="unit" type="durationUnit" />
         </xs:sequence>
         <xs:attribute name="label" type="xs:string" />
         <xs:attribute name="mode" type="timeWindowMode" default="back-to-back" />
@@ -412,7 +414,7 @@
         <xs:sequence>
             <xs:element name="period" type="duration" minOccurs="1" maxOccurs="1" />
             <xs:element name="frequency" type="duration" minOccurs="0" maxOccurs="1"/>
-            <xs:element name="unit" type="durationUnit" minOccurs="1" maxOccurs="1" default="hour"/>
+            <xs:element name="unit" type="durationUnit" minOccurs="1" maxOccurs="1" />
         </xs:sequence>
         <xs:attribute name="mode" type="timeWindowMode" default="back-to-back" />
         <xs:attribute name="anchor" type="timeAnchor" default="center" />

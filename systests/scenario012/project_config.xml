@@ -27,13 +27,13 @@
         <poolingWindow mode="rolling" anchor="center">
             <period>48</period>
             <frequency>24</frequency>
-            <unit>hour</unit>
+            <unit>hours</unit>
         </poolingWindow>
         <desiredTimeAggregation mode="rolling">
             <function>avg</function>
             <period>4</period>
             <frequency>1</frequency>
-            <unit>hour</unit>
+            <unit>hours</unit>
         </desiredTimeAggregation>
     </pair>
 

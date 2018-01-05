@@ -96,7 +96,7 @@ public class ConfigHelper
                                                                TimeAggregationFunction.AVG,
                                                                1,
                                                                1,
-                                                               DurationUnit.HOUR,
+                                                               DurationUnit.HOURS,
                                                                "",
                                                                TimeWindowMode.BACK_TO_BACK );
         }
@@ -122,7 +122,7 @@ public class ConfigHelper
         String qualifier;
 
         if (!(projectDetails.getAggregationPeriod() == 1 &&
-              projectDetails.getAggregationUnit().equalsIgnoreCase( DurationUnit.HOUR.toString() )))
+              projectDetails.getAggregationUnit().equalsIgnoreCase( DurationUnit.HOURS.toString() )))
         {
             int beginning = projectDetails.getLead( windowNumber );
             int end = projectDetails.getLead( windowNumber + 1 );
