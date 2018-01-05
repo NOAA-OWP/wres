@@ -261,8 +261,7 @@ public final class DefaultSlicerTest
     }
 
     /**
-     * Tests the {@link Slicer#transformPairs(SingleValuedPairs, Function)}. TODO: implement equals in
-     * {@link SafeVectorOfBooleans}, then uncomment below
+     * Tests the {@link Slicer#transformPairs(SingleValuedPairs, Function)}. 
      */
 
     @Test
@@ -296,14 +295,14 @@ public final class DefaultSlicerTest
 
         //Test without baseline
         DichotomousPairs actualNoBase = slicer.transformPairs( metIn.ofSingleValuedPairs( values, meta ), mapper );
-//        assertTrue("The transformed test data does not match the benchmark.",
-//                  actualNoBase.getData().equals(expectedNoBase.getData()));
+        assertTrue("The transformed test data does not match the benchmark.",
+                  actualNoBase.getData().equals(expectedNoBase.getData()));
         //Test baseline
         DichotomousPairs actualBase =
                 slicer.transformPairs( metIn.ofSingleValuedPairs( values, values, meta, meta, null ),
                                        mapper );
-//        assertTrue("The transformed test data does not match the benchmark.",
-//                   actualBase.getDataForBaseline().equals(expectedBase.getDataForBaseline()));
+        assertTrue("The transformed test data does not match the benchmark.",
+                   actualBase.getDataForBaseline().equals(expectedBase.getDataForBaseline()));
     }
 
     /**

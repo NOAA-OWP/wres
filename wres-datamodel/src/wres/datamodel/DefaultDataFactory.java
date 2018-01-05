@@ -210,6 +210,9 @@ public class DefaultDataFactory implements DataFactory
     {
         return new Pair<VectorOfDoubles, VectorOfDoubles>()
         {
+
+            private static final long serialVersionUID = -1498961647587422087L;
+
             @Override
             public VectorOfDoubles setValue( VectorOfDoubles vectorOfDoubles )
             {
