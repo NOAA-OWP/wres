@@ -29,10 +29,7 @@ class BackToBackForecastScripter extends Scripter
     {
         this.add("SELECT ");
         this.applyValueDate();
-        this.addLine("    FV.lead - ",
-                     this.getProjectDetails().getLead( this.getProgress() - 1 ) +
-                     this.getLeadOffset(),
-                     " AS agg_hour,");
+        this.addLine("    FV.lead AS agg_hour");
         this.addLine( "    ARRAY_AGG(FV.forecasted_value ORDER BY TS.ensemble_id) AS measurements," );
         this.addLine( "    TS.measurementunit_id" );
         this.addLine( "FROM wres.TimeSeries TS" );
@@ -44,6 +41,7 @@ class BackToBackForecastScripter extends Scripter
         this.addLine( "INNER JOIN wres.ProjectSource AS PS" );
         this.addLine( "    ON PS.source_id = FS.source_id" );
 
+        // TODO: move wres.Source.lead to wres.ForecastSource to avoid the extremely expensive join to wres.Source
         // Source is needed due to NWM having the lead information
         this.addLine( "INNER JOIN wres.Source as S" );
         this.addLine( "    ON S.source_id = PS.source_id" );

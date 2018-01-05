@@ -462,9 +462,9 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     {
         Integer period = null;
 
-        if (this.projectConfig.getPair().getDesiredTimeAggregation() != null)
+        if (this.getAggregation() != null)
         {
-            period = this.projectConfig.getPair().getDesiredTimeAggregation().getPeriod();
+            period = this.getAggregation().getPeriod();
         }
 
         return period;
@@ -474,12 +474,9 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     {
         String unit = null;
 
-        if (this.projectConfig.getPair().getDesiredTimeAggregation() != null)
+        if (this.getAggregation() != null)
         {
-            unit = this.projectConfig.getPair()
-                                     .getDesiredTimeAggregation()
-                                     .getUnit()
-                                     .value();
+            unit = this.getAggregation().getUnit().value();
         }
 
         return unit;
@@ -498,6 +495,18 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         }
 
         return function;
+    }
+
+    public int getAggregationFrequency()
+    {
+        int frequency = 1;
+
+        if (this.getAggregation() != null && this.getAggregation().getFrequency() != null)
+        {
+            frequency = this.getAggregation().getFrequency();
+        }
+
+        return frequency;
     }
 
     public boolean shouldAggregate()
@@ -654,7 +663,10 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
                 // This will ensure that we gloss over partial windows
                 if ( this.getPoolingWindow().getAnchor() == TimeAnchor.CENTER)
                 {
-                    min = TimeHelper.plus( min, this.getPoolingWindowUnit(), span / 2);
+                    /*Span / 2 doesn't work because it does not take into account that mid points aren't span / 2 away from the start
+                        If we have basis times 12 hours apart at 12z with a span of 72 hours, we'll get a mid point of 00z, which is invalid
+                        We need to have the next basis time after the cut off.*/
+                    min = TimeHelper.plus( min, this.getPoolingWindowUnit(), span / 2.0);
                 }
                 else if (this.getPoolingWindow().getAnchor() == TimeAnchor.RIGHT)
                 {

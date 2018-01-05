@@ -383,7 +383,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                     (resultSet.getInt( "agg_hour" ) <= aggHour ||
                      !this.projectDetails.shouldAggregate()))
                 {
-                    pairs = this.addPair( pairs, valueDate, rightValues, dataSourceConfig );
+                    pairs = this.addPair( pairs, valueDate, rightValues, dataSourceConfig, aggHour );
 
                     rightValues = new TreeMap<>(  );
                 }
@@ -404,7 +404,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                 }
             }
 
-            pairs = this.addPair( pairs, valueDate, rightValues, dataSourceConfig );
+            pairs = this.addPair( pairs, valueDate, rightValues, dataSourceConfig, aggHour );
         }
         finally
         {
@@ -425,7 +425,8 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
     private List<PairOfDoubleAndVectorOfDoubles> addPair( List<PairOfDoubleAndVectorOfDoubles> pairs,
                                                           String valueDate,
                                                           Map<Integer, List<Double>> rightValues,
-                                                          DataSourceConfig dataSourceConfig)
+                                                          DataSourceConfig dataSourceConfig,
+                                                          int lead)
             throws ProjectConfigException, NoDataException,
             InvalidPropertiesFormatException
     {
@@ -434,7 +435,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             PairOfDoubleAndVectorOfDoubles pair = this.getPair( valueDate, rightValues );
             if (pair != null)
             {
-                writePair( valueDate, pair, dataSourceConfig );
+                writePair( valueDate, pair, dataSourceConfig, lead );
                 pairs.add( pair );
             }
         }
@@ -575,7 +576,8 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
 
     private void writePair( String date,
                             PairOfDoubleAndVectorOfDoubles pair,
-                            DataSourceConfig dataSourceConfig )
+                            DataSourceConfig dataSourceConfig,
+                            int lead)
             throws ProjectConfigException
     {
         boolean isBaseline = dataSourceConfig.equals( this.projectDetails.getBaseline() );
@@ -590,7 +592,8 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                                                pair,
                                                isBaseline,
                                                this.sequenceStep,
-                                               this.projectDetails);
+                                               this.projectDetails,
+                                               lead);
             Executor.submitHighPriorityTask( saver);
         }
     }

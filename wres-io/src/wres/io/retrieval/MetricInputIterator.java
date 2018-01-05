@@ -76,7 +76,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
         else
         {
             this.setSequenceStep( 0 );
-            this.windowNumber++;
+            this.windowNumber += this.getProjectDetails().getAggregationFrequency();
         }
     }
 
