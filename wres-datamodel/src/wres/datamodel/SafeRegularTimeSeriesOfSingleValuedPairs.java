@@ -3,15 +3,11 @@ package wres.datamodel;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.Set;
 import java.util.SortedSet;
-import java.util.StringJoiner;
 import java.util.TreeSet;
 import java.util.function.Predicate;
 
@@ -35,52 +31,10 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
 {
 
     /**
-     * The time-step associated with the regular time-series.
+     * Base class for a regular time-series of pairs.
      */
 
-    private final Duration timeStep;
-
-    /**
-     * A set of basis times. There are as many basis times as atomic time-series.
-     */
-
-    private final List<Instant> basisTimes;
-
-    /**
-     * A set of basis times associated with a baseline dataset. There are as many basis times as atomic time-series.
-     */
-
-    private final List<Instant> basisTimesBaseline;
-
-    /**
-     * The number of times in each atomic time-series.
-     */
-
-    private final int timeStepCount;
-
-    /**
-     * Iterable view of the basis times.
-     */
-
-    private final Iterable<TimeSeries<PairOfDoubles>> basisTimeIterator;
-
-    /**
-     * Iterable view of the durations.
-     */
-
-    private final Iterable<TimeSeries<PairOfDoubles>> durationIterator;
-
-    /**
-     * Iterable view of the pairs of times and values. 
-     */
-
-    private final Iterable<Pair<Instant, PairOfDoubles>> timeIterator;
-
-    /**
-     * Error message denoting attempt to modify an immutable time-series via an iterator.
-     */
-
-    private static final String UNSUPPORTED_MODIFICATION = "While attempting to modify an immutable time-series.";
+    private final SafeRegularTimeSeriesOfPairs<PairOfDoubles> bP;
 
     @Override
     public RegularTimeSeriesOfSingleValuedPairs getBaselineData()
@@ -90,13 +44,13 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
             return null;
         }
         SafeRegularTimeSeriesOfSingleValuedPairsBuilder builder = new SafeRegularTimeSeriesOfSingleValuedPairsBuilder();
-        builder.setTimeStep( timeStep ).setMetadata( getMetadataForBaseline() );
+        builder.setTimeStep( getRegularDuration() ).setMetadata( getMetadataForBaseline() );
         List<PairOfDoubles> baselineData = getDataForBaseline();
         int start = 0;
-        for ( Instant next : basisTimesBaseline )
+        for ( Instant next : bP.getBasisTimesBaseline() )
         {
-            builder.addData( next, baselineData.subList( start, start + timeStepCount ) );
-            start += timeStepCount;
+            builder.addData( next, baselineData.subList( start, start + bP.getTimeStepCount() ) );
+            start += bP.getTimeStepCount();
         }
         return builder.build();
     }
@@ -104,19 +58,19 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
     @Override
     public Iterable<Pair<Instant, PairOfDoubles>> timeIterator()
     {
-        return timeIterator;
+        return bP.timeIterator();
     }
 
     @Override
     public Iterable<TimeSeries<PairOfDoubles>> basisTimeIterator()
     {
-        return basisTimeIterator;
+        return bP.basisTimeIterator();
     }
 
     @Override
     public Iterable<TimeSeries<PairOfDoubles>> durationIterator()
     {
-        return durationIterator;
+        return bP.durationIterator();
     }
 
     @Override
@@ -154,7 +108,7 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
             return null;
         }
         //Set regular time-step of filtered data
-        builder.setTimeStep( timeStep.multipliedBy( step ) );
+        builder.setTimeStep( getRegularDuration().multipliedBy( step ) );
 
         //Build if something to build
         return builder.build();
@@ -165,7 +119,7 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
     {
         Objects.requireNonNull( basisTime, "Provide a non-null predicate on which to filter by basis time." );
         SafeRegularTimeSeriesOfSingleValuedPairsBuilder builder = new SafeRegularTimeSeriesOfSingleValuedPairsBuilder();
-        builder.setTimeStep( timeStep );
+        builder.setTimeStep( getRegularDuration() );
         //Add the filtered data
         for ( TimeSeries<PairOfDoubles> a : basisTimeIterator() )
         {
@@ -185,24 +139,19 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
     @Override
     public SortedSet<Instant> getBasisTimes()
     {
-        return new TreeSet<>( basisTimes );
+        return new TreeSet<>( bP.getBasisTimes() );
     }
 
     @Override
     public SortedSet<Duration> getDurations()
     {
-        SortedSet<Duration> returnMe = new TreeSet<>();
-        for ( long i = 0; i < timeStepCount; i++ )
-        {
-            returnMe.add( timeStep.multipliedBy( i + 1 ) );
-        }
-        return returnMe;
+        return bP.getDurations();
     }
 
     @Override
     public boolean hasMultipleTimeSeries()
     {
-        return basisTimes.size() > 1;
+        return bP.hasMultipleTimeSeries();
     }
 
     @Override
@@ -214,38 +163,19 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
     @Override
     public Duration getRegularDuration()
     {
-        return timeStep;
+        return bP.getRegularDuration();
     }
 
     @Override
     public Instant getEarliestBasisTime()
     {
-        if ( basisTimes.size() == 1 )
-        {
-            return ( basisTimes ).iterator().next();
-        }
-        return new TreeSet<>( basisTimes ).first();
+        return bP.getEarliestBasisTime();
     }
 
     @Override
     public String toString()
     {
-        StringJoiner joiner = new StringJoiner( System.lineSeparator() );
-        if ( basisTimes.size() > 1 )
-        {
-            for ( TimeSeries<PairOfDoubles> next : basisTimeIterator() )
-            {
-                joiner.add( next.toString() );
-            }
-        }
-        else
-        {
-            for ( Pair<Instant, PairOfDoubles> next : timeIterator() )
-            {
-                joiner.add( next.toString() );
-            }
-        }
-        return joiner.toString();
+        return bP.toString();
     }
 
     /**
@@ -412,44 +342,15 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
     SafeRegularTimeSeriesOfSingleValuedPairs( final SafeRegularTimeSeriesOfSingleValuedPairsBuilder b )
     {
         super( b );
-        this.timeStep = b.timeStep;
-        //Set as unmodifiable lists
-        this.basisTimes =
-                Collections.unmodifiableList( b.basisTimes );
-        this.basisTimesBaseline =
-                Collections.unmodifiableList( b.basisTimesBaseline );
-        this.timeStepCount = b.timeStepCount.get( 0 );
-        //Validate additional parameters
-        if ( Objects.isNull( this.timeStep ) )
-        {
-            throw new MetricInputException( "Specify a non-null timestep for the time-series." );
-        }
-        //Check the number of timesteps
-        Set<Integer> times = new HashSet<>( b.timeStepCount );
-        if ( times.size() > 1 )
-        {
-            throw new MetricInputException( "Cannot construct a regular time-series whose atomic time-series contain "
-                                            + "a variable number of times: " + times.toString() + "." );
-        }
-        Set<Integer> baselineTimes = new HashSet<>( b.timeStepCountBaseline );
-        if ( baselineTimes.size() > 1 )
-        {
-            throw new MetricInputException( "Cannot construct a regular time-series whose atomic baseline time-series "
-                                            + "contain a variable number of times." );
-        }
-        if ( hasBaseline() && b.timeStepCountBaseline.get( 0 ) != this.timeStepCount )
-        {
-            throw new MetricInputException( "The number of times in the baseline does not match the number of times in "
-                                            + "the main time-series ["
-                                            + b.timeStepCountBaseline.get( 0 )
-                                            + ", "
-                                            + this.timeStepCount
-                                            + "]." );
-        }
-        //Set the iterators
-        basisTimeIterator = getBasisTimeIterator();
-        durationIterator = getDurationIterator();
-        timeIterator = getTimeIterator();
+        bP =
+                new SafeRegularTimeSeriesOfPairs<>( getData(),
+                                                    b.timeStep,
+                                                    b.basisTimes,
+                                                    b.basisTimesBaseline,
+                                                    b.timeStepCount,
+                                                    b.timeStepCountBaseline,
+                                                    getBasisTimeIterator(),
+                                                    getDurationIterator() );
     }
 
     /**
@@ -469,35 +370,36 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
                 return new Iterator<TimeSeries<PairOfDoubles>>()
                 {
                     int returned = 0;
-                    Iterator<Instant> iterator = basisTimes.iterator();
+                    Iterator<Instant> iterator = getBasisTimes().iterator();
                     List<PairOfDoubles> data = getData();
                     List<PairOfDoubles> baselineData = getDataForBaseline();
 
                     @Override
                     public boolean hasNext()
                     {
-                        return returned < basisTimes.size();
+                        return returned < getBasisTimes().size();
                     }
 
                     @Override
                     public TimeSeries<PairOfDoubles> next()
                     {
-                        if ( returned >= basisTimes.size() )
+                        if ( returned >= getBasisTimes().size() )
                         {
                             throw new NoSuchElementException( " No more basis times to iterate." );
                         }
                         SafeRegularTimeSeriesOfSingleValuedPairsBuilder builder =
                                 new SafeRegularTimeSeriesOfSingleValuedPairsBuilder();
                         Instant nextTime = iterator.next();
-                        int start = returned * timeStepCount;
-                        builder.setTimeStep( timeStep );
-                        builder.addData( nextTime, data.subList( start, start + timeStepCount ) );
+                        int start = returned * bP.getTimeStepCount();
+                        builder.setTimeStep( getRegularDuration() );
+                        builder.addData( nextTime, data.subList( start, start + bP.getTimeStepCount() ) );
                         builder.setMetadata( getMetadata() );
-                        if ( hasBaseline() && basisTimesBaseline.contains( nextTime ) )
+                        if ( hasBaseline() && bP.getBasisTimesBaseline().contains( nextTime ) )
                         {
-                            int startBase = basisTimesBaseline.indexOf( nextTime ) * timeStepCount;
+                            int startBase = bP.getBasisTimesBaseline().indexOf( nextTime ) * bP.getTimeStepCount();
                             builder.addDataForBaseline( nextTime,
-                                                        baselineData.subList( startBase, startBase + timeStepCount ) );
+                                                        baselineData.subList( startBase,
+                                                                              startBase + bP.getTimeStepCount() ) );
                             builder.setMetadataForBaseline( getMetadataForBaseline() );
                         }
                         returned++;
@@ -507,7 +409,7 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
                     @Override
                     public void remove()
                     {
-                        throw new UnsupportedOperationException( UNSUPPORTED_MODIFICATION );
+                        throw new UnsupportedOperationException( SafeRegularTimeSeriesOfPairs.UNSUPPORTED_MODIFICATION );
                     }
                 };
             }
@@ -538,38 +440,38 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
                     @Override
                     public boolean hasNext()
                     {
-                        return returned < timeStepCount;
+                        return returned < bP.getTimeStepCount();
                     }
 
                     @Override
                     public TimeSeries<PairOfDoubles> next()
                     {
-                        if ( returned >= timeStepCount )
+                        if ( returned >= bP.getTimeStepCount() )
                         {
                             throw new NoSuchElementException( " No more lead times to iterate." );
                         }
                         SafeRegularTimeSeriesOfSingleValuedPairsBuilder builder =
                                 new SafeRegularTimeSeriesOfSingleValuedPairsBuilder();
-                        builder.setTimeStep( timeStep.multipliedBy( (long) returned + 1 ) );
+                        builder.setTimeStep( getRegularDuration().multipliedBy( (long) returned + 1 ) );
                         builder.setMetadata( getMetadata() );
                         int start = 0;
-                        for ( Instant next : basisTimes )
+                        for ( Instant next : bP.getBasisTimes() )
                         {
                             List<PairOfDoubles> subset = new ArrayList<>();
                             subset.add( data.get( start + returned ) );
                             builder.addData( next, subset );
-                            start += timeStepCount;
+                            start += bP.getTimeStepCount();
                         }
                         //Add filtered baseline data
                         if ( hasBaseline() )
                         {
                             start = 0; //Reset counter
-                            for ( Instant next : basisTimesBaseline )
+                            for ( Instant next : bP.getBasisTimesBaseline() )
                             {
                                 List<PairOfDoubles> subset = new ArrayList<>();
                                 subset.add( baselineData.get( start + returned ) );
                                 builder.addDataForBaseline( next, subset );
-                                start += timeStepCount;
+                                start += bP.getTimeStepCount();
                             }
                             builder.setMetadataForBaseline( getMetadataForBaseline() );
                         }
@@ -580,93 +482,12 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
                     @Override
                     public void remove()
                     {
-                        throw new UnsupportedOperationException( UNSUPPORTED_MODIFICATION );
+                        throw new UnsupportedOperationException( SafeRegularTimeSeriesOfPairs.UNSUPPORTED_MODIFICATION );
                     }
                 };
             }
         }
         return new IterableTimeSeries();
     }
-
-    /**
-     * Returns an {@link Iterable} view of the pairs of times and values.
-     * 
-     * @return an iterable view of the times and values
-     */
-
-    private Iterable<Pair<Instant, PairOfDoubles>> getTimeIterator()
-    {
-        //Construct an iterable view of the times and values
-        class IterableTimeSeries implements Iterable<Pair<Instant, PairOfDoubles>>
-        {
-            @Override
-            public Iterator<Pair<Instant, PairOfDoubles>> iterator()
-            {
-                return new Iterator<Pair<Instant, PairOfDoubles>>()
-                {
-                    int returned = 0;
-                    List<PairOfDoubles> data = getData();
-
-                    @Override
-                    public boolean hasNext()
-                    {
-                        return returned < data.size();
-                    }
-
-                    @Override
-                    public Pair<Instant, PairOfDoubles> next()
-                    {
-                        if ( returned >= data.size() )
-                        {
-                            throw new NoSuchElementException( "No more pairs to iterate." );
-                        }
-                        Pair<Instant, PairOfDoubles> returnMe = new Pair<Instant, PairOfDoubles>()
-                        {
-                            static final long serialVersionUID = -1526254706557220091L;
-                            int returnedSoFar = returned; //Current step, before incremented
-                            
-                            @Override
-                            public PairOfDoubles setValue( PairOfDoubles pairOfDoubles )
-                            {
-                                throw new UnsupportedOperationException( "Cannot mutate this pair." );
-                            }
-
-                            @Override
-                            public Instant getLeft()
-                            {
-                                int basisIndex = (int) Math.floor( ( (double) returnedSoFar ) / timeStepCount );
-                                int residual = returnedSoFar - ( basisIndex * timeStepCount );
-                                return basisTimes.get( basisIndex )
-                                                 .plus( timeStep.multipliedBy( (long) residual + 1 ) );
-                            }
-
-                            @Override
-                            public PairOfDoubles getRight()
-                            {
-                                return data.get( returnedSoFar );
-                            }
-
-                            @Override
-                            public String toString()
-                            {
-                                return getLeft() + "," + getRight().getItemOne() + "," + getRight().getItemTwo();
-                            }
-
-                        };
-                        returned++;
-                        return returnMe;
-                    }
-
-                    @Override
-                    public void remove()
-                    {
-                        throw new UnsupportedOperationException( UNSUPPORTED_MODIFICATION );
-                    }
-                };
-            }
-        }
-        return new IterableTimeSeries();
-    }
-
 
 }
