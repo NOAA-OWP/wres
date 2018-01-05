@@ -33,7 +33,7 @@
         <leadHours minimum="1" maximum="24" />
         <grouping>feature,lead_time</grouping>       
         <desiredTimeAggregation>
-            <function>avg</function>
+            <function>none</function>
             <period>6</period>
             <unit>hour</unit>
         </desiredTimeAggregation>
@@ -48,10 +48,10 @@
         <metric><name>mean error</name></metric>
         <metric><name>sample size</name></metric>
         <destination type="pairs" decimalFormat="0.000000">
-            <path>output</path>
+            <path>output/</path>
         </destination>
         <destination type="numeric" decimalFormat="0.000000">
-            <path>output</path>
+            <path>output/</path>
         </destination>
         <!--
         <destination type="graphic">
