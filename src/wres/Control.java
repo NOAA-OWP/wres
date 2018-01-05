@@ -193,7 +193,7 @@ public class Control implements Function<String[], Integer>
 
                 Long completionPercent = Math.min( Math.round( completion ), 100L );
 
-                if (completionPercent < 10)
+                if (completionPercent <= 0)
                 {
                     result = -1;
                 }

@@ -33,6 +33,8 @@ import wres.config.generated.TimeWindowMode;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.Variables;
+import wres.io.grouping.LabeledScript;
+import wres.io.retrieval.scripting.Scripter;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
 import wres.io.utilities.ScriptGenerator;
@@ -513,7 +515,19 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     public PoolingWindowConfig getPoolingWindow()
     {
         return this.projectConfig.getPair().getPoolingWindow();
-    }    
+    }
+
+    public TimeWindowMode getPoolingMode()
+    {
+        TimeWindowMode mode = TimeWindowMode.BACK_TO_BACK;
+
+        if (this.getPoolingWindow() != null)
+        {
+            mode = this.getPoolingWindow().getMode();
+        }
+
+        return mode;
+    }
     
     public String getPoolingWindowUnit()
     {
@@ -610,9 +624,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     public Integer getRollingWindowCount(Feature feature)
             throws SQLException, InvalidPropertiesFormatException
     {
-        //JBr: check for rolling window config, not aggregation mode
-        //if ( this.getAggregation().getMode() != TimeWindowMode.ROLLING)
-        if ( getPoolingWindow() == null || getPoolingWindow().getMode() != TimeWindowMode.ROLLING )
+        if ( getPoolingMode() != TimeWindowMode.ROLLING)
         {
             return -1;
         }
@@ -646,19 +658,13 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
                 resultSet.next();
 
                 String min = Database.getValue(resultSet, "min");
-                Double span = TimeHelper.unitsToHours( this.getPoolingWindowUnit(), this.getPoolingWindow().getPeriod() );
 
                 // This will ensure that we gloss over partial windows
-                if ( this.getPoolingWindow().getAnchor() == TimeAnchor.CENTER)
+                if ( this.getPoolingWindow().getAnchor() == TimeAnchor.CENTER ||
+                     this.getPoolingWindow().getAnchor() == TimeAnchor.RIGHT)
                 {
-                    /*Span / 2 doesn't work because it does not take into account that mid points aren't span / 2 away from the start
-                        If we have basis times 12 hours apart at 12z with a span of 72 hours, we'll get a mid point of 00z, which is invalid
-                        We need to have the next basis time after the cut off.*/
-                    min = TimeHelper.plus( min, this.getPoolingWindowUnit(), span / 2.0);
-                }
-                else if (this.getPoolingWindow().getAnchor() == TimeAnchor.RIGHT)
-                {
-                    min = TimeHelper.plus( min, this.getPoolingWindowUnit(), span );
+                    String anchorScript = ScriptGenerator.formApplyInitialAnchorScript( this, feature, min );
+                    min = Database.getResult( anchorScript, "zero_date" );
                 }
 
                 this.initialRollingDates.put( feature, min );
