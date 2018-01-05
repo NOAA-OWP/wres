@@ -356,7 +356,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
                     Integer beginning;
                     Integer end;
 
-                    if ( this.getProjectDetails().getAggregation().getMode() == TimeWindowMode.BACK_TO_BACK)
+                    if ( this.getProjectDetails().getPoolingMode() == TimeWindowMode.BACK_TO_BACK)
                     {
                         beginning =
                                 this.getProjectDetails()

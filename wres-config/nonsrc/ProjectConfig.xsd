@@ -376,7 +376,6 @@
             <xs:element name="unit" type="durationUnit" />
         </xs:sequence>
         <xs:attribute name="label" type="xs:string" />
-        <xs:attribute name="mode" type="timeWindowMode" default="back-to-back" />
     </xs:complexType>
 
     <xs:complexType name="spaceAggregation">

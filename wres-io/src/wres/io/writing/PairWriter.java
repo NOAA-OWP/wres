@@ -206,7 +206,7 @@ public class PairWriter extends WRESCallable<Boolean>
         // but so will rolling, which should be 4 then 5
         double lead;
 
-        if (this.projectDetails.getAggregation().getMode() == TimeWindowMode.ROLLING)
+        if (this.projectDetails.getPoolingMode() == TimeWindowMode.ROLLING)
         {
             // Rolling windows use explicit lead times
             lead = this.lead;

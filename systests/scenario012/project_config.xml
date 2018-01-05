@@ -29,7 +29,7 @@
             <frequency>24</frequency>
             <unit>hours</unit>
         </poolingWindow>
-        <desiredTimeAggregation mode="rolling">
+        <desiredTimeAggregation>
             <function>avg</function>
             <period>4</period>
             <frequency>1</frequency>
@@ -59,12 +59,12 @@
         <destination type="pairs" decimalFormat="0.000000">
             <path>output</path>
         </destination>
-        <destination type="graphic">
-            <path>output</path>
+        <!--<destination type="graphic">
+            <path>output/scenario012/</path>
             <graphical width="800" height="600">
                 <plotType>pooling window</plotType>
             </graphical>
-        </destination>
+        </destination>-->
     </outputs>
 
 </project>

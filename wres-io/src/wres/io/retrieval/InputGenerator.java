@@ -41,7 +41,7 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>>
         Iterator<Future<MetricInput<?>>> iterator = null;
         try
         {
-            switch (this.projectDetails.getAggregation().getMode())
+            switch (this.projectDetails.getPoolingMode())
             {
                 case ROLLING:
                     iterator = new RollingMetricInputIterator( this.feature,
@@ -53,8 +53,7 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>>
                     break;
                 default:
                     throw new NotImplementedException( "The aggregation mode of '" +
-                                                       this.projectDetails.getAggregation()
-                                                                                  .getMode() +
+                                                       this.projectDetails.getPoolingMode() +
                                                        "' has not been implemented." );
             }
         }
