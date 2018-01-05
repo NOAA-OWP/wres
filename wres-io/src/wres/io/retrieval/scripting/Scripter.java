@@ -38,7 +38,7 @@ public abstract class Scripter
     {
         Scripter loadScripter;
 
-        TimeWindowMode mode = projectDetails.getAggregation().getMode();
+        TimeWindowMode mode = projectDetails.getPoolingMode();
         boolean isForecast = ConfigHelper.isForecast( dataSourceConfig );
 
         switch ( mode )

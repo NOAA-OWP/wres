@@ -473,7 +473,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         {
             try
             {
-                if (this.projectDetails.getAggregation().getMode() == TimeWindowMode.ROLLING)
+                if (this.projectDetails.getPoolingMode() == TimeWindowMode.ROLLING)
                 {
                     lastLead = (this.projectDetails.getAggregationPeriod() + this.progress) * 1.0;
                 }

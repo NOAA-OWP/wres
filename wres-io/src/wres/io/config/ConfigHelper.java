@@ -91,8 +91,7 @@ public class ConfigHelper
                                                                1,
                                                                1,
                                                                DurationUnit.HOURS,
-                                                               "",
-                                                               TimeWindowMode.BACK_TO_BACK );
+                                                               "");
         }
 
         return timeAggregationConfig;
@@ -870,7 +869,7 @@ public class ConfigHelper
             Integer step = projectDetails.getPoolingWindow().getFrequency();
             // A pooling window with TimeWindowMode.BACK_TO_BACK has an unspecified frequency
             // that is equal to the period
-            if ( projectDetails.getPoolingWindow().getMode() == TimeWindowMode.BACK_TO_BACK )
+            if ( projectDetails.getPoolingMode() == TimeWindowMode.BACK_TO_BACK )
             {
                 step = projectDetails.getPoolingWindow().getPeriod();
             }

@@ -11,6 +11,7 @@ import wres.config.generated.Feature;
 import wres.config.generated.TimeAnchor;
 import wres.io.config.ConfigHelper;
 import wres.io.data.details.ProjectDetails;
+import wres.io.grouping.LabeledScript;
 import wres.util.Internal;
 
 /**
@@ -156,6 +157,63 @@ public final class ScriptGenerator
 
 
         return script.toString();
+    }
+
+    public static String formApplyInitialAnchorScript( ProjectDetails projectDetails, Feature feature, String initialDate)
+            throws SQLException
+    {
+        StringBuilder anchorScript = new StringBuilder(  );
+
+        anchorScript.append("SELECT MIN(TS.initialization_date)::text AS zero_date").append(NEWLINE);
+        anchorScript.append("FROM wres.TimeSeries TS").append(NEWLINE);
+        anchorScript.append("WHERE ").append(ConfigHelper.getVariablePositionClause(
+                feature,
+                ConfigHelper.getVariableID( projectDetails.getRight() ),
+                "TS"
+        )).append(NEWLINE);
+        anchorScript.append("    AND TS.initialization_date >= '")
+                    .append(initialDate)
+                    .append("'::timestamp without time zone ");
+
+        if (projectDetails.getPoolingWindow().getAnchor() != TimeAnchor.LEFT)
+        {
+            anchorScript.append("+ INTERVAL '");
+
+            if (projectDetails.getPoolingWindow().getAnchor() == TimeAnchor.CENTER)
+            {
+                anchorScript.append( projectDetails.getPoolingWindow().getPeriod() / 2.0 );
+            }
+            else if (projectDetails.getPoolingWindow().getAnchor() == TimeAnchor.RIGHT)
+            {
+                anchorScript.append( projectDetails.getPoolingWindow().getPeriod());
+            }
+
+            anchorScript.append(" ")
+                        .append(projectDetails.getPoolingWindowUnit())
+                        .append("'");
+        }
+
+        anchorScript.append(NEWLINE);
+
+        anchorScript.append("    AND EXISTS (").append(NEWLINE);
+        anchorScript.append("        SELECT 1").append(NEWLINE);
+        anchorScript.append("        FROM wres.ForecastSource FS")
+                    .append(NEWLINE);
+        anchorScript.append("        INNER JOIN wres.ProjectSource PS")
+                    .append(NEWLINE);
+        anchorScript.append("            ON PS.source_id = FS.source_id")
+                    .append(NEWLINE);
+        anchorScript.append("        WHERE PS.project_id = ")
+                    .append(projectDetails.getId())
+                    .append(NEWLINE);
+        anchorScript.append("            AND PS.member = ")
+                    .append(ProjectDetails.RIGHT_MEMBER)
+                    .append(NEWLINE);
+        anchorScript.append("            AND FS.forecast_id = TS.timeseries_id")
+                    .append(NEWLINE);
+        anchorScript.append("    );");
+
+        return anchorScript.toString();
     }
 
     public static String generateZeroDateScript(ProjectDetails projectDetails,

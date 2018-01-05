@@ -856,15 +856,6 @@ public class Validation
 
         StringBuilder warning = new StringBuilder();
 
-        // Rolling window aggregation must have a non-null frequency
-        if ( aggregationConfig.getMode() == TimeWindowMode.ROLLING && aggregationConfig.getFrequency() == null )
-        {
-            valid = false;
-            warning.append( "The frequency (the rate at which a new rolling " +
-                            "window is generated) must be set in order to use "
-                            +
-                            "rolling windows for aggregation." );
-        }
         // Non-null frequency must be >= 1
         if ( aggregationConfig.getFrequency() != null && aggregationConfig.getFrequency() < 1 )
         {
