@@ -9,7 +9,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.generated.Feature;
-import wres.config.generated.ProjectConfig;
 import wres.datamodel.inputs.MetricInput;
 import wres.io.config.ConfigHelper;
 import wres.io.data.details.ProjectDetails;
@@ -60,18 +59,19 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>>
         }
         catch (SQLException | NotImplementedException | InvalidPropertiesFormatException e)
         {
-            // We don't want to log the new line, we just want the separator
-            System.err.println();
-            LOGGER.error("A MetricInputIterator could not be created for '{}'.",
-                         ConfigHelper.getFeatureDescription( this.feature ));
+            String message = "A MetricInputIterator could not be created for '"
+                             + ConfigHelper.getFeatureDescription( this.feature )
+                             + "'.";
+            // Until we can get rid of the stateful Iterable/Iterator interface:
+            throw new IterationFailedException( message, e );
         }
         catch ( NoDataException e )
         {
-            // We don't want to log the new line, we just want the separator
-            System.err.println();
-            LOGGER.error("A MetricInputIterator could not be created for '{}'. " +
-                         "There's no data to iterate over.",
-                         ConfigHelper.getFeatureDescription(this.feature));
+            String message = "A MetricInputIterator could not be created for '{"
+                             + ConfigHelper.getFeatureDescription( this.feature )
+                             + "}'. There's no data to iterate over.";
+            // Until we can get rid of the stateful Iterable/Iterator interface:
+            throw new IterationFailedException( message, e );
         }
         return iterator;
     }
