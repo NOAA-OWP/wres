@@ -8,7 +8,7 @@
             <existingTimeAggregation>
                 <function>none</function>
                 <period>1</period>
-                <unit>hour</unit>
+                <unit>hours</unit>
             </existingTimeAggregation>
         </left>
         <right label="NWM Short Range">
@@ -26,7 +26,7 @@
         <desiredTimeAggregation>
             <function>avg</function>
             <period>1</period>
-            <unit>hour</unit>
+            <unit>hours</unit>
         </desiredTimeAggregation>
     </pair>
     <outputs>
