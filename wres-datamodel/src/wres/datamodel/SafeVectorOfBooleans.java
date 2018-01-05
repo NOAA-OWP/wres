@@ -1,5 +1,7 @@
 package wres.datamodel;
 
+import java.util.Arrays;
+
 /**
  * A Safe way to share a boolean array between threads. It is cloned on the way in, and cloned on the way out. This way,
  * if the original array is mutated after construction, the clone during construction prevents surprise. Likewise, the
@@ -26,6 +28,23 @@ class SafeVectorOfBooleans implements VectorOfBooleans
     {
         return booleans.clone();
     }
+    
+    @Override
+    public boolean equals( Object o )
+    {
+        if(! (o instanceof VectorOfBooleans) )
+        {
+            return false;
+        }
+        boolean[] in = ((VectorOfBooleans)o).getBooleans();
+        return Arrays.equals( this.getBooleans(), in );
+    }
+    
+    @Override
+    public int hashCode( )
+    {
+        return Arrays.hashCode( this.getBooleans() );
+    }       
 
     @Override
     public int size()
