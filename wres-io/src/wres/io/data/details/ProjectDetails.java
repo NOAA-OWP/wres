@@ -676,13 +676,14 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
 
                 String min = Database.getValue(resultSet, "min");
 
+                // TODO: Determine if we want to perform anchoring. If so, uncomment
                 // This will ensure that we gloss over partial windows
-                if ( this.getPoolingWindow().getAnchor() == TimeAnchor.CENTER ||
+                /*if ( this.getPoolingWindow().getAnchor() == TimeAnchor.CENTER ||
                      this.getPoolingWindow().getAnchor() == TimeAnchor.RIGHT)
-                {
+                {*/
                     String anchorScript = ScriptGenerator.formApplyInitialAnchorScript( this, feature, min );
                     min = Database.getResult( anchorScript, "zero_date" );
-                }
+                //}
 
                 this.initialRollingDates.put( feature, min );
                 this.rollingWindowCounts.put( feature, Database.getValue( resultSet, "window_count" ));

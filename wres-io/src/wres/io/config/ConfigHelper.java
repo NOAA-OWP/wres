@@ -894,8 +894,9 @@ public class ConfigHelper
             String firstDate;
             String lastDate;
 
-            if (projectDetails.getPoolingWindow().getAnchor() == TimeAnchor.CENTER)
-            {
+            // TODO: Determine if we want to continue with anchoring. If so, uncomment
+            /*if (projectDetails.getPoolingWindow().getAnchor() == TimeAnchor.CENTER)
+            {*/
                 // Since the focus is in the center of the window, our first
                 // date is half the period before the focus and our last date
                 // is half the period after
@@ -906,7 +907,7 @@ public class ConfigHelper
                 lastDate = TimeHelper.plus( focusDate,
                                             projectDetails.getPoolingWindowUnit(),
                                             halfPeriod);
-            }
+            /*}
             else if (projectDetails.getPoolingWindow().getAnchor() == TimeAnchor.LEFT)
             {
                 // Since the focus is on the left of the window, our first date
@@ -926,7 +927,7 @@ public class ConfigHelper
                                               projectDetails.getPoolingWindowUnit(),
                                               projectDetails.getPoolingWindow().getPeriod() );
                 lastDate = focusDate;
-            }
+            }*/
 
             OffsetDateTime first = TimeHelper.convertStringToDate( firstDate );
             OffsetDateTime last = TimeHelper.convertStringToDate( lastDate );

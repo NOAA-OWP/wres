@@ -116,13 +116,14 @@ public final class ScriptGenerator
         script.append("CROSS JOIN earliest_latest EL").append(NEWLINE);
         script.append("WHERE ").append(timeSeriesVariablePosition).append(NEWLINE);
 
-        if ( projectDetails.getPoolingWindow().getAnchor() == TimeAnchor.CENTER)
-        {
+        // TODO: If we decide to use anchoring, uncomment
+        /*if ( projectDetails.getPoolingWindow().getAnchor() == TimeAnchor.CENTER)
+        {*/
             script.append( "    AND TS.initialization_date >= EL.earliest" )
                   .append( NEWLINE );
             script.append( "    AND TS.initialization_date <= EL.latest" )
                   .append( NEWLINE );
-        }
+        /*}
         else if (projectDetails.getPoolingWindow().getAnchor() == TimeAnchor.LEFT)
         {
             script.append("    AND TS.initialization_date >= EL.earliest").append(NEWLINE);
@@ -143,7 +144,7 @@ public final class ScriptGenerator
             script.append(NEWLINE);
             script.append("    AND TS.initialization_date <= EL.latest");
             script.append(NEWLINE);
-        }
+        }*/
 
         script.append("    AND EXISTS (").append(NEWLINE);
         script.append("        SELECT 1").append(NEWLINE);
@@ -175,23 +176,24 @@ public final class ScriptGenerator
                     .append(initialDate)
                     .append("'::timestamp without time zone ");
 
-        if (projectDetails.getPoolingWindow().getAnchor() != TimeAnchor.LEFT)
-        {
+        // TODO: If we want to move forward with anchoring, uncomment
+        /*if (projectDetails.getPoolingWindow().getAnchor() != TimeAnchor.LEFT)
+        {*/
             anchorScript.append("+ INTERVAL '");
 
-            if (projectDetails.getPoolingWindow().getAnchor() == TimeAnchor.CENTER)
-            {
+            /*if (projectDetails.getPoolingWindow().getAnchor() == TimeAnchor.CENTER)
+            {*/
                 anchorScript.append( projectDetails.getPoolingWindow().getPeriod() / 2.0 );
-            }
+            /*}
             else if (projectDetails.getPoolingWindow().getAnchor() == TimeAnchor.RIGHT)
             {
                 anchorScript.append( projectDetails.getPoolingWindow().getPeriod());
-            }
+            }*/
 
             anchorScript.append(" ")
                         .append(projectDetails.getPoolingWindowUnit())
                         .append("'");
-        }
+        //}
 
         anchorScript.append(NEWLINE);
 
