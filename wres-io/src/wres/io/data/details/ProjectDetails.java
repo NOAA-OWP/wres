@@ -495,7 +495,9 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         {
             frequency = this.getAggregation().getFrequency();
         }
-        else if (this.getAggregation() != null)
+        else if ( this.getPoolingWindow() != null &&
+                  this.getPoolingWindow().getMode() == TimeWindowMode.ROLLING &&
+                  this.getAggregation() != null)
         {
             try
             {
@@ -511,6 +513,10 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
                               + "specify the unconfigured lead time frequency."
                               + "Defaulting to 1.", e );
             }
+        }
+        else
+        {
+            frequency = 1;
         }
 
         return frequency;
