@@ -25,8 +25,8 @@ public class ReaderFactory {
                                          String filename )
             throws IOException
 	{
-		SourceType typeOfFile = getFiletype(filename);
-		
+        Format typeOfFile = getFiletype( filename );
+
 		BasicSource source = null;
 
 		switch (typeOfFile)
@@ -39,7 +39,7 @@ public class ReaderFactory {
                 source = new ZippedSource( projectConfig,
                                            filename );
 				break;
-			case NETCDF:
+            case NET_CDF:
                 source = new NWMSource( projectConfig,
                                         filename );
 				break;
@@ -58,9 +58,9 @@ public class ReaderFactory {
 		return source;
 	}
 	
-	public static SourceType getFiletype(String filename)
+    public static Format getFiletype( String filename )
 	{
-		SourceType type;
+        Format type;
 
 		filename = Paths.get(filename).getFileName().toString().toLowerCase();
 
@@ -68,58 +68,25 @@ public class ReaderFactory {
 
 		if (filename.endsWith("tar.gz") || filename.endsWith(".tgz"))
 		{
-			type = SourceType.ARCHIVE;
+            type = Format.ARCHIVE;
 		}
 		else if ( filename.endsWith(".xml") || Strings.contains(filename, ".+\\.\\d+$"))
 		{
-			type = SourceType.PI_XML;
+            type = Format.PI_XML;
 		}
 		else if (filename.equalsIgnoreCase( "usgs" ))
         {
-            type = SourceType.USGS;
+            type = Format.USGS;
         }
         else if ( NetCDF.isNWMData(filename ) )
         {
-            type = SourceType.NETCDF;
+            type = Format.NET_CDF;
         }
 		else
 		{
-			type = SourceType.DATACARD;
+            type = Format.DATACARD;
 		}
 
 		return type;
 	}
-
-	public static SourceType getFileType (Format fileFormat)
-    {
-    	if (fileFormat == null)
-		{
-			return SourceType.UNDEFINED;
-		}
-
-        SourceType type;
-
-        switch (fileFormat)
-		{
-			case PI_XML:
-				type = SourceType.PI_XML;
-				break;
-            case DATACARD:
-                type = SourceType.DATACARD;
-                break;
-            case NET_CDF:
-                type = SourceType.NETCDF;
-                break;
-            case ARCHIVE:
-                type = SourceType.ARCHIVE;
-                break;
-            case USGS:
-                type = SourceType.USGS;
-                break;
-            default:
-                type = SourceType.UNDEFINED;
-		}
-
-        return type;
-    }
 }

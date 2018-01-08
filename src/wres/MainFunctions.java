@@ -28,6 +28,7 @@ import ucar.ma2.Array;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
 
+import wres.config.generated.Format;
 import wres.config.generated.ProjectConfig;
 import wres.io.Operations;
 import wres.io.concurrency.Downloader;
@@ -37,7 +38,6 @@ import wres.io.concurrency.WRESRunnable;
 import wres.io.config.ConfigHelper;
 import wres.io.config.SystemSettings;
 import wres.io.reading.ReaderFactory;
-import wres.io.reading.SourceType;
 import wres.io.reading.usgs.USGSParameterReader;
 import wres.io.utilities.Database;
 import wres.util.NetCDF;
@@ -913,7 +913,8 @@ final class MainFunctions
                 try
                 {
 
-                    if (Files.notExists(Paths.get(filePath)) || ReaderFactory.getFiletype(filePath) != SourceType.NETCDF)
+                    if ( Files.notExists( Paths.get( filePath ) )
+                         || ReaderFactory.getFiletype( filePath ) != Format.NET_CDF )
                     {
                         throw new IOException("There is not a NetCDFFile at the indicated path");
                     }
