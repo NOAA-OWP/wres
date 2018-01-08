@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.InvalidPropertiesFormatException;
 import java.util.List;
 import java.util.Objects;
+import java.util.StringJoiner;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -624,6 +625,28 @@ public class ConfigHelper
         }
 
         return description;
+    }
+
+
+    /**
+     * Get a comma separated description of a list of features.
+     * @param features the list of features to describe, nonnull
+     * @return a description of all features
+     * @throws NullPointerException when list of features is null
+     */
+
+    public static String getFeaturesDescription( List<Feature> features )
+    {
+        Objects.requireNonNull( features );
+        StringJoiner result = new StringJoiner( ", ", "( ", " )");
+
+        for ( Feature feature : features )
+        {
+            String description = ConfigHelper.getFeatureDescription( feature );
+            result.add( description );
+        }
+
+        return result.toString();
     }
 
     /**
