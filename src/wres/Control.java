@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -69,11 +70,12 @@ import wres.io.config.SystemSettings;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
 import wres.io.retrieval.InputGenerator;
+import wres.io.retrieval.IterationFailedException;
+import wres.io.utilities.NoDataException;
 import wres.io.writing.ChartWriter;
 import wres.io.writing.ChartWriter.ChartWritingException;
 import wres.io.writing.CommaSeparated;
 import wres.util.ProgressMonitor;
-import wres.util.Strings;
 import wres.vis.ChartEngineFactory;
 
 /**
@@ -246,25 +248,52 @@ public class Control implements Function<String[], Integer>
 
         ProgressMonitor.setShowStepDescription( false );
 
+        Set<Feature> decomposedFeatures;
+
         try
         {
-            Feature[] decomposedFeatures = Operations.decomposeFeatures( projectConfig );
-            FEATURE_COUNT.getAndAdd( decomposedFeatures.length );
-            for (Feature feature : decomposedFeatures)
-            {
-                ProgressMonitor.resetMonitor();
-                processFeature( feature,
-                                projectConfigPlus,
-                                availableSources,
-                                pairExecutor,
-                                thresholdExecutor,
-                                metricExecutor );
-            }
+            decomposedFeatures = Operations.decomposeFeatures( projectConfig );
         }
         catch ( SQLException e )
         {
-            throw new IOException( "Data for a feature could not be processed.", e );
+            throw new IOException( "Failed to retrieve the set of features.", e );
         }
+
+        FEATURE_COUNT.getAndAdd( decomposedFeatures.size() );
+
+        List<Feature> successfulFeatures = new ArrayList<>();
+        List<Feature> unsuccessfulFeatures = new ArrayList<>();
+
+        for ( Feature feature : decomposedFeatures )
+        {
+            ProgressMonitor.resetMonitor();
+            FeatureProcessingResult result =
+                    processFeature( feature,
+                                    projectConfigPlus,
+                                    availableSources,
+                                    pairExecutor,
+                                    thresholdExecutor,
+                                    metricExecutor );
+
+            if ( result.isSuccess() )
+            {
+                successfulFeatures.add( result.getFeature() );
+            }
+            else
+            {
+                unsuccessfulFeatures.add( result.getFeature() );
+                if ( LOGGER.isDebugEnabled() )
+                {
+                    LOGGER.debug( "Feature {} failed due to",
+                                  result.getFeature(),
+                                  result.getCause() );
+                }
+            }
+        }
+
+        LOGGER.info( "The following features succeeded: {}", successfulFeatures );
+        LOGGER.info( "The following features were unavailable: {}", unsuccessfulFeatures );
+
     }
 
     /**
@@ -278,12 +307,12 @@ public class Control implements Function<String[], Integer>
      * @param metricExecutor the {@link ExecutorService} for processing metrics
      * @throws WresProcessingException when an error occurs during processing
      */
-    private void processFeature( final Feature feature,
-                                 final ProjectConfigPlus projectConfigPlus,
-                                 final List<IngestResult> projectSources,
-                                 final ExecutorService pairExecutor,
-                                 final ExecutorService thresholdExecutor,
-                                 final ExecutorService metricExecutor )
+    private FeatureProcessingResult processFeature( final Feature feature,
+                                                    final ProjectConfigPlus projectConfigPlus,
+                                                    final List<IngestResult> projectSources,
+                                                    final ExecutorService pairExecutor,
+                                                    final ExecutorService thresholdExecutor,
+                                                    final ExecutorService metricExecutor )
     {
 
         final ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
@@ -329,14 +358,12 @@ public class Control implements Function<String[], Integer>
 
         // Queue the various tasks by time window (time window is the pooling dimension for metric calculation here)
         final List<CompletableFuture<?>> listOfFutures = new ArrayList<>(); //List of futures to test for completion
-        int inputCount = 0;
 
         try
         {
             // Iterate
             for ( final Future<MetricInput<?>> nextInput : metricInputs )
             {
-                inputCount++;
                 // Complete all tasks asynchronously:
                 // 1. Get some pairs from the database
                 // 2. Compute the metrics
@@ -358,28 +385,13 @@ public class Control implements Function<String[], Integer>
                 listOfFutures.add( c );
             }
         }
-        catch (NullPointerException npe)
+        catch ( IterationFailedException re )
         {
-            if (inputCount == 0)
+            if ( Control.wasNoDataExceptionInThisStack( re ) )
             {
-                LOGGER.debug( Strings.getStackTrace(npe));
-                // Not a single metric input could be created, meaning that
-                // something was most likely wrong with the data itself, not
-                // the programming
-                LOGGER.info("Data for '{}' could not be evaluated. Please view " +
-                            "the log for more information.",
-                            ConfigHelper.getFeatureDescription( feature ));
-
-                // We don't want to log the blank line, we just want a separator
-                // on the terminal
-                System.out.println();
-
-                return;
-            }
-            else
-            {
-                // Data has been used; this is a legitimate NPE
-                throw npe;
+                return new FeatureProcessingResult( feature,
+                                                    false,
+                                                    re );
             }
         }
 
@@ -388,18 +400,21 @@ public class Control implements Function<String[], Integer>
         {
             doAllOrException(listOfFutures).join();
         }
-        catch(final CompletionException e)
+        catch( CompletionException e )
         {
-            // Shouldn't be logged; just in there to make it easier to spot the error
-            System.err.println("");
             String message = "Error while processing feature "
                              + ConfigHelper.getFeatureDescription( feature );
-            LOGGER.error(message, e);
-            System.err.println("");
+            LOGGER.error( message, e );
 
-            // TODO: This is commented out experimentally; The app should not die
-            // if a single feature fails.  If this is checked in, remove it.
-            //throw new WresProcessingException( message, e );
+            if ( Control.wasNoDataExceptionInThisStack( e ) )
+            {
+                return new FeatureProcessingResult( feature,
+                                                    false,
+                                                    e );
+            }
+
+            // Otherwise, propagate the exception up to the top.
+            throw new WresProcessingException( message, e );
         }
 
         // Generated stored output if available
@@ -413,6 +428,8 @@ public class Control implements Function<String[], Integer>
             LOGGER.info( "No metric results generated for feature: '"
                          + description + "'" );
         }
+
+        return new FeatureProcessingResult( feature, true, null );
     }
 
     /**
@@ -1272,6 +1289,75 @@ public class Control implements Function<String[], Integer>
 
             MAX_THREADS = 3;
         }
+    }
+
+    private static class FeatureProcessingResult
+    {
+        private final Feature feature;
+        private final boolean success;
+        private final Throwable cause;
+
+        private FeatureProcessingResult( Feature feature,
+                                         boolean success,
+                                         Throwable cause )
+        {
+            Objects.requireNonNull( feature );
+            this.feature = feature;
+            this.success = success;
+            this.cause = cause;
+        }
+
+        Feature getFeature()
+        {
+            return this.feature;
+        }
+
+        boolean isSuccess()
+        {
+            return this.success;
+        }
+
+        Throwable getCause()
+        {
+            return this.cause;
+        }
+
+        @Override
+        public String toString()
+        {
+            if ( isSuccess() )
+            {
+                return "Feature "
+                       + ConfigHelper.getFeatureDescription( this.getFeature() )
+                       + " was successful.";
+            }
+            else
+            {
+                return "Feature "
+                       + ConfigHelper.getFeatureDescription( this.getFeature() )
+                       + " was unsuccessful due to "
+                       + this.getCause();
+            }
+        }
+    }
+
+    /**
+     * Look at a chain of exceptions, returns true if ANY is a NoDataException
+     * @param e the exception to look at
+     * @return true when a NoDataException is found, false otherwise
+     */
+    private static boolean wasNoDataExceptionInThisStack( Exception e )
+    {
+        Throwable cause = e;
+        while ( cause != null )
+        {
+            if ( cause instanceof NoDataException )
+            {
+                return true;
+            }
+            cause = cause.getCause();
+        }
+        return false;
     }
 
 }
