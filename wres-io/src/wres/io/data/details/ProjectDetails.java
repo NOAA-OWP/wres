@@ -495,6 +495,23 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         {
             frequency = this.getAggregation().getFrequency();
         }
+        else if (this.getAggregation() != null)
+        {
+            try
+            {
+                frequency = TimeHelper.unitsToHours(
+                        this.getAggregationUnit(),
+                        this.getAggregationPeriod()
+                ).intValue();
+            }
+            catch (InvalidPropertiesFormatException e)
+            {
+                LOGGER.debug( "The period for the aggregation could not be"
+                              + "determined, but it was needed in order to"
+                              + "specify the unconfigured lead time frequency."
+                              + "Defaulting to 1.", e );
+            }
+        }
 
         return frequency;
     }
