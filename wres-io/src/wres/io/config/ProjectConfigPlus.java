@@ -88,6 +88,18 @@ public class ProjectConfigPlus
         return this.path;
     }
 
+    /**
+     * Get the full path and filename for this ProjectConfig
+     * @return the full path and filename
+     * @throws IOException when the canonical path cannot be determined
+     */
+    public String getCanonicalPath() throws IOException
+    {
+        File file = this.getPath()
+                        .toFile();
+        return file.getCanonicalPath();
+    }
+
     public String getRawConfig()
     {
         return this.rawConfig;
