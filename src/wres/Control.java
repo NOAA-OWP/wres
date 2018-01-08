@@ -21,7 +21,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -186,25 +185,6 @@ public class Control implements Function<String[], Integer>
         // Shutdown
         finally
         {
-            if (LOGGER.isInfoEnabled())
-            {
-                Double completion = COMPLETED_FEATURE_COUNT.doubleValue() / FEATURE_COUNT.doubleValue();
-                completion *= 100.0;
-
-                Long completionPercent = Math.min( Math.round( completion ), 100L );
-
-                if (completionPercent <= 0)
-                {
-                    result = -1;
-                }
-
-                // System.out is used because we don't need the formatting in the log
-                System.out.println();
-                LOGGER.info("{}% of all indicated features were evaluated successfully.",
-                            completionPercent);
-                System.out.println();
-            }
-
             shutDownGracefully(metricExecutor);
             shutDownGracefully(thresholdExecutor);
             shutDownGracefully(pairExecutor);
@@ -237,14 +217,20 @@ public class Control implements Function<String[], Integer>
         ProgressMonitor.setShowStepDescription( true );
         ProgressMonitor.resetMonitor();
 
-        LOGGER.debug( "Beginning ingest for project {}...",
-                      projectConfigPlus.getPath() );
+        if ( LOGGER.isDebugEnabled() )
+        {
+            LOGGER.debug( "Beginning ingest for project {}...",
+                          projectConfigPlus.getCanonicalPath() );
+        }
 
         // Need to ingest first
         List<IngestResult> availableSources = Operations.ingest( projectConfig);
 
-        LOGGER.debug( "Finished ingest for project {}...",
-                      projectConfigPlus.getPath() );
+        if ( LOGGER.isDebugEnabled() )
+        {
+            LOGGER.debug( "Finished ingest for project {}...",
+                          projectConfigPlus.getCanonicalPath() );
+        }
 
         ProgressMonitor.setShowStepDescription( false );
 
@@ -258,8 +244,6 @@ public class Control implements Function<String[], Integer>
         {
             throw new IOException( "Failed to retrieve the set of features.", e );
         }
-
-        FEATURE_COUNT.getAndAdd( decomposedFeatures.size() );
 
         List<Feature> successfulFeatures = new ArrayList<>();
         List<Feature> unsuccessfulFeatures = new ArrayList<>();
@@ -282,6 +266,7 @@ public class Control implements Function<String[], Integer>
             else
             {
                 unsuccessfulFeatures.add( result.getFeature() );
+
                 if ( LOGGER.isDebugEnabled() )
                 {
                     LOGGER.debug( "Feature {} failed due to",
@@ -291,8 +276,38 @@ public class Control implements Function<String[], Integer>
             }
         }
 
-        LOGGER.info( "The following features succeeded: {}", successfulFeatures );
-        LOGGER.info( "The following features were unavailable: {}", unsuccessfulFeatures );
+        if ( LOGGER.isInfoEnabled() )
+        {
+            LOGGER.info( "The following features succeeded: {}",
+                         ConfigHelper.getFeaturesDescription( successfulFeatures ) );
+        }
+
+        if ( LOGGER.isInfoEnabled() && !unsuccessfulFeatures.isEmpty() )
+        {
+            LOGGER.info( "The following features were unavailable: {}",
+                         ConfigHelper.getFeaturesDescription(
+                                 unsuccessfulFeatures ) );
+        }
+
+        if ( LOGGER.isInfoEnabled() )
+        {
+            if ( decomposedFeatures.size() == successfulFeatures.size() )
+            {
+                LOGGER.info( "All features in project {} were successfully "
+                             + "evaluated.",
+                             projectConfigPlus.getCanonicalPath() );
+            }
+            else
+            {
+                LOGGER.info( "{} out of {} features in project {} were successfully "
+                             + "evaluated, {} out of {} features were not.",
+                             successfulFeatures.size(),
+                             decomposedFeatures.size(),
+                             projectConfigPlus.getCanonicalPath(),
+                             unsuccessfulFeatures.size(),
+                             decomposedFeatures.size() );
+            }
+        }
 
     }
 
@@ -497,7 +512,6 @@ public class Control implements Function<String[], Integer>
                           feature.getLocationId() );
         }
 
-        COMPLETED_FEATURE_COUNT.incrementAndGet();
         if ( LOGGER.isInfoEnabled() )
         {
             LOGGER.info( "Completed processing of feature '{}'.", feature.getLocationId() );
@@ -1232,15 +1246,6 @@ public class Control implements Function<String[], Integer>
      */
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Control.class);
-
-    private static final AtomicInteger FEATURE_COUNT = new AtomicInteger(  );
-    private static final AtomicInteger COMPLETED_FEATURE_COUNT = new AtomicInteger(  );
-
-    /**
-     * Log interval.
-     */
-
-    public static final long LOG_PROGRESS_INTERVAL_MILLIS = 2000;
 
     /**
      * Default data factory.
