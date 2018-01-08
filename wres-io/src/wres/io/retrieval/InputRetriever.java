@@ -548,6 +548,11 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         else
         {
             leftAggregation = leftValues.get( 0 );
+
+            if (leftAggregation == null)
+            {
+                leftAggregation = Double.NaN;
+            }
         }
 
         List<Double> validAggregations = new ArrayList<>();
@@ -571,7 +576,9 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         }
 
         return DefaultDataFactory.getInstance().pairOf( leftAggregation,
-                                                        validAggregations.toArray( new Double[validAggregations.size()] ) );
+                                                        validAggregations.toArray(
+                                                                new Double[validAggregations
+                                                                        .size()] ) );
     }
 
     private void writePair( String date,
