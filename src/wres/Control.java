@@ -246,7 +246,7 @@ public class Control implements Function<String[], Integer>
         }
 
         List<Feature> successfulFeatures = new ArrayList<>();
-        List<Feature> unsuccessfulFeatures = new ArrayList<>();
+        List<Feature> missingDataFeatures = new ArrayList<>();
 
         for ( Feature feature : decomposedFeatures )
         {
@@ -259,13 +259,13 @@ public class Control implements Function<String[], Integer>
                                     thresholdExecutor,
                                     metricExecutor );
 
-            if ( result.isSuccess() )
+            if ( result.hadData() )
             {
                 successfulFeatures.add( result.getFeature() );
             }
             else
             {
-                unsuccessfulFeatures.add( result.getFeature() );
+                missingDataFeatures.add( result.getFeature() );
 
                 if ( LOGGER.isDebugEnabled() )
                 {
@@ -282,11 +282,11 @@ public class Control implements Function<String[], Integer>
                          ConfigHelper.getFeaturesDescription( successfulFeatures ) );
         }
 
-        if ( LOGGER.isInfoEnabled() && !unsuccessfulFeatures.isEmpty() )
+        if ( LOGGER.isInfoEnabled() && !missingDataFeatures.isEmpty() )
         {
-            LOGGER.info( "The following features were unavailable: {}",
+            LOGGER.info( "The following features were missing data: {}",
                          ConfigHelper.getFeaturesDescription(
-                                 unsuccessfulFeatures ) );
+                                 missingDataFeatures ) );
         }
 
         if ( LOGGER.isInfoEnabled() )
@@ -300,16 +300,16 @@ public class Control implements Function<String[], Integer>
             else
             {
                 LOGGER.info( "{} out of {} features in project {} were successfully "
-                             + "evaluated, {} out of {} features were not.",
+                             + "evaluated, {} out of {} features were missing data.",
                              successfulFeatures.size(),
                              decomposedFeatures.size(),
                              projectConfigPlus.getCanonicalPath(),
-                             unsuccessfulFeatures.size(),
+                             missingDataFeatures.size(),
                              decomposedFeatures.size() );
             }
         }
-
     }
+
 
     /**
      * Processes a {@link ProjectConfigPlus} for a specific {@link Feature} using a prescribed {@link ExecutorService}
@@ -322,6 +322,7 @@ public class Control implements Function<String[], Integer>
      * @param metricExecutor the {@link ExecutorService} for processing metrics
      * @throws WresProcessingException when an error occurs during processing
      */
+
     private FeatureProcessingResult processFeature( final Feature feature,
                                                     final ProjectConfigPlus projectConfigPlus,
                                                     final List<IngestResult> projectSources,
@@ -1299,16 +1300,16 @@ public class Control implements Function<String[], Integer>
     private static class FeatureProcessingResult
     {
         private final Feature feature;
-        private final boolean success;
+        private final boolean hadData;
         private final Throwable cause;
 
         private FeatureProcessingResult( Feature feature,
-                                         boolean success,
+                                         boolean hadData,
                                          Throwable cause )
         {
             Objects.requireNonNull( feature );
             this.feature = feature;
-            this.success = success;
+            this.hadData = hadData;
             this.cause = cause;
         }
 
@@ -1317,9 +1318,9 @@ public class Control implements Function<String[], Integer>
             return this.feature;
         }
 
-        boolean isSuccess()
+        boolean hadData()
         {
-            return this.success;
+            return this.hadData;
         }
 
         Throwable getCause()
@@ -1330,17 +1331,17 @@ public class Control implements Function<String[], Integer>
         @Override
         public String toString()
         {
-            if ( isSuccess() )
+            if ( hadData() )
             {
                 return "Feature "
                        + ConfigHelper.getFeatureDescription( this.getFeature() )
-                       + " was successful.";
+                       + " had data.";
             }
             else
             {
                 return "Feature "
                        + ConfigHelper.getFeatureDescription( this.getFeature() )
-                       + " was unsuccessful due to "
+                       + " had no data: "
                        + this.getCause();
             }
         }
