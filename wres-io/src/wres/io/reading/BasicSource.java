@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
@@ -14,6 +13,7 @@ import org.slf4j.Logger;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
+import wres.config.generated.Format;
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.Executor;
 import wres.io.concurrency.WRESCallable;
@@ -297,10 +297,11 @@ public abstract class BasicSource
      */
     protected Pair<Boolean,String> shouldIngest( String filePath, DataSourceConfig.Source source, byte[] contents )
     {
-        SourceType specifiedFormat = ReaderFactory.getFileType(source.getFormat());
-        SourceType pathFormat = ReaderFactory.getFiletype(filePath);
+        Format specifiedFormat = source.getFormat();
+        Format pathFormat = ReaderFactory.getFiletype( filePath );
 
-        boolean ingest = specifiedFormat == SourceType.UNDEFINED || specifiedFormat.equals(pathFormat);
+        boolean ingest = specifiedFormat == null
+                         || specifiedFormat.equals( pathFormat );
 
         String contentHash = null;
 

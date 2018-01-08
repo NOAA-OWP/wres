@@ -28,6 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.generated.DataSourceConfig;
+import wres.config.generated.Format;
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.Executor;
 import wres.io.concurrency.ForecastSaver;
@@ -262,7 +263,7 @@ public class ZippedSource extends BasicSource {
             throws IOException
     {
         String archivedFileName = Paths.get(this.directoryPath, source.getName()).toString();
-        SourceType sourceType = ReaderFactory.getFiletype(archivedFileName);
+        Format sourceType = ReaderFactory.getFiletype( archivedFileName );
         DataSourceConfig.Source
                 originalSource = ConfigHelper.findDataSourceByFilename( this.getDataSourceConfig(), this.getAbsoluteFilename() );
 
@@ -317,7 +318,7 @@ public class ZippedSource extends BasicSource {
 
         WRESCallable<List<IngestResult>> ingest;
 
-        if (sourceType == SourceType.PI_XML)
+        if ( sourceType == Format.PI_XML )
         {
             ingest = new ZippedPIXMLIngest(archivedFileName,
                                            content,

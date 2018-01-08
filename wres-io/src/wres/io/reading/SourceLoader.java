@@ -316,11 +316,11 @@ public class SourceLoader
                                          DataSourceConfig.Source source,
                                          DataSourceConfig dataSourceConfig )
     {
-        SourceType specifiedFormat = ReaderFactory.getFileType(source.getFormat());
-        SourceType pathFormat = ReaderFactory.getFiletype(filePath);
+        Format specifiedFormat = source.getFormat();
+        Format pathFormat = ReaderFactory.getFiletype( filePath );
 
         // Archives perform their own ingest verification
-        if (pathFormat == SourceType.ARCHIVE)
+        if ( pathFormat == Format.ARCHIVE )
         {
             LOGGER.debug( "The file at '{}' will be ingested because it has " +
                           "determined that it is an archive that will need to " +
@@ -329,8 +329,8 @@ public class SourceLoader
             return new FileEvaluation( true, true, null );
         }
 
-        boolean ingest = specifiedFormat == SourceType.UNDEFINED ||
-                         specifiedFormat.equals(pathFormat);
+        boolean ingest = specifiedFormat == null ||
+                         specifiedFormat.equals( pathFormat );
 
         String hash = null;
 
