@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- This is a test of real, baseline validation streamflows verified through WRES where the obs is 24-h
+     and the forecasts are 6-h.  Time aggregation is needed. -->
+<project label="ExampleProject" name="scenario100">
+
+    <inputs>
+        <left label="">
+            <type>observations</type>
+            <source all="true" format="PI-XML" missingValue="-999.0"
+                recursive="true" unit="">../data/abrfcExample/LGNN5_QME.xml</source>
+            <variable>QME</variable>
+            <existingTimeAggregation>
+                <function>avg</function>
+                <period>24</period>
+                <unit>hours</unit>
+            </existingTimeAggregation>
+        </left>
+        <right label="HEFS" >
+            <type>ensemble forecasts</type>
+            <source all="false" format="PI-XML" missingValue="-999.0"
+                recursive="false" unit="">../data/abrfcExample/LGNN5_hefs_flow_1yr.tgz</source>
+            <variable>QINE</variable>
+            <existingTimeAggregation>
+                <function>avg</function>
+                <period>1</period>
+                <unit>nanos</unit>
+            </existingTimeAggregation>
+        </right>
+    </inputs>
+
+    <pair label="Pairs by location and lead time"> 
+        <unit>CMS</unit>
+        <feature locationId="LGNN5" />
+        <leadHours minimum="1" maximum="48" />
+        <issuedDates earliest="1985-01-01T00:00:00Z" latest="1985-03-01T00:00:00Z"/>
+        <grouping>feature,lead_time</grouping>    
+        <poolingWindow mode="rolling" anchor="center">
+            <period>336</period>
+            <!-- WITH period=168, this CAUSES A NULL PTR EXCEPTION!!! 
+            <frequency>672</frequency>-->
+            <frequency>168</frequency>
+            <unit>hours</unit>
+        </poolingWindow>   
+        <desiredTimeAggregation>
+            <function>avg</function>
+            <period>24</period>
+            <unit>hours</unit>
+        </desiredTimeAggregation>
+    </pair>
+
+    <outputs>
+<!--        <probabilityThresholds>
+            <applyTo>left</applyTo>
+            <commaSeparatedValues>0.1,0.25,0.5,0.75,0.9,0.95</commaSeparatedValues>
+            <operator>greater than or equal to</operator>
+        </probabilityThresholds>-->
+        <metric><name>mean error</name></metric>
+        <metric><name>sample size</name></metric>
+        <destination type="numeric" decimalFormat="0.000000">
+            <path>output/</path>
+        </destination>
+        <destination type="pairs" decimalFormat="0.000000">
+            <path>output</path>
+        </destination>
+        <destination type="graphic">
+            <path>output/</path>
+            <graphical width="800" height="600">
+                <plotType>pooling window</plotType>
+            </graphical>
+        </destination>
+    </outputs>
+
+</project>
