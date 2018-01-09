@@ -40,7 +40,7 @@
         <leadHours minimum="1" maximum="48" />
         <grouping>feature,lead_time</grouping>
         <desiredTimeAggregation>
-            <function>sum</function>
+            <function>none</function>
             <period>6</period>
             <unit>hours</unit>
         </desiredTimeAggregation>
