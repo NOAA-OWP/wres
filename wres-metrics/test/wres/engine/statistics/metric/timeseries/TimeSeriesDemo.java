@@ -1,4 +1,4 @@
-package wres.engine.statistics.metric;
+package wres.engine.statistics.metric.timeseries;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -10,12 +10,18 @@ import org.junit.Test;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
+import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
+import wres.datamodel.inputs.pairs.RegularTimeSeriesOfEnsemblePairs;
+import wres.datamodel.inputs.pairs.RegularTimeSeriesOfEnsemblePairs.RegularTimeSeriesOfEnsemblePairsBuilder;
 import wres.datamodel.inputs.pairs.RegularTimeSeriesOfSingleValuedPairs;
 import wres.datamodel.inputs.pairs.RegularTimeSeriesOfSingleValuedPairs.RegularTimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.time.TimeSeries;
+import wres.engine.statistics.metric.MetricFactory;
+import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.singlevalued.MeanError;
 
 /**
@@ -235,6 +241,48 @@ public class TimeSeriesDemo
             if ( printOutput )
             {
                 System.out.println( "While attempting to filter a time-series: " + e.getMessage() );
+            }
+        }
+
+        //Build a regular time-series of ensemble pairs and filter to include only a trace index of 0 or 3
+        //Build a time-series with three basis times 
+        List<PairOfDoubleAndVectorOfDoubles> first = new ArrayList<>();
+        List<PairOfDoubleAndVectorOfDoubles> second = new ArrayList<>();
+        List<PairOfDoubleAndVectorOfDoubles> third = new ArrayList<>();
+        RegularTimeSeriesOfEnsemblePairsBuilder b = dataFactory.ofRegularTimeSeriesOfEnsemblePairsBuilder();
+        DataFactory metIn = DefaultDataFactory.getInstance();
+        Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
+        first.add( metIn.pairOf( 1, new double[] { 1, 2, 3, 4, 5 } ) );
+        first.add( metIn.pairOf( 2, new double[] { 1, 2, 3, 4, 5 } ) );
+        first.add( metIn.pairOf( 3, new double[] { 1, 2, 3, 4, 5 } ) );
+        Instant secondBasisTime = Instant.parse( "1985-01-02T00:00:00Z" );
+        second.add( metIn.pairOf( 4, new double[] { 6, 7, 8, 9, 10 } ) );
+        second.add( metIn.pairOf( 5, new double[] { 6, 7, 8, 9, 10 } ) );
+        second.add( metIn.pairOf( 6, new double[] { 6, 7, 8, 9, 10 } ) );
+        Instant thirdBasisTime = Instant.parse( "1985-01-03T00:00:00Z" );
+        third.add( metIn.pairOf( 7, new double[] { 11, 12, 13, 14, 15 } ) );
+        third.add( metIn.pairOf( 8, new double[] { 11, 12, 13, 14, 15 } ) );
+        third.add( metIn.pairOf( 9, new double[] { 11, 12, 13, 14, 15 } ) );
+        //Build some metadata
+        MetadataFactory metaFac = metIn.getMetadataFactory();
+        Metadata meta = metaFac.getMetadata();
+        //Build the time-series
+        RegularTimeSeriesOfEnsemblePairs ts =
+                (RegularTimeSeriesOfEnsemblePairs) b.addData( firstBasisTime, first )
+                                                    .addData( secondBasisTime, second )
+                                                    .addData( thirdBasisTime, third )
+                                                    .setTimeStep( Duration.ofDays( 1 ) )
+                                                    .setMetadata( meta )
+                                                    .build();
+        //Iterate and test
+        RegularTimeSeriesOfEnsemblePairs regular = ts.filterByTraceIndex( q -> q.equals( 0 )
+                                                                               || q.equals( 3 ) );
+        //Print the filtered output by basis time
+        for ( TimeSeries<PairOfDoubleAndVectorOfDoubles> next : regular.basisTimeIterator() )
+        {
+            if ( printOutput )
+            {
+                System.out.println( next + System.lineSeparator() );
             }
         }
 
