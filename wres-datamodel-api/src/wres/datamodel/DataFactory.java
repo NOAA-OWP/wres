@@ -18,6 +18,8 @@ import wres.datamodel.inputs.pairs.MulticategoryPairs;
 import wres.datamodel.inputs.pairs.PairOfBooleans;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
+import wres.datamodel.inputs.pairs.RegularTimeSeriesOfEnsemblePairs;
+import wres.datamodel.inputs.pairs.RegularTimeSeriesOfEnsemblePairs.RegularTimeSeriesOfEnsemblePairsBuilder;
 import wres.datamodel.inputs.pairs.RegularTimeSeriesOfSingleValuedPairs;
 import wres.datamodel.inputs.pairs.RegularTimeSeriesOfSingleValuedPairs.RegularTimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
@@ -845,6 +847,14 @@ public interface DataFactory
     
     RegularTimeSeriesOfSingleValuedPairsBuilder ofRegularTimeSeriesOfSingleValuedPairsBuilder();
 
+    /**
+     * Returns a builder for a {@link RegularTimeSeriesOfEnsemblePairs}.
+     * 
+     * @return a {@link RegularTimeSeriesOfEnsemblePairsBuilder}
+     */
+    
+    RegularTimeSeriesOfEnsemblePairsBuilder ofRegularTimeSeriesOfEnsemblePairsBuilder();
+    
     /**
      * Returns a {@link MetricOutputMapByMetric} from the raw list of inputs.
      * 
