@@ -117,7 +117,7 @@ class SafeRegularTimeSeriesOfPairs<T>
 
     List<Instant> getBasisTimes()
     {
-        return basisTimes;
+        return Collections.unmodifiableList( basisTimes );
     }
 
     /**
@@ -128,7 +128,7 @@ class SafeRegularTimeSeriesOfPairs<T>
 
     List<Instant> getBasisTimesBaseline()
     {
-        return basisTimesBaseline;
+        return Collections.unmodifiableList( basisTimesBaseline );
     }    
     
     /**

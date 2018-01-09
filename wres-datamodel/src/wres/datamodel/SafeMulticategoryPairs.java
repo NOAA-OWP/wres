@@ -254,7 +254,6 @@ class SafeMulticategoryPairs implements MulticategoryPairs
      * Checks for exactly one observed occurrence and one predicted occurrence. Throws an exception if the condition is
      * not met.
      * 
-     * @param outcomes the number of outcomes
      * @param pair the pair
      * @throws MetricInputException if the input does not contain one observed occurrence and one predicted occurrence
      */

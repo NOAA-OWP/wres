@@ -377,7 +377,6 @@ class SafeThreshold implements Threshold
      * Construct the threshold.
      *
      * @param builder the builder
-     * @param condition the condition
      */
 
     private SafeThreshold( ThresholdBuilder builder )

@@ -525,6 +525,7 @@ class DefaultSlicer implements Slicer
      * @param input the input
      * @param condition the condition
      * @param failMessage a message to locate a source of failure
+     * @return the filtered vector
      * @throws MetricInputSliceException if no elements meet the condition
      */
 
