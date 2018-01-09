@@ -42,6 +42,12 @@
         <unit>MM</unit>
         <feature locationId="LGNN5" />
         <leadHours minimum="1" maximum="48" />
+        <season>
+            <earliestMonth>10</earliestMonth>
+            <earliestDay>1</earliestDay>
+            <latestMonth>3</latestMonth>
+            <latestDay>31</latestDay>
+        </season>
         <grouping>feature,lead_time</grouping>
         <desiredTimeAggregation>
             <function>sum</function>
