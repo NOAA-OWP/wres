@@ -5,6 +5,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
+import wres.datamodel.inputs.InsufficientDataException;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
@@ -171,41 +172,81 @@ class SafeSingleValuedPairs implements SingleValuedPairs
         {
             throw new MetricInputException( "Specify non-null metadata for the metric input." );
         }
+
         if ( Objects.isNull( mainInput ) )
         {
             throw new MetricInputException( "Specify a non-null dataset for the metric input." );
         }
+
         if ( Objects.isNull( baselineInput ) != Objects.isNull( baselineMeta ) )
         {
             throw new MetricInputException( "Specify a non-null baseline input and associated metadata or leave both "
                                             + "null." );
         }
+
         if ( mainInput.contains( null ) )
         {
             throw new MetricInputException( "One or more of the pairs is null." );
         }
+
         if ( mainInput.isEmpty() )
         {
             throw new MetricInputException( "Cannot build the paired data with an empty input: add one or more pairs." );
         }
+
+        if ( !SafeSingleValuedPairs.hasAtLeastOneNonNanPair( mainInput ) )
+        {
+            throw new InsufficientDataException( "Must have at least one non-NaN pair in main input." );
+        }
+
         if ( Objects.nonNull( baselineInput ) )
         {
             if ( baselineInput.contains( null ) )
             {
                 throw new MetricInputException( "One or more of the baseline pairs is null." );
             }
+
             if ( baselineInput.isEmpty() )
             {
                 throw new MetricInputException( "Cannot build the paired data with an empty baseline: add one or more "
                                                 + "pairs." );
             }
+
+            if ( !SafeSingleValuedPairs.hasAtLeastOneNonNanPair( baselineInput ) )
+            {
+                throw new MetricInputException( "Must have at least one non-NaN pair in baseline input." );
+            }
         }
+
         if ( Objects.nonNull( climatology ) && climatology.size() == 0 )
         {
-            throw new MetricInputException( "Cannot build the paired data with an empty baseline: add one or more "
-                                            + "pairs." );
+            throw new InsufficientDataException( "Cannot build the paired data with an empty baseline: add one or more "
+                                                 + "pairs." );
         }
-
     }
 
+
+    /**
+     * Returns true if there is at least one pair with no NaNs
+     * @param pairs a list of pairs
+     * @return true if one or more pairs has no NaN in either left or right
+     */
+
+    private static boolean hasAtLeastOneNonNanPair( List<PairOfDoubles> pairs )
+    {
+        Objects.requireNonNull( pairs );
+        boolean foundAtLeastOneNonNanPair = false;
+
+        for ( PairOfDoubles pair : pairs )
+        {
+            if ( pair.getItemOne() != Double.NaN
+                 && pair.getItemTwo() != Double.NaN )
+            {
+                foundAtLeastOneNonNanPair = true;
+                break;
+            }
+        }
+
+        return foundAtLeastOneNonNanPair;
+    }
 }

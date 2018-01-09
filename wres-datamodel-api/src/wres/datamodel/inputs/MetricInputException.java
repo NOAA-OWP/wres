@@ -10,7 +10,7 @@ import wres.datamodel.MetricException;
  * @since 0.1
  */
 
-public final class MetricInputException extends MetricException
+public class MetricInputException extends MetricException
 {
 
     /**
