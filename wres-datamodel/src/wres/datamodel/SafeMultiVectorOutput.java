@@ -10,7 +10,7 @@ import wres.datamodel.outputs.MetricOutputException;
 import wres.datamodel.outputs.MultiVectorOutput;
 
 /**
- * An immutable mapping of {@link VectorOfDouble} to a {@link MetricDimension}.
+ * An immutable mapping of {@link VectorOfDoubles} to a {@link MetricDimension}.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1

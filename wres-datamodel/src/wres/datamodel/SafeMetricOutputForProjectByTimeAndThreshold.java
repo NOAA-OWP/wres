@@ -335,6 +335,7 @@ class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForPro
     /**
      * Helper that adds an existing output collection to an existing map.
      *
+     * @param builder the builder
      * @param addMe the metric output collection
      */
 
@@ -353,11 +354,11 @@ class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForPro
      * Unwraps a map of values that are wrapped in {@link Future} by calling {@link Future#get()} on each value and
      * returning a map of the unwrapped entries.
      * 
+     * @param <T> the type of output
      * @param outGroup the {@link MetricOutputGroup} for error logging
      * @param wrapped the map of values wrapped in {@link Future}
      * @return the unwrapped map or null if the input is empty
-     * @throws InterruptedException if the retrieval of {@link MetricOutput} is cancelled
-     * @throws ExecutionException if the retrieval of {@link MetricOutput} fails
+     * @throws MetricOutputAccessException if the retrieval of {@link MetricOutput} fails
      */
 
     private <T extends MetricOutput<?>> MetricOutputMultiMapByTimeAndThreshold<T> unwrap( MetricOutputGroup outGroup,

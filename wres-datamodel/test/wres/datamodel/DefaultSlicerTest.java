@@ -89,7 +89,7 @@ public final class DefaultSlicerTest
     }
 
     /**
-     * Tests the {@link Slicer#getRightSide(List)}.
+     * Tests the {@link Slicer#getRightSide(SingleValuedPairs)}.
      */
 
     @Test
@@ -114,7 +114,7 @@ public final class DefaultSlicerTest
     /**
      * Tests the {@link Slicer#filterByLeft(SingleValuedPairs, Threshold)}.
      * 
-     * @throws MetricInputSliceException
+     * @throws MetricInputSliceException if the filtering fails
      */
 
     @Test
@@ -173,7 +173,7 @@ public final class DefaultSlicerTest
     /**
      * Tests the {@link Slicer#filterByLeft(EnsemblePairs, Threshold)}.
      * 
-     * @throws MetricInputSliceException
+     * @throws MetricInputSliceException if the filtering fails
      */
 
     @Test
@@ -394,7 +394,7 @@ public final class DefaultSlicerTest
     }
 
     /**
-     * Tests the {@link Slicer#getQuantile(double, double[])}.
+     * Tests the {@link Slicer#getQuantileFunction(double[])}.
      */
 
     @Test
@@ -457,7 +457,7 @@ public final class DefaultSlicerTest
     }
 
     /**
-     * Tests the {@link Slicer#getQuantileFromProbability(ProbabilityThreshold, double[])}.
+     * Tests the {@link Slicer#getQuantileFromProbability(Threshold, double[], Integer)}.
      */
 
     @Test
@@ -614,7 +614,7 @@ public final class DefaultSlicerTest
     }
 
     /**
-     * Tests the {@link Slicer#filter(SingleValuedPairs, java.util.function.DoublePredicate, boolean).
+     * Tests the {@link Slicer#filter(SingleValuedPairs, java.util.function.DoublePredicate, boolean)}.
     
      * @throws MetricInputSliceException if slicing results in an unexpected exception
      */

@@ -26,7 +26,7 @@ import wres.datamodel.metadata.TimeWindow;
  * Tests the {@link DefaultDataFactory}.
  * 
  * @author james.brown@hydrosolved.com
- * @jesse
+ * @author jesse
  * @version 0.1
  * @since 0.1
  */
