@@ -289,6 +289,12 @@ public class Control implements Function<String[], Integer>
                                  missingDataFeatures ) );
         }
 
+        if ( successfulFeatures.isEmpty() )
+        {
+            throw new WresProcessingException( "No features were successful.",
+                                               null );
+        }
+
         if ( LOGGER.isInfoEnabled() )
         {
             if ( decomposedFeatures.size() == successfulFeatures.size() )
