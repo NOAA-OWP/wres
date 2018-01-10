@@ -179,7 +179,7 @@ public final class MetricProcessorSingleValuedPairsByTimeTest
             processor.apply( null );
             fail( "Expected a checked exception on processing the project configuration '" + testOne + "'." );
         }
-        catch ( MetricCalculationException e )
+        catch ( NullPointerException e )
         {
         }
         catch ( Exception e )
