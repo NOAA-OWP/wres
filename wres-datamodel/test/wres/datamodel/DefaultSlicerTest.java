@@ -662,44 +662,6 @@ public final class DefaultSlicerTest
 
         assertTrue( "The sliced data without a baseline does not match the benchmark.",
                     slicedNoBase.getData().equals( expectedValues ) );
-
-        //Test exceptions
-        //No pairs in main
-        try
-        {
-            List<PairOfDoubles> none = new ArrayList<>();
-            none.add( metIn.pairOf( Double.NaN, Double.NaN ) );
-            slicer.filter( metIn.ofSingleValuedPairs( none, meta ), a -> Double.isFinite( a ), false );
-            fail( "Expected an exception on attempting to filter with no data." );
-        }
-        catch ( MetricInputSliceException e )
-        {
-        }
-        //No pairs in baseline
-        try
-        {
-            List<PairOfDoubles> none = new ArrayList<>();
-            none.add( metIn.pairOf( Double.NaN, Double.NaN ) );
-            slicer.filter( metIn.ofSingleValuedPairs( values, none, meta, meta ), a -> Double.isFinite( a ), false );
-            fail( "Expected an exception on attempting to filter with no baseline data." );
-        }
-        catch ( MetricInputSliceException e )
-        {
-        }
-
-        //No climatological data
-        try
-        {
-            SingleValuedPairs test =
-                    metIn.ofSingleValuedPairs( values,
-                                               meta,
-                                               metIn.vectorOf( new double[] { Double.NaN } ) );
-            slicer.filter( test, a -> Double.isFinite( a ), true );
-            fail( "Expected an exception on attempting to filter with no climatological data." );
-        }
-        catch ( MetricInputSliceException e )
-        {
-        }
     }
 
     /**
