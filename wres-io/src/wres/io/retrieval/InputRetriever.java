@@ -214,11 +214,13 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             }
             catch (MetricInputException mie)
             {
-                LOGGER.error("A collection of pairs could not be created at " +
-                             "window {} for '{}'",
-                             this.progress + 1,
-                             ConfigHelper.getFeatureDescription( this.feature ));
-                LOGGER.debug(Strings.getStackTrace( mie ));
+                String message = "A collection of pairs could not be created at"
+                                 + " window " + ( this.progress + 1 )
+                                 + " for feature '"
+                                 + ConfigHelper.getFeatureDescription( this.feature )
+                                 + "'.";
+                // Decorating with more information in our message.
+                throw new MetricInputException( message, mie );
             }
         }
 
