@@ -1,5 +1,6 @@
 package wres.datamodel;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -45,30 +46,55 @@ public interface Slicer
     {
         return getQuantileFromProbability( threshold, sorted, null );
     }
-    
+
     /**
-     * Loops over the {@link PairOfDoubles} in the input and returns <code>true</code> immediately when the 
-     * {@link Predicate} returns <code>true</code> for both sides of a pairing, false otherwise. 
+     * Loops over the {@link PairOfDoubles} in the input and returns <code>true</code> when a pair is encountered
+     * for which the {@link Predicate} returns <code>true</code> for both sides of the pairing, false otherwise. 
      * 
      * @param pairs the input pairs
      * @param condition the predicate to apply
      * @return true if one or more inputs meet the predicate condition on both sides of the pairing, false otherwise
      * @throws NullPointerException if either input is null
      */
-    
+
     static boolean hasOneOrMoreOf( List<PairOfDoubles> pairs, DoublePredicate condition )
     {
         Objects.requireNonNull( pairs, "Expected non-null pairs." );
         Objects.requireNonNull( condition, "Expected a non-null condition." );
-        for(PairOfDoubles next : pairs)
+        for ( PairOfDoubles next : pairs )
         {
-            if( condition.test( next.getItemOne() ) && condition.test( next.getItemTwo() ) )
+            if ( condition.test( next.getItemOne() ) && condition.test( next.getItemTwo() ) )
             {
                 return true;
             }
         }
-        return false;        
-    }    
+        return false;
+    }
+
+    /**
+     * Loops over the {@link PairOfDoubleAndVectorOfDoubles} in the input and returns <code>true</code> when a pair 
+     * is encountered for which the {@link Predicate} returns <code>true</code> for the left side of the pairing and
+     * for one or more values on the right side, false otherwise. 
+     * 
+     * @param pairs the input pairs
+     * @param condition the predicate to apply
+     * @return true if one or more inputs meet the predicate condition on both sides of the pairing, false otherwise
+     * @throws NullPointerException if either input is null
+     */
+
+    static boolean hasOneOrMoreOfVectorRight( List<PairOfDoubleAndVectorOfDoubles> pairs, DoublePredicate condition )
+    {
+        Objects.requireNonNull( pairs, "Expected non-null pairs." );
+        Objects.requireNonNull( condition, "Expected a non-null condition." );
+        for ( PairOfDoubleAndVectorOfDoubles next : pairs )
+        {
+            if ( condition.test( next.getItemOne() ) && Arrays.stream( next.getItemTwo() ).anyMatch( condition ) )
+            {
+                return true;
+            }
+        }
+        return false;
+    }
 
     /**
      * Returns the left side of {@link SingleValuedPairs#getData()} as a primitive array of doubles.
@@ -266,5 +292,5 @@ public interface Slicer
      */
 
     Threshold getQuantileFromProbability( Threshold threshold, double[] sorted, Integer decimals );
-    
+
 }

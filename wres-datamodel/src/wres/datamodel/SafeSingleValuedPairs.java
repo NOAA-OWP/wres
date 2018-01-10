@@ -156,7 +156,7 @@ class SafeSingleValuedPairs implements SingleValuedPairs
      * 
      * @param b the builder
      * @throws MetricInputException if the pairs are invalid
-     * @throws InsufficientDataException if all inputs are {@link Double#NaN}
+     * @throws InsufficientDataException if all inputs are non-finite
      */
 
     SafeSingleValuedPairs( final SingleValuedPairsBuilder b )
@@ -179,7 +179,7 @@ class SafeSingleValuedPairs implements SingleValuedPairs
      * Validates the main pairs and associated metadata after the constructor has copied it.
      * 
      * @throws MetricInputException if the input is invalid
-     * @throws InsufficientDataException if all inputs are {@link Double#NaN}
+     * @throws InsufficientDataException if all inputs are non-finite
      */
 
     private void validateMainInput()
