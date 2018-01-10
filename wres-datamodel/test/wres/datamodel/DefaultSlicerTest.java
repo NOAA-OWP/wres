@@ -668,8 +668,9 @@ public final class DefaultSlicerTest
         try
         {
             List<PairOfDoubles> none = new ArrayList<>();
+            none.add( metIn.pairOf( 1, 1 ) );
             none.add( metIn.pairOf( Double.NaN, Double.NaN ) );
-            slicer.filter( metIn.ofSingleValuedPairs( none, meta ), a -> Double.isFinite( a ), false );
+            slicer.filter( metIn.ofSingleValuedPairs( none, meta ), a -> a > 1, false );
             fail( "Expected an exception on attempting to filter with no data." );
         }
         catch ( MetricInputSliceException e )
@@ -679,8 +680,9 @@ public final class DefaultSlicerTest
         try
         {
             List<PairOfDoubles> none = new ArrayList<>();
+            none.add( metIn.pairOf( 1, 1 ) );
             none.add( metIn.pairOf( Double.NaN, Double.NaN ) );
-            slicer.filter( metIn.ofSingleValuedPairs( values, none, meta, meta ), a -> Double.isFinite( a ), false );
+            slicer.filter( metIn.ofSingleValuedPairs( values, none, meta, meta ), a -> a > 1, false );
             fail( "Expected an exception on attempting to filter with no baseline data." );
         }
         catch ( MetricInputSliceException e )
@@ -693,8 +695,8 @@ public final class DefaultSlicerTest
             SingleValuedPairs test =
                     metIn.ofSingleValuedPairs( values,
                                                meta,
-                                               metIn.vectorOf( new double[] { Double.NaN } ) );
-            slicer.filter( test, a -> Double.isFinite( a ), true );
+                                               metIn.vectorOf( new double[] { 1, Double.NaN } ) );
+            slicer.filter( test, a -> a > 1, true );
             fail( "Expected an exception on attempting to filter with no climatological data." );
         }
         catch ( MetricInputSliceException e )
@@ -758,8 +760,9 @@ public final class DefaultSlicerTest
         try
         {
             List<PairOfDoubleAndVectorOfDoubles> none = new ArrayList<>();
+            none.add( metIn.pairOf( 1, new double[] { 1 } ) );
             none.add( metIn.pairOf( Double.NaN, new double[] { Double.NaN } ) );
-            slicer.filter( metIn.ofEnsemblePairs( none, meta ), a -> Double.isFinite( a ), false );
+            slicer.filter( metIn.ofEnsemblePairs( none, meta ), a -> a > 1, false );
             fail( "Expected an exception on attempting to filter with no data." );
         }
         catch ( MetricInputSliceException e )
@@ -769,8 +772,9 @@ public final class DefaultSlicerTest
         try
         {
             List<PairOfDoubleAndVectorOfDoubles> none = new ArrayList<>();
+            none.add( metIn.pairOf( 1, new double[] { 1 } ) );
             none.add( metIn.pairOf( Double.NaN, new double[] { Double.NaN } ) );
-            slicer.filter( metIn.ofEnsemblePairs( values, none, meta, meta ), a -> Double.isFinite( a ), false );
+            slicer.filter( metIn.ofEnsemblePairs( values, none, meta, meta ), a -> a > 1, false );
             fail( "Expected an exception on attempting to filter with no baseline data." );
         }
         catch ( MetricInputSliceException e )
@@ -783,8 +787,8 @@ public final class DefaultSlicerTest
             EnsemblePairs test =
                     metIn.ofEnsemblePairs( values,
                                            meta,
-                                           metIn.vectorOf( new double[] { Double.NaN } ) );
-            slicer.filter( test, a -> Double.isFinite( a ), true );
+                                           metIn.vectorOf( new double[] { 1, Double.NaN } ) );
+            slicer.filter( test, a -> a > 1, true );
             fail( "Expected an exception on attempting to filter with no climatological data." );
         }
         catch ( MetricInputSliceException e )

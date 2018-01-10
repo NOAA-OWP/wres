@@ -44,6 +44,7 @@ import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.Threshold;
+import wres.datamodel.inputs.InsufficientDataException;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
@@ -265,14 +266,13 @@ public class Control implements Function<String[], Integer>
             }
             else
             {
-                missingDataFeatures.add( result.getFeature() );
-
-                if ( LOGGER.isDebugEnabled() )
+                if ( LOGGER.isWarnEnabled() )
                 {
-                    LOGGER.debug( "Feature {} failed due to",
-                                  result.getFeature(),
-                                  result.getCause() );
+                    LOGGER.warn( "Not enough data found for feature {}:",
+                                 ConfigHelper.getFeatureDescription( result.getFeature() ),
+                                 result.getCause() );
                 }
+                missingDataFeatures.add( result.getFeature() );
             }
         }
 
@@ -409,7 +409,7 @@ public class Control implements Function<String[], Integer>
         }
         catch ( IterationFailedException re )
         {
-            if ( Control.wasNoDataExceptionInThisStack( re ) )
+            if ( Control.wasInsufficientDataOrNoDataInThisStack( re ) )
             {
                 return new FeatureProcessingResult( feature,
                                                     false,
@@ -424,18 +424,17 @@ public class Control implements Function<String[], Integer>
         }
         catch( CompletionException e )
         {
-            String message = "Error while processing feature "
-                             + ConfigHelper.getFeatureDescription( feature );
-            LOGGER.error( message, e );
-
-            if ( Control.wasNoDataExceptionInThisStack( e ) )
+            // If there was simply not enough data for this feature, OK
+            if ( Control.wasInsufficientDataOrNoDataInThisStack( e ) )
             {
                 return new FeatureProcessingResult( feature,
                                                     false,
                                                     e );
             }
 
-            // Otherwise, propagate the exception up to the top.
+            // Otherwise, chain and propagate the exception up to the top.
+            String message = "Error while processing feature "
+                             + ConfigHelper.getFeatureDescription( feature );
             throw new WresProcessingException( message, e );
         }
 
@@ -1355,15 +1354,18 @@ public class Control implements Function<String[], Integer>
 
     /**
      * Look at a chain of exceptions, returns true if ANY is a NoDataException
-     * @param e the exception to look at
-     * @return true when a NoDataException is found, false otherwise
+     * or if ANY is an InsufficientDataException
+     * @param e the exception (and its chained causes) to look at
+     * @return true when either NoDataException or InsufficientDataException is
+     * found, false otherwise
      */
-    private static boolean wasNoDataExceptionInThisStack( Exception e )
+    private static boolean wasInsufficientDataOrNoDataInThisStack( Exception e )
     {
         Throwable cause = e;
         while ( cause != null )
         {
-            if ( cause instanceof NoDataException )
+            if ( cause instanceof NoDataException
+                 || cause instanceof InsufficientDataException )
             {
                 return true;
             }
