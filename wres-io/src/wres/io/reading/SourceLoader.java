@@ -29,7 +29,6 @@ import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Features;
 import wres.io.data.details.FeatureDetails;
-import wres.util.Internal;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
 
@@ -39,7 +38,6 @@ import wres.util.Strings;
  * ingest are created and sent to the Exector for ingestion.
  * @author Christopher Tubbs
  */
-@Internal(exclusivePackage = "wres.io")
 public class SourceLoader
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(SourceLoader.class);
@@ -47,7 +45,6 @@ public class SourceLoader
     /**
      * @param projectConfig the project configuration
      */
-    @Internal(exclusivePackage = "wres.io")
     public SourceLoader (ProjectConfig projectConfig)
     {
         this.projectConfig = projectConfig;

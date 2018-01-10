@@ -1166,15 +1166,6 @@ public class Validation
         PoolingWindowConfig poolingConfig = pairConfig.getPoolingWindow();
         StringBuilder warning = new StringBuilder();
 
-        // Rolling window pooling must have a non-null frequency
-        if ( poolingConfig.getMode() == TimeWindowMode.ROLLING && poolingConfig.getFrequency() == null )
-        {
-            valid = false;
-            warning.append( "The frequency (the rate at which a new rolling " +
-                            "window is generated) must be set in order to use "
-                            +
-                            "rolling windows for pooling." );
-        }
         // Non-null frequency must be >= 1
         if ( poolingConfig.getFrequency() != null && poolingConfig.getFrequency() < 1 )
         {

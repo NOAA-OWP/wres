@@ -9,7 +9,6 @@ import wres.io.reading.fews.FEWSSource;
 import wres.io.reading.nwm.NWMSource;
 import wres.io.reading.usgs.USGSReader;
 import wres.io.reading.datacard.DatacardSource;
-import wres.util.Internal;
 import wres.util.NetCDF;
 import wres.util.Strings;
 
@@ -17,7 +16,6 @@ import wres.util.Strings;
  * @author ctubbs
  *
  */
-@Internal(exclusivePackage = "wres.io")
 public class ReaderFactory {
     private ReaderFactory(){}
 

@@ -9,7 +9,6 @@ import org.slf4j.LoggerFactory;
 
 import wres.io.data.details.VariableDetails;
 import wres.io.utilities.Database;
-import wres.util.Internal;
 import wres.util.Strings;
 
 /**
@@ -17,7 +16,6 @@ import wres.util.Strings;
  *
  * Manages the retrieval of variable information that may be shared across threads
  */
-@Internal(exclusivePackage = "wres.io")
 public final class Variables extends Cache<VariableDetails, String>
 {
 

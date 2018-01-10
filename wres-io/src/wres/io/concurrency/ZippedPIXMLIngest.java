@@ -18,13 +18,11 @@ import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DataSources;
 import wres.io.reading.IngestResult;
 import wres.io.reading.fews.PIXMLReader;
-import wres.util.Internal;
 import wres.util.Strings;
 
 /**
  * Created by ctubbs on 7/19/17.
  */
-@Internal(exclusivePackage = "wres.io")
 public final class ZippedPIXMLIngest extends WRESCallable<List<IngestResult>>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ZippedPIXMLIngest.class);
@@ -36,7 +34,6 @@ public final class ZippedPIXMLIngest extends WRESCallable<List<IngestResult>>
     private final DataSourceConfig.Source sourceConfig;
     private final ProjectConfig projectConfig;
 
-    @Internal(exclusivePackage = "wres.io")
     public ZippedPIXMLIngest ( final String fileName,
                                final byte[] content,
                                final DataSourceConfig dataSourceConfig,

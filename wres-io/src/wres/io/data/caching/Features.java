@@ -19,14 +19,12 @@ import wres.config.generated.Format;
 import wres.config.generated.ProjectConfig;
 import wres.io.data.details.FeatureDetails;
 import wres.io.utilities.Database;
-import wres.util.Internal;
 import wres.util.Strings;
 
 /**
  * Caches details about Features
  * @author Christopher Tubbs
  */
-@Internal(exclusivePackage = "wres.io")
 public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
 {
 

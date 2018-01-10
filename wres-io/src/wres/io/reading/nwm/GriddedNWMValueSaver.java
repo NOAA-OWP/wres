@@ -23,7 +23,6 @@ import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Variables;
 import wres.io.utilities.Database;
 import wres.util.Collections;
-import wres.util.Internal;
 import wres.util.NotImplementedException;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
@@ -33,7 +32,6 @@ import wres.util.TimeHelper;
  * Executes the database copy operation for every value in the passed in string
  * @author Christopher Tubbs
  */
-@Internal(exclusivePackage = "wres.io")
 class GriddedNWMValueSaver extends WRESRunnable
 {
 	private final static String DELIMITER = ",";
@@ -55,8 +53,7 @@ class GriddedNWMValueSaver extends WRESRunnable
     private String hash;
     private final Future<String> futureHash;
 
-    @Internal(exclusivePackage = "wres.io")
-	public GriddedNWMValueSaver( String fileName, int variableID, Future<String> futureHash)
+    public GriddedNWMValueSaver( String fileName, int variableID, Future<String> futureHash)
 	{
 		this.fileName = fileName;
 		this.variableID = variableID;

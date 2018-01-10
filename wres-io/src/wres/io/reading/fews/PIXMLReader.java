@@ -43,7 +43,6 @@ import wres.io.reading.InvalidInputDataException;
 import wres.io.reading.XMLReader;
 import wres.io.utilities.Database;
 import wres.util.Collections;
-import wres.util.Internal;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
 import wres.util.TimeHelper;
@@ -54,8 +53,7 @@ import wres.util.XML;
  * Loads a PIXML file, iterates through it, and saves all data to the database, whether it is
  * forecast or observation data
  */
-@Internal(exclusivePackage = "wres.io")
-public final class PIXMLReader extends XMLReader 
+public final class PIXMLReader extends XMLReader
 {
 	private static final Logger LOGGER = LoggerFactory.getLogger(PIXMLReader.class);
 
@@ -104,7 +102,6 @@ public final class PIXMLReader extends XMLReader
 	 * @param isForecast Whether or not the reader is for forecast data
 	 * @param hash the hash code for the source
 	 */
-    @Internal(exclusivePackage = "wres.io")
     public PIXMLReader( String filename,
                         boolean isForecast,
                         String hash )
@@ -114,7 +111,6 @@ public final class PIXMLReader extends XMLReader
 		this.hash = hash;
 	}
 
-    @Internal(exclusivePackage = "wres.io")
     public PIXMLReader( String filename,
                         InputStream inputStream,
                         boolean isForecast,

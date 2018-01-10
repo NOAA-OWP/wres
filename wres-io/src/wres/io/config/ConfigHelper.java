@@ -35,7 +35,6 @@ import wres.config.generated.Feature;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.ProjectConfig;
-import wres.config.generated.TimeAnchor;
 import wres.config.generated.TimeAggregationConfig;
 import wres.config.generated.TimeAggregationFunction;
 import wres.config.generated.TimeWindowMode;
@@ -409,16 +408,6 @@ public class ConfigHelper
         }
 
         return source;
-    }
-
-    public static boolean isLeft(DataSourceConfig dataSourceConfig, ProjectConfig projectConfig)
-    {
-        return projectConfig.getInputs().getLeft().equals( dataSourceConfig );
-    }
-
-    public static boolean isRight(DataSourceConfig dataSourceConfig, ProjectConfig projectConfig)
-    {
-        return projectConfig.getInputs().getRight().equals( dataSourceConfig );
     }
 
     /**
@@ -865,7 +854,6 @@ public class ConfigHelper
      * @param projectDetails the project configuration
      * @param lead the earliest and latest lead time
      * @param sequenceStep the position of the window within a sequence
-     * @param feature the feature
      * @return a time window 
      * @throws NullPointerException if the config is null
      * @throws DateTimeParseException if the configuration contains dates that cannot be parsed
@@ -873,7 +861,7 @@ public class ConfigHelper
      * @throws SQLException if the anchor date for the rolling windows could not be established
      */
 
-    public static TimeWindow getTimeWindow( ProjectDetails projectDetails, long lead, int sequenceStep, Feature feature)
+    public static TimeWindow getTimeWindow( ProjectDetails projectDetails, long lead, int sequenceStep)
             throws InvalidPropertiesFormatException, SQLException
     {
         Objects.requireNonNull( projectDetails );
@@ -883,11 +871,6 @@ public class ConfigHelper
         // where the frequency is undefined (equal to the period)
         if ( projectDetails.getPoolingWindow() != null )
         {
-            // Defines logic for left focused, center focused, and right focused
-            // pooling windows. Initially, the differences between the three will
-            // be minute, but those differences will grow once different variables
-            // used by other projects are introduced.
-
             // Determine the position in hours of this window within the sequence
             Integer step = projectDetails.getPoolingWindow().getFrequency();
             // A pooling window with TimeWindowMode.BACK_TO_BACK has an unspecified frequency
@@ -901,56 +884,14 @@ public class ConfigHelper
                                      * sequenceStep;
 
             // Get the first date that matching data for a feature is valid
-            String focusDate = projectDetails.getInitialRollingDate( feature );
-
-            // TODO: add the lead time to the focus date when the rolling windows 
-            // are defined in valid time. For issue time, do not add the lead time
-            
-            // Add the lead time to the focus date to get to where this set of
-            // sequences really starts
-            //focusDate = TimeHelper.plus( focusDate, projectDetails.getRollingWindowUnit(), lead );
+            String firstDate = projectDetails.getEarliestIssueDate();
 
             // Add the frequency offset to focus date to jump to the correct
             // sequence
-            focusDate = TimeHelper.plus( focusDate, "hours", frequencyOffset );
-
-            String firstDate;
-            String lastDate;
-
-            // TODO: Determine if we want to continue with anchoring. If so, uncomment
-            /*if (projectDetails.getPoolingWindow().getAnchor() == TimeAnchor.CENTER)
-            {*/
-                // Since the focus is in the center of the window, our first
-                // date is half the period before the focus and our last date
-                // is half the period after
-                double halfPeriod = projectDetails.getPoolingWindow().getPeriod() / 2.0;
-                firstDate = TimeHelper.minus( focusDate,
-                                              projectDetails.getPoolingWindowUnit(),
-                                              halfPeriod );
-                lastDate = TimeHelper.plus( focusDate,
-                                            projectDetails.getPoolingWindowUnit(),
-                                            halfPeriod);
-            /*}
-            else if (projectDetails.getPoolingWindow().getAnchor() == TimeAnchor.LEFT)
-            {
-                // Since the focus is on the left of the window, our first date
-                // is actually the focus, while the last date is the entire
-                // period after it
-                firstDate = focusDate;
-                lastDate = TimeHelper.plus( focusDate,
-                                            projectDetails.getPoolingWindowUnit(),
-                                            projectDetails.getPoolingWindow().getPeriod());
-            }
-            else
-            {
-                // Since the focus is on the right of the window, our first date
-                // is the entire span prior to the focus and the last date is
-                // the focus itself
-                firstDate = TimeHelper.minus( focusDate,
-                                              projectDetails.getPoolingWindowUnit(),
-                                              projectDetails.getPoolingWindow().getPeriod() );
-                lastDate = focusDate;
-            }*/
+            firstDate = TimeHelper.plus( firstDate, "hours", frequencyOffset );
+            String lastDate = TimeHelper.plus( firstDate,
+                                        projectDetails.getPoolingWindowUnit(),
+                                        projectDetails.getPoolingWindow().getPeriod());
 
             OffsetDateTime first = TimeHelper.convertStringToDate( firstDate );
             OffsetDateTime last = TimeHelper.convertStringToDate( lastDate );

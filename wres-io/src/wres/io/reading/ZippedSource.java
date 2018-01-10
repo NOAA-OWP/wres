@@ -38,7 +38,6 @@ import wres.io.concurrency.ZippedPIXMLIngest;
 import wres.io.config.ConfigHelper;
 import wres.io.config.SystemSettings;
 import wres.io.utilities.Database;
-import wres.util.Internal;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
 
@@ -46,7 +45,6 @@ import wres.util.Strings;
  * @author Christopher Tubbs
  * Reads source files from an archived and saves their data to the database
  */
-@Internal(exclusivePackage = "wres.io")
 public class ZippedSource extends BasicSource {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ZippedSource.class);
@@ -94,7 +92,6 @@ public class ZippedSource extends BasicSource {
      * @param projectConfig the project config causing this ingest
 	 * @param filename The name of the source file
 	 */
-    @Internal(exclusivePackage = "wres.io")
     public ZippedSource ( ProjectConfig projectConfig,
                           String filename )
 	{

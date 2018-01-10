@@ -5,7 +5,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.MonthDay;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.InvalidPropertiesFormatException;
@@ -28,25 +27,19 @@ import wres.config.generated.ProjectConfig;
 import wres.config.generated.PoolingWindowConfig;
 import wres.config.generated.TimeAggregationConfig;
 import wres.config.generated.TimeAggregationFunction;
-import wres.config.generated.TimeAnchor;
 import wres.config.generated.TimeWindowMode;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.Variables;
-import wres.io.grouping.LabeledScript;
-import wres.io.retrieval.scripting.Scripter;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
 import wres.io.utilities.ScriptGenerator;
-import wres.util.Internal;
-import wres.util.Strings;
 import wres.util.TimeHelper;
 
 /**
  * Wrapper object linking a project configuration and the data needed to form
  * database statements
  */
-@Internal(exclusivePackage = "wres.io")
 public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger( ProjectDetails.class );
@@ -491,19 +484,24 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     {
         int frequency = 1;
 
-        if (this.getAggregation() != null && this.getAggregation().getFrequency() != null)
+        if ( this.getPoolingMode() == TimeWindowMode.ROLLING)
         {
-            frequency = this.getAggregation().getFrequency();
-        }
-        else if ( this.getPoolingWindow() != null &&
-                  this.getPoolingWindow().getMode() == TimeWindowMode.ROLLING &&
-                  this.getAggregation() != null)
-        {
+            int specification;
+
+            if (this.getAggregation().getFrequency() != null)
+            {
+                specification = this.getAggregation().getFrequency();
+            }
+            else
+            {
+                specification = this.getAggregationPeriod();
+            }
+
             try
             {
                 frequency = TimeHelper.unitsToHours(
                         this.getAggregationUnit(),
-                        this.getAggregationPeriod()
+                        specification
                 ).intValue();
             }
             catch (InvalidPropertiesFormatException e)
@@ -513,10 +511,6 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
                               + "specify the unconfigured lead time frequency."
                               + "Defaulting to 1.", e );
             }
-        }
-        else
-        {
-            frequency = 1;
         }
 
         return frequency;
@@ -544,9 +538,11 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     {
         TimeWindowMode mode = TimeWindowMode.BACK_TO_BACK;
 
-        if (this.getPoolingWindow() != null)
+        // Can't use "this.getAggregationFrequency because it uses this
+        if ( this.getAggregation() != null &&
+             this.getAggregation().getFrequency() != null)
         {
-            mode = this.getPoolingWindow().getMode();
+            mode = TimeWindowMode.ROLLING;
         }
 
         return mode;

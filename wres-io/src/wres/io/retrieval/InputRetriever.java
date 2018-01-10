@@ -19,7 +19,6 @@ import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.Feature;
-import wres.config.generated.TimeAggregationFunction;
 import wres.config.generated.TimeWindowMode;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DatasetIdentifier;
@@ -32,6 +31,7 @@ import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.metadata.TimeWindow;
 import wres.io.concurrency.Executor;
 import wres.io.concurrency.WRESCallable;
 import wres.io.config.ConfigHelper;
@@ -41,19 +41,16 @@ import wres.io.retrieval.scripting.Scripter;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
 import wres.io.writing.PairWriter;
-import wres.util.Internal;
 import wres.util.Strings;
 import wres.util.TimeHelper;
 
 /**
  * Created by ctubbs on 7/17/17.
  */
-@Internal(exclusivePackage = "wres.io")
 class InputRetriever extends WRESCallable<MetricInput<?>>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(InputRetriever.class);
 
-    @Internal(exclusivePackage = "wres.io")
     public InputRetriever ( ProjectDetails projectDetails,
                             BiFunction<String, String, List<Double>> getLeftValues )
     {
@@ -454,10 +451,6 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         DatasetIdentifier datasetIdentifier = metadataFactory.getDatasetIdentifier(geospatialIdentifier,
                                                                                    variableIdentifier,
                                                                                    sourceConfig.getLabel());
-
-        // TODO: this needs to be refactored to support additional types of 
-        // time aggregation, such as a pooling aggregation in which the 
-        // first and last lead times must be defined separately
         
         // This will help us determine when the window will end
         int windowNumber = this.progress + 1;
@@ -490,12 +483,13 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             }
         }
 
+        TimeWindow timeWindow = ConfigHelper.getTimeWindow( this.projectDetails,
+                                                            lastLead.longValue(),
+                                                            this.sequenceStep);
+
         return metadataFactory.getMetadata( dim,
                                             datasetIdentifier,
-                                            ConfigHelper.getTimeWindow( this.projectDetails,
-                                                                        lastLead.longValue(),
-                                                                        this.sequenceStep,
-                                                                        this.feature) );
+                                            timeWindow );
     }
 
     private PairOfDoubleAndVectorOfDoubles getPair(String lastDate,

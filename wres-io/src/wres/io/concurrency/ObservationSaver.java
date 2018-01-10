@@ -12,14 +12,12 @@ import wres.config.generated.ProjectConfig;
 import wres.io.reading.BasicSource;
 import wres.io.reading.IngestResult;
 import wres.io.reading.ReaderFactory;
-import wres.util.Internal;
 
 /**
  * Saves the observation at the given location
  * 
  * @author Christopher Tubbs
  */
-@Internal(exclusivePackage = "wres.io")
 public class ObservationSaver extends WRESCallable<List<IngestResult>>
 {
 
@@ -27,8 +25,7 @@ public class ObservationSaver extends WRESCallable<List<IngestResult>>
 
     private final DataSourceConfig.Source sourceConfig;
 
-    @Internal(exclusivePackage = "wres.io")
-	public ObservationSaver(String filepath,
+    public ObservationSaver(String filepath,
                             ProjectConfig ProjectConfig,
                             DataSourceConfig dataSourceConfig,
 							DataSourceConfig.Source sourceConfig,

@@ -14,14 +14,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.io.config.SystemSettings;
-import wres.util.Internal;
 
 /**
  * The static thread executor 
  * 
  * @author Christopher Tubbs
  */
-@Internal(exclusivePackage = "wres.io")
 public final class Executor {
 
 	// The underlying thread executor

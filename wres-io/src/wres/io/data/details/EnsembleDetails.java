@@ -3,13 +3,11 @@ package wres.io.data.details;
 import java.util.Objects;
 
 import wres.io.data.details.EnsembleDetails.EnsembleKey;
-import wres.util.Internal;
 
 /**
  * Describes basic information used to define an Ensemble from the database
  * @author Christopher Tubbs
  */
-@Internal(exclusivePackage = "wres.io")
 public final class EnsembleDetails extends CachedDetail<EnsembleDetails, EnsembleKey>{
 	
 	// The name of the ensemble being represented

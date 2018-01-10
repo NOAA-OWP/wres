@@ -61,7 +61,6 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>>
             String message = "A MetricInputIterator could not be created for '"
                              + ConfigHelper.getFeatureDescription( this.feature )
                              + "'.";
-            // Until we can get rid of the stateful Iterable/Iterator interface:
             throw new IterationFailedException( message, e );
         }
         catch ( NoDataException e )
@@ -69,7 +68,6 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>>
             String message = "A MetricInputIterator could not be created for '{"
                              + ConfigHelper.getFeatureDescription( this.feature )
                              + "}'. There's no data to iterate over.";
-            // Until we can get rid of the stateful Iterable/Iterator interface:
             throw new IterationFailedException( message, e );
         }
         return iterator;

@@ -15,7 +15,6 @@ import wres.io.data.caching.Variables;
 import wres.io.reading.BasicSource;
 import wres.io.reading.IngestResult;
 import wres.io.utilities.Database;
-import wres.util.Internal;
 import wres.util.NetCDF;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
@@ -24,7 +23,6 @@ import wres.util.Strings;
  * @author ctubbs
  *
  */
-@Internal(exclusivePackage = "wres.io")
 public class NWMSource extends BasicSource
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(NWMSource.class);
@@ -34,8 +32,7 @@ public class NWMSource extends BasicSource
      * @param projectConfig the ProjectConfig causing ingest
 	 * @param filename the file name
 	 */
-	@Internal(exclusivePackage = "wres.io")
-    public NWMSource( ProjectConfig projectConfig,
+	public NWMSource( ProjectConfig projectConfig,
                       String filename )
     {
         super( projectConfig );
