@@ -16,6 +16,7 @@ import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
+import wres.datamodel.inputs.InsufficientDataException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
@@ -202,7 +203,7 @@ public final class MetricProcessorSingleValuedPairsByTimeTest
                   + "' "
                   + "with insufficient data for a single-valued metric." );
         }
-        catch ( MetricCalculationException e )
+        catch ( InsufficientDataException e )
         {
         }
         catch ( Exception e )
@@ -225,7 +226,7 @@ public final class MetricProcessorSingleValuedPairsByTimeTest
                   + "' "
                   + "with insufficient data for a dichotomous metric." );
         }
-        catch ( MetricCalculationException e )
+        catch ( InsufficientDataException e )
         {
         }
         catch ( Exception e )
@@ -362,7 +363,7 @@ public final class MetricProcessorSingleValuedPairsByTimeTest
             fail( "Expected a checked exception on processing the project configuration '" + testNine
                   + "' with insufficient data." );
         }
-        catch ( MetricCalculationException e )
+        catch ( InsufficientDataException e )
         {
         }
         catch ( Exception e )

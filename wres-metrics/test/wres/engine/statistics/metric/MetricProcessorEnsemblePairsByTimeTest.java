@@ -13,6 +13,7 @@ import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
+import wres.datamodel.inputs.InsufficientDataException;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
@@ -538,7 +539,7 @@ public final class MetricProcessorEnsemblePairsByTimeTest
             fail( "Expected a checked exception on processing the project configuration '" + testTwo
                   + "' with insufficient data." );
         }
-        catch ( MetricCalculationException e )
+        catch ( InsufficientDataException e )
         {
         }
         catch ( Exception e )
@@ -561,7 +562,7 @@ public final class MetricProcessorEnsemblePairsByTimeTest
             fail( "Expected a checked exception on processing the project configuration '" + testThree
                   + "' with insufficient data." );
         }
-        catch ( MetricCalculationException e )
+        catch ( InsufficientDataException e )
         {
         }
         catch ( Exception e )

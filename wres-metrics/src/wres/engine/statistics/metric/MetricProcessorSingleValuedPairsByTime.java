@@ -19,6 +19,7 @@ import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.Slicer;
 import wres.datamodel.Threshold;
+import wres.datamodel.inputs.InsufficientDataException;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.MetricInputSliceException;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
@@ -183,6 +184,7 @@ class MetricProcessorSingleValuedPairsByTime extends MetricProcessorByTime
      * @param input the input pairs
      * @param futures the metric futures
      * @throws MetricCalculationException if the metrics cannot be computed
+     * @throws InsufficientDataException if there is insufficient data to compute any metrics
      */
 
     private void processDichotomousPairs( TimeWindow timeWindow,

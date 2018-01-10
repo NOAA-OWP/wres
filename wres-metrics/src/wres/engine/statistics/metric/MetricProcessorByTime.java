@@ -415,7 +415,7 @@ public abstract class MetricProcessorByTime extends MetricProcessor<MetricOutput
      * @param meta the {@link Metadata} used to help focus messaging
      * @param inGroup the {@link MetricInputGroup} consumed by the metrics on which the failure occurred, used to 
      *            focus messaging
-     * @throws MetricCalculationException if all thresholds fail
+     * @throws InsufficientDataException if all thresholds fail
      */
 
     static void handleThresholdFailures( Map<Threshold, MetricCalculationException> failures,
@@ -431,7 +431,7 @@ public abstract class MetricProcessorByTime extends MetricProcessor<MetricOutput
         if ( failures.size() == thresholdCount )
         {
             // Set the first failure as the cause
-            throw new MetricCalculationException( "Failed to compute metrics at all " + thresholdCount
+            throw new InsufficientDataException( "Failed to compute metrics at all " + thresholdCount
                                                   + " available thresholds at time window '"
                                                   + meta.getTimeWindow()
                                                   + "' as insufficient data was available.",
