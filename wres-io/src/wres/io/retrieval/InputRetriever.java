@@ -19,13 +19,13 @@ import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.Feature;
-import wres.config.generated.TimeAggregationFunction;
 import wres.config.generated.TimeWindowMode;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.Dimension;
 import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.inputs.InsufficientDataException;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
@@ -189,22 +189,27 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             baselineMetadata = this.buildMetadata(factory, this.projectDetails.getBaseline());
         }
 
-        if (dataType == DatasourceType.ENSEMBLE_FORECASTS)
+        try
         {
-            input = factory.ofEnsemblePairs(this.primaryPairs, this.baselinePairs, metadata, baselineMetadata, this.climatology);
-        }
-        else
-        {
-            List<PairOfDoubles> primary = convertToPairOfDoubles( this.primaryPairs );
-            List<PairOfDoubles> baseline = null;
 
-            if (this.baselinePairs != null && this.baselinePairs.size() > 0)
+            if ( dataType == DatasourceType.ENSEMBLE_FORECASTS )
             {
-                baseline = convertToPairOfDoubles( this.baselinePairs );
+                input = factory.ofEnsemblePairs( this.primaryPairs,
+                                                 this.baselinePairs,
+                                                 metadata,
+                                                 baselineMetadata,
+                                                 this.climatology );
             }
-
-            try
+            else
             {
+                List<PairOfDoubles> primary = convertToPairOfDoubles( this.primaryPairs );
+                List<PairOfDoubles> baseline = null;
+
+                if ( this.baselinePairs != null && this.baselinePairs.size() > 0 )
+                {
+                    baseline = convertToPairOfDoubles( this.baselinePairs );
+                }
+
 
                 input = factory.ofSingleValuedPairs( primary,
                                                      baseline,
@@ -212,16 +217,17 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                                                      baselineMetadata,
                                                      this.climatology );
             }
-            catch (MetricInputException mie)
-            {
-                String message = "A collection of pairs could not be created at"
-                                 + " window " + ( this.progress + 1 )
-                                 + " for feature '"
-                                 + ConfigHelper.getFeatureDescription( this.feature )
-                                 + "'.";
-                // Decorating with more information in our message.
-                throw new MetricInputException( message, mie );
-            }
+        }
+        catch ( MetricInputException mie )
+        {
+            String message = "A collection of pairs could not be created at"
+                             + " window "
+                             + ( this.progress + 1 )
+                             + " for feature '"
+                             + ConfigHelper.getFeatureDescription( this.feature )
+                             + "'.";
+            // Decorating with more information in our message.
+            throw new InsufficientDataException( message, mie );
         }
 
         return input;
