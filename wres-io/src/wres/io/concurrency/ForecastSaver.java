@@ -12,22 +12,19 @@ import wres.config.generated.ProjectConfig;
 import wres.io.reading.BasicSource;
 import wres.io.reading.IngestResult;
 import wres.io.reading.ReaderFactory;
-import wres.util.Internal;
 
 /**
  * Saves the forecast at the indicated path asynchronously
  *
  * @author Christopher Tubbs
  */
-@Internal(exclusivePackage = "wres.io")
 public class ForecastSaver extends WRESCallable<List<IngestResult>>
 {
 	private static final Logger LOGGER = LoggerFactory.getLogger(ForecastSaver.class);
 
 	private final DataSourceConfig.Source sourceConfig;
 
-    @Internal(exclusivePackage = "wres.io")
-	public ForecastSaver(String filepath,
+    public ForecastSaver(String filepath,
                          ProjectConfig projectConfig,
 						 DataSourceConfig dataSourceConfig,
 						 DataSourceConfig.Source sourceConfig,

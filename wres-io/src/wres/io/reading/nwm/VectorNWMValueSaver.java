@@ -35,12 +35,10 @@ import wres.io.data.caching.Variables;
 import wres.io.data.details.SourceDetails;
 import wres.io.data.details.TimeSeries;
 import wres.io.utilities.Database;
-import wres.util.Internal;
 import wres.util.NetCDF;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
 
-@Internal(exclusivePackage = "wres.io")
 class VectorNWMValueSaver extends WRESRunnable
 {
     /**
@@ -171,7 +169,6 @@ class VectorNWMValueSaver extends WRESRunnable
     private Double missingValue;
     private boolean inChargeOfIngest;
 
-    @Internal(exclusivePackage = "wres.io")
     public VectorNWMValueSaver( String filename,
                                 Future<String> futureHash,
                                 DataSourceConfig dataSourceConfig,

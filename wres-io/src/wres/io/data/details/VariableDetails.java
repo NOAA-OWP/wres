@@ -3,13 +3,11 @@ package wres.io.data.details;
 import java.sql.SQLException;
 
 import wres.io.utilities.Database;
-import wres.util.Internal;
 
 /**
  * Details about a variable as defined in the Database
  * @author Christopher Tubbs
  */
-@Internal(exclusivePackage = "wres.io")
 public final class VariableDetails extends CachedDetail<VariableDetails, String>
 {
 	private String variable_name = null;

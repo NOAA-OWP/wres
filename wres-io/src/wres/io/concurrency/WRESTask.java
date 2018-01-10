@@ -4,14 +4,12 @@ import java.util.function.Consumer;
 
 import org.slf4j.Logger;
 
-import wres.util.Internal;
 import wres.util.Strings;
 
 /**
  * @author Christopher Tubbs
  *
  */
-@Internal(exclusivePackage = "wres.io")
 public abstract class WRESTask
 {
     protected final static String NEWLINE = System.lineSeparator();

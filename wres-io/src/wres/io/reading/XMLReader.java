@@ -19,14 +19,11 @@ import javax.xml.transform.stream.StreamResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.util.Internal;
-
 /**
  * @author Tubbs
  *
  */
-@Internal(exclusivePackage = "wres.io")
-public class XMLReader 
+public class XMLReader
 {
     private final String filename;
     private final boolean findOnClasspath;
@@ -39,13 +36,11 @@ public class XMLReader
 	 * 
 	 * @param filename the file name
 	 */
-	@Internal(exclusivePackage = "wres.io")
 	protected XMLReader( String filename )
 	{
 	    this(filename, false);
 	}
 
-	@Internal(exclusivePackage = "wres.io")
 	protected XMLReader( String fileName, InputStream inputStream )
 	{
 		this.findOnClasspath = false;
@@ -53,8 +48,7 @@ public class XMLReader
 		this.inputStream = inputStream;
 	}
 
-	@Internal(exclusivePackage = "wres.io")
-    protected XMLReader( String filename, boolean findOnClasspath )
+	protected XMLReader( String filename, boolean findOnClasspath )
 	{
 	    this.filename = filename;
 	    this.findOnClasspath = findOnClasspath;

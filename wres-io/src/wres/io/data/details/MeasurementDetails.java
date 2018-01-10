@@ -3,15 +3,13 @@ package wres.io.data.details;
 import java.sql.SQLException;
 
 import wres.io.utilities.Database;
-import wres.util.Internal;
 
 /**
  * Details defining a unit of measurement within the database (i.e. CFS (cubic feet per second),
  * M (meter), etc)
  * @author Christopher Tubbs
  */
-@Internal(exclusivePackage = "wres.io")
-public final class MeasurementDetails extends CachedDetail<MeasurementDetails, String> {	
+public final class MeasurementDetails extends CachedDetail<MeasurementDetails, String> {
 	private String unit = null;
 	private Integer measurementunit_id = null;
 

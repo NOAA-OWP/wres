@@ -19,7 +19,6 @@ import wres.io.concurrency.Executor;
 import wres.io.concurrency.WRESCallable;
 import wres.io.config.ConfigHelper;
 import wres.io.utilities.Database;
-import wres.util.Internal;
 import wres.util.Strings;
 
 /**
@@ -27,7 +26,6 @@ import wres.util.Strings;
  * Serves as the base class for all classes that are expected to save
  * observations or forecasts from a source file
  */
-@Internal(exclusivePackage = "wres.io")
 public abstract class BasicSource
 {
 

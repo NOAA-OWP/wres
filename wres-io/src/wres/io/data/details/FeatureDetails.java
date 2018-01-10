@@ -10,14 +10,12 @@ import java.util.concurrent.ConcurrentMap;
 
 import wres.config.generated.Feature;
 import wres.io.utilities.Database;
-import wres.util.Internal;
 import wres.util.Strings;
 
 /**
  * Defines the important details of a feature as stored in the database
  * @author Christopher Tubbs
  */
-@Internal(exclusivePackage = "wres.io")
 public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDetails.FeatureKey>
 {
 	private String lid = null;

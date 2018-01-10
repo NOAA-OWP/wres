@@ -152,15 +152,6 @@
         </xs:restriction>
     </xs:simpleType>
 
-    <!-- Determines where the anchor of a pooling window lies -->
-    <xs:simpleType name="timeAnchor">
-        <xs:restriction base="xs:string">
-            <xs:enumeration value="left"/>
-            <xs:enumeration value="center" />
-            <xs:enumeration value="right" />
-        </xs:restriction>
-    </xs:simpleType>
-
     <!-- Thresholds need to specify probabilities and an operator. -->
     <xs:complexType name="probabilityThreshold">
 
@@ -411,12 +402,10 @@
         </xs:annotation>
 
         <xs:sequence>
-            <xs:element name="period" type="duration" minOccurs="1" maxOccurs="1" />
-            <xs:element name="frequency" type="duration" minOccurs="0" maxOccurs="1"/>
-            <xs:element name="unit" type="durationUnit" minOccurs="1" maxOccurs="1" />
+            <xs:element name="period" type="duration" />
+            <xs:element name="frequency" type="duration" minOccurs="0"/>
+            <xs:element name="unit" type="durationUnit" />
         </xs:sequence>
-        <xs:attribute name="mode" type="timeWindowMode" default="back-to-back" />
-        <xs:attribute name="anchor" type="timeAnchor" default="center" />
     </xs:complexType>
 
     <xs:simpleType name="spaceAggregationFunction">

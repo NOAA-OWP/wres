@@ -4,14 +4,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.io.utilities.Database;
-import wres.util.Internal;
 import wres.util.Strings;
 
 /**
  * Executes the database copy operation for every value in the passed in string
  * @author Christopher Tubbs
  */
-@Internal(exclusivePackage = "wres.io")
 public class CopyExecutor extends WRESRunnable
 {
     private final String table_definition;
@@ -26,8 +24,7 @@ public class CopyExecutor extends WRESRunnable
      * @param values Newline delimited string containing values delimited by the delimiter that adheres to the table definition
      * @param delimiter The symbol separating each value in each line of the values
      */
-	@Internal(exclusivePackage = "wres.io")
-	public CopyExecutor(String table_definition, String values, String delimiter) 
+	public CopyExecutor(String table_definition, String values, String delimiter)
 	{
 		this.table_definition = table_definition;
 		this.values = values;

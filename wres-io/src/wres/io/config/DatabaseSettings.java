@@ -4,12 +4,10 @@ import com.mchange.v2.c3p0.ComboPooledDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.util.Internal;
 import wres.util.Strings;
 
 import javax.xml.stream.XMLStreamReader;
 import java.beans.PropertyVetoException;
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -21,7 +19,6 @@ import java.util.TreeMap;
  * Contains access to configured settings and objects for accessing the database
  * @author Christopher Tubbs
  */
-@Internal(exclusivePackage = "wres.io")
 final class DatabaseSettings {
 	private static final Logger LOGGER = LoggerFactory.getLogger(DatabaseSettings.class);
 

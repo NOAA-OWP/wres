@@ -4,13 +4,11 @@ import java.sql.SQLException;
 import java.util.HashMap;
 
 import wres.io.utilities.Database;
-import wres.util.Internal;
 
 /**
  * Defines details about a forecasted time series
  * @author Christopher Tubbs
  */
-@Internal(exclusivePackage = "wres.io")
 public final class TimeSeries
 {
     /**

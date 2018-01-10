@@ -7,7 +7,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import wres.io.data.details.CachedDetail;
-import wres.util.Internal;
 
 /**
  * An collection of details about concepts stored within the database
@@ -15,7 +14,6 @@ import wres.util.Internal;
  * @param <T> The type of detail within the database
  * @param <U> The key for the type within the database
  */
-@Internal(exclusivePackage = "wres.io")
 abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
     static final String NEWLINE = System.lineSeparator();
 

@@ -9,13 +9,11 @@ import wres.io.data.caching.DataSources;
 import wres.io.reading.BasicSource;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
-import wres.util.Internal;
 
 /**
  * @author Christopher Tubbs
  * Interprets a FEWS (PIXML) source into either forecast or observation data and stores them in the database
  */
-@Internal(exclusivePackage = "wres.io")
 public class FEWSSource extends BasicSource
 {
 	/**
@@ -23,7 +21,6 @@ public class FEWSSource extends BasicSource
      * @param projectConfig the ProjectConfig causing ingest
 	 * @param filename The name of the source file
 	 */
-    @Internal(exclusivePackage = "wres.io")
     public FEWSSource( ProjectConfig projectConfig,
                        String filename )
     {

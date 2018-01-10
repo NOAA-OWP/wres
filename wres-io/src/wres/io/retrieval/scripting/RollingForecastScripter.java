@@ -41,7 +41,7 @@ class RollingForecastScripter extends Scripter
         this.addLine("    WHERE F.variable_id = ", this.getVariableID());
 
         Double frequency = TimeHelper.unitsToHours( this.getProjectDetails().getPoolingWindowUnit(), this.getProjectDetails().getPoolingWindow().getFrequency() );
-        Double halfSpan = TimeHelper.unitsToHours( this.getProjectDetails().getPoolingWindowUnit(), this.getProjectDetails().getPoolingWindow().getPeriod() ) / 2;
+        Double span = TimeHelper.unitsToHours( this.getProjectDetails().getPoolingWindowUnit(), this.getProjectDetails().getPoolingWindow().getPeriod());
 
         this.addLine( "        AND F.feature_id = ", Features.getFeatureID(this.getFeature()));
         this.addLine( "        AND F.lead > ", this.getProgress() );
@@ -54,13 +54,12 @@ class RollingForecastScripter extends Scripter
                 )
         );
 
-        // TODO: Update this to handle left and right focused windows
-        this.add( "        AND F.basis_time >= ('", this.getInitialRollingDate(), "'::timestamp without time zone + (INTERVAL '1 HOUR' * ");
+        this.add( "        AND F.basis_time >= ('", this.getProjectDetails().getEarliestIssueDate(), "'::timestamp without time zone + (INTERVAL '1 HOUR' * ");
         this.add( TimeHelper.unitsToHours( getProjectDetails().getPoolingWindowUnit(), frequency ) );
-        this.addLine(" ) * ", this.getSequenceStep(), ") - INTERVAL '", halfSpan, " HOUR'");
-        this.add( "        AND F.basis_time <= ('", this.getInitialRollingDate() );
+        this.addLine(" ) * ", this.getSequenceStep(), ")");
+        this.add( "        AND F.basis_time <= ('", this.getProjectDetails().getEarliestIssueDate() );
         this.add("'::timestamp without time zone + (INTERVAL '1 HOUR' * ", frequency, ") * ", this.getSequenceStep(), ") ");
-        this.addLine( "+ INTERVAL '", halfSpan, " HOUR'");
+        this.addLine( "+ INTERVAL '", span, " HOUR'");
 
         this.applyEnsembleConstraint();
 
@@ -83,16 +82,6 @@ class RollingForecastScripter extends Scripter
         this.addLine( "ORDER BY F.valid_time, F.lead;" );
 
         return this.getScript();
-    }
-
-    private String getInitialRollingDate()
-            throws SQLException, InvalidPropertiesFormatException
-    {
-        if (this.zeroDate == null)
-        {
-            this.zeroDate = this.getProjectDetails().getInitialRollingDate( this.getFeature() );
-        }
-        return this.zeroDate;
     }
 
     private void applyEnsembleConstraint() throws SQLException

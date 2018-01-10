@@ -9,14 +9,12 @@ import org.slf4j.LoggerFactory;
 
 import wres.io.data.details.SourceDetails.SourceKey;
 import wres.io.utilities.Database;
-import wres.util.Internal;
 import wres.util.TimeHelper;
 
 /**
  * Details about a source of observation or forecast data
  * @author Christopher Tubbs
  */
-@Internal(exclusivePackage = "wres.io")
 public class SourceDetails extends CachedDetail<SourceDetails, SourceKey> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger( SourceDetails.class );

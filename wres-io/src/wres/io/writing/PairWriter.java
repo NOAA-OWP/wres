@@ -128,7 +128,7 @@ public class PairWriter extends WRESCallable<Boolean>
                 line.add( ConfigHelper.getFeatureDescription( this.getFeature() ) );
                 line.add(this.date);
 
-                line.add( String.valueOf( this.getLeadHour() ) );
+                line.add(String.valueOf(this.lead));
 
                 line.add( this.getWindow() );
 
@@ -199,33 +199,6 @@ public class PairWriter extends WRESCallable<Boolean>
         return this.date;
     }
 
-    private double getLeadHour() throws InvalidPropertiesFormatException
-    {
-        // This defines back-to-back. This doesn't work for rolling.
-        // Given a 4 hour period, back-to-back would yield 4 then 8,
-        // but so will rolling, which should be 4 then 5
-        double lead;
-
-        if (this.projectDetails.getPoolingMode() == TimeWindowMode.ROLLING)
-        {
-            // Rolling windows use explicit lead times
-            lead = this.lead;
-        }
-        else
-        {
-            // Back to back windows have lead times relative to their starting point
-            // For instance, if there is an offset resulting in a 19 hour push,
-            // the actual lead times can be 20 through 43, which later get adjusted
-            // to look like 25 through 48. Since that is the first window,
-            // instead of being 25 through 48, it becomes 1 through 24
-            lead = TimeHelper.unitsToHours( this.projectDetails.getAggregationUnit(),
-                                            this.projectDetails.getAggregationPeriod() ) *
-                   ( this.getWindowNum() + 1 );
-        }
-
-        return lead;
-    }
-
     private Feature getFeature()
     {
         return this.feature;
@@ -237,8 +210,7 @@ public class PairWriter extends WRESCallable<Boolean>
 
         int window = this.getWindowNum() / this.projectDetails.getAggregationFrequency();
 
-        PoolingWindowConfig config = this.projectDetails.getPoolingWindow();
-        if ( config != null && config.getMode() == TimeWindowMode.ROLLING )
+        if ( this.projectDetails.getPoolingMode() == TimeWindowMode.ROLLING )
         {
             // This doesn't quite work. When rolling over to the next
             // lead, it stays at the largest value prior. For instance,

@@ -17,12 +17,10 @@ import wres.config.generated.ProjectConfig;
 import wres.io.data.details.ProjectDetails;
 import wres.io.reading.IngestResult;
 import wres.io.utilities.Database;
-import wres.util.Internal;
 
 /**
  * Cache of available types of forecast
  */
-@Internal(exclusivePackage = "wres.io")
 public class Projects extends Cache<ProjectDetails, Integer> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Projects.class);
