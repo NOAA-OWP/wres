@@ -116,11 +116,7 @@ class DefaultSlicer implements Slicer
             if ( condition.test( a.getItemOne() ) && condition.test( a.getItemTwo() ) )
                 mainPairsSubset.add( a );
         } );
-        //No pairs in the subset
-        if ( mainPairsSubset.isEmpty() )
-        {
-            throw new MetricInputSliceException( sliceFail + " No data for main pairs." );
-        }
+
         //Filter climatology as required
         VectorOfDoubles climatology = input.getClimatology();
         if ( input.hasClimatology() && applyToClimatology )
@@ -137,11 +133,6 @@ class DefaultSlicer implements Slicer
                     basePairsSubset.add( a );
             } );
 
-            //No pairs in the subset
-            if ( basePairsSubset.isEmpty() )
-            {
-                throw new MetricInputSliceException( sliceFail + " No data for baseline pairs." );
-            }
             return dataFac.ofSingleValuedPairs( mainPairsSubset,
                                                 basePairsSubset,
                                                 input.getMetadata(),

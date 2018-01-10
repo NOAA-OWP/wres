@@ -21,6 +21,7 @@ import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.Slicer;
 import wres.datamodel.Threshold;
+import wres.datamodel.inputs.InsufficientDataException;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.MetricInputSliceException;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
@@ -435,7 +436,7 @@ class MetricProcessorEnsemblePairsByTime extends MetricProcessorByTime
 
         }
         //Insufficient data for one threshold: log, but allow
-        catch ( MetricInputSliceException e )
+        catch ( MetricInputSliceException | InsufficientDataException e )
         {
             returnMe = new MetricCalculationException( e.getMessage(), e );
         }
@@ -556,7 +557,7 @@ class MetricProcessorEnsemblePairsByTime extends MetricProcessorByTime
             }
         }
         //Insufficient data for one threshold: log, but allow
-        catch ( MetricInputSliceException e )
+        catch ( MetricInputSliceException | InsufficientDataException e )
         {
             returnMe = new MetricCalculationException( e.getMessage(), e );
         }
@@ -574,6 +575,7 @@ class MetricProcessorEnsemblePairsByTime extends MetricProcessorByTime
      * @param collection the metric collection
      * @return the future result
      * @throws MetricInputSliceException if the pairs contain insufficient data to compute the metrics
+     * @throws InsufficientDataException if the pairs contain only missing values after slicing
      */
 
     private <T extends MetricOutput<?>> Future<MetricOutputMapByMetric<T>>
@@ -601,6 +603,7 @@ class MetricProcessorEnsemblePairsByTime extends MetricProcessorByTime
      * @param collection the metric collection
      * @return the future result
      * @throws MetricInputSliceException if the threshold fails to slice sufficient data to compute the metrics
+     * @throws InsufficientDataException if the pairs contain only missing values after slicing
      */
 
     private <T extends MetricOutput<?>> Future<MetricOutputMapByMetric<T>>

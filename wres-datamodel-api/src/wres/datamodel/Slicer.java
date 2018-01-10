@@ -2,10 +2,12 @@ package wres.datamodel;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.DoublePredicate;
 import java.util.function.DoubleUnaryOperator;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import wres.datamodel.inputs.MetricInputSliceException;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
@@ -43,6 +45,28 @@ public interface Slicer
     {
         return getQuantileFromProbability( threshold, sorted, null );
     }
+    
+    /**
+     * Loops over the {@link PairOfDouble} in the input and returns <code>true</code> immediately when the 
+     * {@link Predicate} returns <code>true</code> for both sides of a pairing, false otherwise. 
+     * 
+     * @return true if one or more inputs meet the predicate condition on both sides of the pairing, false otherwise
+     * @throws NullPointerException if either input is null
+     */
+    
+    static boolean hasOneOrMoreOf( List<PairOfDoubles> pairs, DoublePredicate condition )
+    {
+        Objects.requireNonNull( pairs, "Expected non-null pairs." );
+        Objects.requireNonNull( condition, "Expected a non-null condition." );
+        for(PairOfDoubles next : pairs)
+        {
+            if( condition.test( next.getItemOne() ) && condition.test( next.getItemTwo() ) )
+            {
+                return true;
+            }
+        }
+        return false;        
+    }    
 
     /**
      * Returns the left side of {@link SingleValuedPairs#getData()} as a primitive array of doubles.
@@ -240,5 +264,5 @@ public interface Slicer
      */
 
     Threshold getQuantileFromProbability( Threshold threshold, double[] sorted, Integer decimals );
-
+    
 }
