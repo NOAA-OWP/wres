@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project label="ExampleProject" name="scenario012">
+
+    <inputs>
+        <left label="">
+            <type>observations</type>
+            <source all="true" format="PI-XML" missingValue="-999.0" 
+                recursive="true" unit="">../data/DRRC2QINE.xml</source>
+            <variable>QINE</variable>
+        </left>
+        <right label="HEFS">
+            <type>single valued forecasts</type>
+            <source all="false" format="PI-XML" missingValue="-999.0"
+                recursive="false" unit="">../data/drrc2ForecastsOneMonth/</source>
+            <variable>SQIN</variable>
+            <ensemble name="HEFSENSPOST" member_id="2009" qualifier="SIM1" />
+        </right>
+    </inputs>
+
+    <pair label="Pairs by location and lead time">
+        <unit>CMS</unit>
+        <feature locationId="DRRC2" />
+        <leadHours minimum="1" maximum="24" />
+        <issuedDates latest="1985-06-07T12:00:00Z" />
+        <grouping>feature,lead_time</grouping>
+<!--
+        <poolingWindow mode="rolling" anchor="center">
+            <period>48</period>
+            <frequency>24</frequency>
+            <unit>hours</unit>
+        </poolingWindow>
+-->
+        <desiredTimeAggregation>
+            <function>avg</function>
+            <period>6</period>
+            <frequency>3</frequency>
+            <unit>hours</unit>
+        </desiredTimeAggregation>
+    </pair>
+
+    <outputs>
+        <metric>
+            <name>mean error</name>
+        </metric>
+        <metric>
+            <name>sample size</name>
+        </metric>
+        <destination type="numeric" decimalFormat="0.000000">
+            <path>output</path>
+        </destination>
+        <destination type="pairs" decimalFormat="0.000000">
+            <path>output</path>
+        </destination>
+        <destination type="graphic">
+            <path>output</path>
+            <graphical width="800" height="600">
+                <plotType>threshold lead</plotType>
+            </graphical>
+        </destination>
+    </outputs>
+
+</project>
