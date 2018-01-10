@@ -9,6 +9,7 @@ import java.util.List;
 import org.junit.Test;
 
 import wres.datamodel.SafeEnsemblePairs.EnsemblePairsBuilder;
+import wres.datamodel.inputs.InsufficientDataException;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.metadata.Metadata;
@@ -77,6 +78,50 @@ public final class SafeEnsemblePairsTest
             fail("Expected a checked exception on invalid inputs: null pair list.");
         }
         catch(final Exception e)
+        {
+        }
+
+        //Only non-finite main pairs
+        try
+        {
+            values.clear();
+            values.add( metIn.pairOf( Double.NaN, new double[] { 1 } ) );
+            final EnsemblePairsBuilder c = new EnsemblePairsBuilder();
+            c.addData( values ).setMetadata( meta ).build();
+            fail( "Expected a checked exception on invalid inputs: all data missing." );
+        }
+        catch ( final InsufficientDataException e )
+        {
+        }
+        //Only non-finite baseline pairs
+        try
+        {
+            values.clear();
+            values.add( metIn.pairOf( 1, new double[] { 1 } ) );
+            final List<PairOfDoubleAndVectorOfDoubles> baselineValues = new ArrayList<>();
+            baselineValues.add( metIn.pairOf( Double.NaN, new double[] { 1 } ) );
+            final EnsemblePairsBuilder c = new EnsemblePairsBuilder();
+            c.addData( values )
+             .setMetadata( meta )
+             .addDataForBaseline( baselineValues )
+             .setMetadataForBaseline( meta )
+             .build();
+            fail( "Expected a checked exception on invalid inputs: all baseline data missing." );
+        }
+        catch ( final InsufficientDataException e )
+        {
+        }
+        //Only non-finite climatology
+        try
+        {
+            values.clear();
+            values.add( metIn.pairOf( 1, new double[] { 1 } ) );
+            VectorOfDoubles climatology = metIn.vectorOf( new double[] { Double.NaN } );
+            final EnsemblePairsBuilder c = new EnsemblePairsBuilder();
+            c.addData( values ).setMetadata( meta ).setClimatology( climatology ).build();
+            fail( "Expected a checked exception on invalid inputs: all climatology data missing." );
+        }
+        catch ( final InsufficientDataException e )
         {
         }
 

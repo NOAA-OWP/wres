@@ -136,7 +136,6 @@ class DefaultSlicer implements Slicer
                 if ( condition.test( a.getItemOne() ) && condition.test( a.getItemTwo() ) )
                     basePairsSubset.add( a );
             } );
-
             //No pairs in the subset
             if ( basePairsSubset.isEmpty() )
             {

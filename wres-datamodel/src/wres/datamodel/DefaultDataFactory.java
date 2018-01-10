@@ -13,6 +13,7 @@ import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.SafeMetricOutputMapByMetric.SafeMetricOutputMapByMetricBuilder;
 import wres.datamodel.SafeMetricOutputMultiMapByTimeAndThreshold.SafeMetricOutputMultiMapByTimeAndThresholdBuilder;
+import wres.datamodel.SafeRegularTimeSeriesOfEnsemblePairs.SafeRegularTimeSeriesOfEnsemblePairsBuilder;
 import wres.datamodel.SafeRegularTimeSeriesOfSingleValuedPairs.SafeRegularTimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.Threshold.Operator;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
@@ -22,6 +23,7 @@ import wres.datamodel.inputs.pairs.MulticategoryPairs;
 import wres.datamodel.inputs.pairs.PairOfBooleans;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
+import wres.datamodel.inputs.pairs.RegularTimeSeriesOfEnsemblePairs.RegularTimeSeriesOfEnsemblePairsBuilder;
 import wres.datamodel.inputs.pairs.RegularTimeSeriesOfSingleValuedPairs.RegularTimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.Metadata;
@@ -331,7 +333,7 @@ public class DefaultDataFactory implements DataFactory
             //Merge the outputs for different metrics
             final SafeMetricOutputMapByMetricBuilder<T> mBuilder = new SafeMetricOutputMapByMetricBuilder<>();
             value.forEach( mBuilder::put );
-            builder.put( key, mBuilder.build() ); 
+            builder.put( key, mBuilder.build() );
         } );
         return builder.build();
     }
@@ -348,6 +350,12 @@ public class DefaultDataFactory implements DataFactory
     public RegularTimeSeriesOfSingleValuedPairsBuilder ofRegularTimeSeriesOfSingleValuedPairsBuilder()
     {
         return new SafeRegularTimeSeriesOfSingleValuedPairsBuilder();
+    }
+
+    @Override
+    public RegularTimeSeriesOfEnsemblePairsBuilder ofRegularTimeSeriesOfEnsemblePairsBuilder()
+    {
+        return new SafeRegularTimeSeriesOfEnsemblePairsBuilder();
     }
 
     @Override
