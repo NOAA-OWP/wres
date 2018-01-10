@@ -620,6 +620,7 @@ public abstract class MetricProcessor<T extends MetricOutputForProject<?>> imple
      * @param subset the data to validate
      * @param threshold the threshold used to localize the error message
      * @throws MetricInputSliceException if the input contains insufficient data for metric calculation 
+     * @throws InsufficientDataException if the input contains all missing pairs after slicing
      */
 
     void checkSlice( PairedInput<?> subset, Threshold threshold ) throws MetricInputSliceException

@@ -56,6 +56,7 @@ class MetricProcessorSingleValuedPairsByTime extends MetricProcessorByTime
     @Override
     public MetricOutputForProjectByTimeAndThreshold apply( MetricInput<?> input )
     {
+        Objects.requireNonNull( input, "Expected non-null input to the metric processor." );
         if ( ! ( input instanceof SingleValuedPairs ) )
         {
             throw new MetricCalculationException( "Expected single-valued pairs for metric processing." );

@@ -1,11 +1,13 @@
 package wres.datamodel;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.StringJoiner;
 
+import wres.datamodel.inputs.InsufficientDataException;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
@@ -177,6 +179,7 @@ class SafeEnsemblePairs implements EnsemblePairs
      * 
      * @param b the builder
      * @throws MetricInputException if the pairs are invalid
+     * @throws InsufficientDataException if all inputs are non-finite
      */
 
     SafeEnsemblePairs( final EnsemblePairsBuilder b )
@@ -192,77 +195,106 @@ class SafeEnsemblePairs implements EnsemblePairs
         climatology = b.climatology;
 
         //Validate
+        validateMainInput();
+        validateBaselineInput();
+        validateClimatologicalInput();
+    }
+
+    /**
+     * Validates the main pairs and associated metadata after the constructor has copied it.
+     * 
+     * @throws MetricInputException if the input is invalid
+     * @throws InsufficientDataException if all inputs are non-finite
+     */
+
+    private void validateMainInput()
+    {
+        
         if ( Objects.isNull( mainMeta ) )
         {
             throw new MetricInputException( "Specify non-null metadata for the metric input." );
         }
+        
         if ( Objects.isNull( mainInput ) )
         {
             throw new MetricInputException( "Specify a non-null dataset for the metric input." );
         }
+
+        if ( mainInput.contains( null ) )
+        {
+            throw new MetricInputException( "One or more of the pairs is null." );
+        }
+
+        if ( mainInput.isEmpty() )
+        {
+            throw new MetricInputException( "Cannot build the paired data with an empty input: add one or more pairs." );
+        }
+
+        if ( !Slicer.hasOneOrMoreOfVectorRight( mainInput, Double::isFinite ) )
+        {
+            throw new InsufficientDataException( "Must have at least one non-missing pair in main input." );
+        }
+    }
+
+    /**
+     * Validates the baseline pairs and associated metadata after the constructor has copied it.
+     * 
+     * @throws MetricInputException if the baseline input is invalid
+     * @throws InsufficientDataException if all baseline inputs are non-finite
+     */
+
+    private void validateBaselineInput()
+    {
         if ( Objects.isNull( baselineInput ) != Objects.isNull( baselineMeta ) )
         {
             throw new MetricInputException( "Specify a non-null baseline input and associated metadata or leave both "
                                             + "null." );
         }
-        if ( mainInput.contains( null ) )
-        {
-            throw new MetricInputException( "One or more of the pairs is null." );
-        }
-        if ( mainInput.isEmpty() )
-        {
-            throw new MetricInputException( "Cannot build the paired data with an empty input: add one or more pairs." );
-        }
+
         if ( Objects.nonNull( baselineInput ) )
         {
             if ( baselineInput.contains( null ) )
             {
                 throw new MetricInputException( "One or more of the baseline pairs is null." );
             }
+
             if ( baselineInput.isEmpty() )
             {
                 throw new MetricInputException( "Cannot build the paired data with an empty baseline: add one or more "
                                                 + "pairs." );
             }
+
+            if ( !Slicer.hasOneOrMoreOfVectorRight( baselineInput, Double::isFinite ) )
+            {
+                throw new InsufficientDataException( "Must have at least one non-missing pair in baseline input." );
+            }
         }
-        if ( Objects.nonNull( climatology ) && climatology.size() == 0 )
-        {
-            throw new MetricInputException( "Cannot build the paired data with an empty baseline: add one or more "
-                                            + "pairs." );
-        }
-        //Check contents
-        checkEachPair( mainInput, baselineInput );
     }
 
     /**
-     * Validates each pair in each input.
+     * Validates the climatological input after the constructor has copied it.
      * 
-     * @param mainInput the main input
-     * @param baselineInput the baseline input
+     * @throws MetricInputException if the climatological input is invalid
+     * @throws InsufficientDataException if all climatological inputs are non-finite
      */
 
-    private void checkEachPair( List<PairOfDoubleAndVectorOfDoubles> mainInput,
-                                List<PairOfDoubleAndVectorOfDoubles> baselineInput )
+    private void validateClimatologicalInput()
     {
-        //Main pairs
-        for ( PairOfDoubleAndVectorOfDoubles next : mainInput )
+        if ( Objects.nonNull( climatology ) )
         {
-            if ( next.getItemTwo().length == 0 )
+            if ( climatology.size() == 0 )
             {
-                throw new MetricInputException( "One or more pairs has no ensemble members." );
+                throw new MetricInputException( "Cannot build the paired data with an empty climatology: add one or "
+                                                + "more values." );
             }
-        }
-        //Baseline
-        if ( Objects.nonNull( baselineInput ) )
-        {
-            for ( PairOfDoubleAndVectorOfDoubles next : mainInput )
-            {
-                if ( next.getItemTwo().length == 0 )
-                {
-                    throw new MetricInputException( "One or more pairs in the baseline has no ensemble members." );
-                }
-            }
-        }
-    }
 
+            if ( !Arrays.stream( climatology.getDoubles() ).anyMatch( Double::isFinite ) )
+            {
+                throw new InsufficientDataException( "Must have at least one non-missing value in the climatological "
+                                                     + "input" );
+            }
+        }
+    }    
+    
+    
 }
