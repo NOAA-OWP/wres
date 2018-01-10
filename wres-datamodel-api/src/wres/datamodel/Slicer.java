@@ -47,9 +47,11 @@ public interface Slicer
     }
     
     /**
-     * Loops over the {@link PairOfDouble} in the input and returns <code>true</code> immediately when the 
+     * Loops over the {@link PairOfDoubles} in the input and returns <code>true</code> immediately when the 
      * {@link Predicate} returns <code>true</code> for both sides of a pairing, false otherwise. 
      * 
+     * @param pairs the input pairs
+     * @param condition the predicate to apply
      * @return true if one or more inputs meet the predicate condition on both sides of the pairing, false otherwise
      * @throws NullPointerException if either input is null
      */
