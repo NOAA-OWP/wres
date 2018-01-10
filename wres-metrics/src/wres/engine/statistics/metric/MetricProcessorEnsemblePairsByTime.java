@@ -109,6 +109,7 @@ class MetricProcessorEnsemblePairsByTime extends MetricProcessorByTime
     @Override
     public MetricOutputForProjectByTimeAndThreshold apply( MetricInput<?> input )
     {
+        Objects.requireNonNull( input, "Expected non-null input to the metric processor." );
         if ( ! ( input instanceof EnsemblePairs ) )
         {
             throw new MetricCalculationException( "Expected ensemble pairs for metric processing." );
