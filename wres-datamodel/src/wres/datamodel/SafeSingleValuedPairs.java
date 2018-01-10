@@ -1,6 +1,7 @@
 package wres.datamodel;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -155,6 +156,7 @@ class SafeSingleValuedPairs implements SingleValuedPairs
      * 
      * @param b the builder
      * @throws MetricInputException if the pairs are invalid
+     * @throws InsufficientDataException if all inputs are non-finite
      */
 
     SafeSingleValuedPairs( final SingleValuedPairsBuilder b )
@@ -168,6 +170,20 @@ class SafeSingleValuedPairs implements SingleValuedPairs
         climatology = b.climatology;
 
         //Validate
+        validateMainInput();
+        validateBaselineInput();
+        validateClimatologicalInput();
+    }
+
+    /**
+     * Validates the main pairs and associated metadata after the constructor has copied it.
+     * 
+     * @throws MetricInputException if the input is invalid
+     * @throws InsufficientDataException if all inputs are non-finite
+     */
+
+    private void validateMainInput()
+    {
         if ( Objects.isNull( mainMeta ) )
         {
             throw new MetricInputException( "Specify non-null metadata for the metric input." );
@@ -176,12 +192,6 @@ class SafeSingleValuedPairs implements SingleValuedPairs
         if ( Objects.isNull( mainInput ) )
         {
             throw new MetricInputException( "Specify a non-null dataset for the metric input." );
-        }
-
-        if ( Objects.isNull( baselineInput ) != Objects.isNull( baselineMeta ) )
-        {
-            throw new MetricInputException( "Specify a non-null baseline input and associated metadata or leave both "
-                                            + "null." );
         }
 
         if ( mainInput.contains( null ) )
@@ -194,9 +204,25 @@ class SafeSingleValuedPairs implements SingleValuedPairs
             throw new MetricInputException( "Cannot build the paired data with an empty input: add one or more pairs." );
         }
 
-        if ( !SafeSingleValuedPairs.hasAtLeastOneNonNanPair( mainInput ) )
+        if ( !Slicer.hasOneOrMoreOf( mainInput, Double::isFinite ) )
         {
-            throw new InsufficientDataException( "Must have at least one non-NaN pair in main input." );
+            throw new InsufficientDataException( "Must have at least one non-missing pair in main input." );
+        }
+    }
+
+    /**
+     * Validates the baseline pairs and associated metadata after the constructor has copied it.
+     * 
+     * @throws MetricInputException if the baseline input is invalid
+     * @throws InsufficientDataException if all baseline inputs are non-finite
+     */
+
+    private void validateBaselineInput()
+    {
+        if ( Objects.isNull( baselineInput ) != Objects.isNull( baselineMeta ) )
+        {
+            throw new MetricInputException( "Specify a non-null baseline input and associated metadata or leave both "
+                                            + "null." );
         }
 
         if ( Objects.nonNull( baselineInput ) )
@@ -212,41 +238,36 @@ class SafeSingleValuedPairs implements SingleValuedPairs
                                                 + "pairs." );
             }
 
-            if ( !SafeSingleValuedPairs.hasAtLeastOneNonNanPair( baselineInput ) )
+            if ( !Slicer.hasOneOrMoreOf( baselineInput, Double::isFinite ) )
             {
-                throw new MetricInputException( "Must have at least one non-NaN pair in baseline input." );
+                throw new InsufficientDataException( "Must have at least one non-missing pair in baseline input." );
             }
         }
-
-        if ( Objects.nonNull( climatology ) && climatology.size() == 0 )
-        {
-            throw new InsufficientDataException( "Cannot build the paired data with an empty baseline: add one or more "
-                                                 + "pairs." );
-        }
     }
-
 
     /**
-     * Returns true if there is at least one pair with no NaNs
-     * @param pairs a list of pairs
-     * @return true if one or more pairs has no NaN in either left or right
+     * Validates the climatological input after the constructor has copied it.
+     * 
+     * @throws MetricInputException if the climatological input is invalid
+     * @throws InsufficientDataException if all climatological inputs are non-finite
      */
 
-    private static boolean hasAtLeastOneNonNanPair( List<PairOfDoubles> pairs )
+    private void validateClimatologicalInput()
     {
-        Objects.requireNonNull( pairs );
-        boolean foundAtLeastOneNonNanPair = false;
-
-        for ( PairOfDoubles pair : pairs )
+        if ( Objects.nonNull( climatology ) )
         {
-            if ( pair.getItemOne() != Double.NaN
-                 && pair.getItemTwo() != Double.NaN )
+            if ( climatology.size() == 0 )
             {
-                foundAtLeastOneNonNanPair = true;
-                break;
+                throw new MetricInputException( "Cannot build the paired data with an empty climatology: add one or "
+                                                + "more values." );
+            }
+
+            if ( !Arrays.stream( climatology.getDoubles() ).anyMatch( Double::isFinite ) )
+            {
+                throw new InsufficientDataException( "Must have at least one non-missing value in the climatological "
+                                                     + "input" );
             }
         }
-
-        return foundAtLeastOneNonNanPair;
     }
+
 }
