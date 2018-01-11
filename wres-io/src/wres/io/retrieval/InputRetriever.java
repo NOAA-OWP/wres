@@ -25,7 +25,6 @@ import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.Dimension;
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.inputs.InsufficientDataException;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
@@ -227,7 +226,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                              + ConfigHelper.getFeatureDescription( this.feature )
                              + "'.";
             // Decorating with more information in our message.
-            throw new InsufficientDataException( message, mie );
+            throw new MetricInputException( message, mie );
         }
 
         return input;
