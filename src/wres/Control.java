@@ -33,6 +33,7 @@ import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
 import wres.config.ProjectConfigException;
 import wres.config.Validation;
+import wres.config.generated.DatasourceType;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.Feature;
@@ -46,6 +47,8 @@ import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.Threshold;
 import wres.datamodel.inputs.InsufficientDataException;
 import wres.datamodel.inputs.MetricInput;
+import wres.datamodel.inputs.pairs.EnsemblePairs;
+import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
@@ -323,10 +326,12 @@ public class Control implements Function<String[], Integer>
      * 
      * @param feature the feature to process
      * @param projectConfigPlus the project configuration
+     * @param projectSources the project sources
      * @param pairExecutor the {@link ExecutorService} for processing pairs
      * @param thresholdExecutor the {@link ExecutorService} for processing thresholds
      * @param metricExecutor the {@link ExecutorService} for processing metrics
      * @throws WresProcessingException when an error occurs during processing
+     * @return a feature result
      */
 
     private FeatureProcessingResult processFeature( final Feature feature,
@@ -349,14 +354,31 @@ public class Control implements Function<String[], Integer>
         // Some output types are processed at the end of the pipeline, others after each input is processed
         // Construct a processor that retains all output types required at the end of the pipeline: SCALAR and VECTOR
         // TODO: support additional processor types
-        MetricProcessorByTime processor = null;
+        MetricProcessorByTime<SingleValuedPairs> singleValuedProcessor = null; // Ensemble processor
+        MetricProcessorByTime<EnsemblePairs> ensembleProcessor = null; // Single-valued processor
+        MetricProcessorByTime<?> processor = null; // The processor used
         try
         {
-            processor = MetricFactory.getInstance(DATA_FACTORY).getMetricProcessorByTime(projectConfig,
-                                                                                   thresholdExecutor,          
-                                                                                   metricExecutor,
-                                                                                   MetricOutputGroup.SCALAR,
-                                                                                   MetricOutputGroup.VECTOR);
+            MetricFactory mF = MetricFactory.getInstance( DATA_FACTORY );
+            DatasourceType type = projectConfig.getInputs().getRight().getType();
+            if ( type.equals( DatasourceType.SINGLE_VALUED_FORECASTS ) || type.equals( DatasourceType.SIMULATIONS ) )
+            {
+                singleValuedProcessor = mF.ofMetricProcessorByTimeSingleValuedPairs( projectConfig,
+                                                                                     thresholdExecutor,
+                                                                                     metricExecutor,
+                                                                                     MetricOutputGroup.SCALAR,
+                                                                                     MetricOutputGroup.VECTOR );
+                processor = singleValuedProcessor;
+            }
+            else
+            {
+                ensembleProcessor = mF.ofMetricProcessorByTimeEnsemblePairs( projectConfig,
+                                                                             thresholdExecutor,
+                                                                             metricExecutor,
+                                                                             MetricOutputGroup.SCALAR,
+                                                                             MetricOutputGroup.VECTOR );
+                processor = ensembleProcessor;
+            }
         }
         catch(final MetricConfigurationException e)
         {
@@ -393,16 +415,16 @@ public class Control implements Function<String[], Integer>
                 // 4. Monitor progress
                 final CompletableFuture<Void> c =
                         CompletableFuture.supplyAsync( new PairsByTimeWindowProcessor(
-                                                               nextInput ),
+                                                                                       nextInput,
+                                                                                       singleValuedProcessor,
+                                                                                       ensembleProcessor ),
                                                        pairExecutor )
-                                         .thenApplyAsync( processor,
-                                                          pairExecutor )
                                          .thenAcceptAsync( new IntermediateResultProcessor(
-                                                                   feature,
-                                                                   projectConfigPlus ),
+                                                                                            feature,
+                                                                                            projectConfigPlus ),
                                                            pairExecutor )
                                          .thenAccept(
-                                                 aVoid -> ProgressMonitor.completeStep() );
+                                                      aVoid -> ProgressMonitor.completeStep() );
 
                 // Add the future to the list
                 listOfFutures.add( c );
@@ -465,7 +487,7 @@ public class Control implements Function<String[], Integer>
      */
 
     private static void   processCachedProducts( ProjectConfigPlus projectConfigPlus,
-                                               MetricProcessorByTime processor,
+                                               MetricProcessorByTime<?> processor,
                                                Feature feature )
     {
         ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
@@ -537,7 +559,7 @@ public class Control implements Function<String[], Integer>
 
     private static void   processCachedCharts( final Feature feature,
                                                final ProjectConfigPlus projectConfigPlus,
-                                               final MetricProcessorByTime processor,
+                                               final MetricProcessorByTime<?> processor,
                                                final MetricOutputGroup... outGroup)
     {
         if(!processor.hasStoredMetricOutput())
@@ -986,39 +1008,57 @@ public class Control implements Function<String[], Integer>
     }
 
     /**
-     * Task that waits for pairs to arrive and then returns them.
+     * Task that computes a set of metric results for a particular time window.
      */
-    private static class PairsByTimeWindowProcessor implements Supplier<MetricInput<?>>
+    private static class PairsByTimeWindowProcessor implements Supplier<MetricOutputForProjectByTimeAndThreshold>
     {
         /**
          * The future metric input.
          */
-        private final Future<MetricInput<?>> input;
+        private final Future<MetricInput<?>> futureInput;
+
+        /**
+         * Processor for single-valued pairs.
+         */
+
+        private final MetricProcessorByTime<SingleValuedPairs> singleValuedProcessor;
+
+        /**
+         * Processor for ensemble pairs.
+         */
+
+        private final MetricProcessorByTime<EnsemblePairs> ensembleProcessor;
 
         /**
          * Construct.
          * 
-         * @param input the future metric input
+         * @param futureInput the future metric input
+         * @param singleValuedProcessor a processor for {@link SingleValuedPairs}
+         * @param ensembleProcessor a processor for {@link EnsemblePairs}
          */
 
-        private PairsByTimeWindowProcessor(final Future<MetricInput<?>> input)
+        private PairsByTimeWindowProcessor( final Future<MetricInput<?>> futureInput,
+                                            MetricProcessorByTime<SingleValuedPairs> singleValuedProcessor,
+                                            MetricProcessorByTime<EnsemblePairs> ensembleProcessor )
         {
-            Objects.requireNonNull( input, "Specify a non-null input for the processor." );
-            this.input = input;
+            Objects.requireNonNull( futureInput, "Specify a non-null input for the processor." );
+            this.futureInput = futureInput;
+            this.singleValuedProcessor = singleValuedProcessor;
+            this.ensembleProcessor = ensembleProcessor;
         }
 
         @Override
-        public MetricInput<?> get()
+        public MetricOutputForProjectByTimeAndThreshold get()
         {
-            MetricInput<?> nextInput = null;
+            MetricInput<?> input = null;
             try
             {
-                nextInput = input.get();
+                input = futureInput.get();
                 if(LOGGER.isDebugEnabled())
                 {
                     LOGGER.debug("Completed processing of pairs for feature '{}' and time window {}.",
-                                nextInput.getMetadata().getIdentifier().getGeospatialID(),
-                                nextInput.getMetadata().getTimeWindow());
+                                 input.getMetadata().getIdentifier().getGeospatialID(),
+                                 input.getMetadata().getTimeWindow());
                 }
             }
             catch(final InterruptedException e)
@@ -1030,8 +1070,19 @@ public class Control implements Function<String[], Integer>
             {
                 throw new WresProcessingException( "While processing pairs:", e );
             }
-
-            return nextInput;
+            // Process the pairs
+            if ( input instanceof SingleValuedPairs )
+            {
+                return singleValuedProcessor.apply( (SingleValuedPairs) input );
+            }
+            else if ( input instanceof EnsemblePairs )
+            {
+                return ensembleProcessor.apply( (EnsemblePairs) input );
+            }
+            else
+            {
+                throw new WresProcessingException( "While processing pairs: encountered an unexpected type of pairs." );
+            }
         }
     }
 
@@ -1132,6 +1183,11 @@ public class Control implements Function<String[], Integer>
     {
         private static final long serialVersionUID = 6988169716259295343L;
 
+        WresProcessingException( String message )
+        {
+            super( message );
+        }
+        
         WresProcessingException( String message, Throwable cause )
         {
             super( message, cause );

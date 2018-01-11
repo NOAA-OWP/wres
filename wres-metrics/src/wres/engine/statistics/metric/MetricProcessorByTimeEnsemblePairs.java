@@ -51,7 +51,7 @@ import wres.engine.statistics.metric.MetricProcessorByTime.MetricFuturesByTime.M
  * @since 0.1
  */
 
-class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime
+public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<EnsemblePairs>
 {
 
     /**
@@ -107,13 +107,9 @@ class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime
     private final BiFunction<PairOfDoubleAndVectorOfDoubles, Threshold, PairOfDoubles> toDiscreteProbabilities;
 
     @Override
-    public MetricOutputForProjectByTimeAndThreshold apply( MetricInput<?> input )
+    public MetricOutputForProjectByTimeAndThreshold apply( EnsemblePairs input )
     {
         Objects.requireNonNull( input, "Expected non-null input to the metric processor." );
-        if ( ! ( input instanceof EnsemblePairs ) )
-        {
-            throw new MetricCalculationException( "Expected ensemble pairs for metric processing." );
-        }
         TimeWindow timeWindow = input.getMetadata().getTimeWindow();
         Objects.requireNonNull( timeWindow, "Expected a non-null time window in the input metadata." );
 
@@ -126,35 +122,32 @@ class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime
 
         //Remove missing values. 
         //TODO: when time-series metrics are supported, leave missings in place for time-series
-        MetricInput<?> inputNoMissing = input;
-        if ( input instanceof EnsemblePairs )
+        EnsemblePairs inputNoMissing = input;
+        try
         {
-            try
-            {
-                inputNoMissing = slicer.filter( (EnsemblePairs) input, ADMISSABLE_DATA, true );
-            }
-            catch ( MetricInputSliceException e )
-            {
-                throw new MetricCalculationException( "While attempting to remove missing values: ", e );
-            }
+            inputNoMissing = slicer.filter( input, ADMISSABLE_DATA, true );
+        }
+        catch ( MetricInputSliceException e )
+        {
+            throw new MetricCalculationException( "While attempting to remove missing values: ", e );
         }
 
         //Process the metrics that consume ensemble pairs
         if ( hasMetrics( MetricInputGroup.ENSEMBLE ) )
         {
-            processEnsemblePairs( timeWindow, (EnsemblePairs) inputNoMissing, futures );
+            processEnsemblePairs( timeWindow, inputNoMissing, futures );
         }
         //Process the metrics that consume single-valued pairs
         if ( hasMetrics( MetricInputGroup.SINGLE_VALUED ) )
         {
             //Derive the single-valued pairs from the ensemble pairs using the configured mapper
-            SingleValuedPairs singleValued = slicer.transformPairs( (EnsemblePairs) inputNoMissing, toSingleValues );
+            SingleValuedPairs singleValued = slicer.transformPairs( inputNoMissing, toSingleValues );
             processSingleValuedPairs( timeWindow, singleValued, futures );
         }
         //Process the metrics that consume discrete probability pairs
         if ( hasMetrics( MetricInputGroup.DISCRETE_PROBABILITY ) )
         {
-            processDiscreteProbabilityPairs( timeWindow, (EnsemblePairs) inputNoMissing, futures );
+            processDiscreteProbabilityPairs( timeWindow, inputNoMissing, futures );
         }
 
         // Log

@@ -11,8 +11,8 @@ import wres.datamodel.outputs.ScalarOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 
 /**
- * <p>The {@link VolumetricEfficiency} (VE) accumulates the observations (VO) and, separately, it accumulates the 
- * absolute errors of the predictions (VP). It then expresses the difference between the two as a fraction of the 
+ * <p>The {@link VolumetricEfficiency} (VE) accumulates the absolute observations (VO) and, separately, it accumulates 
+ * the absolute errors of the predictions (VP). It then expresses the difference between the two as a fraction of the 
  * accumulated observations, i.e. VE = (VO - VP) / VO.</p> 
  * 
  * <p>A score of 1 denotes perfect efficiency and a score of 0 denotes a VP that matches the VO. The lower bound of 
@@ -32,18 +32,22 @@ public class VolumetricEfficiency extends DoubleErrorScore<SingleValuedPairs>
         {
             throw new MetricInputException("Specify non-null input to the '"+this+"'.");
         }
-        double vO = 0.0;
-        double vE = 0.0;
+        Double vO = 0.0;
+        double vP = 0.0;
         for ( PairOfDoubles nextPair : s.getData() )
         {
-            vO += nextPair.getItemOne();
-            vE += Math.abs( nextPair.getItemOne() - nextPair.getItemTwo() );
+            vO += Math.abs( nextPair.getItemOne() );
+            vP += Math.abs( nextPair.getItemOne() - nextPair.getItemTwo() );
         }
 
         //Metadata
         final MetricOutputMetadata metOut = getMetadata( s, s.getData().size(), MetricConstants.MAIN, null );
         //Compute the atomic errors in a stream
-        return getDataFactory().ofScalarOutput( (vO - vE) / vO, metOut );
+        if( vO.equals( 0.0 ) )
+        {
+            return getDataFactory().ofScalarOutput( Double.POSITIVE_INFINITY, metOut );
+        }
+        return getDataFactory().ofScalarOutput( ( vO - vP ) / vO, metOut );
     }
 
     @Override

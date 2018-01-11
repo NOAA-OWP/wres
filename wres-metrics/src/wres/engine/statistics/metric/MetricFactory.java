@@ -118,27 +118,48 @@ public class MetricFactory
     }
 
     /**
-     * Returns an instance of a {@link MetricProcessor} for processing {@link MetricInput}. Optionally, retain and merge
-     * the results associated with specific {@link MetricOutputGroup} across successive calls to
+     * Returns an instance of a {@link MetricProcessor} for processing {@link SingleValuedPairs}. Optionally, retain 
+     * and merge the results associated with specific {@link MetricOutputGroup} across successive calls to
      * {@link MetricProcessor#apply(Object)}. If results are retained and merged across calls, the
      * {@link MetricProcessor#apply(Object)} will return the merged results from all prior calls.
      * 
      * @param config the project configuration
      * @param mergeList an optional list of {@link MetricOutputGroup} for which results should be retained and merged
-     * @return the {@link MetricProcessor}
+     * @return the {@link MetricProcessorByTime}
      * @throws MetricConfigurationException if the metrics are configured incorrectly
      */
 
-    public MetricProcessorByTime getMetricProcessorByTime( final ProjectConfig config,
-                                                               final MetricOutputGroup... mergeList )
-            throws MetricConfigurationException
+    public MetricProcessorByTime<SingleValuedPairs>
+            ofMetricProcessorByTimeSingleValuedPairs( final ProjectConfig config,
+                                                      final MetricOutputGroup... mergeList )
+                    throws MetricConfigurationException
     {
-        return getMetricProcessorByTime( config, null, null, mergeList );
+        return ofMetricProcessorByTimeSingleValuedPairs( config, null, null, mergeList );
     }
+    
+    /**
+     * Returns an instance of a {@link MetricProcessor} for processing {@link EnsemblePairs}. Optionally, retain 
+     * and merge the results associated with specific {@link MetricOutputGroup} across successive calls to
+     * {@link MetricProcessor#apply(Object)}. If results are retained and merged across calls, the
+     * {@link MetricProcessor#apply(Object)} will return the merged results from all prior calls.
+     * 
+     * @param config the project configuration
+     * @param mergeList an optional list of {@link MetricOutputGroup} for which results should be retained and merged
+     * @return the {@link MetricProcessorByTime}
+     * @throws MetricConfigurationException if the metrics are configured incorrectly
+     */
+
+    public MetricProcessorByTime<EnsemblePairs>
+            ofMetricProcessorByTimeEnsemblePairs( final ProjectConfig config,
+                                                      final MetricOutputGroup... mergeList )
+                    throws MetricConfigurationException
+    {
+        return ofMetricProcessorByTimeEnsemblePairs( config, null, null, mergeList );
+    }    
 
     /**
-     * Returns an instance of a {@link MetricProcessor} for processing {@link MetricInput}. Optionally, retain and merge
-     * the results associated with specific {@link MetricOutputGroup} across successive calls to
+     * Returns an instance of a {@link MetricProcessor} for processing {@link SingleValuedPairs}. Optionally, retain 
+     * and merge the results associated with specific {@link MetricOutputGroup} across successive calls to
      * {@link MetricProcessor#apply(Object)}. If results are retained and merged across calls, the
      * {@link MetricProcessor#apply(Object)} will return the merged results from all prior calls.
      * 
@@ -148,36 +169,52 @@ public class MetricFactory
      * @param metricExecutor an optional {@link ExecutorService} for executing metrics. Defaults to the 
      *            {@link ForkJoinPool#commonPool()} 
      * @param mergeList an optional list of {@link MetricOutputGroup} for which results should be retained and merged
-     * @return the {@link MetricProcessor}
+     * @return the {@link MetricProcessorByTime}
      * @throws MetricConfigurationException if the metrics are configured incorrectly
      */
 
-    public MetricProcessorByTime getMetricProcessorByTime( final ProjectConfig config,
-                                                               final ExecutorService thresholdExecutor,
-                                                               final ExecutorService metricExecutor,
-                                                               final MetricOutputGroup... mergeList )
+    public MetricProcessorByTime<SingleValuedPairs>
+            ofMetricProcessorByTimeSingleValuedPairs( final ProjectConfig config,
+                                                      final ExecutorService thresholdExecutor,
+                                                      final ExecutorService metricExecutor,
+                                                      final MetricOutputGroup... mergeList )
+                    throws MetricConfigurationException
+    {
+        return new MetricProcessorByTimeSingleValuedPairs( outputFactory,
+                                                           config,
+                                                           thresholdExecutor,
+                                                           metricExecutor,
+                                                           mergeList );
+    }
+
+    /**
+     * Returns an instance of a {@link MetricProcessor} for processing {@link EnsemblePairs}. Optionally, retain 
+     * and merge the results associated with specific {@link MetricOutputGroup} across successive calls to
+     * {@link MetricProcessor#apply(Object)}. If results are retained and merged across calls, the
+     * {@link MetricProcessor#apply(Object)} will return the merged results from all prior calls.
+     * 
+     * @param config the project configuration
+     * @param thresholdExecutor an optional {@link ExecutorService} for executing thresholds. Defaults to the 
+     *            {@link ForkJoinPool#commonPool()}
+     * @param metricExecutor an optional {@link ExecutorService} for executing metrics. Defaults to the 
+     *            {@link ForkJoinPool#commonPool()} 
+     * @param mergeList an optional list of {@link MetricOutputGroup} for which results should be retained and merged
+     * @return the {@link MetricProcessorByTime}
+     * @throws MetricConfigurationException if the metrics are configured incorrectly
+     */
+
+    public MetricProcessorByTime<EnsemblePairs> ofMetricProcessorByTimeEnsemblePairs( final ProjectConfig config,
+                                                                                      final ExecutorService thresholdExecutor,
+                                                                                      final ExecutorService metricExecutor,
+                                                                                      final MetricOutputGroup... mergeList )
             throws MetricConfigurationException
     {
-        switch ( MetricProcessor.getInputType( config ) )
-        {
-            case SINGLE_VALUED:
-                return new MetricProcessorByTimeSingleValuedPairs( outputFactory,
-                                                                   config,
-                                                                   thresholdExecutor,
-                                                                   metricExecutor,
-                                                                   mergeList );
-            case ENSEMBLE:
-                return new MetricProcessorByTimeEnsemblePairs( outputFactory,
-                                                               config,
-                                                               thresholdExecutor,
-                                                               metricExecutor,
-                                                               mergeList );
-            default:
-                throw new MetricConfigurationException( "Unsupported input type in the project configuration '"
-                                                        + config
-                                                        + "'" );
-        }
-    }
+        return new MetricProcessorByTimeEnsemblePairs( outputFactory,
+                                                       config,
+                                                       thresholdExecutor,
+                                                       metricExecutor,
+                                                       mergeList );
+    }    
 
     /**
      * Returns a {@link MetricCollection} of metrics that consume {@link SingleValuedPairs} and produce
