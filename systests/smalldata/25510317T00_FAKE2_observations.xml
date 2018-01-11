@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TimeSeries xmlns="http://www.wldelft.nl/fews/PI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.wldelft.nl/fews/PI http://fews.wldelft.nl/schemas/version1.0/pi-schemas/pi_timeseries.xsd" version="1.2">
+    <timeZone>0.0</timeZone>
+    <series>
+        <header>
+            <type>instantaneous</type>
+            <locationId>FAKE2</locationId>
+            <parameterId>DISCHARGE</parameterId>
+            <timeStep unit="second" multiplier="3600"/>
+            <startDate date="2551-03-17" time="00:00:00"/>
+            <endDate date="2551-03-20" time="12:00:00"/>
+            <missVal>-999.0</missVal>
+            <stationName>SOME FAKE PLACE 2</stationName>
+            <units>CMS</units>
+        </header>
+        <event date="2551-03-17" time="00:00:00" value="313" flag="0"/>
+        <event date="2551-03-17" time="01:00:00" value="317" flag="0"/>
+        <event date="2551-03-17" time="02:00:00" value="331" flag="0"/>
+        <event date="2551-03-17" time="03:00:00" value="347" flag="0"/>
+        <event date="2551-03-17" time="04:00:00" value="349" flag="0"/>
+        <event date="2551-03-17" time="05:00:00" value="353" flag="0"/>
+        <event date="2551-03-17" time="06:00:00" value="359" flag="0"/>
+        <event date="2551-03-17" time="07:00:00" value="367" flag="0"/>
+        <event date="2551-03-17" time="08:00:00" value="373" flag="0"/>
+        <event date="2551-03-17" time="09:00:00" value="379" flag="0"/>
+        <event date="2551-03-17" time="10:00:00" value="383" flag="0"/>
+        <event date="2551-03-17" time="11:00:00" value="389" flag="0"/>
+        <event date="2551-03-17" time="12:00:00" value="397" flag="0"/>
+        <event date="2551-03-17" time="13:00:00" value="401" flag="0"/>
+        <event date="2551-03-17" time="14:00:00" value="409" flag="0"/>
+        <event date="2551-03-17" time="15:00:00" value="419" flag="0"/>
+        <event date="2551-03-17" time="16:00:00" value="421" flag="0"/>
+        <event date="2551-03-17" time="17:00:00" value="431" flag="0"/>
+        <event date="2551-03-17" time="18:00:00" value="433" flag="0"/>
+        <event date="2551-03-17" time="19:00:00" value="439" flag="0"/>
+        <event date="2551-03-17" time="20:00:00" value="443" flag="0"/>
+        <event date="2551-03-17" time="21:00:00" value="449" flag="0"/>
+        <event date="2551-03-17" time="22:00:00" value="457" flag="0"/>
+        <event date="2551-03-17" time="23:00:00" value="461" flag="0"/>
+        <event date="2551-03-18" time="00:00:00" value="463" flag="0"/>
+        <event date="2551-03-18" time="01:00:00" value="467" flag="0"/>
+        <event date="2551-03-18" time="02:00:00" value="479" flag="0"/>
+        <event date="2551-03-18" time="03:00:00" value="487" flag="0"/>
+        <event date="2551-03-18" time="04:00:00" value="491" flag="0"/>
+        <event date="2551-03-18" time="05:00:00" value="499" flag="0"/>
+        <event date="2551-03-18" time="06:00:00" value="503" flag="0"/>
+        <event date="2551-03-18" time="07:00:00" value="509" flag="0"/>
+        <event date="2551-03-18" time="08:00:00" value="521" flag="0"/>
+        <event date="2551-03-18" time="09:00:00" value="523" flag="0"/>
+        <event date="2551-03-18" time="10:00:00" value="541" flag="0"/>
+        <event date="2551-03-18" time="11:00:00" value="547" flag="0"/>
+        <event date="2551-03-18" time="12:00:00" value="557" flag="0"/>
+        <event date="2551-03-18" time="13:00:00" value="563" flag="0"/>
+        <event date="2551-03-18" time="14:00:00" value="569" flag="0"/>
+        <event date="2551-03-18" time="15:00:00" value="571" flag="0"/>
+        <event date="2551-03-18" time="16:00:00" value="577" flag="0"/>
+        <event date="2551-03-18" time="17:00:00" value="587" flag="0"/>
+        <event date="2551-03-18" time="18:00:00" value="593" flag="0"/>
+        <event date="2551-03-18" time="19:00:00" value="599" flag="0"/>
+        <event date="2551-03-18" time="20:00:00" value="601" flag="0"/>
+        <event date="2551-03-18" time="21:00:00" value="607" flag="0"/>
+        <event date="2551-03-18" time="22:00:00" value="613" flag="0"/>
+        <event date="2551-03-18" time="23:00:00" value="617" flag="0"/>
+        <event date="2551-03-19" time="00:00:00" value="619" flag="0"/>
+        <event date="2551-03-19" time="01:00:00" value="631" flag="0"/>
+        <event date="2551-03-19" time="02:00:00" value="641" flag="0"/>
+        <event date="2551-03-19" time="03:00:00" value="643" flag="0"/>
+        <event date="2551-03-19" time="04:00:00" value="647" flag="0"/>
+        <event date="2551-03-19" time="05:00:00" value="653" flag="0"/>
+        <event date="2551-03-19" time="06:00:00" value="659" flag="0"/>
+        <event date="2551-03-19" time="07:00:00" value="661" flag="0"/>
+        <event date="2551-03-19" time="08:00:00" value="673" flag="0"/>
+        <event date="2551-03-19" time="09:00:00" value="677" flag="0"/>
+        <event date="2551-03-19" time="10:00:00" value="683" flag="0"/>
+        <event date="2551-03-19" time="11:00:00" value="691" flag="0"/>
+        <event date="2551-03-19" time="12:00:00" value="701" flag="0"/>
+        <event date="2551-03-19" time="13:00:00" value="709" flag="0"/>
+        <event date="2551-03-19" time="14:00:00" value="719" flag="0"/>
+        <event date="2551-03-19" time="15:00:00" value="727" flag="0"/>
+        <event date="2551-03-19" time="16:00:00" value="733" flag="0"/>
+        <event date="2551-03-19" time="17:00:00" value="739" flag="0"/>
+        <event date="2551-03-19" time="18:00:00" value="743" flag="0"/>
+        <event date="2551-03-19" time="19:00:00" value="751" flag="0"/>
+        <event date="2551-03-19" time="20:00:00" value="757" flag="0"/>
+        <event date="2551-03-19" time="21:00:00" value="761" flag="0"/>
+        <event date="2551-03-19" time="22:00:00" value="769" flag="0"/>
+        <event date="2551-03-19" time="23:00:00" value="773" flag="0"/>
+        <event date="2551-03-20" time="00:00:00" value="787" flag="0"/>
+        <event date="2551-03-20" time="01:00:00" value="797" flag="0"/>
+        <event date="2551-03-20" time="02:00:00" value="809" flag="0"/>
+        <event date="2551-03-20" time="03:00:00" value="811" flag="0"/>
+        <event date="2551-03-20" time="04:00:00" value="821" flag="0"/>
+        <event date="2551-03-20" time="05:00:00" value="823" flag="0"/>
+        <event date="2551-03-20" time="06:00:00" value="827" flag="0"/>
+        <event date="2551-03-20" time="07:00:00" value="829" flag="0"/>
+        <event date="2551-03-20" time="08:00:00" value="839" flag="0"/>
+        <event date="2551-03-20" time="09:00:00" value="853" flag="0"/>
+        <event date="2551-03-20" time="10:00:00" value="857" flag="0"/>
+        <event date="2551-03-20" time="11:00:00" value="859" flag="0"/>
+        <event date="2551-03-20" time="12:00:00" value="863" flag="0"/>
+    </series>
+</TimeSeries>
