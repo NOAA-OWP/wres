@@ -186,22 +186,27 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             baselineMetadata = this.buildMetadata(factory, this.projectDetails.getBaseline());
         }
 
-        if (dataType == DatasourceType.ENSEMBLE_FORECASTS)
+        try
         {
-            input = factory.ofEnsemblePairs(this.primaryPairs, this.baselinePairs, metadata, baselineMetadata, this.climatology);
-        }
-        else
-        {
-            List<PairOfDoubles> primary = convertToPairOfDoubles( this.primaryPairs );
-            List<PairOfDoubles> baseline = null;
 
-            if (this.baselinePairs != null && this.baselinePairs.size() > 0)
+            if ( dataType == DatasourceType.ENSEMBLE_FORECASTS )
             {
-                baseline = convertToPairOfDoubles( this.baselinePairs );
+                input = factory.ofEnsemblePairs( this.primaryPairs,
+                                                 this.baselinePairs,
+                                                 metadata,
+                                                 baselineMetadata,
+                                                 this.climatology );
             }
-
-            try
+            else
             {
+                List<PairOfDoubles> primary = convertToPairOfDoubles( this.primaryPairs );
+                List<PairOfDoubles> baseline = null;
+
+                if ( this.baselinePairs != null && this.baselinePairs.size() > 0 )
+                {
+                    baseline = convertToPairOfDoubles( this.baselinePairs );
+                }
+
 
                 input = factory.ofSingleValuedPairs( primary,
                                                      baseline,
@@ -209,14 +214,17 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                                                      baselineMetadata,
                                                      this.climatology );
             }
-            catch (MetricInputException mie)
-            {
-                LOGGER.error("A collection of pairs could not be created at " +
-                             "window {} for '{}'",
-                             this.progress + 1,
-                             ConfigHelper.getFeatureDescription( this.feature ));
-                LOGGER.debug(Strings.getStackTrace( mie ));
-            }
+        }
+        catch ( MetricInputException mie )
+        {
+            String message = "A collection of pairs could not be created at"
+                             + " window "
+                             + ( this.progress + 1 )
+                             + " for feature '"
+                             + ConfigHelper.getFeatureDescription( this.feature )
+                             + "'.";
+            // Decorating with more information in our message.
+            throw new MetricInputException( message, mie );
         }
 
         return input;

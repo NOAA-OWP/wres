@@ -81,6 +81,12 @@ import wres.datamodel.outputs.VectorOutput;
  * from {@link #getStoredMetricOutput()}.
  * </p>
  * 
+ * TODO: refactor this class with an input type that extends {@link MetricInput} to avoid the ambiguous input to 
+ * {@link #apply(Object)}. However, this will require splitting out the processing by type at the highest level of the
+ * system, in order to build the appropriate type of processor for the type of {@link MetricInput} desired. Until then,
+ * there are unsatisfactory type checks in the {@link #apply(Object)}, since it takes a {@link MetricInput} and not a
+ * more specific type.
+ * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
  * @since 0.1
