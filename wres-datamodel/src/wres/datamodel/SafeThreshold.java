@@ -167,6 +167,19 @@ class SafeThreshold implements Threshold
     }
 
     @Override
+    public String toStringSafe()
+    {    
+        String safe = toString();
+        // Replace spaces and special characters: note the order of application matters
+        safe = safe.replaceAll( ">=", "GTE" );
+        safe = safe.replaceAll( "<=", "LTE" );
+        safe = safe.replaceAll( ">", "GT" );
+        safe = safe.replaceAll( "<", "LT" );
+        safe = safe.replaceAll( " ", "_" );
+        return safe;
+    }
+    
+    @Override
     public int compareTo( final Threshold o )
     {
         Objects.requireNonNull( o, "Specify a non-null threshold for comparison" );
