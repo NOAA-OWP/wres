@@ -44,7 +44,7 @@ import wres.engine.statistics.metric.MetricProcessorByTime.MetricFuturesByTime.M
  * @since 0.1
  */
 
-class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTime
+public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTime<SingleValuedPairs>
 {
 
     /**
@@ -55,34 +55,27 @@ class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTime
     private final MetricCollection<DichotomousPairs, ScalarOutput> dichotomousScalar;
 
     @Override
-    public MetricOutputForProjectByTimeAndThreshold apply( MetricInput<?> input )
+    public MetricOutputForProjectByTimeAndThreshold apply( SingleValuedPairs input )
     {
         Objects.requireNonNull( input, "Expected non-null input to the metric processor." );
-        if ( ! ( input instanceof SingleValuedPairs ) )
-        {
-            throw new MetricCalculationException( "Expected single-valued pairs for metric processing." );
-        }
         TimeWindow timeWindow = input.getMetadata().getTimeWindow();
         Objects.requireNonNull( timeWindow, "Expected a non-null time window in the input metadata." );
-        
+
         //Slicer
         Slicer slicer = dataFactory.getSlicer();
-        
+
         //Remove missing values. 
         //TODO: when time-series metrics are supported, leave missings in place for time-series
-        MetricInput<?> inputNoMissing = input;
-        if ( input instanceof SingleValuedPairs )
+        SingleValuedPairs inputNoMissing = input;
+        try
         {
-            try
-            {
-                inputNoMissing = slicer.filter( (SingleValuedPairs) input, ADMISSABLE_DATA, true );
-            }
-            catch ( MetricInputSliceException e )
-            {
-                throw new MetricCalculationException( "While attempting to remove missing values: ", e );
-            }
+            inputNoMissing = slicer.filter( input, ADMISSABLE_DATA, true );
         }
-        
+        catch ( MetricInputSliceException e )
+        {
+            throw new MetricCalculationException( "While attempting to remove missing values: ", e );
+        }
+
         //Metric futures 
         MetricFuturesByTimeBuilder futures = new MetricFuturesByTimeBuilder();
         futures.addDataFactory( dataFactory );
@@ -90,11 +83,11 @@ class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTime
         //Process the metrics that consume single-valued pairs
         if ( hasMetrics( MetricInputGroup.SINGLE_VALUED ) )
         {
-            processSingleValuedPairs( timeWindow, (SingleValuedPairs) inputNoMissing, futures );
+            processSingleValuedPairs( timeWindow, inputNoMissing, futures );
         }
         if ( hasMetrics( MetricInputGroup.DICHOTOMOUS ) )
         {
-            processDichotomousPairs( timeWindow, (SingleValuedPairs) inputNoMissing, futures );
+            processDichotomousPairs( timeWindow, inputNoMissing, futures );
         }
 
         // Log

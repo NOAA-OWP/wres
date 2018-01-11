@@ -427,7 +427,7 @@ public final class MetricFactoryTest
         {
             ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathSingleValued ) ).getProjectConfig();
             MetricFactory.getInstance( DefaultDataFactory.getInstance() )
-                         .getMetricProcessorByTime( config, (MetricOutputGroup) null );
+                         .ofMetricProcessorByTimeSingleValuedPairs( config, (MetricOutputGroup) null );
         }
         catch ( Exception e )
         {
@@ -439,7 +439,7 @@ public final class MetricFactoryTest
         {
             ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathEnsemble ) ).getProjectConfig();
             MetricFactory.getInstance( DefaultDataFactory.getInstance() )
-                         .getMetricProcessorByTime( config, (MetricOutputGroup) null );
+                         .ofMetricProcessorByTimeEnsemblePairs( config, (MetricOutputGroup) null );
         }
         catch ( Exception e )
         {

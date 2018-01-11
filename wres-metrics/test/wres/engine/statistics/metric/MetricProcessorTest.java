@@ -14,6 +14,8 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
+import wres.datamodel.inputs.pairs.EnsemblePairs;
+import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.io.config.ProjectConfigPlus;
 
@@ -39,13 +41,13 @@ public final class MetricProcessorTest
         try
         {
             ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-            MetricProcessor<MetricOutputForProjectByTimeAndThreshold> trueProcessor =
+            MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> trueProcessor =
                     MetricFactory.getInstance( metIn )
-                                 .getMetricProcessorByTime( config,
-                                                            MetricOutputGroup.values() );
-            MetricProcessor<MetricOutputForProjectByTimeAndThreshold> falseProcessor =
+                                 .ofMetricProcessorByTimeSingleValuedPairs( config,
+                                                                            MetricOutputGroup.values() );
+            MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> falseProcessor =
                     MetricFactory.getInstance( metIn )
-                                 .getMetricProcessorByTime( config );
+                                 .ofMetricProcessorByTimeSingleValuedPairs( config );
             //Check for storage
             assertTrue( "Expected a metric processor that stores metric outputs.",
                         trueProcessor.willStoreMetricOutput() );
@@ -78,9 +80,9 @@ public final class MetricProcessorTest
         try
         {
             ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-            MetricProcessor<MetricOutputForProjectByTimeAndThreshold> processor =
+            MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
-                                 .getMetricProcessorByTime( config,
+                                 .ofMetricProcessorByTimeSingleValuedPairs( config,
                                                             MetricOutputGroup.values() );
             //Check for existence of metrics
             assertTrue( "Expected metrics for '" + MetricInputGroup.SINGLE_VALUED
@@ -118,9 +120,9 @@ public final class MetricProcessorTest
         try
         {
             ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathSingleValued ) ).getProjectConfig();
-            MetricProcessor<MetricOutputForProjectByTimeAndThreshold> processor =
+            MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
-                                 .getMetricProcessorByTime( config,
+                                 .ofMetricProcessorByTimeSingleValuedPairs( config,
                                                             MetricOutputGroup.values() );
             //Check that score metrics are defined 
             assertTrue( "Expected metrics for '" + MetricOutputGroup.SCALAR
@@ -146,9 +148,9 @@ public final class MetricProcessorTest
         try
         {
             ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathEnsemble ) ).getProjectConfig();
-            MetricProcessor<MetricOutputForProjectByTimeAndThreshold> processor =
+            MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
-                                 .getMetricProcessorByTime( config,
+                                 .ofMetricProcessorByTimeEnsemblePairs( config,
                                                             MetricOutputGroup.values() );
             //Check that score metrics are defined 
             assertTrue( "Expected metrics for '" + MetricOutputGroup.SCALAR
