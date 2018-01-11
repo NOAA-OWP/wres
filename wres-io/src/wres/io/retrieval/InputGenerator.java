@@ -5,9 +5,6 @@ import java.util.InvalidPropertiesFormatException;
 import java.util.Iterator;
 import java.util.concurrent.Future;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import wres.config.generated.Feature;
 import wres.datamodel.inputs.MetricInput;
 import wres.io.config.ConfigHelper;
@@ -20,8 +17,6 @@ import wres.util.NotImplementedException;
  */
 public class InputGenerator implements Iterable<Future<MetricInput<?>>>
 {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(InputGenerator.class);
 
     public InputGenerator( Feature feature,
                            ProjectDetails projectDetails )
