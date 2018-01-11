@@ -161,13 +161,13 @@ public class MetricFactory
         switch ( MetricProcessor.getInputType( config ) )
         {
             case SINGLE_VALUED:
-                return new MetricProcessorSingleValuedPairsByTime( outputFactory,
+                return new MetricProcessorByTimeSingleValuedPairs( outputFactory,
                                                                    config,
                                                                    thresholdExecutor,
                                                                    metricExecutor,
                                                                    mergeList );
             case ENSEMBLE:
-                return new MetricProcessorEnsemblePairsByTime( outputFactory,
+                return new MetricProcessorByTimeEnsemblePairs( outputFactory,
                                                                config,
                                                                thresholdExecutor,
                                                                metricExecutor,
