@@ -51,7 +51,7 @@ import wres.engine.statistics.metric.MetricProcessorByTime.MetricFuturesByTime.M
  * @since 0.1
  */
 
-class MetricProcessorEnsemblePairsByTime extends MetricProcessorByTime
+class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime
 {
 
     /**
@@ -186,7 +186,7 @@ class MetricProcessorEnsemblePairsByTime extends MetricProcessorByTime
      * @throws MetricConfigurationException if the metrics are configured incorrectly
      */
 
-    MetricProcessorEnsemblePairsByTime( final DataFactory dataFactory,
+    MetricProcessorByTimeEnsemblePairs( final DataFactory dataFactory,
                                         final ProjectConfig config,
                                         final ExecutorService thresholdExecutor,
                                         final ExecutorService metricExecutor,
