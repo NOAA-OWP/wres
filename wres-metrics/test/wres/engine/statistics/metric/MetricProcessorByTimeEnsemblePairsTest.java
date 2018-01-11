@@ -13,6 +13,7 @@ import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
+import wres.datamodel.inputs.InsufficientDataException;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
@@ -22,20 +23,20 @@ import wres.datamodel.outputs.VectorOutput;
 import wres.io.config.ProjectConfigPlus;
 
 /**
- * Tests the {@link MetricProcessorEnsemblePairsByTime}.
+ * Tests the {@link MetricProcessorByTimeEnsemblePairs}.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
  * @since 0.1
  */
-public final class MetricProcessorEnsemblePairsByTimeTest
+public final class MetricProcessorByTimeEnsemblePairsTest
 {
 
     private final DataFactory dataFactory = DefaultDataFactory.getInstance();
 
     /**
-     * Tests the construction of a {@link MetricProcessorEnsemblePairsByTime} and application of
-     * {@link MetricProcessorEnsemblePairsByTime#apply(wres.datamodel.inputs.MetricInput)} to configuration obtained from
+     * Tests the construction of a {@link MetricProcessorByTimeEnsemblePairs} and application of
+     * {@link MetricProcessorByTimeEnsemblePairs#apply(wres.datamodel.inputs.MetricInput)} to configuration obtained from
      * testinput/metricProcessorEnsemblePairsByTimeTest/test1ApplyNoThresholds.xml and pairs obtained from
      * {@link MetricTestDataFactory#getEnsemblePairsOne()}.
      */
@@ -47,8 +48,8 @@ public final class MetricProcessorEnsemblePairsByTimeTest
         try
         {
             ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-            MetricProcessorEnsemblePairsByTime processor =
-                    (MetricProcessorEnsemblePairsByTime) MetricFactory.getInstance( dataFactory )
+            MetricProcessorByTimeEnsemblePairs processor =
+                    (MetricProcessorByTimeEnsemblePairs) MetricFactory.getInstance( dataFactory )
                                                                       .getMetricProcessorByTime( config );
             EnsemblePairs pairs = MetricTestDataFactory.getEnsemblePairsOne();
             MetricOutputForProjectByTimeAndThreshold results = processor.apply( pairs );
@@ -92,8 +93,8 @@ public final class MetricProcessorEnsemblePairsByTimeTest
     }
 
     /**
-     * Tests the construction of a {@link MetricProcessorEnsemblePairsByTime} and application of
-     * {@link MetricProcessorEnsemblePairsByTime#apply(wres.datamodel.inputs.MetricInput)} to configuration obtained from
+     * Tests the construction of a {@link MetricProcessorByTimeEnsemblePairs} and application of
+     * {@link MetricProcessorByTimeEnsemblePairs#apply(wres.datamodel.inputs.MetricInput)} to configuration obtained from
      * testinput/metricProcessorEnsemblePairsByTimeTest/test2ApplyWithValueThresholds.xml and pairs obtained from
      * {@link MetricTestDataFactory#getEnsemblePairsOne()}.
      */
@@ -294,8 +295,8 @@ public final class MetricProcessorEnsemblePairsByTimeTest
     }
 
     /**
-     * Tests the construction of a {@link MetricProcessorEnsemblePairsByTime} and application of
-     * {@link MetricProcessorEnsemblePairsByTime#apply(wres.datamodel.inputs.MetricInput)} to configuration obtained from
+     * Tests the construction of a {@link MetricProcessorByTimeEnsemblePairs} and application of
+     * {@link MetricProcessorByTimeEnsemblePairs#apply(wres.datamodel.inputs.MetricInput)} to configuration obtained from
      * testinput/metricProcessorEnsemblePairsByTimeTest/test3ApplyWithProbabilityThresholds.xml and pairs obtained from
      * {@link MetricTestDataFactory#getEnsemblePairsOne()}.
      */
@@ -500,7 +501,7 @@ public final class MetricProcessorEnsemblePairsByTimeTest
     }
 
     /**
-     * Tests for exceptions associated with a {@link MetricProcessorEnsemblePairsByTime}.
+     * Tests for exceptions associated with a {@link MetricProcessorByTimeEnsemblePairs}.
      */
 
     @Test
@@ -538,7 +539,7 @@ public final class MetricProcessorEnsemblePairsByTimeTest
             fail( "Expected a checked exception on processing the project configuration '" + testTwo
                   + "' with insufficient data." );
         }
-        catch ( MetricCalculationException e )
+        catch ( InsufficientDataException e )
         {
         }
         catch ( Exception e )
@@ -561,7 +562,7 @@ public final class MetricProcessorEnsemblePairsByTimeTest
             fail( "Expected a checked exception on processing the project configuration '" + testThree
                   + "' with insufficient data." );
         }
-        catch ( MetricCalculationException e )
+        catch ( InsufficientDataException e )
         {
         }
         catch ( Exception e )
@@ -641,7 +642,7 @@ public final class MetricProcessorEnsemblePairsByTimeTest
     }
 
     /**
-     * Tests the construction of a {@link MetricProcessorEnsemblePairsByTime} for all valid metrics associated
+     * Tests the construction of a {@link MetricProcessorByTimeEnsemblePairs} for all valid metrics associated
      * with ensemble inputs.
      */
 
@@ -671,8 +672,8 @@ public final class MetricProcessorEnsemblePairsByTimeTest
     }
 
     /**
-     * Tests the construction of a {@link MetricProcessorEnsemblePairsByTime} and application of
-     * {@link MetricProcessorEnsemblePairsByTime#apply(wres.datamodel.inputs.MetricInput)} to configuration 
+     * Tests the construction of a {@link MetricProcessorByTimeEnsemblePairs} and application of
+     * {@link MetricProcessorByTimeEnsemblePairs#apply(wres.datamodel.inputs.MetricInput)} to configuration 
      * obtained from testinput/metricProcessorEnsemblePairsByTimeTest/test2ApplyWithValueThresholds.xml and pairs obtained 
      * from {@link MetricTestDataFactory#getEnsemblePairsOneWithMissings()}.
      */

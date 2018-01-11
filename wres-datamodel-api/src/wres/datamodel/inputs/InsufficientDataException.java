@@ -27,4 +27,18 @@ public class InsufficientDataException extends MetricInputException
     {
         super( message );
     }
+    
+    /**
+     * Constructs a {@link InsufficientDataException} with the specified message.
+     * 
+     * @param message the message.
+     * @param cause the cause of the exception
+     */
+
+    public InsufficientDataException(final String message, final Throwable cause)
+    {
+        super(message, cause);
+    }
+    
+    
 }

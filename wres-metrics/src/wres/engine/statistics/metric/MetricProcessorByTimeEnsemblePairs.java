@@ -51,7 +51,7 @@ import wres.engine.statistics.metric.MetricProcessorByTime.MetricFuturesByTime.M
  * @since 0.1
  */
 
-class MetricProcessorEnsemblePairsByTime extends MetricProcessorByTime
+class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime
 {
 
     /**
@@ -186,7 +186,7 @@ class MetricProcessorEnsemblePairsByTime extends MetricProcessorByTime
      * @throws MetricConfigurationException if the metrics are configured incorrectly
      */
 
-    MetricProcessorEnsemblePairsByTime( final DataFactory dataFactory,
+    MetricProcessorByTimeEnsemblePairs( final DataFactory dataFactory,
                                         final ProjectConfig config,
                                         final ExecutorService thresholdExecutor,
                                         final ExecutorService metricExecutor,
@@ -350,6 +350,7 @@ class MetricProcessorEnsemblePairsByTime extends MetricProcessorByTime
      * @param futures the metric futures
      * @param outGroup the metric output type
      * @throws MetricCalculationException if the metrics cannot be computed
+     * @throws InsufficientDataException if there is insufficient data to compute any metrics
      */
 
     private void processEnsembleThresholds( TimeWindow timeWindow,
@@ -453,6 +454,7 @@ class MetricProcessorEnsemblePairsByTime extends MetricProcessorByTime
      * @param input the input pairs
      * @param futures the metric futures
      * @throws MetricCalculationException if the metrics cannot be computed
+     * @throws InsufficientDataException if there is insufficient data to compute any metrics
      */
 
     private void processDiscreteProbabilityPairs( TimeWindow timeWindow,
@@ -479,6 +481,7 @@ class MetricProcessorEnsemblePairsByTime extends MetricProcessorByTime
      * @param futures the metric futures
      * @param outGroup the metric output type
      * @throws MetricCalculationException if the metrics cannot be computed
+     * @throws InsufficientDataException if there is insufficient data to compute any metrics
      */
 
     private void processDiscreteProbabilityThresholds( TimeWindow timeWindow,

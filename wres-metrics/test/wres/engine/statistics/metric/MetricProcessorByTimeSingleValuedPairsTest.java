@@ -16,6 +16,7 @@ import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
+import wres.datamodel.inputs.InsufficientDataException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
@@ -27,20 +28,20 @@ import wres.datamodel.outputs.ScalarOutput;
 import wres.io.config.ProjectConfigPlus;
 
 /**
- * Tests the {@link MetricProcessorSingleValuedPairsByTime}.
+ * Tests the {@link MetricProcessorByTimeSingleValuedPairs}.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
  * @since 0.1
  */
-public final class MetricProcessorSingleValuedPairsByTimeTest
+public final class MetricProcessorByTimeSingleValuedPairsTest
 {
 
     private final DataFactory dataFactory = DefaultDataFactory.getInstance();
 
     /**
-     * Tests the construction of a {@link MetricProcessorSingleValuedPairsByTime} and application of
-     * {@link MetricProcessorSingleValuedPairsByTime#apply(wres.datamodel.inputs.MetricInput)} to 
+     * Tests the construction of a {@link MetricProcessorByTimeSingleValuedPairs} and application of
+     * {@link MetricProcessorByTimeSingleValuedPairs#apply(wres.datamodel.inputs.MetricInput)} to 
      * configuration obtained from testinput/metricProcessorSingleValuedPairsByTimeTest/test1ApplyNoThresholds.xml and pairs 
      * obtained from {@link MetricTestDataFactory#getSingleValuedPairsFour()}.
      */
@@ -99,8 +100,8 @@ public final class MetricProcessorSingleValuedPairsByTimeTest
     }
 
     /**
-     * Tests the construction of a {@link MetricProcessorSingleValuedPairsByTime} and application of
-     * {@link MetricProcessorSingleValuedPairsByTime#apply(wres.datamodel.inputs.MetricInput)} to 
+     * Tests the construction of a {@link MetricProcessorByTimeSingleValuedPairs} and application of
+     * {@link MetricProcessorByTimeSingleValuedPairs#apply(wres.datamodel.inputs.MetricInput)} to 
      * configuration obtained from testinput/metricProcessorSingleValuedPairsByTimeTest/test1ApplyNoThresholds.xml and 
      * pairs obtained from {@link MetricTestDataFactory#getSingleValuedPairsFour()}. Tests the output for multiple 
      * calls with separate forecast lead times.
@@ -159,7 +160,7 @@ public final class MetricProcessorSingleValuedPairsByTimeTest
     }
 
     /**
-     * Tests for exceptions associated with a {@link MetricProcessorSingleValuedPairsByTime}.
+     * Tests for exceptions associated with a {@link MetricProcessorByTimeSingleValuedPairs}.
      */
 
     @Test
@@ -202,7 +203,7 @@ public final class MetricProcessorSingleValuedPairsByTimeTest
                   + "' "
                   + "with insufficient data for a single-valued metric." );
         }
-        catch ( MetricCalculationException e )
+        catch ( InsufficientDataException e )
         {
         }
         catch ( Exception e )
@@ -225,7 +226,7 @@ public final class MetricProcessorSingleValuedPairsByTimeTest
                   + "' "
                   + "with insufficient data for a dichotomous metric." );
         }
-        catch ( MetricCalculationException e )
+        catch ( InsufficientDataException e )
         {
         }
         catch ( Exception e )
@@ -362,7 +363,7 @@ public final class MetricProcessorSingleValuedPairsByTimeTest
             fail( "Expected a checked exception on processing the project configuration '" + testNine
                   + "' with insufficient data." );
         }
-        catch ( MetricCalculationException e )
+        catch ( InsufficientDataException e )
         {
         }
         catch ( Exception e )
@@ -373,7 +374,7 @@ public final class MetricProcessorSingleValuedPairsByTimeTest
     }
 
     /**
-     * Tests the construction of a {@link MetricProcessorSingleValuedPairsByTime} for all valid metrics associated
+     * Tests the construction of a {@link MetricProcessorByTimeSingleValuedPairs} for all valid metrics associated
      * with single-valued inputs.
      */
 
