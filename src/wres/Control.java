@@ -38,6 +38,7 @@ import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.Feature;
 import wres.config.generated.MetricConfig;
+import wres.config.generated.MetricConfigName;
 import wres.config.generated.PlotTypeSelection;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
@@ -660,15 +661,15 @@ public class Control implements Function<String[], Integer>
                     final String graphicsString = projectConfigPlus.getGraphicsStrings().get(dest);
                     // Build the chart engine
                     final MetricConfig nextConfig = getMetricConfiguration(e.getKey().getKey(), config);
-                    PlotTypeSelection plotType = null;
+                    // Default to global type parameter
+                    PlotTypeSelection plotType = dest.getGraphical().getPlotType();
                     String templateResourceName = null;
                     if(Objects.nonNull(nextConfig))
                     {
-                        plotType = nextConfig.getPlotType();
-                        //Default to global type
-                        if ( Objects.isNull( plotType ) )
+                        // Local type parameter
+                        if( nextConfig.getPlotType() != null )
                         {
-                            plotType = dest.getGraphical().getPlotType();
+                            plotType = nextConfig.getPlotType();
                         }
                         templateResourceName = nextConfig.getTemplateResourceName();
                     }
@@ -738,26 +739,26 @@ public class Control implements Function<String[], Integer>
                     final String graphicsString = projectConfigPlus.getGraphicsStrings().get(dest);
                     // Build the chart engine
                     final MetricConfig nextConfig = getMetricConfiguration(e.getKey().getKey(), config);
-                    PlotTypeSelection plotType = null;
+                    // Default to global type parameter
+                    PlotTypeSelection plotType = dest.getGraphical().getPlotType();
                     String templateResourceName = null;
                     if(Objects.nonNull(nextConfig))
                     {
-                        plotType = nextConfig.getPlotType();
-                        //Default to global type
-                        if ( Objects.isNull( plotType ) )
+                        // Local type parameter
+                        if( nextConfig.getPlotType() != null )
                         {
-                            plotType = dest.getGraphical().getPlotType();
+                            plotType = nextConfig.getPlotType();
                         }
                         templateResourceName = nextConfig.getTemplateResourceName();
                     }
-                    final Map<Object, ChartEngine> engines =
+                    final Map<MetricConstants, ChartEngine> engines =
                         ChartEngineFactory.buildVectorOutputChartEngine(e.getValue(),
                                                                         DATA_FACTORY,
                                                                         plotType,
                                                                         templateResourceName,
                                                                         graphicsString);
                     // Build the outputs
-                    for(final Map.Entry<Object, ChartEngine> nextEntry: engines.entrySet())
+                    for(final Map.Entry<MetricConstants, ChartEngine> nextEntry: engines.entrySet())
                     {
                         // Build the output file name
                         File destDir = ConfigHelper.getDirectoryFromDestinationConfig( dest );
@@ -772,7 +773,7 @@ public class Control implements Function<String[], Integer>
                                                       .getVariable()
                                                       .getValue()
                                                       + "_"
-                                                      + ((MetricConstants)nextEntry.getKey()).name()
+                                                      + nextEntry.getKey().name()
                                                       + ".png" );
                         ChartWriter.writeChart(outputImage, nextEntry.getValue(), dest);
                     }
@@ -823,16 +824,16 @@ public class Control implements Function<String[], Integer>
                 {
                     final String graphicsString = projectConfigPlus.getGraphicsStrings().get(dest);
                     // Build the chart engine
-                    final MetricConfig nextConfig = getMetricConfiguration(e.getKey().getKey(), config);
-                    PlotTypeSelection plotType = null;
+                    MetricConfig nextConfig = getMetricConfiguration(e.getKey().getKey(), config);
+                    // Default to global type parameter
+                    PlotTypeSelection plotType = dest.getGraphical().getPlotType();
                     String templateResourceName = null;
                     if(Objects.nonNull(nextConfig))
                     {
-                        plotType = nextConfig.getPlotType();
-                        //Default to global type
-                        if ( Objects.isNull( plotType ) )
+                        // Local type parameter
+                        if( nextConfig.getPlotType() != null )
                         {
-                            plotType = dest.getGraphical().getPlotType();
+                            plotType = nextConfig.getPlotType();
                         }
                         templateResourceName = nextConfig.getTemplateResourceName();
                     }
@@ -853,6 +854,10 @@ public class Control implements Function<String[], Integer>
                         if( key instanceof TimeWindow ) 
                         {
                             key = ( (TimeWindow) key ).getLatestLeadTimeInHours();
+                        }
+                        else if (key instanceof Threshold)
+                        {
+                            key = ( (Threshold) key ).toStringSafe();
                         }
                         File destDir = ConfigHelper.getDirectoryFromDestinationConfig( dest );
                         Path outputImage = Paths.get( destDir.toString(),
@@ -926,7 +931,6 @@ public class Control implements Function<String[], Integer>
 
                     final Map<Pair<TimeWindow, Threshold>, ChartEngine> engines =
                             ChartEngineFactory.buildBoxPlotChartEngine( e.getValue(),
-                                                                        DATA_FACTORY,
                                                                         templateResourceName,
                                                                         graphicsString );
                     // Build the outputs
@@ -1251,7 +1255,9 @@ public class Control implements Function<String[], Integer>
 
     /**
      * Locates the metric configuration corresponding to the input {@link MetricConstants} or null if no corresponding
-     * configuration could be found.
+     * configuration could be found. If the configuration contains a {@link MetricConfigName#ALL_VALID}, the 
+     * prescribed metric identifier is ignored and the configuration is returned for 
+     * {@link MetricConfigName#ALL_VALID}.
      * 
      * @param metric the metric
      * @param config the project configuration
@@ -1260,6 +1266,13 @@ public class Control implements Function<String[], Integer>
 
     private static MetricConfig getMetricConfiguration(final MetricConstants metric, final ProjectConfig config)
     {
+        // Deal with MetricConfigName.ALL_VALID first
+        if ( config.getOutputs().getMetric().contains( MetricConfigName.ALL_VALID ) )
+        {
+            return config.getOutputs()
+                         .getMetric()
+                         .get( config.getOutputs().getMetric().indexOf( MetricConfigName.ALL_VALID ) );
+        }
         // Find the corresponding configuration
         final Optional<MetricConfig> returnMe = config.getOutputs().getMetric().stream().filter(a -> {
             try

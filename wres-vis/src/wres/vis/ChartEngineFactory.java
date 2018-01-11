@@ -645,7 +645,6 @@ public abstract class ChartEngineFactory
      * 
      * @param inputKeyInstance The key that will be used to find the box plot data in the provided input.
      * @param input Input providing the box plot data.
-     * @param factory Factory used to find metadata for chart arguments.
      * @param templateName The name of the template to use, if not the standard template.
      * @param overrideParametersStr An XML string providing override parameters if they were given in the project configuration.
      * @return A single instance of {@link WRESChartEngine}.
@@ -655,7 +654,6 @@ public abstract class ChartEngineFactory
             processBoxPlotErrorsDiagram(
                                          Pair<TimeWindow, Threshold> inputKeyInstance,
                                          final MetricOutputMapByTimeAndThreshold<BoxPlotOutput> input,
-                                         final DataFactory factory,
                                          String templateName,
                                          String overrideParametersStr )
                     throws ChartEngineException
@@ -691,7 +689,6 @@ public abstract class ChartEngineFactory
     /**
      * At this time, there is only one plot type available for box plots, so the user specified plot type is not included as an argument.
      * @param input The metric output to plot.
-     * @param factory The data factory from which arguments will be identified.
      * @param userSpecifiedTemplateResourceName Name of the resource to load which provides the default template for
      *            chart construction. May be null to use default template identified in static table.
      * @param overrideParametersStr String of XML (top level tag: chartDrawingParameters) that specifies the user
@@ -701,7 +698,6 @@ public abstract class ChartEngineFactory
      */
     public static ConcurrentMap<Pair<TimeWindow, Threshold>, ChartEngine>
             buildBoxPlotChartEngine( final MetricOutputMapByTimeAndThreshold<BoxPlotOutput> input,
-                                     final DataFactory factory,
                                      final String userSpecifiedTemplateResourceName,
                                      final String overrideParametersStr )
                     throws ChartEngineException
@@ -728,7 +724,6 @@ public abstract class ChartEngineFactory
 
                 final ChartEngine engine = processBoxPlotErrorsDiagram( keyInstance,
                                                                         input,
-                                                                        factory,
                                                                         templateName,
                                                                         overrideParametersStr );
                 results.put( keyInstance, engine );
@@ -759,7 +754,7 @@ public abstract class ChartEngineFactory
      * @return a map of {@link ChartEngine} containing the plots
      * @throws ChartEngineException if the ChartEngine fails to construct
      */
-    public static ConcurrentMap<Object, ChartEngine>
+    public static ConcurrentMap<MetricConstants, ChartEngine>
             buildVectorOutputChartEngine( final MetricOutputMapByTimeAndThreshold<VectorOutput> input,
                                           final DataFactory factory,
                                           final PlotTypeSelection userSpecifiedPlotType,
@@ -767,7 +762,7 @@ public abstract class ChartEngineFactory
                                           final String overrideParametersStr )
                     throws ChartEngineException
     {
-        final ConcurrentMap<Object, ChartEngine> results = new ConcurrentSkipListMap<>();
+        final ConcurrentMap<MetricConstants, ChartEngine> results = new ConcurrentSkipListMap<>();
 
         final Map<MetricConstants, MetricOutputMapByTimeAndThreshold<ScalarOutput>> slicedInput =
                 factory.getSlicer()

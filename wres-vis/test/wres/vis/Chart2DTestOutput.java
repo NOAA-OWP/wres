@@ -17,6 +17,7 @@ import ohd.hseb.hefs.utils.tools.FileTools;
 import wres.config.generated.PlotTypeSelection;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
+import wres.datamodel.MetricConstants;
 import wres.datamodel.Threshold;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
@@ -242,7 +243,7 @@ public class Chart2DTestOutput
             final DataFactory factory = DefaultDataFactory.getInstance();
 
             //Call the factory.
-            final ConcurrentMap<Object, ChartEngine> engineMap = ChartEngineFactory.buildVectorOutputChartEngine( input,
+            final ConcurrentMap<MetricConstants, ChartEngine> engineMap = ChartEngineFactory.buildVectorOutputChartEngine( input,
                                                                                                                   factory,
                                                                                                                   PlotTypeSelection.LEAD_THRESHOLD,
                                                                                                                   null,
@@ -612,7 +613,6 @@ public class Chart2DTestOutput
 
             //Call the factory.
             final Map<Pair<TimeWindow, Threshold>, ChartEngine> engineMap = ChartEngineFactory.buildBoxPlotChartEngine( results,
-                                                                                                                        factory,
                                                                                                                         null,
                                                                                                                         null );
 
@@ -675,7 +675,6 @@ public class Chart2DTestOutput
 
             //Call the factory.
             final Map<Pair<TimeWindow, Threshold>, ChartEngine> engineMap = ChartEngineFactory.buildBoxPlotChartEngine( results,
-                                                                                                   factory,
                                                                                                    null,
                                                                                                    null );
 
