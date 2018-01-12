@@ -360,6 +360,18 @@ public class Control implements Function<String[], Integer>
         MetricProcessorByTime<?> processor = null; // The processor used
         try
         {
+            MetricOutputGroup[] cacheMe = null;
+            // Multivector outputs by threshold must be cached across time windows
+            if ( hasMultiVectorOutputsToCache( projectConfig ) )
+            {
+                cacheMe = new MetricOutputGroup[] { MetricOutputGroup.SCALAR, MetricOutputGroup.VECTOR,
+                                                    MetricOutputGroup.MULTIVECTOR };
+            }
+            else
+            {
+                cacheMe = new MetricOutputGroup[] { MetricOutputGroup.SCALAR, MetricOutputGroup.VECTOR };
+            }
+
             MetricFactory mF = MetricFactory.getInstance( DATA_FACTORY );
             DatasourceType type = projectConfig.getInputs().getRight().getType();
             if ( type.equals( DatasourceType.SINGLE_VALUED_FORECASTS ) || type.equals( DatasourceType.SIMULATIONS ) )
@@ -367,8 +379,7 @@ public class Control implements Function<String[], Integer>
                 singleValuedProcessor = mF.ofMetricProcessorByTimeSingleValuedPairs( projectConfig,
                                                                                      thresholdExecutor,
                                                                                      metricExecutor,
-                                                                                     MetricOutputGroup.SCALAR,
-                                                                                     MetricOutputGroup.VECTOR );
+                                                                                     cacheMe );
                 processor = singleValuedProcessor;
             }
             else
@@ -376,8 +387,7 @@ public class Control implements Function<String[], Integer>
                 ensembleProcessor = mF.ofMetricProcessorByTimeEnsemblePairs( projectConfig,
                                                                              thresholdExecutor,
                                                                              metricExecutor,
-                                                                             MetricOutputGroup.SCALAR,
-                                                                             MetricOutputGroup.VECTOR );
+                                                                             cacheMe );
                 processor = ensembleProcessor;
             }
         }
@@ -422,7 +432,8 @@ public class Control implements Function<String[], Integer>
                                                        pairExecutor )
                                          .thenAcceptAsync( new IntermediateResultProcessor(
                                                                                             feature,
-                                                                                            projectConfigPlus ),
+                                                                                            projectConfigPlus,
+                                                                                            processor ),
                                                            pairExecutor )
                                          .thenAccept(
                                                       aVoid -> ProgressMonitor.completeStep() );
@@ -501,9 +512,7 @@ public class Control implements Function<String[], Integer>
 
             processCachedCharts( feature,
                                  projectConfigPlus,
-                                 processor,
-                                 MetricOutputGroup.SCALAR,
-                                 MetricOutputGroup.VECTOR );
+                                 processor );
 
             LOGGER.debug( "Finished building charts for feature {}.",
                           feature.getLocationId() );
@@ -560,8 +569,7 @@ public class Control implements Function<String[], Integer>
 
     private static void   processCachedCharts( final Feature feature,
                                                final ProjectConfigPlus projectConfigPlus,
-                                               final MetricProcessorByTime<?> processor,
-                                               final MetricOutputGroup... outGroup)
+                                               final MetricProcessorByTime<?> processor )
     {
         if(!processor.hasStoredMetricOutput())
         {
@@ -571,47 +579,41 @@ public class Control implements Function<String[], Integer>
 
         try
         {
-            for(final MetricOutputGroup nextGroup: outGroup)
+            // Process scalar charts
+            if ( processor.willCacheMetricOutput( MetricOutputGroup.SCALAR )
+                 && processor.getStoredMetricOutput().hasOutput( MetricOutputGroup.SCALAR ) )
             {
-                if(processor.getStoredMetricOutput().hasOutput(nextGroup))
-                {
-                    switch(nextGroup)
-                    {
-                        case SCALAR:
-                            processScalarCharts( feature,
-                                                 projectConfigPlus,
-                                                 processor.getStoredMetricOutput()
-                                                          .getScalarOutput() );
-                            break;
-                        case VECTOR:
-                            processVectorCharts( feature,
-                                                 projectConfigPlus,
-                                                 processor.getStoredMetricOutput()
-                                                          .getVectorOutput() );
-                            break;
-                        case MULTIVECTOR:
-                            processMultiVectorCharts( feature,
-                                                      projectConfigPlus,
-                                                      processor.getStoredMetricOutput()
-                                                               .getMultiVectorOutput() );
-                            break;
-                        case BOXPLOT:
-                            processBoxPlotCharts( feature,
-                                                      projectConfigPlus,
-                                                      processor.getStoredMetricOutput()
-                                                               .getBoxPlotOutput() );
-                            break;
-                        default:
-                            LOGGER.warn( "Unsupported chart type {}.",
-                                         nextGroup );
-                            return;
-                    }
-                }
-                else
-                {
-                    //Return silently: chart type not necessarily configured
-                    return;
-                }
+                processScalarCharts( feature,
+                                     projectConfigPlus,
+                                     processor.getStoredMetricOutput()
+                                              .getScalarOutput() );
+            }
+            // Process vector charts
+            if ( processor.willCacheMetricOutput( MetricOutputGroup.VECTOR )
+                 && processor.getStoredMetricOutput().hasOutput( MetricOutputGroup.VECTOR ) )
+            {
+                processVectorCharts( feature,
+                                     projectConfigPlus,
+                                     processor.getStoredMetricOutput()
+                                              .getVectorOutput() );
+            }
+            // Process multivector charts
+            if ( processor.willCacheMetricOutput( MetricOutputGroup.MULTIVECTOR )
+                 && processor.getStoredMetricOutput().hasOutput( MetricOutputGroup.MULTIVECTOR ) )
+            {
+                processMultiVectorCharts( feature,
+                                          projectConfigPlus,
+                                          processor.getStoredMetricOutput()
+                                                   .getMultiVectorOutput() );
+            }
+            // Process box plot charts
+            if ( processor.willCacheMetricOutput( MetricOutputGroup.BOXPLOT )
+                 && processor.getStoredMetricOutput().hasOutput( MetricOutputGroup.BOXPLOT ) )
+            {
+                processBoxPlotCharts( feature,
+                                      projectConfigPlus,
+                                      processor.getStoredMetricOutput()
+                                               .getBoxPlotOutput() );
             }
         }
         catch ( final MetricOutputAccessException e )
@@ -1108,41 +1110,53 @@ public class Control implements Function<String[], Integer>
          */
 
         private final Feature feature;
+        
+        /**
+         * The processor used to determined whether the output is intermediate or being cached.
+         */
 
+        private final MetricProcessorByTime<?> processor;
+        
         /**
          * Construct.
          * 
          * @param feature the feature
          * @param projectConfigPlus the project configuration
+         * @param processor the metric processor
          */
 
-        private IntermediateResultProcessor(final Feature feature, final ProjectConfigPlus projectConfigPlus)
+        private IntermediateResultProcessor(final Feature feature, final ProjectConfigPlus projectConfigPlus, final MetricProcessorByTime<?> processor)
         {
-            Objects.requireNonNull( feature, "Specify a non-null feature for the processor." );
-            Objects.requireNonNull( projectConfigPlus, "Specify a non-null configuration for the processor." );
+            Objects.requireNonNull( feature, "Specify a non-null feature for the results processor." );
+            Objects.requireNonNull( projectConfigPlus, "Specify a non-null configuration for the results processor." );
+            Objects.requireNonNull( processor, "Specify a non-null metric processor for the results processor." );           
             this.projectConfigPlus = projectConfigPlus;
             this.feature = feature;
+            this.processor = processor;
         }
 
         @Override
         public void accept(final MetricOutputForProjectByTimeAndThreshold input)
         {
-            MetricOutputMetadata meta = null;
             try
             {
                 if ( configNeedsThisTypeOfOutput( projectConfigPlus.getProjectConfig(),
                                                   DestinationType.GRAPHIC ) )
                 {
-                    //Multivector output
-                    if ( input.hasOutput( MetricOutputGroup.MULTIVECTOR ) )
+                    MetricOutputMetadata meta = null;
+
+                    //Multivector output available, not being cached to the end
+                    if ( input.hasOutput( MetricOutputGroup.MULTIVECTOR )
+                         && !processor.willCacheMetricOutput( MetricOutputGroup.MULTIVECTOR ) )
                     {
                         processMultiVectorCharts( feature,
                                                   projectConfigPlus,
                                                   input.getMultiVectorOutput() );
                         meta = input.getMultiVectorOutput().entrySet().iterator().next().getValue().getMetadata();
                     }
-                    //Box-plot output
-                    if ( input.hasOutput( MetricOutputGroup.BOXPLOT ) )
+                    //Box-plot output available, not being cached to the end
+                    if ( input.hasOutput( MetricOutputGroup.BOXPLOT )
+                         && !processor.willCacheMetricOutput( MetricOutputGroup.BOXPLOT ) )
                     {
                         processBoxPlotCharts( feature,
                                               projectConfigPlus,
@@ -1442,6 +1456,57 @@ public class Control implements Function<String[], Integer>
             cause = cause.getCause();
         }
         return false;
+    }
+    
+    /**
+     * Returns <code>true</code> if the input configuration requires any outputs of the type 
+     * {@link MetricOutputGroup#MULTIVECTOR} that must be cached across time windows; that is, when the plot type 
+     * configuration is {@link PlotTypeSelection#THRESHOLD_LEAD} for any or all metrics.
+     * 
+     * @param projectConfig the project configuration
+     * @return true if the input configuration requires cached outputs of the {@link MetricOutputGroup#MULTIVECTOR} 
+     *            type, false otherwise
+     * @throws NullPointerException if the input is null
+     * @throws MetricConfigurationException if the configuration is invalid
+     */
+
+    private static boolean hasMultiVectorOutputsToCache( ProjectConfig projectConfig )
+            throws MetricConfigurationException
+    {
+        Objects.requireNonNull( projectConfig, "Specify non-null project configuration." );
+        // Does the configuration contain any multivector types?        
+        boolean hasMultiVectorType = MetricProcessor.getMetricsFromConfig( projectConfig )
+                                                    .stream()
+                                                    .anyMatch( a -> a.isInGroup( MetricOutputGroup.MULTIVECTOR ) );
+
+        // Does it contain an threshold lead types?
+        boolean hasThresholdLeadType = false; //Assume not
+
+        // Does it contain any metric-local threshold lead types?
+        for ( MetricConfig next : projectConfig.getOutputs().getMetric() )
+        {
+            if ( next.getPlotType() != null && next.getPlotType().equals( PlotTypeSelection.THRESHOLD_LEAD ) )
+            {
+                hasThresholdLeadType = true; //Yes
+                break;
+            }
+        }
+
+        // Check for metric-global threshold lead types if required
+        if ( !hasThresholdLeadType )
+        {
+            List<DestinationConfig> destinations =
+                    ConfigHelper.getGraphicalDestinations( projectConfig );
+            for ( DestinationConfig next : destinations )
+            {
+                if ( next.getGraphical().getPlotType().equals( PlotTypeSelection.THRESHOLD_LEAD ) )
+                {
+                    hasThresholdLeadType = true;
+                    break;
+                }
+            }
+        }
+        return hasMultiVectorType && hasThresholdLeadType;
     }
 
 }

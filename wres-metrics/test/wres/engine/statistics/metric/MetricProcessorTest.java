@@ -30,7 +30,7 @@ public final class MetricProcessorTest
 {
 
     /**
-     * Tests the {@link MetricProcessor#willStoreMetricOutput()}.
+     * Tests the {@link MetricProcessor#willCacheMetricOutput()}.
      */
 
     @Test
@@ -50,9 +50,9 @@ public final class MetricProcessorTest
                                  .ofMetricProcessorByTimeSingleValuedPairs( config );
             //Check for storage
             assertTrue( "Expected a metric processor that stores metric outputs.",
-                        trueProcessor.willStoreMetricOutput() );
+                        trueProcessor.willCacheMetricOutput() );
             assertFalse( "Expected a metric processor that does not store metric outputs.",
-                         falseProcessor.willStoreMetricOutput() );
+                         falseProcessor.willCacheMetricOutput() );
         }
         catch ( Exception e )
         {

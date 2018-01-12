@@ -36,11 +36,11 @@ import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
 import wres.config.generated.TimeAggregationConfig;
 import wres.config.generated.TimeAggregationFunction;
-import wres.config.generated.TimeWindowMode;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.engine.statistics.metric.ConfigMapper;
 import wres.engine.statistics.metric.MetricConfigurationException;
+import wres.io.config.ConfigHelper;
 import wres.io.config.ProjectConfigPlus;
 import wres.util.Strings;
 
@@ -515,7 +515,7 @@ public class Validation
                 pairConfig.getDesiredTimeAggregation();
 
         if ( aggregationConfig != null
-             && ProjectConfigs.isInstantaneous( aggregationConfig ) )
+             && ConfigHelper.isInstantaneous( aggregationConfig ) )
         {
             if ( LOGGER.isWarnEnabled() )
             {
@@ -986,7 +986,7 @@ public class Validation
     {
         boolean returnMe = true;
         // Existing aggregation cannot be an instant
-        if ( ProjectConfigs.isInstantaneous( inputConfig ) )
+        if ( ConfigHelper.isInstantaneous( inputConfig ) )
         {
             returnMe = false;
             String message = " When using a desired time aggregation of "
@@ -1069,13 +1069,13 @@ public class Validation
 
         Duration desired = Duration.of( timeAgg.getPeriod(),
                                         ChronoUnit.valueOf( timeAgg.getUnit().toString().toUpperCase() ) );
-        if ( left != null && !ProjectConfigs.isInstantaneous( left ) )
+        if ( left != null && !ConfigHelper.isInstantaneous( left ) )
         {
             Duration leftExists = Duration.of( left.getPeriod(),
                                                ChronoUnit.valueOf( left.getUnit().toString().toUpperCase() ) );
             returnMe = isDesiredTimeAggregationPeriodConsistent( projectConfigPlus, desired, leftExists, left, "left" );
         }
-        if ( right != null && !ProjectConfigs.isInstantaneous( right) )
+        if ( right != null && !ConfigHelper.isInstantaneous( right) )
         {
             Duration rightExists = Duration.of( right.getPeriod(),
                                                 ChronoUnit.valueOf( right.getUnit().toString().toUpperCase() ) );
@@ -1086,7 +1086,7 @@ public class Validation
                                                                  "right" )
                        && returnMe;
         }
-        if ( baseline != null && !ProjectConfigs.isInstantaneous( baseline ) )
+        if ( baseline != null && !ConfigHelper.isInstantaneous( baseline ) )
         {
             Duration baselineExists = Duration.of( baseline.getPeriod(),
                                                    ChronoUnit.valueOf( baseline.getUnit().toString().toUpperCase() ) );

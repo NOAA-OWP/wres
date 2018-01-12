@@ -204,15 +204,67 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
     abstract void validate( ProjectConfig config ) throws MetricConfigurationException;
 
     /**
+     * Returns a set of {@link MetricConstants} from a {@link ProjectConfig}. If the {@link ProjectConfig} contains
+     * the identifier {@link MetricConfigName#ALL_VALID}, all supported metrics are returned that are consistent
+     * with the configuration. 
+     * 
+     * TODO: consider interpreting configured metrics in combination with {@link MetricConfigName#ALL_VALID} as 
+     * overrides to be removed from the {@link MetricConfigName#ALL_VALID} metrics.
+     * 
+     * @param config the project configuration
+     * @return a set of {@link MetricConstants}
+     * @throws MetricConfigurationException if the metrics are configured incorrectly
+     */
+
+    public static Set<MetricConstants> getMetricsFromConfig( ProjectConfig config ) throws MetricConfigurationException
+    {
+        Objects.requireNonNull( config, "Specify a non-null project from which to generate metrics." );
+        //Obtain the list of metrics
+        List<MetricConfigName> metricsConfig = config.getOutputs()
+                                                     .getMetric()
+                                                     .stream()
+                                                     .map( MetricConfig::getName )
+                                                     .collect( Collectors.toList() );
+        Set<MetricConstants> metrics = new TreeSet<>();
+        //All valid metrics
+        if ( metricsConfig.contains( MetricConfigName.ALL_VALID ) )
+        {
+            metrics = getAllValidMetricsFromConfig( config );
+        }
+        //Explicitly configured metrics
+        else
+        {
+            for ( MetricConfigName metric : metricsConfig )
+            {
+                metrics.add( ConfigMapper.from( metric ) );
+            }
+        }
+        return metrics;
+    }    
+    
+    /**
      * Returns true if one or more metric outputs will be cached across successive calls to {@link #apply(Object)},
      * false otherwise.
      * 
      * @return true if results will be cached, false otherwise
      */
 
-    public boolean willStoreMetricOutput()
+    public boolean willCacheMetricOutput()
     {
         return Objects.nonNull( mergeList ) && mergeList.length > 0;
+    }
+    
+    /**
+     * Returns true if a named {@link MetricOutputGroup} will be cached across successive calls to 
+     * {@link #apply(Object)}, false otherwise.
+     * 
+     * @param outputGroup the metric output group
+     * @return true if results will be cached for the outputGroup, false otherwise
+     */
+
+    public boolean willCacheMetricOutput( MetricOutputGroup outputGroup )
+    {
+        return Objects.nonNull( mergeList ) && Arrays.stream( mergeList ).anyMatch( a -> a.equals( outputGroup ) );
     }
 
     /**
@@ -298,45 +350,6 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
                 throw new MetricConfigurationException( "Unable to interpret the input type '" + type
                                                         + "' when attempting to process the metrics " );
         }
-    }
-
-    /**
-     * Returns a set of {@link MetricConstants} from a {@link ProjectConfig}. If the {@link ProjectConfig} contains
-     * the identifier {@link MetricConfigName#ALL_VALID}, all supported metrics are returned that are consistent
-     * with the configuration. 
-     * 
-     * TODO: consider interpreting configured metrics in combination with {@link MetricConfigName#ALL_VALID} as 
-     * overrides to be removed from the {@link MetricConfigName#ALL_VALID} metrics.
-     * 
-     * @param config the project configuration
-     * @return a set of {@link MetricConstants}
-     * @throws MetricConfigurationException if the metrics are configured incorrectly
-     */
-
-    static Set<MetricConstants> getMetricsFromConfig( ProjectConfig config ) throws MetricConfigurationException
-    {
-        Objects.requireNonNull( config, "Specify a non-null project from which to generate metrics." );
-        //Obtain the list of metrics
-        List<MetricConfigName> metricsConfig = config.getOutputs()
-                                                     .getMetric()
-                                                     .stream()
-                                                     .map( MetricConfig::getName )
-                                                     .collect( Collectors.toList() );
-        Set<MetricConstants> metrics = new TreeSet<>();
-        //All valid metrics
-        if ( metricsConfig.contains( MetricConfigName.ALL_VALID ) )
-        {
-            metrics = getAllValidMetricsFromConfig( config );
-        }
-        //Explicitly configured metrics
-        else
-        {
-            for ( MetricConfigName metric : metricsConfig )
-            {
-                metrics.add( ConfigMapper.from( metric ) );
-            }
-        }
-        return metrics;
     }
 
     /**
