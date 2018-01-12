@@ -869,16 +869,19 @@ public class ConfigHelper
 
         // TODO: support back-to-back pooling windows, which are a special case of rolling windows
         // where the frequency is undefined (equal to the period)
-        if ( projectDetails.getPoolingWindow() != null )
+        if ( projectDetails.getPoolingMode() == TimeWindowMode.ROLLING )// projectDetails.getPoolingWindow() != null )
         {
             // Determine the position in hours of this window within the sequence
             Integer step = projectDetails.getPoolingWindow().getFrequency();
+
+            // TODO: Determine how this fits in the paradigm where all is rolling
             // A pooling window with TimeWindowMode.BACK_TO_BACK has an unspecified frequency
             // that is equal to the period
             if ( projectDetails.getPoolingMode() == TimeWindowMode.BACK_TO_BACK )
             {
                 step = projectDetails.getPoolingWindow().getPeriod();
             }
+
             double frequencyOffset = TimeHelper.unitsToHours( projectDetails.getPoolingWindowUnit(),
                                                               step )
                                      * sequenceStep;
