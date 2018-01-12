@@ -102,7 +102,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
     {
         Objects.requireNonNull( mergeFutures, "Specify non-null futures for merging." );
         //Merge futures if cached outputs identified
-        if ( willStoreMetricOutput() )
+        if ( willCacheMetricOutput() )
         {
             futures.put( timeWindow, mergeFutures );
         }
