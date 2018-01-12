@@ -874,6 +874,23 @@ public class Validation
                             "move on to the next window." );
         }
 
+        if ( aggregationConfig.getFrequency() != null &&
+             (projectConfigPlus.getProjectConfig().getPair().getIssuedDates() == null ||
+              projectConfigPlus.getProjectConfig().getPair().getIssuedDates().getEarliest() == null ||
+              projectConfigPlus.getProjectConfig().getPair().getIssuedDates().getLatest() == null))
+        {
+            valid = false;
+
+            if (warning.length() > 0 )
+            {
+                warning.append( System.lineSeparator() );
+            }
+
+            warning.append( "The presence of a frequency indicates rolling "
+                            + "pools of data. All rolling pools require "
+                            + "both an earliest and latest issue date.");
+        }
+
         if ( aggregationConfig.getPeriod() < 1 )
         {
             valid = false;
