@@ -24,7 +24,7 @@
         <leadHours minimum="1" maximum="5" />
         <issuedDates latest="1985-06-07T12:00:00Z" />
         <grouping>feature,lead_time</grouping>
-        <poolingWindow mode="rolling" anchor="center">
+        <poolingWindow >
             <period>48</period>
             <frequency>24</frequency>
             <unit>hours</unit>
