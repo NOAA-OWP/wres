@@ -22,7 +22,7 @@
         <unit>CMS</unit>
         <feature locationId="DRRC2" />
         <leadHours minimum="1" maximum="5" />
-        <issuedDates latest="1985-06-07T12:00:00Z" />
+        <issuedDates earliest="1985-06-01T12:00:00Z" latest="1985-06-07T12:00:00Z" />
         <grouping>feature,lead_time</grouping>
         <poolingWindow >
             <period>48</period>
@@ -54,13 +54,13 @@
             <name>mean error</name>
         </metric>
         <destination type="numeric" decimalFormat="0.000000">
-            <path>output</path>
+            <path>output/</path>
         </destination>
         <destination type="pairs" decimalFormat="0.000000">
-            <path>output</path>
+            <path>output/</path>
         </destination>
         <destination type="graphic">
-            <path>output</path>
+            <path>output/</path>
             <graphical width="800" height="600">
                 <plotType>pooling window</plotType>
             </graphical>
