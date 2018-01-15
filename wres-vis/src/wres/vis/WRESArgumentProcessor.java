@@ -1,8 +1,7 @@
 package wres.vis;
 
-import java.text.SimpleDateFormat;
 import java.time.Instant;
-import java.util.Calendar;
+import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -13,7 +12,6 @@ import ohd.hseb.hefs.utils.arguments.Argument;
 import ohd.hseb.hefs.utils.arguments.DefaultArgumentsProcessor;
 import ohd.hseb.hefs.utils.datetime.HEFSTimeZoneTools;
 import ohd.hseb.hefs.utils.plugins.UniqueGenericParameterList;
-import ohd.hseb.util.misc.HCalendar;
 import ohd.hseb.util.misc.HString;
 import wres.config.generated.PlotTypeSelection;
 import wres.datamodel.DatasetIdentifier;
@@ -41,12 +39,12 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
     /**
      * Basis for earliestDateToText function.
      */
-    private Long earliestDateLong = null;
+    private Instant earliestInstant = null;
 
     /**
      * Basis for latestDateToText function.
      */
-    private Long latestDateLong = null;
+    private Instant latestInstant = null;
 
     /**
      * An arguments processor intended for use in displaying single-valued pairs. It is assumed that there is 
@@ -73,14 +71,8 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
 
         if ( meta.hasTimeWindow() )
         {
-            if ( meta.getTimeWindow().getEarliestTime().isAfter( Instant.MIN ) )
-            {
-                earliestDateLong = meta.getTimeWindow().getEarliestTime().toEpochMilli();
-            }
-            if ( meta.getTimeWindow().getLatestTime().isBefore( Instant.MAX ) )
-            {
-                latestDateLong = meta.getTimeWindow().getLatestTime().toEpochMilli();
-            }
+            earliestInstant = meta.getTimeWindow().getEarliestTime();
+            latestInstant = meta.getTimeWindow().getLatestTime();
             addArgument( "earliestLeadTimeHours", "" + meta.getTimeWindow().getEarliestLeadTimeInHours() );
             addArgument( "latestLeadTimeHours", "" + meta.getTimeWindow().getLatestLeadTimeInHours() );
             addArgument( "referenceTime", meta.getTimeWindow().getReferenceTime().toString() ); //#44873
@@ -105,14 +97,8 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         extractStandardArgumentsFromMetadata( meta );
         if ( meta.hasTimeWindow() )
         {
-            if ( meta.getTimeWindow().getEarliestTime().isAfter( Instant.MIN ) )
-            {
-                earliestDateLong = meta.getTimeWindow().getEarliestTime().toEpochMilli();
-            }
-            if ( meta.getTimeWindow().getLatestTime().isBefore( Instant.MAX ) )
-            {
-                latestDateLong = meta.getTimeWindow().getLatestTime().toEpochMilli();
-            }
+            earliestInstant = meta.getTimeWindow().getEarliestTime();
+            latestInstant = meta.getTimeWindow().getLatestTime();
             addArgument( "earliestLeadTimeHours", "" + meta.getTimeWindow().getEarliestLeadTimeInHours() );
             addArgument( "latestLeadTimeHours", "" + meta.getTimeWindow().getLatestLeadTimeInHours() );
             addArgument( "referenceTime", meta.getTimeWindow().getReferenceTime().toString() ); //#44873
@@ -147,8 +133,8 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
 
         if ( plotType.equals( PlotTypeSelection.POOLING_WINDOW ) )
         {
-            earliestDateLong = displayedPlotInput.firstKey().getLeft().getEarliestTime().toEpochMilli();
-            latestDateLong = displayedPlotInput.lastKey().getLeft().getLatestTime().toEpochMilli();
+            earliestInstant = displayedPlotInput.firstKey().getLeft().getEarliestTime();
+            latestInstant = displayedPlotInput.lastKey().getLeft().getLatestTime();
             addArgument( "earliestLeadTimeHours",
                          "" + displayedPlotInput.firstKey().getLeft().getEarliestLeadTimeInHours() );
             addArgument( "latestLeadTimeHours",
@@ -157,14 +143,8 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         }
         else if ( meta.hasTimeWindow() )
         {
-            if ( meta.getTimeWindow().getEarliestTime().isAfter( Instant.MIN ) )
-            {
-                earliestDateLong = meta.getTimeWindow().getEarliestTime().toEpochMilli();
-            }
-            if ( meta.getTimeWindow().getLatestTime().isBefore( Instant.MAX ) )
-            {
-                latestDateLong = meta.getTimeWindow().getLatestTime().toEpochMilli();
-            }
+            earliestInstant = meta.getTimeWindow().getEarliestTime();
+            latestInstant = meta.getTimeWindow().getLatestTime();
             addArgument( "earliestLeadTimeHours", "" + meta.getTimeWindow().getEarliestLeadTimeInHours() );
             addArgument( "latestLeadTimeHours", "" + meta.getTimeWindow().getLatestLeadTimeInHours() );
             addArgument( "referenceTime", meta.getTimeWindow().getReferenceTime().toString() ); //#44873
@@ -304,9 +284,9 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * @param dateInMillis the time in milliseconds from the epoch
      * @return Date function processed value
      */
-    private String processDateFunction( final Argument argument, Long dateInMillis )
+    private String processDateFunction( final Argument argument, Instant dateInstant )
     {
-        if ( dateInMillis == null )
+        if ( dateInstant == null )
         {
             LOGGER.warn( "Date for argument function " + argument.getArgumentName()
                          + " is not provided with plotting meta data." );
@@ -316,12 +296,12 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         {
             if ( argument.getFunctionParameterValues().size() == 2 )
             {
-                final Calendar cal = HCalendar.computeCalendarFromMilliseconds( dateInMillis );
                 final String dateFormat = argument.getFunctionParameterValues().get( 0 );
                 final String timeZoneStr = argument.getFunctionParameterValues().get( 1 );
-                final SimpleDateFormat formatter = new SimpleDateFormat( dateFormat );
-                formatter.setTimeZone( HEFSTimeZoneTools.retrieveTimeZone( timeZoneStr ) );
-                return formatter.format( cal.getTime() );
+                Instant instant = Instant.ofEpochMilli(92554380000L);
+                HEFSTimeZoneTools.retrieveTimeZone( timeZoneStr );
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern( dateFormat ).withZone(HEFSTimeZoneTools.retrieveTimeZone( timeZoneStr ).toZoneId());
+                return formatter.format( dateInstant );
             }
             else
             {
@@ -330,7 +310,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
                 return null;
             }
         }
-        catch ( final IllegalArgumentException e )
+        catch ( final Exception e )
         {
             LOGGER.warn( "Date format is invalid for " + argument.getArgumentName()
                          + " function; message: "
@@ -341,22 +321,23 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
 
     private String processPoolingWindowFunction( final Argument argument )
     {
-        if ( ( earliestDateLong == null ) && ( latestDateLong == null ) )
+        if ( ( earliestInstant == null ) || ( !earliestInstant.isAfter( Instant.MIN ) )
+                && ( ( latestInstant == null ) || ( !latestInstant.isBefore( Instant.MAX ) ) ) )
         {
             return "Window is Unconstrained";
         }
-        else if ( earliestDateLong == null )
+        else if ( ( earliestInstant == null ) || ( !earliestInstant.isAfter( Instant.MIN ) ) )
         {
-            return "Before " + this.processDateFunction( argument, latestDateLong );
+            return "Before " + this.processDateFunction( argument, latestInstant );
         }
-        else if ( latestDateLong == null )
+        else if ( ( latestInstant == null ) || ( !latestInstant.isBefore( Instant.MAX ) ) )
         {
-            return "After " + this.processDateFunction( argument, earliestDateLong );
+            return "After " + this.processDateFunction( argument, earliestInstant );
         }
         else
         {
-            return this.processDateFunction( argument, earliestDateLong ) + " - "
-                   + this.processDateFunction( argument, latestDateLong );
+            return this.processDateFunction( argument, earliestInstant ) + " - "
+                   + this.processDateFunction( argument, latestInstant );
         }
     }
 
@@ -365,11 +346,11 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
     {
         if ( argument.getArgumentName().equals( EARLIEST_DATE_TO_TEXT ) )
         {
-            return this.processDateFunction( argument, earliestDateLong );
+            return this.processDateFunction( argument, earliestInstant );
         }
         else if ( argument.getArgumentName().equals( LATEST_DATE_TO_TEXT ) )
         {
-            return this.processDateFunction( argument, latestDateLong );
+            return this.processDateFunction( argument, latestInstant );
         }
         else if ( argument.getArgumentName().equals( POOLING_WINDOW ) )
         {
