@@ -175,6 +175,7 @@ class SafeThreshold implements Threshold
         safe = safe.replaceAll( "<=", "LTE" );
         safe = safe.replaceAll( ">", "GT" );
         safe = safe.replaceAll( "<", "LT" );
+        safe = safe.replaceAll( "Pr = ", "Pr=" );
         safe = safe.replaceAll( " ", "_" );
         return safe;
     }

@@ -221,17 +221,18 @@ public class Validation
 
         boolean result = true;
 
-        List<MetricConfig> metrics = projectConfigPlus.getProjectConfig().getOutputs().getMetric();
+        ProjectConfig config = projectConfigPlus.getProjectConfig();
+        List<MetricConfig> metrics = config.getOutputs().getMetric();
         for ( MetricConfig next : metrics )
         {
-            //Named metric
+            // Named metric
             if ( !next.getName().equals( MetricConfigName.ALL_VALID ) )
             {
                 try
                 {
                     MetricConstants checkMe = ConfigMapper.from( next.getName() );
 
-                    //Check that the named metric is consistent with any pooling window configuration
+                    // Check that the named metric is consistent with any pooling window configuration
                     if ( projectConfigPlus.getProjectConfig().getPair().getPoolingWindow() != null && checkMe != null
                          && ! ( checkMe.isInGroup( MetricOutputGroup.SCALAR )
                                 || checkMe.isInGroup( MetricOutputGroup.VECTOR ) ) )
@@ -246,6 +247,21 @@ public class Validation
                                          next.getName() );
                         }
                     }
+                    
+                    // Check that the CRPS has an explicit baseline
+                    if ( checkMe.equals( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE )
+                         && config.getInputs().getBaseline() == null )
+                    {
+                        result = false;
+                        if ( LOGGER.isWarnEnabled() )
+                        {
+                            LOGGER.warn( "In file {}, a metric named {} was requested, which requires an explicit "
+                                    + "baseline. Remove this metric or add the required baseline configuration.",
+                                         projectConfigPlus.getPath(),
+                                         next.getName() );
+                        }
+                    }
+
                 }
                 // Handle the situation where a metric is recognized by the xsd but not by the ConfigMapper. This is
                 // unlikely and implies an incomplete implementation of a metric by the system  

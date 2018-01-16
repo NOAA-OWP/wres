@@ -18,8 +18,8 @@ import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
+import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.datamodel.outputs.ScalarOutput;
-import wres.datamodel.outputs.VectorOutput;
 import wres.io.config.ProjectConfigPlus;
 
 /**
@@ -36,7 +36,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
     /**
      * Tests the construction of a {@link MetricProcessorByTimeEnsemblePairs} and application of
-     * {@link MetricProcessorByTimeEnsemblePairs#apply(wres.datamodel.inputs.MetricInput)} to configuration obtained from
+     * {@link MetricProcessorByTimeEnsemblePairs#apply(EnsemblePairs)} to configuration obtained from
      * testinput/metricProcessorEnsemblePairsByTimeTest/test1ApplyNoThresholds.xml and pairs obtained from
      * {@link MetricTestDataFactory#getEnsemblePairsOne()}.
      */
@@ -65,7 +65,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                     results.getScalarOutput().get( MetricConstants.MEAN_ERROR );
             MetricOutputMapByTimeAndThreshold<ScalarOutput> rmse = results.getScalarOutput()
                                                                           .get( MetricConstants.ROOT_MEAN_SQUARE_ERROR );
-            MetricOutputMapByTimeAndThreshold<VectorOutput> crps =
+            MetricOutputMapByTimeAndThreshold<MultiValuedScoreOutput> crps =
                     results.getVectorOutput()
                            .get( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE );
 
@@ -94,7 +94,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
     /**
      * Tests the construction of a {@link MetricProcessorByTimeEnsemblePairs} and application of
-     * {@link MetricProcessorByTimeEnsemblePairs#apply(wres.datamodel.inputs.MetricInput)} to configuration obtained from
+     * {@link MetricProcessorByTimeEnsemblePairs#apply(EnsemblePairs)} to configuration obtained from
      * testinput/metricProcessorEnsemblePairsByTimeTest/test2ApplyWithValueThresholds.xml and pairs obtained from
      * {@link MetricTestDataFactory#getEnsemblePairsOne()}.
      */
@@ -295,7 +295,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
     /**
      * Tests the construction of a {@link MetricProcessorByTimeEnsemblePairs} and application of
-     * {@link MetricProcessorByTimeEnsemblePairs#apply(wres.datamodel.inputs.MetricInput)} to configuration obtained from
+     * {@link MetricProcessorByTimeEnsemblePairs#apply(EnsemblePairs)} to configuration obtained from
      * testinput/metricProcessorEnsemblePairsByTimeTest/test3ApplyWithProbabilityThresholds.xml and pairs obtained from
      * {@link MetricTestDataFactory#getEnsemblePairsOne()}.
      */
@@ -671,7 +671,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
     /**
      * Tests the construction of a {@link MetricProcessorByTimeEnsemblePairs} and application of
-     * {@link MetricProcessorByTimeEnsemblePairs#apply(wres.datamodel.inputs.MetricInput)} to configuration 
+     * {@link MetricProcessorByTimeEnsemblePairs#apply(EnsemblePairs)} to configuration 
      * obtained from testinput/metricProcessorEnsemblePairsByTimeTest/test2ApplyWithValueThresholds.xml and pairs obtained 
      * from {@link MetricTestDataFactory#getEnsemblePairsOneWithMissings()}.
      */

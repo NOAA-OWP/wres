@@ -1,7 +1,5 @@
 package wres.datamodel.outputs;
 
-import java.util.Map;
-
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.VectorOfDoubles;
 
@@ -13,7 +11,7 @@ import wres.datamodel.VectorOfDoubles;
  * @since 0.1
  */
 
-public interface MultiVectorOutput extends MetricOutput<Map<MetricDimension, VectorOfDoubles>>
+public interface MultiVectorOutput extends MapOutput<MetricDimension, VectorOfDoubles>
 {
 
     /**

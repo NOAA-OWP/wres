@@ -19,7 +19,7 @@ import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.MatrixOutput;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.ScalarOutput;
-import wres.datamodel.outputs.VectorOutput;
+import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.engine.statistics.metric.Metric.MetricBuilder;
 import wres.engine.statistics.metric.MetricCollection.MetricCollectionBuilder;
 import wres.engine.statistics.metric.SampleSize.SampleSizeBuilder;
@@ -234,7 +234,7 @@ public class MetricFactory
 
     /**
      * Returns a {@link MetricCollection} of metrics that consume {@link SingleValuedPairs} and produce
-     * {@link VectorOutput}.
+     * {@link MultiValuedScoreOutput}.
      * 
      * @param metric the metric identifiers
      * @return a collection of metrics
@@ -242,7 +242,7 @@ public class MetricFactory
      * @throws IllegalArgumentException if the metric identifier is not recognized 
      */
 
-    public MetricCollection<SingleValuedPairs, VectorOutput> ofSingleValuedVectorCollection( MetricConstants... metric )
+    public MetricCollection<SingleValuedPairs, MultiValuedScoreOutput> ofSingleValuedVectorCollection( MetricConstants... metric )
             throws MetricParameterException
     {
         return ofSingleValuedVectorCollection( null, metric );
@@ -266,7 +266,7 @@ public class MetricFactory
 
     /**
      * Returns a {@link MetricCollection} of metrics that consume {@link DiscreteProbabilityPairs} and produce
-     * {@link VectorOutput}.
+     * {@link MultiValuedScoreOutput}.
      * 
      * @param metric the metric identifiers
      * @return a collection of metrics
@@ -274,7 +274,7 @@ public class MetricFactory
      * @throws IllegalArgumentException if the metric identifier is not recognized 
      */
 
-    public MetricCollection<DiscreteProbabilityPairs, VectorOutput>
+    public MetricCollection<DiscreteProbabilityPairs, MultiValuedScoreOutput>
             ofDiscreteProbabilityVectorCollection( MetricConstants... metric ) throws MetricParameterException
     {
         return ofDiscreteProbabilityVectorCollection( null, metric );
@@ -346,7 +346,7 @@ public class MetricFactory
 
     /**
      * Returns a {@link MetricCollection} of metrics that consume {@link EnsemblePairs} and produce
-     * {@link VectorOutput}.
+     * {@link MultiValuedScoreOutput}.
      * 
      * @param metric the metric identifiers
      * @return a collection of metrics
@@ -354,7 +354,7 @@ public class MetricFactory
      * @throws IllegalArgumentException if the metric identifier is not recognized 
      */
 
-    public MetricCollection<EnsemblePairs, VectorOutput> ofEnsembleVectorCollection( MetricConstants... metric )
+    public MetricCollection<EnsemblePairs, MultiValuedScoreOutput> ofEnsembleVectorCollection( MetricConstants... metric )
             throws MetricParameterException
     {
         return ofEnsembleVectorCollection( null, metric );
@@ -418,7 +418,7 @@ public class MetricFactory
 
     /**
      * Returns a {@link MetricCollection} of metrics that consume {@link SingleValuedPairs} and produce
-     * {@link VectorOutput}.
+     * {@link MultiValuedScoreOutput}.
      * 
      * @param executor an optional {@link ExecutorService} for executing the metrics
      * @param metric the metric identifiers
@@ -427,11 +427,11 @@ public class MetricFactory
      * @throws IllegalArgumentException if the metric identifier is not recognized 
      */
 
-    public MetricCollection<SingleValuedPairs, VectorOutput> ofSingleValuedVectorCollection( ExecutorService executor,
+    public MetricCollection<SingleValuedPairs, MultiValuedScoreOutput> ofSingleValuedVectorCollection( ExecutorService executor,
                                                                                              MetricConstants... metric )
             throws MetricParameterException
     {
-        final MetricCollectionBuilder<SingleValuedPairs, VectorOutput> builder = MetricCollectionBuilder.of();
+        final MetricCollectionBuilder<SingleValuedPairs, MultiValuedScoreOutput> builder = MetricCollectionBuilder.of();
         for ( MetricConstants next : metric )
         {
             builder.add( ofSingleValuedVector( next ) );
@@ -467,7 +467,7 @@ public class MetricFactory
 
     /**
      * Returns a {@link MetricCollection} of metrics that consume {@link DiscreteProbabilityPairs} and produce
-     * {@link VectorOutput}.
+     * {@link MultiValuedScoreOutput}.
      * 
      * @param executor an optional {@link ExecutorService} for executing the metrics
      * @param metric the metric identifiers
@@ -476,12 +476,12 @@ public class MetricFactory
      * @throws IllegalArgumentException if the metric identifier is not recognized 
      */
 
-    public MetricCollection<DiscreteProbabilityPairs, VectorOutput>
+    public MetricCollection<DiscreteProbabilityPairs, MultiValuedScoreOutput>
             ofDiscreteProbabilityVectorCollection( ExecutorService executor,
                                                    MetricConstants... metric )
                     throws MetricParameterException
     {
-        final MetricCollectionBuilder<DiscreteProbabilityPairs, VectorOutput> builder = MetricCollectionBuilder.of();
+        final MetricCollectionBuilder<DiscreteProbabilityPairs, MultiValuedScoreOutput> builder = MetricCollectionBuilder.of();
         for ( MetricConstants next : metric )
         {
             builder.add( ofDiscreteProbabilityVector( next ) );
@@ -590,7 +590,7 @@ public class MetricFactory
 
     /**
      * Returns a {@link MetricCollection} of metrics that consume {@link EnsemblePairs} and produce
-     * {@link VectorOutput}.
+     * {@link MultiValuedScoreOutput}.
      * 
      * @param executor an optional {@link ExecutorService} for executing the metrics
      * @param metric the metric identifiers
@@ -599,11 +599,11 @@ public class MetricFactory
      * @throws IllegalArgumentException if the metric identifier is not recognized 
      */
 
-    public MetricCollection<EnsemblePairs, VectorOutput> ofEnsembleVectorCollection( ExecutorService executor,
+    public MetricCollection<EnsemblePairs, MultiValuedScoreOutput> ofEnsembleVectorCollection( ExecutorService executor,
                                                                                      MetricConstants... metric )
             throws MetricParameterException
     {
-        final MetricCollectionBuilder<EnsemblePairs, VectorOutput> builder = MetricCollectionBuilder.of();
+        final MetricCollectionBuilder<EnsemblePairs, MultiValuedScoreOutput> builder = MetricCollectionBuilder.of();
         for ( MetricConstants next : metric )
         {
             builder.add( ofEnsembleVector( next ) );
@@ -698,7 +698,7 @@ public class MetricFactory
     }
 
     /**
-     * Returns a {@link Metric} that consumes {@link SingleValuedPairs} and produces {@link VectorOutput}.
+     * Returns a {@link Metric} that consumes {@link SingleValuedPairs} and produces {@link MultiValuedScoreOutput}.
      * 
      * @param metric the metric identifier
      * @return a metric
@@ -706,7 +706,7 @@ public class MetricFactory
      * @throws IllegalArgumentException if the metric identifier is not recognized
      */
 
-    public Metric<SingleValuedPairs, VectorOutput> ofSingleValuedVector( MetricConstants metric )
+    public Metric<SingleValuedPairs, MultiValuedScoreOutput> ofSingleValuedVector( MetricConstants metric )
             throws MetricParameterException
     {
         switch ( metric )
@@ -745,7 +745,7 @@ public class MetricFactory
     }
 
     /**
-     * Returns a {@link Metric} that consumes {@link DiscreteProbabilityPairs} and produces {@link VectorOutput}.
+     * Returns a {@link Metric} that consumes {@link DiscreteProbabilityPairs} and produces {@link MultiValuedScoreOutput}.
      * 
      * @param metric the metric identifier
      * @return a metric
@@ -753,7 +753,7 @@ public class MetricFactory
      * @throws IllegalArgumentException if the metric identifier is not recognized
      */
 
-    public Metric<DiscreteProbabilityPairs, VectorOutput> ofDiscreteProbabilityVector( MetricConstants metric )
+    public Metric<DiscreteProbabilityPairs, MultiValuedScoreOutput> ofDiscreteProbabilityVector( MetricConstants metric )
             throws MetricParameterException
     {
         switch ( metric )
@@ -891,7 +891,7 @@ public class MetricFactory
     }
 
     /**
-     * Returns a {@link Metric} that consumes {@link EnsemblePairs} and produces {@link VectorOutput}.
+     * Returns a {@link Metric} that consumes {@link EnsemblePairs} and produces {@link MultiValuedScoreOutput}.
      * 
      * @param metric the metric identifier
      * @return a metric
@@ -899,7 +899,7 @@ public class MetricFactory
      * @throws IllegalArgumentException if the metric identifier is not recognized
      */
 
-    public Metric<EnsemblePairs, VectorOutput> ofEnsembleVector( MetricConstants metric )
+    public Metric<EnsemblePairs, MultiValuedScoreOutput> ofEnsembleVector( MetricConstants metric )
             throws MetricParameterException
     {
         switch ( metric )

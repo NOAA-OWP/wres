@@ -18,7 +18,7 @@ import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.RegularTimeSeriesOfEnsemblePairs;
-import wres.datamodel.inputs.pairs.RegularTimeSeriesOfSingleValuedPairs;
+import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.time.TimeSeries;
 
 /**
@@ -568,17 +568,17 @@ class SafeRegularTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
     }
 
     @Override
-    public Iterable<RegularTimeSeriesOfSingleValuedPairs> ensembleTraceIterator()
+    public Iterable<TimeSeriesOfSingleValuedPairs> ensembleTraceIterator()
     {
         //Construct an iterable view of the ensemble traces
         //Start with the basis times
         //Iterator<TimeSeries<PairOfDoubleAndVectorOfDoubles>> basisTimes = basisTimeIterator().iterator();       
-        class IterableTimeSeries implements Iterable<RegularTimeSeriesOfSingleValuedPairs>
+        class IterableTimeSeries implements Iterable<TimeSeriesOfSingleValuedPairs>
         {
             @Override
-            public Iterator<RegularTimeSeriesOfSingleValuedPairs> iterator()
+            public Iterator<TimeSeriesOfSingleValuedPairs> iterator()
             {
-                return new Iterator<RegularTimeSeriesOfSingleValuedPairs>()
+                return new Iterator<TimeSeriesOfSingleValuedPairs>()
                 {
                     int currentBasisTime = -1;
                     int totalBasisTimes = bP.getBasisTimes().size()-1; //currentBasisTime starts at -1
@@ -599,7 +599,7 @@ class SafeRegularTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
                     }
 
                     @Override
-                    public RegularTimeSeriesOfSingleValuedPairs next()
+                    public TimeSeriesOfSingleValuedPairs next()
                     {
                         if ( currentBasisTime >= totalBasisTimes && currentTrace >= totalTraces )
                         {
