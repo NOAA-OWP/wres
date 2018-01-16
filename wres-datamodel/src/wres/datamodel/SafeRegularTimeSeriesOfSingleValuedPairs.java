@@ -16,6 +16,8 @@ import org.apache.commons.lang3.tuple.Pair;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.RegularTimeSeriesOfSingleValuedPairs;
+import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
+import wres.datamodel.inputs.pairs.builders.RegularTimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.time.TimeSeries;
 
 /**
@@ -217,15 +219,7 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
 
         private List<Integer> timeStepCountBaseline = new ArrayList<>();
 
-        /**
-         * Adds an atomic time-series to the builder. If the basis time already exists, the values are appended 
-         * (i.e. are assumed to represent later values). 
-         * 
-         * @param basisTime the basis time for the time-series
-         * @param values the time-series values, ordered from earliest to latest
-         * @return the builder
-         */
-
+        @Override
         public SafeRegularTimeSeriesOfSingleValuedPairsBuilder addData( Instant basisTime,
                                                                         List<PairOfDoubles> values )
         {
@@ -247,15 +241,7 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
             return this;
         }
 
-        /**
-         * Adds an atomic time-series to the builder for a baseline. If the basis time already exists, the values are 
-         * appended (i.e. are assumed to represent later values). 
-         * 
-         * @param basisTime the basis time for the time-series
-         * @param values the time-series values, ordered from earliest to latest
-         * @return the builder
-         */
-
+        @Override
         public SafeRegularTimeSeriesOfSingleValuedPairsBuilder addDataForBaseline( Instant basisTime,
                                                                                    List<PairOfDoubles> values )
         {
@@ -277,16 +263,9 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
             return this;
         }
 
-        /**
-         * Adds a regular time-series to the builder.
-         * 
-         * @param timeSeries the regular time-series
-         * @return the builder
-         * @throws MetricInputException if the specified input is inconsistent with any existing input
-         */
-
+        @Override
         public SafeRegularTimeSeriesOfSingleValuedPairsBuilder
-                addTimeSeries( RegularTimeSeriesOfSingleValuedPairs timeSeries )
+                addTimeSeries( TimeSeriesOfSingleValuedPairs timeSeries )
         {
             //Validate where possible
             if ( Objects.nonNull( timeStep ) && !timeSeries.getRegularDuration().equals( timeStep ) )
@@ -313,12 +292,7 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
             return this;
         }
 
-        /**
-         * Sets the time-step of the regular time-series.
-         * 
-         * @param timeStep the time-step of the regular time-series
-         */
-
+        @Override
         public SafeRegularTimeSeriesOfSingleValuedPairsBuilder setTimeStep( Duration timeStep )
         {
             this.timeStep = timeStep;
