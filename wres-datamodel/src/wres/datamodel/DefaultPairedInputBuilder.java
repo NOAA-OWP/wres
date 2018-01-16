@@ -1,7 +1,7 @@
 package wres.datamodel;
 
 import wres.datamodel.inputs.pairs.PairedInput;
-import wres.datamodel.inputs.pairs.PairedInput.PairedInputBuilder;
+import wres.datamodel.inputs.pairs.builders.PairedInputBuilder;
 import wres.datamodel.metadata.Metadata;
 
 /**

@@ -12,13 +12,12 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
-import wres.datamodel.inputs.pairs.RegularTimeSeriesOfEnsemblePairs;
-import wres.datamodel.inputs.pairs.RegularTimeSeriesOfEnsemblePairs.RegularTimeSeriesOfEnsemblePairsBuilder;
 import wres.datamodel.inputs.pairs.RegularTimeSeriesOfSingleValuedPairs;
-import wres.datamodel.inputs.pairs.RegularTimeSeriesOfSingleValuedPairs.RegularTimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
+import wres.datamodel.inputs.pairs.builders.RegularTimeSeriesOfEnsemblePairsBuilder;
+import wres.datamodel.inputs.pairs.builders.RegularTimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.time.TimeSeries;
@@ -59,9 +58,9 @@ public class TimeSeriesDemo
         //Build the atomic time-series
         TimeSeriesOfSingleValuedPairs timeSeries =
                 (TimeSeriesOfSingleValuedPairs) builder.addData( firstId, firstValues )
-                                                              .setTimeStep( timeStep )
-                                                              .setMetadata( metaData )
-                                                              .build();
+                                                       .setTimeStep( timeStep )
+                                                       .setMetadata( metaData )
+                                                       .build();
         //Take a look at the time-series
 
         //Start by simply printing the untimed values using the PairedInput API, since the 
@@ -269,16 +268,16 @@ public class TimeSeriesDemo
         MetadataFactory metaFac = metIn.getMetadataFactory();
         Metadata meta = metaFac.getMetadata();
         //Build the time-series
-        RegularTimeSeriesOfEnsemblePairs ts =
-                (RegularTimeSeriesOfEnsemblePairs) b.addData( firstBasisTime, first )
-                                                    .addData( secondBasisTime, second )
-                                                    .addData( thirdBasisTime, third )
-                                                    .setTimeStep( Duration.ofDays( 1 ) )
-                                                    .setMetadata( meta )
-                                                    .build();
+        TimeSeriesOfEnsemblePairs ts =
+                (TimeSeriesOfEnsemblePairs) b.addData( firstBasisTime, first )
+                                             .addData( secondBasisTime, second )
+                                             .addData( thirdBasisTime, third )
+                                             .setTimeStep( Duration.ofDays( 1 ) )
+                                             .setMetadata( meta )
+                                             .build();
         //Iterate and test
         TimeSeriesOfEnsemblePairs regular = ts.filterByTraceIndex( q -> q.equals( 0 )
-                                                                               || q.equals( 3 ) );
+                                                                        || q.equals( 3 ) );
         //Print the filtered output by basis time
         for ( TimeSeries<PairOfDoubleAndVectorOfDoubles> next : regular.basisTimeIterator() )
         {

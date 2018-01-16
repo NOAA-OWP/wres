@@ -18,11 +18,11 @@ import wres.datamodel.inputs.pairs.MulticategoryPairs;
 import wres.datamodel.inputs.pairs.PairOfBooleans;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
-import wres.datamodel.inputs.pairs.RegularTimeSeriesOfEnsemblePairs;
-import wres.datamodel.inputs.pairs.RegularTimeSeriesOfEnsemblePairs.RegularTimeSeriesOfEnsemblePairsBuilder;
-import wres.datamodel.inputs.pairs.RegularTimeSeriesOfSingleValuedPairs;
-import wres.datamodel.inputs.pairs.RegularTimeSeriesOfSingleValuedPairs.RegularTimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairs;
+import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
+import wres.datamodel.inputs.pairs.builders.RegularTimeSeriesOfEnsemblePairsBuilder;
+import wres.datamodel.inputs.pairs.builders.RegularTimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
@@ -855,7 +855,7 @@ public interface DataFactory
     MetricOutputForProjectByTimeAndThresholdBuilder ofMetricOutputForProjectByTimeAndThreshold();
     
     /**
-     * Returns a builder for a {@link RegularTimeSeriesOfSingleValuedPairs}.
+     * Returns a builder for a {@link TimeSeriesOfSingleValuedPairs} with a regular timestep.
      * 
      * @return a {@link RegularTimeSeriesOfSingleValuedPairsBuilder}
      */
@@ -863,7 +863,7 @@ public interface DataFactory
     RegularTimeSeriesOfSingleValuedPairsBuilder ofRegularTimeSeriesOfSingleValuedPairsBuilder();
 
     /**
-     * Returns a builder for a {@link RegularTimeSeriesOfEnsemblePairs}.
+     * Returns a builder for a {@link TimeSeriesOfEnsemblePairs} with a regular timestep.
      * 
      * @return a {@link RegularTimeSeriesOfEnsemblePairsBuilder}
      */
