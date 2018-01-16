@@ -1,5 +1,6 @@
 package wres.io.reading;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -60,9 +61,9 @@ public class SourceLoader
     {
         List<Future<List<IngestResult>>> savingFiles = new ArrayList<>();
 
-        savingFiles.addAll(loadConfig(getLeftSource(), LeftOrRightOrBaseline.LEFT));
-        savingFiles.addAll(loadConfig(getRightSource(), LeftOrRightOrBaseline.RIGHT ));
-        savingFiles.addAll(loadConfig(getBaseLine(), LeftOrRightOrBaseline.BASELINE ));
+        savingFiles.addAll( loadConfig( getLeftSource() ) );
+        savingFiles.addAll( loadConfig( getRightSource() ) );
+        savingFiles.addAll( loadConfig( getBaseLine() ) );
 
         return savingFiles;
     }
@@ -75,8 +76,7 @@ public class SourceLoader
      * @throws FileNotFoundException when a source file is not found
      * @throws IOException when a source file was not readable
      */
-    private List<Future<List<IngestResult>>> loadConfig( DataSourceConfig config,
-                                                         LeftOrRightOrBaseline leftOrRightOrBaseline )
+    private List<Future<List<IngestResult>>> loadConfig( DataSourceConfig config )
             throws IOException
     {
         List<Future<List<IngestResult>>> savingFiles = new ArrayList<>();
@@ -104,16 +104,17 @@ public class SourceLoader
                 }
 
                 Path sourcePath = Paths.get(source.getValue());
+                File sourceFile = sourcePath.toFile();
 
-                if (!Files.exists( sourcePath ))
+                if ( !sourceFile.exists() )
                 {
                     throw new FileNotFoundException( "The path: '" +
-                                                     sourcePath +
+                                                     sourceFile.getCanonicalPath() +
                                                      "' was not found.");
                 }
-                else if ( !Files.isReadable( sourcePath ) )
+                else if ( !sourceFile.canRead() )
                 {
-                    throw new IOException( "The path: '" + sourcePath
+                    throw new IOException( "The path: '" + sourceFile.getCanonicalPath()
                                            + "' was not readable. Please set "
                                            + "the permissions of that path to "
                                            + "readable for user '"
@@ -121,8 +122,8 @@ public class SourceLoader
                                            + "' or run WRES as a user with read"
                                            + " permissions on that path." );
                 }
-                else if (Files.isDirectory(sourcePath)) {
-
+                else if ( sourceFile.isDirectory() )
+                {
                     List<Future<List<IngestResult>>> tasks =
                             loadDirectory( sourcePath,
                                            source,
@@ -130,7 +131,7 @@ public class SourceLoader
 
                     savingFiles.addAll( tasks );
                 }
-                else if ( Files.isRegularFile( sourcePath ) )
+                else if ( sourceFile.isFile() )
                 {
                     // TODO: It might be useful to go ahead and just create the
                     // archive ingester here instead of trying to jump through
@@ -145,9 +146,10 @@ public class SourceLoader
                         savingFiles.add(task);
                     }
                 }
-                else
+                else if ( LOGGER.isWarnEnabled() )
                 {
-                    LOGGER.error("'{}' is not a source of valid input data.", source.getValue());
+                    LOGGER.warn( "'{}' is not a source of valid input data.",
+                                 sourceFile.getCanonicalPath() );
                 }
             }
         }
@@ -166,6 +168,7 @@ public class SourceLoader
      *                         that indicated that the directory needed to be
      *                         evaluated
      * @return A listing of asynchronous tasks dispatched to ingest data
+     * @throws PreIngestException when walking the directory causes IOException
      */
     private List<Future<List<IngestResult>>> loadDirectory( Path directory,
                                                             DataSourceConfig.Source source,
@@ -181,7 +184,10 @@ public class SourceLoader
             files = Files.walk(directory);
 
             files.forEach((Path path) -> {
-                if (Files.notExists(path))
+
+                File file = path.toFile();
+
+                if ( !file.exists() )
                 {
                     throw new IllegalArgumentException( "The source path of" +
                                                         path.toAbsolutePath().toString() +
@@ -193,7 +199,7 @@ public class SourceLoader
                     return;
                 }
 
-                if (Files.isRegularFile(path))
+                if ( file.isFile() )
                 {
                     Future<List<IngestResult>> task = saveFile( path,
                                                                 source,
@@ -208,9 +214,10 @@ public class SourceLoader
 
             files.close();
         }
-        catch (IOException e)
+        catch ( IOException e )
         {
-            LOGGER.error(Strings.getStackTrace(e));
+            throw new PreIngestException( "Failed to walk the directory tree '"
+                                          + directory + "':", e );
         }
 
         ProgressMonitor.completeStep();
@@ -237,8 +244,7 @@ public class SourceLoader
         ProgressMonitor.increment();
 
         FileEvaluation checkIngest = shouldIngest( absolutePath,
-                                                   source,
-                                                   dataSourceConfig );
+                                                   source );
 
         if ( checkIngest.shouldIngest() )
         {
@@ -305,13 +311,11 @@ public class SourceLoader
      * @param filePath The path of the file to evaluate
      * @param source The configuration indicating that the given file might
      *               need to be ingested
-     * @param dataSourceConfig The overall configuration indicating that the
-     *                         file should be evaluated for ingestion
      * @return Whether or not data within the file should be ingested (and hash)
+     * @throws PreIngestException when hashing or id lookup cause some exception
      */
     private FileEvaluation shouldIngest( String filePath,
-                                         DataSourceConfig.Source source,
-                                         DataSourceConfig dataSourceConfig )
+                                         DataSourceConfig.Source source )
     {
         Format specifiedFormat = source.getFormat();
         Format pathFormat = ReaderFactory.getFiletype( filePath );
@@ -329,24 +333,19 @@ public class SourceLoader
         boolean ingest = specifiedFormat == null ||
                          specifiedFormat.equals( pathFormat );
 
-        String hash = null;
+        String hash;
 
         if (ingest)
         {
             try
             {
                 hash = Strings.getMD5Checksum( filePath );
-                ingest = !dataExists( hash, dataSourceConfig );
+                ingest = !dataExists( hash );
             }
-            catch ( SQLException e )
+            catch ( IOException | SQLException e )
             {
-                LOGGER.warn( "Could not determine whether to ingest {}",
-                             filePath, e );
-                ingest = false;
-            }
-            catch ( IOException ioe )
-            {
-                throw new RuntimeException( "Problem reading file {}", ioe );
+                throw new PreIngestException( "Could not determine whether to ingest '"
+                                              +  filePath + "'", e );
             }
 
             if (!ingest)
@@ -363,8 +362,8 @@ public class SourceLoader
                           "does not match the specified required format. " +
                           "(specified: {}, encountered: {})",
                           filePath,
-                          specifiedFormat.toString(),
-                          pathFormat.toString());
+                          specifiedFormat,
+                          pathFormat );
             return new FileEvaluation( false, false, null );
         }
 
@@ -374,13 +373,11 @@ public class SourceLoader
     /**
      * Determines if the indicated data already exists within the database
      * @param hash The hash of the file that might need to be ingested
-     * @param dataSourceConfig The configuration for the set of data sources that
-     *                         indicated that this file might need to be ingested
      * @return Whether or not the indicated data is already in the database
      * @throws SQLException Thrown if communcation with the database failed in
      * some way
      */
-    private boolean dataExists(String hash, DataSourceConfig dataSourceConfig)
+    private boolean dataExists( String hash )
             throws SQLException
     {
         return DataSources.hasSource( hash );
