@@ -18,13 +18,11 @@ import org.slf4j.LoggerFactory;
 import wres.config.ProjectConfigException;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.Feature;
-import wres.config.generated.PoolingWindowConfig;
 import wres.config.generated.TimeWindowMode;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.io.concurrency.WRESCallable;
 import wres.io.config.ConfigHelper;
 import wres.io.data.details.ProjectDetails;
-import wres.util.TimeHelper;
 
 public class PairWriter extends WRESCallable<Boolean>
 {
@@ -49,7 +47,7 @@ public class PairWriter extends WRESCallable<Boolean>
     private final int windowNum;
     private final PairOfDoubleAndVectorOfDoubles pair;
     private final boolean isBaseline;
-    private final int sequenceStep;
+    private final int poolingStep;
     private final ProjectDetails projectDetails;
     private final int lead;
 
@@ -62,7 +60,7 @@ public class PairWriter extends WRESCallable<Boolean>
                        int windowNum,
                        PairOfDoubleAndVectorOfDoubles pair,
                        boolean isBaseline,
-                       int sequenceStep,
+                       int poolingStep,
                        ProjectDetails projectDetails,
                        int lead)
     {
@@ -72,7 +70,7 @@ public class PairWriter extends WRESCallable<Boolean>
         this.windowNum = windowNum;
         this.pair = pair;
         this.isBaseline = isBaseline;
-        this.sequenceStep = sequenceStep;
+        this.poolingStep = poolingStep;
         this.projectDetails = projectDetails;
         this.lead = lead;
     }
@@ -216,8 +214,8 @@ public class PairWriter extends WRESCallable<Boolean>
             // lead, it stays at the largest value prior. For instance,
             // if the number goes from 1 through 5, the next window for
             // the next lead will then be 5.
-            window *= (this.projectDetails.getRollingWindowCount( this.feature ));
-            window += this.sequenceStep;
+            window *= (this.projectDetails.getPoolCount( this.feature ));
+            window += this.poolingStep;
         }
 
         window++;

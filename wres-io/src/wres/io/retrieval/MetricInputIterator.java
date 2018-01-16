@@ -16,7 +16,6 @@ import org.slf4j.Logger;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
-import wres.config.generated.ProjectConfig;
 import wres.config.generated.TimeWindowMode;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.VectorOfDoubles;
@@ -43,8 +42,8 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
     private final ProjectDetails projectDetails;
     private NavigableMap<String, Double> leftHandMap;
     private VectorOfDoubles climatology;
-    private int sequenceStep;
-    private int finalSequenceStep = 0;
+    private int poolingStep;
+    private int finalPoolingStep = 0;
 
     // This is just for debugging. This is safe for removal and doesn't drive any logic
     // Use Case: "I expect this run to create 15 inputs. It actually generated 612.
@@ -65,29 +64,26 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
             this.windowNumber = 0;
         }
         // If the next sequence is less than the final step, we increment the sequence
-        else if (this.sequenceStep + 1 < this.finalSequenceStep)
+        else if ( this.poolingStep + 1 < this.finalPoolingStep )
         {
             this.incrementSequenceStep();
         }
         // Otherwise, we move on to the next window
-        // In terms of rolling aggregation, it means move on to the next
-        // sequence of lead hours (i.e. we were centered on lead 4,
-        // move on to lead 5)
         else
         {
-            this.setSequenceStep( 0 );
-            this.windowNumber += this.getProjectDetails().getAggregationFrequency();
+            this.setPoolingStep( 0 );
+            this.windowNumber++;
         }
     }
 
     protected void incrementSequenceStep()
     {
-        sequenceStep++;
+        poolingStep++;
     }
 
-    protected void setSequenceStep(int sequenceStep)
+    protected void setPoolingStep( int poolingStep )
     {
-        this.sequenceStep = sequenceStep;
+        this.poolingStep = poolingStep;
     }
 
     protected Integer getWindowCount() throws NoDataException, SQLException,
@@ -153,7 +149,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
                                        "Please check your specifications." );
         }
 
-        this.finalSequenceStep = this.projectDetails.getRollingWindowCount( feature );
+        this.finalPoolingStep = this.projectDetails.getPoolCount( feature );
 
         // TODO: This needs a better home
         // x2; 1 step for retrieval, 1 step for calculation
@@ -192,6 +188,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
             timeShift = left.getTimeShift().getWidth();
         }
 
+        // TODO: Put this script generation into another class
         if (ConfigHelper.isForecast(left))
         {
             List<Integer> forecastIDs = this.getProjectDetails().getLeftForecastIDs();
@@ -347,33 +344,15 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
         {
             if (ConfigHelper.isForecast( this.getRight() ))
             {
-                next = this.finalSequenceStep > 0 && this.sequenceStep + 1 < this.finalSequenceStep;
+                next = this.finalPoolingStep > 0 && this.poolingStep + 1 < this.finalPoolingStep;
 
                 if (!next)
                 {
                     int nextWindowNumber = this.getWindowNumber() + 1;
+                    int offset = this.getProjectDetails().getLeadOffset( this.getFeature() );
 
-                    Integer beginning;
-                    Integer end;
-
-                    if ( this.getProjectDetails().getPoolingMode() == TimeWindowMode.BACK_TO_BACK)
-                    {
-                        beginning =
-                                this.getProjectDetails()
-                                    .getLead( nextWindowNumber )
-                                +
-                                this.getProjectDetails()
-                                    .getLeadOffset( this.getFeature() );
-                        end = this.getProjectDetails()
-                                      .getLead( nextWindowNumber + 1 ) +
-                                  this.getProjectDetails()
-                                      .getLeadOffset( this.getFeature() );
-                    }
-                    else
-                    {
-                        end = this.getProjectDetails().getAggregationPeriod() + nextWindowNumber;
-                        beginning = nextWindowNumber;
-                    }
+                    Integer end = this.getProjectDetails().getAggregationPeriod() + nextWindowNumber * this.getProjectDetails().getAggregationFrequency() + offset;
+                    Integer beginning = nextWindowNumber * this.getProjectDetails().getAggregationFrequency() + offset;
 
                     int lastLead = this.getProjectDetails().getLastLead( this.getFeature() );
 
@@ -446,17 +425,15 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
             retriever.setFeature(feature);
             retriever.setClimatology( this.getClimatology() );
             retriever.setProgress( this.getWindowNumber() );
-            retriever.setLeadOffset( this.getProjectDetails()
-                                         .getLeadOffset( this.getFeature() ) );
-            retriever.setSequenceStep( this.sequenceStep );
+            retriever.setPoolingStep( this.poolingStep );
             retriever.setOnRun( ProgressMonitor.onThreadStartHandler() );
             retriever.setOnComplete( ProgressMonitor.onThreadCompleteHandler() );
 
             nextInput = Database.submit(retriever);
         }
-        catch ( SQLException | IOException e )
+        catch ( IOException e )
         {
-            this.getLogger().error( Strings.getStackTrace( e ) );
+            throw new NoSuchElementException( Strings.getStackTrace( e ) );
         }
 
         if (nextInput == null)

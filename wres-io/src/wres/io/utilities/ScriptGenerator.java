@@ -110,36 +110,10 @@ public final class ScriptGenerator
         script.append("FROM wres.TimeSeries TS").append(NEWLINE);
         script.append("CROSS JOIN earliest_latest EL").append(NEWLINE);
         script.append("WHERE ").append(timeSeriesVariablePosition).append(NEWLINE);
-
-        // TODO: If we decide to use anchoring, uncomment
-        /*if ( projectDetails.getPoolingWindow().getAnchor() == TimeAnchor.CENTER)
-        {*/
-            script.append( "    AND TS.initialization_date >= EL.earliest" )
-                  .append( NEWLINE );
-            script.append( "    AND TS.initialization_date <= EL.latest" )
-                  .append( NEWLINE );
-        /*}
-        else if (projectDetails.getPoolingWindow().getAnchor() == TimeAnchor.LEFT)
-        {
-            script.append("    AND TS.initialization_date >= EL.earliest").append(NEWLINE);
-            script.append("    AND TS.initialization_date + INTERVAL '");
-            script.append(projectDetails.getPoolingWindow().getPeriod());
-            script.append(" ");
-            script.append(projectDetails.getPoolingWindowUnit());
-            script.append("' <= EL.latest");
-            script.append(NEWLINE);
-        }
-        else
-        {
-            script.append("    AND TS.initialization_date - INTERVAL '");
-            script.append(projectDetails.getPoolingWindow().getPeriod());
-            script.append(" ");
-            script.append(projectDetails.getPoolingWindowUnit());
-            script.append("' >= EL.earliest");
-            script.append(NEWLINE);
-            script.append("    AND TS.initialization_date <= EL.latest");
-            script.append(NEWLINE);
-        }*/
+        script.append( "    AND TS.initialization_date >= EL.earliest" )
+              .append( NEWLINE );
+        script.append( "    AND TS.initialization_date <= EL.latest" )
+              .append( NEWLINE );
 
         script.append("    AND EXISTS (").append(NEWLINE);
         script.append("        SELECT 1").append(NEWLINE);
@@ -153,64 +127,6 @@ public final class ScriptGenerator
 
 
         return script.toString();
-    }
-
-    public static String formApplyInitialAnchorScript( ProjectDetails projectDetails, Feature feature, String initialDate)
-            throws SQLException
-    {
-        StringBuilder anchorScript = new StringBuilder(  );
-
-        anchorScript.append("SELECT MIN(TS.initialization_date)::text AS zero_date").append(NEWLINE);
-        anchorScript.append("FROM wres.TimeSeries TS").append(NEWLINE);
-        anchorScript.append("WHERE ").append(ConfigHelper.getVariablePositionClause(
-                feature,
-                ConfigHelper.getVariableID( projectDetails.getRight() ),
-                "TS"
-        )).append(NEWLINE);
-        anchorScript.append("    AND TS.initialization_date >= '")
-                    .append(initialDate)
-                    .append("'::timestamp without time zone ");
-
-        // TODO: If we want to move forward with anchoring, uncomment
-        /*if (projectDetails.getPoolingWindow().getAnchor() != TimeAnchor.LEFT)
-        {*/
-            anchorScript.append("+ INTERVAL '");
-
-            /*if (projectDetails.getPoolingWindow().getAnchor() == TimeAnchor.CENTER)
-            {*/
-                anchorScript.append( projectDetails.getPoolingWindow().getPeriod() / 2.0 );
-            /*}
-            else if (projectDetails.getPoolingWindow().getAnchor() == TimeAnchor.RIGHT)
-            {
-                anchorScript.append( projectDetails.getPoolingWindow().getPeriod());
-            }*/
-
-            anchorScript.append(" ")
-                        .append(projectDetails.getPoolingWindowUnit())
-                        .append("'");
-        //}
-
-        anchorScript.append(NEWLINE);
-
-        anchorScript.append("    AND EXISTS (").append(NEWLINE);
-        anchorScript.append("        SELECT 1").append(NEWLINE);
-        anchorScript.append("        FROM wres.ForecastSource FS")
-                    .append(NEWLINE);
-        anchorScript.append("        INNER JOIN wres.ProjectSource PS")
-                    .append(NEWLINE);
-        anchorScript.append("            ON PS.source_id = FS.source_id")
-                    .append(NEWLINE);
-        anchorScript.append("        WHERE PS.project_id = ")
-                    .append(projectDetails.getId())
-                    .append(NEWLINE);
-        anchorScript.append("            AND PS.member = ")
-                    .append(ProjectDetails.RIGHT_MEMBER)
-                    .append(NEWLINE);
-        anchorScript.append("            AND FS.forecast_id = TS.timeseries_id")
-                    .append(NEWLINE);
-        anchorScript.append("    );");
-
-        return anchorScript.toString();
     }
 
     public static String generateZeroDateScript(ProjectDetails projectDetails,

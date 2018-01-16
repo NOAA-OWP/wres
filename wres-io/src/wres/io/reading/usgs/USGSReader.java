@@ -186,7 +186,7 @@ public class USGSReader extends BasicSource
 
     private void load() throws IOException
     {
-        String requestURL = null;
+        String requestURL = USGS_URL;
         Client client = null;
         try
         {
