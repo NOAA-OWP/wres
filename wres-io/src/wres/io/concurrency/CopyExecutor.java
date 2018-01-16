@@ -1,10 +1,11 @@
 package wres.io.concurrency;
 
+import java.sql.SQLException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.io.utilities.Database;
-import wres.util.Strings;
 
 /**
  * Executes the database copy operation for every value in the passed in string
@@ -12,41 +13,42 @@ import wres.util.Strings;
  */
 public class CopyExecutor extends WRESRunnable
 {
-    private final String table_definition;
+    private static final Logger LOGGER = LoggerFactory.getLogger( CopyExecutor.class );
+
+    private final String tableDefinition;
     private final String values;
     private final String delimiter;
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(CopyExecutor.class);
 
     /**
      * The Constructor
-     * @param table_definition The definition of the table and values to insert and in what order
+     * @param tableDefinition The definition of the table and values to insert and in what order
      * @param values Newline delimited string containing values delimited by the delimiter that adheres to the table definition
      * @param delimiter The symbol separating each value in each line of the values
      */
-	public CopyExecutor(String table_definition, String values, String delimiter)
+    public CopyExecutor( String tableDefinition,
+                         String values,
+                         String delimiter )
+    {
+        this.tableDefinition = tableDefinition;
+        this.values = values;
+        this.delimiter = delimiter;
+    }
+
+    @Override
+    public void execute() throws SQLException
+    {
+        LOGGER.trace( "Using tableDefinition {} values {} delimiter {}",
+                      tableDefinition,
+                      values,
+                      delimiter );
+
+        Database.copy( tableDefinition, values, delimiter );
+    }
+
+    @Override
+    protected Logger getLogger ()
 	{
-		this.table_definition = table_definition;
-		this.values = values;
-		this.delimiter = delimiter;
-	}
-
-	@Override
-    public void execute() {
-		try {
-		    this.getLogger().trace("Using table_definition {} values {} delimiter {}",
-		                 table_definition, 
-		                 values,
-		                 delimiter);
-		    
-			Database.copy(table_definition, values, delimiter);
-		} catch (Exception e) {
-			this.getLogger().error(Strings.getStackTrace(e));
-		}
-	}
-
-	@Override
-	protected Logger getLogger () {
-		return CopyExecutor.LOGGER;
-	}
+        return CopyExecutor.LOGGER;
+    }
 }
