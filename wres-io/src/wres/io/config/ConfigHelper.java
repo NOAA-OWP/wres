@@ -34,6 +34,7 @@ import wres.config.generated.DurationUnit;
 import wres.config.generated.Feature;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.MetricConfig;
+import wres.config.generated.MetricConfigName;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.TimeAggregationConfig;
 import wres.config.generated.TimeAggregationFunction;
@@ -1176,5 +1177,29 @@ public class ConfigHelper
         Objects.requireNonNull( input, "Specify non-null input to check for instantanous data." );
         return input.getUnit().equals( DurationUnit.NANOS ) && input.getPeriod() == 1;
     }    
+
+    /**
+     * Returns the first instance of the named metric configuration or null if no such configuration exists.
+     * 
+     * @param projectConfig the project configuration
+     * @param metricName the metric name
+     * @return the named metric configuration or null
+     * @throws NullPointerException if one or both of the inputs are null
+     */
+
+    public static MetricConfig getMetricConfigByName( ProjectConfig projectConfig, MetricConfigName metricName )
+    {
+        Objects.requireNonNull( projectConfig, "Specify a non-null metric configuration as input." );
+        Objects.requireNonNull( metricName, "Specify a non-null metric name as input." );
+        for ( MetricConfig next : projectConfig.getOutputs().getMetric() )
+        {
+            // Match
+            if ( next.getName().equals( metricName ) )
+            {
+                return next;
+            }
+        }
+        return null;
+    }
     
 }
