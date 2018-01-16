@@ -998,7 +998,7 @@ public class ConfigHelper
         HADT ( "-0900" ),
         HAST ( "-1000" );
 
-        private transient final ZoneOffset zoneOffset;
+        private final transient ZoneOffset zoneOffset;
 
         ConusZoneId( String zoneOffset )
         {
