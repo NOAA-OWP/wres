@@ -15,7 +15,6 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
-import wres.datamodel.inputs.pairs.RegularTimeSeriesOfSingleValuedPairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.inputs.pairs.builders.RegularTimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.time.TimeSeries;
@@ -29,7 +28,7 @@ import wres.datamodel.time.TimeSeries;
  * @since 0.3
  */
 class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
-        implements RegularTimeSeriesOfSingleValuedPairs
+        implements TimeSeriesOfSingleValuedPairs
 {
 
     /**
@@ -39,7 +38,7 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
     private final SafeRegularTimeSeriesOfPairs<PairOfDoubles> bP;
 
     @Override
-    public RegularTimeSeriesOfSingleValuedPairs getBaselineData()
+    public TimeSeriesOfSingleValuedPairs getBaselineData()
     {
         if ( !hasBaseline() )
         {
@@ -87,7 +86,7 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
         for ( TimeSeries<PairOfDoubles> a : durationIterator() )
         {
             sinceLast++;
-            RegularTimeSeriesOfSingleValuedPairs next = (RegularTimeSeriesOfSingleValuedPairs) a;
+            TimeSeriesOfSingleValuedPairs next = (TimeSeriesOfSingleValuedPairs) a;
             if ( duration.test( a.getDurations().first() ) )
             {
                 if ( Objects.isNull( step ) )
@@ -127,7 +126,7 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
         {
             if ( basisTime.test( a.getEarliestBasisTime() ) )
             {
-                builder.addTimeSeries( (RegularTimeSeriesOfSingleValuedPairs) a );
+                builder.addTimeSeries( (TimeSeriesOfSingleValuedPairs) a );
             }
         }
         //Build if something to build
@@ -280,7 +279,7 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
             //Add the main data
             for ( TimeSeries<PairOfDoubles> a : timeSeries.basisTimeIterator() )
             {
-                RegularTimeSeriesOfSingleValuedPairs next = (RegularTimeSeriesOfSingleValuedPairs) a;
+                TimeSeriesOfSingleValuedPairs next = (TimeSeriesOfSingleValuedPairs) a;
                 addData( next.getEarliestBasisTime(), next.getData() );
                 setMetadata( next.getMetadata() );
                 if ( next.hasBaseline() )

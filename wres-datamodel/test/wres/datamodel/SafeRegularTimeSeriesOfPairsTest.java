@@ -17,7 +17,7 @@ import org.junit.Test;
 import wres.datamodel.SafeRegularTimeSeriesOfSingleValuedPairs.SafeRegularTimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
-import wres.datamodel.inputs.pairs.RegularTimeSeriesOfSingleValuedPairs;
+import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 
@@ -46,11 +46,11 @@ public final class SafeRegularTimeSeriesOfPairsTest
         Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
         first.add( metIn.pairOf( 1, 1 ) );
         final Metadata meta = metaFac.getMetadata();
-        RegularTimeSeriesOfSingleValuedPairs ts =
-                (RegularTimeSeriesOfSingleValuedPairs) b.addData( firstBasisTime, first )
-                                                        .setTimeStep( Duration.ofDays( 1 ) )
-                                                        .setMetadata( meta )
-                                                        .build();
+        TimeSeriesOfSingleValuedPairs ts =
+                (TimeSeriesOfSingleValuedPairs) b.addData( firstBasisTime, first )
+                                                 .setTimeStep( Duration.ofDays( 1 ) )
+                                                 .setMetadata( meta )
+                                                 .build();
         assertTrue( "Expected a regular time-series.", ts.isRegular() );
     }
 
@@ -69,11 +69,11 @@ public final class SafeRegularTimeSeriesOfPairsTest
         Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
         first.add( metIn.pairOf( 1, 1 ) );
         final Metadata meta = metaFac.getMetadata();
-        RegularTimeSeriesOfSingleValuedPairs ts =
-                (RegularTimeSeriesOfSingleValuedPairs) b.addData( firstBasisTime, first )
-                                                        .setTimeStep( Duration.ofDays( 1 ) )
-                                                        .setMetadata( meta )
-                                                        .build();
+        TimeSeriesOfSingleValuedPairs ts =
+                (TimeSeriesOfSingleValuedPairs) b.addData( firstBasisTime, first )
+                                                 .setTimeStep( Duration.ofDays( 1 ) )
+                                                 .setMetadata( meta )
+                                                 .build();
         Duration benchmark = Duration.ofDays( 1 );
         assertTrue( "Expected a regular time-series with a duration of '" + benchmark
                     + "'.",
@@ -285,11 +285,11 @@ public final class SafeRegularTimeSeriesOfPairsTest
 
         //Check for exceptions on the iterators
         SafeRegularTimeSeriesOfSingleValuedPairsBuilder d = new SafeRegularTimeSeriesOfSingleValuedPairsBuilder();
-        RegularTimeSeriesOfSingleValuedPairs ts =
-                (RegularTimeSeriesOfSingleValuedPairs) d.addData( firstBasisTime, first )
-                                                        .setTimeStep( Duration.ofDays( 1 ) )
-                                                        .setMetadata( meta )
-                                                        .build();
+        TimeSeriesOfSingleValuedPairs ts =
+                (TimeSeriesOfSingleValuedPairs) d.addData( firstBasisTime, first )
+                                                 .setTimeStep( Duration.ofDays( 1 ) )
+                                                 .setMetadata( meta )
+                                                 .build();
         try
         {
             Iterator<Pair<Instant, PairOfDoubles>> it = ts.timeIterator().iterator();

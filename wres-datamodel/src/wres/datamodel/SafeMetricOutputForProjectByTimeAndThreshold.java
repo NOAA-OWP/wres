@@ -25,9 +25,9 @@ import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMapByMetric;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold.MetricOutputMultiMapByTimeAndThresholdBuilder;
+import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.ScalarOutput;
-import wres.datamodel.outputs.MultiValuedScoreOutput;
 
 /**
  * <p>
@@ -126,6 +126,8 @@ class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForPro
                         break;
                     case BOXPLOT:
                         addToBuilder( builder, getBoxPlotOutput() );
+                        break;
+                    default:
                         break;
                 }
             }
