@@ -41,9 +41,9 @@ import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
+import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.ScalarOutput;
-import wres.datamodel.outputs.VectorOutput;
 
 /**
  * Factory to use in order to construct a wres-vis chart.
@@ -755,7 +755,7 @@ public abstract class ChartEngineFactory
      * @throws ChartEngineException if the ChartEngine fails to construct
      */
     public static ConcurrentMap<MetricConstants, ChartEngine>
-            buildVectorOutputChartEngine( final MetricOutputMapByTimeAndThreshold<VectorOutput> input,
+            buildVectorOutputChartEngine( final MetricOutputMapByTimeAndThreshold<MultiValuedScoreOutput> input,
                                           final DataFactory factory,
                                           final PlotTypeSelection userSpecifiedPlotType,
                                           final String userSpecifiedTemplateResourceName,

@@ -13,19 +13,19 @@ public interface MetricOutput<U>
 {
 
     /**
-     * Returns the metadata associated with the output.
-     * 
-     * @return the metadata associated with the output
-     */
-
-    MetricOutputMetadata getMetadata();
-    
-    /**
      * Returns the data.
      * 
      * @return the data
      */
 
     U getData();
+    
+    /**
+     * Returns the metadata associated with the output.
+     * 
+     * @return the metadata associated with the output
+     */
 
+    MetricOutputMetadata getMetadata();
+        
 }

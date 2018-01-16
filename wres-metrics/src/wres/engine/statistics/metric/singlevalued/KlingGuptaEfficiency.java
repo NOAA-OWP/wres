@@ -8,7 +8,7 @@ import wres.datamodel.Slicer;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.VectorOutput;
+import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricCollection;
 import wres.engine.statistics.metric.MetricParameterException;
@@ -57,7 +57,7 @@ public class KlingGuptaEfficiency extends MeanSquareError<SingleValuedPairs>
     private final double biasWeight;
 
     @Override
-    public VectorOutput apply( final SingleValuedPairs s )
+    public MultiValuedScoreOutput apply( final SingleValuedPairs s )
     {
         if(Objects.isNull(s))
         {
@@ -86,7 +86,7 @@ public class KlingGuptaEfficiency extends MeanSquareError<SingleValuedPairs>
         result[0] = 1.0 - Math.sqrt( left + middle + right );
         //Metadata
         final MetricOutputMetadata metOut = getMetadata( s, s.getData().size(), MetricConstants.NONE, null );
-        return dataFactory.ofVectorOutput( result, metOut );
+        return dataFactory.ofMultiValuedScoreOutput( result, metOut );
     }
 
     @Override

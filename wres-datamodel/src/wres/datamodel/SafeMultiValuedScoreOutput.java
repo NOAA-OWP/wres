@@ -7,7 +7,7 @@ import java.util.StringJoiner;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MetricOutputException;
-import wres.datamodel.outputs.VectorOutput;
+import wres.datamodel.outputs.MultiValuedScoreOutput;
 
 /**
  * An immutable vector of outputs associated with a metric. The number of outputs, as well as the individual outputs and
@@ -17,7 +17,7 @@ import wres.datamodel.outputs.VectorOutput;
  * @version 0.1
  * @since 0.1
  */
-class SafeVectorOutput implements VectorOutput
+class SafeMultiValuedScoreOutput implements MultiValuedScoreOutput
 {
 
     /**
@@ -59,11 +59,11 @@ class SafeVectorOutput implements VectorOutput
     @Override
     public boolean equals( final Object o )
     {
-        if ( ! ( o instanceof SafeVectorOutput ) )
+        if ( ! ( o instanceof SafeMultiValuedScoreOutput ) )
         {
             return false;
         }
-        final SafeVectorOutput v = (SafeVectorOutput) o;
+        final SafeMultiValuedScoreOutput v = (SafeMultiValuedScoreOutput) o;
         return meta.equals( v.getMetadata() ) && template.equals( v.template )
                && Arrays.equals( output.getDoubles(), v.getData().getDoubles() );
     }
@@ -94,7 +94,7 @@ class SafeVectorOutput implements VectorOutput
      * @throws MetricOutputException if any of the inputs are invalid
      */
 
-    SafeVectorOutput( final VectorOfDoubles output,
+    SafeMultiValuedScoreOutput( final VectorOfDoubles output,
                       final ScoreOutputGroup template,
                       final MetricOutputMetadata meta )
     {

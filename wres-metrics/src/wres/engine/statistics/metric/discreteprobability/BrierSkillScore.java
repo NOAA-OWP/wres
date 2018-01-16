@@ -8,7 +8,7 @@ import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.VectorOutput;
+import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.ProbabilityScore;
@@ -30,7 +30,7 @@ public class BrierSkillScore extends MeanSquareErrorSkillScore<DiscreteProbabili
 {
 
     @Override
-    public VectorOutput apply( final DiscreteProbabilityPairs s )
+    public MultiValuedScoreOutput apply( final DiscreteProbabilityPairs s )
     {
         if ( Objects.isNull( s ) )
         {
@@ -62,7 +62,7 @@ public class BrierSkillScore extends MeanSquareErrorSkillScore<DiscreteProbabili
             }
             //Metadata
             final MetricOutputMetadata metOut = getMetadata( s, s.getData().size(), MetricConstants.NONE, null );
-            return getDataFactory().ofVectorOutput( result, metOut );
+            return getDataFactory().ofMultiValuedScoreOutput( result, metOut );
         }
     }
 

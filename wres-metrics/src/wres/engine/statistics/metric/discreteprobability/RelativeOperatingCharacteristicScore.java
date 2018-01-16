@@ -13,7 +13,7 @@ import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.VectorOutput;
+import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.ProbabilityScore;
 
@@ -41,12 +41,12 @@ import wres.engine.statistics.metric.ProbabilityScore;
  * @since 0.1
  */
 
-public class RelativeOperatingCharacteristicScore extends RelativeOperatingCharacteristic<VectorOutput>
+public class RelativeOperatingCharacteristicScore extends RelativeOperatingCharacteristic<MultiValuedScoreOutput>
         implements ProbabilityScore
 {
 
     @Override
-    public VectorOutput apply( final DiscreteProbabilityPairs s )
+    public MultiValuedScoreOutput apply( final DiscreteProbabilityPairs s )
     {
         if ( Objects.isNull( s ) )
         {
@@ -65,7 +65,7 @@ public class RelativeOperatingCharacteristicScore extends RelativeOperatingChara
             rocScore = 2.0 * getAUCMasonGraham( s ) - 1.0;
         }
         final MetricOutputMetadata metOut = getMetadata( s, s.getData().size(), MetricConstants.NONE, null );
-        return getDataFactory().ofVectorOutput( new double[] { rocScore }, metOut );
+        return getDataFactory().ofMultiValuedScoreOutput( new double[] { rocScore }, metOut );
     }
 
     @Override
@@ -111,7 +111,7 @@ public class RelativeOperatingCharacteristicScore extends RelativeOperatingChara
 
     public static class RelativeOperatingCharacteristicScoreBuilder
             extends
-            MetricBuilder<DiscreteProbabilityPairs, VectorOutput>
+            MetricBuilder<DiscreteProbabilityPairs, MultiValuedScoreOutput>
     {
 
         @Override

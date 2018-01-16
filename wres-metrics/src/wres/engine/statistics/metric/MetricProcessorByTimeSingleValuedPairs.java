@@ -20,7 +20,6 @@ import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.Slicer;
 import wres.datamodel.Threshold;
 import wres.datamodel.inputs.InsufficientDataException;
-import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.MetricInputSliceException;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.PairOfBooleans;
@@ -115,7 +114,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
      * @param metricExecutor an optional {@link ExecutorService} for executing metrics. Defaults to the 
      *            {@link ForkJoinPool#commonPool()} 
      * @param mergeList a list of {@link MetricOutputGroup} whose outputs should be retained and merged across calls to
-     *            {@link #apply(MetricInput)}
+     *            {@link #apply(SingleValuedPairs)}
      * @throws MetricConfigurationException if the metrics are configured incorrectly
      */
 

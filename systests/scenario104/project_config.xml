@@ -34,7 +34,7 @@
         <leadHours minimum="1" maximum="48" />
         <issuedDates earliest="1985-01-01T00:00:00Z" latest="1985-03-01T00:00:00Z"/>
         <grouping>feature,lead_time</grouping>    
-        <poolingWindow mode="rolling" anchor="center">
+        <poolingWindow >
             <period>336</period>
             <!-- WITH period=168, this CAUSES A NULL PTR EXCEPTION!!! 
             <frequency>672</frequency>-->

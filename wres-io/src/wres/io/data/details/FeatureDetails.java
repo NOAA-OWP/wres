@@ -181,13 +181,16 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
                 script += "WHERE VP.variable_id = " + String.valueOf(variableID) + NEWLINE;
                 script += "		AND VP.x_position = " + String.valueOf(getId()) + ";";
 
-				Integer dbResult = Database.getResult(script, "variableposition_id");
+                Integer dbResult = Database.getResult(script, "variableposition_id");
 
-				if (dbResult == null)
-				{
-					// TODO: throw an appropriate checked exception instead of RuntimeException
-					throw new RuntimeException("Possibly missing data in the wres.variableposition table?");
-				}
+                if ( dbResult == null )
+                {
+                    throw new InconsistentDataException( "Expected a result but"
+                                                         + " got none:"
+                                                         + NEWLINE
+                                                         + script );
+                }
+
 				variablePositions.putIfAbsent(variableID, dbResult);
 			}
 

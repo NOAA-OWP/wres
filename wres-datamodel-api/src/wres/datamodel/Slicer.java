@@ -19,8 +19,8 @@ import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
+import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.datamodel.outputs.ScalarOutput;
-import wres.datamodel.outputs.VectorOutput;
 
 /**
  * A utility class for slicing/dicing and transforming datasets associated with verification metrics.
@@ -188,7 +188,7 @@ public interface Slicer
     Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> filterByRight( List<PairOfDoubleAndVectorOfDoubles> input );
 
     /**
-     * Returns a map of {@link ScalarOutput} for each component in the input map of {@link VectorOutput}. The slices are
+     * Returns a map of {@link ScalarOutput} for each component in the input map of {@link MultiValuedScoreOutput}. The slices are
      * mapped to their {@link MetricConstants} component identifier.
      * 
      * @param input the input map
@@ -196,7 +196,7 @@ public interface Slicer
      */
 
     Map<MetricConstants, MetricOutputMapByTimeAndThreshold<ScalarOutput>>
-            filterByMetricComponent( MetricOutputMapByTimeAndThreshold<VectorOutput> input );
+            filterByMetricComponent( MetricOutputMapByTimeAndThreshold<MultiValuedScoreOutput> input );
 
     /**
      * Produces a {@link List} of {@link PairOfDoubles} from a {@link List} of {@link PairOfDoubleAndVectorOfDoubles}

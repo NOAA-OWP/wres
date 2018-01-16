@@ -7,16 +7,15 @@ import java.util.SortedMap;
 import java.util.function.BiConsumer;
 
 /**
- * A sorted map of {@link MetricOutput} stored by a {@link Comparable} key in their natural order. Implements the same
- * read-only API as the {@link SortedMap}. However, for an immutable implementation, changes in the returned values are
- * not backed by this map.
+ * A sorted map of {@link MetricOutput} stored by a {@link Comparable} key in their natural order. Implements the 
+ * read-only portion of a {@link SortedMap}.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
  * @since 0.1
  */
 
-public interface MetricOutputMap<S extends Comparable<?>, T extends MetricOutput<?>>
+public interface MetricOutputMap<S extends Comparable<S>, T extends MetricOutput<?>>
 {
 
     /**

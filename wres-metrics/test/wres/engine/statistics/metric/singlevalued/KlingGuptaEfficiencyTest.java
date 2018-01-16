@@ -19,7 +19,7 @@ import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.outputs.VectorOutput;
+import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.engine.statistics.metric.singlevalued.KlingGuptaEfficiency.KlingGuptaEfficiencyBuilder;
@@ -86,9 +86,9 @@ public final class KlingGuptaEfficiencyTest
                     kge.getScoreOutputGroup() == ScoreOutputGroup.NONE );
 
         //Check the results
-        final VectorOutput actual = kge.apply( input );
+        final MultiValuedScoreOutput actual = kge.apply( input );
 
-        final VectorOutput expected = outF.ofVectorOutput( new double[] { 0.8921704394462281 }, m1 );
+        final MultiValuedScoreOutput expected = outF.ofMultiValuedScoreOutput( new double[] { 0.8921704394462281 }, m1 );
         assertTrue( "Actual: " + actual.getData().getDoubles()[0]
                     + ". Expected: "
                     + expected.getData().getDoubles()[0]

@@ -34,8 +34,8 @@ import wres.datamodel.outputs.MetricOutputAccessException;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
+import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.datamodel.outputs.ScalarOutput;
-import wres.datamodel.outputs.VectorOutput;
 import wres.io.config.ConfigHelper;
 
 /**
@@ -147,7 +147,7 @@ public class CommaSeparated
         SortedMap<TimeWindow, StringJoiner> rows = new TreeMap<>();
 
         MetricOutputMultiMapByTimeAndThreshold<ScalarOutput> scalarOutput = null;
-        MetricOutputMultiMapByTimeAndThreshold<VectorOutput> vectorOutput = null;
+        MetricOutputMultiMapByTimeAndThreshold<MultiValuedScoreOutput> vectorOutput = null;
 
         try
         {
@@ -274,13 +274,13 @@ public class CommaSeparated
 
     private static void appendVectorColumns(
             SortedMap<TimeWindow, StringJoiner> existingRows,
-            MetricOutputMultiMapByTimeAndThreshold<VectorOutput> output,
+            MetricOutputMultiMapByTimeAndThreshold<MultiValuedScoreOutput> output,
             DecimalFormat formatter )
     {
         StringJoiner headerRow = existingRows.get( HEADER_INDEX );
 
         for ( Map.Entry<MapKey<MetricConstants>,
-                MetricOutputMapByTimeAndThreshold<VectorOutput>> m
+                MetricOutputMapByTimeAndThreshold<MultiValuedScoreOutput>> m
                 : output.entrySet() )
         {
             Map<MetricConstants, MetricOutputMapByTimeAndThreshold<ScalarOutput>> helper
