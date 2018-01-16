@@ -20,58 +20,44 @@ import wres.io.reading.ReaderFactory;
  */
 public class ForecastSaver extends WRESCallable<List<IngestResult>>
 {
-	private static final Logger LOGGER = LoggerFactory.getLogger(ForecastSaver.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger( ForecastSaver.class );
 
-	private final DataSourceConfig.Source sourceConfig;
+    private final String filepath;
+    private final ProjectConfig projectConfig;
+    private final DataSourceConfig dataSourceConfig;
+    private final DataSourceConfig.Source sourceConfig;
+    private final List<Feature> specifiedFeatures;
 
-    public ForecastSaver(String filepath,
-                         ProjectConfig projectConfig,
-						 DataSourceConfig dataSourceConfig,
-						 DataSourceConfig.Source sourceConfig,
-						 List<Feature> specifiedFeatures)
+
+    public ForecastSaver( String filepath,
+                          ProjectConfig projectConfig,
+                          DataSourceConfig dataSourceConfig,
+                          DataSourceConfig.Source sourceConfig,
+                          List<Feature> specifiedFeatures )
     {
+        this.filepath = filepath;
+        this.projectConfig = projectConfig;
         this.dataSourceConfig = dataSourceConfig;
         this.sourceConfig = sourceConfig;
-        this.filepath = filepath;
         this.specifiedFeatures = specifiedFeatures;
-        this.projectConfig = projectConfig;
     }
 
-	/* (non-Javadoc)
-	 * @see java.lang.Runnable#run()
-	 */
-	@Override
-    public List<IngestResult> execute()
-    {
-		try
-		{
-            BasicSource source = ReaderFactory.getReader( this.projectConfig,
-                                                          this.filepath );
-
-			source.setDataSourceConfig(this.dataSourceConfig);
-
-			source.setSourceConfig( this.sourceConfig );
-
-			source.setSpecifiedFeatures(this.specifiedFeatures);
-
-            return source.saveForecast();
-		}
-        catch ( IOException e )
-        {
-            String message = "A forecast for the data at '"
-                             + this.filepath
-                             + "' could not be saved to the database.";
-            throw new RuntimeException( message, e );
-        }
-	}
-
-	private final String filepath;
-	private final DataSourceConfig dataSourceConfig;
-	private final List<Feature> specifiedFeatures;
-    private final ProjectConfig projectConfig;
 
     @Override
-    protected Logger getLogger () {
+    public List<IngestResult> execute() throws IOException
+    {
+        BasicSource source = ReaderFactory.getReader( this.projectConfig,
+                                                      this.filepath );
+        source.setDataSourceConfig( this.dataSourceConfig );
+        source.setSourceConfig( this.sourceConfig );
+        source.setSpecifiedFeatures( this.specifiedFeatures );
+        return source.saveForecast();
+    }
+
+
+    @Override
+    protected Logger getLogger()
+    {
         return ForecastSaver.LOGGER;
     }
 }
