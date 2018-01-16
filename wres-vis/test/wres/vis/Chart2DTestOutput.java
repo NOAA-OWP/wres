@@ -609,7 +609,7 @@ public class Chart2DTestOutput
         try
         {
             //Get an implementation of the factory to use for testing.
-            final DataFactory factory = DefaultDataFactory.getInstance();
+//            final DataFactory factory = DefaultDataFactory.getInstance();
 
             //Call the factory.
             final Map<Pair<TimeWindow, Threshold>, ChartEngine> engineMap = ChartEngineFactory.buildBoxPlotChartEngine( results,
@@ -671,7 +671,7 @@ public class Chart2DTestOutput
         try
         {
             //Get an implementation of the factory to use for testing.
-            final DataFactory factory = DefaultDataFactory.getInstance();
+//            final DataFactory factory = DefaultDataFactory.getInstance();
 
             //Call the factory.
             final Map<Pair<TimeWindow, Threshold>, ChartEngine> engineMap = ChartEngineFactory.buildBoxPlotChartEngine( results,
