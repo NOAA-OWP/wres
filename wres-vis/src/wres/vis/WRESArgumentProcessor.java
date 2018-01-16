@@ -298,9 +298,10 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
             {
                 final String dateFormat = argument.getFunctionParameterValues().get( 0 );
                 final String timeZoneStr = argument.getFunctionParameterValues().get( 1 );
-                Instant instant = Instant.ofEpochMilli(92554380000L);
                 HEFSTimeZoneTools.retrieveTimeZone( timeZoneStr );
-                DateTimeFormatter formatter = DateTimeFormatter.ofPattern( dateFormat ).withZone(HEFSTimeZoneTools.retrieveTimeZone( timeZoneStr ).toZoneId());
+                DateTimeFormatter formatter =
+                        DateTimeFormatter.ofPattern( dateFormat )
+                                         .withZone( HEFSTimeZoneTools.retrieveTimeZone( timeZoneStr ).toZoneId() );
                 return formatter.format( dateInstant );
             }
             else
