@@ -15,7 +15,7 @@ import wres.datamodel.time.TimeSeries;
  * @version 0.1
  * @since 0.3
  */
-public interface RegularTimeSeriesOfSingleValuedPairs extends SingleValuedPairs, TimeSeries<PairOfDoubles>
+public interface RegularTimeSeriesOfSingleValuedPairs extends TimeSeriesOfSingleValuedPairs
 {
 
     /**

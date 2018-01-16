@@ -59,9 +59,9 @@ import wres.datamodel.outputs.MetricOutputAccessException;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
+import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.ScalarOutput;
-import wres.datamodel.outputs.VectorOutput;
 import wres.engine.statistics.metric.ConfigMapper;
 import wres.engine.statistics.metric.MetricConfigurationException;
 import wres.engine.statistics.metric.MetricFactory;
@@ -706,7 +706,7 @@ public class Control implements Function<String[], Integer>
     }
 
     /**
-     * Processes a set of charts associated with {@link VectorOutput} across multiple metrics, time windows, and
+     * Processes a set of charts associated with {@link MultiValuedScoreOutput} across multiple metrics, time windows, and
      * thresholds, stored in a {@link MetricOutputMultiMapByTimeAndThreshold}. these.
      * 
      * @param feature the feature for which the chart is defined
@@ -717,7 +717,7 @@ public class Control implements Function<String[], Integer>
 
     private static void   processVectorCharts( final Feature feature,
                                                final ProjectConfigPlus projectConfigPlus,
-                                               final MetricOutputMultiMapByTimeAndThreshold<VectorOutput> vectorResults)
+                                               final MetricOutputMultiMapByTimeAndThreshold<MultiValuedScoreOutput> vectorResults)
     {
         //Check for results
         if(Objects.isNull(vectorResults))
@@ -731,7 +731,7 @@ public class Control implements Function<String[], Integer>
         // Build charts
         try
         {
-            for(final Map.Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<VectorOutput>> e: vectorResults.entrySet())
+            for ( final Map.Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<MultiValuedScoreOutput>> e : vectorResults.entrySet() )
             {
                 List<DestinationConfig> destinations =
                         ConfigHelper.getGraphicalDestinations( config );

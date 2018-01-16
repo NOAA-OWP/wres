@@ -22,9 +22,9 @@ import wres.datamodel.Threshold;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
+import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.ScalarOutput;
-import wres.datamodel.outputs.VectorOutput;
 
 /**
  * Tests the construction of a 3D chart of metric outputs. The building of the charts and images is tested via the unit
@@ -235,7 +235,7 @@ public class Chart2DTestOutput
         }
 
         //Construct some single-valued pairs
-        final MetricOutputMapByTimeAndThreshold<VectorOutput> input = Chart2DTestDataGenerator.getVectorMetricOutputMapByLeadThreshold();
+        final MetricOutputMapByTimeAndThreshold<MultiValuedScoreOutput> input = Chart2DTestDataGenerator.getVectorMetricOutputMapByLeadThreshold();
 
         try
         {

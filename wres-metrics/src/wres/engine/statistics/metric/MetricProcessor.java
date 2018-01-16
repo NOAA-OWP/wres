@@ -30,6 +30,7 @@ import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.Threshold;
 import wres.datamodel.Threshold.Operator;
+import wres.datamodel.inputs.InsufficientDataException;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.MetricInputSliceException;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
@@ -37,9 +38,9 @@ import wres.datamodel.inputs.pairs.PairedInput;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.MetricOutputForProject;
+import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.ScalarOutput;
-import wres.datamodel.outputs.VectorOutput;
 
 /**
  * <p>
@@ -135,10 +136,10 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume {@link SingleValuedPairs} and produce
-     * {@link VectorOutput}.
+     * {@link MultiValuedScoreOutput}.
      */
 
-    final MetricCollection<SingleValuedPairs, VectorOutput> singleValuedVector;
+    final MetricCollection<SingleValuedPairs, MultiValuedScoreOutput> singleValuedVector;
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume {@link SingleValuedPairs} and produce

@@ -6,7 +6,7 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.VectorOutput;
+import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricParameterException;
 
@@ -23,7 +23,7 @@ public class MeanSquareError<S extends SingleValuedPairs> extends SumOfSquareErr
 {
 
     @Override
-    public VectorOutput apply( final S s )
+    public MultiValuedScoreOutput apply( final S s )
     {
         if(Objects.isNull(s))
         {
@@ -90,12 +90,12 @@ public class MeanSquareError<S extends SingleValuedPairs> extends SumOfSquareErr
      * @return the mean square error without decomposition
      */
 
-    private VectorOutput getMSENoDecomp( final SingleValuedPairs s )
+    private MultiValuedScoreOutput getMSENoDecomp( final SingleValuedPairs s )
     {
         double mse = getSumOfSquareError( s ) / s.getData().size();
         //Metadata
         final MetricOutputMetadata metOut = getMetadata( s, s.getData().size(), MetricConstants.NONE, null );
-        return getDataFactory().ofVectorOutput( new double[] { mse }, metOut );
+        return getDataFactory().ofMultiValuedScoreOutput( new double[] { mse }, metOut );
     }
 
 }

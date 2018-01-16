@@ -3,7 +3,6 @@ package wres.datamodel.inputs.pairs;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
-import java.util.function.Predicate;
 
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.MetricInputException;
@@ -19,29 +18,8 @@ import wres.datamodel.time.TimeSeries;
  * @version 0.1
  * @since 0.3
  */
-public interface RegularTimeSeriesOfEnsemblePairs extends EnsemblePairs, TimeSeries<PairOfDoubleAndVectorOfDoubles>
+public interface RegularTimeSeriesOfEnsemblePairs extends TimeSeriesOfEnsemblePairs
 {
-
-    /**
-     * Returns a view of each ensemble trace as a {@link RegularTimeSeriesOfSingleValuedPairs}. The atomic time-series 
-     * are returned in trace order. Baseline data is not added to the trace view, because there is no guaranteed 
-     * connection between the trace views of the main dataset and the baseline dataset (e.g. they may contain a 
-     * different number of ensemble members).
-     * 
-     * @return an iterable view of the atomic time-series by ensemble trace, without any baseline data
-     */
-
-    Iterable<RegularTimeSeriesOfSingleValuedPairs> ensembleTraceIterator();
-    
-    /**
-     * Returns a {@link TimeSeries} whose elements are filtered according to the zero-based index of the ensemble trace 
-     * or null if no such time-series exist.
-     * 
-     * @param traceFilter the trace index filter
-     * @return a time-series associated with a specific trace or null
-     */
-
-    RegularTimeSeriesOfEnsemblePairs filterByTraceIndex( Predicate<Integer> traceFilter );    
 
     /**
      * Returns the baseline data as a {@link MetricInput} or null if no baseline is defined. 

@@ -4,7 +4,7 @@ import java.util.Objects;
 
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInput;
-import wres.datamodel.outputs.VectorOutput;
+import wres.datamodel.outputs.MultiValuedScoreOutput;
 
 /**
  * A generic implementation of an error score for that is decomposable.
@@ -14,7 +14,7 @@ import wres.datamodel.outputs.VectorOutput;
  * @since 0.1
  */
 
-public abstract class DecomposableDoubleErrorScore<S extends MetricInput<?>> extends Metric<S, VectorOutput>
+public abstract class DecomposableDoubleErrorScore<S extends MetricInput<?>> extends Metric<S, MultiValuedScoreOutput>
         implements Score
 {
 
@@ -42,7 +42,7 @@ public abstract class DecomposableDoubleErrorScore<S extends MetricInput<?>> ext
 
     public static abstract class DecomposableDoubleErrorScoreBuilder<S extends MetricInput<?>>
             extends
-            MetricBuilder<S, VectorOutput>
+            MetricBuilder<S, MultiValuedScoreOutput>
     {
         /**
          * The type of metric decomposition. See {@link ScoreOutputGroup}.

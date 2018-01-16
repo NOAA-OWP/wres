@@ -30,6 +30,7 @@ import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.MapKey;
+import wres.datamodel.outputs.MapOutput;
 import wres.datamodel.outputs.MatrixOutput;
 import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.MetricOutputException;
@@ -39,9 +40,9 @@ import wres.datamodel.outputs.MetricOutputMapByMetric;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold.MetricOutputMultiMapByTimeAndThresholdBuilder;
+import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.ScalarOutput;
-import wres.datamodel.outputs.VectorOutput;
 
 /**
  * A factory class for producing datasets associated with verification metrics.
@@ -319,16 +320,16 @@ public interface DataFactory
     }
 
     /**
-     * Return a {@link VectorOutput} with a default decomposition template of {@link ScoreOutputGroup#NONE}.
+     * Return a {@link MultiValuedScoreOutput} with a default decomposition template of {@link ScoreOutputGroup#NONE}.
      * 
      * @param output the output data
      * @param meta the metadata
-     * @return a {@link VectorOutput}
+     * @return a {@link MultiValuedScoreOutput}
      */
 
-    default VectorOutput ofVectorOutput( final double[] output, final MetricOutputMetadata meta )
+    default MultiValuedScoreOutput ofMultiValuedScoreOutput( final double[] output, final MetricOutputMetadata meta )
     {
-        return ofVectorOutput( output, ScoreOutputGroup.NONE, meta );
+        return ofMultiValuedScoreOutput( output, ScoreOutputGroup.NONE, meta );
     }
 
     /**
@@ -691,16 +692,16 @@ public interface DataFactory
     ScalarOutput ofScalarOutput( final double output, final MetricOutputMetadata meta );
 
     /**
-     * Return a {@link VectorOutput} with a prescribed decomposition template {@link ScoreOutputGroup}, which
+     * Return a {@link MultiValuedScoreOutput} with a prescribed decomposition template {@link ScoreOutputGroup}, which
      * maps the output to specific components in a specific order.
      * 
      * @param output the output data
      * @param template the template for the output
      * @param meta the metadata
-     * @return a {@link VectorOutput}
+     * @return a {@link MultiValuedScoreOutput}
      */
 
-    VectorOutput ofVectorOutput( final double[] output,
+    MultiValuedScoreOutput ofMultiValuedScoreOutput( final double[] output,
                                  final ScoreOutputGroup template,
                                  final MetricOutputMetadata meta );
 
@@ -742,6 +743,20 @@ public interface DataFactory
                                    MetricOutputMetadata meta,
                                    MetricDimension domainAxisDimension,
                                    MetricDimension rangeAxisDimension );
+    
+    /**
+     * Return a {@link MapOutput} that maps a key against a value.
+     * 
+     * @param <S> the key type
+     * @param <T> the output type
+     * @param output the output
+     * @param meta the output metadata
+     * @return a map output
+     * @throws MetricOutputException if any of the inputs are invalid
+     */
+
+    <S, T> MapOutput<S, T> ofMapOutput( Map<S, T> output,
+                                        MetricOutputMetadata meta );
 
     /**
      * Returns a {@link MapKey} to map a {@link MetricOutput} by an elementary key.

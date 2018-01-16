@@ -17,6 +17,8 @@ import wres.datamodel.inputs.pairs.RegularTimeSeriesOfEnsemblePairs.RegularTimeS
 import wres.datamodel.inputs.pairs.RegularTimeSeriesOfSingleValuedPairs;
 import wres.datamodel.inputs.pairs.RegularTimeSeriesOfSingleValuedPairs.RegularTimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairs;
+import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.time.TimeSeries;
@@ -55,8 +57,8 @@ public class TimeSeriesDemo
         //Create some default metadata for the time-series
         Metadata metaData = dataFactory.getMetadataFactory().getMetadata();
         //Build the atomic time-series
-        RegularTimeSeriesOfSingleValuedPairs timeSeries =
-                (RegularTimeSeriesOfSingleValuedPairs) builder.addData( firstId, firstValues )
+        TimeSeriesOfSingleValuedPairs timeSeries =
+                (TimeSeriesOfSingleValuedPairs) builder.addData( firstId, firstValues )
                                                               .setTimeStep( timeStep )
                                                               .setMetadata( metaData )
                                                               .build();
@@ -275,7 +277,7 @@ public class TimeSeriesDemo
                                                     .setMetadata( meta )
                                                     .build();
         //Iterate and test
-        RegularTimeSeriesOfEnsemblePairs regular = ts.filterByTraceIndex( q -> q.equals( 0 )
+        TimeSeriesOfEnsemblePairs regular = ts.filterByTraceIndex( q -> q.equals( 0 )
                                                                                || q.equals( 3 ) );
         //Print the filtered output by basis time
         for ( TimeSeries<PairOfDoubleAndVectorOfDoubles> next : regular.basisTimeIterator() )

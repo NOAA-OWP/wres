@@ -20,7 +20,8 @@ import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.RegularTimeSeriesOfEnsemblePairs;
-import wres.datamodel.inputs.pairs.RegularTimeSeriesOfSingleValuedPairs;
+import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairs;
+import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.time.TimeSeries;
@@ -408,8 +409,8 @@ public final class SafeRegularTimeSeriesOfEnsemblePairsTest
                 ts.filterByBasisTime( p -> p.equals( secondBasisTime ) )
                   .filterByDuration( q -> q.equals( Duration.ofDays( 3 ) ) );
 
-        RegularTimeSeriesOfEnsemblePairs regular =
-                ( (RegularTimeSeriesOfEnsemblePairs) filtered ).filterByTraceIndex( q -> q.equals( 0 )
+        TimeSeriesOfEnsemblePairs regular =
+                ( (TimeSeriesOfEnsemblePairs) filtered ).filterByTraceIndex( q -> q.equals( 0 )
                                                                                          || q.equals( 3 ) );
 
         assertTrue( "Unexpected number of durations in filtered time-series.", regular.getDurations().size() == 1 );
@@ -588,7 +589,7 @@ public final class SafeRegularTimeSeriesOfEnsemblePairsTest
         }
         try
         {
-            Iterator<RegularTimeSeriesOfSingleValuedPairs> it = ts.ensembleTraceIterator().iterator();
+            Iterator<TimeSeriesOfSingleValuedPairs> it = ts.ensembleTraceIterator().iterator();
             it.forEachRemaining( a -> a.equals( null ) );
             it.next();
             fail( "Expected a checked exception on iterating a time-series with no more ensemble traces left." );
@@ -618,7 +619,7 @@ public final class SafeRegularTimeSeriesOfEnsemblePairsTest
         }
         try
         {
-            Iterator<RegularTimeSeriesOfSingleValuedPairs> it = ts.ensembleTraceIterator().iterator();
+            Iterator<TimeSeriesOfSingleValuedPairs> it = ts.ensembleTraceIterator().iterator();
             it.next();
             it.remove();
             fail( "Expected a checked exception on attempting to remove an ensemble trace from an immutable "

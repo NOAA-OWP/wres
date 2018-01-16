@@ -35,13 +35,13 @@ class SafeRegularTimeSeriesOfPairs<T>
     private final Duration timeStep;
 
     /**
-     * A set of basis times. There are as many basis times as atomic time-series.
+     * A list of basis times. There are as many basis times as atomic time-series.
      */
 
     private final List<Instant> basisTimes;
 
     /**
-     * A set of basis times associated with a baseline dataset. There are as many basis times as atomic time-series.
+     * A list of basis times associated with a baseline dataset. There are as many basis times as atomic time-series.
      */
 
     private final List<Instant> basisTimesBaseline;

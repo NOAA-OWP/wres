@@ -12,7 +12,7 @@ import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.inputs.pairs.PairedInput;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.VectorOutput;
+import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.engine.statistics.metric.discreteprobability.BrierScore;
@@ -59,8 +59,8 @@ public final class BrierScoreTest
                                            metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ) );
 
         //Check the results       
-        final VectorOutput actual = bs.apply( (DiscreteProbabilityPairs) input );
-        final VectorOutput expected = outF.ofVectorOutput( new double[] { 0.26 }, m1 );
+        final MultiValuedScoreOutput actual = bs.apply( (DiscreteProbabilityPairs) input );
+        final MultiValuedScoreOutput expected = outF.ofMultiValuedScoreOutput( new double[] { 0.26 }, m1 );
         assertTrue( "Actual: " + actual.getData().getDoubles()[0]
                     + ". Expected: "
                     + expected.getData().getDoubles()[0]

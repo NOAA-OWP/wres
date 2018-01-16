@@ -32,15 +32,16 @@ import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.MapKey;
+import wres.datamodel.outputs.MapOutput;
 import wres.datamodel.outputs.MatrixOutput;
 import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold.MetricOutputForProjectByTimeAndThresholdBuilder;
 import wres.datamodel.outputs.MetricOutputMapByMetric;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
+import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.ScalarOutput;
-import wres.datamodel.outputs.VectorOutput;
 
 /**
  * A default factory class for producing metric inputs.
@@ -266,11 +267,11 @@ public class DefaultDataFactory implements DataFactory
     }
 
     @Override
-    public VectorOutput ofVectorOutput( final double[] output,
+    public MultiValuedScoreOutput ofMultiValuedScoreOutput( final double[] output,
                                         final ScoreOutputGroup template,
                                         final MetricOutputMetadata meta )
     {
-        return new SafeVectorOutput( vectorOf( output ), template, meta );
+        return new SafeMultiValuedScoreOutput( vectorOf( output ), template, meta );
     }
 
     @Override
@@ -299,6 +300,13 @@ public class DefaultDataFactory implements DataFactory
         return new SafeBoxPlotOutput( output, probabilities, meta, domainAxisDimension, rangeAxisDimension );
     }
 
+
+    @Override
+    public <S, T> MapOutput<S, T> ofMapOutput( Map<S, T> output, MetricOutputMetadata meta )
+    {
+        return new SafeMapOutput<>(output, meta);
+    }
+    
     @Override
     public <T extends MetricOutput<?>> MetricOutputMapByMetric<T> ofMap( final List<T> input )
     {
@@ -529,7 +537,7 @@ public class DefaultDataFactory implements DataFactory
         }
         return SafeMatrixOfDoubles.of( input.getDoubles() );
     }
-
+    
     /**
      * Default implementation of a pair of booleans.
      */
