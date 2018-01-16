@@ -16,6 +16,7 @@ import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DataSources;
+import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
 import wres.io.reading.fews.PIXMLReader;
 import wres.util.Strings;
@@ -27,11 +28,11 @@ public final class ZippedPIXMLIngest extends WRESCallable<List<IngestResult>>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(ZippedPIXMLIngest.class);
 
-    private final byte[] content;
     private final String fileName;
-    private final List<Feature> specifiedFeatures;
+    private final byte[] content;
     private final DataSourceConfig dataSourceConfig;
     private final DataSourceConfig.Source sourceConfig;
+    private final List<Feature> specifiedFeatures;
     private final ProjectConfig projectConfig;
 
     public ZippedPIXMLIngest ( final String fileName,
@@ -50,7 +51,7 @@ public final class ZippedPIXMLIngest extends WRESCallable<List<IngestResult>>
     }
 
     @Override
-    public List<IngestResult> execute ()
+    public List<IngestResult> execute() throws IOException
     {
         List<IngestResult> result = new ArrayList<>( 1 );
         boolean wasFoundInCache;
@@ -84,19 +85,19 @@ public final class ZippedPIXMLIngest extends WRESCallable<List<IngestResult>>
                                                            this.getDataSourceConfig(),
                                                            hash,
                                                            wasFoundInCache );
-
             result.add( ingestResult );
         }
-        catch ( SQLException | IOException  e )
+        catch ( SQLException se )
         {
-            throw new RuntimeException( "Failed to ingest", e );
+            throw new IngestException( "Failed to ingest", se );
         }
 
         return Collections.unmodifiableList( result );
     }
 
     @Override
-    protected Logger getLogger () {
+    protected Logger getLogger()
+    {
         return ZippedPIXMLIngest.LOGGER;
     }
 
