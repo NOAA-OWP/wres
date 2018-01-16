@@ -29,8 +29,8 @@ import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
+import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.datamodel.outputs.ScalarOutput;
-import wres.datamodel.outputs.VectorOutput;
 
 /**
  * Default implementation of a utility class for slicing/dicing and transforming datasets associated with verification
@@ -294,7 +294,7 @@ class DefaultSlicer implements Slicer
 
     @Override
     public Map<MetricConstants, MetricOutputMapByTimeAndThreshold<ScalarOutput>>
-            filterByMetricComponent( MetricOutputMapByTimeAndThreshold<VectorOutput> input )
+            filterByMetricComponent( MetricOutputMapByTimeAndThreshold<MultiValuedScoreOutput> input )
     {
         Objects.requireNonNull( input, NULL_INPUT );
         Map<MetricConstants, Map<Pair<TimeWindow, Threshold>, ScalarOutput>> sourceMap =

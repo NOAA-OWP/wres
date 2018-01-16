@@ -9,7 +9,7 @@ import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.VectorOutput;
+import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 
@@ -25,7 +25,7 @@ public class MeanSquareErrorSkillScore<S extends SingleValuedPairs> extends Mean
 {
 
     @Override
-    public VectorOutput apply(final S s)
+    public MultiValuedScoreOutput apply(final S s)
     {
         if(Objects.isNull(s))
         {
@@ -54,7 +54,7 @@ public class MeanSquareErrorSkillScore<S extends SingleValuedPairs> extends Mean
         //Metadata
         final MetricOutputMetadata metOut =
                                           getMetadata(s, s.getData().size(), MetricConstants.NONE, baselineIdentifier);
-        return getDataFactory().ofVectorOutput(result, metOut);
+        return getDataFactory().ofMultiValuedScoreOutput(result, metOut);
     }
 
     @Override

@@ -8,6 +8,7 @@ import java.util.Objects;
 import java.util.Set;
 
 import wres.datamodel.outputs.BoxPlotOutput;
+import wres.datamodel.outputs.MapOutput;
 import wres.datamodel.outputs.MatrixOutput;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.ScalarOutput;
@@ -204,6 +205,12 @@ public enum MetricConstants
      */
     
     VOLUMETRIC_EFFICIENCY ( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCALAR ),
+    
+    /**
+     * Identifier for the Time-to-Peak Error.
+     */
+    
+    TIME_TO_PEAK_ERROR ( MetricInputGroup.SINGLE_VALUED_TIME_SERIES, MetricOutputGroup.MAP ),    
     
     /**
      * Indicator for no decomposition.
@@ -449,6 +456,12 @@ public enum MetricConstants
          */
 
         SINGLE_VALUED,
+        
+        /**
+         * Metrics that consume single-valued time-series inputs.
+         */
+
+        SINGLE_VALUED_TIME_SERIES,
 
         /**
          * Metrics that consume discrete probability inputs.
@@ -536,7 +549,13 @@ public enum MetricConstants
          * Metrics that produce a {@link BoxPlotOutput}.
          */
 
-        BOXPLOT;
+        BOXPLOT,
+        
+        /**
+         * Metrics that produce a {@link MapOutput}.
+         */
+
+        MAP;
 
         /**
          * Returns all {@link MetricConstants} associated with the current {@link MetricOutputGroup}.

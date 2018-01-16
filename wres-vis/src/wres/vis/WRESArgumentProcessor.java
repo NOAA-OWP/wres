@@ -1,8 +1,7 @@
 package wres.vis;
 
-import java.text.SimpleDateFormat;
 import java.time.Instant;
-import java.util.Calendar;
+import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -13,7 +12,6 @@ import ohd.hseb.hefs.utils.arguments.Argument;
 import ohd.hseb.hefs.utils.arguments.DefaultArgumentsProcessor;
 import ohd.hseb.hefs.utils.datetime.HEFSTimeZoneTools;
 import ohd.hseb.hefs.utils.plugins.UniqueGenericParameterList;
-import ohd.hseb.util.misc.HCalendar;
 import ohd.hseb.util.misc.HString;
 import wres.config.generated.PlotTypeSelection;
 import wres.datamodel.DatasetIdentifier;
@@ -21,6 +19,7 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.Threshold;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetricOutputMetadata;
+import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
@@ -34,19 +33,19 @@ import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 public class WRESArgumentProcessor extends DefaultArgumentsProcessor
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( ChartEngineFactory.class );
-    private final static String EARLIEST_DATE_TO_TEXT = "earliestDateToText";
-    private final static String LATEST_DATE_TO_TEXT = "latestDateToText";
-    private final static String POOLING_WINDOW = "dataPoolingWindow";
+    private static final String EARLIEST_DATE_TO_TEXT = "earliestDateToText";
+    private static final String LATEST_DATE_TO_TEXT = "latestDateToText";
+    private static final String POOLING_WINDOW = "dataPoolingWindow";
 
     /**
      * Basis for earliestDateToText function.
      */
-    private Long earliestDateLong = null;
+    private Instant earliestInstant = null;
 
     /**
      * Basis for latestDateToText function.
      */
-    private Long latestDateLong = null;
+    private Instant latestInstant = null;
 
     /**
      * An arguments processor intended for use in displaying single-valued pairs. It is assumed that there is 
@@ -63,32 +62,11 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         addArgument( "inputUnitsLabelSuffix", " [" + meta.getDimension() + "]" );
         addArgument( "inputUnits", meta.getDimension().toString() );
 
-        if ( meta.hasIdentifier() )
-        {
-            final DatasetIdentifier identifier = meta.getIdentifier();
-            addArgument( "locationName", identifier.getGeospatialID() );
-            addArgument( "variableName", identifier.getVariableID() );
-            addArgument( "primaryScenario", identifier.getScenarioID() );
-        }
+        recordIdentifierArguments( meta );
 
-        if ( meta.hasTimeWindow() )
-        {
-            if ( meta.getTimeWindow().getEarliestTime().isAfter( Instant.MIN ) )
-            {
-                earliestDateLong = meta.getTimeWindow().getEarliestTime().toEpochMilli();
-            }
-            if ( meta.getTimeWindow().getLatestTime().isBefore( Instant.MAX ) )
-            {
-                latestDateLong = meta.getTimeWindow().getLatestTime().toEpochMilli();
-            }
-            addArgument( "earliestLeadTimeHours", "" + meta.getTimeWindow().getEarliestLeadTimeInHours() );
-            addArgument( "latestLeadTimeHours", "" + meta.getTimeWindow().getLatestLeadTimeInHours() );
-            addArgument( "referenceTime", meta.getTimeWindow().getReferenceTime().toString() ); //#44873
-        }
-        else
-        {
-            addArgument( "referenceTime", "" );
-        }
+        recordWindowingArguments( meta );
+
+        initializeFunctionInformation();
     }
 
     /**
@@ -103,24 +81,9 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         super();
         MetricOutputMetadata meta = displayPlotInput.getMetadata();
         extractStandardArgumentsFromMetadata( meta );
-        if ( meta.hasTimeWindow() )
-        {
-            if ( meta.getTimeWindow().getEarliestTime().isAfter( Instant.MIN ) )
-            {
-                earliestDateLong = meta.getTimeWindow().getEarliestTime().toEpochMilli();
-            }
-            if ( meta.getTimeWindow().getLatestTime().isBefore( Instant.MAX ) )
-            {
-                latestDateLong = meta.getTimeWindow().getLatestTime().toEpochMilli();
-            }
-            addArgument( "earliestLeadTimeHours", "" + meta.getTimeWindow().getEarliestLeadTimeInHours() );
-            addArgument( "latestLeadTimeHours", "" + meta.getTimeWindow().getLatestLeadTimeInHours() );
-            addArgument( "referenceTime", meta.getTimeWindow().getReferenceTime().toString() ); //#44873
-        }
-        else
-        {
-            addArgument( "referenceTime", "" );
-        }
+
+        recordWindowingArguments( meta );
+
         addArgument( "diagramInstanceDescription",
                      "at Lead Hour " + inputKeyInstance.getLeft().getLatestLeadTimeInHours()
                                                    + " for "
@@ -129,6 +92,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
                      HString.buildStringFromArray( displayPlotInput.getProbabilities().getDoubles(), ", " )
                             .replaceAll( "0.0,", "min," )
                             .replaceAll( "1.0", "max" ) );
+
         initializeFunctionInformation();
     }
 
@@ -147,31 +111,15 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
 
         if ( plotType.equals( PlotTypeSelection.POOLING_WINDOW ) )
         {
-            earliestDateLong = displayedPlotInput.firstKey().getLeft().getEarliestTime().toEpochMilli();
-            latestDateLong = displayedPlotInput.lastKey().getLeft().getLatestTime().toEpochMilli();
-            addArgument( "earliestLeadTimeHours",
-                         "" + displayedPlotInput.firstKey().getLeft().getEarliestLeadTimeInHours() );
-            addArgument( "latestLeadTimeHours",
-                         "" + displayedPlotInput.lastKey().getLeft().getLatestLeadTimeInHours() );
-            addArgument( "referenceTime", displayedPlotInput.firstKey().getLeft().getReferenceTime().toString() ); //#44873
-        }
-        else if ( meta.hasTimeWindow() )
-        {
-            if ( meta.getTimeWindow().getEarliestTime().isAfter( Instant.MIN ) )
-            {
-                earliestDateLong = meta.getTimeWindow().getEarliestTime().toEpochMilli();
-            }
-            if ( meta.getTimeWindow().getLatestTime().isBefore( Instant.MAX ) )
-            {
-                latestDateLong = meta.getTimeWindow().getLatestTime().toEpochMilli();
-            }
-            addArgument( "earliestLeadTimeHours", "" + meta.getTimeWindow().getEarliestLeadTimeInHours() );
-            addArgument( "latestLeadTimeHours", "" + meta.getTimeWindow().getLatestLeadTimeInHours() );
-            addArgument( "referenceTime", meta.getTimeWindow().getReferenceTime().toString() ); //#44873
+            recordWindowingArguments( displayedPlotInput.firstKey().getLeft().getEarliestTime(),
+                                      displayedPlotInput.lastKey().getLeft().getLatestTime(),
+                                      displayedPlotInput.firstKey().getLeft().getEarliestLeadTimeInHours(),
+                                      displayedPlotInput.lastKey().getLeft().getLatestLeadTimeInHours(),
+                                      displayedPlotInput.firstKey().getLeft().getReferenceTime() );
         }
         else
         {
-            addArgument( "referenceTime", "" );
+            recordWindowingArguments( meta );
         }
 
         initializeFunctionInformation();
@@ -191,13 +139,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         addArgument( "outputUnitsLabelSuffix", " [" + meta.getDimension() + "]" );
         addArgument( "inputUnitsLabelSuffix", " [" + meta.getInputDimension() + "]" );
 
-        if ( meta.hasIdentifier() )
-        {
-            final DatasetIdentifier identifier = meta.getIdentifier();
-            addArgument( "locationName", identifier.getGeospatialID() );
-            addArgument( "variableName", identifier.getVariableID() );
-            addArgument( "primaryScenario", identifier.getScenarioID() );
-        }
+        recordIdentifierArguments( meta );
 
         //I could create a helper method to handle this wrapping, but I don't think this will be used outside of this context,
         //so why bother?  (This relates to an email James wrote.)
@@ -209,6 +151,67 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         {
             addArgument( "metricComponentNameSuffix", meta.getMetricComponentID().toString() );
         }
+    }
+
+    /**
+     * Record the identifier arguments based on the metadata.  This will do nothing if the metadata provides no identifier.
+     * @param meta
+     */
+    private void recordIdentifierArguments( final Metadata meta )
+    {
+        if ( meta.hasIdentifier() )
+        {
+            final DatasetIdentifier identifier = meta.getIdentifier();
+            addArgument( "locationName", identifier.getGeospatialID() );
+            addArgument( "variableName", identifier.getVariableID() );
+            addArgument( "primaryScenario", identifier.getScenarioID() );
+        }
+    }
+
+    private void recordWindowingArguments( final Metadata meta )
+    {
+        if ( meta.hasTimeWindow() )
+        {
+            earliestInstant = meta.getTimeWindow().getEarliestTime();
+            latestInstant = meta.getTimeWindow().getLatestTime();
+            addArgument( "earliestLeadTimeHours", Long.toString( meta.getTimeWindow().getEarliestLeadTimeInHours() ) );
+            addArgument( "latestLeadTimeHours", Long.toString( meta.getTimeWindow().getLatestLeadTimeInHours() ) );
+            addArgument( "referenceTime", meta.getTimeWindow().getReferenceTime().toString() ); //#44873
+
+            recordWindowingArguments( meta.getTimeWindow().getEarliestTime(),
+                                      meta.getTimeWindow().getLatestTime(),
+                                      meta.getTimeWindow().getEarliestLeadTimeInHours(),
+                                      meta.getTimeWindow().getLatestLeadTimeInHours(),
+                                      meta.getTimeWindow().getReferenceTime() );
+        }
+        else
+        {
+            addArgument( "referenceTime", "" );
+        }
+    }
+
+    //XXX HANK -- Think about this when you have a chance.  Basically, there are two options:  
+    //arguments pulled from metadata; arguments pulled from displayed data.  Considerations:
+    //want to avoid using the same strings (argument names) repeatedly.  
+    /**
+     * Record the pooling window arguments and attributes from the meta data or provided overrides.  
+     * @param meta
+     * @param usedEarliestLeadTimeInHours Earliest lead time to use IN HOURS!
+     * @param usedLatestLeadTimeInHours Latest lead time to use IN HOURS!
+     * @param usedReferenceTime The reference time system for the pooling windows.
+     */
+    private void recordWindowingArguments(
+                                           Instant earliestTime,
+                                           Instant latestTime,
+                                           long usedEarliestLeadTimeInHours,
+                                           long usedLatestLeadTimeInHours,
+                                           ReferenceTime usedReferenceTime )
+    {
+        earliestInstant = earliestTime;
+        latestInstant = latestTime;
+        addArgument( "earliestLeadTimeHours", Long.toString( usedEarliestLeadTimeInHours ) );
+        addArgument( "latestLeadTimeHours", Long.toString( usedLatestLeadTimeInHours ) );
+        addArgument( "referenceTime", usedReferenceTime.toString() ); //#44873
     }
 
     /**
@@ -304,9 +307,9 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * @param dateInMillis the time in milliseconds from the epoch
      * @return Date function processed value
      */
-    private String processDateFunction( final Argument argument, Long dateInMillis )
+    private String processDateFunction( final Argument argument, Instant dateInstant )
     {
-        if ( dateInMillis == null )
+        if ( dateInstant == null )
         {
             LOGGER.warn( "Date for argument function " + argument.getArgumentName()
                          + " is not provided with plotting meta data." );
@@ -316,12 +319,13 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         {
             if ( argument.getFunctionParameterValues().size() == 2 )
             {
-                final Calendar cal = HCalendar.computeCalendarFromMilliseconds( dateInMillis );
                 final String dateFormat = argument.getFunctionParameterValues().get( 0 );
                 final String timeZoneStr = argument.getFunctionParameterValues().get( 1 );
-                final SimpleDateFormat formatter = new SimpleDateFormat( dateFormat );
-                formatter.setTimeZone( HEFSTimeZoneTools.retrieveTimeZone( timeZoneStr ) );
-                return formatter.format( cal.getTime() );
+                HEFSTimeZoneTools.retrieveTimeZone( timeZoneStr );
+                DateTimeFormatter formatter =
+                        DateTimeFormatter.ofPattern( dateFormat )
+                                         .withZone( HEFSTimeZoneTools.retrieveTimeZone( timeZoneStr ).toZoneId() );
+                return formatter.format( dateInstant );
             }
             else
             {
@@ -330,7 +334,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
                 return null;
             }
         }
-        catch ( final IllegalArgumentException e )
+        catch ( final Exception e )
         {
             LOGGER.warn( "Date format is invalid for " + argument.getArgumentName()
                          + " function; message: "
@@ -341,22 +345,23 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
 
     private String processPoolingWindowFunction( final Argument argument )
     {
-        if ( ( earliestDateLong == null ) && ( latestDateLong == null ) )
+        if ( ( ( earliestInstant == null ) || ( !earliestInstant.isAfter( Instant.MIN ) ) )
+             && ( ( latestInstant == null ) || ( !latestInstant.isBefore( Instant.MAX ) ) ) )
         {
             return "Window is Unconstrained";
         }
-        else if ( earliestDateLong == null )
+        else if ( ( earliestInstant == null ) || ( !earliestInstant.isAfter( Instant.MIN ) ) )
         {
-            return "Before " + this.processDateFunction( argument, latestDateLong );
+            return "Before " + this.processDateFunction( argument, latestInstant );
         }
-        else if ( latestDateLong == null )
+        else if ( ( latestInstant == null ) || ( !latestInstant.isBefore( Instant.MAX ) ) )
         {
-            return "After " + this.processDateFunction( argument, earliestDateLong );
+            return "After " + this.processDateFunction( argument, earliestInstant );
         }
         else
         {
-            return this.processDateFunction( argument, earliestDateLong ) + " - "
-                   + this.processDateFunction( argument, latestDateLong );
+            return this.processDateFunction( argument, earliestInstant ) + " - "
+                   + this.processDateFunction( argument, latestInstant );
         }
     }
 
@@ -365,11 +370,11 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
     {
         if ( argument.getArgumentName().equals( EARLIEST_DATE_TO_TEXT ) )
         {
-            return this.processDateFunction( argument, earliestDateLong );
+            return this.processDateFunction( argument, earliestInstant );
         }
         else if ( argument.getArgumentName().equals( LATEST_DATE_TO_TEXT ) )
         {
-            return this.processDateFunction( argument, latestDateLong );
+            return this.processDateFunction( argument, latestInstant );
         }
         else if ( argument.getArgumentName().equals( POOLING_WINDOW ) )
         {

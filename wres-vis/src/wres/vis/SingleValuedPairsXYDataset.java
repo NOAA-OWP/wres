@@ -12,6 +12,7 @@ import wres.datamodel.inputs.pairs.SingleValuedPairs;
 //TODO Note that this needs further work whenever we let wres-vis build scatter plots for display.
 //Specifically, we need to think about what the legend entry should look like (see below for a first attempt)
 //as well as how to handle multiple sereis being plotted (i.e., how to store the data.).
+@SuppressWarnings( "serial" )
 public class SingleValuedPairsXYDataset extends WRESAbstractXYDataset<SingleValuedPairs, SingleValuedPairs> //implements DomainInfo, XisSymbolic, RangeInfo
 {
     public SingleValuedPairsXYDataset(final SingleValuedPairs input)

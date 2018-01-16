@@ -35,6 +35,7 @@ import org.jfree.data.xy.XYDataset;
  *            {@link WRESAbstractXYDataset#WRESAbstractXYDataset(Object)}. Most often, this will be identical to the
  *            plot data generic type.
  */
+@SuppressWarnings( "serial" )
 public abstract class WRESAbstractXYDataset<T, U> extends AbstractIntervalXYDataset
 {
     /**

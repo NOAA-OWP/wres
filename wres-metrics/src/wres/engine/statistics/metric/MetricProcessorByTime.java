@@ -34,7 +34,7 @@ import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold.MetricOut
 import wres.datamodel.outputs.MetricOutputMapByMetric;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.ScalarOutput;
-import wres.datamodel.outputs.VectorOutput;
+import wres.datamodel.outputs.MultiValuedScoreOutput;
 
 /**
  * A {@link MetricProcessor} that processes and stores metric results by {@link TimeWindow}.
@@ -132,7 +132,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
          * Vector results.
          */
 
-        private final ConcurrentMap<Pair<TimeWindow, Threshold>, List<Future<MetricOutputMapByMetric<VectorOutput>>>> vector =
+        private final ConcurrentMap<Pair<TimeWindow, Threshold>, List<Future<MetricOutputMapByMetric<MultiValuedScoreOutput>>>> vector =
                 new ConcurrentHashMap<>();
         /**
          * Multivector results.
@@ -200,7 +200,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
              * Vector results.
              */
 
-            private final ConcurrentMap<Pair<TimeWindow, Threshold>, List<Future<MetricOutputMapByMetric<VectorOutput>>>> vector =
+            private final ConcurrentMap<Pair<TimeWindow, Threshold>, List<Future<MetricOutputMapByMetric<MultiValuedScoreOutput>>>> vector =
                     new ConcurrentHashMap<>();
             /**
              * Multivector results.
@@ -250,7 +250,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
             }
 
             /**
-             * Adds a set of future {@link VectorOutput} to the appropriate internal store.
+             * Adds a set of future {@link MultiValuedScoreOutput} to the appropriate internal store.
              * 
              * @param key the key
              * @param value the future result
@@ -258,9 +258,9 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
              */
 
             MetricFuturesByTimeBuilder addVectorOutput( Pair<TimeWindow, Threshold> key,
-                                                        Future<MetricOutputMapByMetric<VectorOutput>> value )
+                                                        Future<MetricOutputMapByMetric<MultiValuedScoreOutput>> value )
             {
-                List<Future<MetricOutputMapByMetric<VectorOutput>>> result =
+                List<Future<MetricOutputMapByMetric<MultiValuedScoreOutput>>> result =
                         vector.putIfAbsent( key, new ArrayList<>( Arrays.asList( value ) ) );
                 if ( Objects.nonNull( result ) )
                 {

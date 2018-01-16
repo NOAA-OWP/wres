@@ -36,9 +36,9 @@ import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
+import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.ScalarOutput;
-import wres.datamodel.outputs.VectorOutput;
 
 public abstract class Chart2DTestDataGenerator
 {
@@ -166,17 +166,17 @@ public abstract class Chart2DTestDataGenerator
     }
 
     /**
-     * Returns a {@link MetricOutputMapByTimeAndThreshold} of {@link VectorOutput} comprising the CRPSS for various
-     * thresholds and forecast lead times. Reads the input data from
+     * Returns a {@link MetricOutputMapByTimeAndThreshold} of {@link MultiValuedScoreOutput} comprising the CRPSS for 
+     * various thresholds and forecast lead times. Reads the input data from
      * testinput/chart2DTest/getMetricOutputMapByLeadThreshold.xml.
      * 
      * @return an output map of verification scores
      */
-    static MetricOutputMapByTimeAndThreshold<VectorOutput> getVectorMetricOutputMapByLeadThreshold()
+    static MetricOutputMapByTimeAndThreshold<MultiValuedScoreOutput> getVectorMetricOutputMapByLeadThreshold()
     {
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
         final MetadataFactory metaFactory = outputFactory.getMetadataFactory();
-        final Map<Pair<TimeWindow, Threshold>, VectorOutput> rawData = new TreeMap<>();
+        final Map<Pair<TimeWindow, Threshold>, MultiValuedScoreOutput> rawData = new TreeMap<>();
     
         try
         {
@@ -223,7 +223,7 @@ public abstract class Chart2DTestDataGenerator
                     //Build the scalar result
                     final MetricResult result = t.getResult( f );
                     final double[] res = ( (DoubleMatrix1DResult) result ).getResult().toArray();
-                    final VectorOutput value = outputFactory.ofVectorOutput( res, meta );
+                    final MultiValuedScoreOutput value = outputFactory.ofMultiValuedScoreOutput( res, meta );
     
                     //Append result
                     rawData.put( key, value );

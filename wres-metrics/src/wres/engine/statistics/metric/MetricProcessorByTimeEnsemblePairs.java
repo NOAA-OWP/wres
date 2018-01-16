@@ -22,7 +22,6 @@ import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.Slicer;
 import wres.datamodel.Threshold;
 import wres.datamodel.inputs.InsufficientDataException;
-import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.MetricInputSliceException;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
@@ -35,9 +34,9 @@ import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMapByMetric;
+import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.ScalarOutput;
-import wres.datamodel.outputs.VectorOutput;
 import wres.engine.statistics.metric.MetricProcessorByTime.MetricFuturesByTime.MetricFuturesByTimeBuilder;
 
 /**
@@ -56,10 +55,10 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume {@link DiscreteProbabilityPairs} and produce
-     * {@link VectorOutput}.
+     * {@link MultiValuedScoreOutput}.
      */
 
-    private final MetricCollection<DiscreteProbabilityPairs, VectorOutput> discreteProbabilityVector;
+    private final MetricCollection<DiscreteProbabilityPairs, MultiValuedScoreOutput> discreteProbabilityVector;
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume {@link DichotomousPairs} and produce
@@ -75,10 +74,10 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
     private final MetricCollection<EnsemblePairs, ScalarOutput> ensembleScalar;
 
     /**
-     * A {@link MetricCollection} of {@link Metric} that consume {@link EnsemblePairs} and produce {@link VectorOutput}.
+     * A {@link MetricCollection} of {@link Metric} that consume {@link EnsemblePairs} and produce {@link MultiValuedScoreOutput}.
      */
 
-    private final MetricCollection<EnsemblePairs, VectorOutput> ensembleVector;
+    private final MetricCollection<EnsemblePairs, MultiValuedScoreOutput> ensembleVector;
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume {@link EnsemblePairs} and produce
@@ -175,7 +174,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
      * @param metricExecutor an optional {@link ExecutorService} for executing metrics. Defaults to the 
      *            {@link ForkJoinPool#commonPool()} 
      * @param mergeList a list of {@link MetricOutputGroup} whose outputs should be retained and merged across calls to
-     *            {@link #apply(MetricInput)}
+     *            {@link #apply(EnsemblePairs)}
      * @throws MetricConfigurationException if the metrics are configured incorrectly
      */
 

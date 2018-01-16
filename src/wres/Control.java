@@ -59,9 +59,9 @@ import wres.datamodel.outputs.MetricOutputAccessException;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
+import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.ScalarOutput;
-import wres.datamodel.outputs.VectorOutput;
 import wres.engine.statistics.metric.ConfigMapper;
 import wres.engine.statistics.metric.MetricConfigurationException;
 import wres.engine.statistics.metric.MetricFactory;
@@ -636,77 +636,98 @@ public class Control implements Function<String[], Integer>
      * @throws WresProcessingException when an error occurs during processing
      */
 
-    private static void   processScalarCharts( final Feature feature,
-                                               final ProjectConfigPlus projectConfigPlus,
-                                               final MetricOutputMultiMapByTimeAndThreshold<ScalarOutput> scalarResults)
+    private static void processScalarCharts( final Feature feature,
+                                             final ProjectConfigPlus projectConfigPlus,
+                                             final MetricOutputMultiMapByTimeAndThreshold<ScalarOutput> scalarResults )
     {
 
-        //Check for results
-        if(Objects.isNull(scalarResults))
+        // Check for results
+        if ( Objects.isNull( scalarResults ) )
         {
-            LOGGER.warn("No scalar outputs from which to generate charts.");
+            LOGGER.warn( "No scalar outputs from which to generate charts." );
             return;
         }
 
         ProjectConfig config = projectConfigPlus.getProjectConfig();
+        // Iterate through each metric 
+        for ( final Map.Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<ScalarOutput>> e : scalarResults.entrySet() )
+        {
+            List<DestinationConfig> destinations =
+                    ConfigHelper.getGraphicalDestinations( config );
+            // Iterate through each destination
+            for ( DestinationConfig destConfig : destinations )
+            {
+                writeScalarChart( feature, projectConfigPlus, destConfig, e.getKey().getKey(), e.getValue() );
+            }
+        }
+    }
+    
+    /**
+     * Writes a set of charts associated with {@link ScalarOutput} for a single metric and time window, stored in a 
+     * {@link MetricOutputMultiMapByTimeAndThreshold}.
+     * 
+     * @param feature the feature
+     * @param projectConfigPlus the project configuration
+     * @param destConfig the destination configuration for the written output
+     * @param metricId the metric identifier
+     * @param scalarResults the result containing the metric output
+     * @throws WresProcessingException when an error occurs during writing
+     */
 
+    private static void writeScalarChart( Feature feature,
+                                          ProjectConfigPlus projectConfigPlus,
+                                          DestinationConfig destConfig,
+                                          MetricConstants metricId,
+                                          MetricOutputMapByTimeAndThreshold<ScalarOutput> scalarResults )
+    {
         // Build charts
         try
         {
-            for(final Map.Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<ScalarOutput>> e: scalarResults.entrySet())
+            String graphicsString = projectConfigPlus.getGraphicsStrings().get( destConfig );
+            // Build the chart engine
+            MetricConfig nextConfig = getNamedConfigOrAllValid( metricId, projectConfigPlus.getProjectConfig() );
+            // Default to global type parameter
+            PlotTypeSelection plotType = destConfig.getGraphical().getPlotType();
+            String templateResourceName = null;
+            if ( Objects.nonNull( nextConfig ) )
             {
-                List<DestinationConfig> destinations =
-                        ConfigHelper.getGraphicalDestinations( config );
-
-                for ( DestinationConfig dest : destinations )
+                // Local type parameter
+                if ( nextConfig.getPlotType() != null )
                 {
-                    final String graphicsString = projectConfigPlus.getGraphicsStrings().get(dest);
-                    // Build the chart engine
-                    final MetricConfig nextConfig = getMetricConfiguration(e.getKey().getKey(), config);
-                    // Default to global type parameter
-                    PlotTypeSelection plotType = dest.getGraphical().getPlotType();
-                    String templateResourceName = null;
-                    if(Objects.nonNull(nextConfig))
-                    {
-                        // Local type parameter
-                        if( nextConfig.getPlotType() != null )
-                        {
-                            plotType = nextConfig.getPlotType();
-                        }
-                        templateResourceName = nextConfig.getTemplateResourceName();
-                    }
-
-                    final ChartEngine engine = ChartEngineFactory.buildGenericScalarOutputChartEngine(e.getValue(),
-                                                                                                      plotType,
-                                                                                                      templateResourceName,
-                                                                                                      graphicsString);
-                    //Build the output
-                    File destDir = ConfigHelper.getDirectoryFromDestinationConfig( dest );
-                    Path outputImage = Paths.get( destDir.toString(),
-                                                  ConfigHelper.getFeatureDescription( feature )
-                                                  + "_"
-                                                  + e.getKey()
-                                                  .getKey().name()
-                                                  + "_"
-                                                  + config.getInputs()
-                                                  .getRight()
-                                                  .getVariable()
-                                                  .getValue()
-                                                  + ".png");
-                    ChartWriter.writeChart(outputImage, engine, dest);
+                    plotType = nextConfig.getPlotType();
                 }
+                templateResourceName = nextConfig.getTemplateResourceName();
             }
+
+            ChartEngine engine = ChartEngineFactory.buildGenericScalarOutputChartEngine( scalarResults,
+                                                                                         plotType,
+                                                                                         templateResourceName,
+                                                                                         graphicsString );
+            //Build the output
+            File destDir = ConfigHelper.getDirectoryFromDestinationConfig( destConfig );
+            Path outputImage = Paths.get( destDir.toString(),
+                                          ConfigHelper.getFeatureDescription( feature )
+                                                              + "_"
+                                                              + metricId.name()
+                                                              + "_"
+                                                              + projectConfigPlus.getProjectConfig()
+                                                                                 .getInputs()
+                                                                                 .getRight()
+                                                                                 .getVariable()
+                                                                                 .getValue()
+                                                              + ".png" );
+            ChartWriter.writeChart( outputImage, engine, destConfig );
         }
-        catch( ChartEngineException
+        catch ( ChartEngineException
                 | ChartWritingException
                 | ProjectConfigException e )
         {
-            throw new WresProcessingException( "Error while generating scalar charts:", e);
+            throw new WresProcessingException( "Error while generating scalar charts:", e );
         }
-    }
+    }   
 
     /**
-     * Processes a set of charts associated with {@link VectorOutput} across multiple metrics, time windows, and
+     * Processes a set of charts associated with {@link MultiValuedScoreOutput} across multiple metrics, time windows, and
      * thresholds, stored in a {@link MetricOutputMultiMapByTimeAndThreshold}. these.
      * 
      * @param feature the feature for which the chart is defined
@@ -717,7 +738,7 @@ public class Control implements Function<String[], Integer>
 
     private static void   processVectorCharts( final Feature feature,
                                                final ProjectConfigPlus projectConfigPlus,
-                                               final MetricOutputMultiMapByTimeAndThreshold<VectorOutput> vectorResults)
+                                               final MetricOutputMultiMapByTimeAndThreshold<MultiValuedScoreOutput> vectorResults)
     {
         //Check for results
         if(Objects.isNull(vectorResults))
@@ -731,7 +752,7 @@ public class Control implements Function<String[], Integer>
         // Build charts
         try
         {
-            for(final Map.Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<VectorOutput>> e: vectorResults.entrySet())
+            for ( final Map.Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<MultiValuedScoreOutput>> e : vectorResults.entrySet() )
             {
                 List<DestinationConfig> destinations =
                         ConfigHelper.getGraphicalDestinations( config );
@@ -740,7 +761,7 @@ public class Control implements Function<String[], Integer>
                 {
                     final String graphicsString = projectConfigPlus.getGraphicsStrings().get(dest);
                     // Build the chart engine
-                    final MetricConfig nextConfig = getMetricConfiguration(e.getKey().getKey(), config);
+                    final MetricConfig nextConfig = getNamedConfigOrAllValid(e.getKey().getKey(), config);
                     // Default to global type parameter
                     PlotTypeSelection plotType = dest.getGraphical().getPlotType();
                     String templateResourceName = null;
@@ -826,7 +847,7 @@ public class Control implements Function<String[], Integer>
                 {
                     final String graphicsString = projectConfigPlus.getGraphicsStrings().get(dest);
                     // Build the chart engine
-                    MetricConfig nextConfig = getMetricConfiguration(e.getKey().getKey(), config);
+                    MetricConfig nextConfig = getNamedConfigOrAllValid(e.getKey().getKey(), config);
                     // Default to global type parameter
                     PlotTypeSelection plotType = dest.getGraphical().getPlotType();
                     String templateResourceName = null;
@@ -924,7 +945,7 @@ public class Control implements Function<String[], Integer>
                 {
                     final String graphicsString = projectConfigPlus.getGraphicsStrings().get(dest);
                     // Build the chart engine
-                    final MetricConfig nextConfig = getMetricConfiguration(e.getKey().getKey(), config);
+                    final MetricConfig nextConfig = getNamedConfigOrAllValid(e.getKey().getKey(), config);
                     String templateResourceName = null;
                     if(Objects.nonNull(nextConfig))
                     {
@@ -1278,30 +1299,28 @@ public class Control implements Function<String[], Integer>
      * @return the metric configuration or null
      */
 
-    private static MetricConfig getMetricConfiguration(final MetricConstants metric, final ProjectConfig config)
+    private static MetricConfig getNamedConfigOrAllValid( final MetricConstants metric, final ProjectConfig config )
     {
         // Deal with MetricConfigName.ALL_VALID first
-        if ( config.getOutputs().getMetric().contains( MetricConfigName.ALL_VALID ) )
+        MetricConfig allValid = ConfigHelper.getMetricConfigByName( config, MetricConfigName.ALL_VALID );
+        if ( allValid != null )
         {
-            return config.getOutputs()
-                         .getMetric()
-                         .get( config.getOutputs().getMetric().indexOf( MetricConfigName.ALL_VALID ) );
+            return allValid;
         }
         // Find the corresponding configuration
-        final Optional<MetricConfig> returnMe = config.getOutputs().getMetric().stream().filter(a -> {
+        final Optional<MetricConfig> returnMe = config.getOutputs().getMetric().stream().filter( a -> {
             try
             {
-                return metric.equals(ConfigMapper.from(a.getName()));
+                return metric.equals( ConfigMapper.from( a.getName() ) );
             }
-            catch(final MetricConfigurationException e)
+            catch ( final MetricConfigurationException e )
             {
-                LOGGER.error("Could not map metric name '{}' to metric configuration.", metric, e);
+                LOGGER.error( "Could not map metric name '{}' to metric configuration.", metric, e );
                 return false;
             }
-        }).findFirst();
+        } ).findFirst();
         return returnMe.isPresent() ? returnMe.get() : null;
     }
-
 
     /**
      * Returns true if the given config has one or more of given output type.

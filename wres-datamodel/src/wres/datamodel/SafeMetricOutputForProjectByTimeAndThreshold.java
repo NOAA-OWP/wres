@@ -25,9 +25,9 @@ import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMapByMetric;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold.MetricOutputMultiMapByTimeAndThresholdBuilder;
+import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.ScalarOutput;
-import wres.datamodel.outputs.VectorOutput;
 
 /**
  * <p>
@@ -50,10 +50,10 @@ class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForPro
             new ConcurrentHashMap<>();
 
     /**
-     * Thread safe map for {@link VectorOutput}.
+     * Thread safe map for {@link MultiValuedScoreOutput}.
      */
 
-    private final ConcurrentMap<Pair<TimeWindow, Threshold>, List<Future<MetricOutputMapByMetric<VectorOutput>>>> vector =
+    private final ConcurrentMap<Pair<TimeWindow, Threshold>, List<Future<MetricOutputMapByMetric<MultiValuedScoreOutput>>>> vector =
             new ConcurrentHashMap<>();
 
     /**
@@ -127,6 +127,8 @@ class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForPro
                     case BOXPLOT:
                         addToBuilder( builder, getBoxPlotOutput() );
                         break;
+                    default:
+                        break;
                 }
             }
         }
@@ -167,7 +169,7 @@ class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForPro
     }
 
     @Override
-    public MetricOutputMultiMapByTimeAndThreshold<VectorOutput> getVectorOutput() throws MetricOutputAccessException
+    public MetricOutputMultiMapByTimeAndThreshold<MultiValuedScoreOutput> getVectorOutput() throws MetricOutputAccessException
     {
         return unwrap( MetricOutputGroup.VECTOR, vector );
     }
@@ -207,10 +209,10 @@ class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForPro
                 new ConcurrentHashMap<>();
 
         /**
-         * Thread safe map for {@link VectorOutput}.
+         * Thread safe map for {@link MultiValuedScoreOutput}.
          */
 
-        private final ConcurrentMap<Pair<TimeWindow, Threshold>, List<Future<MetricOutputMapByMetric<VectorOutput>>>> vectorInternal =
+        private final ConcurrentMap<Pair<TimeWindow, Threshold>, List<Future<MetricOutputMapByMetric<MultiValuedScoreOutput>>>> vectorInternal =
                 new ConcurrentHashMap<>();
 
         /**
@@ -252,9 +254,9 @@ class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForPro
         @Override
         public MetricOutputForProjectByTimeAndThresholdBuilder addVectorOutput( TimeWindow timeWindow,
                                                                                 Threshold threshold,
-                                                                                Future<MetricOutputMapByMetric<VectorOutput>> result )
+                                                                                Future<MetricOutputMapByMetric<MultiValuedScoreOutput>> result )
         {
-            List<Future<MetricOutputMapByMetric<VectorOutput>>> existing =
+            List<Future<MetricOutputMapByMetric<MultiValuedScoreOutput>>> existing =
                     vectorInternal.putIfAbsent( Pair.of( timeWindow, threshold ),
                                                 new ArrayList<>( Arrays.asList( result ) ) );
             if ( Objects.nonNull( existing ) )

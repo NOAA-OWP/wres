@@ -21,7 +21,7 @@ import wres.datamodel.inputs.pairs.MulticategoryPairs;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.outputs.MetricOutputMapByMetric;
 import wres.datamodel.outputs.ScalarOutput;
-import wres.datamodel.outputs.VectorOutput;
+import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.engine.statistics.metric.MetricCollection.MetricCollectionBuilder;
 import wres.engine.statistics.metric.singlevalued.DoubleErrorScore;
 
@@ -179,7 +179,7 @@ public class MetricCollectionTest
         final DiscreteProbabilityPairs input = MetricTestDataFactory.getDiscreteProbabilityPairsTwo();
 
         //Create a collection metrics that consume probabilistic pairs and generate vector outputs
-        final MetricCollectionBuilder<DiscreteProbabilityPairs, VectorOutput> n = MetricCollectionBuilder.of();
+        final MetricCollectionBuilder<DiscreteProbabilityPairs, MultiValuedScoreOutput> n = MetricCollectionBuilder.of();
         final DataFactory outF = DefaultDataFactory.getInstance();
         final MetricFactory metF = MetricFactory.getInstance( outF );
         n.setOutputFactory( outF );
@@ -189,10 +189,10 @@ public class MetricCollectionTest
         n.add( metF.ofBrierSkillScore() ); //Should be 0.11363636363636376
 
         //Finalize
-        final MetricCollection<DiscreteProbabilityPairs, VectorOutput> collection = n.build();
+        final MetricCollection<DiscreteProbabilityPairs, MultiValuedScoreOutput> collection = n.build();
 
         //Compute them
-        final MetricOutputMapByMetric<VectorOutput> d = collection.apply( input );
+        final MetricOutputMapByMetric<MultiValuedScoreOutput> d = collection.apply( input );
 
         //Print them
         //d.stream().forEach(g -> System.out.println(((ScalarOutput)g).getData().valueOf()));
@@ -231,7 +231,7 @@ public class MetricCollectionTest
         final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsTwo();
 
         //Create a collection metrics that consume single-valued pairs and produce vector outputs
-        final MetricCollectionBuilder<SingleValuedPairs, VectorOutput> n = MetricCollectionBuilder.of();
+        final MetricCollectionBuilder<SingleValuedPairs, MultiValuedScoreOutput> n = MetricCollectionBuilder.of();
         final DataFactory outF = DefaultDataFactory.getInstance();
         final MetricFactory metF = MetricFactory.getInstance( outF );
         n.setOutputFactory( outF );
@@ -241,10 +241,10 @@ public class MetricCollectionTest
         n.add( metF.ofMeanSquareErrorSkillScore() ); //Should be 0.8007025335093799
 
         //Finalize
-        final MetricCollection<SingleValuedPairs, VectorOutput> collection = n.build();
+        final MetricCollection<SingleValuedPairs, MultiValuedScoreOutput> collection = n.build();
 
         //Compute them
-        final MetricOutputMapByMetric<VectorOutput> d = collection.apply( input );
+        final MetricOutputMapByMetric<MultiValuedScoreOutput> d = collection.apply( input );
 
         //Print them
         //d.stream().forEach(g -> System.out.println(((ScalarOutput)g).getData().valueOf()));

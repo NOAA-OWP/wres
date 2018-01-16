@@ -30,7 +30,7 @@ import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMapByMetric;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.ScalarOutput;
-import wres.datamodel.outputs.VectorOutput;
+import wres.datamodel.outputs.MultiValuedScoreOutput;
 
 /**
  * Factory class for generating test datasets for metric calculations.
@@ -119,18 +119,18 @@ public final class DataModelTestDataFactory
     }
 
     /**
-     * Returns a {@link MetricOutputMapByTimeAndThreshold} of {@link VectorOutput} comprising the CRPSS for selected
+     * Returns a {@link MetricOutputMapByTimeAndThreshold} of {@link MultiValuedScoreOutput} comprising the CRPSS for selected
      * thresholds and forecast lead times. Reads the input data from
      * testinput/wres/datamodel/metric/getVectorMetricOutputMapByLeadThresholdOne.xml.
      * 
      * @return an output map of verification scores
      */
 
-    public static MetricOutputMapByTimeAndThreshold<VectorOutput> getVectorMetricOutputMapByLeadThresholdOne()
+    public static MetricOutputMapByTimeAndThreshold<MultiValuedScoreOutput> getVectorMetricOutputMapByLeadThresholdOne()
     {
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
         final MetadataFactory metaFactory = outputFactory.getMetadataFactory();
-        final Builder<VectorOutput> builder = new SafeMetricOutputMapByTimeAndThreshold.Builder<>();
+        final Builder<MultiValuedScoreOutput> builder = new SafeMetricOutputMapByTimeAndThreshold.Builder<>();
         try
         {
             //Create the input file
@@ -178,8 +178,8 @@ public final class DataModelTestDataFactory
                     //Build the scalar result
                     final MetricResult result = t.getResult( f );
                     final double[] res = ( (DoubleMatrix1DResult) result ).getResult().toArray();
-                    final VectorOutput value =
-                            outputFactory.ofVectorOutput( res, ScoreOutputGroup.CR_POT, meta );
+                    final MultiValuedScoreOutput value =
+                            outputFactory.ofMultiValuedScoreOutput( res, ScoreOutputGroup.CR_POT, meta );
 
                     //Append result
                     builder.put( key, value );

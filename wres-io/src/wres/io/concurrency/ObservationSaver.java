@@ -20,59 +20,43 @@ import wres.io.reading.ReaderFactory;
  */
 public class ObservationSaver extends WRESCallable<List<IngestResult>>
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger( ObservationSaver.class );
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ObservationSaver.class);
-
+    private final String filepath;
+    private final ProjectConfig projectConfig;
+    private final DataSourceConfig dataSourceConfig;
     private final DataSourceConfig.Source sourceConfig;
+    private final List<Feature> specifiedFeatures;
 
-    public ObservationSaver(String filepath,
-                            ProjectConfig ProjectConfig,
-                            DataSourceConfig dataSourceConfig,
-							DataSourceConfig.Source sourceConfig,
-                            List<Feature> specifiedFeatures)
+    public ObservationSaver( String filepath,
+                             ProjectConfig projectConfig,
+                             DataSourceConfig dataSourceConfig,
+                             DataSourceConfig.Source sourceConfig,
+                             List<Feature> specifiedFeatures )
     {
-        this.dataSourceConfig = dataSourceConfig;
-		this.sourceConfig = sourceConfig;
-        this.projectConfig = ProjectConfig;
-        this.specifiedFeatures = specifiedFeatures;
         this.filepath = filepath;
+        this.projectConfig = projectConfig;
+        this.dataSourceConfig = dataSourceConfig;
+        this.sourceConfig = sourceConfig;
+        this.specifiedFeatures = specifiedFeatures;
     }
 
-	/* (non-Javadoc)
-	 * @see java.lang.Runnable#run()
-	 */
-	@Override
-    public List<IngestResult> execute()
-	{
-		BasicSource source;
 
-		try {
-            source = ReaderFactory.getReader( this.projectConfig,
-                                              this.filepath );
+    @Override
+    public List<IngestResult> execute() throws IOException
+    {
+        BasicSource source = ReaderFactory.getReader( this.projectConfig,
+                                                      this.filepath );
+        source.setDataSourceConfig( this.dataSourceConfig );
+        source.setSourceConfig( this.sourceConfig );
+        source.setSpecifiedFeatures( this.specifiedFeatures );
+        return source.saveObservation();
+    }
 
-            source.setDataSourceConfig(this.dataSourceConfig);
 
-			source.setSourceConfig( this.sourceConfig );
-
-            source.setSpecifiedFeatures( this.specifiedFeatures );
-
-            return source.saveObservation();
-		}
-        catch (IOException ioe)
-        {
-            String message = "Failed to save '" + filepath
-                             + "' as an observation";
-            throw new RuntimeException( message, ioe );
-        }
-	}
-
-	private final String filepath;
-	private final List<Feature> specifiedFeatures;
-	private final DataSourceConfig dataSourceConfig;
-    private final ProjectConfig projectConfig;
-
-	@Override
-	protected Logger getLogger () {
-		return ObservationSaver.LOGGER;
-	}
+    @Override
+    protected Logger getLogger()
+    {
+        return ObservationSaver.LOGGER;
+    }
 }
