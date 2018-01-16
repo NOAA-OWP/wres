@@ -23,7 +23,6 @@ public class ScalarOutputByThresholdAndLeadXYChartDataSource
     {
         super( orderIndex, input, input.keySetByTime().size() );
 
-        //TODO Need to ensure that the arguments used below are standard arguments created in the factory that generates images!
         getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultDomainAxisTitle( "THRESHOLD VALUE@inputUnitsLabelSuffix@" );
         getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultRangeAxisTitle( "@metricShortName@@metricComponentNameSuffix@@outputUnitsLabelSuffix@" );
         WRESTools.applyDefaultJFreeChartColorSequence( getDefaultFullySpecifiedDataSourceDrawingParameters() );
