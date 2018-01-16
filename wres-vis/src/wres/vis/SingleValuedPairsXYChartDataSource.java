@@ -20,7 +20,6 @@ public class SingleValuedPairsXYChartDataSource extends WRESXYChartDataSource<Si
     {
         super(orderIndex, input, 1);
 
-        //TODO Need to ensure that these arguments are available here.  How best to do so?
         getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultDomainAxisTitle("@domainAxisLabelPrefix@@inputUnitsLabelSuffix@");
         getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultRangeAxisTitle("@rangeAxisLabelPrefix@@inputUnitsLabelSuffix@");
         WRESTools.applyDefaultJFreeChartColorSequence( getDefaultFullySpecifiedDataSourceDrawingParameters() );
