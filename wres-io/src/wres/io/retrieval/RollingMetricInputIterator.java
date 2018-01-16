@@ -7,7 +7,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.generated.Feature;
-import wres.config.generated.ProjectConfig;
 import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.NoDataException;
 
@@ -29,7 +28,7 @@ public class RollingMetricInputIterator extends MetricInputIterator
             throws SQLException, InvalidPropertiesFormatException,
             NoDataException
     {
-        return this.getProjectDetails().getRollingWindowCount( this.getFeature() );
+        return this.getProjectDetails().getPoolCount( this.getFeature() );
     }
 
     @Override

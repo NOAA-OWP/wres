@@ -62,7 +62,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     private final Map<Feature, Integer> leadOffsets = new ConcurrentHashMap<>(  );
     private final Map<Feature, String> zeroDates = new ConcurrentHashMap<>(  );
     private final Map<Feature, String> initialRollingDates = new ConcurrentHashMap<>(  );
-    private final Map<Feature, Integer> rollingWindowCounts = new ConcurrentHashMap<>(  );
+    private final Map<Feature, Integer> poolCounts = new ConcurrentHashMap<>(  );
 
     private final List<Integer> leftSources = new ArrayList<>(  );
     private final List<Integer> rightSources = new ArrayList<>(  );
@@ -78,7 +78,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
 
     private final int inputCode;
 
-    private static final Object ROLLING_LOCK = new Object();
+    private static final Object POOL_LOCK = new Object();
     private static final Object LOAD_LOCK = new Object();
 
     public static Integer hash( final ProjectConfig projectConfig,
@@ -482,35 +482,30 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
 
     public int getAggregationFrequency()
     {
-        int frequency = 1;
+        int frequency;
 
-        if ( this.getPoolingMode() == TimeWindowMode.ROLLING)
+        if (this.getAggregation().getFrequency() != null)
         {
-            int specification;
+            frequency = this.getAggregation().getFrequency();
+        }
+        else
+        {
+            frequency = this.getAggregationPeriod();
+        }
 
-            if (this.getAggregation().getFrequency() != null)
-            {
-                specification = this.getAggregation().getFrequency();
-            }
-            else
-            {
-                specification = this.getAggregationPeriod();
-            }
-
-            try
-            {
-                frequency = TimeHelper.unitsToHours(
-                        this.getAggregationUnit(),
-                        specification
-                ).intValue();
-            }
-            catch (InvalidPropertiesFormatException e)
-            {
-                LOGGER.debug( "The period for the aggregation could not be"
-                              + "determined, but it was needed in order to"
-                              + "specify the unconfigured lead time frequency."
-                              + "Defaulting to 1.", e );
-            }
+        try
+        {
+            frequency = TimeHelper.unitsToHours(
+                    this.getAggregationUnit(),
+                    frequency
+            ).intValue();
+        }
+        catch (InvalidPropertiesFormatException e)
+        {
+            LOGGER.debug( "The period for the aggregation could not be"
+                          + "determined, but it was needed in order to"
+                          + "specify the unconfigured lead time frequency."
+                          + "Defaulting to 1.", e );
         }
 
         return frequency;
@@ -539,8 +534,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         TimeWindowMode mode = TimeWindowMode.BACK_TO_BACK;
 
         // Can't use "this.getAggregationFrequency because it uses this
-        if ( this.getAggregation() != null &&
-             this.getAggregation().getFrequency() != null)
+        if ( this.getPoolingWindow() != null )
         {
             mode = TimeWindowMode.ROLLING;
         }
@@ -626,21 +620,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return this.leadOffsets.get( feature );
     }
 
-    public String getInitialRollingDate(Feature feature)
-            throws SQLException, InvalidPropertiesFormatException
-    {
-        synchronized ( ROLLING_LOCK )
-        {
-            if (!this.initialRollingDates.containsKey( feature ))
-            {
-                this.addRollingFeature( feature );
-            }
-        }
-
-        return this.initialRollingDates.get(feature);
-    }
-
-    public Integer getRollingWindowCount(Feature feature)
+    public Integer getPoolCount( Feature feature)
             throws SQLException, InvalidPropertiesFormatException
     {
         if ( getPoolingMode() != TimeWindowMode.ROLLING)
@@ -648,18 +628,18 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
             return -1;
         }
 
-        synchronized ( ROLLING_LOCK )
+        synchronized ( POOL_LOCK )
         {
-            if (!this.rollingWindowCounts.containsKey( feature ))
+            if (!this.poolCounts.containsKey( feature ))
             {
-                this.addRollingFeature( feature );
+                this.addPoolingFeature( feature );
             }
         }
 
-        return this.rollingWindowCounts.get( feature );
+        return this.poolCounts.get( feature );
     }
 
-    private void addRollingFeature(Feature feature)
+    private void addPoolingFeature( Feature feature)
             throws SQLException, InvalidPropertiesFormatException
     {
         String rollingScript = ScriptGenerator.formInitialRollingDataScript( this, feature );
@@ -676,19 +656,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
             {
                 resultSet.next();
 
-                String min = Database.getValue(resultSet, "min");
-
-                // TODO: Determine if we want to perform anchoring. If so, uncomment
-                // This will ensure that we gloss over partial windows
-                /*if ( this.getPoolingWindow().getAnchor() == TimeAnchor.CENTER ||
-                     this.getPoolingWindow().getAnchor() == TimeAnchor.RIGHT)
-                {*/
-                    String anchorScript = ScriptGenerator.formApplyInitialAnchorScript( this, feature, min );
-                    min = Database.getResult( anchorScript, "zero_date" );
-                //}
-
-                this.initialRollingDates.put( feature, min );
-                this.rollingWindowCounts.put( feature, Database.getValue( resultSet, "window_count" ));
+                this.poolCounts.put( feature, Database.getValue( resultSet, "window_count" ));
             }
         }
         finally
@@ -778,15 +746,6 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return this.leftSources;
     }
 
-    public Map<Integer, String> getLeftHashes() throws SQLException
-    {
-        if (this.leftHashes.size() == 0)
-        {
-            this.loadSources( ProjectDetails.LEFT_MEMBER );
-        }
-        return this.leftHashes;
-    }
-
     public List<Integer> getRightSources() throws SQLException
     {
         if (this.rightSources.size() == 0)
@@ -794,15 +753,6 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
             this.loadSources( ProjectDetails.RIGHT_MEMBER );
         }
         return this.rightSources;
-    }
-
-    public Map<Integer, String> getRightHashes() throws SQLException
-    {
-        if (this.rightHashes.size() == 0)
-        {
-            this.loadSources( ProjectDetails.RIGHT_MEMBER );
-        }
-        return this.rightHashes;
     }
 
     public List<Integer> getBaselineSources() throws SQLException
@@ -813,15 +763,6 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         }
 
         return this.baselineSources;
-    }
-
-    public Map<Integer, String> getBaselineHashes() throws SQLException
-    {
-        if (this.hasBaseline() && this.baselineHashes.size() == 0)
-        {
-            this.loadSources( ProjectDetails.BASELINE_MEMBER );
-        }
-        return this.baselineHashes;
     }
 
     private void loadSources(String member) throws SQLException
@@ -1032,7 +973,8 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         TimeAggregationConfig
                 timeAggregationConfig = ConfigHelper.getTimeAggregation( projectConfig );
         return TimeHelper.unitsToHours( timeAggregationConfig.getUnit().name(),
-                                  1.0 * windowNumber * timeAggregationConfig.getPeriod()).intValue();
+                                  1.0 * windowNumber +
+                                  this.getAggregationFrequency() * timeAggregationConfig.getPeriod()).intValue();
     }
 
     public Integer getMinimumLeadHour()

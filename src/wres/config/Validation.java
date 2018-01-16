@@ -857,7 +857,7 @@ public class Validation
         StringBuilder warning = new StringBuilder();
 
         // Non-null frequency must be >= 1
-        if ( aggregationConfig.getFrequency() != null && aggregationConfig.getFrequency() < 1 )
+        if ( aggregationConfig.getFrequency() != null && aggregationConfig.getFrequency() < 0 )
         {
             valid = false;
             
@@ -872,23 +872,6 @@ public class Validation
                             " is not valid; it must be at least 1 in order to "
                             +
                             "move on to the next window." );
-        }
-
-        if ( aggregationConfig.getFrequency() != null &&
-             (projectConfigPlus.getProjectConfig().getPair().getIssuedDates() == null ||
-              projectConfigPlus.getProjectConfig().getPair().getIssuedDates().getEarliest() == null ||
-              projectConfigPlus.getProjectConfig().getPair().getIssuedDates().getLatest() == null))
-        {
-            valid = false;
-
-            if (warning.length() > 0 )
-            {
-                warning.append( System.lineSeparator() );
-            }
-
-            warning.append( "The presence of a frequency indicates rolling "
-                            + "pools of data. All rolling pools require "
-                            + "both an earliest and latest issue date.");
         }
 
         if ( aggregationConfig.getPeriod() < 1 )
@@ -1182,6 +1165,20 @@ public class Validation
 
         PoolingWindowConfig poolingConfig = pairConfig.getPoolingWindow();
         StringBuilder warning = new StringBuilder();
+
+        if (pairConfig.getIssuedDates() == null || pairConfig.getIssuedDates().getLatest() == null || pairConfig.getIssuedDates().getEarliest() == null)
+        {
+            valid = false;
+
+            if (warning.length() > 0 )
+            {
+                warning.append( System.lineSeparator() );
+            }
+
+            warning.append("Both an earliest and latest date is required if "
+                           + "data pooling is to be used. Please set the "
+                           + "earliest and latest issue dates.");
+        }
 
         // Non-null frequency must be >= 1
         if ( poolingConfig.getFrequency() != null && poolingConfig.getFrequency() < 1 )

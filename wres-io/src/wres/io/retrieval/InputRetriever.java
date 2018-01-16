@@ -1,5 +1,6 @@
 package wres.io.retrieval;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -68,19 +69,14 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         this.progress = progress;
     }
 
-    public void setSequenceStep( int sequenceStep )
+    public void setPoolingStep( int poolingStep )
     {
-        this.sequenceStep = sequenceStep;
+        this.poolingStep = poolingStep;
     }
 
     public void setClimatology(VectorOfDoubles climatology)
     {
         this.climatology = climatology;
-    }
-
-    public void setLeadOffset(int leadOffset)
-    {
-        this.leadOffset = leadOffset;
     }
 
     private UnitConversions.Conversion getConversion(int measurementUnitID)
@@ -146,7 +142,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             if ( this.projectDetails.getPoolingWindow() != null )
             {
                 message += " sequence ";
-                message += String.valueOf( this.sequenceStep );
+                message += String.valueOf( this.poolingStep );
                 message += " for";
             }
 
@@ -159,8 +155,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         return input;
     }
 
-    private MetricInput<?> createInput() throws NoDataException, SQLException,
-            InvalidPropertiesFormatException
+    private MetricInput<?> createInput() throws IOException, SQLException
     {
         MetricInput<?> input = null;
 
@@ -257,7 +252,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         {
             if (this.rightLoadScript == null)
             {
-                this.rightLoadScript = Scripter.getLoadScript( this.projectDetails, dataSourceConfig, feature, progress, this.sequenceStep );
+                this.rightLoadScript = Scripter.getLoadScript( this.projectDetails, dataSourceConfig, feature, progress, this.poolingStep );
             }
             loadScript = this.rightLoadScript;
         }
@@ -265,7 +260,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         {
             if (this.baselineLoadScript == null)
             {
-                this.baselineLoadScript = Scripter.getLoadScript( this.projectDetails, dataSourceConfig, this.feature, this.progress, this.sequenceStep );
+                this.baselineLoadScript = Scripter.getLoadScript( this.projectDetails, dataSourceConfig, this.feature, this.progress, this.poolingStep );
             }
             loadScript = this.baselineLoadScript;
         }
@@ -448,7 +443,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
     }
 
     private Metadata buildMetadata (DataFactory dataFactory, DataSourceConfig sourceConfig)
-            throws SQLException, InvalidPropertiesFormatException
+            throws SQLException, IOException
     {
         MetadataFactory metadataFactory = dataFactory.getMetadataFactory();
         Dimension dim = metadataFactory.getDimension( this.projectDetails.getDesiredMeasurementUnit());
@@ -459,41 +454,34 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         DatasetIdentifier datasetIdentifier = metadataFactory.getDatasetIdentifier(geospatialIdentifier,
                                                                                    variableIdentifier,
                                                                                    sourceConfig.getLabel());
-        
-        // This will help us determine when the window will end
-        int windowNumber = this.progress + 1;
-        Double windowWidth;
         Double lastLead = 0.0;
 
-        // If this is a simulation, there are no windows, so set to 0
-        if ( !ConfigHelper.isForecast( sourceConfig ))
-        {
-            lastLead = 0.0;
-        }
-        else
+        if (ConfigHelper.isForecast( sourceConfig ))
         {
             try
             {
-                if (this.projectDetails.getPoolingMode() == TimeWindowMode.ROLLING)
-                {
-                    lastLead = (this.projectDetails.getAggregationPeriod() + this.progress) * 1.0;
-                }
-                else
-                {
-                    windowWidth = this.projectDetails.getWindowWidth() * 1.0;
-                    lastLead = ( windowNumber * windowWidth ) + leadOffset;
-                }
+                lastLead = this.progress *
+                           this.projectDetails.getAggregationFrequency() +
+                           this.projectDetails.getWindowWidth() * 1.0 +
+                           this.projectDetails.getLeadOffset( this.feature );
             }
             catch ( InvalidPropertiesFormatException e )
             {
-                LOGGER.error( Strings.getStackTrace(e) );
-                LOGGER.error("The width of the standard window for this project could not be determined.");
+                throw new IOException( "The width of the standard window for this "
+                                       + "project could not be determined.", e );
+            }
+            catch ( NoDataException e )
+            {
+                throw new IOException( "The last lead of the window could not "
+                                       + "be determined because the offset for "
+                                       + "the window could not be determined.",
+                                       e );
             }
         }
 
         TimeWindow timeWindow = ConfigHelper.getTimeWindow( this.projectDetails,
                                                             lastLead.longValue(),
-                                                            this.sequenceStep);
+                                                            this.poolingStep );
 
         return metadataFactory.getMetadata( dim,
                                             datasetIdentifier,
@@ -600,7 +588,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                                                this.progress,
                                                pair,
                                                isBaseline,
-                                               this.sequenceStep,
+                                               this.poolingStep,
                                                this.projectDetails,
                                                lead);
             Executor.submitHighPriorityTask( saver);
@@ -609,9 +597,8 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
 
     private String baselineLoadScript;
     private String rightLoadScript;
-    private int leadOffset;
     private int progress;
-    private int sequenceStep;
+    private int poolingStep;
     private final ProjectDetails projectDetails;
     private Feature feature;
     private final BiFunction<String, String, List<Double>> getLeftValues;
