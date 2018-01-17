@@ -41,11 +41,15 @@ import wres.util.Strings;
 
 class VectorNWMValueSaver extends WRESRunnable
 {
+
+    private static final Logger LOGGER =
+            LoggerFactory.getLogger( VectorNWMValueSaver.class );
+
     /**
      * Used as a key to tie variable and position identifiers to their
      * index in the NetCDF variable
      */
-    private class TimeSeriesIndexKey
+    private static class TimeSeriesIndexKey
     {
         public TimeSeriesIndexKey(Integer variableID,
                                   String initializationDate,
@@ -148,8 +152,6 @@ class VectorNWMValueSaver extends WRESRunnable
     private static final String FORECAST_COLUMN_DEFINTIION =
             "(timeseries_id, lead, forecasted_value)";
 
-    private final static Logger LOGGER =
-            LoggerFactory.getLogger(VectorNWMValueSaver.class);
 
     private StringBuilder copyScript;
     private String copyHeader;
@@ -302,8 +304,6 @@ class VectorNWMValueSaver extends WRESRunnable
 
                     // Now that ball is in our court we should put in cache
                     DataSources.put( deets );
-                    // // Older, implicit way:
-                    // DataSources.hasSource( this.getHash() );
                 }
             }
 
