@@ -1,4 +1,4 @@
-package wres;
+package wres.control;
 
 import java.io.File;
 import java.io.IOException;
@@ -100,8 +100,6 @@ public class Control implements Function<String[], Integer>
      */
     public Integer apply(final String[] args)
     {
-        Integer result = MainFunctions.FAILURE;
-
         // Unmarshal the configurations
         final List<ProjectConfigPlus> projectConfiggies = getProjects(args);
 
@@ -176,16 +174,14 @@ public class Control implements Function<String[], Integer>
 
             }
 
-            result = 0;
-            //return 0;
+            return 0;
         }
         catch ( WresProcessingException | IOException e )
         {
 
             LOGGER.error( "Could not complete project execution:", e );
 
-            result = -1;
-            //return -1;
+            return -1;
         }
         // Shutdown
         finally
@@ -194,8 +190,6 @@ public class Control implements Function<String[], Integer>
             shutDownGracefully(thresholdExecutor);
             shutDownGracefully(pairExecutor);
         }
-
-        return result;
     }
 
     /**
