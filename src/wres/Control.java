@@ -471,16 +471,10 @@ public class Control implements Function<String[], Integer>
             throw new WresProcessingException( message, e );
         }
 
-        // Generated stored output if available
-        if ( processor.hasStoredMetricOutput() )
+        // Generate cached output if available
+        if ( processor.hasCachedMetricOutput() )
         {
             processCachedProducts( projectConfigPlus, processor, feature );
-        }
-        else if ( LOGGER.isInfoEnabled() )
-        {
-            String description = ConfigHelper.getFeatureDescription( feature );
-            LOGGER.info( "No metric results generated for feature: '"
-                         + description + "'" );
         }
 
         return new FeatureProcessingResult( feature, true, null );
@@ -527,7 +521,7 @@ public class Control implements Function<String[], Integer>
             {
                 CommaSeparated.writeOutputFiles( projectConfig,
                                                  feature,
-                                                 processor.getStoredMetricOutput() );
+                                                 processor.getCachedMetricOutput() );
 
             }
             catch ( final ProjectConfigException pce )
@@ -561,7 +555,6 @@ public class Control implements Function<String[], Integer>
      * @param feature the feature for which the charts are defined
      * @param projectConfigPlus the project configuration
      * @param processor the {@link MetricProcessor} that contains the results for all chart types
-     * @param outGroup the {@link MetricOutputGroup} for which charts are required
      * @throws WresProcessingException when an error occurs during processing
      */
 
@@ -569,7 +562,7 @@ public class Control implements Function<String[], Integer>
                                                final ProjectConfigPlus projectConfigPlus,
                                                final MetricProcessorByTime<?> processor )
     {
-        if(!processor.hasStoredMetricOutput())
+        if(!processor.hasCachedMetricOutput())
         {
             LOGGER.warn( "No cached outputs to process. ");
             return;
@@ -579,38 +572,38 @@ public class Control implements Function<String[], Integer>
         {
             // Process scalar charts
             if ( processor.willCacheMetricOutput( MetricOutputGroup.SCALAR )
-                 && processor.getStoredMetricOutput().hasOutput( MetricOutputGroup.SCALAR ) )
+                 && processor.getCachedMetricOutput().hasOutput( MetricOutputGroup.SCALAR ) )
             {
                 processScalarCharts( feature,
                                      projectConfigPlus,
-                                     processor.getStoredMetricOutput()
+                                     processor.getCachedMetricOutput()
                                               .getScalarOutput() );
             }
             // Process vector charts
             if ( processor.willCacheMetricOutput( MetricOutputGroup.VECTOR )
-                 && processor.getStoredMetricOutput().hasOutput( MetricOutputGroup.VECTOR ) )
+                 && processor.getCachedMetricOutput().hasOutput( MetricOutputGroup.VECTOR ) )
             {
                 processVectorCharts( feature,
                                      projectConfigPlus,
-                                     processor.getStoredMetricOutput()
+                                     processor.getCachedMetricOutput()
                                               .getVectorOutput() );
             }
             // Process multivector charts
             if ( processor.willCacheMetricOutput( MetricOutputGroup.MULTIVECTOR )
-                 && processor.getStoredMetricOutput().hasOutput( MetricOutputGroup.MULTIVECTOR ) )
+                 && processor.getCachedMetricOutput().hasOutput( MetricOutputGroup.MULTIVECTOR ) )
             {
                 processMultiVectorCharts( feature,
                                           projectConfigPlus,
-                                          processor.getStoredMetricOutput()
+                                          processor.getCachedMetricOutput()
                                                    .getMultiVectorOutput() );
             }
             // Process box plot charts
             if ( processor.willCacheMetricOutput( MetricOutputGroup.BOXPLOT )
-                 && processor.getStoredMetricOutput().hasOutput( MetricOutputGroup.BOXPLOT ) )
+                 && processor.getCachedMetricOutput().hasOutput( MetricOutputGroup.BOXPLOT ) )
             {
                 processBoxPlotCharts( feature,
                                       projectConfigPlus,
-                                      processor.getStoredMetricOutput()
+                                      processor.getCachedMetricOutput()
                                                .getBoxPlotOutput() );
             }
         }

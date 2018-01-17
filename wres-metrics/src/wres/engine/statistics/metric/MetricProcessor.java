@@ -79,7 +79,7 @@ import wres.datamodel.outputs.ScalarOutput;
  * consumed until the end of a processing pipeline, the results from sequential calls to {@link #apply(Object)} may be
  * cached and merged. This is achieved by constructing a {@link MetricProcessor} with a <code>vararg</code> of
  * {@link MetricOutputGroup} whose results will be cached across successive calls. The merged results are accessible
- * from {@link #getStoredMetricOutput()}.
+ * from {@link #getCachedMetricOutput()}.
  * </p>
  * 
  * @author james.brown@hydrosolved.com
@@ -180,12 +180,12 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
 
     /**
      * Returns a {@link MetricOutputForProject} for the last available results or null if
-     * {@link #hasStoredMetricOutput()} returns false.
+     * {@link #hasCachedMetricOutput()} returns false.
      * 
      * @return a {@link MetricOutputForProject} or null
      */
 
-    public abstract T getStoredMetricOutput();
+    public abstract T getCachedMetricOutput();
 
     /**
      * Returns true if a prior call led to the caching of metric outputs.
@@ -193,7 +193,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
      * @return true if stored results are available, false otherwise
      */
 
-    public abstract boolean hasStoredMetricOutput();
+    public abstract boolean hasCachedMetricOutput();
 
     /**
      * Validates the configuration and throws a {@link MetricConfigurationException} if the configuration is invalid.
