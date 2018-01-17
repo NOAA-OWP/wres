@@ -206,10 +206,11 @@ public class PairWriter extends WRESCallable<Boolean>
             throws SQLException, InvalidPropertiesFormatException
     {
 
-        int window = this.getWindowNum() / this.projectDetails.getAggregationFrequency();
+        int window = this.getWindowNum();
 
         if ( this.projectDetails.getPoolingMode() == TimeWindowMode.ROLLING )
         {
+            window /= this.projectDetails.getAggregationFrequency();
             // This doesn't quite work. When rolling over to the next
             // lead, it stays at the largest value prior. For instance,
             // if the number goes from 1 through 5, the next window for
