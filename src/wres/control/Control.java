@@ -1442,55 +1442,6 @@ public class Control implements Function<String[], Integer>
         }
     }
 
-    private static class FeatureProcessingResult
-    {
-        private final Feature feature;
-        private final boolean hadData;
-        private final Throwable cause;
-
-        private FeatureProcessingResult( Feature feature,
-                                         boolean hadData,
-                                         Throwable cause )
-        {
-            Objects.requireNonNull( feature );
-            this.feature = feature;
-            this.hadData = hadData;
-            this.cause = cause;
-        }
-
-        Feature getFeature()
-        {
-            return this.feature;
-        }
-
-        boolean hadData()
-        {
-            return this.hadData;
-        }
-
-        Throwable getCause()
-        {
-            return this.cause;
-        }
-
-        @Override
-        public String toString()
-        {
-            if ( hadData() )
-            {
-                return "Feature "
-                       + ConfigHelper.getFeatureDescription( this.getFeature() )
-                       + " had data.";
-            }
-            else
-            {
-                return "Feature "
-                       + ConfigHelper.getFeatureDescription( this.getFeature() )
-                       + " had no data: "
-                       + this.getCause();
-            }
-        }
-    }
 
     /**
      * Look at a chain of exceptions, returns true if ANY is a NoDataException
