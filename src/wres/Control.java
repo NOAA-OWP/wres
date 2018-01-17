@@ -222,20 +222,12 @@ public class Control implements Function<String[], Integer>
         ProgressMonitor.setShowStepDescription( true );
         ProgressMonitor.resetMonitor();
 
-        if ( LOGGER.isDebugEnabled() )
-        {
-            LOGGER.debug( "Beginning ingest for project {}...",
-                          projectConfigPlus.getCanonicalPath() );
-        }
+        LOGGER.debug( "Beginning ingest for project {}...", projectConfigPlus );
 
         // Need to ingest first
         List<IngestResult> availableSources = Operations.ingest( projectConfig);
 
-        if ( LOGGER.isDebugEnabled() )
-        {
-            LOGGER.debug( "Finished ingest for project {}...",
-                          projectConfigPlus.getCanonicalPath() );
-        }
+        LOGGER.debug( "Finished ingest for project {}...", projectConfigPlus );
 
         ProgressMonitor.setShowStepDescription( false );
 
@@ -280,10 +272,33 @@ public class Control implements Function<String[], Integer>
             }
         }
 
+        printFeaturesReport( projectConfigPlus,
+                             decomposedFeatures,
+                             successfulFeatures,
+                             missingDataFeatures );
+    }
+
+
+    /**
+     * Print a report to the log about which features were successful and not.
+     * Also, throw an exception if zero features were successful.
+     * @param projectConfigPlus the project config just processed
+     * @param decomposedFeatures the features decomposed from the config
+     * @param successfulFeatures the features that succeeded
+     * @param missingDataFeatures the features that were missing data
+     * @throws WresProcessingException when zero features were successful
+     */
+
+    private void printFeaturesReport( final ProjectConfigPlus projectConfigPlus,
+                                      final Set<Feature> decomposedFeatures,
+                                      final List<Feature> successfulFeatures,
+                                      final List<Feature> missingDataFeatures )
+    {
         if ( LOGGER.isInfoEnabled() )
         {
             LOGGER.info( "The following features succeeded: {}",
                          ConfigHelper.getFeaturesDescription( successfulFeatures ) );
+
             if ( !missingDataFeatures.isEmpty() )
             {
                 LOGGER.info( "The following features were missing data: {}",
@@ -303,7 +318,7 @@ public class Control implements Function<String[], Integer>
             {
                 LOGGER.info( "All features in project {} were successfully "
                              + "evaluated.",
-                             projectConfigPlus.getCanonicalPath() );
+                             projectConfigPlus );
             }
             else
             {
@@ -311,7 +326,7 @@ public class Control implements Function<String[], Integer>
                              + "evaluated, {} out of {} features were missing data.",
                              successfulFeatures.size(),
                              decomposedFeatures.size(),
-                             projectConfigPlus.getCanonicalPath(),
+                             projectConfigPlus,
                              missingDataFeatures.size(),
                              decomposedFeatures.size() );
             }

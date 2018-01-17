@@ -289,4 +289,18 @@ public class ProjectConfigPlus
 
         return visConfigs;
     }
+
+
+    @Override
+    public String toString()
+    {
+        try
+        {
+            return this.getCanonicalPath();
+        }
+        catch ( IOException ioe )
+        {
+            return this.path.toString();
+        }
+    }
 }
