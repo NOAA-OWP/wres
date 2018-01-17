@@ -113,7 +113,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                                         MetricOutputGroup.values() );
             processor.apply( MetricTestDataFactory.getEnsemblePairsOne() );
             //Obtain the results
-            MetricOutputMultiMapByTimeAndThreshold<ScalarOutput> results = processor.getStoredMetricOutput()
+            MetricOutputMultiMapByTimeAndThreshold<ScalarOutput> results = processor.getCachedMetricOutput()
                                                                                     .getScalarOutput();
             //Validate bias
             MetricOutputMapByTimeAndThreshold<ScalarOutput> bias = results.get( MetricConstants.BIAS_FRACTION );
@@ -314,7 +314,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                                         MetricOutputGroup.SCALAR );
             processor.apply( MetricTestDataFactory.getEnsemblePairsOne() );
             //Obtain the results
-            MetricOutputMultiMapByTimeAndThreshold<ScalarOutput> results = processor.getStoredMetricOutput()
+            MetricOutputMultiMapByTimeAndThreshold<ScalarOutput> results = processor.getCachedMetricOutput()
                                                                                     .getScalarOutput();
 
             //Validate a selection of the outputs only
@@ -690,7 +690,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                                         MetricOutputGroup.values() );
             processor.apply( MetricTestDataFactory.getEnsemblePairsOne() );
             //Obtain the results
-            MetricOutputMultiMapByTimeAndThreshold<ScalarOutput> results = processor.getStoredMetricOutput()
+            MetricOutputMultiMapByTimeAndThreshold<ScalarOutput> results = processor.getCachedMetricOutput()
                                                                                     .getScalarOutput();
             //Validate bias
             MetricOutputMapByTimeAndThreshold<ScalarOutput> bias = results.get( MetricConstants.BIAS_FRACTION );
