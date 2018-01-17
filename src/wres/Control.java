@@ -284,13 +284,11 @@ public class Control implements Function<String[], Integer>
         {
             LOGGER.info( "The following features succeeded: {}",
                          ConfigHelper.getFeaturesDescription( successfulFeatures ) );
-        }
-
-        if ( LOGGER.isInfoEnabled() && !missingDataFeatures.isEmpty() )
-        {
-            LOGGER.info( "The following features were missing data: {}",
-                         ConfigHelper.getFeaturesDescription(
-                                 missingDataFeatures ) );
+            if ( !missingDataFeatures.isEmpty() )
+            {
+                LOGGER.info( "The following features were missing data: {}",
+                             ConfigHelper.getFeaturesDescription( missingDataFeatures ) );
+            }
         }
 
         if ( successfulFeatures.isEmpty() )
@@ -632,7 +630,7 @@ public class Control implements Function<String[], Integer>
      * 
      * @param feature the feature for which the chart is defined
      * @param projectConfigPlus the project configuration
-     * @param scalarResults the scalar outputs
+     * @param scalarResults the metric results
      * @throws WresProcessingException when an error occurs during processing
      */
 
@@ -663,14 +661,14 @@ public class Control implements Function<String[], Integer>
     }
     
     /**
-     * Writes a set of charts associated with {@link ScalarOutput} for a single metric and time window, stored in a 
+     * Writes a single chart associated with {@link ScalarOutput} for a single metric and time window, stored in a 
      * {@link MetricOutputMultiMapByTimeAndThreshold}.
      * 
      * @param feature the feature
      * @param projectConfigPlus the project configuration
      * @param destConfig the destination configuration for the written output
      * @param metricId the metric identifier
-     * @param scalarResults the result containing the metric output
+     * @param scalarResults the metric results
      * @throws WresProcessingException when an error occurs during writing
      */
 
@@ -727,80 +725,102 @@ public class Control implements Function<String[], Integer>
     }   
 
     /**
-     * Processes a set of charts associated with {@link MultiValuedScoreOutput} across multiple metrics, time windows, and
-     * thresholds, stored in a {@link MetricOutputMultiMapByTimeAndThreshold}. these.
+     * Processes a set of charts associated with {@link MultiValuedScoreOutput} across multiple metrics, time windows, 
+     * and thresholds, stored in a {@link MetricOutputMultiMapByTimeAndThreshold}. these.
      * 
      * @param feature the feature for which the chart is defined
      * @param projectConfigPlus the project configuration
-     * @param vectorResults the vector outputs
+     * @param vectorResults the metric results
      * @throws WresProcessingException when an error occurs during processing
      */
 
-    private static void   processVectorCharts( final Feature feature,
-                                               final ProjectConfigPlus projectConfigPlus,
-                                               final MetricOutputMultiMapByTimeAndThreshold<MultiValuedScoreOutput> vectorResults)
+    private static void processVectorCharts( final Feature feature,
+                                             final ProjectConfigPlus projectConfigPlus,
+                                             final MetricOutputMultiMapByTimeAndThreshold<MultiValuedScoreOutput> vectorResults )
     {
-        //Check for results
-        if(Objects.isNull(vectorResults))
+        // Check for results
+        if ( Objects.isNull( vectorResults ) )
         {
-            LOGGER.warn("No vector outputs from which to generate charts.");
+            LOGGER.warn( "No vector outputs from which to generate charts." );
             return;
         }
 
         ProjectConfig config = projectConfigPlus.getProjectConfig();
+        // Iterate through each metric 
+        for ( final Map.Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<MultiValuedScoreOutput>> e : vectorResults.entrySet() )
+        {
+            List<DestinationConfig> destinations =
+                    ConfigHelper.getGraphicalDestinations( config );
+            // Iterate through each destination
+            for ( DestinationConfig destConfig : destinations )
+            {
+                writeVectorCharts( feature, projectConfigPlus, destConfig, e.getKey().getKey(), e.getValue() );
+            }
+        }
+    }
+    
+    /**
+     * Writes a set of charts associated with {@link MultiValuedScoreOutput} for a single metric and time window, 
+     * stored in a {@link MetricOutputMultiMapByTimeAndThreshold}.
+     * 
+     * @param feature the feature
+     * @param projectConfigPlus the project configuration
+     * @param destConfig the destination configuration for the written output
+     * @param metricId the metric identifier
+     * @param vectorResults the metric results
+     * @throws WresProcessingException when an error occurs during writing
+     */
 
+    private static void writeVectorCharts( Feature feature,
+                                          ProjectConfigPlus projectConfigPlus,
+                                          DestinationConfig destConfig,
+                                          MetricConstants metricId,
+                                          MetricOutputMapByTimeAndThreshold<MultiValuedScoreOutput> vectorResults )
+    {
         // Build charts
         try
         {
-            for ( final Map.Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<MultiValuedScoreOutput>> e : vectorResults.entrySet() )
+            ProjectConfig config = projectConfigPlus.getProjectConfig();
+            String graphicsString = projectConfigPlus.getGraphicsStrings().get( destConfig );
+            // Build the chart engine
+            MetricConfig nextConfig =
+                    getNamedConfigOrAllValid( metricId, config );
+            // Default to global type parameter
+            PlotTypeSelection plotType = destConfig.getGraphical().getPlotType();
+            String templateResourceName = null;
+            if ( Objects.nonNull( nextConfig ) )
             {
-                List<DestinationConfig> destinations =
-                        ConfigHelper.getGraphicalDestinations( config );
-
-                for ( DestinationConfig dest : destinations )
+                // Local type parameter
+                if ( nextConfig.getPlotType() != null )
                 {
-                    final String graphicsString = projectConfigPlus.getGraphicsStrings().get(dest);
-                    // Build the chart engine
-                    final MetricConfig nextConfig = getNamedConfigOrAllValid(e.getKey().getKey(), config);
-                    // Default to global type parameter
-                    PlotTypeSelection plotType = dest.getGraphical().getPlotType();
-                    String templateResourceName = null;
-                    if(Objects.nonNull(nextConfig))
-                    {
-                        // Local type parameter
-                        if( nextConfig.getPlotType() != null )
-                        {
-                            plotType = nextConfig.getPlotType();
-                        }
-                        templateResourceName = nextConfig.getTemplateResourceName();
-                    }
-                    final Map<MetricConstants, ChartEngine> engines =
-                        ChartEngineFactory.buildVectorOutputChartEngine(e.getValue(),
-                                                                        DATA_FACTORY,
-                                                                        plotType,
-                                                                        templateResourceName,
-                                                                        graphicsString);
-                    // Build the outputs
-                    for(final Map.Entry<MetricConstants, ChartEngine> nextEntry: engines.entrySet())
-                    {
-                        // Build the output file name
-                        File destDir = ConfigHelper.getDirectoryFromDestinationConfig( dest );
-                        Path outputImage = Paths.get( destDir.toString(),
-                                                      ConfigHelper.getFeatureDescription( feature )
-                                                      + "_"
-                                                      + e.getKey()
-                                                      .getKey().name()
-                                                      + "_"
-                                                      + config.getInputs()
-                                                      .getRight()
-                                                      .getVariable()
-                                                      .getValue()
-                                                      + "_"
-                                                      + nextEntry.getKey().name()
-                                                      + ".png" );
-                        ChartWriter.writeChart(outputImage, nextEntry.getValue(), dest);
-                    }
+                    plotType = nextConfig.getPlotType();
                 }
+                templateResourceName = nextConfig.getTemplateResourceName();
+            }
+            Map<MetricConstants, ChartEngine> engines =
+                    ChartEngineFactory.buildVectorOutputChartEngine( vectorResults,
+                                                                     DATA_FACTORY,
+                                                                     plotType,
+                                                                     templateResourceName,
+                                                                     graphicsString );
+            // Build the outputs
+            for ( final Map.Entry<MetricConstants, ChartEngine> nextEntry : engines.entrySet() )
+            {
+                // Build the output file name
+                File destDir = ConfigHelper.getDirectoryFromDestinationConfig( destConfig );
+                Path outputImage = Paths.get( destDir.toString(),
+                                              ConfigHelper.getFeatureDescription( feature )
+                                                                  + "_"
+                                                                  + metricId.name()
+                                                                  + "_"
+                                                                  + config.getInputs()
+                                                                          .getRight()
+                                                                          .getVariable()
+                                                                          .getValue()
+                                                                  + "_"
+                                                                  + nextEntry.getKey().name()
+                                                                  + ".png" );
+                ChartWriter.writeChart( outputImage, nextEntry.getValue(), destConfig );
             }
         }
         catch ( ChartEngineException
@@ -809,23 +829,23 @@ public class Control implements Function<String[], Integer>
         {
             throw new WresProcessingException( "Error while generating vector charts:", e );
         }
-    }
-
+    }      
+    
     /**
      * Processes a set of charts associated with {@link MultiVectorOutput} across multiple metrics, time windows,
      * and thresholds, stored in a {@link MetricOutputMultiMapByTimeAndThreshold}.
      * 
      * @param feature the feature for which the chart is defined
      * @param projectConfigPlus the project configuration
-     * @param multiVectorResults the multi-vector outputs
+     * @param multiVectorResults the metric results
      * @throws WresProcessingException if the processing completed unsuccessfully
      */
 
-    private static void   processMultiVectorCharts( final Feature feature,
-                                                    final ProjectConfigPlus projectConfigPlus,
-                                                    final MetricOutputMultiMapByTimeAndThreshold<MultiVectorOutput> multiVectorResults)
+    private static void processMultiVectorCharts( final Feature feature,
+                                                  final ProjectConfigPlus projectConfigPlus,
+                                                  final MetricOutputMultiMapByTimeAndThreshold<MultiVectorOutput> multiVectorResults )
     {
-        //Check for results
+        // Check for results
         if(Objects.isNull(multiVectorResults))
         {
             LOGGER.warn( "No multi-vector outputs from which to generate charts." );
@@ -833,77 +853,97 @@ public class Control implements Function<String[], Integer>
         }
 
         ProjectConfig config = projectConfigPlus.getProjectConfig();
+        // Iterate through each metric 
+        for ( final Map.Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<MultiVectorOutput>> e : multiVectorResults.entrySet() )
+        {
+            List<DestinationConfig> destinations =
+                    ConfigHelper.getGraphicalDestinations( config );
+            // Iterate through each destination
+            for ( DestinationConfig destConfig : destinations )
+            {
+                writeMultiVectorCharts( feature, projectConfigPlus, destConfig, e.getKey().getKey(), e.getValue() );
+            }
+        }
+    }
+    
+    /**
+     * Writes a set of charts associated with {@link MultiVectorOutput} for a single metric and time window, 
+     * stored in a {@link MetricOutputMultiMapByTimeAndThreshold}.
+     * 
+     * @param feature the feature
+     * @param projectConfigPlus the project configuration
+     * @param destConfig the destination configuration for the written output
+     * @param metricId the metric identifier
+     * @param multiVectorResults the metric results
+     * @throws WresProcessingException when an error occurs during writing
+     */
 
+    private static void writeMultiVectorCharts( Feature feature,
+                                                ProjectConfigPlus projectConfigPlus,
+                                                DestinationConfig destConfig,
+                                                MetricConstants metricId,
+                                                MetricOutputMapByTimeAndThreshold<MultiVectorOutput> multiVectorResults )
+    {
         // Build charts
         try
         {
-            // Build the charts for each metric
-            for(final Map.Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<MultiVectorOutput>> e: multiVectorResults.entrySet())
+            ProjectConfig config = projectConfigPlus.getProjectConfig();
+            String graphicsString = projectConfigPlus.getGraphicsStrings().get( destConfig );
+            // Build the chart engine
+            MetricConfig nextConfig = getNamedConfigOrAllValid( metricId, config );
+            // Default to global type parameter
+            PlotTypeSelection plotType = destConfig.getGraphical().getPlotType();
+            String templateResourceName = null;
+            if ( Objects.nonNull( nextConfig ) )
             {
-                List<DestinationConfig> destinations =
-                        ConfigHelper.getGraphicalDestinations( config );
-
-                for ( DestinationConfig dest : destinations )
+                // Local type parameter
+                if ( nextConfig.getPlotType() != null )
                 {
-                    final String graphicsString = projectConfigPlus.getGraphicsStrings().get(dest);
-                    // Build the chart engine
-                    MetricConfig nextConfig = getNamedConfigOrAllValid(e.getKey().getKey(), config);
-                    // Default to global type parameter
-                    PlotTypeSelection plotType = dest.getGraphical().getPlotType();
-                    String templateResourceName = null;
-                    if(Objects.nonNull(nextConfig))
-                    {
-                        // Local type parameter
-                        if( nextConfig.getPlotType() != null )
-                        {
-                            plotType = nextConfig.getPlotType();
-                        }
-                        templateResourceName = nextConfig.getTemplateResourceName();
-                    }
-
-                    final Map<Object, ChartEngine> engines =
-                        ChartEngineFactory.buildMultiVectorOutputChartEngine(e.getValue(),
-                                                                             DATA_FACTORY,
-                                                                             plotType,
-                                                                             templateResourceName,
-                                                                             graphicsString);
-                    // Build the outputs
-                    for(final Map.Entry<Object, ChartEngine> nextEntry: engines.entrySet())
-                    {
-                        // Build the output file name
-                        // TODO: adopt a more general naming convention as the pipelines expand
-                        // For now, the only supported temporal pipeline is per lead time
-                        Object key = nextEntry.getKey();
-                        if( key instanceof TimeWindow ) 
-                        {
-                            key = ( (TimeWindow) key ).getLatestLeadTimeInHours();
-                        }
-                        else if (key instanceof Threshold)
-                        {
-                            key = ( (Threshold) key ).toStringSafe();
-                        }
-                        File destDir = ConfigHelper.getDirectoryFromDestinationConfig( dest );
-                        Path outputImage = Paths.get( destDir.toString(),
-                                                      ConfigHelper.getFeatureDescription( feature )
-                                                      + "_"
-                                                      + e.getKey()
-                                                      .getKey().name()
-                                                      + "_"
-                                                      + config.getInputs()
-                                                      .getRight()
-                                                      .getVariable()
-                                                      .getValue()
-                                                      + "_"
-                                                      + key
-                                                      + ".png" );
-                        ChartWriter.writeChart(outputImage, nextEntry.getValue(), dest);
-                    }
+                    plotType = nextConfig.getPlotType();
                 }
+                templateResourceName = nextConfig.getTemplateResourceName();
+            }
+
+            final Map<Object, ChartEngine> engines =
+                    ChartEngineFactory.buildMultiVectorOutputChartEngine( multiVectorResults,
+                                                                          DATA_FACTORY,
+                                                                          plotType,
+                                                                          templateResourceName,
+                                                                          graphicsString );
+            // Build the outputs
+            for ( final Map.Entry<Object, ChartEngine> nextEntry : engines.entrySet() )
+            {
+                // Build the output file name
+                // TODO: adopt a more general naming convention as the pipelines expand
+                // For now, the only supported temporal pipeline is per lead time
+                Object key = nextEntry.getKey();
+                if ( key instanceof TimeWindow )
+                {
+                    key = ( (TimeWindow) key ).getLatestLeadTimeInHours();
+                }
+                else if ( key instanceof Threshold )
+                {
+                    key = ( (Threshold) key ).toStringSafe();
+                }
+                File destDir = ConfigHelper.getDirectoryFromDestinationConfig( destConfig );
+                Path outputImage = Paths.get( destDir.toString(),
+                                              ConfigHelper.getFeatureDescription( feature )
+                                                                  + "_"
+                                                                  + metricId.name()
+                                                                  + "_"
+                                                                  + config.getInputs()
+                                                                          .getRight()
+                                                                          .getVariable()
+                                                                          .getValue()
+                                                                  + "_"
+                                                                  + key
+                                                                  + ".png" );
+                ChartWriter.writeChart( outputImage, nextEntry.getValue(), destConfig );
             }
         }
         catch ( ChartEngineException
                 | ChartWritingException
-                | ProjectConfigException e)
+                | ProjectConfigException e )
         {
             throw new WresProcessingException( "Error while generating multi-vector charts:", e );
         }
@@ -919,11 +959,11 @@ public class Control implements Function<String[], Integer>
      * @throws WresProcessingException if the processing completed unsuccessfully
      */
 
-    private static void   processBoxPlotCharts( final Feature feature,
+    private static void processBoxPlotCharts( final Feature feature,
                                               final ProjectConfigPlus projectConfigPlus,
                                               final MetricOutputMultiMapByTimeAndThreshold<BoxPlotOutput> boxPlotResults )
     {
-        //Check for results
+        // Check for results
         if ( Objects.isNull( boxPlotResults ) )
         {
             LOGGER.warn( "No box-plot outputs from which to generate charts." );
@@ -931,64 +971,84 @@ public class Control implements Function<String[], Integer>
         }
 
         ProjectConfig config = projectConfigPlus.getProjectConfig();
+        // Iterate through each metric 
+        for ( final Map.Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<BoxPlotOutput>> e : boxPlotResults.entrySet() )
+        {
+            List<DestinationConfig> destinations =
+                    ConfigHelper.getGraphicalDestinations( config );
+            // Iterate through each destination
+            for ( DestinationConfig destConfig : destinations )
+            {
+                writeBoxPlotCharts( feature, projectConfigPlus, destConfig, e.getKey().getKey(), e.getValue() );
+            }
+        }
+    }
 
+    /**
+     * Writes a set of charts associated with {@link BoxPlotOutput} for a single metric and time window, 
+     * stored in a {@link MetricOutputMultiMapByTimeAndThreshold}.
+     * 
+     * @param feature the feature
+     * @param projectConfigPlus the project configuration
+     * @param destConfig the destination configuration for the written output
+     * @param metricId the metric identifier
+     * @param boxPlotResults the metric results
+     * @throws WresProcessingException when an error occurs during writing
+     */
+
+    private static void writeBoxPlotCharts( Feature feature,
+                                            ProjectConfigPlus projectConfigPlus,
+                                            DestinationConfig destConfig,
+                                            MetricConstants metricId,
+                                            MetricOutputMapByTimeAndThreshold<BoxPlotOutput> boxPlotResults )
+    {
         // Build charts
         try
         {
-            // Build the charts for each metric
-            for(final Map.Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<BoxPlotOutput>> e: boxPlotResults.entrySet())
+            ProjectConfig config = projectConfigPlus.getProjectConfig();
+            String graphicsString = projectConfigPlus.getGraphicsStrings().get( destConfig );
+            // Build the chart engine
+            MetricConfig nextConfig = getNamedConfigOrAllValid( metricId, config );
+            String templateResourceName = null;
+            if ( Objects.nonNull( nextConfig ) )
             {
-                List<DestinationConfig> destinations =
-                        ConfigHelper.getGraphicalDestinations( config );
+                templateResourceName = nextConfig.getTemplateResourceName();
+            }
 
-                for ( DestinationConfig dest : destinations )
-                {
-                    final String graphicsString = projectConfigPlus.getGraphicsStrings().get(dest);
-                    // Build the chart engine
-                    final MetricConfig nextConfig = getNamedConfigOrAllValid(e.getKey().getKey(), config);
-                    String templateResourceName = null;
-                    if(Objects.nonNull(nextConfig))
-                    {
-                        templateResourceName = nextConfig.getTemplateResourceName();
-                    }
-
-                    final Map<Pair<TimeWindow, Threshold>, ChartEngine> engines =
-                            ChartEngineFactory.buildBoxPlotChartEngine( e.getValue(),
-                                                                        templateResourceName,
-                                                                        graphicsString );
-                    // Build the outputs
-                    for(final Map.Entry<Pair<TimeWindow, Threshold>, ChartEngine> nextEntry: engines.entrySet())
-                    {
-                        // Build the output file name
-                        File destDir = ConfigHelper.getDirectoryFromDestinationConfig( dest );
-                        // TODO: adopt a more general naming convention as the pipelines expand
-                        // For now, the only temporal pipeline is by lead time
-                        long key = nextEntry.getKey().getLeft().getLatestLeadTimeInHours();
-                        Path outputImage = Paths.get( destDir.toString(),
-                                                      ConfigHelper.getFeatureDescription( feature )
-                                                      + "_"
-                                                      + e.getKey()
-                                                      .getKey().name()
-                                                      + "_"
-                                                      + config.getInputs()
-                                                      .getRight()
-                                                      .getVariable()
-                                                      .getValue()
-                                                      + "_"
-                                                      + key
-                                                      + ".png" );
-                        ChartWriter.writeChart(outputImage, nextEntry.getValue(), dest);
-                    }
-                }
+            final Map<Pair<TimeWindow, Threshold>, ChartEngine> engines =
+                    ChartEngineFactory.buildBoxPlotChartEngine( boxPlotResults,
+                                                                templateResourceName,
+                                                                graphicsString );
+            // Build the outputs
+            for ( final Map.Entry<Pair<TimeWindow, Threshold>, ChartEngine> nextEntry : engines.entrySet() )
+            {
+                // Build the output file name
+                File destDir = ConfigHelper.getDirectoryFromDestinationConfig( destConfig );
+                // TODO: adopt a more general naming convention as the pipelines expand
+                // For now, the only temporal pipeline is by lead time
+                long key = nextEntry.getKey().getLeft().getLatestLeadTimeInHours();
+                Path outputImage = Paths.get( destDir.toString(),
+                                              ConfigHelper.getFeatureDescription( feature )
+                                                                  + "_"
+                                                                  + metricId.name()
+                                                                  + "_"
+                                                                  + config.getInputs()
+                                                                          .getRight()
+                                                                          .getVariable()
+                                                                          .getValue()
+                                                                  + "_"
+                                                                  + key
+                                                                  + ".png" );
+                ChartWriter.writeChart( outputImage, nextEntry.getValue(), destConfig );
             }
         }
         catch ( ChartEngineException
                 | ChartWritingException
-                | ProjectConfigException e)
+                | ProjectConfigException e )
         {
-            throw new WresProcessingException( "Error while generating multi-vector charts:", e );
+            throw new WresProcessingException( "Error while generating box-plot charts:", e );
         }
-    }    
+    }
 
     /**
      * Get project configurations from command line file args. If there are no command line args, look in System
@@ -1081,12 +1141,9 @@ public class Control implements Function<String[], Integer>
             try
             {
                 input = futureInput.get();
-                if(LOGGER.isDebugEnabled())
-                {
-                    LOGGER.debug("Completed processing of pairs for feature '{}' and time window {}.",
-                                 input.getMetadata().getIdentifier().getGeospatialID(),
-                                 input.getMetadata().getTimeWindow());
-                }
+                LOGGER.debug( "Completed processing of pairs for feature '{}' and time window {}.",
+                              input.getMetadata().getIdentifier().getGeospatialID(),
+                              input.getMetadata().getTimeWindow() );
             }
             catch(final InterruptedException e)
             {
@@ -1184,21 +1241,18 @@ public class Control implements Function<String[], Integer>
                                               input.getBoxPlotOutput() );
                         meta = input.getBoxPlotOutput().entrySet().iterator().next().getValue().getMetadata();
                     }
-                    if ( LOGGER.isDebugEnabled() )
+                    if ( Objects.nonNull( meta ) )
                     {
-                        if ( Objects.nonNull( meta ) )
-                        {
-                            LOGGER.debug( "Completed processing of intermediate metrics results for feature '{}' "
-                                          + "and time window {}.",
-                                          meta.getIdentifier().getGeospatialID(),
-                                          meta.getTimeWindow() );
-                        }
-                        else
-                        {
-                            LOGGER.debug( "Completed processing of intermediate metrics results for feature '{}' with "
-                                          + "unknown time window.",
-                                          feature.getLocationId() );
-                        }
+                        LOGGER.debug( "Completed processing of intermediate metrics results for feature '{}' "
+                                      + "and time window {}.",
+                                      meta.getIdentifier().getGeospatialID(),
+                                      meta.getTimeWindow() );
+                    }
+                    else
+                    {
+                        LOGGER.debug( "Completed processing of intermediate metrics results for feature '{}' with "
+                                      + "unknown time window.",
+                                      feature.getLocationId() );
                     }
                 }
             }

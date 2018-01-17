@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.util.Strings;
 
+import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import java.beans.PropertyVetoException;
 import java.sql.Connection;
@@ -19,7 +20,8 @@ import java.util.TreeMap;
  * Contains access to configured settings and objects for accessing the database
  * @author Christopher Tubbs
  */
-final class DatabaseSettings {
+final class DatabaseSettings
+{
 	private static final Logger LOGGER = LoggerFactory.getLogger(DatabaseSettings.class);
 
 	// A mapping of database names to the name of the class for the 
@@ -31,9 +33,8 @@ final class DatabaseSettings {
 	private String port = "5432";
 	private String databaseName = "wres";
 	private String databaseType = "postgresql";
-	private String connection_string = null;
-	private int max_pool_size = 10;
-	private int max_idle_time = 30;
+    private int maxPoolSize = 10;
+    private int maxIdleTime = 30;
 
 	/**
 	 * Creates the mapping between the names of databases to the name of the classes that may connect to them
@@ -51,7 +52,7 @@ final class DatabaseSettings {
 	 * Parses the settings for the database from an XMLReader
 	 * @param reader The reader containing XML data
 	 */
-	DatabaseSettings(XMLStreamReader reader)
+    DatabaseSettings( XMLStreamReader reader )
 	{
 		try {
 			while (reader.hasNext())
@@ -72,9 +73,11 @@ final class DatabaseSettings {
 			}
 			this.applySystemPropertyOverrides();
 			testConnection();
-		} catch (Exception e) {
-		    throw new ExceptionInInitializerError(e);
-		}
+        }
+        catch ( XMLStreamException | SQLException e )
+        {
+            throw new ExceptionInInitializerError( e );
+        }
 	}
 
 	/**
@@ -129,20 +132,19 @@ final class DatabaseSettings {
         }
     }
 
-	
 	public ComboPooledDataSource createDatasource()
 	{
 		ComboPooledDataSource datasource = new ComboPooledDataSource();
-		
+
 		try {
 			datasource.setDriverClass(DRIVER_MAPPING.get(getDatabaseType()));
 			datasource.setJdbcUrl(getConnectionString());
 			datasource.setUser(username);
 			datasource.setPassword(password);
 			datasource.setAutoCommitOnClose(true);
-			datasource.setMaxIdleTime(max_idle_time);
-			datasource.setMaxPoolSize(max_pool_size);
-			datasource.setInitialPoolSize(max_pool_size);
+            datasource.setMaxIdleTime( maxIdleTime );
+            datasource.setMaxPoolSize( maxPoolSize );
+            datasource.setInitialPoolSize( maxPoolSize );
 			datasource.setPreferredTestQuery("SELECT 1");
 			datasource.setTestConnectionOnCheckout(false);
 		} 
@@ -176,7 +178,12 @@ final class DatabaseSettings {
 
 		return highPrioritySource;
 	}
-	
+
+    private String getUrl()
+    {
+        return this.url;
+    }
+
 	/**
 	 * Sets the URL of the database to connect to
 	 * @param url The address of the database to connect to
@@ -185,7 +192,7 @@ final class DatabaseSettings {
 	{
 		this.url = url;
 	}
-	
+
 	/**
 	 * Sets the username used to connect to the database
 	 * @param username The username used to connect to the database
@@ -194,7 +201,7 @@ final class DatabaseSettings {
 	{
 		this.username = username;
 	}
-	
+
 	/**
 	 * Sets the password used to connect to the database
 	 * @param password The password used to connect to the database
@@ -203,7 +210,12 @@ final class DatabaseSettings {
 	{
 		this.password = password;
 	}
-	
+
+    private String getPort()
+    {
+        return this.port;
+    }
+
 	/**
 	 * Sets the identifier for the port used to connect to the database
 	 * @param port
@@ -212,7 +224,12 @@ final class DatabaseSettings {
 	{
 		this.port = port;
 	}
-	
+
+    private String getDatabaseName()
+    {
+        return this.databaseName;
+    }
+
 	/**
 	 * Sets the name of the database to connect to
 	 * @param database_name The name of the database to access
@@ -221,7 +238,7 @@ final class DatabaseSettings {
 	{
 		this.databaseName = database_name;
 	}
-	
+
 	/**
 	 * Sets the name of the type of database in use (such as 'mysql', 'postgresql', etc)
 	 * @param database_type The name of the database to connect to
@@ -230,38 +247,38 @@ final class DatabaseSettings {
 	{
 		this.databaseType = database_type;
 	}
-	
+
 	/**
 	 * Creates the connection string used to access the database
 	 * @return The connection string used to connect to the database of interest
 	 */
     private String getConnectionString ()
-	{
-		if (connection_string == null)
-		{
-			connection_string = "jdbc:";
-			
-			connection_string += databaseType;
-			connection_string += "://";
-			connection_string += url;
-			if (port != null)
-			{
-				connection_string += ":";
-				connection_string += port;
-			}
-			connection_string += "/";
-			connection_string += databaseName;
-		}
-		
-		return connection_string;
-	}
-	
+    {
+        StringBuilder connectionString = new StringBuilder();
+        connectionString.append( "jdbc:" );
+        connectionString.append( this.getDatabaseType() );
+        connectionString.append( "://" );
+        connectionString.append( this.getUrl() );
+
+        if ( this.getPort() != null )
+        {
+            connectionString.append( ":" );
+            connectionString.append( this.getPort() );
+        }
+
+        connectionString.append( "/" );
+        connectionString.append( this.getDatabaseName() );
+
+        return connectionString.toString();
+    }
+
 	/**
 	 * Parses out settings from the passed in XML 
 	 * @param reader The XML reader containing XML data describing the database settings
 	 * @throws Exception Any exception occurred when reading from the XML
 	 */
-	private void parseElement(XMLStreamReader reader) throws Exception
+    private void parseElement( XMLStreamReader reader )
+            throws XMLStreamException
 	{
 		if (reader.isStartElement())
 		{
@@ -294,10 +311,10 @@ final class DatabaseSettings {
 					setUsername(value);
 					break;
 				case "max_pool_size":
-					max_pool_size = Integer.parseInt(value);
+                    maxPoolSize = Integer.parseInt( value);
 					break;
 				case "max_idle_time":
-					max_idle_time = Integer.parseInt(value);
+                    maxIdleTime = Integer.parseInt( value);
 					break;
 				default:
 					LOGGER.error("Tag of type: '" + tag_name + "' is not valid for database configuration.");
