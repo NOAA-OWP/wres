@@ -68,7 +68,7 @@ public abstract class Scripter
             case ROLLING:
                 if (isForecast)
                 {
-                    loadScripter = new RollingForecastScripter(
+                    loadScripter = new PoolingForecastScripter(
                             projectDetails,
                             dataSourceConfig,
                             feature,
@@ -78,7 +78,7 @@ public abstract class Scripter
                 }
                 else
                 {
-                    loadScripter = new RollingObservationScripter(
+                    loadScripter = new PoolingObservationScripter(
                             projectDetails,
                             dataSourceConfig,
                             feature,
@@ -121,7 +121,8 @@ public abstract class Scripter
         return this.feature;
     }
 
-    protected int getProgress()
+    protected int getProgress() throws NoDataException, SQLException,
+            InvalidPropertiesFormatException
     {
         return this.progress;
     }
