@@ -15,9 +15,23 @@ import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.engine.statistics.metric.MetricProcessorByTime;
 import wres.io.config.ProjectConfigPlus;
 
+/**
+ * A processor that generates outputs while a processing pipeline is ongoing (i.e. has more outputs to generate), rather 
+ * than at the end of a pipeline (i.e. once all outputs have been generated). 
+ * 
+ * @author james.brown@hydrosolved.com
+ * @author jesse.bickel@***REMOVED***
+ * @since 0.1
+ * @version 0.2
+ */
+
 public class IntermediateResultProcessor implements Consumer<MetricOutputForProjectByTimeAndThreshold>
 {
 
+    /**
+     * Logger.
+     */
+    
     private static final Logger LOGGER = LoggerFactory.getLogger( IntermediateResultProcessor.class );
 
     /**
@@ -26,20 +40,17 @@ public class IntermediateResultProcessor implements Consumer<MetricOutputForProj
 
     private final ProjectConfigPlus projectConfigPlus;
 
-
     /**
      * The feature.
      */
 
     private final Feature feature;
-
-        
+       
     /**
      * The processor used to determined whether the output is intermediate or being cached.
      */
 
     private final MetricProcessorByTime<?> processor;
-
         
     /**
      * Construct.
