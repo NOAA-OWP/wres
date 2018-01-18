@@ -116,18 +116,18 @@ public interface MetadataFactory
      * and the input, and a {@link MetricConstants} identifier for the metric.
      * 
      * @param sampleSize the sample size
-     * @param dim the dimension
+     * @param outputDim the dimension
      * @param inputDim the input dimension
      * @param metricID the metric identifier
      * @return a {@link MetricOutputMetadata} object
      */
 
     default MetricOutputMetadata getOutputMetadata( final int sampleSize,
-                                                    final Dimension dim,
+                                                    final Dimension outputDim,
                                                     final Dimension inputDim,
                                                     final MetricConstants metricID )
     {
-        return getOutputMetadata( sampleSize, dim, inputDim, metricID, MetricConstants.MAIN, null, null );
+        return getOutputMetadata( sampleSize, outputDim, inputDim, metricID, MetricConstants.MAIN, null, null );
     }
 
     /**
@@ -135,7 +135,7 @@ public interface MetadataFactory
      * and the input, and {@link MetricConstants} identifiers for the metric and the metric component, respectively.
      * 
      * @param sampleSize the sample size
-     * @param dim the output dimension
+     * @param outputDim the output dimension
      * @param inputDim the input dimension
      * @param metricID the metric identifier
      * @param componentID the metric component identifier or decomposition template
@@ -143,12 +143,12 @@ public interface MetadataFactory
      */
 
     default MetricOutputMetadata getOutputMetadata( final int sampleSize,
-                                                    final Dimension dim,
+                                                    final Dimension outputDim,
                                                     final Dimension inputDim,
                                                     final MetricConstants metricID,
                                                     final MetricConstants componentID )
     {
-        return getOutputMetadata( sampleSize, dim, inputDim, metricID, componentID, null, null );
+        return getOutputMetadata( sampleSize, outputDim, inputDim, metricID, componentID, null, null );
     }
 
     /**
@@ -157,7 +157,7 @@ public interface MetadataFactory
      * for the metric and the metric component, respectively.
      * 
      * @param sampleSize the sample size
-     * @param dim the output dimension
+     * @param outputDim the output dimension
      * @param metadata the source metadata
      * @param metricID the metric identifier
      * @param componentID the metric component identifier or decomposition template
@@ -165,7 +165,7 @@ public interface MetadataFactory
      */
 
     default MetricOutputMetadata getOutputMetadata( final int sampleSize,
-                                                    final Dimension dim,
+                                                    final Dimension outputDim,
                                                     final Metadata metadata,
                                                     final MetricConstants metricID,
                                                     final MetricConstants componentID )
@@ -173,7 +173,7 @@ public interface MetadataFactory
         Objects.requireNonNull( metadata,
                                 "Specify a non-null source of input metadata from which to build the output metadata." );
         return getOutputMetadata( sampleSize,
-                                  dim,
+                                  outputDim,
                                   metadata.getDimension(),
                                   metricID,
                                   componentID,
@@ -187,7 +187,7 @@ public interface MetadataFactory
      * optional {@link DatasetIdentifier} identifier.
      * 
      * @param sampleSize the sample size
-     * @param dim the output dimension
+     * @param outputDim the output dimension
      * @param inputDim the input dimension
      * @param metricID the metric identifier
      * @param componentID the metric component identifier or decomposition template
@@ -196,13 +196,13 @@ public interface MetadataFactory
      */
 
     default MetricOutputMetadata getOutputMetadata( final int sampleSize,
-                                                    final Dimension dim,
+                                                    final Dimension outputDim,
                                                     final Dimension inputDim,
                                                     final MetricConstants metricID,
                                                     final MetricConstants componentID,
                                                     final DatasetIdentifier identifier )
     {
-        return getOutputMetadata( sampleSize, dim, inputDim, metricID, componentID, identifier, null );
+        return getOutputMetadata( sampleSize, outputDim, inputDim, metricID, componentID, identifier, null );
     }
 
     /**
@@ -262,7 +262,7 @@ public interface MetadataFactory
      * optional {@link DatasetIdentifier} identifier and {@link TimeWindow}.
      * 
      * @param sampleSize the sample size
-     * @param dim the output dimension
+     * @param outputDim the output dimension
      * @param inputDim the input dimension
      * @param metricID the metric identifier
      * @param componentID the metric component identifier or decomposition template
@@ -272,7 +272,7 @@ public interface MetadataFactory
      */
 
     MetricOutputMetadata getOutputMetadata( final int sampleSize,
-                                            final Dimension dim,
+                                            final Dimension outputDim,
                                             final Dimension inputDim,
                                             final MetricConstants metricID,
                                             final MetricConstants componentID,
