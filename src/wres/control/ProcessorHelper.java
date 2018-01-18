@@ -1086,7 +1086,7 @@ public class ProcessorHelper
     {
         Objects.requireNonNull( projectConfig, "Specify non-null project configuration." );
         // Does the configuration contain any multivector types?        
-        boolean hasMultiVectorType = MetricProcessor.getMetricsFromConfig( projectConfig )
+        boolean hasMultiVectorType = MetricConfigHelper.getMetricsFromConfig( projectConfig )
                                                     .stream()
                                                     .anyMatch( a -> a.isInGroup( MetricOutputGroup.MULTIVECTOR ) );
 
