@@ -13,9 +13,9 @@ import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.NoDataException;
 import wres.util.TimeHelper;
 
-class RollingForecastScripter extends Scripter
+class PoolingForecastScripter extends Scripter
 {
-    protected RollingForecastScripter( ProjectDetails projectDetails,
+    protected PoolingForecastScripter( ProjectDetails projectDetails,
                                        DataSourceConfig dataSourceConfig,
                                        Feature feature,
                                        int progress,
@@ -133,5 +133,13 @@ class RollingForecastScripter extends Scripter
         return "F.valid_time";
     }
 
-    private String zeroDate;
+    @Override
+    protected int getProgress() throws NoDataException, SQLException,
+            InvalidPropertiesFormatException
+    {
+        // TODO: Change ConfigHelper.getLeadQualifier to suit this need
+        // ConfigHelper.getLeadQualifier cannot be currently used since it
+        // relies on the alias 'FV'
+        return super.getProgress() + this.getProjectDetails().getLeadOffset( this.getFeature() );
+    }
 }

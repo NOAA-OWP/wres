@@ -11,6 +11,7 @@ import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.InvalidPropertiesFormatException;
 import java.util.StringJoiner;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,13 +34,9 @@ public class PairWriter extends WRESCallable<Boolean>
     private static final String PAIR_FILENAME = "/pairs.csv";
     private static final String BASELINE_FILENAME = "/baseline_pairs.csv";
 
-    // TODO: Actually guard this static variable
-    /** Guarded by PAIR_OUTPUT_LOCK */
-    private static boolean headerHasBeenWritten = false;
+    private static AtomicBoolean headerHasBeenWritten = new AtomicBoolean( false );
 
-    // TODO: Actually guard this static variable
-    /** Guarded by BASELINE_PAIR_OUTPUT_LOCK */
-    private static boolean baselineHeaderHasBeenWritten = false;
+    private static AtomicBoolean baselineHeaderHasBeenWritten = new AtomicBoolean( false );
 
     private final DestinationConfig destinationConfig;
     private final String date;
@@ -96,8 +93,8 @@ public class PairWriter extends WRESCallable<Boolean>
 
         synchronized ( PAIR_OUTPUT_LOCK )
         {
-            if ( (!this.isBaseline && !PairWriter.headerHasBeenWritten) ||
-                 (this.isBaseline && !PairWriter.baselineHeaderHasBeenWritten) )
+            if ( (!this.isBaseline && !PairWriter.headerHasBeenWritten.get()) ||
+                 (this.isBaseline && !PairWriter.baselineHeaderHasBeenWritten.get()) )
             {
                 Files.deleteIfExists( Paths.get( actualFileDestination) );
             }
@@ -106,19 +103,19 @@ public class PairWriter extends WRESCallable<Boolean>
                                                          true );
                   BufferedWriter writer = new BufferedWriter( fileWriter ) )
             {
-                if ( this.isBaseline && !PairWriter.baselineHeaderHasBeenWritten)
+                if ( this.isBaseline && !PairWriter.baselineHeaderHasBeenWritten.get())
                 {
                     writer.write( OUTPUT_HEADER );
                     writer.newLine();
 
-                    PairWriter.baselineHeaderHasBeenWritten = true;
+                    PairWriter.baselineHeaderHasBeenWritten.set( true );
                 }
-                else if ( !this.isBaseline && !PairWriter.headerHasBeenWritten )
+                else if ( !this.isBaseline && !PairWriter.headerHasBeenWritten.get() )
                 {
                     writer.write( OUTPUT_HEADER );
                     writer.newLine();
 
-                    PairWriter.headerHasBeenWritten = true;
+                    PairWriter.headerHasBeenWritten.set( true );
                 }
 
                 StringJoiner line = new StringJoiner( DELIMITER );
@@ -208,13 +205,15 @@ public class PairWriter extends WRESCallable<Boolean>
 
         int window = this.getWindowNum();
 
+        // If basis time pooling is used, you get intermediary pools. This means
+        // that you don't just get entries for window 0, 1, 2, 3, 4, etc, you
+        // get window 0 pooling step 1, window 0 pooling step 2, window 1
+        // pooling step 1, etc. To find the overall window (i.e. "this is the
+        // fifth calculation"), you need to break down the calculation to
+        // compensate for the number of intermediate windows
         if ( this.projectDetails.getPoolingMode() == TimeWindowMode.ROLLING )
         {
             window /= this.projectDetails.getAggregationFrequency();
-            // This doesn't quite work. When rolling over to the next
-            // lead, it stays at the largest value prior. For instance,
-            // if the number goes from 1 through 5, the next window for
-            // the next lead will then be 5.
             window *= (this.projectDetails.getPoolCount( this.feature ));
             window += this.poolingStep;
         }
