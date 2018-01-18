@@ -1,30 +1,39 @@
 package wres.datamodel;
 
 import java.util.Collections;
-import java.util.Map;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
 import java.util.StringJoiner;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.MapOutput;
 import wres.datamodel.outputs.MetricOutputException;
+import wres.datamodel.outputs.PairedOutput;
 
 /**
- * A read-only map of outputs. The keys and values may or may not be immutable, but the map is read only.
+ * A read-only list of paired outputs. The pairs may or may not be immutable, but the list is read only.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
  * @since 0.4
  */
 
-class SafeMapOutput<S,T> implements MapOutput<S,T>
+class SafePairedOutput<S, T> implements PairedOutput<S, T>
 {
+
+    /**
+     * Line separator for printing.
+     */
+
+    private static final String NEWLINE = System.lineSeparator();
 
     /**
      * The output.
      */
 
-    private final Map<S,T> output;
+    private final List<Pair<S, T>> output;
 
     /**
      * The metadata associated with the output.
@@ -41,11 +50,11 @@ class SafeMapOutput<S,T> implements MapOutput<S,T>
     @Override
     public boolean equals( final Object o )
     {
-        if ( ! ( o instanceof SafeMapOutput ) )
+        if ( ! ( o instanceof SafePairedOutput ) )
         {
             return false;
         }
-        final SafeMapOutput<?,?> v = (SafeMapOutput<?,?>) o;
+        final SafePairedOutput<?, ?> v = (SafePairedOutput<?, ?>) o;
         boolean start = meta.equals( v.getMetadata() );
         start = start && v.output.equals( output );
         return start;
@@ -54,21 +63,27 @@ class SafeMapOutput<S,T> implements MapOutput<S,T>
     @Override
     public int hashCode()
     {
-        return Objects.hash( output , meta );
+        return Objects.hash( output, meta );
     }
 
     @Override
-    public Map<S,T> getData()
+    public List<Pair<S, T>> getData()
     {
         return output;
     }
 
     @Override
+    public Iterator<Pair<S, T>> iterator()
+    {
+        return output.iterator();
+    }
+
+    @Override
     public String toString()
     {
-        StringJoiner joiner = new StringJoiner( ",", "[", "]" );
-        output.forEach( ( key, value ) -> joiner.add( value.toString() ) );
-        return joiner.toString();
+        StringJoiner b = new StringJoiner( NEWLINE );
+        output.forEach( pair -> b.add( pair.toString() ) );
+        return b.toString();
     }
 
     /**
@@ -79,8 +94,8 @@ class SafeMapOutput<S,T> implements MapOutput<S,T>
      * @throws MetricOutputException if any of the inputs are invalid
      */
 
-    SafeMapOutput( final Map<S,T> output, final MetricOutputMetadata meta )
-    {        
+    SafePairedOutput( final List<Pair<S, T>> output, final MetricOutputMetadata meta )
+    {
         //Validate
         if ( Objects.isNull( output ) )
         {
@@ -91,18 +106,22 @@ class SafeMapOutput<S,T> implements MapOutput<S,T>
             throw new MetricOutputException( "Specify non-null metadata." );
         }
         //Set content
-        this.output = Collections.unmodifiableMap( output );     
+        this.output = Collections.unmodifiableList( output );
         this.meta = meta;
 
         //Validate content
-        output.forEach( ( key, value ) -> {
-            if ( Objects.isNull( key ) )
+        output.forEach( pair -> {
+            if ( Objects.isNull( pair ) )
             {
-                throw new MetricOutputException( "Cannot prescribe a null key for the input map." );
+                throw new MetricOutputException( "Cannot prescribe a null pair for the input map." );
             }
-            if ( Objects.isNull( value ) )
+            if ( Objects.isNull( pair.getLeft() ) )
             {
-                throw new MetricOutputException( "Cannot prescribe a null value for the input map." );
+                throw new MetricOutputException( "Cannot prescribe a null value for the left of a pair." );
+            }
+            if ( Objects.isNull( pair.getRight() ) )
+            {
+                throw new MetricOutputException( "Cannot prescribe a null value for the right of a pair." );
             }
         } );
 
