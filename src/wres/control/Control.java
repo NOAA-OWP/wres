@@ -343,11 +343,9 @@ public class Control implements Function<String[], Integer>
 
         final ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
 
-        if(LOGGER.isInfoEnabled())
-        {
-            // This will NOT work if we are using any other feature format
-            LOGGER.info( "Processing feature '{}'", feature.getLocationId() );
-        }
+        final String featureDescription = ConfigHelper.getFeatureDescription( feature );
+
+        LOGGER.info( "Processing feature '{}'", featureDescription );
 
         // Sink for the results: the results are added incrementally to an immutable store via a builder
         // Some output types are processed at the end of the pipeline, others after each input is processed
@@ -467,7 +465,7 @@ public class Control implements Function<String[], Integer>
 
             // Otherwise, chain and propagate the exception up to the top.
             String message = "Error while processing feature "
-                             + ConfigHelper.getFeatureDescription( feature );
+                             + featureDescription;
             throw new WresProcessingException( message, e );
         }
 
@@ -495,19 +493,21 @@ public class Control implements Function<String[], Integer>
                                                Feature feature )
     {
         ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
+        final String featureDescription = ConfigHelper.getFeatureDescription( feature );
+
         //Generate graphical output
         if ( configNeedsThisTypeOfOutput( projectConfig,
                                           DestinationType.GRAPHIC ) )
         {
             LOGGER.debug( "Beginning to build charts for feature {}...",
-                          feature.getLocationId() );
+                          featureDescription );
 
             processCachedCharts( feature,
                                  projectConfigPlus,
                                  processor );
 
             LOGGER.debug( "Finished building charts for feature {}.",
-                          feature.getLocationId() );
+                          featureDescription );
         }
 
         //Generate numerical output
@@ -515,7 +515,7 @@ public class Control implements Function<String[], Integer>
                                           DestinationType.NUMERIC ) )
         {
             LOGGER.debug( "Beginning to write numeric output for feature {}...",
-                          feature.getLocationId() );
+                          featureDescription );
 
             try
             {
@@ -540,13 +540,10 @@ public class Control implements Function<String[], Integer>
             }
 
             LOGGER.debug( "Finished writing numeric output for feature {}.",
-                          feature.getLocationId() );
+                          featureDescription );
         }
 
-        if ( LOGGER.isInfoEnabled() )
-        {
-            LOGGER.info( "Completed processing of feature '{}'.", feature.getLocationId() );
-        }
+        LOGGER.info( "Completed processing of feature '{}'.", featureDescription );
     }
 
     /**
