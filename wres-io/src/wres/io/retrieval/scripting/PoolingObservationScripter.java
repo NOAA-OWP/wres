@@ -9,9 +9,9 @@ import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.NoDataException;
 import wres.util.NotImplementedException;
 
-class RollingObservationScripter extends Scripter
+class PoolingObservationScripter extends Scripter
 {
-    protected RollingObservationScripter( ProjectDetails projectDetails,
+    protected PoolingObservationScripter( ProjectDetails projectDetails,
                                           DataSourceConfig dataSourceConfig,
                                           Feature feature,
                                           int progress,
