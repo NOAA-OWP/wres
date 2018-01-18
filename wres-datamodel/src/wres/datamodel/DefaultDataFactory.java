@@ -32,7 +32,7 @@ import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.MapKey;
-import wres.datamodel.outputs.MapOutput;
+import wres.datamodel.outputs.PairedOutput;
 import wres.datamodel.outputs.MatrixOutput;
 import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold.MetricOutputForProjectByTimeAndThresholdBuilder;
@@ -302,9 +302,9 @@ public class DefaultDataFactory implements DataFactory
 
 
     @Override
-    public <S, T> MapOutput<S, T> ofMapOutput( Map<S, T> output, MetricOutputMetadata meta )
+    public <S, T> PairedOutput<S, T> ofPairedOutput( List<Pair<S, T>> output, MetricOutputMetadata meta )
     {
-        return new SafeMapOutput<>(output, meta);
+        return new SafePairedOutput<>(output, meta);
     }
     
     @Override
