@@ -64,7 +64,7 @@ public class DefaultMetadataFactory implements MetadataFactory
 
     @Override
     public MetricOutputMetadata getOutputMetadata(final int sampleSize,
-                                                  final Dimension dim,
+                                                  final Dimension outputDim,
                                                   final Dimension inputDim,
                                                   final MetricConstants metricID,
                                                   final MetricConstants componentID,
@@ -76,7 +76,7 @@ public class DefaultMetadataFactory implements MetadataFactory
 
             private MetricOutputMetadataImpl()
             {
-                super(dim, identifier, timeWindow);
+                super(outputDim, identifier, timeWindow);
             }
 
             @Override
@@ -135,9 +135,17 @@ public class DefaultMetadataFactory implements MetadataFactory
             public String toString()
             {
                 String start = super.toString();
-                start = start.replaceAll("]", ",");
+                start = start.substring( 0, start.length() -1 ); // Remove bookend char, ']'
                 final StringBuilder b = new StringBuilder(start);
-                b.append(sampleSize).append(",").append(metricID).append(",").append(componentID).append("]");
+                b.append( "," )
+                 .append( inputDim )
+                 .append( "," )
+                 .append( sampleSize )
+                 .append( "," )
+                 .append( metricID )
+                 .append( "," )
+                 .append( componentID )
+                 .append( "]" );
                 return b.toString();
             }
 

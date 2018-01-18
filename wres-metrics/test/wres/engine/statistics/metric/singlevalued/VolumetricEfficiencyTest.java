@@ -38,25 +38,19 @@ public final class VolumetricEfficiencyTest
      * Constructs a {@link VolumetricEfficiency} and compares the actual result to the expected result. Also, checks 
      * the parameters.
      * @throws MetricParameterException if the metric could not be constructed 
+     * @throws IOException if the test data could not be read
      */
 
     @Test
-    public void test1VolumetricEfficiency() throws MetricParameterException
+    public void test1VolumetricEfficiency() throws MetricParameterException, IOException
     {
         //Obtain the factories
         final DataFactory outF = DefaultDataFactory.getInstance();
         final MetadataFactory metaFac = outF.getMetadataFactory();
 
         //Generate some data
-        SingleValuedPairs input = null;
-        try
-        {
-            input = MetricTestDataFactory.getSingleValuedPairsFive();
-        }
-        catch ( IOException e )
-        {
-            fail( "Unable to read the test data." );
-        }
+        SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsFive();
+
         //Metadata for the output
         final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                  Instant.parse( "2010-12-31T11:59:59Z" ),
@@ -78,7 +72,7 @@ public final class VolumetricEfficiencyTest
         final VolumetricEfficiency ve = b.build();
 
         //Check the parameters
-        assertTrue( "Unexpected name for the Index of Agreement.",
+        assertTrue( "Unexpected name for the Volumetric Efficiency.",
                     ve.getName().equals( MetricConstants.VOLUMETRIC_EFFICIENCY.toString() ) );
         assertTrue( "The Volumetric Efficiency is not decomposable.", !ve.isDecomposable() );
         assertTrue( "The Volumetric Efficiency is not a skill score.", !ve.isSkillScore() );
