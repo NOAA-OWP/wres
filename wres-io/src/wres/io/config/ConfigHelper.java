@@ -889,7 +889,6 @@ public class ConfigHelper
      * @throws NullPointerException if the config is null
      * @throws DateTimeParseException if the configuration contains dates that cannot be parsed
      * @throws InvalidPropertiesFormatException if dates could not be established
-     * @throws SQLException if the anchor date for the rolling windows could not be established
      */
 
     public static TimeWindow getTimeWindow( ProjectDetails projectDetails, long lead, int sequenceStep)
