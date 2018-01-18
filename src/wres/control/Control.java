@@ -88,6 +88,7 @@ public class Control implements Function<String[], Integer>
      *
      * @param args the paths to one or more project configurations
      */
+    @Override
     public Integer apply(final String[] args)
     {
         // Unmarshal the configurations
@@ -594,7 +595,7 @@ public class Control implements Function<String[], Integer>
                 IntermediateResultProcessor.processMultiVectorCharts( feature,
                                                                       projectConfigPlus,
                                                                       processor.getCachedMetricOutput()
-                                                   .getMultiVectorOutput() );
+                                                                               .getMultiVectorOutput() );
             }
             // Process box plot charts
             if ( processor.willCacheMetricOutput( MetricOutputGroup.BOXPLOT )
@@ -603,7 +604,7 @@ public class Control implements Function<String[], Integer>
                 IntermediateResultProcessor.processBoxPlotCharts( feature,
                                                                   projectConfigPlus,
                                                                   processor.getCachedMetricOutput()
-                                                                  .getBoxPlotOutput() );
+                                                                           .getBoxPlotOutput() );
             }
         }
         catch ( final MetricOutputAccessException e )
@@ -823,7 +824,7 @@ public class Control implements Function<String[], Integer>
         }
     }      
 
-    
+
     /**
      * Get project configurations from command line file args. If there are no command line args, look in System
      * Settings for directory to scan for configurations.
