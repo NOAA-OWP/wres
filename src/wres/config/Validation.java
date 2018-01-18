@@ -38,7 +38,7 @@ import wres.config.generated.TimeAggregationConfig;
 import wres.config.generated.TimeAggregationFunction;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.engine.statistics.metric.ConfigMapper;
+import wres.engine.statistics.metric.MetricConfigHelper;
 import wres.engine.statistics.metric.MetricConfigurationException;
 import wres.io.config.ConfigHelper;
 import wres.io.config.ProjectConfigPlus;
@@ -230,7 +230,7 @@ public class Validation
             {
                 try
                 {
-                    MetricConstants checkMe = ConfigMapper.from( next.getName() );
+                    MetricConstants checkMe = MetricConfigHelper.from( next.getName() );
 
                     // Check that the named metric is consistent with any pooling window configuration
                     if ( projectConfigPlus.getProjectConfig().getPair().getPoolingWindow() != null && checkMe != null

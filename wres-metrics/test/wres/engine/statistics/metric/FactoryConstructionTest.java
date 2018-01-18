@@ -36,7 +36,7 @@ public final class FactoryConstructionTest
                                InvocationTargetException
     {
         coverageSingleton(FunctionFactory.class);
-        coverageSingleton(ConfigMapper.class);
+        coverageSingleton(MetricConfigHelper.class);
     }
 
     /**

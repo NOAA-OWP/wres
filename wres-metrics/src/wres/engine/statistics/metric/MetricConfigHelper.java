@@ -10,18 +10,14 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.Threshold.Operator;
 
 /**
- * A helper class that maps constructs in {@link ProjectConfig}, including enumerations. In particular, maps between 
- * named metrics in {@link MetricConstants} and those with a corresponding {@link Enum#name()} in 
- * {@link MetricConfigName}. Also maps between operators in {@link ThresholdOperator} and those in {@link Operator}.
- * 
- * TODO: consider moving this class to wres.datamodel and requiring the wres.datamodel to be aware of wres.config.
+ * A helper class for interpreting and using the {@link ProjectConfig} in the context of verification metrics.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
+ * @version 0.2
  * @since 0.1
  */
 
-public final class ConfigMapper
+public final class MetricConfigHelper
 {
 
     /**
@@ -117,7 +113,7 @@ public final class ConfigMapper
      * Hidden constructor.
      */
 
-    private ConfigMapper()
+    private MetricConfigHelper()
     {
     }
 
