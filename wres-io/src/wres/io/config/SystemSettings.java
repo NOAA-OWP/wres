@@ -2,7 +2,6 @@ package wres.io.config;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.file.Paths;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
@@ -25,23 +24,23 @@ public final class SystemSettings extends XMLReader
 {
 	private static final Logger LOGGER = LoggerFactory.getLogger(SystemSettings.class);
 
-	// The global, static system configuration
-    private static SystemSettings INSTANCE;
-
     // The static path to the configuration path
     private static final String CONFIG_PATH = "wresconfig.xml";
+
+    // The global, static system configuration
+    private static SystemSettings instance;
 
 	static
 	{
 		try
-		{
-			INSTANCE = new SystemSettings(CONFIG_PATH);
-		}
+        {
+            instance = new SystemSettings( CONFIG_PATH);
+        }
 		catch (IOException ioe)
 		{
 			LOGGER.warn("Using default system settings due to problem reading config:", ioe);
-			INSTANCE = new SystemSettings();
-		}
+            instance = new SystemSettings();
+        }
 	}
 
     private DatabaseSettings databaseConfiguration = null;
@@ -167,83 +166,6 @@ public final class SystemSettings extends XMLReader
                         }
                         break;
                 }
-
-                // TODO: Remove once it is confirmed that the switch statement is ok
-
-				/*if (reader.getLocalName().equalsIgnoreCase("database"))
-				{
-					databaseConfiguration = new DatabaseSettings(reader);
-                }
-				else if (reader.getLocalName().equalsIgnoreCase("maximum_thread_count"))
-				{
-					reader.next();
-					if (reader.isCharacters())
-					{
-						int begin_index = reader.getTextStart();
-						int end_index = reader.getTextLength();
-						value = new String(reader.getTextCharacters(), begin_index, end_index).trim();
-						maximumThreadCount = Integer.parseInt(value);
-					}
-				}
-				else if (reader.getLocalName().equalsIgnoreCase("pool_object_lifespan"))
-				{
-					reader.next();
-					if (reader.isCharacters())
-					{
-						int begin_index = reader.getTextStart();
-						int end_index = reader.getTextLength();
-						value = new String(reader.getTextCharacters(), begin_index, end_index).trim();
-						poolObjectLifespan = Integer.parseInt(value);
-					}
-				}
-				else if (reader.getLocalName().equalsIgnoreCase("maximum_inserts"))
-				{
-					maximumInserts = Integer.parseInt(XML.getXMLText(reader));
-				}
-				else if (reader.getLocalName().equalsIgnoreCase("maximum_copies"))
-				{
-					maximumCopies = Integer.parseInt(XML.getXMLText(reader));
-				}
-				else if (XML.tagIs(reader, "update_frequency"))
-				{
-					String frequency = XML.getXMLText(reader);
-					if (Strings.isNumeric(frequency))
-					{
-						ProgressMonitor.setUpdateFrequency(Long.parseLong( frequency ));
-					}
-				}
-				else if (XML.tagIs(reader, "fetch_size"))
-				{
-					this.fetchSize = Integer.parseInt(XML.getXMLText(reader));
-				}
-				else if (XML.tagIs(reader, "update_progress_monitor"))
-				{
-					ProgressMonitor.setShouldUpdate(Strings.isTrue(XML.getXMLText(reader)));
-				}
-                else if (XML.tagIs(reader, "default_chart_width"))
-                {
-                    this.defaultChartWidth = Integer.parseInt(XML.getXMLText(reader));
-                }
-                else if (XML.tagIs(reader, "default_chart_height"))
-                {
-                    this.defaultChartHeight = Integer.parseInt(XML.getXMLText(reader));
-                }
-                else if (XML.tagIs(reader, "netcdf_repo_url"))
-				{
-					String URL = XML.getXMLText(reader);
-					if (Strings.hasValue(URL))
-					{
-						this.remoteNetCDFURL = URL;
-					}
-				}
-				else if(XML.tagIs( reader, "netcdf_store_path" ))
-				{
-					String path = XML.getXMLText( reader );
-					if ( Strings.hasValue( path ) && Strings.isValidPathFormat( path ))
-					{
-						this.netcdfStorePath = path;
-					}
-				}*/
 			}
 		}
         catch ( XMLStreamException xse )
@@ -262,90 +184,94 @@ public final class SystemSettings extends XMLReader
      */
 	public static String getNetCDFStorePath()
     {
-        return INSTANCE.netcdfStorePath;
+        return instance.netcdfStorePath;
     }
 
     /**
      * @return The URL where NetCDF files may be downloaded from
      */
 	public static String getRemoteNetcdfURL()
-	{
-		return INSTANCE.remoteNetCDFURL;
-	}
+    {
+        return instance.remoteNetCDFURL;
+    }
+
 	/**
 	 * @return The number of allowable threads
 	 */
 	public static int maximumThreadCount()
-	{
-		return INSTANCE.maximumThreadCount;
-	}
+    {
+        return instance.maximumThreadCount;
+    }
 
 	/**
 	 * @return The maximum life span for an object in an object pool
 	 */
 	public static int poolObjectLifespan()
-	{
-		return INSTANCE.poolObjectLifespan;
-	}
+    {
+        return instance.poolObjectLifespan;
+    }
 
 	/**
 	 * @return The maximum number of rows to retrieve
 	 */
 	public static int fetchSize()
-	{
-		return INSTANCE.fetchSize;
-	}
+    {
+        return instance.fetchSize;
+    }
 
 	/**
 	 * @return The maximum number of values that may be inserted into the database at once
 	 */
-	public static int maximumDatabaseInsertStatements() {
-		return INSTANCE.maximumInserts;
-	}
+    public static int maximumDatabaseInsertStatements()
+    {
+        return instance.maximumInserts;
+    }
 
 	/**
 	 * @return The maximum number of values that may be copied into the database at once
 	 */
 	public static int getMaximumCopies() {
-		return INSTANCE.maximumCopies;
-	}
+        return instance.maximumCopies;
+    }
 
     /**
      * @return The default to use for chart width
      */
     public static int getDefaultChartWidth()
     {
-        return INSTANCE.defaultChartWidth;
+        return instance.defaultChartWidth;
     }
 
 	/**
 	 * @return The default to use for chart height
 	 */
 	public static int getDefaultChartHeight()
-	{
-		return INSTANCE.defaultChartHeight;
-	}
+    {
+        return instance.defaultChartHeight;
+    }
 
 	/**
 	 * @return A new instance of a connection pool that is built for the system wide configuration
 	 */
 	public static ComboPooledDataSource getConnectionPool()
-	{
-        return INSTANCE.databaseConfiguration.createDatasource();
-	}
+    {
+        return instance.databaseConfiguration.createDatasource();
+    }
 
 	public static ComboPooledDataSource getHighPriorityConnectionPool()
-	{
-		return INSTANCE.databaseConfiguration.createHighPriorityDataSource();
-	}
+    {
+        return instance.databaseConfiguration.createHighPriorityDataSource();
+    }
 
 	public static String getUserName()
-	{
-		return INSTANCE.databaseConfiguration.getUsername();
-	}
+    {
+        return instance.databaseConfiguration.getUsername();
+    }
 
-	public static String getRawConfiguration() throws FileNotFoundException, XMLStreamException, TransformerException {
-        return INSTANCE.getRawXML();
+    public static String getRawConfiguration()
+            throws FileNotFoundException, XMLStreamException, TransformerException
+    {
+        return instance.getRawXML();
     }
 
 	@Override

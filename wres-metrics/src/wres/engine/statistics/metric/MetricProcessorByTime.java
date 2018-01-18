@@ -56,16 +56,16 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
 
     /**
      * Returns a {@link MetricOutputForProjectByTimeAndThreshold} for the last available results or null if
-     * {@link #hasStoredMetricOutput()} returns false.
+     * {@link #hasCachedMetricOutput()} returns false.
      * 
      * @return a {@link MetricOutputForProjectByTimeAndThreshold} or null
      */
 
     @Override
-    public MetricOutputForProjectByTimeAndThreshold getStoredMetricOutput()
+    public MetricOutputForProjectByTimeAndThreshold getCachedMetricOutput()
     {
         MetricOutputForProjectByTimeAndThreshold returnMe = null;
-        if ( hasStoredMetricOutput() )
+        if ( hasCachedMetricOutput() )
         {
             MetricFuturesByTime.MetricFuturesByTimeBuilder builder =
                     new MetricFuturesByTime.MetricFuturesByTimeBuilder();
@@ -85,7 +85,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
      * @return true if stored results are available, false otherwise
      */
     @Override
-    public boolean hasStoredMetricOutput()
+    public boolean hasCachedMetricOutput()
     {
         return futures.values().stream().anyMatch( MetricFuturesByTime::hasFutureOutputs );
     }
