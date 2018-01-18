@@ -41,34 +41,20 @@ public class NWMSource extends BasicSource
 	}
 
 	@Override
-    public List<IngestResult> saveObservation() throws IOException
+	public List<IngestResult> save() throws IOException
 	{
 		try ( NetcdfFile source = getSource() )
 		{
-			save( source );
+			saveNetCDF( source );
 		}
 
-        return IngestResult.singleItemListFrom( this.getProjectConfig(),
-                                                this.getDataSourceConfig(),
-                                                this.getHash(),
-                                                false );
+		return IngestResult.singleItemListFrom( this.getProjectConfig(),
+												this.getDataSourceConfig(),
+												this.getHash(),
+												false );
 	}
 
-	@Override
-    public List<IngestResult> saveForecast() throws IOException
-	{
-		try (NetcdfFile source = getSource())
-		{
-			save( source );
-		}
-
-        return IngestResult.singleItemListFrom( this.getProjectConfig(),
-                                                this.getDataSourceConfig(),
-                                                this.getHash(),
-                                                false );
-	}
-
-	private void save(NetcdfFile source)
+	private void saveNetCDF(NetcdfFile source)
 	{
 		Variable var = NetCDF.getVariable(source, this.getSpecifiedVariableName());
 

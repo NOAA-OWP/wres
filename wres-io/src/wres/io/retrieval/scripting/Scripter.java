@@ -121,8 +121,7 @@ public abstract class Scripter
         return this.feature;
     }
 
-    protected int getProgress() throws NoDataException, SQLException,
-            InvalidPropertiesFormatException
+    protected int getProgress() throws NoDataException
     {
         return this.progress;
     }

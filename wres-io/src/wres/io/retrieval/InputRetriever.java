@@ -20,7 +20,6 @@ import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.Feature;
-import wres.config.generated.TimeWindowMode;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.DefaultDataFactory;

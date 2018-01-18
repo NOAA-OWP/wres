@@ -99,25 +99,20 @@ public final class PIXMLReader extends XMLReader
 	/**
 	 * Constructor for a reader that may be for forecasts or observations
 	 * @param filename The path to the file to read
-	 * @param isForecast Whether or not the reader is for forecast data
 	 * @param hash the hash code for the source
 	 */
     public PIXMLReader( String filename,
-                        boolean isForecast,
                         String hash )
 	{
 		super(filename);
-		this.isForecast = isForecast;
 		this.hash = hash;
 	}
 
     public PIXMLReader( String filename,
                         InputStream inputStream,
-                        boolean isForecast,
                         String hash )
 	{
 		super(filename, inputStream);
-		this.isForecast = isForecast;
 		this.hash = hash;
 	}
 
@@ -335,7 +330,7 @@ public final class PIXMLReader extends XMLReader
         }
 
         LocalDateTime dateTime = LocalDateTime.of( localDate, localTime );
-        if (isForecast)
+        if (this.getIsForecast())
         {
             if ( this.getForecastDate() == null )
             {
@@ -531,7 +526,7 @@ public final class PIXMLReader extends XMLReader
 			{
 				localName = reader.getLocalName();
 
-				if ( this.isForecast )
+				if ( this.getIsForecast() )
 				{
 					parseForecastHeaderElements( reader, localName );
 				}
@@ -811,23 +806,6 @@ public final class PIXMLReader extends XMLReader
                 output_time = actualStartDate.format( FORMATTER );
 			}
 
-            // Cannot do hasSource because it mutates database and hides info!
-            /*
-            if ( DataSources.hasSource( this.getHash() ) )
-            {
-                if ( LOGGER.isTraceEnabled() )
-                {
-                    LOGGER.trace( "DataSources said it hasSource {}",
-                                  this.getHash() );
-                }
-                else
-                {
-                    LOGGER.trace( "DataSources said NOT hasSource {}",
-                                  this.getHash() );
-                }
-            }
-            */
-
             // In order to interrogate the Cache, we need the key, not the
             // actual SourceDetails class itself.
 
@@ -889,6 +867,15 @@ public final class PIXMLReader extends XMLReader
 
         return missingValue;
     }
+
+    private boolean getIsForecast()
+	{
+		if (this.isForecast == null)
+		{
+			this.isForecast = ConfigHelper.isForecast( this.getDataSourceConfig() );
+		}
+		return this.isForecast;
+	}
 
     /**
      * Conditions the passed in value and transforms it into a form suitable to
@@ -987,7 +974,7 @@ public final class PIXMLReader extends XMLReader
 	/**
 	 * Indicates whether or not the data is for forecasts. Default is True
 	 */
-	private boolean isForecast = true;
+	private Boolean isForecast;
 	
 	/**
 	 * Basic details about the current ensemble for a current forecast

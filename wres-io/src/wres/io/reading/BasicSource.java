@@ -47,20 +47,30 @@ public abstract class BasicSource
         this.projectConfig = projectConfig;
     }
 
-	@SuppressWarnings("static-method")
+    public List<IngestResult> save() throws IOException
+    {
+        if ( ConfigHelper.isForecast( this.dataSourceConfig ))
+        {
+            return this.saveForecast();
+        }
+        else
+        {
+            return this.saveObservation();
+        }
+    }
+
     /**
      * Saves data within the source file as a forecast
      */
-    public List<IngestResult> saveForecast() throws IOException
+    protected List<IngestResult> saveForecast() throws IOException
 	{
 		throw new IOException("Forecasts may not be saved using this type of source.");
 	}
-	
-	@SuppressWarnings("static-method")
+
     /**
      * Saves data within the source file as an observation
      */
-    public List<IngestResult> saveObservation() throws IOException
+    protected List<IngestResult> saveObservation() throws IOException
 	{
 		throw new IOException("Observations may not be saved using this type of source.");
 	}

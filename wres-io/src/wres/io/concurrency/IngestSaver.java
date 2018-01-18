@@ -18,9 +18,9 @@ import wres.io.reading.ReaderFactory;
  *
  * @author Christopher Tubbs
  */
-public class ForecastSaver extends WRESCallable<List<IngestResult>>
+public class IngestSaver extends WRESCallable<List<IngestResult>>
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger( ForecastSaver.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( IngestSaver.class );
 
     private final String filepath;
     private final ProjectConfig projectConfig;
@@ -29,11 +29,11 @@ public class ForecastSaver extends WRESCallable<List<IngestResult>>
     private final List<Feature> specifiedFeatures;
 
 
-    public ForecastSaver( String filepath,
-                          ProjectConfig projectConfig,
-                          DataSourceConfig dataSourceConfig,
-                          DataSourceConfig.Source sourceConfig,
-                          List<Feature> specifiedFeatures )
+    public IngestSaver( String filepath,
+                        ProjectConfig projectConfig,
+                        DataSourceConfig dataSourceConfig,
+                        DataSourceConfig.Source sourceConfig,
+                        List<Feature> specifiedFeatures )
     {
         this.filepath = filepath;
         this.projectConfig = projectConfig;
@@ -51,13 +51,13 @@ public class ForecastSaver extends WRESCallable<List<IngestResult>>
         source.setDataSourceConfig( this.dataSourceConfig );
         source.setSourceConfig( this.sourceConfig );
         source.setSpecifiedFeatures( this.specifiedFeatures );
-        return source.saveForecast();
+        return source.save();
     }
 
 
     @Override
     protected Logger getLogger()
     {
-        return ForecastSaver.LOGGER;
+        return IngestSaver.LOGGER;
     }
 }

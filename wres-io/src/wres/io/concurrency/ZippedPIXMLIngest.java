@@ -66,7 +66,6 @@ public final class ZippedPIXMLIngest extends WRESCallable<List<IngestResult>>
                 {
                     PIXMLReader reader = new PIXMLReader(this.fileName,
                                                          input,
-                                                         ConfigHelper.isForecast(this.dataSourceConfig),
                                                          hash );
 
                     reader.setSpecifiedFeatures(this.specifiedFeatures);
@@ -81,8 +80,8 @@ public final class ZippedPIXMLIngest extends WRESCallable<List<IngestResult>>
                 wasFoundInCache = true;
             }
 
-            IngestResult ingestResult = IngestResult.from( this.getProjectConfig(),
-                                                           this.getDataSourceConfig(),
+            IngestResult ingestResult = IngestResult.from( this.projectConfig,
+                                                           this.dataSourceConfig,
                                                            hash,
                                                            wasFoundInCache );
             result.add( ingestResult );
@@ -99,16 +98,6 @@ public final class ZippedPIXMLIngest extends WRESCallable<List<IngestResult>>
     protected Logger getLogger()
     {
         return ZippedPIXMLIngest.LOGGER;
-    }
-
-    private DataSourceConfig getDataSourceConfig()
-    {
-        return this.dataSourceConfig;
-    }
-
-    private ProjectConfig getProjectConfig()
-    {
-        return this.projectConfig;
     }
 
 }

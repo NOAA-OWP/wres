@@ -134,7 +134,7 @@ public class USGSReader extends BasicSource
     }
 
     @Override
-    public List<IngestResult> saveObservation() throws IOException
+    protected List<IngestResult> saveObservation() throws IOException
     {
         this.operationStartTime = TimeHelper.convertDateToString( OffsetDateTime.now() );
         this.load();
