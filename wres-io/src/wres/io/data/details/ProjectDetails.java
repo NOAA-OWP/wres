@@ -61,7 +61,6 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     private final Map<Feature, Integer> lastLeads = new ConcurrentHashMap<>(  );
     private final Map<Feature, Integer> leadOffsets = new ConcurrentHashMap<>(  );
     private final Map<Feature, String> zeroDates = new ConcurrentHashMap<>(  );
-    private final Map<Feature, String> initialRollingDates = new ConcurrentHashMap<>(  );
     private final Map<Feature, Integer> poolCounts = new ConcurrentHashMap<>(  );
 
     private final List<Integer> leftSources = new ArrayList<>(  );

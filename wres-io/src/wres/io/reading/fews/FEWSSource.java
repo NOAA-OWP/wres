@@ -5,6 +5,7 @@ import java.sql.SQLException;
 import java.util.List;
 
 import wres.config.generated.ProjectConfig;
+import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DataSources;
 import wres.io.reading.BasicSource;
 import wres.io.reading.IngestException;
@@ -29,17 +30,15 @@ public class FEWSSource extends BasicSource
 		this.setHash();
 	}
 
-	@Override
-    public List<IngestResult> saveForecast() throws IOException
+    @Override
+    public List<IngestResult> save() throws IOException
     {
         boolean wasFoundInCache;
         try
         {
-            // TODO: This will break if we have the source but not the variable/location
             if ( !DataSources.hasSource( this.getHash() ) )
             {
-                PIXMLReader sourceReader = new PIXMLReader( this.getFilename(),
-                                                            true,
+                PIXMLReader sourceReader = new PIXMLReader( this.getAbsoluteFilename(),
                                                             this.getHash() );
                 sourceReader.setDataSourceConfig( this.getDataSourceConfig() );
                 sourceReader.setSpecifiedFeatures( this.getSpecifiedFeatures() );
@@ -54,46 +53,21 @@ public class FEWSSource extends BasicSource
         }
         catch ( SQLException se )
         {
-            String message = "While saving the forecast from source "
-                             + this.getAbsoluteFilename()
-                             + ", encountered an issue.";
-            throw new IngestException( message, se );
-        }
+            String message = "While saving the";
 
-        return IngestResult.singleItemListFrom( this.getProjectConfig(),
-                                                this.getDataSourceConfig(),
-                                                this.getHash(),
-                                                wasFoundInCache );
-    }
-
-    @Override
-    public List<IngestResult> saveObservation() throws IOException
-    {
-        boolean wasFoundInCache;
-        try
-        {
-            if ( !DataSources.hasSource( this.getHash() ) )
+            if (ConfigHelper.isForecast( this.dataSourceConfig ))
             {
-                PIXMLReader sourceReader =
-                        new PIXMLReader( this.getAbsoluteFilename(),
-                                         false,
-                                         this.getHash() );
-                sourceReader.setDataSourceConfig( this.getDataSourceConfig() );
-                sourceReader.setSpecifiedFeatures( this.getSpecifiedFeatures() );
-                sourceReader.setSourceConfig( this.getSourceConfig() );
-                sourceReader.parse();
-                wasFoundInCache = false;
+                message += " forecast ";
             }
             else
             {
-                wasFoundInCache = true;
+                message += " observation ";
             }
-        }
-        catch ( SQLException se )
-        {
-            String message = "While saving the observation from source "
-                             + this.getAbsoluteFilename()
-                             + ", encountered an issue.";
+
+            message += "from source '" +
+                       this.getAbsoluteFilename() +
+                       "', encountered an issue.";
+
             throw new IngestException( message, se );
         }
 

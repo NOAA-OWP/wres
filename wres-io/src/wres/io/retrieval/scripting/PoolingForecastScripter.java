@@ -134,12 +134,37 @@ class PoolingForecastScripter extends Scripter
     }
 
     @Override
-    protected int getProgress() throws NoDataException, SQLException,
-            InvalidPropertiesFormatException
+    protected int getProgress() throws NoDataException
     {
         // TODO: Change ConfigHelper.getLeadQualifier to suit this need
         // ConfigHelper.getLeadQualifier cannot be currently used since it
         // relies on the alias 'FV'
-        return super.getProgress() + this.getProjectDetails().getLeadOffset( this.getFeature() );
+
+        Integer offset;
+
+        try
+        {
+            offset = this.getProjectDetails().getLeadOffset( this.getFeature() );
+        }
+        catch ( SQLException e )
+        {
+            throw new NoDataException( "Information about the lead offset could "
+                                       + "not be retrieved from the database.",
+                                       e );
+        }
+        catch ( InvalidPropertiesFormatException e )
+        {
+            throw new NoDataException( "The time specification for the desired "
+                                       + "time aggregation could not be used to "
+                                       + "identify the width of the window to "
+                                       + "retrieve.", e );
+        }
+        catch ( NoDataException e )
+        {
+            throw new NoDataException( "The offset for pooling forecasts could "
+                                       + "not be determined.", e );
+        }
+
+        return super.getProgress() + offset;
     }
 }

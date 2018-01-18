@@ -2,7 +2,6 @@ package wres.io.reading;
 
 import java.io.BufferedInputStream;
 import java.io.EOFException;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -33,8 +32,7 @@ import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Format;
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.Executor;
-import wres.io.concurrency.ForecastSaver;
-import wres.io.concurrency.ObservationSaver;
+import wres.io.concurrency.IngestSaver;
 import wres.io.concurrency.WRESCallable;
 import wres.io.concurrency.ZippedPIXMLIngest;
 import wres.io.config.ConfigHelper;
@@ -80,6 +78,12 @@ public class ZippedSource extends BasicSource {
         this.tasks.add(result);
     }
 
+    @Override
+    public List<IngestResult> save() throws IOException
+    {
+        return issue();
+    }
+
     private Future<List<IngestResult>> getIngestTask()
     {
         return tasks.poll();
@@ -102,19 +106,7 @@ public class ZippedSource extends BasicSource {
 	    this.directoryPath = Paths.get(filename).toAbsolutePath().getParent().toString();
     }
 
-	@Override
-    public List<IngestResult> saveForecast() throws IOException
-    {
-	    return issue( true );
-	}
-
-	@Override
-    public List<IngestResult> saveObservation() throws IOException
-    {
-	    return issue( false );
-	}
-
-    private List<IngestResult> issue(boolean isForecast)
+    private List<IngestResult> issue()
     {
         List<IngestResult> result = new ArrayList<>();
 
@@ -132,7 +124,7 @@ public class ZippedSource extends BasicSource {
                 ProgressMonitor.increment();
                 if (archivedSource.isFile())
                 {
-                    processFile(archivedSource, archive, isForecast);
+                    processFile(archivedSource, archive);
                 }
 
                 archivedSource = archive.getNextTarEntry();
@@ -206,8 +198,7 @@ public class ZippedSource extends BasicSource {
     }
 
     private void processFile(TarArchiveEntry source,
-                             TarArchiveInputStream archiveInputStream,
-                             boolean isForecast)
+                             TarArchiveInputStream archiveInputStream)
             throws IOException
     {
         String archivedFileName = Paths.get(this.directoryPath, source.getName()).toString();
@@ -253,7 +244,7 @@ public class ZippedSource extends BasicSource {
         else
         {
             String message = "The file '{}' will now be ingested as a set of ";
-            if (isForecast)
+            if (ConfigHelper.isForecast( this.getDataSourceConfig() ))
             {
                 message += "forecasts.";
             }
@@ -285,23 +276,11 @@ public class ZippedSource extends BasicSource {
             {
                 stream.write(content);
                 this.savedFiles.add(archivedFileName);
-
-                if (isForecast)
-                {
-                    ingest = new ForecastSaver(archivedFileName,
-                                               this.getProjectConfig(),
-                                               this.getDataSourceConfig(),
-                                               originalSource,
-                                               this.getSpecifiedFeatures());
-                }
-                else
-                {
-                    ingest = new ObservationSaver(archivedFileName,
-                                                  this.getProjectConfig(),
-                                                  this.getDataSourceConfig(),
-                                                  originalSource,
-                                                  this.getSpecifiedFeatures());
-                }
+                ingest = new IngestSaver(archivedFileName,
+                                         this.getProjectConfig(),
+                                         this.getDataSourceConfig(),
+                                         originalSource,
+                                         this.getSpecifiedFeatures());
 
                 ingest.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
 

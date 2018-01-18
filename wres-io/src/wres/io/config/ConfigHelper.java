@@ -177,15 +177,36 @@ public class ConfigHelper
         Integer offset;
         String newline = System.lineSeparator();
         int width = getWindowWidth( projectConfig ).intValue();
+        String leftVariablepositionClause;
+        String rightVariablepositionClause;
 
-        String leftVariablepositionClause =
-                ConfigHelper.getVariablePositionClause( feature,
-                                                        projectDetails.getLeftVariableID(),
-                                                        "O" );
-        String rightVariablepositionClause =
-                ConfigHelper.getVariablePositionClause( feature,
-                                                        projectDetails.getRightVariableID(),
-                                                        "TS" );
+        try
+        {
+            leftVariablepositionClause =
+                    ConfigHelper.getVariablePositionClause( feature,
+                                                            projectDetails.getLeftVariableID(),
+                                                            "O" );
+        }
+        catch (SQLException e)
+        {
+            throw new SQLException( "Information about the variable used in the "
+                                    + "left data set could not be retrieved "
+                                    + "from the database.", e );
+        }
+
+        try
+        {
+            rightVariablepositionClause =
+                    ConfigHelper.getVariablePositionClause( feature,
+                                                            projectDetails.getRightVariableID(),
+                                                            "TS" );
+        }
+        catch (SQLException e)
+        {
+            throw new SQLException( "Information about the variable used in the "
+                                    + "right data set could not be retrieved "
+                                    + "from the database.", e );
+        }
 
         StringBuilder script = new StringBuilder(  );
 
@@ -282,7 +303,7 @@ public class ConfigHelper
             }
         }
 
-        // Filtering on existence guarentees early exit
+        // Filtering on existence guarantees early exit
         script.append("     AND EXISTS (").append(newline);
         script.append("         SELECT 1").append(newline);
         script.append("         FROM wres.ProjectSource OPS").append(newline);
@@ -303,7 +324,16 @@ public class ConfigHelper
         script.append("ORDER BY FV.lead").append(newline);
         script.append("LIMIT 1;");
 
-        offset = Database.getResult(script.toString(), "offset");
+        try
+        {
+            offset = Database.getResult( script.toString(), "offset" );
+        }
+        catch (SQLException e)
+        {
+            throw new SQLException( "The script used to extract the lead time "
+                                    + "offset for pairing could not be "
+                                    + "retrieved from the database.", e );
+        }
 
         return offset;
     }
@@ -863,7 +893,7 @@ public class ConfigHelper
      */
 
     public static TimeWindow getTimeWindow( ProjectDetails projectDetails, long lead, int sequenceStep)
-            throws InvalidPropertiesFormatException, SQLException
+            throws InvalidPropertiesFormatException
     {
         Objects.requireNonNull( projectDetails );
         TimeWindow windowMetadata;

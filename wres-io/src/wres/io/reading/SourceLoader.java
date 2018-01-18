@@ -23,8 +23,7 @@ import wres.config.generated.Feature;
 import wres.config.generated.Format;
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.Executor;
-import wres.io.concurrency.ForecastSaver;
-import wres.io.concurrency.ObservationSaver;
+import wres.io.concurrency.IngestSaver;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Features;
@@ -92,7 +91,7 @@ public class SourceLoader
                         throw new IllegalArgumentException( "USGS data cannot be used to supply forecasts." );
                     }
 
-                    savingFiles.add( Executor.submit( new ObservationSaver( "usgs",
+                    savingFiles.add( Executor.submit( new IngestSaver( "usgs",
                                                                             this.projectConfig,
                                                                             config,
                                                                             source,
@@ -252,16 +251,16 @@ public class SourceLoader
                 if (ConfigHelper.isForecast(dataSourceConfig))
                 {
                     LOGGER.trace("Loading {} as forecast data...", absolutePath);
-                    task = Executor.submit( new ForecastSaver( absolutePath,
-                                                               this.projectConfig,
-                                                              dataSourceConfig,
-                                                              source,
-                                                              this.getSpecifiedFeatures() ) );
+                    task = Executor.submit( new IngestSaver( absolutePath,
+                                                             this.projectConfig,
+                                                             dataSourceConfig,
+                                                             source,
+                                                             this.getSpecifiedFeatures() ) );
                 }
                 else
                 {
                     LOGGER.trace("Loading {} as Observation data...");
-                    task = Executor.submit( new ObservationSaver( absolutePath,
+                    task = Executor.submit( new IngestSaver( absolutePath,
                                                                   this.projectConfig,
                                                                  dataSourceConfig,
                                                                  source,

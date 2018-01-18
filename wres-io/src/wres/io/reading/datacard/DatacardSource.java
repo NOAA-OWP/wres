@@ -102,7 +102,7 @@ public class DatacardSource extends BasicSource
 	}
 
 	@Override
-    public List<IngestResult> saveObservation() throws IOException
+    protected List<IngestResult> saveObservation() throws IOException
     {
         try
         {
@@ -330,8 +330,8 @@ public class DatacardSource extends BasicSource
 					}
 				} //end of loop for one value line 
 			} //end of loop for all value lines
-			
-			save();
+
+			sendToDatabase();
 		}
         catch ( ProjectConfigException pce )
         {
@@ -350,7 +350,7 @@ public class DatacardSource extends BasicSource
                                                 false );
 	}
 
-	public void save()
+	public void sendToDatabase()
     {
         if (insertCount > 0)
         {
@@ -641,10 +641,6 @@ public class DatacardSource extends BasicSource
 	/* The number of values in datacard file
 	*/
 	private int entryCount = 0;
-
-	// Indicates that it is ok to save. This should only ever not be the case
-    // when
-	private boolean savingEnabled = true;
 
 	private Integer variablePositionID = null;
 	
