@@ -182,18 +182,6 @@ public final class SafePairedOutputTest
                                                                    MetricConstants.CONTINGENCY_TABLE,
                                                                    MetricConstants.MAIN,
                                                                    metaFac.getDatasetIdentifier( "A", "B", "C" ) );
-        final MetricOutputMetadata m2 = metaFac.getOutputMetadata( 10,
-                                                                   metaFac.getDimension(),
-                                                                   metaFac.getDimension( "CMS" ),
-                                                                   MetricConstants.CONTINGENCY_TABLE,
-                                                                   MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( "A", "B", "C" ) );
-        final MetricOutputMetadata m3 = metaFac.getOutputMetadata( 10,
-                                                                   metaFac.getDimension(),
-                                                                   metaFac.getDimension( "CMS" ),
-                                                                   MetricConstants.CONTINGENCY_TABLE,
-                                                                   MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( "B", "B", "C" ) );
         List<Pair<Instant, Duration>> input = new ArrayList<>();
         input.add( Pair.of( Instant.parse( "1985-01-01T00:00:00Z" ), Duration.ofHours( 1 ) ) );
         // Null output
