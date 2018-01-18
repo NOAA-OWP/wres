@@ -1,4 +1,4 @@
-package wres.engine.statistics.metric;
+package wres.engine.statistics.metric.processing;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -17,6 +17,7 @@ import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
+import wres.engine.statistics.metric.MetricFactory;
 import wres.io.config.ProjectConfigPlus;
 
 /**

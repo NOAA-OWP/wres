@@ -1,4 +1,4 @@
-package wres.engine.statistics.metric;
+package wres.engine.statistics.metric.processing;
 
 import java.util.HashMap;
 import java.util.List;
@@ -30,7 +30,12 @@ import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMapByMetric;
 import wres.datamodel.outputs.ScalarOutput;
-import wres.engine.statistics.metric.MetricProcessorByTime.MetricFuturesByTime.MetricFuturesByTimeBuilder;
+import wres.engine.statistics.metric.Metric;
+import wres.engine.statistics.metric.MetricCalculationException;
+import wres.engine.statistics.metric.MetricCollection;
+import wres.engine.statistics.metric.MetricConfigurationException;
+import wres.engine.statistics.metric.MetricParameterException;
+import wres.engine.statistics.metric.processing.MetricProcessorByTime.MetricFuturesByTime.MetricFuturesByTimeBuilder;
 
 /**
  * Builds and processes all {@link MetricCollection} associated with a {@link ProjectConfig} for metrics that consume
@@ -118,11 +123,11 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
      * @throws MetricConfigurationException if the metrics are configured incorrectly
      */
 
-    MetricProcessorByTimeSingleValuedPairs( final DataFactory dataFactory,
-                                            final ProjectConfig config,
-                                            final ExecutorService thresholdExecutor,
-                                            final ExecutorService metricExecutor,
-                                            final MetricOutputGroup... mergeList )
+    public MetricProcessorByTimeSingleValuedPairs( final DataFactory dataFactory,
+                                                   final ProjectConfig config,
+                                                   final ExecutorService thresholdExecutor,
+                                                   final ExecutorService metricExecutor,
+                                                   final MetricOutputGroup... mergeList )
             throws MetricConfigurationException
     {
         super( dataFactory, config, thresholdExecutor, metricExecutor, mergeList );

@@ -12,7 +12,7 @@ import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MetricOutputAccessException;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
-import wres.engine.statistics.metric.MetricProcessorByTime;
+import wres.engine.statistics.metric.processing.MetricProcessorByTime;
 import wres.io.config.ProjectConfigPlus;
 
 /**
