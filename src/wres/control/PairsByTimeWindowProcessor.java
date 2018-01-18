@@ -12,7 +12,7 @@ import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
-import wres.engine.statistics.metric.MetricProcessorByTime;
+import wres.engine.statistics.metric.processing.MetricProcessorByTime;
 
     /**
      * Task that computes a set of metric results for a particular time window.

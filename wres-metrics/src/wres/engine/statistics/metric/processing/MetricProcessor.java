@@ -1,4 +1,4 @@
-package wres.engine.statistics.metric;
+package wres.engine.statistics.metric.processing;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -41,6 +41,13 @@ import wres.datamodel.outputs.MetricOutputForProject;
 import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.ScalarOutput;
+import wres.engine.statistics.metric.ConfigMapper;
+import wres.engine.statistics.metric.Metric;
+import wres.engine.statistics.metric.MetricCalculationException;
+import wres.engine.statistics.metric.MetricCollection;
+import wres.engine.statistics.metric.MetricConfigurationException;
+import wres.engine.statistics.metric.MetricFactory;
+import wres.engine.statistics.metric.MetricParameterException;
 
 /**
  * <p>

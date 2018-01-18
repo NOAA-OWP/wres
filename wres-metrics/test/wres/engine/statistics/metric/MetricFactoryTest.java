@@ -14,6 +14,7 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
+import wres.engine.statistics.metric.processing.MetricProcessor;
 import wres.io.config.ProjectConfigPlus;
 
 /**

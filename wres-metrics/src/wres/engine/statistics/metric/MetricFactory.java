@@ -49,6 +49,10 @@ import wres.engine.statistics.metric.ensemble.ContinuousRankedProbabilitySkillSc
 import wres.engine.statistics.metric.ensemble.ContinuousRankedProbabilitySkillScore.CRPSSBuilder;
 import wres.engine.statistics.metric.ensemble.RankHistogram;
 import wres.engine.statistics.metric.ensemble.RankHistogram.RankHistogramBuilder;
+import wres.engine.statistics.metric.processing.MetricProcessor;
+import wres.engine.statistics.metric.processing.MetricProcessorByTime;
+import wres.engine.statistics.metric.processing.MetricProcessorByTimeEnsemblePairs;
+import wres.engine.statistics.metric.processing.MetricProcessorByTimeSingleValuedPairs;
 import wres.engine.statistics.metric.singlevalued.BiasFraction;
 import wres.engine.statistics.metric.singlevalued.CoefficientOfDetermination;
 import wres.engine.statistics.metric.singlevalued.CorrelationPearsons;
