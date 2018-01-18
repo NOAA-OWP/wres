@@ -11,24 +11,18 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
 import wres.config.ProjectConfigException;
-import wres.config.Validation;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
@@ -41,16 +35,20 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
+import wres.datamodel.Threshold;
 import wres.datamodel.inputs.InsufficientDataException;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.metadata.TimeWindow;
+import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.MapKey;
 import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.MetricOutputAccessException;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
 import wres.datamodel.outputs.MultiValuedScoreOutput;
+import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.ScalarOutput;
 import wres.engine.statistics.metric.ConfigMapper;
 import wres.engine.statistics.metric.MetricConfigurationException;
@@ -60,7 +58,6 @@ import wres.engine.statistics.metric.MetricProcessorByTime;
 import wres.io.Operations;
 import wres.io.config.ConfigHelper;
 import wres.io.config.ProjectConfigPlus;
-import wres.io.config.SystemSettings;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
 import wres.io.retrieval.InputGenerator;
@@ -73,115 +70,26 @@ import wres.util.ProgressMonitor;
 import wres.vis.ChartEngineFactory;
 
 /**
- * A complete implementation of a processing pipeline originating from one or more {@link ProjectConfig}.
- * 
+ * Helper with functions that Control and Processors use
+ *
  * @author james.brown@hydrosolved.com
- * @author jesse
- * @version 0.1
- * @since 0.1
+ * @author jesse.bickel@***REMOVED***
  */
-public class Control implements Function<String[], Integer>
+public class ProcessorHelper
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger( ProcessorHelper.class );
 
     /**
-     * Processes one or more projects whose paths are provided in the input arguments.
-     *
-     * @param args the paths to one or more project configurations
+     * Default data factory.
      */
-    @Override
-    public Integer apply(final String[] args)
+
+    private static final DataFactory DATA_FACTORY = DefaultDataFactory.getInstance();
+
+    private ProcessorHelper()
     {
-        // Unmarshal the configurations
-        final List<ProjectConfigPlus> projectConfiggies = getProjects(args);
-
-        if ( !projectConfiggies.isEmpty() )
-        {
-            LOGGER.info( "Successfully unmarshalled {} project "
-                         + "configuration(s),  validating further...",
-                         projectConfiggies.size() );
-        }
-        else
-        {
-            LOGGER.error( "Please correct project configuration files and pass "
-                          + "them in the command line like this: "
-                          + "bin/wres.bat execute c:/path/to/config1.xml "
-                          + "c:/path/to/config2.xml" );
-            return 1;
-        }
-
-        // Validate unmarshalled configurations
-        final boolean validated = Validation.validateProjects(projectConfiggies);
-        if ( validated )
-        {
-            LOGGER.info( "Successfully validated {} project configuration(s). "
-                         + "Beginning execution...",
-                         projectConfiggies.size() );
-        }
-        else
-        {
-            LOGGER.error( "One or more projects did not pass validation.");
-            return 1;
-        }
-
-        // Build a processing pipeline
-        // Essential to use a separate thread pool for thresholds and metrics as ArrayBlockingQueue operates a FIFO 
-        // policy. If dependent tasks (thresholds) are queued ahead of independent ones (metrics) in the same pool, 
-        // there is a DEADLOCK probability       
-        ThreadFactory pairFactory = runnable -> new Thread( runnable, "Pair Thread" );
-        ThreadFactory thresholdFactory = runnable -> new Thread( runnable, "Threshold Dispatch Thread" );
-        ThreadFactory metricFactory = runnable -> new Thread( runnable, "Metric Thread" );
-        // Processes pairs       
-        ThreadPoolExecutor pairExecutor = new ThreadPoolExecutor( SystemSettings.maximumThreadCount(),
-                                                                  SystemSettings.maximumThreadCount(),
-                                                                  SystemSettings.poolObjectLifespan(),
-                                                                  TimeUnit.MILLISECONDS,
-                                                                  new ArrayBlockingQueue<>( SystemSettings.maximumThreadCount()
-                                                                                            * 5 ),
-                                                                  pairFactory );
-        // Dispatches thresholds
-        ExecutorService thresholdExecutor = Executors.newSingleThreadExecutor( thresholdFactory );
-        // Processes metrics
-        ThreadPoolExecutor metricExecutor = new ThreadPoolExecutor( SystemSettings.maximumThreadCount(),
-                                                                    SystemSettings.maximumThreadCount(),
-                                                                    SystemSettings.poolObjectLifespan(),
-                                                                    TimeUnit.MILLISECONDS,
-                                                                    new ArrayBlockingQueue<>( SystemSettings.maximumThreadCount()
-                                                                                              * 5 ),
-                                                                    metricFactory );
-        // Set the rejection policy to run in the caller, slowing producers
-        pairExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
-        metricExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
-
-        try
-        {
-            // Iterate through the configurations
-            for(final ProjectConfigPlus projectConfigPlus: projectConfiggies)
-            {
-                // Process the next configuration
-                processProjectConfig( projectConfigPlus,
-                                      pairExecutor,
-                                      thresholdExecutor,
-                                      metricExecutor );
-
-            }
-
-            return 0;
-        }
-        catch ( WresProcessingException | IOException e )
-        {
-
-            LOGGER.error( "Could not complete project execution:", e );
-
-            return -1;
-        }
-        // Shutdown
-        finally
-        {
-            shutDownGracefully(metricExecutor);
-            shutDownGracefully(thresholdExecutor);
-            shutDownGracefully(pairExecutor);
-        }
+        // Helper class with static methods therefore no construction allowed.
     }
+
 
     /**
      * Processes a {@link ProjectConfigPlus} using a prescribed {@link ExecutorService} for each of the pairs, 
@@ -195,10 +103,10 @@ public class Control implements Function<String[], Integer>
      * @throws WresProcessingException when an issue occurs during processing
      */
 
-    private void   processProjectConfig( final ProjectConfigPlus projectConfigPlus,
-                                         final ExecutorService pairExecutor,
-                                         final ExecutorService thresholdExecutor,
-                                         final ExecutorService metricExecutor )
+    static void processProjectConfig( final ProjectConfigPlus projectConfigPlus,
+                                      final ExecutorService pairExecutor,
+                                      final ExecutorService thresholdExecutor,
+                                      final ExecutorService metricExecutor )
             throws IOException
     {
 
@@ -274,10 +182,10 @@ public class Control implements Function<String[], Integer>
      * @throws WresProcessingException when zero features were successful
      */
 
-    private void printFeaturesReport( final ProjectConfigPlus projectConfigPlus,
-                                      final Set<Feature> decomposedFeatures,
-                                      final List<Feature> successfulFeatures,
-                                      final List<Feature> missingDataFeatures )
+    private static void printFeaturesReport( final ProjectConfigPlus projectConfigPlus,
+                                             final Set<Feature> decomposedFeatures,
+                                             final List<Feature> successfulFeatures,
+                                             final List<Feature> missingDataFeatures )
     {
         if ( LOGGER.isInfoEnabled() )
         {
@@ -333,12 +241,12 @@ public class Control implements Function<String[], Integer>
      * @return a feature result
      */
 
-    private FeatureProcessingResult processFeature( final Feature feature,
-                                                    final ProjectConfigPlus projectConfigPlus,
-                                                    final List<IngestResult> projectSources,
-                                                    final ExecutorService pairExecutor,
-                                                    final ExecutorService thresholdExecutor,
-                                                    final ExecutorService metricExecutor )
+    static FeatureProcessingResult processFeature( final Feature feature,
+                                                   final ProjectConfigPlus projectConfigPlus,
+                                                   final List<IngestResult> projectSources,
+                                                   final ExecutorService pairExecutor,
+                                                   final ExecutorService thresholdExecutor,
+                                                   final ExecutorService metricExecutor )
     {
 
         final ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
@@ -440,7 +348,7 @@ public class Control implements Function<String[], Integer>
         }
         catch ( IterationFailedException re )
         {
-            if ( Control.wasInsufficientDataOrNoDataInThisStack( re ) )
+            if ( ProcessorHelper.wasInsufficientDataOrNoDataInThisStack( re ) )
             {
                 return new FeatureProcessingResult( feature,
                                                     false,
@@ -456,7 +364,7 @@ public class Control implements Function<String[], Integer>
         catch( CompletionException e )
         {
             // If there was simply not enough data for this feature, OK
-            if ( Control.wasInsufficientDataOrNoDataInThisStack( e ) )
+            if ( ProcessorHelper.wasInsufficientDataOrNoDataInThisStack( e ) )
             {
                 return new FeatureProcessingResult( feature,
                                                     false,
@@ -488,7 +396,7 @@ public class Control implements Function<String[], Integer>
      * @param feature the feature being processed
      */
 
-    private static void   processCachedProducts( ProjectConfigPlus projectConfigPlus,
+    private static void processCachedProducts( ProjectConfigPlus projectConfigPlus,
                                                MetricProcessorByTime<?> processor,
                                                Feature feature )
     {
@@ -555,9 +463,9 @@ public class Control implements Function<String[], Integer>
      * @throws WresProcessingException when an error occurs during processing
      */
 
-    private static void   processCachedCharts( final Feature feature,
-                                               final ProjectConfigPlus projectConfigPlus,
-                                               final MetricProcessorByTime<?> processor )
+    private static void processCachedCharts( final Feature feature,
+                                             final ProjectConfigPlus projectConfigPlus,
+                                             final MetricProcessorByTime<?> processor )
     {
         if(!processor.hasCachedMetricOutput())
         {
@@ -589,19 +497,19 @@ public class Control implements Function<String[], Integer>
             if ( processor.willCacheMetricOutput( MetricOutputGroup.MULTIVECTOR )
                  && processor.getCachedMetricOutput().hasOutput( MetricOutputGroup.MULTIVECTOR ) )
             {
-                IntermediateResultProcessor.processMultiVectorCharts( feature,
-                                                                      projectConfigPlus,
-                                                                      processor.getCachedMetricOutput()
-                                                                               .getMultiVectorOutput() );
+                ProcessorHelper.processMultiVectorCharts( feature,
+                                                          projectConfigPlus,
+                                                          processor.getCachedMetricOutput()
+                                                                   .getMultiVectorOutput() );
             }
             // Process box plot charts
             if ( processor.willCacheMetricOutput( MetricOutputGroup.BOXPLOT )
                  && processor.getCachedMetricOutput().hasOutput( MetricOutputGroup.BOXPLOT ) )
             {
-                IntermediateResultProcessor.processBoxPlotCharts( feature,
-                                                                  projectConfigPlus,
-                                                                  processor.getCachedMetricOutput()
-                                                                           .getBoxPlotOutput() );
+                ProcessorHelper.processBoxPlotCharts( feature,
+                                                      projectConfigPlus,
+                                                      processor.getCachedMetricOutput()
+                                                               .getBoxPlotOutput() );
             }
         }
         catch ( final MetricOutputAccessException e )
@@ -821,49 +729,225 @@ public class Control implements Function<String[], Integer>
         }
     }      
 
+    /**
+     * Processes a set of charts associated with {@link MultiVectorOutput} across multiple metrics, time windows,
+     * and thresholds, stored in a {@link MetricOutputMultiMapByTimeAndThreshold}.
+     * 
+     * @param feature the feature for which the chart is defined
+     * @param projectConfigPlus the project configuration
+     * @param multiVectorResults the metric results
+     * @throws WresProcessingException if the processing completed unsuccessfully
+     */
+
+    static void processMultiVectorCharts( final Feature feature,
+                                          final ProjectConfigPlus projectConfigPlus,
+                                          final MetricOutputMultiMapByTimeAndThreshold<MultiVectorOutput> multiVectorResults )
+    {
+        // Check for results
+        if(Objects.isNull(multiVectorResults))
+        {
+            LOGGER.warn( "No multi-vector outputs from which to generate charts." );
+            return;
+        }
+
+        ProjectConfig config = projectConfigPlus.getProjectConfig();
+        // Iterate through each metric 
+        for ( final Map.Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<MultiVectorOutput>> e : multiVectorResults.entrySet() )
+        {
+            List<DestinationConfig> destinations =
+                    ConfigHelper.getGraphicalDestinations( config );
+            // Iterate through each destination
+            for ( DestinationConfig destConfig : destinations )
+            {
+                writeMultiVectorCharts( feature, projectConfigPlus, destConfig, e.getKey().getKey(), e.getValue() );
+            }
+        }
+    }
+
+    
+    /**
+     * Writes a set of charts associated with {@link MultiVectorOutput} for a single metric and time window, 
+     * stored in a {@link MetricOutputMultiMapByTimeAndThreshold}.
+     * 
+     * @param feature the feature
+     * @param projectConfigPlus the project configuration
+     * @param destConfig the destination configuration for the written output
+     * @param metricId the metric identifier
+     * @param multiVectorResults the metric results
+     * @throws WresProcessingException when an error occurs during writing
+     */
+
+    private static void writeMultiVectorCharts( Feature feature,
+                                                ProjectConfigPlus projectConfigPlus,
+                                                DestinationConfig destConfig,
+                                                MetricConstants metricId,
+                                                MetricOutputMapByTimeAndThreshold<MultiVectorOutput> multiVectorResults )
+    {
+        // Build charts
+        try
+        {
+            ProjectConfig config = projectConfigPlus.getProjectConfig();
+            String graphicsString = projectConfigPlus.getGraphicsStrings().get( destConfig );
+            // Build the chart engine
+            MetricConfig nextConfig = getNamedConfigOrAllValid( metricId, config );
+            // Default to global type parameter
+            PlotTypeSelection plotType = destConfig.getGraphical().getPlotType();
+            String templateResourceName = null;
+            if ( Objects.nonNull( nextConfig ) )
+            {
+                // Local type parameter
+                if ( nextConfig.getPlotType() != null )
+                {
+                    plotType = nextConfig.getPlotType();
+                }
+                templateResourceName = nextConfig.getTemplateResourceName();
+            }
+
+            final Map<Object, ChartEngine> engines =
+                    ChartEngineFactory.buildMultiVectorOutputChartEngine( multiVectorResults,
+                                                                          DATA_FACTORY,
+                                                                          plotType,
+                                                                          templateResourceName,
+                                                                          graphicsString );
+            // Build the outputs
+            for ( final Map.Entry<Object, ChartEngine> nextEntry : engines.entrySet() )
+            {
+                // Build the output file name
+                // TODO: adopt a more general naming convention as the pipelines expand
+                // For now, the only supported temporal pipeline is per lead time
+                Object key = nextEntry.getKey();
+                if ( key instanceof TimeWindow )
+                {
+                    key = ( (TimeWindow) key ).getLatestLeadTimeInHours();
+                }
+                else if ( key instanceof Threshold )
+                {
+                    key = ( (Threshold) key ).toStringSafe();
+                }
+                File destDir = ConfigHelper.getDirectoryFromDestinationConfig( destConfig );
+                Path outputImage = Paths.get( destDir.toString(),
+                                              ConfigHelper.getFeatureDescription( feature )
+                                                                  + "_"
+                                                                  + metricId.name()
+                                                                  + "_"
+                                                                  + config.getInputs()
+                                                                          .getRight()
+                                                                          .getVariable()
+                                                                          .getValue()
+                                                                  + "_"
+                                                                  + key
+                                                                  + ".png" );
+                ChartWriter.writeChart( outputImage, nextEntry.getValue(), destConfig );
+            }
+        }
+        catch ( ChartEngineException
+                | ChartWritingException
+                | ProjectConfigException e )
+        {
+            throw new WresProcessingException( "Error while generating multi-vector charts:", e );
+        }
+    }
+
+    
+    /**
+     * Processes a set of charts associated with {@link BoxPlotOutput} across multiple metrics, time window, and 
+     * thresholds, stored in a {@link MetricOutputMultiMapByTimeAndThreshold}.
+     * 
+     * @param feature the feature for which the chart is defined
+     * @param projectConfigPlus the project configuration
+     * @param boxPlotResults the box plot outputs
+     * @throws WresProcessingException if the processing completed unsuccessfully
+     */
+
+    static void processBoxPlotCharts( final Feature feature,
+                                      final ProjectConfigPlus projectConfigPlus,
+                                      final MetricOutputMultiMapByTimeAndThreshold<BoxPlotOutput> boxPlotResults )
+    {
+        // Check for results
+        if ( Objects.isNull( boxPlotResults ) )
+        {
+            LOGGER.warn( "No box-plot outputs from which to generate charts." );
+            return;
+        }
+
+        ProjectConfig config = projectConfigPlus.getProjectConfig();
+        // Iterate through each metric 
+        for ( final Map.Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<BoxPlotOutput>> e : boxPlotResults.entrySet() )
+        {
+            List<DestinationConfig> destinations =
+                    ConfigHelper.getGraphicalDestinations( config );
+            // Iterate through each destination
+            for ( DestinationConfig destConfig : destinations )
+            {
+                writeBoxPlotCharts( feature, projectConfigPlus, destConfig, e.getKey().getKey(), e.getValue() );
+            }
+        }
+    }
 
     /**
-     * Get project configurations from command line file args. If there are no command line args, look in System
-     * Settings for directory to scan for configurations.
-     *
-     * @param args the paths to the projects
-     * @return the successfully found, read, unmarshalled project configs
+     * Writes a set of charts associated with {@link BoxPlotOutput} for a single metric and time window, 
+     * stored in a {@link MetricOutputMultiMapByTimeAndThreshold}.
+     * 
+     * @param feature the feature
+     * @param projectConfigPlus the project configuration
+     * @param destConfig the destination configuration for the written output
+     * @param metricId the metric identifier
+     * @param boxPlotResults the metric results
+     * @throws WresProcessingException when an error occurs during writing
      */
-    private static List<ProjectConfigPlus> getProjects(final String[] args)
+
+    private static void writeBoxPlotCharts( Feature feature,
+                                            ProjectConfigPlus projectConfigPlus,
+                                            DestinationConfig destConfig,
+                                            MetricConstants metricId,
+                                            MetricOutputMapByTimeAndThreshold<BoxPlotOutput> boxPlotResults )
     {
-        final List<Path> existingProjectFiles = new ArrayList<>();
-
-        if(args.length > 0)
+        // Build charts
+        try
         {
-            for(final String arg: args)
+            ProjectConfig config = projectConfigPlus.getProjectConfig();
+            String graphicsString = projectConfigPlus.getGraphicsStrings().get( destConfig );
+            // Build the chart engine
+            MetricConfig nextConfig = getNamedConfigOrAllValid( metricId, config );
+            String templateResourceName = null;
+            if ( Objects.nonNull( nextConfig ) )
             {
-                final Path path = Paths.get(arg);
-                if(path.toFile().exists())
-                {
-                    existingProjectFiles.add(path);
-                }
-                else
-                {
-                    LOGGER.warn("Project configuration file {} does not exist!", path);
-                }
+                templateResourceName = nextConfig.getTemplateResourceName();
+            }
+
+            final Map<Pair<TimeWindow, Threshold>, ChartEngine> engines =
+                    ChartEngineFactory.buildBoxPlotChartEngine( boxPlotResults,
+                                                                templateResourceName,
+                                                                graphicsString );
+            // Build the outputs
+            for ( final Map.Entry<Pair<TimeWindow, Threshold>, ChartEngine> nextEntry : engines.entrySet() )
+            {
+                // Build the output file name
+                File destDir = ConfigHelper.getDirectoryFromDestinationConfig( destConfig );
+                // TODO: adopt a more general naming convention as the pipelines expand
+                // For now, the only temporal pipeline is by lead time
+                long key = nextEntry.getKey().getLeft().getLatestLeadTimeInHours();
+                Path outputImage = Paths.get( destDir.toString(),
+                                              ConfigHelper.getFeatureDescription( feature )
+                                                                  + "_"
+                                                                  + metricId.name()
+                                                                  + "_"
+                                                                  + config.getInputs()
+                                                                          .getRight()
+                                                                          .getVariable()
+                                                                          .getValue()
+                                                                  + "_"
+                                                                  + key
+                                                                  + ".png" );
+                ChartWriter.writeChart( outputImage, nextEntry.getValue(), destConfig );
             }
         }
-
-        final List<ProjectConfigPlus> projectConfiggies = new ArrayList<>();
-
-        for(final Path path: existingProjectFiles)
+        catch ( ChartEngineException
+                | ChartWritingException
+                | ProjectConfigException e )
         {
-            try
-            {
-                final ProjectConfigPlus projectConfigPlus = ProjectConfigPlus.from(path);
-                projectConfiggies.add(projectConfigPlus);
-            }
-            catch(final IOException ioe)
-            {
-                LOGGER.error("Could not read project configuration: ", ioe);
-            }
+            throw new WresProcessingException( "Error while generating box-plot charts:", e );
         }
-        return projectConfiggies;
     }
 
 
@@ -898,30 +982,6 @@ public class Control implements Function<String[], Integer>
         return CompletableFuture.anyOf(allDone, oneExceptional);
     }
 
-    /**
-     * Kill off the executors passed in even if there are remaining tasks.
-     *
-     * @param executor the executor to shutdown
-     */
-    private static void shutDownGracefully(final ExecutorService executor)
-    {
-        if(Objects.isNull(executor))
-        {
-            return;
-        }
-
-        executor.shutdown();
-
-        try
-        {
-            executor.awaitTermination( 5, TimeUnit.SECONDS );
-        }
-        catch ( InterruptedException ie )
-        {
-            Thread.currentThread().interrupt();
-        }
-    }
-
 
     /**
      * Locates the metric configuration corresponding to the input {@link MetricConstants} or null if no corresponding
@@ -934,7 +994,7 @@ public class Control implements Function<String[], Integer>
      * @return the metric configuration or null
      */
 
-    private static MetricConfig getNamedConfigOrAllValid( final MetricConstants metric, final ProjectConfig config )
+    static MetricConfig getNamedConfigOrAllValid( final MetricConstants metric, final ProjectConfig config )
     {
         // Deal with MetricConfigName.ALL_VALID first
         MetricConfig allValid = ConfigHelper.getMetricConfigByName( config, MetricConfigName.ALL_VALID );
@@ -965,8 +1025,8 @@ public class Control implements Function<String[], Integer>
      * @return true if the output type is present, false otherwise
      */
 
-    private static boolean configNeedsThisTypeOfOutput( ProjectConfig config,
-                                                        DestinationType type )
+    static boolean configNeedsThisTypeOfOutput( ProjectConfig config,
+                                                DestinationType type )
     {
         if ( config.getOutputs() == null
              || config.getOutputs().getDestination() == null )
@@ -984,61 +1044,6 @@ public class Control implements Function<String[], Integer>
         }
 
         return false;
-    }
-
-    /**
-     * Default logger.
-     */
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(Control.class);
-
-    /**
-     * Default data factory.
-     */
-
-    private static final DataFactory DATA_FACTORY = DefaultDataFactory.getInstance();
-
-    /**
-     * System property used to retrieve max thread count, passed as -D
-     */
-
-    public static final String MAX_THREADS_PROP_NAME = "wres.maxThreads";
-
-    /**
-     * Maximum threads.
-     */
-
-    public static final int MAX_THREADS;
-
-    // Figure out the max threads from property or by default rule.
-    // Ideally priority order would be: -D, SystemSettings, default rule.
-    static
-    {
-        final String maxThreadsStr = System.getProperty(MAX_THREADS_PROP_NAME);
-        int maxThreads;
-        try
-        {
-            maxThreads = Integer.parseInt(maxThreadsStr);
-        }
-        catch(final NumberFormatException nfe)
-        {
-            maxThreads = SystemSettings.maximumThreadCount();
-        }
-
-        // Since ForkJoinPool goes ape when this is 2 or less...
-        if ( maxThreads >= 3 )
-        {
-            MAX_THREADS = maxThreads;
-        }
-        else
-        {
-            LOGGER.warn( "Java -D property {} or SystemSettings "
-                         + "maximumThreadCount was likely less than 1, setting "
-                         + " Control.MAX_THREADS to 3",
-                         MAX_THREADS_PROP_NAME );
-
-            MAX_THREADS = 3;
-        }
     }
 
 
