@@ -6,7 +6,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -19,17 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.Validation;
-import wres.config.generated.DestinationConfig;
-import wres.config.generated.DestinationType;
-import wres.config.generated.MetricConfig;
-import wres.config.generated.MetricConfigName;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.DataFactory;
-import wres.datamodel.DefaultDataFactory;
-import wres.datamodel.MetricConstants;
-import wres.engine.statistics.metric.ConfigMapper;
-import wres.engine.statistics.metric.MetricConfigurationException;
-import wres.io.config.ConfigHelper;
 import wres.io.config.ProjectConfigPlus;
 import wres.io.config.SystemSettings;
 
@@ -213,81 +202,11 @@ public class Control implements Function<String[], Integer>
         }
     }
 
-
-    /**
-     * Locates the metric configuration corresponding to the input {@link MetricConstants} or null if no corresponding
-     * configuration could be found. If the configuration contains a {@link MetricConfigName#ALL_VALID}, the 
-     * prescribed metric identifier is ignored and the configuration is returned for 
-     * {@link MetricConfigName#ALL_VALID}.
-     * 
-     * @param metric the metric
-     * @param config the project configuration
-     * @return the metric configuration or null
-     */
-
-    private static MetricConfig getNamedConfigOrAllValid( final MetricConstants metric, final ProjectConfig config )
-    {
-        // Deal with MetricConfigName.ALL_VALID first
-        MetricConfig allValid = ConfigHelper.getMetricConfigByName( config, MetricConfigName.ALL_VALID );
-        if ( allValid != null )
-        {
-            return allValid;
-        }
-        // Find the corresponding configuration
-        final Optional<MetricConfig> returnMe = config.getOutputs().getMetric().stream().filter( a -> {
-            try
-            {
-                return metric.equals( ConfigMapper.from( a.getName() ) );
-            }
-            catch ( final MetricConfigurationException e )
-            {
-                LOGGER.error( "Could not map metric name '{}' to metric configuration.", metric, e );
-                return false;
-            }
-        } ).findFirst();
-        return returnMe.isPresent() ? returnMe.get() : null;
-    }
-
-
-    /**
-     * Returns true if the given config has one or more of given output type.
-     * @param config the config to search
-     * @param type the type of output to look for
-     * @return true if the output type is present, false otherwise
-     */
-
-    private static boolean configNeedsThisTypeOfOutput( ProjectConfig config,
-                                                        DestinationType type )
-    {
-        if ( config.getOutputs() == null
-             || config.getOutputs().getDestination() == null )
-        {
-            LOGGER.debug( "No destinations specified for config {}", config );
-            return false;
-        }
-
-        for ( DestinationConfig d : config.getOutputs().getDestination() )
-        {
-            if ( d.getType().equals( type ) )
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
     /**
      * Default logger.
      */
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Control.class);
-
-    /**
-     * Default data factory.
-     */
-
-    private static final DataFactory DATA_FACTORY = DefaultDataFactory.getInstance();
 
     /**
      * System property used to retrieve max thread count, passed as -D

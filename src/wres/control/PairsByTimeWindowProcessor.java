@@ -12,7 +12,6 @@ import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
-import wres.engine.statistics.metric.MetricProcessor;
 import wres.engine.statistics.metric.MetricProcessorByTime;
 
     /**
