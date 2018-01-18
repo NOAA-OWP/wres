@@ -8,9 +8,9 @@ import java.util.Objects;
 import java.util.Set;
 
 import wres.datamodel.outputs.BoxPlotOutput;
-import wres.datamodel.outputs.MapOutput;
 import wres.datamodel.outputs.MatrixOutput;
 import wres.datamodel.outputs.MultiVectorOutput;
+import wres.datamodel.outputs.PairedOutput;
 import wres.datamodel.outputs.ScalarOutput;
 import wres.datamodel.outputs.VectorOutput;
 
@@ -552,7 +552,7 @@ public enum MetricConstants
         BOXPLOT,
         
         /**
-         * Metrics that produce a {@link MapOutput}.
+         * Metrics that produce a {@link PairedOutput}.
          */
 
         MAP;

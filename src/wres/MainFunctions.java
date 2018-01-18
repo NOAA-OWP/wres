@@ -30,6 +30,7 @@ import ucar.nc2.Variable;
 
 import wres.config.generated.Format;
 import wres.config.generated.ProjectConfig;
+import wres.control.Control;
 import wres.io.Operations;
 import wres.io.concurrency.Downloader;
 import wres.io.concurrency.Executor;

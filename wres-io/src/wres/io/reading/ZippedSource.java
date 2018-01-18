@@ -6,6 +6,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -116,19 +118,13 @@ public class ZippedSource extends BasicSource {
     {
         List<IngestResult> result = new ArrayList<>();
 
-        FileInputStream fileStream = null;
-        BufferedInputStream bufferedFile = null;
-        GzipCompressorInputStream decompressedFileStream = null;
-        TarArchiveInputStream archive = null;
         TarArchiveEntry archivedSource;
 
-        try
+        try ( FileInputStream fileStream = new FileInputStream( this.getAbsoluteFilename() );
+              BufferedInputStream bufferedFile = new BufferedInputStream( fileStream );
+              GzipCompressorInputStream decompressedFileStream = new GzipCompressorInputStream( bufferedFile );
+              TarArchiveInputStream archive = new TarArchiveInputStream( decompressedFileStream ) )
         {
-            fileStream = new FileInputStream(this.getAbsoluteFilename());
-            bufferedFile = new BufferedInputStream(fileStream);
-            decompressedFileStream = new GzipCompressorInputStream(bufferedFile);
-            archive = new TarArchiveInputStream(decompressedFileStream);
-
             archivedSource = archive.getNextTarEntry();
 
             while (archivedSource != null)
@@ -185,7 +181,9 @@ public class ZippedSource extends BasicSource {
 
             for (String filename : this.savedFiles)
             {
-                boolean fileRemoved = new File(filename).delete();
+                Path path = Paths.get( filename );
+                boolean fileRemoved = Files.deleteIfExists( path );
+
                 if (!fileRemoved)
                 {
                     LOGGER.debug( "The file '{}' could not be removed after " +
@@ -200,55 +198,8 @@ public class ZippedSource extends BasicSource {
         }
         catch ( ExecutionException | IOException e )
         {
-            throw new RuntimeException( "Failure", e );
-        }
-        finally
-        {
-            if (archive != null)
-            {
-                try
-                {
-                    archive.close();
-                }
-                catch (IOException e)
-                {
-                    LOGGER.error(Strings.getStackTrace(e));
-                }
-            }
-
-            if (decompressedFileStream != null)
-            {
-                try
-                {
-                    decompressedFileStream.close();
-                }
-                catch (IOException e)
-                {
-                    LOGGER.error(Strings.getStackTrace(e));
-                }
-            }
-
-            if (bufferedFile != null)
-            {
-                try
-                {
-                    bufferedFile.close();
-                }
-                catch (IOException e)
-                {
-                    LOGGER.error(Strings.getStackTrace(e));
-                }
-            }
-
-            if (fileStream != null)
-            {
-                try {
-                    fileStream.close();
-                }
-                catch (IOException e) {
-                    LOGGER.error(Strings.getStackTrace(e));
-                }
-            }
+            throw new PreIngestException( "Failed to process a zipped source",
+                                          e );
         }
 
         return Collections.unmodifiableList( result );

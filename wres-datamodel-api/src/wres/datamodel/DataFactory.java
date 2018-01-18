@@ -30,7 +30,6 @@ import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.MapKey;
-import wres.datamodel.outputs.MapOutput;
 import wres.datamodel.outputs.MatrixOutput;
 import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.MetricOutputException;
@@ -42,6 +41,7 @@ import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold.MetricOutputMultiMapByTimeAndThresholdBuilder;
 import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.datamodel.outputs.MultiVectorOutput;
+import wres.datamodel.outputs.PairedOutput;
 import wres.datamodel.outputs.ScalarOutput;
 
 /**
@@ -745,17 +745,17 @@ public interface DataFactory
                                    MetricDimension rangeAxisDimension );
     
     /**
-     * Return a {@link MapOutput} that maps a key against a value.
+     * Return a {@link PairedOutput} that contains a list of pairs.
      * 
-     * @param <S> the key type
-     * @param <T> the output type
+     * @param <S> the type for the left of the pair
+     * @param <T> the type for the right of the pair
      * @param output the output
      * @param meta the output metadata
-     * @return a map output
+     * @return a paired output
      * @throws MetricOutputException if any of the inputs are invalid
      */
 
-    <S, T> MapOutput<S, T> ofMapOutput( Map<S, T> output,
+    <S, T> PairedOutput<S, T> ofPairedOutput( List<Pair<S, T>> output,
                                         MetricOutputMetadata meta );
 
     /**
