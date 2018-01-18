@@ -50,7 +50,7 @@ import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
 import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.ScalarOutput;
-import wres.engine.statistics.metric.ConfigMapper;
+import wres.engine.statistics.metric.MetricConfigHelper;
 import wres.engine.statistics.metric.MetricConfigurationException;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.processing.MetricProcessor;
@@ -1006,7 +1006,7 @@ public class ProcessorHelper
         final Optional<MetricConfig> returnMe = config.getOutputs().getMetric().stream().filter( a -> {
             try
             {
-                return metric.equals( ConfigMapper.from( a.getName() ) );
+                return metric.equals( MetricConfigHelper.from( a.getName() ) );
             }
             catch ( final MetricConfigurationException e )
             {

@@ -41,10 +41,10 @@ import wres.datamodel.outputs.MetricOutputForProject;
 import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.ScalarOutput;
-import wres.engine.statistics.metric.ConfigMapper;
 import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricCollection;
+import wres.engine.statistics.metric.MetricConfigHelper;
 import wres.engine.statistics.metric.MetricConfigurationException;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
@@ -244,12 +244,12 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         {
             for ( MetricConfigName metric : metricsConfig )
             {
-                metrics.add( ConfigMapper.from( metric ) );
+                metrics.add( MetricConfigHelper.from( metric ) );
             }
         }
         return metrics;
-    }    
-    
+    }
+
     /**
      * Returns true if one or more metric outputs will be cached across successive calls to {@link #apply(Object)},
      * false otherwise.
@@ -261,7 +261,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
     {
         return Objects.nonNull( mergeList ) && mergeList.length > 0;
     }
-    
+
     /**
      * Returns true if a named {@link MetricOutputGroup} will be cached across successive calls to 
      * {@link #apply(Object)}, false otherwise.
@@ -737,7 +737,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         //Add probability thresholds
         if ( Objects.nonNull( outputs.getProbabilityThresholds() ) )
         {
-            Operator oper = ConfigMapper.from( outputs.getProbabilityThresholds().getOperator() );
+            Operator oper = MetricConfigHelper.from( outputs.getProbabilityThresholds().getOperator() );
             String values = outputs.getProbabilityThresholds().getCommaSeparatedValues();
             List<Threshold> thresholds = getThresholdsFromCommaSeparatedValues( values, oper, true );
             globalThresholds.addAll( thresholds );
@@ -746,7 +746,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         //Add real-valued thresholds
         if ( Objects.nonNull( outputs.getValueThresholds() ) )
         {
-            Operator oper = ConfigMapper.from( outputs.getValueThresholds().getOperator() );
+            Operator oper = MetricConfigHelper.from( outputs.getValueThresholds().getOperator() );
             String values = outputs.getValueThresholds().getCommaSeparatedValues();
             List<Threshold> thresholds = getThresholdsFromCommaSeparatedValues( values, oper, false );
             globalThresholds.addAll( thresholds );
@@ -810,7 +810,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         {
             if ( metric.getName() != MetricConfigName.ALL_VALID )
             {
-                MetricConstants name = ConfigMapper.from( metric.getName() );
+                MetricConstants name = MetricConfigHelper.from( metric.getName() );
                 if ( Objects.nonNull( metric.getProbabilityThresholds() )
                      || Objects.nonNull( metric.getValueThresholds() ) )
                 {

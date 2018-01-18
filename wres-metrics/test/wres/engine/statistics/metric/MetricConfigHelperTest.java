@@ -18,7 +18,7 @@ import wres.datamodel.Threshold.Operator;
  * @version 0.1
  * @since 0.1
  */
-public final class ConfigMapperTest
+public final class MetricConfigHelperTest
 {
 
     /**
@@ -32,13 +32,13 @@ public final class ConfigMapperTest
         //Check for mapping without exception
         for ( MetricConfigName nextConfig : MetricConfigName.values() )
         {
-            ConfigMapper.from( nextConfig );
+            MetricConfigHelper.from( nextConfig );
         }
 
         //Check the MetricConfigName.ALL_VALID       
         assertTrue( "Expected a null mapping for '" + MetricConfigName.ALL_VALID
                     + "'.",
-                    Objects.isNull( ConfigMapper.from( MetricConfigName.ALL_VALID ) ) );
+                    Objects.isNull( MetricConfigHelper.from( MetricConfigName.ALL_VALID ) ) );
     }
     
     /**
@@ -51,16 +51,16 @@ public final class ConfigMapperTest
     {
         assertTrue( "Failed to convert '" + ThresholdOperator.GREATER_THAN
                     + "'.",
-                    ConfigMapper.from( ThresholdOperator.GREATER_THAN ) == Operator.GREATER );
+                    MetricConfigHelper.from( ThresholdOperator.GREATER_THAN ) == Operator.GREATER );
         assertTrue( "Failed to convert '" + ThresholdOperator.LESS_THAN
                     + "'.",
-                    ConfigMapper.from( ThresholdOperator.LESS_THAN ) == Operator.LESS );
+                    MetricConfigHelper.from( ThresholdOperator.LESS_THAN ) == Operator.LESS );
         assertTrue( "Failed to convert '" + ThresholdOperator.GREATER_THAN_OR_EQUAL_TO
                     + "'.",
-                    ConfigMapper.from( ThresholdOperator.GREATER_THAN_OR_EQUAL_TO ) == Operator.GREATER_EQUAL );
+                    MetricConfigHelper.from( ThresholdOperator.GREATER_THAN_OR_EQUAL_TO ) == Operator.GREATER_EQUAL );
         assertTrue( "Failed to convert '" + ThresholdOperator.LESS_THAN_OR_EQUAL_TO
                     + "'.",
-                    ConfigMapper.from( ThresholdOperator.LESS_THAN_OR_EQUAL_TO ) == Operator.LESS_EQUAL );
+                    MetricConfigHelper.from( ThresholdOperator.LESS_THAN_OR_EQUAL_TO ) == Operator.LESS_EQUAL );
     }
     
     /**
@@ -73,7 +73,7 @@ public final class ConfigMapperTest
         //Test the exceptions
         try
         {
-            ConfigMapper.from( (MetricConfigName) null );
+            MetricConfigHelper.from( (MetricConfigName) null );
             fail("Expected a checked exception on invalid inputs: null pair.");
         }
         catch(final MetricConfigurationException e)
@@ -83,7 +83,7 @@ public final class ConfigMapperTest
         //Test exception cases
         try
         {
-            ConfigMapper.from( (ThresholdOperator) null );
+            MetricConfigHelper.from( (ThresholdOperator) null );
             fail( "Expected a checked exception on null input." );
         }
         catch ( final MetricConfigurationException e )
