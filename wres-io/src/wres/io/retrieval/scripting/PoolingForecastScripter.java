@@ -13,9 +13,9 @@ import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.NoDataException;
 import wres.util.TimeHelper;
 
-class RollingForecastScripter extends Scripter
+class PoolingForecastScripter extends Scripter
 {
-    protected RollingForecastScripter( ProjectDetails projectDetails,
+    protected PoolingForecastScripter( ProjectDetails projectDetails,
                                        DataSourceConfig dataSourceConfig,
                                        Feature feature,
                                        int progress,
