@@ -59,8 +59,20 @@ class BackToBackObservationScripter extends Scripter
         this.applyLatestDateConstraint();
 
         this.applySeasonConstraint();
+        this.applyProjectConstraint();
 
         return this.getScript();
+    }
+
+    protected void applyProjectConstraint()
+    {
+        this.addLine( "    AND EXISTS (" );
+        this.addLine( "        SELECT 1" );
+        this.addLine( "        FROM wres.ProjectSource PS");
+        this.addLine( "        WHERE PS.project_id = ", this.getProjectDetails().getId());
+        this.addLine( "            AND PS.member = ", this.getMember());
+        this.addLine( "            AND PS.source_id = O.source_id");
+        this.addLine( "    )");
     }
 
     @Override
