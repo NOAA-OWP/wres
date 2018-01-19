@@ -34,18 +34,18 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
     /**
      *  Global cache for all Features
      */
-	private static Features INTERNAL_CACHE = null;
+	private static Features instance = null;
 
 	private static Features getCache ()
 	{
 		synchronized (CACHE_LOCK)
 		{
-			if (INTERNAL_CACHE == null)
+			if ( instance == null)
 			{
-				INTERNAL_CACHE = new Features();
-				INTERNAL_CACHE.init();
+                instance = new Features();
+				instance.init();
 			}
-			return INTERNAL_CACHE;
+			return instance;
 		}
 	}
 
@@ -128,81 +128,21 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
 
     public static FeatureDetails getDetails(Feature feature) throws SQLException
     {
-        Integer ID = Features.getFeatureID( feature );
-        return Features.getCache().get( ID );
+        Integer id = Features.getFeatureID( feature );
+        return Features.getCache().get( id );
     }
 
     public static Set<FeatureDetails> getAllDetails( ProjectConfig projectConfig ) throws SQLException
     {
         Set<FeatureDetails> features = new HashSet<>(  );
-        boolean hasNetCDF = false;
-        boolean hasUSGS = false;
-
-        for ( DataSourceConfig.Source source : projectConfig.getInputs().getLeft().getSource())
-        {
-            hasNetCDF = hasNetCDF || source.getFormat() == Format.NET_CDF;
-            hasUSGS = hasUSGS || source.getFormat() == Format.USGS;
-
-            if (hasUSGS && hasNetCDF)
-            {
-                break;
-            }
-        }
-
-        for ( DataSourceConfig.Source source : projectConfig.getInputs().getRight().getSource())
-        {
-            hasNetCDF = hasNetCDF || source.getFormat() == Format.NET_CDF;
-            hasUSGS = hasUSGS || source.getFormat() == Format.USGS;
-
-            if (hasUSGS && hasNetCDF)
-            {
-                break;
-            }
-        }
-
-        if (projectConfig.getInputs().getBaseline() != null)
-        {
-            for ( DataSourceConfig.Source source : projectConfig.getInputs()
-                                                                .getBaseline()
-                                                                .getSource() )
-            {
-                hasNetCDF = hasNetCDF || source.getFormat() == Format.NET_CDF;
-                hasUSGS = hasUSGS || source.getFormat() == Format.USGS;
-
-                if ( hasUSGS && hasNetCDF )
-                {
-                    break;
-                }
-            }
-        }
+        boolean hasNetCDF = usesNetCDFData( projectConfig );
+        boolean hasUSGS = usesUSGSData( projectConfig );
 
         for (Feature feature : projectConfig.getPair().getFeature())
         {
             for (FeatureDetails details : Features.getAllDetails( feature ))
             {
-                // If we aren't using NetCDF or USGS data, we don't need to worry
-                // about identifiers on the locations
-                if (!(hasNetCDF || hasUSGS))
-                {
-                    features.add( details );
-                }
-                // If we are using both NetCDF and USGS data, we need both Gage IDs
-                // and indexes for NetCDF files to be able to load any sort of
-                // data for evaluation
-                else if ((hasNetCDF && details.getNwmIndex() != null) &&
-                         (hasUSGS && Strings.hasValue( details.getGageID() )))
-                {
-                    features.add( details );
-                }
-                // If we are using NetCDF data, we need indexes to determine what
-                // data to retrieve
-                else if (hasNetCDF && details.getNwmIndex() != null)
-                {
-                    features.add( details );
-                }
-                // If we are using USGS data, we need a gageID or we won't be
-                // able to retrieve data
-                else if (hasUSGS && Strings.hasValue( details.getGageID() ))
+                if (shouldAddFeature( details, hasUSGS, hasNetCDF ))
                 {
                     features.add( details );
                 }
@@ -241,6 +181,106 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         }
 
         return features;
+    }
+
+    private static boolean shouldAddFeature(FeatureDetails feature, boolean usesUSGS, boolean usesNetCDF)
+    {
+        // If we aren't using NetCDF or USGS data, we don't need to worry
+        // about identifiers on the locations
+        if (!(usesNetCDF || usesUSGS))
+        {
+            return true;
+        }
+        // If we are using both NetCDF and USGS data, we need both Gage IDs
+        // and indexes for NetCDF files to be able to load any sort of
+        // data for evaluation
+        else if ((usesNetCDF && feature.getNwmIndex() != null) &&
+                 (usesUSGS && Strings.hasValue( feature.getGageID() )))
+        {
+            return true;
+        }
+        // If we are using NetCDF data, we need indexes to determine what
+        // data to retrieve
+        else if (usesNetCDF && feature.getNwmIndex() != null)
+        {
+            return true;
+        }
+        // If we are using USGS data, we need a gageID or we won't be
+        // able to retrieve data
+        else if (usesUSGS && Strings.hasValue( feature.getGageID() ))
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    private static boolean usesUSGSData(ProjectConfig projectConfig)
+    {
+        for ( DataSourceConfig.Source source : projectConfig.getInputs().getLeft().getSource())
+        {
+            if ( source.getFormat() == Format.USGS )
+            {
+                return true;
+            }
+        }
+
+        for ( DataSourceConfig.Source source : projectConfig.getInputs().getRight().getSource())
+        {
+            if ( source.getFormat() == Format.USGS )
+            {
+                return true;
+            }
+        }
+
+        if (projectConfig.getInputs().getBaseline() != null)
+        {
+            for ( DataSourceConfig.Source source : projectConfig.getInputs()
+                                                                .getBaseline()
+                                                                .getSource() )
+            {
+                if ( source.getFormat() == Format.USGS )
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private static boolean usesNetCDFData(ProjectConfig projectConfig)
+    {
+        for ( DataSourceConfig.Source source : projectConfig.getInputs().getLeft().getSource())
+        {
+            if (source.getFormat() == Format.NET_CDF)
+            {
+                return true;
+            }
+        }
+
+        for ( DataSourceConfig.Source source : projectConfig.getInputs().getRight().getSource())
+        {
+            if (source.getFormat() == Format.NET_CDF)
+            {
+                return true;
+            }
+        }
+
+        if (projectConfig.getInputs().getBaseline() != null)
+        {
+            for ( DataSourceConfig.Source source : projectConfig.getInputs()
+                                                                .getBaseline()
+                                                                .getSource() )
+            {
+                if (source.getFormat() == Format.NET_CDF)
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     public static Set<FeatureDetails> getAllDetails(Feature feature) throws SQLException
@@ -297,8 +337,8 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
     public static FeatureDetails getDetails(Integer comid, String lid, String gageID, String huc)
             throws SQLException
     {
-        Integer ID = Features.getFeatureID( comid, lid, gageID, huc );
-        return Features.getCache().get( ID );
+        Integer id = Features.getFeatureID( comid, lid, gageID, huc );
+        return Features.getCache().get( id );
     }
 
     public static FeatureDetails getDetailsByLID(String lid) throws SQLException
@@ -318,7 +358,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
 
         // This is the approximate distance between longitudinal degrees at
         // the equator
-        Double distanceAtEquator = 111321.0;
+        final Double distanceAtEquator = 111321.0;
 
         // This is an approximation
         Double distanceOfOneDegree = Math.cos(radianLatitude) * distanceAtEquator;
@@ -330,7 +370,6 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         // spot on.
         Double rangeInDegrees = Math.max( range / distanceOfOneDegree, 0.00005);
 
-        // TODO: Convert to database function
         String script = "";
         script += "WITH feature_and_distance AS" + NEWLINE;
         script += "(" + NEWLINE;

@@ -4,15 +4,17 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 
+import org.apache.commons.lang3.StringUtils;
+
 import wres.io.utilities.Database;
-import wres.util.Strings;
 
 public class USGSParameters
 {
+    private USGSParameters() {}
+
     private static class ParameterKey implements Comparable<ParameterKey>
     {
         public ParameterKey(String name, String measurementUnit, String aggregation)
@@ -29,47 +31,16 @@ public class USGSParameters
         @Override
         public boolean equals( Object obj )
         {
-            if (obj == null || !(obj  instanceof ParameterKey))
+            if (obj == null || !(obj instanceof ParameterKey))
             {
                 return false;
             }
 
-            boolean equal;
-
             ParameterKey otherKey = (ParameterKey)obj;
 
-            if (this.name != null && otherKey.name != null)
-            {
-                equal = this.name.equalsIgnoreCase( otherKey.name );
-            }
-            else
-            {
-                equal = this.name == null && otherKey.name == null;
-            }
-
-            if (equal)
-            {
-                if (this.measurementUnit != null && otherKey.measurementUnit != null)
-                {
-                    equal = this.measurementUnit.equalsIgnoreCase( otherKey.measurementUnit );
-                }
-                else
-                {
-                    equal = this.measurementUnit == null && otherKey.measurementUnit == null;
-                }
-            }
-
-            if (equal)
-            {
-                if (this.aggregation != null && otherKey.aggregation != null)
-                {
-                    equal = this.aggregation.equalsIgnoreCase( otherKey.aggregation );
-                }
-                else
-                {
-                    equal = this.aggregation == null && otherKey.aggregation == null;
-                }
-            }
+            boolean equal = StringUtils.equalsIgnoreCase( this.name, otherKey.name );
+            equal = equal || StringUtils.equalsIgnoreCase( this.measurementUnit, otherKey.measurementUnit );
+            equal = equal || StringUtils.equalsIgnoreCase( this.aggregation, otherKey.aggregation );
 
             return equal;
         }
@@ -251,9 +222,9 @@ public class USGSParameters
         else
         {
             String message = "There is not a known USGS parameter with the name '" +
-                             String.valueOf(parameterName) +
+                             parameterName +
                              "' and a measurement unit of " +
-                             String.valueOf(measurementUnit);
+                             measurementUnit;
 
             if (aggregationMethod.equalsIgnoreCase( "none" ))
             {
@@ -261,7 +232,7 @@ public class USGSParameters
             }
             else
             {
-                message += " that is aggregated by " + String.valueOf(aggregationMethod);
+                message += " that is aggregated by " + aggregationMethod;
             }
 
             throw new IllegalArgumentException( message );

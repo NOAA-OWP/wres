@@ -32,18 +32,18 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
     /**
      *  Internal cache that will store a global collection of details whose details may be accessed through static methods
      */
-	private static Ensembles INTERNAL_CACHE = null;
+	private static Ensembles instance = null;
 
 	private static Ensembles getCache()
 	{
 		synchronized (CACHE_LOCK)
 		{
-			if (INTERNAL_CACHE == null)
+			if ( instance == null)
 			{
-				INTERNAL_CACHE = new Ensembles();
-				INTERNAL_CACHE.init();
+				instance = new Ensembles();
+				instance.init();
 			}
-			return INTERNAL_CACHE;
+			return instance;
 		}
 	}
 
@@ -107,90 +107,111 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
 		return getID(detail.getKey());
 	}
 
+	/**
+	 * Performs fuzzy matching to find the ID of the closest existing ID. If one
+	 * doesn't exist, one is created.  Priority is given via: name, index, then qualifier
+	 * @param grouping The key containing some permutation of name, index, and qualifier
+	 * @return The ID representing the ensemble in the database
+	 * @throws SQLException
+	 */
 	@Override
-	public synchronized Integer getID(final EnsembleKey grouping) throws SQLException
+	public Integer getID(final EnsembleKey grouping) throws SQLException
 	{
 		// Maps keys to the number of similarities between them and the passed in grouping
-		Map<Integer, List<EnsembleKey>> possibleKeys = new TreeMap<>();
-		
-		// Listing of keys with the same amount of similarities
-		List<EnsembleKey> similarKeys;
+		Map<Integer, List<EnsembleKey>> possibleKeys;
 
 		// The closest existing key to what we are trying to retrieve
 		EnsembleKey mostSimilar = null;
-        Integer ID = getKeyIndex().get(grouping);
+
+        Integer id = getKeyIndex().get(grouping);
 		
 		// If no identical groupings are found and the grouping isn't full, attempt to find a similar one
-		if (getKeyIndex().size() > 0)
+		if (id == null && getKeyIndex().size() > 0)
 		{
-			for (EnsembleKey key : getKeyIndex().keySet())
+			possibleKeys = this.getSimilarKeys( grouping );
+
+			if (possibleKeys.containsKey( 3 ))
+            {
+                mostSimilar = possibleKeys.get(3).get( 0 );
+            }
+			else if (possibleKeys.containsKey(2))
 			{
-			    ID = getKeyIndex().get(grouping);
-	            if (ID != null)
-	            {
-	                break;
-	            }
-	            
-				Integer similarity = grouping.getSimilarity(key);
-				
-				if (similarity == 3)
-				{
-					mostSimilar = grouping;
-					break;
-				}
-				if (similarity > 0)
-				{					
-					if (!possibleKeys.containsKey(similarity))
-					{
-						possibleKeys.put(similarity, new ArrayList<>());
-					}
-					
-					possibleKeys.get(similarity).add(key);
-				}
-			}
-			
-			if (possibleKeys.containsKey(2))
-			{
-				similarKeys = possibleKeys.get(2);
-				
-				mostSimilar = Collections.find(similarKeys, (EnsembleKey key) -> {
-					return key.getEnsembleName().equalsIgnoreCase(grouping.getEnsembleName()) && key.getMemberIndex().equalsIgnoreCase(grouping.getMemberIndex());
-				});
+			    mostSimilar = this.getSecondDegreeMatch( grouping, possibleKeys.get( 2 ) );
 			}
 			else if (possibleKeys.containsKey(1)) {
-				similarKeys = possibleKeys.get(1);
 				
-				mostSimilar = Collections.find(similarKeys, (EnsembleKey key) -> {
-					return key.getEnsembleName().equalsIgnoreCase(grouping.getEnsembleName());
-				});
-				
-				if (mostSimilar == null)
-				{
-					mostSimilar = Collections.find(similarKeys, (EnsembleKey key) -> {
-						return key.getMemberIndex().equalsIgnoreCase(grouping.getMemberIndex());
-					});
-				}
+				mostSimilar = Collections.find (
+                        possibleKeys.get(1),
+						(EnsembleKey key) ->
+								key.getEnsembleName()
+								   .equalsIgnoreCase( grouping.getEnsembleName())
+				);
 			}
 		}
 		
 		// If a similar key wasn't found, insert a new element based on the grouping
-		if (ID == null && mostSimilar == null)
+		if (id == null && mostSimilar == null)
 		{
-			mostSimilar = grouping;
 			EnsembleDetails detail = new EnsembleDetails();
 			detail.setEnsembleName(grouping.getEnsembleName());
 			detail.setEnsembleMemberID(grouping.getMemberIndex());
 			detail.setQualifierID(grouping.getQualifierID());
 			addElement(detail);
+            id = getKeyIndex().get(grouping);
 		}
-		
-		if (mostSimilar != null)
+		else if (id == null)
 		{
-		    ID = getKeyIndex().get(mostSimilar);
+		    id = getKeyIndex().get(mostSimilar);
 		}
 
-		return ID;
+		return id;
 	}
+
+	private Map<Integer, List<EnsembleKey>> getSimilarKeys(EnsembleKey originalKey)
+    {
+		// Maps keys to the number of similarities between them and the passed in grouping
+		Map<Integer, List<EnsembleKey>> possibleKeys = new TreeMap<>();
+
+		for (EnsembleKey key : getKeyIndex().keySet())
+		{
+			Integer similarity = originalKey.getSimilarity(key);
+
+			if (similarity == 3)
+			{
+			    possibleKeys = new TreeMap<>(  );
+			    possibleKeys.put( 3, new ArrayList<>() );
+			    possibleKeys.get(3).add( key );
+				break;
+			}
+			if (similarity > 0)
+			{
+				if (!possibleKeys.containsKey(similarity))
+				{
+					possibleKeys.put(similarity, new ArrayList<>());
+				}
+
+				possibleKeys.get(similarity).add(key);
+			}
+		}
+
+		return possibleKeys;
+    }
+
+    private EnsembleKey getSecondDegreeMatch(EnsembleKey key, List<EnsembleKey> similarKeys)
+    {
+        EnsembleKey match = null;
+
+        for (EnsembleKey similarKey : similarKeys)
+        {
+            if ( similarKey.getEnsembleName().equalsIgnoreCase( key.getEnsembleName() ) &&
+                 similarKey.getMemberIndex().equalsIgnoreCase( key.getMemberIndex() ))
+            {
+                match = similarKey;
+            }
+        }
+
+        return match;
+    }
 	
 	/**
 	 * Loads all pre-existing Ensembles into the instanced cache

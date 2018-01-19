@@ -122,10 +122,11 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey> {
 	}
 
 	@Override
-	protected String getInsertSelectStatement() {
+	protected String getInsertSelectStatement() throws SQLException
+	{
 	    if (this.hash == null)
         {
-            throw new RuntimeException( "Could not save '" + this.sourcePath + "'; there was no file hash." );
+            throw new SQLException( "Could not save '" + this.sourcePath + "'; there was no file hash." );
         }
 
 		String script = "";
@@ -134,7 +135,7 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey> {
 		script += "		INSERT INTO wres.Source (path, output_time, lead, hash)" + NEWLINE;
 		script += "		SELECT '" + this.sourcePath + "'," + NEWLINE;
 		script += "				'" + this.outputTime + "'," + NEWLINE;
-		script += "             " + String.valueOf(this.lead) + "," + NEWLINE;
+		script += "             " + this.lead + "," + NEWLINE;
 		script += "             '" + this.hash + "'" + NEWLINE;
 		script += "		WHERE NOT EXISTS (" + NEWLINE;
 		script += "			SELECT 1" + NEWLINE;

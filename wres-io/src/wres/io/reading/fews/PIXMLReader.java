@@ -169,6 +169,12 @@ public final class PIXMLReader extends XMLReader
 		}
 	}
 
+    @Override
+    protected Logger getLogger()
+    {
+        return LOGGER;
+    }
+
     /**
      * Parses offset hours from a reader that is positioned on "timeZone" tag.
      * <br />
