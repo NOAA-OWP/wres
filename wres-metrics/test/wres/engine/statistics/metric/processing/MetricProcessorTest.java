@@ -17,8 +17,8 @@ import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
-import wres.engine.statistics.metric.MetricConfigurationException;
 import wres.engine.statistics.metric.MetricFactory;
+import wres.engine.statistics.metric.config.MetricConfigurationException;
 import wres.io.config.ProjectConfigPlus;
 
 /**

@@ -1,4 +1,4 @@
-package wres.engine.statistics.metric;
+package wres.engine.statistics.metric.config;
 
 import java.util.EnumMap;
 import java.util.List;

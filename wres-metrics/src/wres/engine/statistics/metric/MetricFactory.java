@@ -28,6 +28,7 @@ import wres.engine.statistics.metric.categorical.CriticalSuccessIndex;
 import wres.engine.statistics.metric.categorical.EquitableThreatScore;
 import wres.engine.statistics.metric.categorical.FrequencyBias;
 import wres.engine.statistics.metric.categorical.FrequencyBias.FrequencyBiasBuilder;
+import wres.engine.statistics.metric.config.MetricConfigurationException;
 import wres.engine.statistics.metric.categorical.PeirceSkillScore;
 import wres.engine.statistics.metric.categorical.ProbabilityOfDetection;
 import wres.engine.statistics.metric.categorical.ProbabilityOfFalseDetection;
