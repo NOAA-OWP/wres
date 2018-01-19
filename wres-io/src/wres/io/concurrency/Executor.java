@@ -23,9 +23,9 @@ import wres.io.config.SystemSettings;
 public final class Executor {
 
 	// The underlying thread executor
-	private static ThreadPoolExecutor SERVICE = createService();
+	private static final ThreadPoolExecutor SERVICE = createService();
 
-	private static ExecutorService HIGH_PRIORITY_TASKS = createHighPriorityService();
+	private static final ExecutorService HIGH_PRIORITY_TASKS = createHighPriorityService();
 
     private static final Logger LOGGER = LoggerFactory.getLogger( Executor.class );
 
@@ -38,7 +38,8 @@ public final class Executor {
 	 * Creates a new thread executor
 	 * @return A new thread executor that may run the maximum number of configured threads
 	 */
-	private static ThreadPoolExecutor createService() {
+	private static ThreadPoolExecutor createService()
+	{
 		if (SERVICE != null)
 		{
 			SERVICE.shutdown();
@@ -62,11 +63,6 @@ public final class Executor {
 
 	public static <V> Future<V> submitHighPriorityTask(Callable<V> task)
 	{
-		if (HIGH_PRIORITY_TASKS == null || HIGH_PRIORITY_TASKS.isShutdown())
-		{
-			HIGH_PRIORITY_TASKS = createHighPriorityService();
-		}
-
 		return HIGH_PRIORITY_TASKS.submit( task );
 	}
 	
@@ -78,11 +74,6 @@ public final class Executor {
 	 */
 	public static <U> Future<U> submit(Callable<U> task)
 	{
-		if (SERVICE == null || SERVICE.isShutdown())
-		{
-			SERVICE = createService();
-		}
-
 		return SERVICE.submit(task);
 	}
 	
@@ -93,11 +84,6 @@ public final class Executor {
 	 */
 	public static Future execute(Runnable task)
 	{
-		if (SERVICE == null || SERVICE.isShutdown())
-		{
-			SERVICE = createService();
-		}
-
 		return SERVICE.submit(task);
 	}
 	

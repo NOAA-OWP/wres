@@ -34,7 +34,8 @@ public final class Downloader extends WRESRunnable {
     public void execute() {
         String message = this.address + "\t|\t";
 
-        try {
+        try
+        {
             final URL fileURL = new URL(address);
             HttpURLConnection connection = (HttpURLConnection) fileURL.openConnection();
 
@@ -47,23 +48,10 @@ public final class Downloader extends WRESRunnable {
                 message += "Exists\t\t\t|\t";
             }
 
-            try (InputStream fileStream = fileURL.openStream())
-            {
-                Files.copy(fileStream, this.targetPath, StandardCopyOption.REPLACE_EXISTING);
+            message += copy( fileURL );
 
-                message += "Downloaded";
-            }
-            catch (java.io.IOException saveError)
-            {
-                this.getLogger().error("{}The file at '{}' could not be saved to:{} '{}'.",
-                                       NEWLINE,
-                                       this.address,
-                                       NEWLINE,
-                                       this.targetPath.toString());
-                message += "Not Downloaded";
-            }
-
-        } catch (java.io.IOException e)
+        }
+        catch (java.io.IOException e)
         {
             this.getLogger().error("The address: '{}' is not a valid url.{}",
                                    this.address,
@@ -78,6 +66,25 @@ public final class Downloader extends WRESRunnable {
         }
 
         this.executeOnComplete();
+    }
+
+    private String copy(URL url)
+    {
+        try (InputStream fileStream = url.openStream())
+        {
+            Files.copy(fileStream, this.targetPath, StandardCopyOption.REPLACE_EXISTING);
+
+            return "Downloaded";
+        }
+        catch (java.io.IOException saveError)
+        {
+            this.getLogger().error("{}The file at '{}' could not be saved to:{} '{}'.",
+                                   NEWLINE,
+                                   this.address,
+                                   NEWLINE,
+                                   this.targetPath.toString());
+            return "Not Downloaded";
+        }
     }
 
     private final Path targetPath;

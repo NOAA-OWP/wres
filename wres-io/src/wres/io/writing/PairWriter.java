@@ -34,9 +34,9 @@ public class PairWriter extends WRESCallable<Boolean>
     private static final String PAIR_FILENAME = "/pairs.csv";
     private static final String BASELINE_FILENAME = "/baseline_pairs.csv";
 
-    private static AtomicBoolean headerHasBeenWritten = new AtomicBoolean( false );
+    private static boolean headerHasBeenWritten;
 
-    private static AtomicBoolean baselineHeaderHasBeenWritten = new AtomicBoolean( false );
+    private static boolean baselineHeaderHasBeenWritten;
 
     private final DestinationConfig destinationConfig;
     private final String date;
@@ -93,8 +93,8 @@ public class PairWriter extends WRESCallable<Boolean>
 
         synchronized ( PAIR_OUTPUT_LOCK )
         {
-            if ( (!this.isBaseline && !PairWriter.headerHasBeenWritten.get()) ||
-                 (this.isBaseline && !PairWriter.baselineHeaderHasBeenWritten.get()) )
+            if ( (!this.isBaseline && !PairWriter.headerHasBeenWritten) ||
+                 (this.isBaseline && !PairWriter.baselineHeaderHasBeenWritten) )
             {
                 Files.deleteIfExists( Paths.get( actualFileDestination) );
             }
@@ -103,19 +103,19 @@ public class PairWriter extends WRESCallable<Boolean>
                                                          true );
                   BufferedWriter writer = new BufferedWriter( fileWriter ) )
             {
-                if ( this.isBaseline && !PairWriter.baselineHeaderHasBeenWritten.get())
+                if ( this.isBaseline && !PairWriter.baselineHeaderHasBeenWritten)
                 {
                     writer.write( OUTPUT_HEADER );
                     writer.newLine();
 
-                    PairWriter.baselineHeaderHasBeenWritten.set( true );
+                    PairWriter.baselineHeaderHasBeenWritten = true;
                 }
-                else if ( !this.isBaseline && !PairWriter.headerHasBeenWritten.get() )
+                else if ( !this.isBaseline && !PairWriter.headerHasBeenWritten )
                 {
                     writer.write( OUTPUT_HEADER );
                     writer.newLine();
 
-                    PairWriter.headerHasBeenWritten.set( true );
+                    PairWriter.headerHasBeenWritten = true;
                 }
 
                 StringJoiner line = new StringJoiner( DELIMITER );

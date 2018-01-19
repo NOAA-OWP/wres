@@ -119,8 +119,9 @@ public class ConfigHelper
         if (!(projectDetails.getAggregationPeriod() == 1 &&
               projectDetails.getAggregationUnit().equalsIgnoreCase( DurationUnit.HOURS.toString() )))
         {
-            int beginning = windowNumber * projectDetails.getAggregationFrequency();// projectDetails.getLead( windowNumber );
-            int end = (projectDetails.getAggregationFrequency() * windowNumber) + projectDetails.getAggregationPeriod();// projectDetails.getLead( windowNumber + 1 );
+            int beginning = windowNumber * projectDetails.getAggregationFrequency();
+            int end = (projectDetails.getAggregationFrequency() * windowNumber) +
+                      projectDetails.getAggregationPeriod();
 
             qualifier = String.valueOf(end + offset);
             qualifier += " >= FV.lead AND FV.lead > ";
@@ -898,8 +899,6 @@ public class ConfigHelper
         Objects.requireNonNull( projectDetails );
         TimeWindow windowMetadata;
 
-        // TODO: support back-to-back pooling windows, which are a special case of rolling windows
-        // where the frequency is undefined (equal to the period)
         if ( projectDetails.getPoolingMode() == TimeWindowMode.ROLLING )// projectDetails.getPoolingWindow() != null )
         {
             // Determine the position in hours of this window within the sequence
@@ -1193,8 +1192,8 @@ public class ConfigHelper
     }
        
     /**
-     * Returns true if the input contains instantaneous data, false otherwise. A {@link TimeScaleConfig} is 
-     * considered instantaneous if the {@link TimeScaleConfig#getPeriod()} is 1 and the 
+     * Returns true if the input contains instantaneous data, false otherwise. A {@link TimeScaleConfig} is
+     * considered instantaneous if the {@link TimeScaleConfig#getPeriod()} is 1 and the
      * {@link TimeScaleConfig#getUnit()} is {@link DurationUnit#NANOS}.
      * 
      * @param input the input to test
@@ -1233,4 +1232,3 @@ public class ConfigHelper
     }
     
 }
-

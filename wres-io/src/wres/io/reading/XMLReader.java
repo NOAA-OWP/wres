@@ -19,18 +19,18 @@ import javax.xml.transform.stream.StreamResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.util.Strings;
+
 /**
  * @author Tubbs
  *
  */
-public class XMLReader
+public abstract class XMLReader
 {
     private final String filename;
     private final boolean findOnClasspath;
     private final InputStream inputStream;
     private XMLInputFactory factory = null;
-
-    private final Logger LOGGER = LoggerFactory.getLogger(XMLReader.class);
 
 	/**
 	 * 
@@ -54,8 +54,9 @@ public class XMLReader
 	    this.findOnClasspath = findOnClasspath;
 	    this.inputStream = null;
 
-	    LOGGER.trace( "Created XMLReader for file: {} findOnClasspath={}", filename,
-					  findOnClasspath );
+	    this.getLogger().trace( "Created XMLReader for file: {} findOnClasspath={}",
+                                filename,
+                                findOnClasspath );
 	}
 	
 	protected String getFilename()
@@ -109,7 +110,9 @@ public class XMLReader
 		        catch (XMLStreamException xse)
 		        {
 		            // not much we can do at this point
-		            LOGGER.warn("Exception while closing file {}: {}", this.filename, xse);
+		            this.getLogger().warn("Exception while closing file {}: {}",
+                                          this.filename,
+                                          xse);
 		        }
 		    }
 		}
@@ -161,39 +164,43 @@ public class XMLReader
 		transformer.transform(new StAXSource(reader), new StreamResult(stringWriter));
 		return stringWriter.toString();
 	}
-	
-	@SuppressWarnings("static-method")
-    protected void parseElement(XMLStreamReader reader)
-            throws IOException
+
+    protected void parseElement(XMLStreamReader reader) throws IOException
 	{
 		switch (reader.getEventType())
 		{
 		case XMLStreamConstants.START_DOCUMENT:
-			LOGGER.trace("Start of the document");
+			this.getLogger().trace("Start of the document");
 			break;
 		case XMLStreamConstants.START_ELEMENT:
-			LOGGER.trace("Start element = '" + reader.getLocalName() + "'");
+			this.getLogger().trace("Start element = '" + reader.getLocalName() + "'");
 			break;
 		case XMLStreamConstants.CHARACTERS:
-			int begin_index = reader.getTextStart();
-			int end_index = reader.getTextLength();
-			String value = new String(reader.getTextCharacters(), begin_index, end_index).trim();
+			int beginIndex = reader.getTextStart();
+			int endIndex = reader.getTextLength();
+			String value = new String(reader.getTextCharacters(), beginIndex, endIndex).trim();
 			
-			if (!value.equalsIgnoreCase(""))
+			if ( Strings.hasValue(value))
 			{
-				LOGGER.trace("Value = '" + value + "'");
+				this.getLogger().trace("Value = '{}'", value);
 			}
 			
 			break;
 		case XMLStreamConstants.END_ELEMENT:
-			LOGGER.trace("End element = '" + reader.getLocalName() + "'");
+			this.getLogger().trace("End element = '" + reader.getLocalName() + "'");
 			break;
 		case XMLStreamConstants.COMMENT:
 			if (reader.hasText())
 			{
-				LOGGER.trace(reader.getText());
+				this.getLogger().trace(reader.getText());
 			}
 			break;
+        default:
+            throw new IOException( "The event: '" +
+                                   reader.getEventType() +
+                                   "' is not parsed by default." );
 		}
 	}
+
+	protected abstract Logger getLogger();
 }

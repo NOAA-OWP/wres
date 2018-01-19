@@ -12,7 +12,7 @@ import wres.util.Strings;
  */
 public abstract class WRESTask
 {
-    protected final static String NEWLINE = System.lineSeparator();
+    protected static final String NEWLINE = System.lineSeparator();
 
     public void setOnComplete(Consumer<Object> onComplete) {
         this.onComplete = onComplete;
@@ -60,7 +60,7 @@ public abstract class WRESTask
         {
             this.threadName = Thread.currentThread().getName();
             String newName =
-                    " -> #" + String.valueOf( Thread.currentThread().getId() );
+                    " -> #" + Thread.currentThread().getId();
 
             if ( Strings.contains( threadName, "\\s->\\s#\\d+" ) )
             {

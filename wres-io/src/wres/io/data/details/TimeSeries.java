@@ -15,7 +15,7 @@ public final class TimeSeries
      * The number of unique lead times contained within a partition within
      * the database for values linked to a forecasted time series
      */
-    private final static short FORECASTVALUE_PARTITION_SPAN = 20;
+    private static final short FORECASTVALUE_PARTITION_SPAN = 20;
 
     /**
      * System agnostic newline character used to make created scripts easier to
@@ -26,7 +26,7 @@ public final class TimeSeries
     /**
      * Mapping between the number of a forecast value partition and its name
      */
-    private final static HashMap<Integer, String> FORECASTVALUE_PARITION_NAMES =
+    private static final HashMap<Integer, String> FORECASTVALUE_PARITION_NAMES =
             new HashMap<>();
 
     /**
@@ -80,45 +80,45 @@ public final class TimeSeries
 	 * Sets the ID of the Ensemble that the time series is linked to. The ID of
      * the time series is invalidated if the ID of the Ensemble it is linked
      * to changes
-	 * @param ensemble_id The ID of the new ensemble
+	 * @param ensembleId The ID of the new ensemble
 	 */
-	public void setEnsembleID(Integer ensemble_id)
+	public void setEnsembleID(Integer ensembleId)
 	{
-		if (this.ensembleID != null && !this.ensembleID.equals(ensemble_id))
+		if (this.ensembleID != null && !this.ensembleID.equals(ensembleId))
 		{
 			this.timeSeriesID = null;
 		}
-        this.ensembleID = ensemble_id;
+        this.ensembleID = ensembleId;
 	}
 	
 	/**
 	 * Sets the ID of the relationship between the variable and its location
      * for this time series. The ID of the time series is
 	 * invalidated if the ID of the linked Variable location changes
-	 * @param variableposition_id The ID of the new variable location
+	 * @param variablePositionID The ID of the new variable location
 	 */
-	public void setVariablePositionID(int variableposition_id)
+	public void setVariablePositionID(int variablePositionID)
 	{
-		if (this.variablePositionID != null && this.variablePositionID != variableposition_id)
+		if (this.variablePositionID != null && this.variablePositionID != variablePositionID)
 		{
 			this.timeSeriesID = null;
 		}
-        this.variablePositionID = variableposition_id;
+        this.variablePositionID = variablePositionID;
 	}
 	
 	/**
 	 * Sets the ID of the unit of measurement connected to the ensemble for
      * this Time Series. The ID of the Time Series
 	 * is invalidated if the ID of the linked Measurement Unit changes
-	 * @param measurementunit_id The ID of the new unit of measurement
+	 * @param measurementUnitID The ID of the new unit of measurement
 	 */
-	public void setMeasurementUnitID(int measurementunit_id)
+	public void setMeasurementUnitID(int measurementUnitID)
 	{
-		if (this.measurementUnitID != null && this.measurementUnitID != measurementunit_id)
+		if (this.measurementUnitID != null && this.measurementUnitID != measurementUnitID)
 		{
 			this.timeSeriesID = null;
 		}
-        this.measurementUnitID = measurementunit_id;
+        this.measurementUnitID = measurementUnitID;
 	}
 	
 	/**
@@ -229,19 +229,19 @@ public final class TimeSeries
                 if ( partitionNumber < 0 )
                 {
                     partitionNumberWord = "Negative_"
-                                          + String.valueOf( Math.abs( partitionNumber ));
-                    lowCheck = "lead > " + String.valueOf((partitionNumber - 1) * FORECASTVALUE_PARTITION_SPAN);
-                    highCheck = "lead <= " + String.valueOf( partitionNumber * FORECASTVALUE_PARTITION_SPAN );
+                                          + Math.abs( partitionNumber );
+                    lowCheck = "lead > " + (partitionNumber - 1) * FORECASTVALUE_PARTITION_SPAN;
+                    highCheck = "lead <= " + partitionNumber * FORECASTVALUE_PARTITION_SPAN;
 				}
 				else if ( partitionNumber == 0)
                 {
-                    highCheck = "lead < " + String.valueOf( FORECASTVALUE_PARTITION_SPAN );
-                    lowCheck = "lead > " + String.valueOf( -FORECASTVALUE_PARTITION_SPAN );
+                    highCheck = "lead < " + FORECASTVALUE_PARTITION_SPAN;
+                    lowCheck = "lead > " + -FORECASTVALUE_PARTITION_SPAN;
                 }
                 else
                 {
-                    lowCheck = "lead >= " + String.valueOf(partitionNumber * FORECASTVALUE_PARTITION_SPAN);
-                    highCheck = "lead < " + String.valueOf((partitionNumber + 1) * FORECASTVALUE_PARTITION_SPAN);
+                    lowCheck = "lead >= " + partitionNumber * FORECASTVALUE_PARTITION_SPAN;
+                    highCheck = "lead < " + (partitionNumber + 1) * FORECASTVALUE_PARTITION_SPAN;
                 }
 
                 name = "partitions.ForecastValue_Lead_" + partitionNumberWord;

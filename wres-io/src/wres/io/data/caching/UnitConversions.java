@@ -61,7 +61,7 @@ public final class UnitConversions
         }
     }
 
-    private static UnitConversions INTERNAL_CACHE = null;
+    private static UnitConversions instance = null;
     private static final Object CACHE_LOCK = new Object();
     private final Map<ConversionKey, Conversion> conversionMap;
 
@@ -69,11 +69,11 @@ public final class UnitConversions
     {
         synchronized (CACHE_LOCK)
         {
-            if (INTERNAL_CACHE == null)
+            if ( instance == null)
             {
-                INTERNAL_CACHE = new UnitConversions();
+                instance = new UnitConversions();
             }
-            return INTERNAL_CACHE;
+            return instance;
         }
     }
 
@@ -124,14 +124,14 @@ public final class UnitConversions
         }
     }
 
-    public static double convert(double value, int fromMeasurementUnitID, String toMeasurementUnit) throws SQLException
+    public static double convert(double value, int fromMeasurementUnitID, String toMeasurementUnit)
     {
         Conversion conversion = getConversion( fromMeasurementUnitID, toMeasurementUnit );
 
         if (conversion == null)
         {
             throw new NotImplementedException("There is not currently a conversion from the measurement unit " +
-                                                      String.valueOf(fromMeasurementUnitID) +
+                                                      fromMeasurementUnitID +
                                                       " to the measurement unit " +
                                                         toMeasurementUnit);
         }
@@ -146,19 +146,19 @@ public final class UnitConversions
     public static class Conversion
     {
         private final double factor;
-        private final double initial_offset;
-        private final double final_offset;
+        private final double initialOffset;
+        private final double finalOffset;
 
         public Conversion (ResultSet row) throws SQLException
         {
             this.factor = row.getDouble("factor");
-            this.initial_offset = row.getDouble("initial_offset");
-            this.final_offset = row.getDouble("final_offset");
+            this.initialOffset = row.getDouble("initial_offset");
+            this.finalOffset = row.getDouble("final_offset");
         }
 
         public double convert(double value)
         {
-            return ((value + this.initial_offset) * this.factor) + this.final_offset;
+            return ((value + this.initialOffset) * this.factor) + this.finalOffset;
         }
     }
 }
