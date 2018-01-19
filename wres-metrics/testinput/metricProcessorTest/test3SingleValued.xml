@@ -28,17 +28,22 @@
   <pair label="Pairs by location and lead time"> <!-- required for unit -->
     <unit>CMS</unit>
     <grouping>feature,lead_time</grouping><!-- optional? default feature,lead_time? -->
-        <poolingWindow mode="rolling" anchor="center">
-            <period>48</period>
-            <frequency>24</frequency>
-            <unit>hour</unit>
-        </poolingWindow>
-      <desiredTimeAggregation>
-          <period>1</period>
-          <unit>HOUR</unit>
-      </desiredTimeAggregation>
+    <poolingWindow mode="rolling" anchor="center">
+      <period>48</period>
+      <frequency>24</frequency>
+      <unit>hour</unit>
+    </poolingWindow>
+    <desiredTimeAggregation>
+      <period>1</period>
+      <unit>HOUR</unit>
+    </desiredTimeAggregation>
+    <issuedDatesPoolingWindow>
+      <period>48</period>
+      <frequency>24</frequency>
+      <unit>hour</unit>
+    </issuedDatesPoolingWindow>
   </pair>
-  <outputs>
+  <metrics>
     <valueThresholds>
       <applyTo>left</applyTo>
       <commaSeparatedValues>0.5</commaSeparatedValues>
@@ -46,6 +51,8 @@
     </valueThresholds>	
     <!-- destinations has one default: text, ., xml; even when nothing is here. Program chooses filenames for now -->
     <metric><name>all valid</name></metric>
+  </metrics>
+  <outputs>
     <destination type="numeric">/home/jesse/text_output"</destination>
     <destination type="graphic"><path>/tmp/</path>
     <!--Optional:-->

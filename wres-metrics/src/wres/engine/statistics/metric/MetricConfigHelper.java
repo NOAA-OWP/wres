@@ -11,6 +11,7 @@ import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
+import wres.config.generated.MetricsConfig;
 import wres.config.generated.PoolingWindowConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Outputs;
@@ -167,7 +168,7 @@ public final class MetricConfigHelper
         }
         //Disallow non-score metrics when pooling window configuration is present, until this 
         //is supported
-        PoolingWindowConfig windows = config.getPair().getPoolingWindow();
+        PoolingWindowConfig windows = config.getPair().getIssuedDatesPoolingWindow();
         if ( Objects.nonNull( windows ) )
         {
             returnMe.removeIf( a -> ! ( a.isInGroup( MetricOutputGroup.SCALAR )
@@ -193,7 +194,7 @@ public final class MetricConfigHelper
     {
         Objects.requireNonNull( config, "Specify a non-null project from which to generate metrics." );
         //Obtain the list of metrics
-        List<MetricConfigName> metricsConfig = config.getOutputs()
+        List<MetricConfigName> metricsConfig = config.getMetrics()
                                                      .getMetric()
                                                      .stream()
                                                      .map( MetricConfig::getName )
@@ -218,20 +219,20 @@ public final class MetricConfigHelper
     /**
      * Returns true if the input {@link Outputs} has thresholds configured, false otherwise.
      * 
-     * @param outputs the {@link Outputs} configuration
+     * @param metrics the {@link MetricsConfig} configuration
      * @return true if the project configuration has thresholds configured, false otherwise
      */
     
-    public static boolean hasThresholds( Outputs outputs )
+    public static boolean hasThresholds( MetricsConfig metrics )
     {
         //Global thresholds
-        if ( Objects.nonNull( outputs.getProbabilityThresholds() )
-             || Objects.nonNull( outputs.getValueThresholds() ) )
+        if ( Objects.nonNull( metrics.getProbabilityThresholds() )
+             || Objects.nonNull( metrics.getValueThresholds() ) )
         {
             return true;
         }
         //Local thresholds
-        for ( MetricConfig metric : outputs.getMetric() )
+        for ( MetricConfig metric : metrics.getMetric() )
         {
             if ( Objects.nonNull( metric.getProbabilityThresholds() )
                  || Objects.nonNull( metric.getValueThresholds() ) )
@@ -254,7 +255,7 @@ public final class MetricConfigHelper
         Set<MetricConstants> returnMe = new TreeSet<>();
         returnMe.addAll( MetricInputGroup.ENSEMBLE.getMetrics() );
         returnMe.addAll( MetricInputGroup.SINGLE_VALUED.getMetrics() );
-        if ( hasThresholds( config.getOutputs() ) )
+        if ( hasThresholds( config.getMetrics() ) )
         {
             returnMe.addAll( MetricInputGroup.DISCRETE_PROBABILITY.getMetrics() );
         }
@@ -272,7 +273,7 @@ public final class MetricConfigHelper
     {
         Set<MetricConstants> returnMe = new TreeSet<>();
         returnMe.addAll( MetricInputGroup.SINGLE_VALUED.getMetrics() );
-        if ( hasThresholds( config.getOutputs() ) )
+        if ( hasThresholds( config.getMetrics() ) )
         {
             returnMe.addAll( MetricInputGroup.DICHOTOMOUS.getMetrics() );
         }

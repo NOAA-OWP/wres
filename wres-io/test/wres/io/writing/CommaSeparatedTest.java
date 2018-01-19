@@ -168,10 +168,7 @@ public class CommaSeparatedTest
         destinations.add( destinationConfig );
 
         ProjectConfig.Outputs outputsConfig =
-                new ProjectConfig.Outputs( null,
-                                           null,
-                                           null,
-                                           destinations );
+                new ProjectConfig.Outputs( destinations );
 
         Feature feature = new Feature( null,
                                        null,
@@ -202,6 +199,7 @@ public class CommaSeparatedTest
 
         ProjectConfig projectConfig = new ProjectConfig( null,
                                                          pairConfig,
+                                                         null,
                                                          outputsConfig,
                                                          null,
                                                          "test" );

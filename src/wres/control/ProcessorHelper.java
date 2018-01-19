@@ -1022,7 +1022,10 @@ public class ProcessorHelper
             return allValid;
         }
         // Find the corresponding configuration
-        final Optional<MetricConfig> returnMe = config.getOutputs().getMetric().stream().filter( a -> {
+        final Optional<MetricConfig> returnMe = config.getMetrics()
+                                                      .getMetric()
+                                                      .stream()
+                                                      .filter( a -> {
             try
             {
                 return metric.equals( MetricConfigHelper.from( a.getName() ) );
@@ -1113,7 +1116,7 @@ public class ProcessorHelper
         boolean hasThresholdLeadType = false; //Assume not
 
         // Does it contain any metric-local threshold lead types?
-        for ( MetricConfig next : projectConfig.getOutputs().getMetric() )
+        for ( MetricConfig next : projectConfig.getMetrics().getMetric() )
         {
             if ( next.getPlotType() != null && next.getPlotType().equals( PlotTypeSelection.THRESHOLD_LEAD ) )
             {

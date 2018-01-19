@@ -203,8 +203,8 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
             }
 
             script.append("SELECT ");
-            if (left.getExistingTimeAggregation() != null) {
-                script.append(left.getExistingTimeAggregation().getFunction());
+            if (left.getExistingTimeScale() != null) {
+                script.append(left.getExistingTimeScale().getFunction());
             }
             else
             {

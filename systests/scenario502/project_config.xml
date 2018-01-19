@@ -132,18 +132,20 @@
     <pair>
         <unit>CMS</unit>
         <feature locationId="FAKE1" />
-        <desiredTimeAggregation>
+        <desiredTimeScale>
             <function>avg</function>
             <period>1</period>
             <unit>hours</unit>
-        </desiredTimeAggregation>
+        </desiredTimeScale>
     </pair>
 
-    <outputs>
+    <metrics>
 
         <metric><name>mean error</name></metric>
         <metric><name>sample size</name></metric>
 
+    </metrics>
+    <outputs>
         <destination type="pairs" decimalFormat="0.000000">
             <path>output</path>
         </destination>
