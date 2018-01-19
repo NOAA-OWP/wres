@@ -24,18 +24,18 @@ public class DataSources extends Cache<SourceDetails, SourceKey> {
     /**
      * Global Cache of basic source data
      */
-	private static DataSources INTERNAL_CACHE = null;
+	private static DataSources instance = null;
 
 	private static DataSources getCache()
     {
         synchronized (CACHE_LOCK)
         {
-            if (INTERNAL_CACHE == null)
+            if ( instance == null)
             {
-                INTERNAL_CACHE = new DataSources();
-                INTERNAL_CACHE.init();
+                instance = new DataSources();
+                instance.init();
             }
-            return INTERNAL_CACHE;
+            return instance;
         }
     }
 	
@@ -156,7 +156,6 @@ public class DataSources extends Cache<SourceDetails, SourceKey> {
 	    return super.getID(key);
 	}
 
-	//TODO: This is arbitrarily large; there needs to be a better process of pulling in values when one is missing
 	@Override
 	protected int getMaxDetails() {
 		return 200;

@@ -78,7 +78,6 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     private final int inputCode;
 
     private static final Object POOL_LOCK = new Object();
-    private static final Object LOAD_LOCK = new Object();
 
     public static Integer hash( final ProjectConfig projectConfig,
                                 final List<String> leftHashesIngested,
@@ -619,8 +618,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return this.leadOffsets.get( feature );
     }
 
-    public Integer getPoolCount( Feature feature)
-            throws SQLException, InvalidPropertiesFormatException
+    public Integer getPoolCount( Feature feature) throws SQLException
     {
         if ( getPoolingMode() != TimeWindowMode.ROLLING)
         {
@@ -638,8 +636,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return this.poolCounts.get( feature );
     }
 
-    private void addPoolingFeature( Feature feature)
-            throws SQLException, InvalidPropertiesFormatException
+    private void addPoolingFeature( Feature feature) throws SQLException
     {
         String rollingScript = ScriptGenerator.formInitialRollingDataScript( this, feature );
 
@@ -688,7 +685,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
 
     public List<Integer> getLeftForecastIDs() throws SQLException
     {
-        if (this.leftForecastIDs.size() == 0)
+        if (this.leftForecastIDs.isEmpty())
         {
             this.loadForecastIDs( ProjectDetails.LEFT_MEMBER );
         }
@@ -738,7 +735,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
 
     public List<Integer> getLeftSources() throws SQLException
     {
-        if (this.leftSources.size() == 0)
+        if (this.leftSources.isEmpty())
         {
             this.loadSources( ProjectDetails.LEFT_MEMBER );
         }
@@ -747,7 +744,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
 
     public List<Integer> getRightSources() throws SQLException
     {
-        if (this.rightSources.size() == 0)
+        if (this.rightSources.isEmpty())
         {
             this.loadSources( ProjectDetails.RIGHT_MEMBER );
         }
@@ -756,7 +753,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
 
     public List<Integer> getBaselineSources() throws SQLException
     {
-        if (this.hasBaseline() && this.baselineSources.size() == 0)
+        if (this.hasBaseline() && this.baselineSources.isEmpty())
         {
             this.loadSources( ProjectDetails.BASELINE_MEMBER );
         }

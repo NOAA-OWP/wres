@@ -140,6 +140,8 @@ class PoolingForecastScripter extends Scripter
         // ConfigHelper.getLeadQualifier cannot be currently used since it
         // relies on the alias 'FV'
 
+        // TODO: Determine a better, centralized exception type
+
         Integer offset;
 
         try
@@ -162,7 +164,8 @@ class PoolingForecastScripter extends Scripter
         catch ( NoDataException e )
         {
             throw new NoDataException( "The offset for pooling forecasts could "
-                                       + "not be determined.", e );
+                                       + "not be determined based on the "
+                                       + "available data.", e );
         }
 
         return super.getProgress() + offset;

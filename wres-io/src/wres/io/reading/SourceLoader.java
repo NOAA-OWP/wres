@@ -131,10 +131,6 @@ public class SourceLoader
                 }
                 else if ( sourceFile.isFile() )
                 {
-                    // TODO: It might be useful to go ahead and just create the
-                    // archive ingester here instead of trying to jump through
-                    // the series of validations
-
                     Future<List<IngestResult>> task = saveFile( sourcePath,
                                                                 source,
                                                                 config );

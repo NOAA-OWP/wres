@@ -20,7 +20,7 @@ public class StatementRunner extends WRESRunnable {
     public StatementRunner (String script, List<Object[]> values)
     {
 
-        if(values.size() == 0)
+        if(values.isEmpty())
         {
             throw new IllegalArgumentException("There are no values to run for this statement.");
         }

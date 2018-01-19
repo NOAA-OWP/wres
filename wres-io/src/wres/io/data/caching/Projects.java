@@ -24,19 +24,19 @@ import wres.io.utilities.Database;
 public class Projects extends Cache<ProjectDetails, Integer> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Projects.class);
-    private static Projects INTERNAL_CACHE = null;
+    private static Projects instance = null;
     private static final Object CACHE_LOCK = new Object();
 
     private static Projects getCache ()
     {
         synchronized (CACHE_LOCK)
         {
-            if (INTERNAL_CACHE == null)
+            if ( instance == null)
             {
-                INTERNAL_CACHE = new Projects();
-                INTERNAL_CACHE.init();
+                instance = new Projects();
+                instance.init();
             }
-            return INTERNAL_CACHE;
+            return instance;
         }
     }
 
@@ -92,7 +92,7 @@ public class Projects extends Cache<ProjectDetails, Integer> {
 
     @Override
     protected void init() {
-        this.getDetails();
+        this.initializeDetails();
 
         Connection connection = null;
         ResultSet projects = null;

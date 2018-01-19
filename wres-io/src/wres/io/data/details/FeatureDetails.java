@@ -60,18 +60,18 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
 
     public Feature toFeature()
     {
-        Long comid = null;
+        Long comID = null;
 
         if (this.getComid() != null)
         {
-            comid = this.getComid().longValue();
+            comID = this.getComid().longValue();
         }
 
         return new Feature( aliases,
                             null,
                             this.getFeatureName(),
                             this.getLid(),
-                            comid,
+                            comID,
                             this.getGageID(),
                             this.getHuc(),
                             this.getFeatureName(),
@@ -162,12 +162,12 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
                 script += "WITH new_variableposition_id AS" + NEWLINE;
                 script += "(" + NEWLINE;
                 script += "		INSERT INTO wres.VariablePosition (variable_id, x_position)" + NEWLINE;
-                script += "		SELECT " + String.valueOf(variableID) + ", " + String.valueOf(getId()) + NEWLINE;
+                script += "		SELECT " + variableID + ", " + getId() + NEWLINE;
                 script += "		WHERE NOT EXISTS (" + NEWLINE;
                 script += "			SELECT 1" + NEWLINE;
                 script += "			FROM wres.VariablePosition VP" + NEWLINE;
-                script += "			WHERE VP.variable_id = " + String.valueOf(variableID) + NEWLINE;
-                script += "				AND VP.x_position = " + String.valueOf(getId()) + NEWLINE;
+                script += "			WHERE VP.variable_id = " + variableID + NEWLINE;
+                script += "				AND VP.x_position = " + getId() + NEWLINE;
                 script += "		)" + NEWLINE;
                 script += "		RETURNING variableposition_id" + NEWLINE;
                 script += ")" + NEWLINE;
@@ -178,8 +178,8 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
                 script += "";
                 script += "SELECT variableposition_id" + NEWLINE;
                 script += "FROM wres.VariablePosition VP" + NEWLINE;
-                script += "WHERE VP.variable_id = " + String.valueOf(variableID) + NEWLINE;
-                script += "		AND VP.x_position = " + String.valueOf(getId()) + ";";
+                script += "WHERE VP.variable_id = " + variableID + NEWLINE;
+                script += "		AND VP.x_position = " + getId() + ";";
 
                 Integer dbResult = Database.getResult(script, "variableposition_id");
 
@@ -464,6 +464,8 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
      */
 	private String getInsertStatement()
     {
+        final String twoTab = "        ";
+
         // Keeps track of whether or not a field has been added.
         // When true, there needs to be a comma to separate the upcoming field
         // from the previous field, along with a newline
@@ -476,7 +478,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
 
         if (this.getComid() != null)
         {
-            script += "        comid";
+            script += twoTab + "comid";
 
             // A field has been added
             lineAdded = true;
@@ -495,8 +497,8 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
                 lineAdded = true;
             }
 
-            script += "        lid," + NEWLINE;
-            script += "        parent_feature_id";
+            script += twoTab + "lid," + NEWLINE;
+            script += twoTab + "parent_feature_id";
         }
 
         if (this.getGageID() != null)
@@ -512,7 +514,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
                 lineAdded = true;
             }
 
-            script += "        gage_id";
+            script += twoTab + "gage_id";
         }
 
         if (this.getRfc() != null)
@@ -528,7 +530,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
                 lineAdded = true;
             }
 
-            script += "        rfc";
+            script += twoTab + "rfc";
         }
 
         if (this.getState() != null)
@@ -544,7 +546,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
                 lineAdded = true;
             }
 
-            script += "        st";
+            script += twoTab + "st";
         }
 
         if (this.getStateCode() != null)
@@ -560,7 +562,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
                 lineAdded = true;
             }
 
-            script += "        st_code";
+            script += twoTab + "st_code";
         }
 
         if (this.getHuc() != null)
@@ -576,7 +578,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
                 lineAdded = true;
             }
 
-            script += "        huc";
+            script += twoTab + "huc";
         }
 
         if (this.getFeatureName() != null)
@@ -592,7 +594,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
                 lineAdded = true;
             }
 
-            script += "        feature_name";
+            script += twoTab + "feature_name";
         }
 
         if (this.getLatitude() != null)
@@ -608,7 +610,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
                 lineAdded = true;
             }
 
-            script += "        latitude";
+            script += twoTab + "latitude";
         }
 
         if (this.getLongitude() != null)
@@ -619,7 +621,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
                 script += "," + NEWLINE;
             }
 
-            script += "        longitude";
+            script += twoTab + "longitude";
         }
 
         script += NEWLINE;
@@ -633,7 +635,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
 
         if (this.getComid() != null)
         {
-            script += "        " + String.valueOf(this.getComid());
+            script += "        " + this.getComid();
 
             // A value has now been added
             lineAdded = true;
@@ -643,7 +645,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
         {
             if (lineAdded)
             {
-                // Seperate this value from the previous one
+                // Separate this value from the previous one
                 script += "," + NEWLINE;
             }
             else
@@ -652,20 +654,20 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
                 lineAdded = true;
             }
 
-            script += "        '" + String.valueOf( this.getLid() ) + "'," + NEWLINE;
+            script += twoTab + "'" + this.getLid() + "'," + NEWLINE;
 
-            script += "        (" + NEWLINE;
+            script += twoTab + "(" + NEWLINE;
             script += "            SELECT feature_id" + NEWLINE;
             script += "            FROM wres.Feature F" + NEWLINE;
             script += "            WHERE '" + this.lid + "' LIKE F.lid || '%'" + NEWLINE;
-            script += "        )";
+            script += twoTab + ")";
         }
 
         if (this.getGageID() != null)
         {
             if (lineAdded)
             {
-                // Seperate this value from the previous one
+                // Separate this value from the previous one
                 script += "," + NEWLINE;
             }
             else
@@ -674,14 +676,14 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
                 lineAdded = true;
             }
 
-            script += "        '" + String.valueOf( this.getGageID() ) + "'";
+            script += twoTab + "'" + this.getGageID() + "'";
         }
 
         if (this.getRfc() != null)
         {
             if (lineAdded)
             {
-                // Seperate this value from the previous one
+                // Separate this value from the previous one
                 script += "," + NEWLINE;
             }
             else
@@ -690,14 +692,14 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
                 lineAdded = true;
             }
 
-            script += "        '" + String.valueOf( this.getRfc() ) + "'";
+            script += twoTab + "'" + this.getRfc() + "'";
         }
 
         if (this.getState() != null)
         {
             if (lineAdded)
             {
-                // Seperate this value from the previous one
+                // Separate this value from the previous one
                 script += "," + NEWLINE;
             }
             else
@@ -706,14 +708,14 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
                 lineAdded = true;
             }
 
-            script += "        '" + String.valueOf( this.getState() ) + "'";
+            script += twoTab + "'" + this.getState() + "'";
         }
 
         if (this.getStateCode() != null)
         {
             if (lineAdded)
             {
-                // Seperate this value from the previous one
+                // Separate this value from the previous one
                 script += "," + NEWLINE;
             }
             else
@@ -722,14 +724,14 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
                 lineAdded = true;
             }
 
-            script += "        '" + String.valueOf( this.getStateCode() ) + "'";
+            script += twoTab + "'" + this.getStateCode()+ "'";
         }
 
         if (this.getHuc() != null)
         {
             if (lineAdded)
             {
-                // Seperate this value from the previous one
+                // Separate this value from the previous one
                 script += "," + NEWLINE;
             }
             else
@@ -738,7 +740,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
                 lineAdded = true;
             }
 
-            script += "        '" + String.valueOf( this.getHuc() ) + "'";
+            script += twoTab + "'" + this.getHuc() + "'";
         }
 
         if (this.getFeatureName() != null)
@@ -754,15 +756,14 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
                 lineAdded = true;
             }
 
-            script +=
-                    "        '" + String.valueOf( this.getFeatureName() ) + "'";
+            script += twoTab + "'" + this.getFeatureName() + "'";
         }
 
         if (this.getLatitude() != null)
         {
             if (lineAdded)
             {
-                // Seperate this value from the previous one
+                // Separate this value from the previous one
                 script += "," + NEWLINE;
             }
             else
@@ -771,18 +772,18 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
                 lineAdded = true;
             }
 
-            script += "        " + String.valueOf( this.getLatitude() );
+            script += twoTab + this.getLatitude();
         }
 
         if (this.getLongitude() != null)
         {
             if (lineAdded)
             {
-                // Seperate this value from the previous one
+                // Separate this value from the previous one
                 script += "," + NEWLINE;
             }
 
-            script += "        " + String.valueOf( this.getLongitude() );
+            script += twoTab + this.getLongitude();
         }
 
         script += NEWLINE;
@@ -798,7 +799,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
 
         if (this.getComid() != null)
         {
-            script += "comid = " + String.valueOf(this.getComid());
+            script += "comid = " + this.getComid();
 
             // A clause was added
             lineAdded = true;
@@ -818,7 +819,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
                 lineAdded = true;
             }
 
-            script += "lid = '" + String.valueOf(this.getLid()) + "'";
+            script += "lid = '" + this.getLid() + "'";
         }
 
         if (Strings.hasValue( this.getGageID() ))
@@ -830,14 +831,25 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
                 script += "            OR ";
             }
 
-            script += "gage_id = '" + String.valueOf(this.getGageID()) + "'";
+            script += "gage_id = '" + this.getGageID() + "'";
         }
 
         script += NEWLINE;
         script += "    )" + NEWLINE;
-        script += "    RETURNING feature_id, comid, lid, gage_id, rfc, st, st_code, huc, feature_name, latitude, longitude, nwm_index" + NEWLINE;
+        script += "    RETURNING feature_id, "
+                  + "comid, "
+                  + "lid, "
+                  + "gage_id, "
+                  + "rfc, "
+                  + "st, "
+                  + "st_code, "
+                  + "huc, "
+                  + "feature_name, "
+                  + "latitude, "
+                  + "longitude, "
+                  + "nwm_index" + NEWLINE;
         script += ")" + NEWLINE;
-        script += "SELECT feature_id, comid, lid, gage_id, rfc, st, st_code, huc, feature_name, latitude, longitude, nwm_index" + NEWLINE;
+        script += "SELECT *" + NEWLINE;
         script += "FROM new_feature" + NEWLINE;
 
         return script;
@@ -862,7 +874,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
 
         if (this.getComid() != null)
         {
-            script += "comid = " + String.valueOf(this.getComid());
+            script += "comid = " + this.getComid();
 
             // A clause was added
             clauseAdded = true;
@@ -882,7 +894,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
                 clauseAdded = true;
             }
 
-            script += "lid = '" + String.valueOf(this.getLid()) + "'" + NEWLINE;
+            script += "lid = '" + this.getLid() + "'" + NEWLINE;
         }
 
         if (Strings.hasValue( this.getGageID() ))
@@ -894,7 +906,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
                 script += "    OR ";
             }
 
-            script += "gage_id = '" + String.valueOf(this.getGageID()) + "'" + NEWLINE;
+            script += "gage_id = '" + this.getGageID() + "'" + NEWLINE;
         }
 
         script += "LIMIT 1;";

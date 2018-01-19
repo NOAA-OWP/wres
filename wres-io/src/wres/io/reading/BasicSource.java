@@ -244,7 +244,7 @@ public abstract class BasicSource
     {
         String missingValue = null;
 
-        if (missingValue == null && dataSourceConfig != null)
+        if (dataSourceConfig != null)
         {
             DataSourceConfig.Source source = ConfigHelper.findDataSourceByFilename(dataSourceConfig, this.filename);
 
@@ -252,9 +252,9 @@ public abstract class BasicSource
             {
                 missingValue = source.getMissingValue();
 
-                if ( missingValue.lastIndexOf( "." ) + 6 < missingValue.length() )
+                if ( missingValue.lastIndexOf( '.' ) + 6 < missingValue.length() )
                 {
-                    missingValue = missingValue.substring( 0, missingValue.lastIndexOf( "." ) + 6 );
+                    missingValue = missingValue.substring( 0, missingValue.lastIndexOf( '.' ) + 6 );
                 }
             }
         }
@@ -447,8 +447,6 @@ public abstract class BasicSource
         this.futureHash = Executor.submitHighPriorityTask( hasher );
     }
 
-    // TODO: This process is now invalid; we need to rely on loaded
-    // project information
     /**
      * Determines if the hash of the passed in contents are contained within the
      * database
