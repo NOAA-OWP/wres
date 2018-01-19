@@ -21,23 +21,24 @@
         <unit>CMS</unit>
         <feature locationId="FAKE2" />
         <issuedDates earliest="2551-03-17T00:00:00Z" latest="2551-03-20T00:00:00Z" />
-        <poolingWindow >
-            <period>13</period>
-            <frequency>7</frequency>
-            <unit>hours</unit>
-        </poolingWindow>
-        <desiredTimeAggregation>
+        <desiredTimeScale>
             <function>avg</function>
             <period>3</period>
             <unit>hours</unit>
-        </desiredTimeAggregation>
+        </desiredTimeScale>
+        <issuedDatesPoolingWindow>
+            <period>13</period>
+            <frequency>7</frequency>
+            <unit>hours</unit>
+        </issuedDatesPoolingWindow>
     </pair>
 
-    <outputs>
+    <metrics>
 
         <metric><name>mean error</name></metric>
         <metric><name>sample size</name></metric>
-
+    </metrics>
+    <outputs>
         <destination type="pairs" decimalFormat="0.00">
             <path>output</path>
         </destination>

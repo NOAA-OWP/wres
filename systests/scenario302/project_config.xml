@@ -11,11 +11,11 @@
             <variable>MAP</variable>
 
 <!-- At some point, this should not be necessary.  However, for now, it informs the WRES what the time step of the incoming data is, more or less. -->
-            <existingTimeAggregation>
+            <existingTimeScale>
                 <function>sum</function>
                 <period>6</period>
                 <unit>hours</unit>
-            </existingTimeAggregation>
+            </existingTimeScale>
 
         </left>
         <right label="HEFS">
@@ -25,11 +25,11 @@
             <variable>MAPX</variable>
 
 <!-- See the note above. -->
-            <existingTimeAggregation>
+            <existingTimeScale>
                 <function>sum</function>
                 <period>6</period>
                 <unit>hours</unit>
-            </existingTimeAggregation>
+            </existingTimeScale>
 
         </right>
     </inputs>
@@ -39,17 +39,19 @@
         <feature locationId="LGNN5" />
         <leadHours minimum="1" maximum="48" />
         <values minimum="0.00001"/><!-- I think this results in only positive values for both obs and fcst-->
-        <grouping>feature,lead_time</grouping>
-        <desiredTimeAggregation>
+
+        <desiredTimeScale>
             <function>sum</function>
             <period>6</period>
             <unit>hours</unit>
-        </desiredTimeAggregation>
+        </desiredTimeScale>
     </pair>
 
-    <outputs>
+    <metrics>
         <metric> <name>mean error</name> </metric>
         <metric> <name>sample size</name> </metric>
+    </metrics>
+    <outputs>
         <destination type="numeric" decimalFormat="0.000000">
             <path>output</path>
         </destination>

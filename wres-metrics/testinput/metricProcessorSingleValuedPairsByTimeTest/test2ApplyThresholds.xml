@@ -33,7 +33,7 @@
           <unit>HOUR</unit>
       </timeAggregation>
   </pair>
-  <outputs>
+  <metrics>
     <valueThresholds>
       <applyTo>left</applyTo>
       <commaSeparatedValues>1.0</commaSeparatedValues>
@@ -49,6 +49,8 @@
     <metric><name>root mean square error</name></metric>
     <metric><name>critical success index</name></metric>
     <metric><name>quantile quantile diagram</name></metric>
+  </metrics>
+  <outputs>
     <destination type="numeric">/home/jesse/text_output"</destination>
     <destination type="graphic"><path>/tmp/</path>
     <!--Optional:-->

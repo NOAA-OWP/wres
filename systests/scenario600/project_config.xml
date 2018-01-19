@@ -15,14 +15,14 @@
     <pair label="Pairs by location and lead time"> <!-- required for unit -->
         <unit>CMS</unit>
         <feature locationId="DRRC2" />
-        <grouping>feature,lead_time</grouping><!-- optional? default feature,lead_time? -->
-        <desiredTimeAggregation>
+
+        <desiredTimeScale>
             <function>avg</function>
             <period>1</period>
             <unit>hours</unit>
-        </desiredTimeAggregation>
+        </desiredTimeScale>
     </pair>
-    <outputs>
+    <metrics>
         <metric> <name>mean error</name> </metric>
         <metric><name>pearson correlation coefficient</name></metric>
         <metric><name>mean absolute error</name></metric>
@@ -31,7 +31,8 @@
         <metric><name>root mean square error</name></metric>
         <metric><name>mean square error</name></metric>
         <metric> <name>sample size</name> </metric>
-
+    </metrics>
+    <outputs>
         <destination type="pairs" decimalFormat="0.000000">
             <path>output/</path>
         </destination>

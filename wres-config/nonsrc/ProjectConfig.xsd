@@ -128,7 +128,7 @@
                     </xs:sequence>
                 </xs:complexType>
             </xs:element>
-            <xs:element name="existingTimeAggregation" type="timeAggregation" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="existingTimeScale" type="timeScale" minOccurs="0" maxOccurs="1"/>
         </xs:sequence>
         <xs:attribute name="label" type="xs:string" />
     </xs:complexType>
@@ -316,7 +316,7 @@
         <xs:attribute name="decimalFormat" type="xs:string" />
     </xs:complexType>
 
-    <xs:simpleType name="timeAggregationFunction">
+    <xs:simpleType name="timeScaleFunction">
         <xs:restriction base="xs:string">
             <xs:enumeration value="none" />
             <xs:enumeration value="sum" />
@@ -351,17 +351,17 @@
         </xs:restriction>
     </xs:simpleType>
 
-    <xs:complexType name="timeAggregation">
+    <xs:complexType name="timeScale">
 
         <!-- for class naming using xjc-->
         <xs:annotation>
             <xs:appinfo>
-                <jaxb:class name="TimeAggregationConfig" />
+                <jaxb:class name="TimeScaleConfig" />
             </xs:appinfo>
         </xs:annotation>
 
         <xs:sequence>
-            <xs:element name="function" type="timeAggregationFunction" default="avg" minOccurs="1" maxOccurs="1"/>
+            <xs:element name="function" type="timeScaleFunction" default="avg" minOccurs="1" maxOccurs="1"/>
             <xs:element name="period" type="duration" minOccurs="1" maxOccurs="1"/>
             <xs:element name="frequency" type="duration" minOccurs="0" maxOccurs="1"/>
             <xs:element name="unit" type="durationUnit" />
@@ -445,9 +445,10 @@
             <!-- values min and max should be in the unit above -->
             <xs:element name="values" type="doubleBoundsType" minOccurs="0" />
 
-            <xs:element name="grouping" type="xs:string" minOccurs="0" maxOccurs="1" />
-            <xs:element name="poolingWindow" type="poolingWindow" minOccurs="0" maxOccurs="1"/>
-            <xs:element name="desiredTimeAggregation" type="timeAggregation" />
+            <xs:element name="desiredTimeScale" type="timeScale" />
+
+            <xs:element name="issuedDatesPoolingWindow" type="poolingWindow" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="leadTimesPoolingWindow" type="poolingWindow" minOccurs="0" maxOccurs="1"/>
 
             <!-- idea here is mask is a WKT, or optionally a filename,
                  so you could do either:
@@ -465,6 +466,24 @@
             </xs:element>
         </xs:sequence>
         <xs:attribute name="label" type="xs:string" />
+    </xs:complexType>
+
+    <!-- A place to declare which metrics to generate, as distinct from what
+         pairs should look like or where to save output files. -->
+    <xs:complexType name="metrics">
+
+        <xs:annotation>
+            <xs:appinfo>
+                <jaxb:class name="MetricsConfig" />
+            </xs:appinfo>
+        </xs:annotation>
+
+        <xs:sequence>
+            <xs:element name="valueThresholds" type="valueThreshold" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="probabilityThresholds" type="probabilityThreshold" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="metric" type="metric" minOccurs="1" maxOccurs="unbounded"/>
+        </xs:sequence>
+
     </xs:complexType>
 
     <xs:element name="project">
@@ -491,12 +510,11 @@
 
                 <xs:element name="pair" type="pair"/>
 
+                <xs:element name="metrics" type="metrics" />
+
                 <xs:element name="outputs">
                     <xs:complexType>
                         <xs:sequence>
-                            <xs:element name="valueThresholds" type="valueThreshold" minOccurs="0" maxOccurs="1"/>
-                            <xs:element name="probabilityThresholds" type="probabilityThreshold" minOccurs="0" maxOccurs="1"/>
-                            <xs:element name="metric" type="metric" minOccurs="1" maxOccurs="unbounded"/>
                             <xs:element name="destination" type="destination" maxOccurs="unbounded"/>
                         </xs:sequence>
                     </xs:complexType>
@@ -510,3 +528,4 @@
     </xs:element>
 
 </xs:schema>
+

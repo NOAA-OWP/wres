@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
+import wres.config.generated.MetricsConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Outputs;
 import wres.datamodel.DataFactory;
@@ -519,12 +520,12 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
     private void setThresholds( DataFactory dataFactory, ProjectConfig config ) throws MetricConfigurationException
     {
         //Validate the configuration
-        Outputs outputs = config.getOutputs();
-        validateOutputsConfig( outputs );
+        MetricsConfig metrics = config.getMetrics();
+        validateOutputsConfig( metrics );
         //Check for metric-local thresholds and throw an exception if they are defined, as they are currently not supported
 //        EnumMap<MetricConstants, List<Threshold>> localThresholds = new EnumMap<>( MetricConstants.class );
 //      TODO: store metric-local threshold conditions when they are available in the configuration
-        for ( MetricConfig metric : outputs.getMetric() )
+        for ( MetricConfig metric : metrics.getMetric() )
         {
             if ( metric.getName() != MetricConfigName.ALL_VALID )
             {
@@ -548,19 +549,19 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         //Add a threshold for "all data" by default
         globalThresholdsAllData.add( dataFactory.getThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER ) );
         //Add probability thresholds
-        if ( Objects.nonNull( outputs.getProbabilityThresholds() ) )
+        if ( Objects.nonNull( metrics.getProbabilityThresholds() ) )
         {
-            Operator oper = MetricConfigHelper.from( outputs.getProbabilityThresholds().getOperator() );
-            String values = outputs.getProbabilityThresholds().getCommaSeparatedValues();
+            Operator oper = MetricConfigHelper.from( metrics.getProbabilityThresholds().getOperator() );
+            String values = metrics.getProbabilityThresholds().getCommaSeparatedValues();
             List<Threshold> thresholds = getThresholdsFromCommaSeparatedValues( values, oper, true );
             globalThresholds.addAll( thresholds );
             globalThresholdsAllData.addAll( thresholds );
         }
         //Add real-valued thresholds
-        if ( Objects.nonNull( outputs.getValueThresholds() ) )
+        if ( Objects.nonNull( metrics.getValueThresholds() ) )
         {
-            Operator oper = MetricConfigHelper.from( outputs.getValueThresholds().getOperator() );
-            String values = outputs.getValueThresholds().getCommaSeparatedValues();
+            Operator oper = MetricConfigHelper.from( metrics.getValueThresholds().getOperator() );
+            String values = metrics.getValueThresholds().getCommaSeparatedValues();
             List<Threshold> thresholds = getThresholdsFromCommaSeparatedValues( values, oper, false );
             globalThresholds.addAll( thresholds );
             globalThresholdsAllData.addAll( thresholds );
@@ -584,42 +585,43 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
     }
 
     /**
-     * Validates the outputs configuration and throws a {@link MetricConfigurationException} if the validation fails
+     * Validates the metrics configuration and throws a {@link MetricConfigurationException} if the validation fails
      * 
-     * @param outputs the outputs configuration
+     * @param metrics the metrics configuration
      * @throws MetricConfigurationException if thresholds are configured incorrectly
      */
 
-    private void validateOutputsConfig( Outputs outputs ) throws MetricConfigurationException
+    private void validateOutputsConfig( MetricsConfig metrics )
+            throws MetricConfigurationException
     {
-        if ( hasThresholdMetrics() && !MetricConfigHelper.hasThresholds( outputs ) )
+        if ( hasThresholdMetrics() && !MetricConfigHelper.hasThresholds( metrics ) )
         {
             throw new MetricConfigurationException( "Thresholds are required by one or more of the configured "
                                                     + "metrics." );
         }
         //Check that probability thresholds are configured for left       
-        if ( Objects.nonNull( outputs.getProbabilityThresholds() )
-             && outputs.getProbabilityThresholds().getApplyTo() != LeftOrRightOrBaseline.LEFT )
+        if ( Objects.nonNull( metrics.getProbabilityThresholds() )
+             && metrics.getProbabilityThresholds().getApplyTo() != LeftOrRightOrBaseline.LEFT )
         {
             throw new MetricConfigurationException( "Attempted to apply probability thresholds to '"
-                                                    + outputs.getProbabilityThresholds().getApplyTo()
+                                                    + metrics.getProbabilityThresholds().getApplyTo()
                                                     + "': this is not currently supported. Use '"
                                                     + LeftOrRightOrBaseline.LEFT
                                                     + "' instead." );
         }
         //Check that value thresholds are configured for left  
-        if ( Objects.nonNull( outputs.getValueThresholds() )
-             && outputs.getValueThresholds().getApplyTo() != LeftOrRightOrBaseline.LEFT )
+        if ( Objects.nonNull( metrics.getValueThresholds() )
+             && metrics.getValueThresholds().getApplyTo() != LeftOrRightOrBaseline.LEFT )
         {
             throw new MetricConfigurationException( "Attempted to apply value thresholds to '"
-                                                    + outputs.getValueThresholds().getApplyTo()
+                                                    + metrics.getValueThresholds().getApplyTo()
                                                     + "': this is not currently supported. Use '"
                                                     + LeftOrRightOrBaseline.LEFT
                                                     + "' instead." );
         }
         //Check for metric-local thresholds and throw an exception if they are defined, as they are currently 
         //not supported
-        for ( MetricConfig metric : outputs.getMetric() )
+        for ( MetricConfig metric : metrics.getMetric() )
         {
             if ( metric.getName() != MetricConfigName.ALL_VALID )
             {

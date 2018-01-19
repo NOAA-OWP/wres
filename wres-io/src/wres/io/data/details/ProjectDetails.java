@@ -25,8 +25,8 @@ import wres.config.generated.Feature;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.PoolingWindowConfig;
-import wres.config.generated.TimeAggregationConfig;
-import wres.config.generated.TimeAggregationFunction;
+import wres.config.generated.TimeScaleConfig;
+import wres.config.generated.TimeScaleFunction;
 import wres.config.generated.TimeWindowMode;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Features;
@@ -468,10 +468,10 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     {
         String function = null;
 
-        if (this.projectConfig.getPair().getDesiredTimeAggregation() != null)
+        if (this.projectConfig.getPair().getDesiredTimeScale() != null)
         {
             function = this.projectConfig.getPair()
-                                         .getDesiredTimeAggregation()
+                                         .getDesiredTimeScale()
                                          .getFunction()
                                          .value();
         }
@@ -512,20 +512,20 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
 
     public boolean shouldAggregate()
     {
-        return !TimeAggregationFunction.NONE.value()
+        return !TimeScaleFunction.NONE.value()
                                             .equalsIgnoreCase(
                                                     this.getAggregationFunction()
                                             );
     }
 
-    public TimeAggregationConfig getAggregation()
+    public TimeScaleConfig getAggregation()
     {
-        return this.projectConfig.getPair().getDesiredTimeAggregation();
+        return this.projectConfig.getPair().getDesiredTimeScale();
     }
     
     public PoolingWindowConfig getPoolingWindow()
     {
-        return this.projectConfig.getPair().getPoolingWindow();
+        return this.projectConfig.getPair().getIssuedDatesPoolingWindow();
     }
 
     public TimeWindowMode getPoolingMode()
@@ -545,10 +545,11 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     {
         String unit = null;
 
-        if (this.projectConfig.getPair().getPoolingWindow() != null)
+        if ( this.projectConfig.getPair()
+                               .getIssuedDatesPoolingWindow() != null )
         {
             unit = this.projectConfig.getPair()
-                                     .getPoolingWindow()
+                                     .getIssuedDatesPoolingWindow()
                                      .getUnit()
                                      .value();
         }
@@ -969,8 +970,8 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     public Integer getLead(int windowNumber)
             throws InvalidPropertiesFormatException
     {
-        TimeAggregationConfig
-                timeAggregationConfig = ConfigHelper.getTimeAggregation( projectConfig );
+        TimeScaleConfig
+                timeAggregationConfig = ConfigHelper.getTimeScale( projectConfig );
         return TimeHelper.unitsToHours( timeAggregationConfig.getUnit().name(),
                                   1.0 * windowNumber +
                                   this.getAggregationFrequency() * timeAggregationConfig.getPeriod()).intValue();
@@ -1037,3 +1038,4 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     }
 
 }
+

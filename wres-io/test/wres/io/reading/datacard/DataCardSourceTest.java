@@ -172,6 +172,7 @@ public class DataCardSourceTest
                                                          pairConfig,
                                                          null,
                                                          null,
+                                                         null,
                                                          null );
 
         String filePath = current + "/testinput/datacard/short_HOPR1SNE.QME.OBS";
@@ -255,6 +256,7 @@ public class DataCardSourceTest
                                                          pairConfig,
                                                          null,
                                                          null,
+                                                         null,
                                                          null );
 
         String filePath = current + "/testinput/datacard/short_CCRN6.MAP06_short_record";
@@ -275,3 +277,4 @@ public class DataCardSourceTest
 	}
 
 }
+

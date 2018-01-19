@@ -36,7 +36,7 @@
           <unit>HOUR</unit>
       </timeAggregation>
   </pair>
-  <outputs>
+  <metrics>
     <probabilityThresholds>
       <applyTo>left</applyTo>
       <commaSeparatedValues>0.0,0.3919,0.4415,0.5042,0.5525</commaSeparatedValues>
@@ -53,6 +53,8 @@
     <metric><name>relative operating characteristic diagram</name></metric>
     <metric><name>rank histogram</name></metric>
     <metric><name>sample size</name></metric>
+  </metrics>
+  <outputs>
     <destination type="numeric">/home/jesse/text_output"</destination>
     <destination type="graphic"><path>/tmp/</path>
     <!--Optional:-->

@@ -33,7 +33,7 @@
           <unit>HOUR</unit>
       </timeAggregation>
   </pair>
-  <outputs>
+  <metrics>
     <valueThresholds>
       <applyTo>left</applyTo>
       <commaSeparatedValues>0.5</commaSeparatedValues>
@@ -41,6 +41,8 @@
     </valueThresholds>	
     <!-- destinations has one default: text, ., xml; even when nothing is here. Program chooses filenames for now -->
     <metric><name>all valid</name></metric>
+  </metrics>
+  <outputs>
     <destination type="numeric">/home/jesse/text_output"</destination>
     <destination type="graphic"><path>/tmp/</path>
     <!--Optional:-->
