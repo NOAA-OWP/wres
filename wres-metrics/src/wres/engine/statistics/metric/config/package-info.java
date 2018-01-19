@@ -1,5 +1,5 @@
 /**
- * A package for using {@link ProjectConfig} in the context of verification metrics.
+ * A package for using project configuration in the context of verification metrics.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
