@@ -36,13 +36,15 @@
           <unit>HOUR</unit>
       </timeAggregation>
   </pair>
-  <outputs>
+  <metrics>
     <valueThresholds>
       <applyTo>left</applyTo>
       <commaSeparatedValues>0.0,0.3919,0.4415,0.5042,0.5525</commaSeparatedValues>
       <operator>greater than or equal to</operator>
     </valueThresholds>
     <metric><name>contingency table</name></metric>
+  </metrics>
+  <outputs>
     <destination type="numeric">/home/jesse/text_output"</destination>
     <destination type="graphic"><path>/tmp/</path>
     <!--Optional:-->

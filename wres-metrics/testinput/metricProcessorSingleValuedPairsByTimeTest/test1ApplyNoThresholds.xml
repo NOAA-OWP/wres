@@ -33,7 +33,7 @@
           <unit>HOUR</unit>
       </timeAggregation>
   </pair>
-  <outputs>
+  <metrics>
     <!-- destinations has one default: text, ., xml; even when nothing is here. Program chooses filenames for now -->
     <metric label="ME"><name>mean error</name></metric>
     <metric><name>pearson correlation coefficient</name></metric>
@@ -42,6 +42,8 @@
     <metric><name>coefficient of determination</name></metric>
     <metric><name>root mean square error</name></metric>
     <metric><name>volumetric efficiency</name></metric>
+  </metrics>
+  <outputs>
     <destination type="numeric">/home/jesse/text_output"</destination>
     <destination type="graphic"><path>/tmp/</path>
     <!--Optional:-->

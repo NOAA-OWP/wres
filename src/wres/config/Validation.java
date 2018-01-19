@@ -29,16 +29,17 @@ import wres.config.generated.Feature;
 import wres.config.generated.Format;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
+import wres.config.generated.MetricsConfig;
 import wres.config.generated.PairConfig;
 import wres.config.generated.PlotTypeSelection;
 import wres.config.generated.PoolingWindowConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
-import wres.config.generated.TimeAggregationConfig;
-import wres.config.generated.TimeAggregationFunction;
+import wres.config.generated.TimeScaleConfig;
+import wres.config.generated.TimeScaleFunction;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.engine.statistics.metric.ConfigMapper;
+import wres.engine.statistics.metric.MetricConfigHelper;
 import wres.engine.statistics.metric.MetricConfigurationException;
 import wres.io.config.ConfigHelper;
 import wres.io.config.ProjectConfigPlus;
@@ -190,7 +191,7 @@ public class Validation
     {
         Objects.requireNonNull( projectConfigPlus, NON_NULL );
         // Cannot define specific metrics together with all valid
-        List<MetricConfig> metrics = projectConfigPlus.getProjectConfig().getOutputs().getMetric();
+        List<MetricConfig> metrics = projectConfigPlus.getProjectConfig().getMetrics().getMetric();
         for ( MetricConfig next : metrics )
         {
             //Unnamed metric
@@ -222,7 +223,7 @@ public class Validation
         boolean result = true;
 
         ProjectConfig config = projectConfigPlus.getProjectConfig();
-        List<MetricConfig> metrics = config.getOutputs().getMetric();
+        List<MetricConfig> metrics = config.getMetrics().getMetric();
         for ( MetricConfig next : metrics )
         {
             // Named metric
@@ -230,10 +231,10 @@ public class Validation
             {
                 try
                 {
-                    MetricConstants checkMe = ConfigMapper.from( next.getName() );
+                    MetricConstants checkMe = MetricConfigHelper.from( next.getName() );
 
                     // Check that the named metric is consistent with any pooling window configuration
-                    if ( projectConfigPlus.getProjectConfig().getPair().getPoolingWindow() != null && checkMe != null
+                    if ( projectConfigPlus.getProjectConfig().getPair().getIssuedDatesPoolingWindow() != null && checkMe != null
                          && ! ( checkMe.isInGroup( MetricOutputGroup.SCALAR )
                                 || checkMe.isInGroup( MetricOutputGroup.VECTOR ) ) )
                     {
@@ -375,7 +376,7 @@ public class Validation
                                                  .getDestination() )
         {
             // Check that the plot type is consistent with other configuration
-            if ( projectConfig.getPair().getPoolingWindow() != null && d.getGraphical() != null
+            if ( projectConfig.getPair().getIssuedDatesPoolingWindow() != null && d.getGraphical() != null
                  && d.getGraphical().getPlotType() != null
                  && !d.getGraphical().getPlotType().equals( PlotTypeSelection.POOLING_WINDOW ) )
             {
@@ -391,7 +392,7 @@ public class Validation
                                  d.getGraphical().getPlotType() );
                 }
             }
-            else if ( projectConfig.getPair().getPoolingWindow() == null && d.getGraphical() != null
+            else if ( projectConfig.getPair().getIssuedDatesPoolingWindow() == null && d.getGraphical() != null
                       && d.getGraphical().getPlotType() != null
                       &&
                       d.getGraphical().getPlotType().equals( PlotTypeSelection.POOLING_WINDOW ) )
@@ -527,8 +528,8 @@ public class Validation
 
         PairConfig pairConfig = projectConfig.getPair();
 
-        TimeAggregationConfig aggregationConfig =
-                pairConfig.getDesiredTimeAggregation();
+        TimeScaleConfig aggregationConfig =
+                pairConfig.getDesiredTimeScale();
 
         if ( aggregationConfig != null
              && ConfigHelper.isInstantaneous( aggregationConfig ) )
@@ -567,7 +568,7 @@ public class Validation
                                            pairConfig )
                  && result;
 
-        result = Validation.isDesiredTimeAggregationValid( projectConfigPlus,
+        result = Validation.isDesiredTimeScaleValid( projectConfigPlus,
                                                            pairConfig)
                  && result;
 
@@ -857,10 +858,10 @@ public class Validation
         return result;
     }
 
-    private static boolean isDesiredTimeAggregationValid( ProjectConfigPlus projectConfigPlus,
+    private static boolean isDesiredTimeScaleValid( ProjectConfigPlus projectConfigPlus,
                                                           PairConfig pairConfig )
     {
-        TimeAggregationConfig aggregationConfig = pairConfig.getDesiredTimeAggregation();
+        TimeScaleConfig aggregationConfig = pairConfig.getDesiredTimeScale();
 
         // No configuration, must be valid
         if ( aggregationConfig == null )
@@ -911,17 +912,17 @@ public class Validation
         }
         
         // Check that the time aggregation function is valid
-        valid = isDesiredTimeAggregationFunctionValid( projectConfigPlus, pairConfig ) && valid;
+        valid = isDesiredTimeScaleFunctionValid( projectConfigPlus, pairConfig ) && valid;
 
         // Check that the time aggregation period is valid 
-        valid = isDesiredTimeAggregationPeriodValid( projectConfigPlus, pairConfig ) && valid;
+        valid = isDesiredTimeScalePeriodValid( projectConfigPlus, pairConfig ) && valid;
         
         return valid;
     }
 
     /**
-     * Returns true if the time aggregation function associated with the desiredTimeAggregation is valid given the time
-     * aggregation functions associated with the existingTimeAggregation for each source.
+     * Returns true if the time aggregation function associated with the desiredTimeScaleis valid given the time
+     * aggregation functions associated with the existingTimeScalefor each source.
      * 
      * See Redmine issue 40389.
      * 
@@ -931,19 +932,19 @@ public class Validation
      * 
      * @param projectConfigPlus the project configuration
      * @param pairConfig the pair configuration
-     * @return true if the time aggregation function associated with the desiredTimeAggregation is valid
+     * @return true if the time aggregation function associated with the desiredTimeScaleis valid
      */
 
-    private static boolean isDesiredTimeAggregationFunctionValid( ProjectConfigPlus projectConfigPlus,
+    private static boolean isDesiredTimeScaleFunctionValid( ProjectConfigPlus projectConfigPlus,
                                                                   PairConfig pairConfig )
     {
         boolean returnMe = true;
-        TimeAggregationFunction desired = pairConfig.getDesiredTimeAggregation().getFunction();
+        TimeScaleFunction desired = pairConfig.getDesiredTimeScale().getFunction();
         Inputs inputConfig = projectConfigPlus.getProjectConfig().getInputs();
         // Time aggregation is a sum
-        if ( desired.equals( TimeAggregationFunction.SUM ) )
+        if ( desired.equals( TimeScaleFunction.SUM ) )
         {
-            returnMe = isDesiredTimeAggregationSumValid( projectConfigPlus, inputConfig );
+            returnMe = isDesiredTimeScaleSumValid( projectConfigPlus, inputConfig );
         }
         return returnMe;
     }
@@ -957,30 +958,30 @@ public class Validation
      * @return true if the time aggregation function is valid, given the inputConfig
      */
 
-    private static boolean isDesiredTimeAggregationSumValid( ProjectConfigPlus projectConfigPlus,
+    private static boolean isDesiredTimeScaleSumValid( ProjectConfigPlus projectConfigPlus,
                                                              Inputs inputConfig )
     {
         boolean returnMe = true;
         // Sum for left must be valid
-        if ( inputConfig.getLeft() != null && inputConfig.getLeft().getExistingTimeAggregation() != null )
+        if ( inputConfig.getLeft() != null && inputConfig.getLeft().getExistingTimeScale() != null )
         {
-            returnMe = isDesiredTimeAggregationSumValid( projectConfigPlus,
-                                                         inputConfig.getLeft().getExistingTimeAggregation(),
+            returnMe = isDesiredTimeScaleSumValid( projectConfigPlus,
+                                                         inputConfig.getLeft().getExistingTimeScale(),
                                                          "left" );
         }
         // Sum for right must be valid
-        if ( inputConfig.getRight() != null && inputConfig.getRight().getExistingTimeAggregation() != null )
+        if ( inputConfig.getRight() != null && inputConfig.getRight().getExistingTimeScale() != null )
         {
-            returnMe = isDesiredTimeAggregationSumValid( projectConfigPlus,
-                                                         inputConfig.getRight().getExistingTimeAggregation(),
+            returnMe = isDesiredTimeScaleSumValid( projectConfigPlus,
+                                                         inputConfig.getRight().getExistingTimeScale(),
                                                          "right" )
                        && returnMe;
         }
         // Sum for baseline must be valid
-        if ( inputConfig.getBaseline() != null && inputConfig.getBaseline().getExistingTimeAggregation() != null )
+        if ( inputConfig.getBaseline() != null && inputConfig.getBaseline().getExistingTimeScale() != null )
         {
-            returnMe = isDesiredTimeAggregationSumValid( projectConfigPlus,
-                                                         inputConfig.getBaseline().getExistingTimeAggregation(),
+            returnMe = isDesiredTimeScaleSumValid( projectConfigPlus,
+                                                         inputConfig.getBaseline().getExistingTimeScale(),
                                                          "baseline" )
                        && returnMe;
         }
@@ -996,8 +997,8 @@ public class Validation
      * @return true if the time aggregation function is valid, given the inputConfig
      */    
     
-    private static boolean isDesiredTimeAggregationSumValid( ProjectConfigPlus projectConfigPlus,
-                                                             TimeAggregationConfig inputConfig,
+    private static boolean isDesiredTimeScaleSumValid( ProjectConfigPlus projectConfigPlus,
+                                                             TimeScaleConfig inputConfig,
                                                              String helper )
     {
         boolean returnMe = true;
@@ -1006,7 +1007,7 @@ public class Validation
         {
             returnMe = false;
             String message = " When using a desired time aggregation of "
-                             + TimeAggregationFunction.SUM
+                             + TimeScaleFunction.SUM
                              + ", the existing time aggregation on the {} cannot be instantaneous.";
             if ( LOGGER.isWarnEnabled() )
             {
@@ -1021,13 +1022,13 @@ public class Validation
         
         // Existing function must be a sum
         if ( !inputConfig.getFunction()
-                            .equals( TimeAggregationFunction.SUM ) )
+                            .equals( TimeScaleFunction.SUM ) )
         {
             returnMe = false;
             String message = " When using a desired time aggregation of "
-                    + TimeAggregationFunction.SUM
+                    + TimeScaleFunction.SUM
                     + ", the existing time aggregation on the {} must also be a "
-                    + TimeAggregationFunction.SUM
+                    + TimeScaleFunction.SUM
                     + ".";
             if ( LOGGER.isWarnEnabled() )
             {
@@ -1043,8 +1044,8 @@ public class Validation
     }    
     
     /**
-     * Returns true if the time aggregation period associated with the desiredTimeAggregation is valid given the time
-     * aggregation periods associated with the existingTimeAggregation for each source.
+     * Returns true if the time aggregation period associated with the desiredTimeScaleis valid given the time
+     * aggregation periods associated with the existingTimeScalefor each source.
      * 
      * See Redmine issue 40389.
      * 
@@ -1054,22 +1055,22 @@ public class Validation
      * 
      * @param projectConfigPlus the project configuration
      * @param pairConfig the pair configuration
-     * @return true if the time aggregation period associated with the desiredTimeAggregation is valid
+     * @return true if the time aggregation period associated with the desiredTimeScaleis valid
      */
 
-    private static boolean isDesiredTimeAggregationPeriodValid( ProjectConfigPlus projectConfigPlus,
+    private static boolean isDesiredTimeScalePeriodValid( ProjectConfigPlus projectConfigPlus,
                                                                 PairConfig pairConfig )
     {
-        // Only proceed if the desiredTimeAggregation is non-null and one or more existingTimeAggregation
+        // Only proceed if the desiredTimeScaleis non-null and one or more existingTimeScale
         // are non-null
-        TimeAggregationConfig timeAgg = pairConfig.getDesiredTimeAggregation();
+        TimeScaleConfig timeAgg = pairConfig.getDesiredTimeScale();
         Inputs input = projectConfigPlus.getProjectConfig().getInputs();
-        TimeAggregationConfig left = input.getLeft().getExistingTimeAggregation();
-        TimeAggregationConfig right = input.getRight().getExistingTimeAggregation();
-        TimeAggregationConfig baseline = null;
+        TimeScaleConfig left = input.getLeft().getExistingTimeScale();
+        TimeScaleConfig right = input.getRight().getExistingTimeScale();
+        TimeScaleConfig baseline = null;
         if ( input.getBaseline() != null )
         {
-            baseline = input.getBaseline().getExistingTimeAggregation();
+            baseline = input.getBaseline().getExistingTimeScale();
         }
         if ( timeAgg == null )
         {
@@ -1089,13 +1090,13 @@ public class Validation
         {
             Duration leftExists = Duration.of( left.getPeriod(),
                                                ChronoUnit.valueOf( left.getUnit().toString().toUpperCase() ) );
-            returnMe = isDesiredTimeAggregationPeriodConsistent( projectConfigPlus, desired, leftExists, left, "left" );
+            returnMe = isDesiredTimeScalePeriodConsistent( projectConfigPlus, desired, leftExists, left, "left" );
         }
         if ( right != null && !ConfigHelper.isInstantaneous( right) )
         {
             Duration rightExists = Duration.of( right.getPeriod(),
                                                 ChronoUnit.valueOf( right.getUnit().toString().toUpperCase() ) );
-            returnMe = isDesiredTimeAggregationPeriodConsistent( projectConfigPlus,
+            returnMe = isDesiredTimeScalePeriodConsistent( projectConfigPlus,
                                                                  desired,
                                                                  rightExists,
                                                                  right,
@@ -1106,7 +1107,7 @@ public class Validation
         {
             Duration baselineExists = Duration.of( baseline.getPeriod(),
                                                    ChronoUnit.valueOf( baseline.getUnit().toString().toUpperCase() ) );
-            returnMe = isDesiredTimeAggregationPeriodConsistent( projectConfigPlus,
+            returnMe = isDesiredTimeScalePeriodConsistent( projectConfigPlus,
                                                                  desired,
                                                                  baselineExists,
                                                                  baseline,
@@ -1128,10 +1129,10 @@ public class Validation
      * @return true if the proposed time aggregation is valid, in principle
      */
 
-    private static boolean isDesiredTimeAggregationPeriodConsistent( ProjectConfigPlus projectConfigPlus,
+    private static boolean isDesiredTimeScalePeriodConsistent( ProjectConfigPlus projectConfigPlus,
                                                                      Duration desired,
                                                                      Duration existing,
-                                                                     TimeAggregationConfig helper,
+                                                                     TimeScaleConfig helper,
                                                                      String helperString )
     {
         boolean returnMe = true;
@@ -1172,14 +1173,14 @@ public class Validation
     {
         
         //No pooling config
-        if( pairConfig.getPoolingWindow() == null )
+        if( pairConfig.getIssuedDatesPoolingWindow() == null )
         {
             return true;
         }
         
         boolean valid = true;
 
-        PoolingWindowConfig poolingConfig = pairConfig.getPoolingWindow();
+        PoolingWindowConfig poolingConfig = pairConfig.getIssuedDatesPoolingWindow();
         StringBuilder warning = new StringBuilder();
 
         if (pairConfig.getIssuedDates() == null || pairConfig.getIssuedDates().getLatest() == null || pairConfig.getIssuedDates().getEarliest() == null)
@@ -1270,7 +1271,7 @@ public class Validation
     {
         boolean result = true;
 
-        TimeAggregationConfig timeAggregation = dataSourceConfig.getExistingTimeAggregation();
+        TimeScaleConfig timeAggregation = dataSourceConfig.getExistingTimeScale();
 
         if ( timeAggregation != null
              && timeAggregation.getUnit() == DurationUnit.NANOS )
@@ -1294,7 +1295,7 @@ public class Validation
                 LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
                              + " When using 'instant' duration, the period (and"
                              + " frequency, if specified) must be 1.",
-                             projectConfigPlus.getPath(),
+                             projectConfigPlus,
                              timeAggregation.sourceLocation().getLineNumber(),
                              timeAggregation.sourceLocation().getColumnNumber() );
             }

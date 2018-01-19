@@ -23,15 +23,15 @@
         <unit>CMS</unit>
         <feature locationId="DRRC2" />
         <leadHours minimum="1" maximum="24" />
-        <grouping>feature,lead_time</grouping><!-- optional? default feature,lead_time? -->
-        <desiredTimeAggregation>
+
+        <desiredTimeScale>
             <function>avg</function>
             <period>1</period>
             <unit>hours</unit>
-        </desiredTimeAggregation>
+        </desiredTimeScale>
     </pair>
 
-    <outputs>
+    <metrics>
         <probabilityThresholds>
             <applyTo>left</applyTo>
             <commaSeparatedValues>0.1,0.25,0.5,0.75,0.9,0.95</commaSeparatedValues>
@@ -41,7 +41,8 @@
         <metric> <name>brier score</name> </metric>
         <metric> <name>reliability diagram</name> </metric>
         <metric> <name>sample size</name> </metric>
-
+    </metrics>
+    <outputs>
         <destination type="pairs" decimalFormat="0.000000">
             <path>output</path>
         </destination>

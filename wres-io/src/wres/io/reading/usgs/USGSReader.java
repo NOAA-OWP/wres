@@ -194,7 +194,7 @@ public class USGSReader extends BasicSource
             client = ClientBuilder.newClient();
             WebTarget webTarget = client.target( USGS_URL );
 
-            if (this.dataSourceConfig.getExistingTimeAggregation() == null)
+            if (this.dataSourceConfig.getExistingTimeScale() == null)
             {
                 throw new IOException( "An existing time aggregation must be defined to ingest USGS data." );
             }
@@ -346,7 +346,7 @@ public class USGSReader extends BasicSource
                 }
 
                 if ( this.getDataSourceConfig()
-                         .getExistingTimeAggregation()
+                         .getExistingTimeScale()
                          .getUnit() == DurationUnit.SECONDS )
                 {
                     aggregation = "instant";
@@ -354,7 +354,7 @@ public class USGSReader extends BasicSource
                 else
                 {
                     aggregation = this.getDataSourceConfig()
-                                      .getExistingTimeAggregation()
+                                      .getExistingTimeScale()
                                       .getFunction()
                                       .value();
                 }
@@ -385,7 +385,7 @@ public class USGSReader extends BasicSource
         if (this.startDate == null)
         {
 
-            if (this.dataSourceConfig.getExistingTimeAggregation() == null)
+            if (this.dataSourceConfig.getExistingTimeScale() == null)
             {
                 throw new IOException( "An existing time aggregation must be defined to ingest USGS data." );
             }
@@ -402,7 +402,7 @@ public class USGSReader extends BasicSource
 
             this.startDate = TimeHelper.normalize( this.startDate );
 
-            switch (this.dataSourceConfig.getExistingTimeAggregation().getUnit())
+            switch (this.dataSourceConfig.getExistingTimeScale().getUnit())
             {
                 case DAYS:
                     // No time or time zone information is allowed
@@ -421,7 +421,7 @@ public class USGSReader extends BasicSource
     {
         if (this.endDate == null)
         {
-            if (this.dataSourceConfig.getExistingTimeAggregation() == null)
+            if (this.dataSourceConfig.getExistingTimeScale() == null)
             {
                 throw new IOException( "An existing time aggregation must be defined to ingest USGS data." );
             }
@@ -438,7 +438,7 @@ public class USGSReader extends BasicSource
 
             this.endDate = TimeHelper.normalize( this.endDate );
 
-            switch (this.dataSourceConfig.getExistingTimeAggregation().getUnit())
+            switch (this.dataSourceConfig.getExistingTimeScale().getUnit())
             {
                 case DAYS:
                     // No time or time zone information is allowed
@@ -457,7 +457,7 @@ public class USGSReader extends BasicSource
     {
         String valueType;
 
-        if (this.dataSourceConfig.getExistingTimeAggregation().getUnit() == DurationUnit.DAYS)
+        if (this.dataSourceConfig.getExistingTimeScale().getUnit() == DurationUnit.DAYS)
         {
             valueType = DAILY_VALUE;
         }

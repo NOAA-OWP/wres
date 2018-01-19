@@ -1,4 +1,4 @@
-package wres.engine.statistics.metric;
+package wres.engine.statistics.metric.processing;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -31,6 +31,9 @@ import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold.MetricOutputForProjectByTimeAndThresholdBuilder;
+import wres.engine.statistics.metric.MetricCalculationException;
+import wres.engine.statistics.metric.MetricCollection;
+import wres.engine.statistics.metric.MetricConfigurationException;
 import wres.datamodel.outputs.MetricOutputMapByMetric;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.ScalarOutput;

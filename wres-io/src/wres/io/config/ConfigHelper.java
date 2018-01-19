@@ -36,8 +36,8 @@ import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
 import wres.config.generated.ProjectConfig;
-import wres.config.generated.TimeAggregationConfig;
-import wres.config.generated.TimeAggregationFunction;
+import wres.config.generated.TimeScaleConfig;
+import wres.config.generated.TimeScaleFunction;
 import wres.config.generated.TimeWindowMode;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
@@ -63,13 +63,14 @@ public class ConfigHelper
 
     public static boolean usesProbabilityThresholds(final ProjectConfig projectConfig)
     {
-        boolean hasProbabilityThreshold = projectConfig.getOutputs().getProbabilityThresholds() != null;
+        boolean hasProbabilityThreshold = projectConfig.getMetrics()
+                                                       .getProbabilityThresholds() != null;
 
         if (!hasProbabilityThreshold)
         {
-            hasProbabilityThreshold = Collections.exists(projectConfig.getOutputs().getMetric(),
-                                                         (MetricConfig config) ->
-                                                                 config.getProbabilityThresholds() != null );
+            hasProbabilityThreshold = Collections.exists(projectConfig.getMetrics().getMetric(), (MetricConfig config) -> {
+                return config.getProbabilityThresholds() != null;
+            });
         }
 
         return hasProbabilityThreshold;
@@ -81,14 +82,14 @@ public class ConfigHelper
                                        dataSourceConfig.getVariable().getUnit());
     }
 
-    public static TimeAggregationConfig getTimeAggregation(ProjectConfig projectConfig)
+    public static TimeScaleConfig getTimeScale(ProjectConfig projectConfig)
     {
-        TimeAggregationConfig timeAggregationConfig = projectConfig.getPair().getDesiredTimeAggregation();
+        TimeScaleConfig timeAggregationConfig = projectConfig.getPair().getDesiredTimeScale();
 
         if (timeAggregationConfig == null)
         {
-            timeAggregationConfig = new TimeAggregationConfig(
-                                                               TimeAggregationFunction.AVG,
+            timeAggregationConfig = new TimeScaleConfig(
+                                                               TimeScaleFunction.AVG,
                                                                1,
                                                                1,
                                                                DurationUnit.HOURS,
@@ -166,7 +167,7 @@ public class ConfigHelper
     public static Double getWindowWidth( ProjectConfig projectConfig )
             throws InvalidPropertiesFormatException
     {
-        TimeAggregationConfig timeAggregationConfig = projectConfig.getPair().getDesiredTimeAggregation();
+        TimeScaleConfig timeAggregationConfig = projectConfig.getPair().getDesiredTimeScale();
         return TimeHelper.unitsToHours( timeAggregationConfig.getUnit().value(),
                                         timeAggregationConfig.getPeriod() );
     }
@@ -890,7 +891,6 @@ public class ConfigHelper
      * @throws NullPointerException if the config is null
      * @throws DateTimeParseException if the configuration contains dates that cannot be parsed
      * @throws InvalidPropertiesFormatException if dates could not be established
-     * @throws SQLException if the anchor date for the rolling windows could not be established
      */
 
     public static TimeWindow getTimeWindow( ProjectDetails projectDetails, long lead, int sequenceStep)
@@ -1192,16 +1192,16 @@ public class ConfigHelper
     }
        
     /**
-     * Returns true if the input contains instantaneous data, false otherwise. A {@link TimeAggregationConfig} is 
-     * considered instantaneous if the {@link TimeAggregationConfig#getPeriod()} is 1 and the 
-     * {@link TimeAggregationConfig#getUnit()} is {@link DurationUnit#NANOS}.
+     * Returns true if the input contains instantaneous data, false otherwise. A {@link TimeScaleConfig} is
+     * considered instantaneous if the {@link TimeScaleConfig#getPeriod()} is 1 and the
+     * {@link TimeScaleConfig#getUnit()} is {@link DurationUnit#NANOS}.
      * 
      * @param input the input to test
      * @return true if the input aggregation denotes instantaneous data, false otherwise
      * @throws NullPointerException if the input is null
      */
 
-    public static boolean isInstantaneous( TimeAggregationConfig input )
+    public static boolean isInstantaneous( TimeScaleConfig input )
     {
         Objects.requireNonNull( input, "Specify non-null input to check for instantanous data." );
         return input.getUnit().equals( DurationUnit.NANOS ) && input.getPeriod() == 1;
@@ -1220,7 +1220,7 @@ public class ConfigHelper
     {
         Objects.requireNonNull( projectConfig, "Specify a non-null metric configuration as input." );
         Objects.requireNonNull( metricName, "Specify a non-null metric name as input." );
-        for ( MetricConfig next : projectConfig.getOutputs().getMetric() )
+        for ( MetricConfig next : projectConfig.getMetrics().getMetric() )
         {
             // Match
             if ( next.getName().equals( metricName ) )

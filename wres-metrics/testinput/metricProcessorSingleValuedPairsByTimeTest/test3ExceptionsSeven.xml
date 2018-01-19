@@ -33,7 +33,7 @@
           <unit>HOUR</unit>
       </timeAggregation>
   </pair>
-  <outputs>
+  <metrics>
     <metric>
 	<name>critical success index</name>
         <probabilityThresholds>
@@ -42,6 +42,8 @@
           <operator>greater than</operator>
         </probabilityThresholds>
     </metric>
+  </metrics>
+  <outputs>
     <destination type="numeric">/home/jesse/text_output"</destination>
     <destination type="graphic"><path>/tmp/</path>
     <!--Optional:-->

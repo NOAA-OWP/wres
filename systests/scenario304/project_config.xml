@@ -11,11 +11,11 @@
                 recursive="true" unit="">../data/abrfcExample/LGNN5_MAP.missing.xml</source>
             <variable>MAP</variable>
 
-            <existingTimeAggregation>
+            <existingTimeScale>
                 <function>sum</function>
                 <period>6</period>
                 <unit>hours</unit>
-            </existingTimeAggregation>
+            </existingTimeScale>
 
         </left>
         <right label="HEFS">
@@ -24,11 +24,11 @@
                 recursive="false" unit="">../data/abrfcExample/LGNN5_precip_1yr.tgz</source>
             <variable>MAPX</variable>
 
-            <existingTimeAggregation>
+            <existingTimeScale>
                 <function>sum</function>
                 <period>6</period>
                 <unit>hours</unit>
-            </existingTimeAggregation>
+            </existingTimeScale>
 
         </right>
     </inputs>
@@ -37,15 +37,15 @@
         <unit>MM</unit>
         <feature locationId="LGNN5" />
         <leadHours minimum="1" maximum="48" />
-        <grouping>feature,lead_time</grouping>
-        <desiredTimeAggregation>
+
+        <desiredTimeScale>
             <function>sum</function>
             <period>24</period>
             <unit>hours</unit>
-        </desiredTimeAggregation>
+        </desiredTimeScale>
     </pair>
 
-    <outputs>
+    <metrics>
         
         <valueThresholds>
             <applyTo>left</applyTo> 
@@ -61,6 +61,8 @@
         <metric> <name>brier score</name> </metric>
         <metric> <name>reliability diagram</name> </metric>
         <metric> <name>sample size</name> </metric>
+    </metrics>
+    <outputs>
         <destination type="numeric" decimalFormat="0.000000">
             <path>output</path>
         </destination>
