@@ -46,7 +46,7 @@
         </destination>
         <destination type="graphic">
             <path>output/</path>
-            <graphical width="800" height="600">
+            <graphical width="800" height="600" template="testTemplateCopiedFromDefault.xml">
                 <plotType>lead threshold</plotType>
 
                 <!-- Test of the capability to override chart template options in project configuration. -->
