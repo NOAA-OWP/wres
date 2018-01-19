@@ -594,7 +594,7 @@ public class ProcessorHelper
                 }
                 
                 // Override template name with metric specific name.
-                if (templateResourceName != null)
+                if (nextConfig.getTemplateResourceName() != null)
                 {
                     templateResourceName = nextConfig.getTemplateResourceName();
                 }
@@ -700,7 +700,7 @@ public class ProcessorHelper
                 }
 
                 // Override template name with metric specific name.
-                if (templateResourceName != null)
+                if (nextConfig.getTemplateResourceName() != null)
                 {
                     templateResourceName = nextConfig.getTemplateResourceName();
                 }
@@ -812,7 +812,7 @@ public class ProcessorHelper
                 }
 
                 // Override template name with metric specific name.
-                if (templateResourceName != null)
+                if (nextConfig.getTemplateResourceName() != null)
                 {
                     templateResourceName = nextConfig.getTemplateResourceName();
                 }
@@ -928,7 +928,7 @@ public class ProcessorHelper
             if ( Objects.nonNull( nextConfig ) )
             {
                 // Override template name with metric specific name.
-                if (templateResourceName != null)
+                if (nextConfig.getTemplateResourceName() != null)
                 {
                     templateResourceName = nextConfig.getTemplateResourceName();
                 }
