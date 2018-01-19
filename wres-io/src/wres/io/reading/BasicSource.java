@@ -61,6 +61,9 @@ public abstract class BasicSource
 
     /**
      * Saves data within the source file as a forecast
+     * 
+     * @return the ingest results
+     * @throws IOException always, because this is not implemented
      */
     protected List<IngestResult> saveForecast() throws IOException
 	{
@@ -69,6 +72,9 @@ public abstract class BasicSource
 
     /**
      * Saves data within the source file as an observation
+     * 
+     * @return the ingest results
+     * @throws IOException always, because this is not implemented
      */
     protected List<IngestResult> saveObservation() throws IOException
 	{
