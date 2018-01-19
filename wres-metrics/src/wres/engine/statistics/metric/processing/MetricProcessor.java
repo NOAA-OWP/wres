@@ -1,4 +1,4 @@
-package wres.engine.statistics.metric;
+package wres.engine.statistics.metric.processing;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -6,7 +6,6 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.DoublePredicate;
@@ -16,12 +15,10 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.generated.DataSourceConfig;
-import wres.config.generated.DatasourceType;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
-import wres.config.generated.PoolingWindowConfig;
+import wres.config.generated.MetricsConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Outputs;
 import wres.datamodel.DataFactory;
@@ -41,6 +38,13 @@ import wres.datamodel.outputs.MetricOutputForProject;
 import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.ScalarOutput;
+import wres.engine.statistics.metric.Metric;
+import wres.engine.statistics.metric.MetricCalculationException;
+import wres.engine.statistics.metric.MetricCollection;
+import wres.engine.statistics.metric.MetricConfigHelper;
+import wres.engine.statistics.metric.MetricConfigurationException;
+import wres.engine.statistics.metric.MetricFactory;
+import wres.engine.statistics.metric.MetricParameterException;
 
 /**
  * <p>
@@ -205,45 +209,6 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
     abstract void validate( ProjectConfig config ) throws MetricConfigurationException;
 
     /**
-     * Returns a set of {@link MetricConstants} from a {@link ProjectConfig}. If the {@link ProjectConfig} contains
-     * the identifier {@link MetricConfigName#ALL_VALID}, all supported metrics are returned that are consistent
-     * with the configuration. 
-     * 
-     * TODO: consider interpreting configured metrics in combination with {@link MetricConfigName#ALL_VALID} as 
-     * overrides to be removed from the {@link MetricConfigName#ALL_VALID} metrics.
-     * 
-     * @param config the project configuration
-     * @return a set of {@link MetricConstants}
-     * @throws MetricConfigurationException if the metrics are configured incorrectly
-     */
-
-    public static Set<MetricConstants> getMetricsFromConfig( ProjectConfig config ) throws MetricConfigurationException
-    {
-        Objects.requireNonNull( config, "Specify a non-null project from which to generate metrics." );
-        //Obtain the list of metrics
-        List<MetricConfigName> metricsConfig = config.getOutputs()
-                                                     .getMetric()
-                                                     .stream()
-                                                     .map( MetricConfig::getName )
-                                                     .collect( Collectors.toList() );
-        Set<MetricConstants> metrics = new TreeSet<>();
-        //All valid metrics
-        if ( metricsConfig.contains( MetricConfigName.ALL_VALID ) )
-        {
-            metrics = getAllValidMetricsFromConfig( config );
-        }
-        //Explicitly configured metrics
-        else
-        {
-            for ( MetricConfigName metric : metricsConfig )
-            {
-                metrics.add( ConfigMapper.from( metric ) );
-            }
-        }
-        return metrics;
-    }    
-    
-    /**
      * Returns true if one or more metric outputs will be cached across successive calls to {@link #apply(Object)},
      * false otherwise.
      * 
@@ -254,7 +219,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
     {
         return Objects.nonNull( mergeList ) && mergeList.length > 0;
     }
-    
+
     /**
      * Returns true if a named {@link MetricOutputGroup} will be cached across successive calls to 
      * {@link #apply(Object)}, false otherwise.
@@ -329,113 +294,6 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
     }
 
     /**
-     * Returns the metric data input type from the {@link ProjectConfig}.
-     * 
-     * @param config the {@link ProjectConfig}
-     * @return the {@link MetricInputGroup} based on the {@link ProjectConfig}
-     * @throws MetricConfigurationException if the input type is not recognized
-     */
-
-    static MetricInputGroup getInputType( ProjectConfig config ) throws MetricConfigurationException
-    {
-        Objects.requireNonNull( config, "Specify a non-null project from which to generate metrics." );
-        DatasourceType type = config.getInputs().getRight().getType();
-        switch ( type )
-        {
-            case ENSEMBLE_FORECASTS:
-                return MetricInputGroup.ENSEMBLE;
-            case SINGLE_VALUED_FORECASTS:
-            case SIMULATIONS:
-                return MetricInputGroup.SINGLE_VALUED;
-            default:
-                throw new MetricConfigurationException( "Unable to interpret the input type '" + type
-                                                        + "' when attempting to process the metrics " );
-        }
-    }
-
-    /**
-     * <p>Returns a list of all supported metrics given the input {@link ProjectConfig}. Specifically, checks the 
-     * {@link ProjectConfig} for the data type of the right-side and for any thresholds, returning metrics as 
-     * follows:</p>
-     * <ol>
-     * <li>If the right side contains {@link DatasourceType#ENSEMBLE_FORECASTS} and thresholds are defined: returns
-     * all metrics that consume {@link MetricInputGroup#ENSEMBLE}, {@link MetricInputGroup#SINGLE_VALUED} and
-     * {@link MetricInputGroup#DISCRETE_PROBABILITY}</li>
-     * <li>If the right side contains {@link DatasourceType#ENSEMBLE_FORECASTS} and thresholds are not defined: returns
-     * all metrics that consume {@link MetricInputGroup#ENSEMBLE} and {@link MetricInputGroup#SINGLE_VALUED}</li>
-     * <li>If the right side contains {@link DatasourceType#SINGLE_VALUED_FORECASTS} and thresholds are defined: returns
-     * all metrics that consume {@link MetricInputGroup#SINGLE_VALUED} and {@link MetricInputGroup#DICHOTOMOUS}</li>
-     * <li>If the right side contains {@link DatasourceType#SINGLE_VALUED_FORECASTS} and thresholds are not defined: 
-     * returns all metrics that consume {@link MetricInputGroup#SINGLE_VALUED}.</li>
-     * </ol>
-     * 
-     * TODO: implement multicategory metrics.
-     * @param config the {@link ProjectConfig}
-     * @return a list of all metrics that are compatible with the project configuration  
-     * @throws MetricConfigurationException if the configuration is invalid
-     */
-
-    static Set<MetricConstants> getAllValidMetricsFromConfig( ProjectConfig config )
-            throws MetricConfigurationException
-    {
-        Set<MetricConstants> returnMe;
-        MetricInputGroup group = getInputType( config );
-        switch ( group )
-        {
-            case ENSEMBLE:
-                returnMe = getMetricsForEnsembleInput( config );
-                break;
-            case SINGLE_VALUED:
-                returnMe = getMetricsForSingleValuedInput( config );
-                break;
-            default:
-                throw new MetricConfigurationException( "Unexpected input identifier '" + group + "'." );
-        }
-        //Remove CRPSS if no baseline is available
-        DataSourceConfig baseline = config.getInputs().getBaseline();
-        if ( Objects.isNull( baseline ) )
-        {
-            returnMe.remove( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE );
-        }
-        //Disallow non-score metrics when pooling window configuration is present, until this 
-        //is supported
-        PoolingWindowConfig windows = config.getPair().getPoolingWindow();
-        if ( Objects.nonNull( windows ) )
-        {
-            returnMe.removeIf( a -> ! ( a.isInGroup( MetricOutputGroup.SCALAR )
-                                        || a.isInGroup( MetricOutputGroup.VECTOR ) ) );
-        }
-        return returnMe;
-    }
-
-    /**
-     * Returns true if the input {@link Outputs} has thresholds configured, false otherwise.
-     * 
-     * @param outputs the {@link Outputs} configuration
-     * @return true if the project configuration has thresholds configured, false otherwise
-     */
-
-    static boolean hasThresholds( Outputs outputs )
-    {
-        //Global thresholds
-        if ( Objects.nonNull( outputs.getProbabilityThresholds() )
-             || Objects.nonNull( outputs.getValueThresholds() ) )
-        {
-            return true;
-        }
-        //Local thresholds
-        for ( MetricConfig metric : outputs.getMetric() )
-        {
-            if ( Objects.nonNull( metric.getProbabilityThresholds() )
-                 || Objects.nonNull( metric.getValueThresholds() ) )
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
      * Constructor.
      * 
      * @param dataFactory the data factory
@@ -461,7 +319,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         Objects.requireNonNull( dataFactory,
                                 "Specify a non-null data factory from which to construct the metric processor." );
         this.dataFactory = dataFactory;
-        metrics = getMetricsFromConfig( config );
+        metrics = MetricConfigHelper.getMetricsFromConfig( config );
         metricFactory = MetricFactory.getInstance( dataFactory );
         //Construct the metrics that are common to more than one type of input pairs
         try
@@ -651,43 +509,6 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
     }
 
     /**
-     * Returns valid metrics for {@link MetricInputGroup#ENSEMBLE}
-     * 
-     * @param config the project configuration
-     * @return the valid metrics for {@link MetricInputGroup#ENSEMBLE}
-     */
-
-    private static Set<MetricConstants> getMetricsForEnsembleInput( ProjectConfig config )
-    {
-        Set<MetricConstants> returnMe = new TreeSet<>();
-        returnMe.addAll( MetricInputGroup.ENSEMBLE.getMetrics() );
-        returnMe.addAll( MetricInputGroup.SINGLE_VALUED.getMetrics() );
-        if ( hasThresholds( config.getOutputs() ) )
-        {
-            returnMe.addAll( MetricInputGroup.DISCRETE_PROBABILITY.getMetrics() );
-        }
-        return returnMe;
-    }
-
-    /**
-     * Returns valid metrics for {@link MetricInputGroup#SINGLE_VALUED}
-     * 
-     * @param config the project configuration
-     * @return the valid metrics for {@link MetricInputGroup#SINGLE_VALUED}
-     */
-
-    private static Set<MetricConstants> getMetricsForSingleValuedInput( ProjectConfig config )
-    {
-        Set<MetricConstants> returnMe = new TreeSet<>();
-        returnMe.addAll( MetricInputGroup.SINGLE_VALUED.getMetrics() );
-        if ( hasThresholds( config.getOutputs() ) )
-        {
-            returnMe.addAll( MetricInputGroup.DICHOTOMOUS.getMetrics() );
-        }
-        return returnMe;
-    }
-
-    /**
      * Sets the thresholds for each metric in the configuration, including any thresholds that apply globally (to all
      * metrics).
      * 
@@ -699,12 +520,12 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
     private void setThresholds( DataFactory dataFactory, ProjectConfig config ) throws MetricConfigurationException
     {
         //Validate the configuration
-        Outputs outputs = config.getOutputs();
-        validateOutputsConfig( outputs );
+        MetricsConfig metrics = config.getMetrics();
+        validateOutputsConfig( metrics );
         //Check for metric-local thresholds and throw an exception if they are defined, as they are currently not supported
 //        EnumMap<MetricConstants, List<Threshold>> localThresholds = new EnumMap<>( MetricConstants.class );
 //      TODO: store metric-local threshold conditions when they are available in the configuration
-        for ( MetricConfig metric : outputs.getMetric() )
+        for ( MetricConfig metric : metrics.getMetric() )
         {
             if ( metric.getName() != MetricConfigName.ALL_VALID )
             {
@@ -728,19 +549,19 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         //Add a threshold for "all data" by default
         globalThresholdsAllData.add( dataFactory.getThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER ) );
         //Add probability thresholds
-        if ( Objects.nonNull( outputs.getProbabilityThresholds() ) )
+        if ( Objects.nonNull( metrics.getProbabilityThresholds() ) )
         {
-            Operator oper = ConfigMapper.from( outputs.getProbabilityThresholds().getOperator() );
-            String values = outputs.getProbabilityThresholds().getCommaSeparatedValues();
+            Operator oper = MetricConfigHelper.from( metrics.getProbabilityThresholds().getOperator() );
+            String values = metrics.getProbabilityThresholds().getCommaSeparatedValues();
             List<Threshold> thresholds = getThresholdsFromCommaSeparatedValues( values, oper, true );
             globalThresholds.addAll( thresholds );
             globalThresholdsAllData.addAll( thresholds );
         }
         //Add real-valued thresholds
-        if ( Objects.nonNull( outputs.getValueThresholds() ) )
+        if ( Objects.nonNull( metrics.getValueThresholds() ) )
         {
-            Operator oper = ConfigMapper.from( outputs.getValueThresholds().getOperator() );
-            String values = outputs.getValueThresholds().getCommaSeparatedValues();
+            Operator oper = MetricConfigHelper.from( metrics.getValueThresholds().getOperator() );
+            String values = metrics.getValueThresholds().getCommaSeparatedValues();
             List<Threshold> thresholds = getThresholdsFromCommaSeparatedValues( values, oper, false );
             globalThresholds.addAll( thresholds );
             globalThresholdsAllData.addAll( thresholds );
@@ -764,46 +585,47 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
     }
 
     /**
-     * Validates the outputs configuration and throws a {@link MetricConfigurationException} if the validation fails
+     * Validates the metrics configuration and throws a {@link MetricConfigurationException} if the validation fails
      * 
-     * @param outputs the outputs configuration
+     * @param metrics the metrics configuration
      * @throws MetricConfigurationException if thresholds are configured incorrectly
      */
 
-    private void validateOutputsConfig( Outputs outputs ) throws MetricConfigurationException
+    private void validateOutputsConfig( MetricsConfig metrics )
+            throws MetricConfigurationException
     {
-        if ( hasThresholdMetrics() && !hasThresholds( outputs ) )
+        if ( hasThresholdMetrics() && !MetricConfigHelper.hasThresholds( metrics ) )
         {
             throw new MetricConfigurationException( "Thresholds are required by one or more of the configured "
                                                     + "metrics." );
         }
         //Check that probability thresholds are configured for left       
-        if ( Objects.nonNull( outputs.getProbabilityThresholds() )
-             && outputs.getProbabilityThresholds().getApplyTo() != LeftOrRightOrBaseline.LEFT )
+        if ( Objects.nonNull( metrics.getProbabilityThresholds() )
+             && metrics.getProbabilityThresholds().getApplyTo() != LeftOrRightOrBaseline.LEFT )
         {
             throw new MetricConfigurationException( "Attempted to apply probability thresholds to '"
-                                                    + outputs.getProbabilityThresholds().getApplyTo()
+                                                    + metrics.getProbabilityThresholds().getApplyTo()
                                                     + "': this is not currently supported. Use '"
                                                     + LeftOrRightOrBaseline.LEFT
                                                     + "' instead." );
         }
         //Check that value thresholds are configured for left  
-        if ( Objects.nonNull( outputs.getValueThresholds() )
-             && outputs.getValueThresholds().getApplyTo() != LeftOrRightOrBaseline.LEFT )
+        if ( Objects.nonNull( metrics.getValueThresholds() )
+             && metrics.getValueThresholds().getApplyTo() != LeftOrRightOrBaseline.LEFT )
         {
             throw new MetricConfigurationException( "Attempted to apply value thresholds to '"
-                                                    + outputs.getValueThresholds().getApplyTo()
+                                                    + metrics.getValueThresholds().getApplyTo()
                                                     + "': this is not currently supported. Use '"
                                                     + LeftOrRightOrBaseline.LEFT
                                                     + "' instead." );
         }
         //Check for metric-local thresholds and throw an exception if they are defined, as they are currently 
         //not supported
-        for ( MetricConfig metric : outputs.getMetric() )
+        for ( MetricConfig metric : metrics.getMetric() )
         {
             if ( metric.getName() != MetricConfigName.ALL_VALID )
             {
-                MetricConstants name = ConfigMapper.from( metric.getName() );
+                MetricConstants name = MetricConfigHelper.from( metric.getName() );
                 if ( Objects.nonNull( metric.getProbabilityThresholds() )
                      || Objects.nonNull( metric.getValueThresholds() ) )
                 {

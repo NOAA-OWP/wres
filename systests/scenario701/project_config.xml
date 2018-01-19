@@ -5,11 +5,11 @@
             <type>simulations</type>
             <source format="usgs"></source>
             <variable unit="ft3/s">streamflow</variable>
-            <existingTimeAggregation>
+            <existingTimeScale>
                 <function>none</function>
                 <period>1</period>
                 <unit>hours</unit>
-            </existingTimeAggregation>
+            </existingTimeScale>
         </left>
         <right label="NWM Short Range">
             <type>single valued forecasts</type>
@@ -22,14 +22,14 @@
         <feature rfc="abrfc" />
         <leadHours minimum="1" maximum="24" />
         <dates earliest="2017-08-07T00:00:00Z" latest="2017-08-10T00:00:00Z" />
-        <grouping>feature,lead_time</grouping><!-- optional? default feature,lead_time? -->
-        <desiredTimeAggregation>
+
+        <desiredTimeScale>
             <function>avg</function>
             <period>1</period>
             <unit>hours</unit>
-        </desiredTimeAggregation>
+        </desiredTimeScale>
     </pair>
-    <outputs>
+    <metrics>
         <metric> <name>mean error</name> </metric>
         <metric><name>pearson correlation coefficient</name></metric>
         <metric><name>mean absolute error</name></metric>
@@ -40,6 +40,8 @@
         <metric> <name>sample size</name> </metric>
 
         <!-- This can end up pulling a MOUNTAIN of data
+    </metrics>
+    <outputs>
         <destination type="pairs" decimalFormat="0.000000">
             <path>output/</path>
         </destination>

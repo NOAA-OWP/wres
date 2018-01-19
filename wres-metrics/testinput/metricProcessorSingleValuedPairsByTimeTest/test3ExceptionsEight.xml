@@ -33,13 +33,15 @@
           <unit>HOUR</unit>
       </timeAggregation>
   </pair>
-  <outputs>
+  <metrics>
     <probabilityThresholds>
       <applyTo>left</applyTo>
       <commaSeparatedValues>0.5</commaSeparatedValues>
       <operator>greater than</operator>
     </probabilityThresholds>
     <metric><name>critical success index</name></metric>
+  </metrics>
+  <outputs>
     <destination type="numeric">/home/jesse/text_output"</destination>
     <destination type="graphic"><path>/tmp/</path>
     <!--Optional:-->

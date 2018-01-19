@@ -36,7 +36,7 @@
           <unit>HOUR</unit>
       </timeAggregation>
   </pair>
-  <outputs>
+  <metrics>
     <!-- destinations has one default: text, ., xml; even when nothing is here. Program chooses filenames for now -->
     <metric label="ME"><name>mean error</name></metric>
     <metric><name>pearson correlation coefficient</name></metric>
@@ -45,6 +45,8 @@
     <metric><name>coefficient of determination</name></metric>
     <metric><name>root mean square error</name></metric>
     <metric><name>continuous ranked probability score</name></metric>
+  </metrics>
+  <outputs>
     <destination type="numeric"></destination>
     <destination type="graphic"><path></path>
     <!--Optional:-->

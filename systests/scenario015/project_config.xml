@@ -23,29 +23,31 @@
         <feature locationId="DRRC2" />
         <leadHours minimum="1" maximum="24" />
         <issuedDates latest="1985-06-07T12:00:00Z" />
-        <grouping>feature,lead_time</grouping>
-<!--
-        <poolingWindow mode="rolling" anchor="center">
-            <period>48</period>
-            <frequency>24</frequency>
-            <unit>hours</unit>
-        </poolingWindow>
--->
-        <desiredTimeAggregation>
+
+        <desiredTimeScale>
             <function>avg</function>
             <period>6</period>
             <frequency>3</frequency>
             <unit>hours</unit>
-        </desiredTimeAggregation>
+        </desiredTimeScale>
+<!--
+        <issuedDatesPoolingWindow mode="rolling" anchor="center">
+            <period>48</period>
+            <frequency>24</frequency>
+            <unit>hours</unit>
+        </issuedDatesPoolingWindow>
+-->
     </pair>
 
-    <outputs>
+    <metrics>
         <metric>
             <name>mean error</name>
         </metric>
         <metric>
             <name>sample size</name>
         </metric>
+    </metrics>
+    <outputs>
         <destination type="numeric" decimalFormat="0.000000">
             <path>output</path>
         </destination>
