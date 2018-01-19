@@ -41,10 +41,10 @@ import wres.datamodel.outputs.ScalarOutput;
 import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricCollection;
-import wres.engine.statistics.metric.MetricConfigHelper;
-import wres.engine.statistics.metric.MetricConfigurationException;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
+import wres.engine.statistics.metric.config.MetricConfigHelper;
+import wres.engine.statistics.metric.config.MetricConfigurationException;
 
 /**
  * <p>

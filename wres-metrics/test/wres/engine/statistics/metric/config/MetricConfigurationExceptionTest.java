@@ -1,6 +1,8 @@
-package wres.engine.statistics.metric;
+package wres.engine.statistics.metric.config;
 
 import org.junit.Test;
+
+import wres.engine.statistics.metric.config.MetricConfigurationException;
 
 /**
  * Tests the {@link MetricConfigurationException}.

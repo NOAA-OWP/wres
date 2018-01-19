@@ -1,4 +1,4 @@
-package wres.engine.statistics.metric;
+package wres.engine.statistics.metric.config;
 
 /**
  * A checked exception associated with a metric calculation.

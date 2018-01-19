@@ -1,4 +1,4 @@
-package wres.engine.statistics.metric;
+package wres.engine.statistics.metric.config;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -10,6 +10,8 @@ import org.junit.Test;
 import wres.config.generated.MetricConfigName;
 import wres.config.generated.ThresholdOperator;
 import wres.datamodel.Threshold.Operator;
+import wres.engine.statistics.metric.config.MetricConfigHelper;
+import wres.engine.statistics.metric.config.MetricConfigurationException;
 
 /**
  * Tests the {@link ConfigMapper}.

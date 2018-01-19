@@ -22,9 +22,9 @@ import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
 import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.datamodel.outputs.ScalarOutput;
-import wres.engine.statistics.metric.MetricConfigurationException;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricTestDataFactory;
+import wres.engine.statistics.metric.config.MetricConfigurationException;
 import wres.io.config.ProjectConfigPlus;
 
 /**

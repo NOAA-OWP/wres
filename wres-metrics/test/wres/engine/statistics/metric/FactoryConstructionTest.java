@@ -5,6 +5,8 @@ import java.lang.reflect.InvocationTargetException;
 
 import org.junit.Test;
 
+import wres.engine.statistics.metric.config.MetricConfigHelper;
+
 /**
  * Convenience class for achieving coverage of hidden factory constructors, in order to clean-up the reported test
  * coverage statistics. Add new factory classes as they are implemented. TODO: remove this class when test coverage can
