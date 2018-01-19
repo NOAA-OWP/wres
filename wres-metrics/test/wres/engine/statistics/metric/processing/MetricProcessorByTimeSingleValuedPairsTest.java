@@ -3,6 +3,7 @@ package wres.engine.statistics.metric.processing;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.io.IOException;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
@@ -22,6 +23,7 @@ import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
+import wres.datamodel.outputs.MetricOutputAccessException;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.ScalarOutput;
@@ -48,59 +50,57 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
      * {@link MetricProcessorByTimeSingleValuedPairs#apply(SingleValuedPairs)} to 
      * configuration obtained from testinput/metricProcessorSingleValuedPairsByTimeTest/test1ApplyNoThresholds.xml and pairs 
      * obtained from {@link MetricTestDataFactory#getSingleValuedPairsFour()}.
+     * 
+     * @throws MetricConfigurationException if the configuration is incorrect
+     * @throws IOException if the input data could not be read
+     * @throws MetricOutputAccessException if the outputs could not be accessed
      */
 
     @Test
-    public void test1ApplyNoThresholds()
+    public void test1ApplyNoThresholds() throws IOException, MetricConfigurationException, MetricOutputAccessException
     {
         String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/test1ApplyNoThresholds.xml";
-        try
-        {
-            ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-            MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
-                    MetricFactory.getInstance( dataFactory )
-                                 .ofMetricProcessorByTimeSingleValuedPairs( config,
-                                                                            Executors.newSingleThreadExecutor(),
-                                                                            null,
-                                                                            (MetricOutputGroup[]) null );
-            SingleValuedPairs pairs = MetricTestDataFactory.getSingleValuedPairsFour();
-            MetricOutputForProjectByTimeAndThreshold results = processor.apply( pairs );
-            MetricOutputMapByTimeAndThreshold<ScalarOutput> bias = results.getScalarOutput()
-                                                                          .get( MetricConstants.BIAS_FRACTION );
-            MetricOutputMapByTimeAndThreshold<ScalarOutput> cod =
-                    results.getScalarOutput()
-                           .get( MetricConstants.COEFFICIENT_OF_DETERMINATION );
-            MetricOutputMapByTimeAndThreshold<ScalarOutput> rho = results.getScalarOutput()
-                                                                         .get( MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
-            MetricOutputMapByTimeAndThreshold<ScalarOutput> mae = results.getScalarOutput()
-                                                                         .get( MetricConstants.MEAN_ABSOLUTE_ERROR );
-            MetricOutputMapByTimeAndThreshold<ScalarOutput> me =
-                    results.getScalarOutput().get( MetricConstants.MEAN_ERROR );
-            MetricOutputMapByTimeAndThreshold<ScalarOutput> rmse = results.getScalarOutput()
-                                                                          .get( MetricConstants.ROOT_MEAN_SQUARE_ERROR );
-            MetricOutputMapByTimeAndThreshold<ScalarOutput> ve = results.getScalarOutput()
-                                                                        .get( MetricConstants.VOLUMETRIC_EFFICIENCY );
 
-            //Test contents
-            assertTrue( "Unexpected difference in " + MetricConstants.BIAS_FRACTION,
-                        bias.getValue( 0 ).getData().equals( 1.6666666666666667 ) );
-            assertTrue( "Unexpected difference in " + MetricConstants.COEFFICIENT_OF_DETERMINATION,
-                        cod.getValue( 0 ).getData().equals( 1.0 ) );
-            assertTrue( "Unexpected difference in " + MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
-                        rho.getValue( 0 ).getData().equals( 1.0 ) );
-            assertTrue( "Unexpected difference in " + MetricConstants.MEAN_ABSOLUTE_ERROR,
-                        mae.getValue( 0 ).getData().equals( 5.0 ) );
-            assertTrue( "Unexpected difference in " + MetricConstants.MEAN_ERROR,
-                        me.getValue( 0 ).getData().equals( 5.0 ) );
-            assertTrue( "Unexpected difference in " + MetricConstants.ROOT_MEAN_SQUARE_ERROR,
-                        rmse.getValue( 0 ).getData().equals( 5.0 ) );
-            assertTrue( "Unexpected difference in " + MetricConstants.VOLUMETRIC_EFFICIENCY,
-                        ve.getValue( 0 ).getData().equals( -0.6666666666666666 ) );
-        }
-        catch ( Exception e )
-        {
-            fail( "Unexpected exception on processing project configuration '" + configPath + "'." );
-        }
+        ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
+        MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
+                MetricFactory.getInstance( dataFactory )
+                             .ofMetricProcessorByTimeSingleValuedPairs( config,
+                                                                        Executors.newSingleThreadExecutor(),
+                                                                        null,
+                                                                        (MetricOutputGroup[]) null );
+        SingleValuedPairs pairs = MetricTestDataFactory.getSingleValuedPairsFour();
+        MetricOutputForProjectByTimeAndThreshold results = processor.apply( pairs );
+        MetricOutputMapByTimeAndThreshold<ScalarOutput> bias = results.getScalarOutput()
+                                                                      .get( MetricConstants.BIAS_FRACTION );
+        MetricOutputMapByTimeAndThreshold<ScalarOutput> cod =
+                results.getScalarOutput()
+                       .get( MetricConstants.COEFFICIENT_OF_DETERMINATION );
+        MetricOutputMapByTimeAndThreshold<ScalarOutput> rho = results.getScalarOutput()
+                                                                     .get( MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
+        MetricOutputMapByTimeAndThreshold<ScalarOutput> mae = results.getScalarOutput()
+                                                                     .get( MetricConstants.MEAN_ABSOLUTE_ERROR );
+        MetricOutputMapByTimeAndThreshold<ScalarOutput> me =
+                results.getScalarOutput().get( MetricConstants.MEAN_ERROR );
+        MetricOutputMapByTimeAndThreshold<ScalarOutput> rmse = results.getScalarOutput()
+                                                                      .get( MetricConstants.ROOT_MEAN_SQUARE_ERROR );
+        MetricOutputMapByTimeAndThreshold<ScalarOutput> ve = results.getScalarOutput()
+                                                                    .get( MetricConstants.VOLUMETRIC_EFFICIENCY );
+
+        //Test contents
+        assertTrue( "Unexpected difference in " + MetricConstants.BIAS_FRACTION,
+                    bias.getValue( 0 ).getData().equals( 1.6666666666666667 ) );
+        assertTrue( "Unexpected difference in " + MetricConstants.COEFFICIENT_OF_DETERMINATION,
+                    cod.getValue( 0 ).getData().equals( 1.0 ) );
+        assertTrue( "Unexpected difference in " + MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
+                    rho.getValue( 0 ).getData().equals( 1.0 ) );
+        assertTrue( "Unexpected difference in " + MetricConstants.MEAN_ABSOLUTE_ERROR,
+                    mae.getValue( 0 ).getData().equals( 5.0 ) );
+        assertTrue( "Unexpected difference in " + MetricConstants.MEAN_ERROR,
+                    me.getValue( 0 ).getData().equals( 5.0 ) );
+        assertTrue( "Unexpected difference in " + MetricConstants.ROOT_MEAN_SQUARE_ERROR,
+                    rmse.getValue( 0 ).getData().equals( 5.0 ) );
+        assertTrue( "Unexpected difference in " + MetricConstants.VOLUMETRIC_EFFICIENCY,
+                    ve.getValue( 0 ).getData().equals( -0.6666666666666666 ) );
     }
 
     /**
@@ -109,57 +109,55 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
      * configuration obtained from testinput/metricProcessorSingleValuedPairsByTimeTest/test1ApplyNoThresholds.xml and 
      * pairs obtained from {@link MetricTestDataFactory#getSingleValuedPairsFour()}. Tests the output for multiple 
      * calls with separate forecast lead times.
+     * 
+     * @throws MetricConfigurationException if the configuration is incorrect
+     * @throws IOException if the input data could not be read
+     * @throws MetricOutputAccessException if the outputs could not be accessed
      */
 
     @Test
-    public void test2ApplyThresholds()
+    public void test2ApplyThresholds() throws IOException, MetricConfigurationException, MetricOutputAccessException
     {
         final DataFactory metIn = DefaultDataFactory.getInstance();
         String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/test2ApplyThresholds.xml";
-        try
-        {
-            ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-            MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
-                    MetricFactory.getInstance( metIn )
-                                 .ofMetricProcessorByTimeSingleValuedPairs( config,
-                                                                            MetricOutputGroup.values() );
-            SingleValuedPairs pairs = MetricTestDataFactory.getSingleValuedPairsFour();
-            final MetadataFactory metFac = metIn.getMetadataFactory();
-            //Generate results for 10 nominal lead times
-            for ( int i = 1; i < 11; i++ )
-            {
-                final TimeWindow window = TimeWindow.of( Instant.MIN,
-                                                         Instant.MAX,
-                                                         ReferenceTime.VALID_TIME,
-                                                         Duration.ofHours( i ) );
-                final Metadata meta = metFac.getMetadata( metFac.getDimension( "CMS" ),
-                                                          metFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ),
-                                                          window );
-                processor.apply( metIn.ofSingleValuedPairs( pairs.getData(), meta ) );
-            }
 
-            //Validate a subset of the data            
-            processor.getCachedMetricOutput().getScalarOutput().forEach( ( key, value ) -> {
-                if ( key.getKey() == MetricConstants.CRITICAL_SUCCESS_INDEX )
-                {
-                    assertTrue( "Expected ten results for the " + key.getKey()
-                                + ": "
-                                + value.size(),
-                                value.size() == 10 );
-                }
-                else
-                {
-                    assertTrue( "Expected twenty results for the " + key.getKey()
-                                + ": "
-                                + value.size(),
-                                value.size() == 20 );
-                }
-            } );
-        }
-        catch ( Exception e )
+        ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
+        MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
+                MetricFactory.getInstance( metIn )
+                             .ofMetricProcessorByTimeSingleValuedPairs( config,
+                                                                        MetricOutputGroup.values() );
+        SingleValuedPairs pairs = MetricTestDataFactory.getSingleValuedPairsFour();
+        final MetadataFactory metFac = metIn.getMetadataFactory();
+        //Generate results for 10 nominal lead times
+        for ( int i = 1; i < 11; i++ )
         {
-            fail( "Unexpected exception on processing project configuration '" + configPath + "'." );
+            final TimeWindow window = TimeWindow.of( Instant.MIN,
+                                                     Instant.MAX,
+                                                     ReferenceTime.VALID_TIME,
+                                                     Duration.ofHours( i ) );
+            final Metadata meta = metFac.getMetadata( metFac.getDimension( "CMS" ),
+                                                      metFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ),
+                                                      window );
+            processor.apply( metIn.ofSingleValuedPairs( pairs.getData(), meta ) );
         }
+
+        //Validate a subset of the data            
+        processor.getCachedMetricOutput().getScalarOutput().forEach( ( key, value ) -> {
+            if ( key.getKey() == MetricConstants.CRITICAL_SUCCESS_INDEX )
+            {
+                assertTrue( "Expected ten results for the " + key.getKey()
+                            + ": "
+                            + value.size(),
+                            value.size() == 10 );
+            }
+            else
+            {
+                assertTrue( "Expected twenty results for the " + key.getKey()
+                            + ": "
+                            + value.size(),
+                            value.size() == 20 );
+            }
+        } );
     }
 
     /**
@@ -379,29 +377,25 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
     /**
      * Tests the construction of a {@link MetricProcessorByTimeSingleValuedPairs} for all valid metrics associated
      * with single-valued inputs.
+     * 
+     * @throws MetricConfigurationException if the configuration is incorrect
+     * @throws IOException if the input data could not be read
      */
 
     @Test
-    public void test4AllValid()
+    public void test4AllValid() throws IOException, MetricConfigurationException
     {
         final DataFactory metIn = DefaultDataFactory.getInstance();
         String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/test4AllValid.xml";
-        try
-        {
-            ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-            MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
-                    MetricFactory.getInstance( metIn )
-                                 .ofMetricProcessorByTimeSingleValuedPairs( config,
-                                                                            MetricOutputGroup.values() );
-            //Check for the expected number of metrics
-            assertTrue( "Unexpected number of metrics.",
-                        processor.metrics.size() == MetricInputGroup.SINGLE_VALUED.getMetrics().size()
-                                                    + MetricInputGroup.DICHOTOMOUS.getMetrics().size() );
-        }
-        catch ( Exception e )
-        {
-            fail( "Unexpected exception on processing project configuration '" + configPath + "'." );
-        }
+        ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
+        MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
+                MetricFactory.getInstance( metIn )
+                             .ofMetricProcessorByTimeSingleValuedPairs( config,
+                                                                        MetricOutputGroup.values() );
+        //Check for the expected number of metrics
+        assertTrue( "Unexpected number of metrics.",
+                    processor.metrics.size() == MetricInputGroup.SINGLE_VALUED.getMetrics().size()
+                                                + MetricInputGroup.DICHOTOMOUS.getMetrics().size() );
     }
 
 

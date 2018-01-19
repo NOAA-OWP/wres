@@ -35,6 +35,10 @@ public class CoefficientOfDetermination extends CorrelationPearsons
     @Override
     public ScalarOutput aggregate(ScalarOutput output)
     {
+        if ( Objects.isNull( output ) )
+        {
+            throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
+        }
         MetricOutputMetadata in = output.getMetadata();
         MetricOutputMetadata meta = getDataFactory().getMetadataFactory().getOutputMetadata(in.getSampleSize(),
                                                                                             in.getDimension(),

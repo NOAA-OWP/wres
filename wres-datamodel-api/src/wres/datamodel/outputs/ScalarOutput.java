@@ -1,7 +1,7 @@
 package wres.datamodel.outputs;
 
 /**
- * A scalar outputs associated with a metric.
+ * A scalar output (a single number) produced by a metric.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1

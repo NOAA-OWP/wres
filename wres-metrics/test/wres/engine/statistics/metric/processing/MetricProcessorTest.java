@@ -2,8 +2,8 @@ package wres.engine.statistics.metric.processing;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
+import java.io.IOException;
 import java.nio.file.Paths;
 
 import org.junit.Test;
@@ -17,6 +17,7 @@ import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
+import wres.engine.statistics.metric.MetricConfigurationException;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.io.config.ProjectConfigPlus;
 
@@ -32,33 +33,29 @@ public final class MetricProcessorTest
 
     /**
      * Tests the {@link MetricProcessor#willCacheMetricOutput()}.
+     * 
+     * @throws MetricConfigurationException if the configuration is incorrect
+     * @throws IOException if the input data could not be read
      */
 
     @Test
-    public void test1WillStoreMetricOutput()
+    public void test1WillStoreMetricOutput() throws IOException, MetricConfigurationException
     {
         final DataFactory metIn = DefaultDataFactory.getInstance();
         String configPath = "testinput/metricProcessorTest/test1AllValid.xml";
-        try
-        {
-            ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-            MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> trueProcessor =
-                    MetricFactory.getInstance( metIn )
-                                 .ofMetricProcessorByTimeSingleValuedPairs( config,
-                                                                            MetricOutputGroup.values() );
-            MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> falseProcessor =
-                    MetricFactory.getInstance( metIn )
-                                 .ofMetricProcessorByTimeSingleValuedPairs( config );
-            //Check for storage
-            assertTrue( "Expected a metric processor that stores metric outputs.",
-                        trueProcessor.willCacheMetricOutput() );
-            assertFalse( "Expected a metric processor that does not store metric outputs.",
-                         falseProcessor.willCacheMetricOutput() );
-        }
-        catch ( Exception e )
-        {
-            fail( "Unexpected exception on processing project configuration '" + configPath + "'." );
-        }
+        ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
+        MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> trueProcessor =
+                MetricFactory.getInstance( metIn )
+                             .ofMetricProcessorByTimeSingleValuedPairs( config,
+                                                                        MetricOutputGroup.values() );
+        MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> falseProcessor =
+                MetricFactory.getInstance( metIn )
+                             .ofMetricProcessorByTimeSingleValuedPairs( config );
+        //Check for storage
+        assertTrue( "Expected a metric processor that stores metric outputs.",
+                    trueProcessor.willCacheMetricOutput() );
+        assertFalse( "Expected a metric processor that does not store metric outputs.",
+                     falseProcessor.willCacheMetricOutput() );
     }
 
     /**
@@ -71,38 +68,34 @@ public final class MetricProcessorTest
      * <li>{@link MetricProcessor#hasMetrics(wres.datamodel.MetricConstants.MetricOutputGroup)}</li>
      * <li>{@link MetricProcessor#hasThresholdMetrics()}</li>
      * </ol>
+     * 
+     * @throws MetricConfigurationException if the configuration is incorrect
+     * @throws IOException if the input data could not be read
      */
 
     @Test
-    public void test2HasMetrics()
+    public void test2HasMetrics() throws IOException, MetricConfigurationException
     {
         final DataFactory metIn = DefaultDataFactory.getInstance();
         String configPath = "testinput/metricProcessorTest/test1AllValid.xml";
-        try
-        {
-            ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
-            MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
-                    MetricFactory.getInstance( metIn )
-                                 .ofMetricProcessorByTimeSingleValuedPairs( config,
-                                                            MetricOutputGroup.values() );
-            //Check for existence of metrics
-            assertTrue( "Expected metrics for '" + MetricInputGroup.SINGLE_VALUED
-                        + "' and '"
-                        + MetricOutputGroup.SCALAR
-                        + ".",
-                        processor.hasMetrics( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCALAR ) );
-            assertTrue( "Expected metrics for '" + MetricInputGroup.SINGLE_VALUED
-                        + "'.",
-                        processor.hasMetrics( MetricInputGroup.SINGLE_VALUED ) );
-            assertTrue( "Expected metrics for '" + MetricOutputGroup.SCALAR
-                        + ".",
-                        processor.hasMetrics( MetricOutputGroup.SCALAR ) );
-            assertTrue( "Expected threshold metrics.", processor.hasThresholdMetrics() );
-        }
-        catch ( Exception e )
-        {
-            fail( "Unexpected exception on processing project configuration '" + configPath + "'." );
-        }
+        ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
+        MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
+                MetricFactory.getInstance( metIn )
+                             .ofMetricProcessorByTimeSingleValuedPairs( config,
+                                                                        MetricOutputGroup.values() );
+        //Check for existence of metrics
+        assertTrue( "Expected metrics for '" + MetricInputGroup.SINGLE_VALUED
+                    + "' and '"
+                    + MetricOutputGroup.SCALAR
+                    + ".",
+                    processor.hasMetrics( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCALAR ) );
+        assertTrue( "Expected metrics for '" + MetricInputGroup.SINGLE_VALUED
+                    + "'.",
+                    processor.hasMetrics( MetricInputGroup.SINGLE_VALUED ) );
+        assertTrue( "Expected metrics for '" + MetricOutputGroup.SCALAR
+                    + ".",
+                    processor.hasMetrics( MetricOutputGroup.SCALAR ) );
+        assertTrue( "Expected threshold metrics.", processor.hasThresholdMetrics() );
     }
 
     /**
@@ -110,67 +103,57 @@ public final class MetricProcessorTest
      * {@link PairConfig#getPoolingWindow()} that is not null. Uses the configuration in 
      * testinput/metricProcessorTest/test3SingleValued.xml and 
      * testinput/metricProcessorTest/test3Ensemble.xml.
+     * 
+     * @throws MetricConfigurationException if the configuration is incorrect
+     * @throws IOException if the input data could not be read
      */
 
     @Test
-    public void test3DisallowNonScores()
+    public void test3DisallowNonScores() throws IOException, MetricConfigurationException
     {
         final DataFactory metIn = DefaultDataFactory.getInstance();
         //Single-valued case
         String configPathSingleValued = "testinput/metricProcessorTest/test3SingleValued.xml";
-        try
+        ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathSingleValued ) ).getProjectConfig();
+        MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
+                MetricFactory.getInstance( metIn )
+                             .ofMetricProcessorByTimeSingleValuedPairs( config,
+                                                                        MetricOutputGroup.values() );
+        //Check that score metrics are defined 
+        assertTrue( "Expected metrics for '" + MetricOutputGroup.SCALAR
+                    + "'.",
+                    processor.hasMetrics( MetricOutputGroup.SCALAR ) );
+        //Check that no non-score metrics are defined
+        for ( MetricOutputGroup next : MetricOutputGroup.values() )
         {
-            ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathSingleValued ) ).getProjectConfig();
-            MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
-                    MetricFactory.getInstance( metIn )
-                                 .ofMetricProcessorByTimeSingleValuedPairs( config,
-                                                            MetricOutputGroup.values() );
-            //Check that score metrics are defined 
-            assertTrue( "Expected metrics for '" + MetricOutputGroup.SCALAR
-                        + "'.",
-                        processor.hasMetrics( MetricOutputGroup.SCALAR ) );
-            //Check that no non-score metrics are defined
-            for ( MetricOutputGroup next : MetricOutputGroup.values() )
+            if ( !next.equals( MetricOutputGroup.SCALAR ) && !next.equals( MetricOutputGroup.VECTOR ) )
             {
-                if ( !next.equals( MetricOutputGroup.SCALAR ) && !next.equals( MetricOutputGroup.VECTOR ) )
-                {
-                    assertFalse( "Did not expect metrics for '" + next
-                                 + "'.",
-                                 processor.hasMetrics( next ) );
-                }
+                assertFalse( "Did not expect metrics for '" + next
+                             + "'.",
+                             processor.hasMetrics( next ) );
             }
         }
-        catch ( Exception e )
-        {
-            fail( "Unexpected exception on processing project configuration '" + configPathSingleValued + "'." );
-        }
+
         //Ensemble case
         String configPathEnsemble = "testinput/metricProcessorTest/test3Ensemble.xml";
-        try
+        ProjectConfig configEnsemble = ProjectConfigPlus.from( Paths.get( configPathEnsemble ) ).getProjectConfig();
+        MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processorEnsemble =
+                MetricFactory.getInstance( metIn )
+                             .ofMetricProcessorByTimeEnsemblePairs( configEnsemble,
+                                                                    MetricOutputGroup.values() );
+        //Check that score metrics are defined 
+        assertTrue( "Expected metrics for '" + MetricOutputGroup.SCALAR
+                    + "'.",
+                    processorEnsemble.hasMetrics( MetricOutputGroup.SCALAR ) );
+        //Check that no non-score metrics are defined
+        for ( MetricOutputGroup next : MetricOutputGroup.values() )
         {
-            ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathEnsemble ) ).getProjectConfig();
-            MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
-                    MetricFactory.getInstance( metIn )
-                                 .ofMetricProcessorByTimeEnsemblePairs( config,
-                                                            MetricOutputGroup.values() );
-            //Check that score metrics are defined 
-            assertTrue( "Expected metrics for '" + MetricOutputGroup.SCALAR
-                        + "'.",
-                        processor.hasMetrics( MetricOutputGroup.SCALAR ) );
-            //Check that no non-score metrics are defined
-            for ( MetricOutputGroup next : MetricOutputGroup.values() )
+            if ( !next.equals( MetricOutputGroup.SCALAR ) && !next.equals( MetricOutputGroup.VECTOR ) )
             {
-                if ( !next.equals( MetricOutputGroup.SCALAR ) && !next.equals( MetricOutputGroup.VECTOR ) )
-                {
-                    assertFalse( "Did not expect metrics for '" + next
-                                 + "'.",
-                                 processor.hasMetrics( next ) );
-                }
+                assertFalse( "Did not expect metrics for '" + next
+                             + "'.",
+                             processorEnsemble.hasMetrics( next ) );
             }
-        }
-        catch ( Exception e )
-        {
-            fail( "Unexpected exception on processing project configuration '" + configPathSingleValued + "'." );
         }
     }
 
