@@ -11,7 +11,7 @@ import wres.io.utilities.Database;
  */
 public final class MeasurementDetails extends CachedDetail<MeasurementDetails, String> {
 	private String unit = null;
-	private Integer measurementunit_id = null;
+	private Integer measurementUnitID = null;
 
 	/**
 	 * Sets the name of the unit of measurement
@@ -22,7 +22,7 @@ public final class MeasurementDetails extends CachedDetail<MeasurementDetails, S
 		if (this.unit == null || !this.unit.equalsIgnoreCase(unit))
 		{
 			this.unit = unit.toLowerCase();
-			this.measurementunit_id = null;
+			this.measurementUnitID = null;
 		}
 	}
 
@@ -38,7 +38,7 @@ public final class MeasurementDetails extends CachedDetail<MeasurementDetails, S
 
 	@Override
 	public Integer getId() {
-		return this.measurementunit_id;
+		return this.measurementUnitID;
 	}
 
 	@Override
@@ -48,7 +48,7 @@ public final class MeasurementDetails extends CachedDetail<MeasurementDetails, S
 
 	@Override
 	public void setID(Integer id) {
-		this.measurementunit_id = id;		
+		this.measurementUnitID = id;
 	}
 	
 	@Override

@@ -170,9 +170,11 @@ public final class Operations {
         boolean successfullyCleaned = FAILURE;
         try {
             Database.clean();
+            Database.refreshStatistics( true );
             successfullyCleaned = SUCCESS;
         }
-        catch (SQLException e) {
+        catch (SQLException e)
+        {
             LOGGER.error(Strings.getStackTrace(e));
         }
         return  successfullyCleaned;
@@ -189,21 +191,22 @@ public final class Operations {
                                      String stop,
                                      boolean failed )
     {
-        try {
+        String address;
+
+        try
+        {
+            address = String.valueOf(InetAddress.getLocalHost());
+        }
+        catch (UnknownHostException e)
+        {
+            LOGGER.warn( "Could not figure out host name", e );
+            address = "Unknown";
+        }
+
+        try
+        {
             String systemConfiguration = SystemSettings.getRawConfiguration();
             String username = SystemSettings.getUserName();
-
-            String address;
-
-            try
-            {
-                address = String.valueOf(InetAddress.getLocalHost());
-            }
-            catch (UnknownHostException e) {
-                LOGGER.warn( "Could not figure out host name", e );
-                address = "Unknown";
-            }
-
 
             // For any arguments that happen to be regular files, read the
             // contents of the first file into the "project" field. Maybe there
@@ -244,7 +247,7 @@ public final class Operations {
                             "'" + start + "'::timestamp, " +
                             "'" + stop + "'::timestamp - '" + start
                             + "'::timestamp" +
-                            ", " + String.valueOf( failed ) + ");";
+                            ", " + failed + ");";
 
             Database.execute( script );
         }

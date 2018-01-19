@@ -84,87 +84,51 @@ public final class SystemSettings extends XMLReader
 	{
 		try
 		{
-			if (reader.getEventType() == XMLStreamConstants.START_ELEMENT)
+			if ( reader.getEventType() == XMLStreamConstants.START_ELEMENT)
 			{
-			    String value;
-			    switch (reader.getLocalName().toLowerCase())
+			    String tagName = reader.getLocalName().toLowerCase();
+
+			    switch (tagName)
                 {
                     case "database":
                         databaseConfiguration = new DatabaseSettings(reader);
                         break;
                     case "maximum_thread_count":
-                        value = XML.getXMLText( reader );
-                        if (value != null && Strings.isNumeric( value ))
-                        {
-                            this.maximumThreadCount = Integer.parseInt( value );
-                        }
+                        this.setMaximumThreadCount( reader );
                         break;
                     case "pool_object_lifespan":
-                        value = XML.getXMLText( reader );
-                        if (value != null && Strings.isNumeric( value ))
-                        {
-                            this.poolObjectLifespan = Integer.parseInt(value);
-                        }
+                        this.setPoolObjectLifespan( reader );
                         break;
                     case "maximum_inserts":
-                        value = XML.getXMLText( reader );
-                        if (value != null && Strings.isNumeric( value ))
-                        {
-                            this.maximumInserts = Integer.parseInt(value);
-                        }
+                        this.setMaximumInserts( reader );
                         break;
                     case "maximum_copies":
-                        value = XML.getXMLText( reader );
-                        if (value != null && Strings.isNumeric( value ))
-                        {
-                            this.maximumCopies = Integer.parseInt(value);
-                        }
+                        this.setMaximumCopies( reader );
                         break;
                     case "update_frequency":
-                        value = XML.getXMLText( reader );
-                        if (value != null && Strings.isNumeric( value ))
-                        {
-                            ProgressMonitor.setUpdateFrequency(Long.parseLong( value ));
-                        }
+                        this.setUpdateFrequency( reader );
                         break;
                     case "fetch_size":
-                        value = XML.getXMLText( reader );
-                        if (value != null && Strings.isNumeric( value ))
-                        {
-                            this.fetchSize = Integer.parseInt(value);
-                        }
+                        this.setFetchSize( reader );
                         break;
                     case "update_progress_monitor":
                         ProgressMonitor.setShouldUpdate(Strings.isTrue(XML.getXMLText(reader)));
                         break;
                     case "default_chart_width":
-                        value = XML.getXMLText( reader );
-                        if (value != null && Strings.isNumeric( value ))
-                        {
-                            this.defaultChartWidth = Integer.parseInt(value);
-                        }
+                        this.setDefaultChartWidth( reader );
                         break;
                     case "default_chart_height":
-                        value = XML.getXMLText( reader );
-                        if (value != null && Strings.isNumeric( value ))
-                        {
-                            this.defaultChartHeight = Integer.parseInt(value);
-                        }
+                        this.setDefaultChartHeight( reader );
                         break;
                     case "netcdf_repo_url":
-                        String URL = XML.getXMLText(reader);
-                        if (Strings.hasValue(URL))
-                        {
-                            this.remoteNetCDFURL = URL;
-                        }
+                        this.setRemoteNetCDFURL( reader );
                         break;
                     case "netcdf_store_path":
-                        String path = XML.getXMLText( reader );
-                        if ( Strings.hasValue( path ) && Strings.isValidPathFormat( path ))
-                        {
-                            this.netcdfStorePath = path;
-                        }
+                        this.setNetcdfStorePath( reader );
                         break;
+                    default:
+                        LOGGER.debug( "The tag '{}' was skipped because it's "
+                                      + "not used in configuration.", tagName );
                 }
 			}
 		}
@@ -178,6 +142,106 @@ public final class SystemSettings extends XMLReader
             throw new IOException( message, xse );
         }
 	}
+
+	private void setMaximumThreadCount(XMLStreamReader reader)
+            throws XMLStreamException
+    {
+        String value = XML.getXMLText( reader );
+        if (value != null && Strings.isNumeric( value ))
+        {
+            this.maximumThreadCount = Integer.parseInt( value );
+        }
+    }
+
+    private void setPoolObjectLifespan(XMLStreamReader reader)
+            throws XMLStreamException
+    {
+        String value = XML.getXMLText( reader );
+        if (value != null && Strings.isNumeric( value ))
+        {
+            this.poolObjectLifespan = Integer.parseInt(value);
+        }
+    }
+
+    private void setMaximumInserts(XMLStreamReader reader)
+            throws XMLStreamException
+    {
+        String value = XML.getXMLText( reader );
+        if (value != null && Strings.isNumeric( value ))
+        {
+            this.maximumInserts = Integer.parseInt(value);
+        }
+    }
+
+    private void setMaximumCopies(XMLStreamReader reader)
+            throws XMLStreamException
+    {
+        String value = XML.getXMLText( reader );
+        if (value != null && Strings.isNumeric( value ))
+        {
+            this.maximumCopies = Integer.parseInt(value);
+        }
+    }
+
+    private void setUpdateFrequency(XMLStreamReader reader)
+            throws XMLStreamException
+    {
+        String value = XML.getXMLText( reader );
+        if (value != null && Strings.isNumeric( value ))
+        {
+            ProgressMonitor.setUpdateFrequency(Long.parseLong( value ));
+        }
+    }
+
+    private void setFetchSize(XMLStreamReader reader)
+            throws XMLStreamException
+    {
+        String value = XML.getXMLText( reader );
+        if (value != null && Strings.isNumeric( value ))
+        {
+            this.fetchSize = Integer.parseInt(value);
+        }
+    }
+
+    private void setDefaultChartWidth(XMLStreamReader reader)
+            throws XMLStreamException
+    {
+        String value = XML.getXMLText( reader );
+        if (value != null && Strings.isNumeric( value ))
+        {
+            this.defaultChartWidth = Integer.parseInt(value);
+        }
+    }
+
+    private void setDefaultChartHeight(XMLStreamReader reader)
+        throws XMLStreamException
+    {
+        String value = XML.getXMLText( reader );
+        if (value != null && Strings.isNumeric( value ))
+        {
+            this.defaultChartHeight = Integer.parseInt(value);
+        }
+    }
+
+    private void setRemoteNetCDFURL(XMLStreamReader reader)
+        throws XMLStreamException
+    {
+        String url = XML.getXMLText(reader);
+        if (Strings.hasValue(url))
+        {
+            this.remoteNetCDFURL = url;
+        }
+    }
+
+    private void setNetcdfStorePath(XMLStreamReader reader)
+        throws XMLStreamException
+    {
+        String path = XML.getXMLText( reader );
+        if ( Strings.hasValue( path ) && Strings.isValidPathFormat( path ))
+        {
+            this.netcdfStorePath = path;
+        }
+    }
 
     /**
      * @return The path where the system should store NetCDF files internally
@@ -277,36 +341,42 @@ public final class SystemSettings extends XMLReader
 	@Override
 	public String toString()
 	{
-		String string_rep = "System Configuration:";
-		string_rep += System.lineSeparator();
-		string_rep += System.lineSeparator();
-		string_rep += "Maximum # of Threads:\t";
-		string_rep += String.valueOf(maximumThreadCount);
-		string_rep += System.lineSeparator();
-		string_rep += "Lifespan of pooled objects (in ms):\t";
-		string_rep += String.valueOf(poolObjectLifespan);
-		string_rep += System.lineSeparator();
-		string_rep += "Most amount of rows that can be loaded from the database at once:\t";
-		string_rep += String.valueOf(fetchSize);
-		string_rep += System.lineSeparator();
-		string_rep += "Maximum number of inserts into the database at any given time:\t";
-		string_rep += String.valueOf(maximumInserts);
-		string_rep += System.lineSeparator();
-		string_rep += System.lineSeparator();
-        string_rep += "Default chart width:\t";
-        string_rep += String.valueOf(defaultChartWidth);
-        string_rep += System.lineSeparator();
-        string_rep += "Default chart height:\t";
-        string_rep += String.valueOf(defaultChartHeight);
-        string_rep += System.lineSeparator();
+		String stringRep = "System Configuration:";
+		stringRep += System.lineSeparator();
+		stringRep += System.lineSeparator();
+		stringRep += "Maximum # of Threads:\t";
+		stringRep += String.valueOf(maximumThreadCount);
+		stringRep += System.lineSeparator();
+		stringRep += "Lifespan of pooled objects (in ms):\t";
+		stringRep += String.valueOf(poolObjectLifespan);
+		stringRep += System.lineSeparator();
+		stringRep += "Most amount of rows that can be loaded from the database at once:\t";
+		stringRep += String.valueOf(fetchSize);
+		stringRep += System.lineSeparator();
+		stringRep += "Maximum number of inserts into the database at any given time:\t";
+		stringRep += String.valueOf(maximumInserts);
+		stringRep += System.lineSeparator();
+		stringRep += System.lineSeparator();
+        stringRep += "Default chart width:\t";
+        stringRep += String.valueOf(defaultChartWidth);
+        stringRep += System.lineSeparator();
+        stringRep += "Default chart height:\t";
+        stringRep += String.valueOf(defaultChartHeight);
+        stringRep += System.lineSeparator();
 
 		if (databaseConfiguration != null)
 		{
-			string_rep += System.lineSeparator();
-			string_rep += databaseConfiguration.toString();
-			string_rep += System.lineSeparator();
+			stringRep += System.lineSeparator();
+			stringRep += databaseConfiguration.toString();
+			stringRep += System.lineSeparator();
 		}
 		
-		return string_rep;
+		return stringRep;
 	}
+
+    @Override
+    protected Logger getLogger()
+    {
+        return LOGGER;
+    }
 }

@@ -9,7 +9,6 @@ import org.slf4j.LoggerFactory;
 
 import wres.io.data.details.VariableDetails;
 import wres.io.utilities.Database;
-import wres.util.Strings;
 
 /**
  * @author Christopher Tubbs
@@ -23,19 +22,19 @@ public final class Variables extends Cache<VariableDetails, String>
     /**
      * The global cache of variables whose details may be accessed through static methods
      */
-	private static Variables INTERNAL_CACHE = null;
+	private static Variables instance = null;
 	private static final Object CACHE_LOCK = new Object();
 
 	private static Variables getCache()
 	{
 		synchronized (CACHE_LOCK)
 		{
-			if (INTERNAL_CACHE == null)
+			if ( instance == null)
 			{
-				INTERNAL_CACHE = new Variables();
-				INTERNAL_CACHE.init();
+				instance = new Variables();
+				instance.init();
 			}
-			return INTERNAL_CACHE;
+			return instance;
 		}
 	}
 	
@@ -150,9 +149,7 @@ public final class Variables extends Cache<VariableDetails, String>
             Connection connection = null;
             ResultSet variables = null;
 
-            // Forces the creation of the details collection
-            // TODO: Find a better solution
-            this.getDetails();
+            this.initializeDetails();
 
             try
             {
@@ -164,20 +161,17 @@ public final class Variables extends Cache<VariableDetails, String>
                 variables = Database.getResults(connection, loadScript);
                 VariableDetails detail;
 
-                while (variables.next()) {
-                    detail = new VariableDetails();
-                    detail.setVariableName(variables.getString("variable_name"));
-                    detail.setMeasurementunitId( Database.getValue( variables, "measurementunit_id" ));
-                    detail.setID(Database.getValue( variables,"variable_id"));
+                while (variables.next())
+				{
+                    detail = VariableDetails.from(variables);
                     this.getKeyIndex().put(detail.getKey(), detail.getId());
-
                     this.getDetails().put(detail.getId(), detail);
                 }
             }
             catch (SQLException error)
             {
-                LOGGER.error("An error was encountered when trying to populate the Variable cache.");
-                LOGGER.error(Strings.getStackTrace(error));
+                LOGGER.error("An error was encountered when trying to populate "
+                             + "the Variable cache.", error);
             }
             finally
             {
@@ -189,8 +183,9 @@ public final class Variables extends Cache<VariableDetails, String>
                     }
                     catch(SQLException e)
                     {
-                        LOGGER.error("An error was encountered when trying to close the result set containing Variable information.");
-                        LOGGER.error(Strings.getStackTrace(e));
+                        LOGGER.error("An error was encountered when trying to"
+                                     + "close the result set containing Variable "
+                                     + "information.", e);
                     }
                 }
 

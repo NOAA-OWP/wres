@@ -1,5 +1,6 @@
 package wres.io.data.details;
 
+import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import wres.io.utilities.Database;
@@ -10,7 +11,16 @@ import wres.io.utilities.Database;
  */
 public final class VariableDetails extends CachedDetail<VariableDetails, String>
 {
-	private String variable_name = null;
+	public static VariableDetails from (ResultSet resultSet) throws SQLException
+	{
+	    VariableDetails details = new VariableDetails();
+        details.setVariableName(resultSet.getString("variable_name"));
+        details.setMeasurementunitId( Database.getValue( resultSet, "measurementunit_id" ));
+        details.setID(Database.getValue( resultSet,"variable_id"));
+        return details;
+	}
+
+	private String variableName = null;
 
     public Integer getMeasurementunitId()
     {
@@ -33,11 +43,11 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
 	 */
 	public void setVariableName(String variable_name)
 	{
-		if (this.variable_name != null && !this.variable_name.equalsIgnoreCase(variable_name))
+		if (this.variableName != null && !this.variableName.equalsIgnoreCase(variable_name))
 		{
 			this.variable_id = null;
 		}
-        this.variable_name = variable_name;
+        this.variableName = variable_name;
 	}
 
 	public String getVariablePositionPartitionName()
@@ -82,7 +92,7 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
 
 	@Override
 	public String getKey() {
-		return this.variable_name;
+		return this.variableName;
 	}
 
 	@Override
@@ -98,13 +108,13 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
 		script += "WITH new_variable_id AS" + NEWLINE;
 		script += "(" + NEWLINE;
 		script += "		INSERT INTO wres.Variable(variable_name, variable_type, measurementunit_id)" + NEWLINE;
-		script += "		SELECT '" + variable_name + "'," + NEWLINE;
+		script += "		SELECT '" + variableName + "'," + NEWLINE;
 		script += "			'Double'," + NEWLINE;
 		script += "			" + measurementunitId + NEWLINE;
 		script += "		WHERE NOT EXISTS (" + NEWLINE;
 		script += "			SELECT 1" + NEWLINE;
 		script += "			FROM wres.Variable" + NEWLINE;
-		script += "			WHERE variable_name = '" + variable_name + "'" + NEWLINE;
+		script += "			WHERE variable_name = '" + variableName + "'" + NEWLINE;
 		script += "		)" + NEWLINE;
 		script += "		RETURNING variable_id" + NEWLINE;
 		script += ")" + NEWLINE;
@@ -115,7 +125,7 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
 		script += "";
 		script += "SELECT variable_id" + NEWLINE;
 		script += "FROM wres.Variable" + NEWLINE;
-		script += "WHERE variable_name = '" + variable_name + "';";
+		script += "WHERE variable_name = '" + variableName + "';";
 		
 		return script;
 	}

@@ -29,13 +29,13 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
 	
 	/**
 	 * Updates the ensemble name if necessary. If the update occurs, the serial id is reset
-	 * @param ensemble_name The new name for the ensemble
+	 * @param ensembleName The new name for the ensemble
 	 */
-	public void setEnsembleName(String ensemble_name)
+	public void setEnsembleName(String ensembleName)
 	{
-		if (this.ensembleName == null || !this.ensembleName.equalsIgnoreCase(ensemble_name))
+		if (this.ensembleName == null || !this.ensembleName.equalsIgnoreCase(ensembleName))
 		{
-			this.ensembleName = ensemble_name;
+			this.ensembleName = ensembleName;
 			this.ensembleID = null;
 		}
 	}
@@ -222,6 +222,15 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
             return equality;
         }
 
+		/**
+		 * Indicates if the key has all three fields filled out
+		 * @return true if all three fields have values
+		 */
+		public boolean isComplete()
+		{
+			return this.fillCount() == 3;
+		}
+
         public short fillCount()
         {
             short count = 0;
@@ -295,37 +304,45 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
          */
         public Integer getSimilarity(EnsembleKey other)
         {
+        	// If the other is non-existent or more fields exist in this key
+			// than the other, we know that this is not a subset of the other
+			// and the similarity needs to be invalidated
             if (other == null || this.fillCount() > other.fillCount())
             {
                 return 0;
             }
+            // If the two keys are equal, we know that there is a perfect
+			// similarity
             else if (this.equals(other))
             {
                 return 3;
             }
 
+            // If the names are the same, we know that there is some similarity
+			// between the two
             if ((this.hasName() && other.hasName()) && this.getEnsembleName().equalsIgnoreCase(other.getEnsembleName()))
             {
-                if(!(this.hasMemberIndex() || other.hasMemberIndex()) || !this.hasMemberIndex())
+            	// If this doesn't have a member index or both are null,
+				// we know that the similarity ends with the name
+                if(!this.hasMemberIndex() || !(this.hasMemberIndex() || other.hasMemberIndex()))
                 {
                     return 1;
                 }
+                // If this has a member index and the other doesn't or they both
+				// do and they are different, we know that this is not a subset
+				// of the other
                 else if ((this.hasMemberIndex() && !other.hasMemberIndex()) ||
                         !this.getMemberIndex().equalsIgnoreCase(other.getMemberIndex()))
                 {
                     return 0;
                 }
-
-                if (!(this.hasQualifier() || other.hasQualifier()) || !this.hasQualifier())
+				// If neither of these have a qualifier or this doesn't have a
+				// qualifier, we know that the similarity is two because we have
+				// passed the testing on member indices
+                else if (!(this.hasQualifier() || other.hasQualifier()) || !this.hasQualifier())
                 {
                     return 2;
                 }
-                else if ((this.hasQualifier() && !other.hasQualifier()) || !this.getQualifierID().equalsIgnoreCase(other.getQualifierID()))
-                {
-                    return 0;
-                }
-
-                return 3;
             }
 
             return 0;
@@ -333,9 +350,9 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
 
         @Override
         public String toString() {
-            return "EnsembleKey: " + String.valueOf(this.ensembleName) + ", " +
-                    String.valueOf(this.memberIndex) + ", " +
-                    String.valueOf(this.qualifierID);
+            return "EnsembleKey: " + this.ensembleName + ", " +
+                    this.memberIndex + ", " +
+                    this.qualifierID;
         }
 
         private final String ensembleName;

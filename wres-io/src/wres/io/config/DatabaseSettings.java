@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.util.Strings;
+import wres.util.XML;
 
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
@@ -232,20 +233,20 @@ final class DatabaseSettings
 
 	/**
 	 * Sets the name of the database to connect to
-	 * @param database_name The name of the database to access
+	 * @param databaseName The name of the database to access
 	 */
-    private void setDatabaseName (String database_name)
+    private void setDatabaseName (String databaseName)
 	{
-		this.databaseName = database_name;
+		this.databaseName = databaseName;
 	}
 
 	/**
 	 * Sets the name of the type of database in use (such as 'mysql', 'postgresql', etc)
-	 * @param database_type The name of the database to connect to
+	 * @param databaseType The name of the database to connect to
 	 */
-    private void setDatabaseType (String database_type)
+    private void setDatabaseType (String databaseType)
 	{
-		this.databaseType = database_type;
+		this.databaseType = databaseType;
 	}
 
 	/**
@@ -282,15 +283,15 @@ final class DatabaseSettings
 	{
 		if (reader.isStartElement())
 		{
-			String tag_name = reader.getLocalName();
+			String tagName = reader.getLocalName();
 			reader.next();
 			if (reader.isCharacters())
 			{
-				int begin_index = reader.getTextStart();
-				int end_index = reader.getTextLength();
-				String value = new String(reader.getTextCharacters(), begin_index, end_index).trim();
+				int beginIndex = reader.getTextStart();
+				int endIndex = reader.getTextLength();
+				String value = new String(reader.getTextCharacters(), beginIndex, endIndex).trim();
 				
-				switch(tag_name)
+				switch(tagName)
 				{
 				case "database_type":
 					setDatabaseType(value);
@@ -317,7 +318,8 @@ final class DatabaseSettings
                     maxIdleTime = Integer.parseInt( value);
 					break;
 				default:
-					LOGGER.error("Tag of type: '" + tag_name + "' is not valid for database configuration.");
+					LOGGER.error("Tag of type: '{}' is not valid for database configuration.",
+                                 tagName);
 				}
 			}
 		}
@@ -336,34 +338,34 @@ final class DatabaseSettings
 	@Override
     public String toString()
 	{
-		String string_rep = "Database Configuration:";
+		String stringRep = "Database Configuration:";
 		
-		string_rep += System.lineSeparator();
-		string_rep += "\t";
-		string_rep += "URL:\t\t";
-		string_rep += String.valueOf(url);
-		string_rep += System.lineSeparator();
-		string_rep += "\t";
-		string_rep += "Username:\t";
-		string_rep += String.valueOf(username);
-		string_rep += System.lineSeparator();
-		string_rep += "\t";
-		string_rep += "Password:\t";
-		string_rep += "(REDACTED)";
-		string_rep += System.lineSeparator();
-		string_rep += "\t";
-		string_rep += "Database Name:\t";
-		string_rep += String.valueOf(databaseName);
-		string_rep += System.lineSeparator();
-		string_rep += "\t";
-		string_rep += "Port:\t\t";
-		string_rep += String.valueOf(port);
-		string_rep += System.lineSeparator();
-		string_rep += "\t";
-		string_rep += "Database Type:\t";
-		string_rep += String.valueOf(databaseType);
+		stringRep += System.lineSeparator();
+		stringRep += "\t";
+		stringRep += "URL:\t\t";
+		stringRep += String.valueOf(url);
+		stringRep += System.lineSeparator();
+		stringRep += "\t";
+		stringRep += "Username:\t";
+		stringRep += String.valueOf(username);
+		stringRep += System.lineSeparator();
+		stringRep += "\t";
+		stringRep += "Password:\t";
+		stringRep += "(REDACTED)";
+		stringRep += System.lineSeparator();
+		stringRep += "\t";
+		stringRep += "Database Name:\t";
+		stringRep += String.valueOf(databaseName);
+		stringRep += System.lineSeparator();
+		stringRep += "\t";
+		stringRep += "Port:\t\t";
+		stringRep += String.valueOf(port);
+		stringRep += System.lineSeparator();
+		stringRep += "\t";
+		stringRep += "Database Type:\t";
+		stringRep += String.valueOf(databaseType);
 		
-		return string_rep;
+		return stringRep;
 	}
 
 	private void applySystemPropertyOverrides()

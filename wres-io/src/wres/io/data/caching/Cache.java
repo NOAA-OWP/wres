@@ -46,12 +46,19 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
 
 	final ConcurrentMap<Integer, T> getDetails()
 	{
-	    synchronized (DETAIL_LOCK) {
-            if (this.details == null) {
-                this.details = new ConcurrentHashMap<>();
-            }
-            return this.details;
-        }
+		this.initializeDetails();
+		return this.details;
+	}
+
+	protected void initializeDetails()
+	{
+		synchronized ( DETAIL_LOCK )
+		{
+			if (this.details == null)
+			{
+				this.details = new ConcurrentHashMap<>( this.getMaxDetails() );
+			}
+		}
 	}
 	/**
 	 * @return The maximum number of details that may be cached at any given time
