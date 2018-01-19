@@ -593,9 +593,8 @@ public class ProcessorHelper
                     plotType = nextConfig.getPlotType();
                 }
                 
-                // We use the user-configured graphical template attribute if specified.
-                // We use this default template resource name if that wasn't specified.
-                if (templateResourceName == null)
+                // Override template name with metric specific name.
+                if (templateResourceName != null)
                 {
                     templateResourceName = nextConfig.getTemplateResourceName();
                 }
@@ -700,9 +699,8 @@ public class ProcessorHelper
                     plotType = nextConfig.getPlotType();
                 }
 
-                // We use the user-configured graphical template attribute if specified.
-                // We use this default template resource name if that wasn't specified.
-                if (templateResourceName == null)
+                // Override template name with metric specific name.
+                if (templateResourceName != null)
                 {
                     templateResourceName = nextConfig.getTemplateResourceName();
                 }
@@ -812,10 +810,9 @@ public class ProcessorHelper
                 {
                     plotType = nextConfig.getPlotType();
                 }
-            
-                // We use the user-configured graphical template attribute if specified.
-                // We use this default template resource name if that wasn't specified.
-                if (templateResourceName == null)
+
+                // Override template name with metric specific name.
+                if (templateResourceName != null)
                 {
                     templateResourceName = nextConfig.getTemplateResourceName();
                 }
@@ -927,10 +924,14 @@ public class ProcessorHelper
             String graphicsString = projectConfigPlus.getGraphicsStrings().get( destConfig );
             // Build the chart engine
             MetricConfig nextConfig = getNamedConfigOrAllValid( metricId, config );
-            String templateResourceName = null;
+            String templateResourceName = destConfig.getGraphical().getTemplate();
             if ( Objects.nonNull( nextConfig ) )
             {
-                templateResourceName = nextConfig.getTemplateResourceName();
+                // Override template name with metric specific name.
+                if (templateResourceName != null)
+                {
+                    templateResourceName = nextConfig.getTemplateResourceName();
+                }
             }
 
             final Map<Pair<TimeWindow, Threshold>, ChartEngine> engines =
