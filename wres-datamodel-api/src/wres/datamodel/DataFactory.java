@@ -29,6 +29,7 @@ import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
+import wres.datamodel.outputs.DurationOutput;
 import wres.datamodel.outputs.MapKey;
 import wres.datamodel.outputs.MatrixOutput;
 import wres.datamodel.outputs.MetricOutput;
@@ -757,6 +758,16 @@ public interface DataFactory
 
     <S, T> PairedOutput<S, T> ofPairedOutput( List<Pair<S, T>> output,
                                         MetricOutputMetadata meta );
+    
+    /**
+     * Return a {@link DurationOutput}.
+     * 
+     * @param output the output data
+     * @param meta the metadata
+     * @return a {@link DurationOutput}
+     */
+
+    DurationOutput ofDurationOutput( final Duration output, final MetricOutputMetadata meta );    
 
     /**
      * Returns a {@link MapKey} to map a {@link MetricOutput} by an elementary key.
