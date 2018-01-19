@@ -584,7 +584,7 @@ public class ProcessorHelper
             MetricConfig nextConfig = getNamedConfigOrAllValid( metricId, projectConfigPlus.getProjectConfig() );
             // Default to global type parameter
             PlotTypeSelection plotType = destConfig.getGraphical().getPlotType();
-            String templateResourceName = null;
+            String templateResourceName = destConfig.getGraphical().getTemplate();
             if ( Objects.nonNull( nextConfig ) )
             {
                 // Local type parameter
@@ -592,7 +592,13 @@ public class ProcessorHelper
                 {
                     plotType = nextConfig.getPlotType();
                 }
-                templateResourceName = nextConfig.getTemplateResourceName();
+                
+                // We use the user-configured graphical template attribute if specified.
+                // We use this default template resource name if that wasn't specified.
+                if (templateResourceName == null)
+                {
+                    templateResourceName = nextConfig.getTemplateResourceName();
+                }
             }
 
             ChartEngine engine = ChartEngineFactory.buildGenericScalarOutputChartEngine( scalarResults,
@@ -685,7 +691,7 @@ public class ProcessorHelper
                     getNamedConfigOrAllValid( metricId, config );
             // Default to global type parameter
             PlotTypeSelection plotType = destConfig.getGraphical().getPlotType();
-            String templateResourceName = null;
+            String templateResourceName = destConfig.getGraphical().getTemplate();
             if ( Objects.nonNull( nextConfig ) )
             {
                 // Local type parameter
@@ -693,7 +699,13 @@ public class ProcessorHelper
                 {
                     plotType = nextConfig.getPlotType();
                 }
-                templateResourceName = nextConfig.getTemplateResourceName();
+
+                // We use the user-configured graphical template attribute if specified.
+                // We use this default template resource name if that wasn't specified.
+                if (templateResourceName == null)
+                {
+                    templateResourceName = nextConfig.getTemplateResourceName();
+                }
             }
             Map<MetricConstants, ChartEngine> engines =
                     ChartEngineFactory.buildVectorOutputChartEngine( vectorResults,
@@ -792,7 +804,7 @@ public class ProcessorHelper
             MetricConfig nextConfig = getNamedConfigOrAllValid( metricId, config );
             // Default to global type parameter
             PlotTypeSelection plotType = destConfig.getGraphical().getPlotType();
-            String templateResourceName = null;
+            String templateResourceName = destConfig.getGraphical().getTemplate();
             if ( Objects.nonNull( nextConfig ) )
             {
                 // Local type parameter
@@ -800,7 +812,13 @@ public class ProcessorHelper
                 {
                     plotType = nextConfig.getPlotType();
                 }
-                templateResourceName = nextConfig.getTemplateResourceName();
+            
+                // We use the user-configured graphical template attribute if specified.
+                // We use this default template resource name if that wasn't specified.
+                if (templateResourceName == null)
+                {
+                    templateResourceName = nextConfig.getTemplateResourceName();
+                }
             }
 
             final Map<Object, ChartEngine> engines =
