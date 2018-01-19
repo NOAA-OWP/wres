@@ -1,5 +1,6 @@
 package wres.datamodel;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -31,8 +32,8 @@ import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
+import wres.datamodel.outputs.DurationOutput;
 import wres.datamodel.outputs.MapKey;
-import wres.datamodel.outputs.PairedOutput;
 import wres.datamodel.outputs.MatrixOutput;
 import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold.MetricOutputForProjectByTimeAndThresholdBuilder;
@@ -41,6 +42,7 @@ import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
 import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.datamodel.outputs.MultiVectorOutput;
+import wres.datamodel.outputs.PairedOutput;
 import wres.datamodel.outputs.ScalarOutput;
 
 /**
@@ -300,11 +302,16 @@ public class DefaultDataFactory implements DataFactory
         return new SafeBoxPlotOutput( output, probabilities, meta, domainAxisDimension, rangeAxisDimension );
     }
 
-
     @Override
     public <S, T> PairedOutput<S, T> ofPairedOutput( List<Pair<S, T>> output, MetricOutputMetadata meta )
     {
         return new SafePairedOutput<>(output, meta);
+    }
+    
+    @Override
+    public DurationOutput ofDurationOutput( Duration output, MetricOutputMetadata meta )
+    {
+        return new SafeDurationOutput( output, meta );
     }
     
     @Override

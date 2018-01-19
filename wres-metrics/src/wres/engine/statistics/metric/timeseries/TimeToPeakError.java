@@ -28,7 +28,7 @@ import wres.engine.statistics.metric.MetricParameterException;
  * @version 0.1
  * @since 0.4
  */
-class TimeToPeakError extends Metric<TimeSeriesOfSingleValuedPairs, PairedOutput<Instant, Duration>>
+public class TimeToPeakError extends Metric<TimeSeriesOfSingleValuedPairs, PairedOutput<Instant, Duration>>
 {
 
     @Override
@@ -87,7 +87,7 @@ class TimeToPeakError extends Metric<TimeSeriesOfSingleValuedPairs, PairedOutput
      * A {@link MetricBuilder} to build the metric.
      */
 
-    static class TimeToPeakErrorBuilder
+    public static class TimeToPeakErrorBuilder
             extends MetricBuilder<TimeSeriesOfSingleValuedPairs, PairedOutput<Instant, Duration>>
     {
         @Override

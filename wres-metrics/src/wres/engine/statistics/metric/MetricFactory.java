@@ -17,9 +17,9 @@ import wres.datamodel.inputs.pairs.PairedInput;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.MatrixOutput;
+import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.ScalarOutput;
-import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.engine.statistics.metric.Metric.MetricBuilder;
 import wres.engine.statistics.metric.MetricCollection.MetricCollectionBuilder;
 import wres.engine.statistics.metric.SampleSize.SampleSizeBuilder;
@@ -68,6 +68,8 @@ import wres.engine.statistics.metric.singlevalued.QuantileQuantileDiagram;
 import wres.engine.statistics.metric.singlevalued.RootMeanSquareError;
 import wres.engine.statistics.metric.singlevalued.VolumetricEfficiency;
 import wres.engine.statistics.metric.singlevalued.VolumetricEfficiency.VolumetricEfficiencyBuilder;
+import wres.engine.statistics.metric.timeseries.TimeToPeakError;
+import wres.engine.statistics.metric.timeseries.TimeToPeakError.TimeToPeakErrorBuilder;
 
 /**
  * <p>
@@ -140,7 +142,7 @@ public class MetricFactory
     {
         return ofMetricProcessorByTimeSingleValuedPairs( config, null, null, mergeList );
     }
-    
+
     /**
      * Returns an instance of a {@link MetricProcessor} for processing {@link EnsemblePairs}. Optionally, retain 
      * and merge the results associated with specific {@link MetricOutputGroup} across successive calls to
@@ -155,11 +157,11 @@ public class MetricFactory
 
     public MetricProcessorByTime<EnsemblePairs>
             ofMetricProcessorByTimeEnsemblePairs( final ProjectConfig config,
-                                                      final MetricOutputGroup... mergeList )
+                                                  final MetricOutputGroup... mergeList )
                     throws MetricConfigurationException
     {
         return ofMetricProcessorByTimeEnsemblePairs( config, null, null, mergeList );
-    }    
+    }
 
     /**
      * Returns an instance of a {@link MetricProcessor} for processing {@link SingleValuedPairs}. Optionally, retain 
@@ -218,7 +220,7 @@ public class MetricFactory
                                                        thresholdExecutor,
                                                        metricExecutor,
                                                        mergeList );
-    }    
+    }
 
     /**
      * Returns a {@link MetricCollection} of metrics that consume {@link SingleValuedPairs} and produce
@@ -246,8 +248,9 @@ public class MetricFactory
      * @throws IllegalArgumentException if the metric identifier is not recognized 
      */
 
-    public MetricCollection<SingleValuedPairs, MultiValuedScoreOutput> ofSingleValuedVectorCollection( MetricConstants... metric )
-            throws MetricParameterException
+    public MetricCollection<SingleValuedPairs, MultiValuedScoreOutput>
+            ofSingleValuedVectorCollection( MetricConstants... metric )
+                    throws MetricParameterException
     {
         return ofSingleValuedVectorCollection( null, metric );
     }
@@ -358,8 +361,9 @@ public class MetricFactory
      * @throws IllegalArgumentException if the metric identifier is not recognized 
      */
 
-    public MetricCollection<EnsemblePairs, MultiValuedScoreOutput> ofEnsembleVectorCollection( MetricConstants... metric )
-            throws MetricParameterException
+    public MetricCollection<EnsemblePairs, MultiValuedScoreOutput>
+            ofEnsembleVectorCollection( MetricConstants... metric )
+                    throws MetricParameterException
     {
         return ofEnsembleVectorCollection( null, metric );
     }
@@ -431,9 +435,10 @@ public class MetricFactory
      * @throws IllegalArgumentException if the metric identifier is not recognized 
      */
 
-    public MetricCollection<SingleValuedPairs, MultiValuedScoreOutput> ofSingleValuedVectorCollection( ExecutorService executor,
-                                                                                             MetricConstants... metric )
-            throws MetricParameterException
+    public MetricCollection<SingleValuedPairs, MultiValuedScoreOutput>
+            ofSingleValuedVectorCollection( ExecutorService executor,
+                                            MetricConstants... metric )
+                    throws MetricParameterException
     {
         final MetricCollectionBuilder<SingleValuedPairs, MultiValuedScoreOutput> builder = MetricCollectionBuilder.of();
         for ( MetricConstants next : metric )
@@ -485,7 +490,8 @@ public class MetricFactory
                                                    MetricConstants... metric )
                     throws MetricParameterException
     {
-        final MetricCollectionBuilder<DiscreteProbabilityPairs, MultiValuedScoreOutput> builder = MetricCollectionBuilder.of();
+        final MetricCollectionBuilder<DiscreteProbabilityPairs, MultiValuedScoreOutput> builder =
+                MetricCollectionBuilder.of();
         for ( MetricConstants next : metric )
         {
             builder.add( ofDiscreteProbabilityVector( next ) );
@@ -604,7 +610,7 @@ public class MetricFactory
      */
 
     public MetricCollection<EnsemblePairs, MultiValuedScoreOutput> ofEnsembleVectorCollection( ExecutorService executor,
-                                                                                     MetricConstants... metric )
+                                                                                               MetricConstants... metric )
             throws MetricParameterException
     {
         final MetricCollectionBuilder<EnsemblePairs, MultiValuedScoreOutput> builder = MetricCollectionBuilder.of();
@@ -757,8 +763,9 @@ public class MetricFactory
      * @throws IllegalArgumentException if the metric identifier is not recognized
      */
 
-    public Metric<DiscreteProbabilityPairs, MultiValuedScoreOutput> ofDiscreteProbabilityVector( MetricConstants metric )
-            throws MetricParameterException
+    public Metric<DiscreteProbabilityPairs, MultiValuedScoreOutput>
+            ofDiscreteProbabilityVector( MetricConstants metric )
+                    throws MetricParameterException
     {
         switch ( metric )
         {
@@ -1338,7 +1345,7 @@ public class MetricFactory
     {
         return (BoxPlotErrorByForecast) new BoxPlotErrorByForecastBuilder().setOutputFactory( outputFactory ).build();
     }
-    
+
     /**
      * Return a default {@link VolumetricEfficiency} function.
      * 
@@ -1349,7 +1356,19 @@ public class MetricFactory
     public VolumetricEfficiency ofVolumetricEfficiency() throws MetricParameterException
     {
         return (VolumetricEfficiency) new VolumetricEfficiencyBuilder().setOutputFactory( outputFactory ).build();
-    }    
+    }
+
+    /**
+     * Return a default {@link TimeToPeakError} function.
+     * 
+     * @return a default {@link TimeToPeakError} function
+     * @throws MetricParameterException if one or more parameter values is incorrect
+     */
+
+    public TimeToPeakError ofTimeToPeakError() throws MetricParameterException
+    {
+        return (TimeToPeakError) new TimeToPeakErrorBuilder().setOutputFactory( outputFactory ).build();
+    }
 
     /**
      * Hidden constructor.
