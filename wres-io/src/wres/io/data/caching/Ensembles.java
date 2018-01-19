@@ -112,7 +112,7 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
 	 * doesn't exist, one is created.  Priority is given via: name, index, then qualifier
 	 * @param grouping The key containing some permutation of name, index, and qualifier
 	 * @return The ID representing the ensemble in the database
-	 * @throws SQLException
+	 * @throws SQLException if the ID could not be returned
 	 */
 	@Override
 	public Integer getID(final EnsembleKey grouping) throws SQLException

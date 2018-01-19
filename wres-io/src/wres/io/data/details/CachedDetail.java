@@ -37,6 +37,7 @@ public abstract class CachedDetail<U, V extends Comparable<V>> implements Compar
 	
 	/**
 	 * @return A script used to select the ID of the detail in the data base and insert it if need be
+	 * @throws SQLException if the insert select statement failed
 	 */
 	protected abstract String getInsertSelectStatement() throws SQLException;
 	
