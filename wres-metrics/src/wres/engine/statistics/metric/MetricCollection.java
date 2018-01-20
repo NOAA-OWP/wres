@@ -359,7 +359,7 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
             throw new MetricParameterException( "Cannot construct a metric collection with an empty list of "
                                                 + "metrics." );
         }
-        for ( Metric<?, ?> next : metrics )
+        for ( Metric<S, T> next : metrics )
         {
             if ( Objects.isNull( next ) )
             {
