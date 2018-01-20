@@ -29,6 +29,7 @@
             <xs:enumeration value="netCDF" />
             <xs:enumeration value="datacard" />
             <xs:enumeration value="usgs" />
+            <xs:enumeration value="persistence" />
             <!-- Neither "archive" nor "all" make sense to me. The idea is to
                  help describe the actual format of the data when it is not
                  obvious from examining it. Filtering/conditioning is in another
