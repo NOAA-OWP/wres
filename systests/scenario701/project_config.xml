@@ -38,10 +38,9 @@
         <metric><name>root mean square error</name></metric>
         <metric><name>mean square error</name></metric>
         <metric> <name>sample size</name> </metric>
-
-        <!-- This can end up pulling a MOUNTAIN of data
     </metrics>
     <outputs>
+        <!-- This can end up pulling a MOUNTAIN of data
         <destination type="pairs" decimalFormat="0.000000">
             <path>output/</path>
         </destination>
