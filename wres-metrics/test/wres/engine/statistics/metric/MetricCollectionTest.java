@@ -20,8 +20,8 @@ import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.inputs.pairs.MulticategoryPairs;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.outputs.MetricOutputMapByMetric;
-import wres.datamodel.outputs.ScalarOutput;
 import wres.datamodel.outputs.MultiValuedScoreOutput;
+import wres.datamodel.outputs.ScalarOutput;
 import wres.engine.statistics.metric.MetricCollection.MetricCollectionBuilder;
 import wres.engine.statistics.metric.singlevalued.DoubleErrorScore;
 
@@ -627,7 +627,7 @@ public class MetricCollectionTest
         final MetricOutputMapByMetric<ScalarOutput> d = n.apply( input );
 
         //Print them
-        //d.stream().forEach(g -> System.out.println(g.getData()));
+        //d.forEach( ( a, b ) -> System.out.println( a.getKey() + " " + b.getData() ) );
 
         //Check them   
         final Double expectedFirst = 0.9999999910148981;

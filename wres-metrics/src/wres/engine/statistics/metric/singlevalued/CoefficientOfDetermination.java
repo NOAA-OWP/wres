@@ -40,12 +40,12 @@ public class CoefficientOfDetermination extends CorrelationPearsons
             throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
         }
         MetricOutputMetadata in = output.getMetadata();
-        MetricOutputMetadata meta = getDataFactory().getMetadataFactory().getOutputMetadata(in.getSampleSize(),
-                                                                                            in.getDimension(),
-                                                                                            in.getInputDimension(),
-                                                                                            getID(),
-                                                                                            MetricConstants.MAIN,
-                                                                                            in.getIdentifier());
+        MetricOutputMetadata meta = getDataFactory().getMetadataFactory().getOutputMetadata( in.getSampleSize(),
+                                                                                             in.getDimension(),
+                                                                                             in.getInputDimension(),
+                                                                                             MetricConstants.COEFFICIENT_OF_DETERMINATION,
+                                                                                             MetricConstants.MAIN,
+                                                                                             in.getIdentifier() );
         return getDataFactory().ofScalarOutput(Math.pow(output.getData(), 2), meta);
     }
 
