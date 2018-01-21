@@ -13,10 +13,9 @@ import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.ScalarOutput;
+import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
-import wres.engine.statistics.metric.singlevalued.BiasFraction;
 import wres.engine.statistics.metric.singlevalued.BiasFraction.BiasFractionBuilder;
 
 /**
@@ -57,8 +56,8 @@ public final class BiasFractionTest
         final BiasFraction bf = b.build();
 
         //Check the results
-        final ScalarOutput actual = bf.apply( input );
-        final ScalarOutput expected = outF.ofScalarOutput( 0.056796298, m1 );
+        final DoubleScoreOutput actual = bf.apply( input );
+        final DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 0.056796298, m1 );
         assertTrue( "Actual: " + actual.getData().doubleValue()
                     + ". Expected: "
                     + expected.getData().doubleValue()

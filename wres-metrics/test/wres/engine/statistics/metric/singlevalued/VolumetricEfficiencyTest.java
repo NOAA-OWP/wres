@@ -19,7 +19,7 @@ import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.outputs.ScalarOutput;
+import wres.datamodel.outputs.ScoreOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.engine.statistics.metric.singlevalued.VolumetricEfficiency.VolumetricEfficiencyBuilder;
@@ -80,9 +80,9 @@ public final class VolumetricEfficiencyTest
                     ve.getScoreOutputGroup() == ScoreOutputGroup.NONE );
 
         //Check the results
-        final ScalarOutput actual = ve.apply( input );
+        final ScoreOutput actual = ve.apply( input );
 
-        final ScalarOutput expected = outF.ofScalarOutput( 0.657420176533252, m1 );
+        final ScoreOutput expected = outF.ofDoubleScoreOutput( 0.657420176533252, m1 );
         assertTrue( "Actual: " + actual.getData() + ". Expected: " + expected.getData() + ".",
                     actual.equals( expected ) );
     }

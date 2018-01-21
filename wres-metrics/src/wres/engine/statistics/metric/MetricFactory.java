@@ -18,10 +18,10 @@ import wres.datamodel.inputs.pairs.MulticategoryPairs;
 import wres.datamodel.inputs.pairs.PairedInput;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.outputs.BoxPlotOutput;
+import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MatrixOutput;
 import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.datamodel.outputs.MultiVectorOutput;
-import wres.datamodel.outputs.ScalarOutput;
 import wres.engine.statistics.metric.MetricCollection.MetricCollectionBuilder;
 import wres.engine.statistics.metric.SampleSize.SampleSizeBuilder;
 import wres.engine.statistics.metric.categorical.ContingencyTable;
@@ -105,10 +105,10 @@ public class MetricFactory
     private DataFactory outputFactory = null;
 
     /**
-     * Cached {@link Metric} that consume {@link SingleValuedPairs} and produce {@link ScalarOutput}. 
+     * Cached {@link Metric} that consume {@link SingleValuedPairs} and produce {@link DoubleScoreOutput}. 
      */
 
-    private Map<MetricConstants, Metric<SingleValuedPairs, ScalarOutput>> singleValuedScalar;
+    private Map<MetricConstants, Metric<SingleValuedPairs, DoubleScoreOutput>> singleValuedScalar;
 
     /**
      * Cached {@link Metric} that consume {@link SingleValuedPairs} and produce {@link MultiValuedScoreOutput}. 
@@ -123,16 +123,16 @@ public class MetricFactory
     private Map<MetricConstants, Metric<EnsemblePairs, MultiValuedScoreOutput>> ensembleVector;
 
     /**
-     * Cached {@link Collectable} that consume {@link SingleValuedPairs} and produce {@link ScalarOutput}. 
+     * Cached {@link Collectable} that consume {@link SingleValuedPairs} and produce {@link DoubleScoreOutput}. 
      */
 
-    private Map<MetricConstants, Collectable<SingleValuedPairs, ScalarOutput, ScalarOutput>> singleValuedScalarCol;
+    private Map<MetricConstants, Collectable<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput>> singleValuedScalarCol;
 
     /**
-     * Cached {@link Collectable} that consume {@link DichotomousPairs} and produce {@link ScalarOutput}. 
+     * Cached {@link Collectable} that consume {@link DichotomousPairs} and produce {@link DoubleScoreOutput}. 
      */
 
-    private Map<MetricConstants, Collectable<DichotomousPairs, MatrixOutput, ScalarOutput>> dichotomousScalarCol;
+    private Map<MetricConstants, Collectable<DichotomousPairs, MatrixOutput, DoubleScoreOutput>> dichotomousScalarCol;
 
     /**
      * Cached {@link Metric} that consume {@link DiscreteProbabilityPairs} and produce {@link MultiValuedScoreOutput}. 
@@ -306,7 +306,7 @@ public class MetricFactory
 
     /**
      * <p>Returns a {@link MetricCollection} of metrics that consume {@link SingleValuedPairs} and produce
-     * {@link ScalarOutput}.</p>
+     * {@link DoubleScoreOutput}.</p>
      * 
      * <p>Uses the {@link ForkJoinPool#commonPool()} for execution.</p>
      * 
@@ -316,7 +316,7 @@ public class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized
      */
 
-    public MetricCollection<SingleValuedPairs, ScalarOutput, ScalarOutput>
+    public MetricCollection<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput>
             ofSingleValuedScalarCollection( MetricConstants... metric )
                     throws MetricParameterException
     {
@@ -378,7 +378,7 @@ public class MetricFactory
 
     /**
      * <p>Returns a {@link MetricCollection} of metrics that consume {@link DichotomousPairs} and produce
-     * {@link ScalarOutput}.</p>
+     * {@link DoubleScoreOutput}.</p>
      * 
      * <p>Uses the {@link ForkJoinPool#commonPool()} for execution.</p>
      * 
@@ -388,7 +388,7 @@ public class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized
      */
 
-    public MetricCollection<DichotomousPairs, MatrixOutput, ScalarOutput>
+    public MetricCollection<DichotomousPairs, MatrixOutput, DoubleScoreOutput>
             ofDichotomousScalarCollection( MetricConstants... metric )
                     throws MetricParameterException
     {
@@ -433,7 +433,7 @@ public class MetricFactory
 
     /**
      * <p>Returns a {@link MetricCollection} of metrics that consume {@link EnsemblePairs} and produce
-     * {@link ScalarOutput}.</p>
+     * {@link DoubleScoreOutput}.</p>
      * 
      * <p>Uses the {@link ForkJoinPool#commonPool()} for execution.</p>
      * 
@@ -443,7 +443,7 @@ public class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized 
      */
 
-    public MetricCollection<EnsemblePairs, ScalarOutput, ScalarOutput>
+    public MetricCollection<EnsemblePairs, DoubleScoreOutput, DoubleScoreOutput>
             ofEnsembleScalarCollection( MetricConstants... metric )
                     throws MetricParameterException
     {
@@ -507,7 +507,7 @@ public class MetricFactory
 
     /**
      * Returns a {@link MetricCollection} of metrics that consume {@link SingleValuedPairs} and produce
-     * {@link ScalarOutput}.
+     * {@link DoubleScoreOutput}.
      * 
      * @param executor an optional {@link ExecutorService} for executing the metrics
      * @param metric the metric identifiers
@@ -516,12 +516,12 @@ public class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized
      */
 
-    public MetricCollection<SingleValuedPairs, ScalarOutput, ScalarOutput>
+    public MetricCollection<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput>
             ofSingleValuedScalarCollection( ExecutorService executor,
                                             MetricConstants... metric )
                     throws MetricParameterException
     {
-        final MetricCollectionBuilder<SingleValuedPairs, ScalarOutput, ScalarOutput> builder =
+        final MetricCollectionBuilder<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput> builder =
                 MetricCollectionBuilder.of();
         // Build the store if required
         buildSingleValuedScalarStore();
@@ -636,7 +636,7 @@ public class MetricFactory
 
     /**
      * Returns a {@link MetricCollection} of metrics that consume {@link DichotomousPairs} and produce
-     * {@link ScalarOutput}.
+     * {@link DoubleScoreOutput}.
      * 
      * @param executor an optional {@link ExecutorService} for executing the metrics
      * @param metric the metric identifiers
@@ -645,14 +645,14 @@ public class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized 
      */
 
-    public MetricCollection<DichotomousPairs, MatrixOutput, ScalarOutput>
+    public MetricCollection<DichotomousPairs, MatrixOutput, DoubleScoreOutput>
             ofDichotomousScalarCollection( ExecutorService executor,
                                            MetricConstants... metric )
                     throws MetricParameterException
     {
         // Build store if required
         buildDichotomousScalarStore();
-        final MetricCollectionBuilder<DichotomousPairs, MatrixOutput, ScalarOutput> builder =
+        final MetricCollectionBuilder<DichotomousPairs, MatrixOutput, DoubleScoreOutput> builder =
                 MetricCollectionBuilder.of();
         for ( MetricConstants next : metric )
         {
@@ -726,7 +726,7 @@ public class MetricFactory
 
     /**
      * Returns a {@link MetricCollection} of metrics that consume {@link EnsemblePairs} and produce
-     * {@link ScalarOutput}.
+     * {@link DoubleScoreOutput}.
      * 
      * @param executor an optional {@link ExecutorService} for executing the metrics
      * @param metric the metric identifiers
@@ -735,12 +735,12 @@ public class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized
      */
 
-    public MetricCollection<EnsemblePairs, ScalarOutput, ScalarOutput>
+    public MetricCollection<EnsemblePairs, DoubleScoreOutput, DoubleScoreOutput>
             ofEnsembleScalarCollection( ExecutorService executor,
                                         MetricConstants... metric )
                     throws MetricParameterException
     {
-        final MetricCollectionBuilder<EnsemblePairs, ScalarOutput, ScalarOutput> builder =
+        final MetricCollectionBuilder<EnsemblePairs, DoubleScoreOutput, DoubleScoreOutput> builder =
                 MetricCollectionBuilder.of();
         for ( MetricConstants next : metric )
         {
@@ -835,7 +835,7 @@ public class MetricFactory
     }
 
     /**
-     * Returns a {@link Metric} that consumes {@link SingleValuedPairs} and produces {@link ScalarOutput}.
+     * Returns a {@link Metric} that consumes {@link SingleValuedPairs} and produces {@link DoubleScoreOutput}.
      * 
      * @param metric the metric identifier
      * @return the metric
@@ -843,7 +843,7 @@ public class MetricFactory
      * @throws IllegalArgumentException if the metric identifier is not recognized
      */
 
-    public Metric<SingleValuedPairs, ScalarOutput> ofSingleValuedScalar( MetricConstants metric )
+    public Metric<SingleValuedPairs, DoubleScoreOutput> ofSingleValuedScalar( MetricConstants metric )
             throws MetricParameterException
     {
         // Build store if required
@@ -934,7 +934,7 @@ public class MetricFactory
     }
 
     /**
-     * Returns a {@link Metric} that consumes {@link DichotomousPairs} and produces {@link ScalarOutput}.
+     * Returns a {@link Metric} that consumes {@link DichotomousPairs} and produces {@link DoubleScoreOutput}.
      * 
      * @param metric the metric identifier
      * @return a metric
@@ -942,7 +942,7 @@ public class MetricFactory
      * @throws IllegalArgumentException if the metric identifier is not recognized
      */
 
-    public Metric<DichotomousPairs, ScalarOutput> ofDichotomousScalar( MetricConstants metric )
+    public Metric<DichotomousPairs, DoubleScoreOutput> ofDichotomousScalar( MetricConstants metric )
             throws MetricParameterException
     {
         // Build store if required
@@ -958,7 +958,7 @@ public class MetricFactory
     }
 
     /**
-     * Returns a {@link Metric} that consumes {@link MulticategoryPairs} and produces {@link ScalarOutput}. Use
+     * Returns a {@link Metric} that consumes {@link MulticategoryPairs} and produces {@link DoubleScoreOutput}. Use
      * {@link #ofDichotomousScalar(MetricConstants)} when the inputs are dichotomous.
      * 
      * @param metric the metric identifier
@@ -967,7 +967,7 @@ public class MetricFactory
      * @throws IllegalArgumentException if the metric identifier is not recognized
      */
 
-    public Metric<MulticategoryPairs, ScalarOutput> ofMulticategoryScalar( MetricConstants metric )
+    public Metric<MulticategoryPairs, DoubleScoreOutput> ofMulticategoryScalar( MetricConstants metric )
             throws MetricParameterException
     {
         if ( MetricConstants.PEIRCE_SKILL_SCORE.equals( metric ) )
@@ -1027,7 +1027,7 @@ public class MetricFactory
     }
 
     /**
-     * Returns a {@link Metric} that consumes {@link EnsemblePairs} and produces {@link ScalarOutput}.
+     * Returns a {@link Metric} that consumes {@link EnsemblePairs} and produces {@link DoubleScoreOutput}.
      * 
      * @param metric the metric identifier
      * @return a metric
@@ -1035,7 +1035,7 @@ public class MetricFactory
      * @throws IllegalArgumentException if the metric identifier is not recognized
      */
 
-    public Metric<EnsemblePairs, ScalarOutput> ofEnsembleScalar( MetricConstants metric )
+    public Metric<EnsemblePairs, DoubleScoreOutput> ofEnsembleScalar( MetricConstants metric )
             throws MetricParameterException
     {
         if ( MetricConstants.SAMPLE_SIZE.equals( metric ) )
@@ -1549,7 +1549,7 @@ public class MetricFactory
     }
 
     /**
-     * Builds the store of metrics that consume {@link SingleValuedPairs} and produce {@link ScalarOutput}. 
+     * Builds the store of metrics that consume {@link SingleValuedPairs} and produce {@link DoubleScoreOutput}. 
      * @throws MetricParameterException if one or more parameter values is incorrect
      */
 
@@ -1610,7 +1610,7 @@ public class MetricFactory
     }
 
     /**
-     * Builds the store of metrics that consume {@link DichotomousPairs} and produce {@link ScalarOutput}. 
+     * Builds the store of metrics that consume {@link DichotomousPairs} and produce {@link DoubleScoreOutput}. 
      * @throws MetricParameterException if one or more parameter values is incorrect
      */
 

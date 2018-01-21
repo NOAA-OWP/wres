@@ -6,7 +6,7 @@ import org.junit.Test;
 
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.ScalarOutput;
+import wres.datamodel.outputs.ScoreOutput;
 
 /**
  * Tests the {@link SafeScalarOutput}.
@@ -45,15 +45,15 @@ public final class SafeScalarOutputTest
                                                                   MetricConstants.CONTINGENCY_TABLE,
                                                                   MetricConstants.MAIN,
                                                                   metaFac.getDatasetIdentifier("B", "B", "C"));
-        final ScalarOutput s = d.ofScalarOutput(1.0, m1);
-        final ScalarOutput t = d.ofScalarOutput(1.0, m1);
+        final ScoreOutput s = d.ofDoubleScoreOutput(1.0, m1);
+        final ScoreOutput t = d.ofDoubleScoreOutput(1.0, m1);
         assertTrue("Expected equal outputs.", s.equals(t));
         assertTrue("Expected non-equal outputs.", !s.equals(null));
         assertTrue("Expected non-equal outputs.", !s.equals(new Double(1.0)));
-        assertTrue("Expected non-equal outputs.", !s.equals(d.ofScalarOutput(2.0, m1)));
-        assertTrue("Expected non-equal outputs.", !s.equals(d.ofScalarOutput(1.0, m2)));
-        final ScalarOutput q = d.ofScalarOutput(1.0, m2);
-        final ScalarOutput r = d.ofScalarOutput(1.0, m3);
+        assertTrue("Expected non-equal outputs.", !s.equals(d.ofDoubleScoreOutput(2.0, m1)));
+        assertTrue("Expected non-equal outputs.", !s.equals(d.ofDoubleScoreOutput(1.0, m2)));
+        final ScoreOutput q = d.ofDoubleScoreOutput(1.0, m2);
+        final ScoreOutput r = d.ofDoubleScoreOutput(1.0, m3);
         assertTrue("Expected non-equal outputs.", !s.equals(q));
         assertTrue("Expected equal outputs.", q.equals(q));
         assertTrue("Expected non-equal outputs.", !q.equals(s));
@@ -75,8 +75,8 @@ public final class SafeScalarOutputTest
                                                                   MetricConstants.CONTINGENCY_TABLE,
                                                                   MetricConstants.MAIN,
                                                                   metaFac.getDatasetIdentifier("A", "B", "C"));
-        final ScalarOutput s = d.ofScalarOutput(1.0, m1);
-        final ScalarOutput t = d.ofScalarOutput(1.0, m1);
+        final ScoreOutput s = d.ofDoubleScoreOutput(1.0, m1);
+        final ScoreOutput t = d.ofDoubleScoreOutput(1.0, m1);
         assertTrue("Expected equal string representations.", s.toString().equals(t.toString()));
     }
 
@@ -101,8 +101,8 @@ public final class SafeScalarOutputTest
                                                                   MetricConstants.CONTINGENCY_TABLE,
                                                                   MetricConstants.MAIN,
                                                                   metaFac.getDatasetIdentifier("B", "B", "C"));
-        final ScalarOutput q = d.ofScalarOutput(1.0, m1);
-        final ScalarOutput r = d.ofScalarOutput(1.0, m2);
+        final ScoreOutput q = d.ofDoubleScoreOutput(1.0, m1);
+        final ScoreOutput r = d.ofDoubleScoreOutput(1.0, m2);
         assertTrue("Unequal metadata.", !q.getMetadata().equals(r.getMetadata()));
     }
 
@@ -133,10 +133,10 @@ public final class SafeScalarOutputTest
                                                                   MetricConstants.CONTINGENCY_TABLE,
                                                                   MetricConstants.MAIN,
                                                                   metaFac.getDatasetIdentifier("B", "B", "C"));
-        final ScalarOutput q = d.ofScalarOutput(1.0, m1);
-        final ScalarOutput r = d.ofScalarOutput(1.0, m2);
+        final ScoreOutput q = d.ofDoubleScoreOutput(1.0, m1);
+        final ScoreOutput r = d.ofDoubleScoreOutput(1.0, m2);
         assertTrue("Expected equal hash codes.", q.hashCode() == r.hashCode());
-        assertTrue("Expected unequal hash codes.", q.hashCode() != d.ofScalarOutput(1.0, m3).hashCode());
+        assertTrue("Expected unequal hash codes.", q.hashCode() != d.ofDoubleScoreOutput(1.0, m3).hashCode());
     }
 
 }

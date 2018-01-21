@@ -29,13 +29,13 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.Threshold;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
+import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MapKey;
 import wres.datamodel.outputs.MetricOutputAccessException;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
 import wres.datamodel.outputs.MultiValuedScoreOutput;
-import wres.datamodel.outputs.ScalarOutput;
 import wres.io.config.ConfigHelper;
 
 /**
@@ -146,12 +146,12 @@ public class CommaSeparated
 
         SortedMap<TimeWindow, StringJoiner> rows = new TreeMap<>();
 
-        MetricOutputMultiMapByTimeAndThreshold<ScalarOutput> scalarOutput = null;
+        MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> scalarOutput = null;
         MetricOutputMultiMapByTimeAndThreshold<MultiValuedScoreOutput> vectorOutput = null;
 
         try
         {
-            scalarOutput = storedMetricOutput.getScalarOutput();
+            scalarOutput = storedMetricOutput.getScoreOutput();
             vectorOutput = storedMetricOutput.getVectorOutput();
         }
         catch ( final MetricOutputAccessException e )
@@ -189,7 +189,7 @@ public class CommaSeparated
      */
 
     private static SortedMap<TimeWindow, StringJoiner> getScalarRows(
-            MetricOutputMultiMapByTimeAndThreshold<ScalarOutput> output,
+            MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> output,
             DecimalFormat formatter )
     {
         SortedMap<TimeWindow, StringJoiner> rows = new TreeMap<>();
@@ -200,7 +200,7 @@ public class CommaSeparated
                  .add( "EARLIEST" + HEADER_DELIMITER + "LEAD" + HEADER_DELIMITER + "HOUR" )
                  .add( "LATEST" + HEADER_DELIMITER + "LEAD" + HEADER_DELIMITER + "HOUR" );
         for ( Map.Entry<MapKey<MetricConstants>,
-                MetricOutputMapByTimeAndThreshold<ScalarOutput>> m
+                MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>> m
                 : output.entrySet() )
         {
             String name = m.getKey().getKey().toString();
@@ -228,7 +228,7 @@ public class CommaSeparated
                     // both dimensions. If we do not find a value, use NA.
                     Pair<TimeWindow,Threshold> key = Pair.of( timeWindow, t );
 
-                    ScalarOutput value = m.getValue()
+                    DoubleScoreOutput value = m.getValue()
                                           .get( key );
 
                     String toWrite = "NA";
@@ -283,14 +283,14 @@ public class CommaSeparated
                 MetricOutputMapByTimeAndThreshold<MultiValuedScoreOutput>> m
                 : output.entrySet() )
         {
-            Map<MetricConstants, MetricOutputMapByTimeAndThreshold<ScalarOutput>> helper
+            Map<MetricConstants, MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>> helper
                     = DefaultDataFactory.getInstance()
                                         .getSlicer()
                                         .filterByMetricComponent( m.getValue() );
 
             String outerName = m.getKey().getKey().toString();
 
-            for ( Map.Entry<MetricConstants, MetricOutputMapByTimeAndThreshold<ScalarOutput>> e
+            for ( Map.Entry<MetricConstants, MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>> e
                     : helper.entrySet() )
             {
                 String name = outerName + HEADER_DELIMITER + e.getKey()
@@ -320,7 +320,7 @@ public class CommaSeparated
                         // both dimensions. If we do not find a value, use NA.
                         Pair<TimeWindow, Threshold> key = Pair.of( timeWindow, t );
 
-                        ScalarOutput value = e.getValue()
+                        DoubleScoreOutput value = e.getValue()
                                               .get( key );
 
                         String toWrite = "NA";

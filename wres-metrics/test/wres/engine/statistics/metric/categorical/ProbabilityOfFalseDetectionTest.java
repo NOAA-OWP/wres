@@ -11,11 +11,10 @@ import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.ScalarOutput;
+import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
-import wres.engine.statistics.metric.categorical.ProbabilityOfFalseDetection;
 import wres.engine.statistics.metric.categorical.ProbabilityOfFalseDetection.ProbabilityOfFalseDetectionBuilder;
 
 /**
@@ -60,9 +59,9 @@ public final class ProbabilityOfFalseDetectionTest
         final ProbabilityOfFalseDetection pofd = b.build();
 
         //Check the results
-        final ScalarOutput actual = pofd.apply( input );
+        final DoubleScoreOutput actual = pofd.apply( input );
         final MetricFactory metF = MetricFactory.getInstance( outF );
-        final ScalarOutput expected = outF.ofScalarOutput( 0.14615384615384616, m1 );
+        final DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 0.14615384615384616, m1 );
         assertTrue( "Actual: " + actual.getData().doubleValue()
                     + ". Expected: "
                     + expected.getData().doubleValue()

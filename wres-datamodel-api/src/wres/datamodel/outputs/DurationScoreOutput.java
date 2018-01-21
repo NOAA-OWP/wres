@@ -10,6 +10,6 @@ import java.time.Duration;
  * @since 0.3
  */
 
-public interface DurationOutput extends MetricOutput<Duration>
+public interface DurationScoreOutput extends ScoreOutput<Duration>
 {
 }

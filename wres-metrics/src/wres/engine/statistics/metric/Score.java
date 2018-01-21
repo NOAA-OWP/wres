@@ -2,7 +2,7 @@ package wres.engine.statistics.metric;
 
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInput;
-import wres.datamodel.outputs.MetricOutput;
+import wres.datamodel.outputs.ScoreOutput;
 
 /**
  * Identifies a scoring rule. A score may be an absolute or relative measure. An absolute score is dimensioned, whereas
@@ -15,7 +15,7 @@ import wres.datamodel.outputs.MetricOutput;
  * @since 0.1
  */
 
-public interface Score<S extends MetricInput<?>, T extends MetricOutput<?>> extends Metric<S,T> 
+public interface Score<S extends MetricInput<?>, T extends ScoreOutput<?>> extends Metric<S,T>
 {
 
     /**

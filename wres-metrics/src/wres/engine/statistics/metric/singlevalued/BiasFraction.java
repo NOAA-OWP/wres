@@ -8,7 +8,7 @@ import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.ScalarOutput;
+import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.DoubleErrorFunction;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricParameterException;
@@ -24,7 +24,7 @@ public class BiasFraction extends DoubleErrorScore<SingleValuedPairs>
 {
 
     @Override
-    public ScalarOutput apply(SingleValuedPairs s)
+    public DoubleScoreOutput apply(SingleValuedPairs s)
     {
         if(Objects.isNull(s))
         {
@@ -38,7 +38,7 @@ public class BiasFraction extends DoubleErrorScore<SingleValuedPairs>
             left.add(error.applyAsDouble( pair ));
             right.add(pair.getItemOne());
         });
-        return getDataFactory().ofScalarOutput(left.sum()/right.sum(), metOut);        
+        return getDataFactory().ofDoubleScoreOutput(left.sum()/right.sum(), metOut);        
     }
 
     @Override

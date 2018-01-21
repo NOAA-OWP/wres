@@ -22,8 +22,8 @@ import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.Metadata;
+import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
-import wres.datamodel.outputs.ScalarOutput;
 import wres.datamodel.outputs.MultiValuedScoreOutput;
 
 /**
@@ -604,7 +604,7 @@ public final class DefaultSlicerTest
         //Obtain input and slice
         MetricOutputMapByTimeAndThreshold<MultiValuedScoreOutput> toSlice =
                 DataModelTestDataFactory.getVectorMetricOutputMapByLeadThresholdOne();
-        Map<MetricConstants, MetricOutputMapByTimeAndThreshold<ScalarOutput>> sliced =
+        Map<MetricConstants, MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>> sliced =
                 slicer.filterByMetricComponent( toSlice );
 
         //Check the results

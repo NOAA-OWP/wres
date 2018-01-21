@@ -13,7 +13,7 @@ import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.ScalarOutput;
+import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.SampleSize.SampleSizeBuilder;
 
 /**
@@ -54,8 +54,8 @@ public final class SampleSizeTest
         final SampleSize<SingleValuedPairs> ss = b.build();
 
         //Check the results
-        final ScalarOutput actual = ss.apply( input );
-        final ScalarOutput expected = outF.ofScalarOutput( input.getData().size(), m1 );
+        final DoubleScoreOutput actual = ss.apply( input );
+        final DoubleScoreOutput expected = outF.ofDoubleScoreOutput( input.getData().size(), m1 );
         assertTrue( "Actual: " + actual.getData().doubleValue()
                     + ". Expected: "
                     + expected.getData().doubleValue()

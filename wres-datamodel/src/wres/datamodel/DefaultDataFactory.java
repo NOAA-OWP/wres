@@ -32,7 +32,8 @@ import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
-import wres.datamodel.outputs.DurationOutput;
+import wres.datamodel.outputs.DoubleScoreOutput;
+import wres.datamodel.outputs.DurationScoreOutput;
 import wres.datamodel.outputs.MapKey;
 import wres.datamodel.outputs.MatrixOutput;
 import wres.datamodel.outputs.MetricOutput;
@@ -43,7 +44,6 @@ import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
 import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.PairedOutput;
-import wres.datamodel.outputs.ScalarOutput;
 
 /**
  * A default factory class for producing metric inputs.
@@ -263,7 +263,7 @@ public class DefaultDataFactory implements DataFactory
     }
 
     @Override
-    public ScalarOutput ofScalarOutput( final double output, final MetricOutputMetadata meta )
+    public DoubleScoreOutput ofDoubleScoreOutput( final double output, final MetricOutputMetadata meta )
     {
         return new SafeScalarOutput( output, meta );
     }
@@ -309,7 +309,7 @@ public class DefaultDataFactory implements DataFactory
     }
     
     @Override
-    public DurationOutput ofDurationOutput( Duration output, MetricOutputMetadata meta )
+    public DurationScoreOutput ofDurationOutput( Duration output, MetricOutputMetadata meta )
     {
         return new SafeDurationOutput( output, meta );
     }

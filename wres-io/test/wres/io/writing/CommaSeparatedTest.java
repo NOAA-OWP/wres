@@ -32,9 +32,9 @@ import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
+import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMapByMetric;
-import wres.datamodel.outputs.ScalarOutput;
 
 // uncomment these if we figure out what was wrong with powermockito setup
 //@RunWith( PowerMockRunner.class )
@@ -131,17 +131,17 @@ public class CommaSeparatedTest
                                            MetricConstants.MAIN,
                                            datasetIdentifier );
         
-        List<ScalarOutput> fakeOutputs = new ArrayList<>();
-        fakeOutputs.add( outputFactory.ofScalarOutput( 1.0, fakeMetadataA ) );
-        fakeOutputs.add( outputFactory.ofScalarOutput( 2.0, fakeMetadataB ) );
-        fakeOutputs.add( outputFactory.ofScalarOutput( 3.0, fakeMetadataC ) );
+        List<DoubleScoreOutput> fakeOutputs = new ArrayList<>();
+        fakeOutputs.add( outputFactory.ofDoubleScoreOutput( 1.0, fakeMetadataA ) );
+        fakeOutputs.add( outputFactory.ofDoubleScoreOutput( 2.0, fakeMetadataB ) );
+        fakeOutputs.add( outputFactory.ofDoubleScoreOutput( 3.0, fakeMetadataC ) );
 
         // Fake output wrapper.
-        MetricOutputMapByMetric<ScalarOutput> fakeOutputData =
+        MetricOutputMapByMetric<DoubleScoreOutput> fakeOutputData =
                 outputFactory.ofMap( fakeOutputs );
 
         // wrap outputs in future
-        Future<MetricOutputMapByMetric<ScalarOutput>> outputMapByMetricFuture =
+        Future<MetricOutputMapByMetric<DoubleScoreOutput>> outputMapByMetricFuture =
                 CompletableFuture.completedFuture( fakeOutputData );
 
         // Fake lead time and threshold
@@ -150,7 +150,7 @@ public class CommaSeparatedTest
                                                         Double.NEGATIVE_INFINITY,
                                                         Threshold.Operator.GREATER );
 
-        outputBuilder.addScalarOutput( mapKeyByLeadThreshold,
+        outputBuilder.addScoreOutput( mapKeyByLeadThreshold,
                                        outputMapByMetricFuture );
 
         MetricOutputForProjectByTimeAndThreshold output = outputBuilder.build();

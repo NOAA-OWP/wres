@@ -6,12 +6,13 @@ import java.util.List;
 import org.jfree.data.xy.AbstractXYDataset;
 
 import wres.datamodel.Threshold;
+import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
-import wres.datamodel.outputs.ScalarOutput;
+import wres.datamodel.outputs.ScoreOutput;
 
 /**
  * An {@link AbstractXYDataset} that wraps a {@link MetricOutputMapByTimeAndThreshold} which contains a set of
- * {@link ScalarOutput} for a single verification metric, indexed by forecast lead time and threshold. Slices the data
+ * {@link ScoreOutput} for a single verification metric, indexed by forecast lead time and threshold. Slices the data
  * by threshold to form plots by lead time on the domain axis.
  * 
  * @author james.brown@hydrosolved.com
@@ -19,11 +20,12 @@ import wres.datamodel.outputs.ScalarOutput;
  * @since 0.1
  */
 
-public class ScalarOutputByLeadAndThresholdXYDataset extends WRESAbstractXYDataset<List<MetricOutputMapByTimeAndThreshold<ScalarOutput>>, MetricOutputMapByTimeAndThreshold<ScalarOutput>>
+public class ScalarOutputByLeadAndThresholdXYDataset extends
+        WRESAbstractXYDataset<List<MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>>, MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>>
 {
     private static final long serialVersionUID = 2251263309545763140L;
 
-    public ScalarOutputByLeadAndThresholdXYDataset(final MetricOutputMapByTimeAndThreshold<ScalarOutput> input)
+    public ScalarOutputByLeadAndThresholdXYDataset(final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> input)
     {
         super(input);
 
@@ -42,12 +44,12 @@ public class ScalarOutputByLeadAndThresholdXYDataset extends WRESAbstractXYDatas
      * keys (the thresholds) will otherwise be lost when the data is populated.
      * 
      * @param rawData the input data must be of type {@link MetricOutputMapByTimeAndThreshold} with generic
-     *            {@link ScalarOutput}.
+     *            {@link ScoreOutput}.
      */
     @Override
-    protected void preparePlotData(final MetricOutputMapByTimeAndThreshold<ScalarOutput> rawData)
+    protected void preparePlotData(final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> rawData)
     {
-        final List<MetricOutputMapByTimeAndThreshold<ScalarOutput>> data = new ArrayList<>();
+        final List<MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>> data = new ArrayList<>();
         for(final Threshold key: rawData.keySetByThreshold())
         {
             data.add(rawData.filterByThreshold(key));

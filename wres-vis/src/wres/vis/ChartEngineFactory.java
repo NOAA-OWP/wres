@@ -40,10 +40,11 @@ import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
+import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.datamodel.outputs.MultiVectorOutput;
-import wres.datamodel.outputs.ScalarOutput;
+import wres.datamodel.outputs.ScoreOutput;
 
 /**
  * Factory to use in order to construct a wres-vis chart.
@@ -55,7 +56,7 @@ public abstract class ChartEngineFactory
     private static final Logger LOGGER = LoggerFactory.getLogger( ChartEngineFactory.class );
 
     /**
-     * Maintains information about the different {@link ScalarOutput} plot types, including defaults and expected
+     * Maintains information about the different {@link ScoreOutput} plot types, including defaults and expected
      * classes.
      */
     private static EnumMap<PlotTypeSelection, PlotTypeInformation> scalarOutputPlotTypeInfoMap =
@@ -64,15 +65,15 @@ public abstract class ChartEngineFactory
     {
         scalarOutputPlotTypeInfoMap.put( PlotTypeSelection.LEAD_THRESHOLD,
                                          new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
-                                                                  ScalarOutput.class,
+                                                                  ScoreOutput.class,
                                                                   "scalarOutputLeadThresholdTemplate.xml" ) );
         scalarOutputPlotTypeInfoMap.put( PlotTypeSelection.THRESHOLD_LEAD,
                                          new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
-                                                                  ScalarOutput.class,
+                                                                  ScoreOutput.class,
                                                                   "scalarOutputThresholdLeadTemplate.xml" ) );
         scalarOutputPlotTypeInfoMap.put( PlotTypeSelection.POOLING_WINDOW,
                                          new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
-                                                                  ScalarOutput.class,
+                                                                  ScoreOutput.class,
                                                                   "scalarOutputPoolingWindowTemplate.xml" ) );
     }
 
@@ -764,10 +765,10 @@ public abstract class ChartEngineFactory
     {
         final ConcurrentMap<MetricConstants, ChartEngine> results = new ConcurrentSkipListMap<>();
 
-        final Map<MetricConstants, MetricOutputMapByTimeAndThreshold<ScalarOutput>> slicedInput =
+        final Map<MetricConstants, MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>> slicedInput =
                 factory.getSlicer()
                        .filterByMetricComponent( input );
-        for ( final Map.Entry<MetricConstants, MetricOutputMapByTimeAndThreshold<ScalarOutput>> entry : slicedInput.entrySet() )
+        for ( final Map.Entry<MetricConstants, MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>> entry : slicedInput.entrySet() )
         {
             final ChartEngine engine = buildGenericScalarOutputChartEngine( entry.getValue(),
                                                                             userSpecifiedPlotType,
@@ -791,7 +792,7 @@ public abstract class ChartEngineFactory
      * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
      */
     public static ChartEngine
-            buildGenericScalarOutputChartEngine( final MetricOutputMapByTimeAndThreshold<ScalarOutput> input,
+            buildGenericScalarOutputChartEngine( final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> input,
                                                  final PlotTypeSelection userSpecifiedPlotType,
                                                  final String userSpecifiedTemplateResourceName,
                                                  final String overrideParametersStr )

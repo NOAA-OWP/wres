@@ -3,8 +3,8 @@ package wres.datamodel;
 import java.util.Objects;
 
 import wres.datamodel.metadata.MetricOutputMetadata;
+import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MetricOutputException;
-import wres.datamodel.outputs.ScalarOutput;
 
 /**
  * An immutable scalar outputs associated with a metric.
@@ -14,7 +14,7 @@ import wres.datamodel.outputs.ScalarOutput;
  * @since 0.1
  */
 
-class SafeScalarOutput implements ScalarOutput
+class SafeScalarOutput implements DoubleScoreOutput
 {
 
     /**

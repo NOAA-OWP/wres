@@ -35,27 +35,27 @@ import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
+import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.datamodel.outputs.MultiVectorOutput;
-import wres.datamodel.outputs.ScalarOutput;
 
 public abstract class Chart2DTestDataGenerator
 {
 
     /**
-     * Returns a {@link MetricOutputMapByTimeAndThreshold} of {@link ScalarOutput} comprising the CRPSS for a subset of
-     * thresholds and forecast lead times. Reads the input data from {@link #getScalarMetricOutputMapByLeadThreshold()}
-     * and slices.
+     * Returns a {@link MetricOutputMapByTimeAndThreshold} of {@link DoubleScoreOutput} comprising the CRPSS for a 
+     * subset of thresholds and forecast lead times. Reads the input data from 
+     * {@link #getScalarMetricOutputMapByLeadThreshold()} and slices.
      * 
      * @return an output map of verification scores
      */
     
-    public static MetricOutputMapByTimeAndThreshold<ScalarOutput> getMetricOutputMapByLeadThresholdOne()
+    public static MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> getMetricOutputMapByLeadThresholdOne()
     {
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
-        final MetricOutputMapByTimeAndThreshold<ScalarOutput> full = getScalarMetricOutputMapByLeadThreshold();
-        final List<MetricOutputMapByTimeAndThreshold<ScalarOutput>> combine = new ArrayList<>();
+        final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> full = getScalarMetricOutputMapByLeadThreshold();
+        final List<MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>> combine = new ArrayList<>();
         final double[][] allow =
                 new double[][] { { Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY }, { 0.5, 2707.5 },
                                  { 0.95, 13685.0 }, { 0.99, 26648.0 } };
@@ -69,17 +69,17 @@ public abstract class Chart2DTestDataGenerator
     }
 
     /**
-     * Returns a {@link MetricOutputMapByTimeAndThreshold} of {@link ScalarOutput} comprising the CRPSS for a subset of
-     * thresholds and forecast lead times. Reads the input data from {@link #getScalarMetricOutputMapByLeadThreshold()}
+     * Returns a {@link MetricOutputMapByTimeAndThreshold} of {@link DoubleScoreOutput} comprising the CRPSS for a 
+     * subset of thresholds and forecast lead times. Reads the input data from {@link #getScalarMetricOutputMapByLeadThreshold()}
      * and slices.
      * 
      * @return an output map of verification scores
      */
-    public static MetricOutputMapByTimeAndThreshold<ScalarOutput> getMetricOutputMapByLeadThresholdTwo()
+    public static MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> getMetricOutputMapByLeadThresholdTwo()
     {
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
-        final MetricOutputMapByTimeAndThreshold<ScalarOutput> full = getScalarMetricOutputMapByLeadThreshold();
-        final List<MetricOutputMapByTimeAndThreshold<ScalarOutput>> combine = new ArrayList<>();
+        final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> full = getScalarMetricOutputMapByLeadThreshold();
+        final List<MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>> combine = new ArrayList<>();
         final int[] allow = new int[] { 42, 258, 474, 690 };
         for ( final int next : allow )
         {
@@ -92,17 +92,17 @@ public abstract class Chart2DTestDataGenerator
     }
 
     /**
-     * Returns a {@link MetricOutputMapByTimeAndThreshold} of {@link ScalarOutput} comprising the CRPSS for various
+     * Returns a {@link MetricOutputMapByTimeAndThreshold} of {@link DoubleScoreOutput} comprising the CRPSS for various
      * thresholds and forecast lead times. Reads the input data from
      * testinput/chart2DTest/getMetricOutputMapByLeadThreshold.xml.
      * 
      * @return an output map of verification scores
      */
-    static MetricOutputMapByTimeAndThreshold<ScalarOutput> getScalarMetricOutputMapByLeadThreshold()
+    static MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> getScalarMetricOutputMapByLeadThreshold()
     {
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
         final MetadataFactory metaFactory = outputFactory.getMetadataFactory();
-        final Map<Pair<TimeWindow, Threshold>, ScalarOutput> rawData = new TreeMap<>();
+        final Map<Pair<TimeWindow, Threshold>, DoubleScoreOutput> rawData = new TreeMap<>();
     
         try
         {
@@ -150,7 +150,7 @@ public abstract class Chart2DTestDataGenerator
                     //Build the scalar result
                     final MetricResult result = t.getResult( f );
                     final double[] res = ( (DoubleMatrix1DResult) result ).getResult().toArray();
-                    final ScalarOutput value = outputFactory.ofScalarOutput( res[0], meta );
+                    final DoubleScoreOutput value = outputFactory.ofDoubleScoreOutput( res[0], meta );
     
                     //Append result
                     rawData.put( key, value );
@@ -786,16 +786,16 @@ public abstract class Chart2DTestDataGenerator
     }
 
     /**
-     * Returns a {@link MetricOutputMapByTimeAndThreshold} of {@link ScalarOutput} comprising the CRPSS for various
+     * Returns a {@link MetricOutputMapByTimeAndThreshold} of {@link DoubleScoreOutput} comprising the CRPSS for various
      * rolling time windows at one threshold (all data). Corresponds to the use case in Redmine ticket #40785.
      * 
      * @return an output map of verification scores
      */
-    static MetricOutputMapByTimeAndThreshold<ScalarOutput> getScalarMetricOutputMapForRollingWindows()
+    static MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> getScalarMetricOutputMapForRollingWindows()
     {
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
         final MetadataFactory metaFactory = outputFactory.getMetadataFactory();
-        final Map<Pair<TimeWindow, Threshold>, ScalarOutput> rawData = new TreeMap<>();
+        final Map<Pair<TimeWindow, Threshold>, DoubleScoreOutput> rawData = new TreeMap<>();
     
         try
         {
@@ -836,8 +836,8 @@ public abstract class Chart2DTestDataGenerator
                                                           end,
                                                           ReferenceTime.ISSUE_TIME,
                                                           Duration.ofHours( 6 ) );
-                ScalarOutput sixHourOutput =
-                        outputFactory.ofScalarOutput( sixHourOutputs[i],
+                DoubleScoreOutput sixHourOutput =
+                        outputFactory.ofDoubleScoreOutput( sixHourOutputs[i],
                                                       metaFactory.getOutputMetadata( meta, sixHourWindow ) );
                 rawData.put( Pair.of( sixHourWindow, threshold ), sixHourOutput );
                 //Add the 12h data
@@ -845,8 +845,8 @@ public abstract class Chart2DTestDataGenerator
                                                              end,
                                                              ReferenceTime.ISSUE_TIME,
                                                              Duration.ofHours( 12 ) );
-                ScalarOutput twelveHourOutput =
-                        outputFactory.ofScalarOutput( twelveHourOutputs[i],
+                DoubleScoreOutput twelveHourOutput =
+                        outputFactory.ofDoubleScoreOutput( twelveHourOutputs[i],
                                                       metaFactory.getOutputMetadata( meta, twelveHourWindow ) );
                 rawData.put( Pair.of( twelveHourWindow, threshold ), twelveHourOutput );
                 //Add the 18h data
@@ -854,8 +854,8 @@ public abstract class Chart2DTestDataGenerator
                                                                end,
                                                                ReferenceTime.ISSUE_TIME,
                                                                Duration.ofHours( 18 ) );
-                ScalarOutput eighteenHourOutput =
-                        outputFactory.ofScalarOutput( eighteenHourOutputs[i],
+                DoubleScoreOutput eighteenHourOutput =
+                        outputFactory.ofDoubleScoreOutput( eighteenHourOutputs[i],
                                                       metaFactory.getOutputMetadata( meta, eighteenHourWindow ) );
                 rawData.put( Pair.of( eighteenHourWindow, threshold ), eighteenHourOutput );
                 //Add the 24h data
@@ -863,8 +863,8 @@ public abstract class Chart2DTestDataGenerator
                                                                  end,
                                                                  ReferenceTime.ISSUE_TIME,
                                                                  Duration.ofHours( 24 ) );
-                ScalarOutput twentyFourHourOutput =
-                        outputFactory.ofScalarOutput( twentyFourHourOutputs[i],
+                DoubleScoreOutput twentyFourHourOutput =
+                        outputFactory.ofDoubleScoreOutput( twentyFourHourOutputs[i],
                                                       metaFactory.getOutputMetadata( meta, twentyFourHourWindow ) );
                 rawData.put( Pair.of( twentyFourHourWindow, threshold ), twentyFourHourOutput );
     

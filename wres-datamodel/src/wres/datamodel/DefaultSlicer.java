@@ -28,9 +28,9 @@ import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
+import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.MultiValuedScoreOutput;
-import wres.datamodel.outputs.ScalarOutput;
 
 /**
  * Default implementation of a utility class for slicing/dicing and transforming datasets associated with verification
@@ -293,18 +293,18 @@ class DefaultSlicer implements Slicer
     }
 
     @Override
-    public Map<MetricConstants, MetricOutputMapByTimeAndThreshold<ScalarOutput>>
+    public Map<MetricConstants, MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>>
             filterByMetricComponent( MetricOutputMapByTimeAndThreshold<MultiValuedScoreOutput> input )
     {
         Objects.requireNonNull( input, NULL_INPUT );
-        Map<MetricConstants, Map<Pair<TimeWindow, Threshold>, ScalarOutput>> sourceMap =
+        Map<MetricConstants, Map<Pair<TimeWindow, Threshold>, DoubleScoreOutput>> sourceMap =
                 new EnumMap<>( MetricConstants.class );
         MetadataFactory metaFac = dataFac.getMetadataFactory();
         input.forEach( ( key, value ) -> {
             List<MetricConstants> components = value.getOutputTemplate().getMetricComponents();
             for ( MetricConstants next : components )
             {
-                Map<Pair<TimeWindow, Threshold>, ScalarOutput> nextMap = null;
+                Map<Pair<TimeWindow, Threshold>, DoubleScoreOutput> nextMap = null;
                 if ( sourceMap.containsKey( next ) )
                 {
                     nextMap = sourceMap.get( next );
@@ -316,11 +316,11 @@ class DefaultSlicer implements Slicer
                 }
                 //Add the output
                 MetricOutputMetadata meta = metaFac.getOutputMetadata( value.getMetadata(), next );
-                nextMap.put( key, dataFac.ofScalarOutput( value.getValue( next ), meta ) );
+                nextMap.put( key, dataFac.ofDoubleScoreOutput( value.getValue( next ), meta ) );
             }
         } );
         //Build the scalar results
-        Map<MetricConstants, MetricOutputMapByTimeAndThreshold<ScalarOutput>> returnMe =
+        Map<MetricConstants, MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>> returnMe =
                 new EnumMap<>( MetricConstants.class );
         sourceMap.forEach( ( key, value ) -> returnMe.put( key, dataFac.ofMap( value ) ) );
         return returnMe;

@@ -91,15 +91,15 @@ public final class MetricProcessorTest
         //Check for existence of metrics
         assertTrue( "Expected metrics for '" + MetricInputGroup.SINGLE_VALUED
                     + "' and '"
-                    + MetricOutputGroup.SCALAR
+                    + MetricOutputGroup.SCORE
                     + ".",
-                    processor.hasMetrics( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCALAR ) );
+                    processor.hasMetrics( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCORE ) );
         assertTrue( "Expected metrics for '" + MetricInputGroup.SINGLE_VALUED
                     + "'.",
                     processor.hasMetrics( MetricInputGroup.SINGLE_VALUED ) );
-        assertTrue( "Expected metrics for '" + MetricOutputGroup.SCALAR
+        assertTrue( "Expected metrics for '" + MetricOutputGroup.SCORE
                     + ".",
-                    processor.hasMetrics( MetricOutputGroup.SCALAR ) );
+                    processor.hasMetrics( MetricOutputGroup.SCORE ) );
         assertTrue( "Expected threshold metrics.", processor.hasThresholdMetrics() );
     }
 
@@ -127,13 +127,13 @@ public final class MetricProcessorTest
                              .ofMetricProcessorByTimeSingleValuedPairs( config,
                                                                         MetricOutputGroup.values() );
         //Check that score metrics are defined 
-        assertTrue( "Expected metrics for '" + MetricOutputGroup.SCALAR
+        assertTrue( "Expected metrics for '" + MetricOutputGroup.SCORE
                     + "'.",
-                    processor.hasMetrics( MetricOutputGroup.SCALAR ) );
+                    processor.hasMetrics( MetricOutputGroup.SCORE ) );
         //Check that no non-score metrics are defined
         for ( MetricOutputGroup next : MetricOutputGroup.values() )
         {
-            if ( !next.equals( MetricOutputGroup.SCALAR ) && !next.equals( MetricOutputGroup.VECTOR ) )
+            if ( !next.equals( MetricOutputGroup.SCORE ) && !next.equals( MetricOutputGroup.VECTOR ) )
             {
                 assertFalse( "Did not expect metrics for '" + next
                              + "'.",
@@ -149,13 +149,13 @@ public final class MetricProcessorTest
                              .ofMetricProcessorByTimeEnsemblePairs( configEnsemble,
                                                                     MetricOutputGroup.values() );
         //Check that score metrics are defined 
-        assertTrue( "Expected metrics for '" + MetricOutputGroup.SCALAR
+        assertTrue( "Expected metrics for '" + MetricOutputGroup.SCORE
                     + "'.",
-                    processorEnsemble.hasMetrics( MetricOutputGroup.SCALAR ) );
+                    processorEnsemble.hasMetrics( MetricOutputGroup.SCORE ) );
         //Check that no non-score metrics are defined
         for ( MetricOutputGroup next : MetricOutputGroup.values() )
         {
-            if ( !next.equals( MetricOutputGroup.SCALAR ) && !next.equals( MetricOutputGroup.VECTOR ) )
+            if ( !next.equals( MetricOutputGroup.SCORE ) && !next.equals( MetricOutputGroup.VECTOR ) )
             {
                 assertFalse( "Did not expect metrics for '" + next
                              + "'.",

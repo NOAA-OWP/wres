@@ -16,7 +16,6 @@ import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
-import wres.engine.statistics.metric.discreteprobability.BrierSkillScore;
 import wres.engine.statistics.metric.discreteprobability.BrierSkillScore.BrierSkillScoreBuilder;
 
 /**
@@ -64,9 +63,9 @@ public final class BrierSkillScoreTest
         //Check the results 
         final MultiValuedScoreOutput actual = bss.apply( input );
         final MultiValuedScoreOutput expected = outF.ofMultiValuedScoreOutput( new double[] { 0.11363636363636376 }, m1 );
-        assertTrue( "Actual: " + actual.getData().getDoubles()[0]
+        assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
-                    + expected.getData().getDoubles()[0]
+                    + expected.getData()
                     + ".",
                     actual.equals( expected ) );
         //Check the parameters
@@ -114,9 +113,9 @@ public final class BrierSkillScoreTest
         //Check the results 
         final MultiValuedScoreOutput actual = bss.apply( input );
         final MultiValuedScoreOutput expected = outF.ofMultiValuedScoreOutput( new double[] { -0.040000000000000036 }, m1 );
-        assertTrue( "Actual: " + actual.getData().getDoubles()[0]
+        assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
-                    + expected.getData().getDoubles()[0]
+                    + expected.getData()
                     + ".",
                     actual.equals( expected ) );
     }
@@ -149,8 +148,7 @@ public final class BrierSkillScoreTest
         //Check NaN skill
         assertTrue( "Expected NaN for a forecast with only non-occurrences as the baseline.",
                     Double.isNaN( bss.apply( MetricTestDataFactory.getDiscreteProbabilityPairsFour() )
-                                     .getData()
-                                     .getDoubles()[0] ) );
+                                     .getData() ) );
     }
 
 

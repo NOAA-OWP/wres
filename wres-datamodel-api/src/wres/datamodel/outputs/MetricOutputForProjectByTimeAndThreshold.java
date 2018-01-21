@@ -5,16 +5,16 @@ import java.util.concurrent.Future;
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.Threshold;
+import wres.datamodel.metadata.TimeWindow;
 
 /**
  * <p>
  * A high-level store of {@link MetricOutput} associated with a verification project. The outputs are stored by 
  * {@link TimeWindow} and {@link Threshold} in a {@link MetricOutputMultiMapByTimeAndThreshold}. The 
  * {@link MetricOutputMultiMapByTimeAndThreshold} are further grouped by {@link MetricOutputGroup}, which denotes the 
- * atomic type of output stored by the container. For example, the {@link MetricOutputGroup#SCALAR} maps to 
- * {@link ScalarOutput}.
+ * atomic type of output stored by the container. For example, the {@link MetricOutputGroup#SCORE} maps to 
+ * {@link ScoreOutput}.
  * </p>
  * <p>
  * Retrieve the outputs using the instance methods for particular {@link MetricOutputGroup}. If no outputs exist, the
@@ -32,13 +32,13 @@ public interface MetricOutputForProjectByTimeAndThreshold
 {
 
     /**
-     * Returns a {@link MetricOutputMultiMap} of {@link ScalarOutput} or null if no output exists.
+     * Returns a {@link MetricOutputMultiMap} of {@link ScoreOutput} or null if no output exists.
      * 
      * @return the scalar output or null
      * @throws MetricOutputAccessException if the retrieval of {@link MetricOutput} fails for any reason
      */
 
-    MetricOutputMultiMapByTimeAndThreshold<ScalarOutput> getScalarOutput() throws MetricOutputAccessException;
+    MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> getScoreOutput() throws MetricOutputAccessException;
 
     /**
      * Returns a {@link MetricOutputMultiMap} of {@link MultiValuedScoreOutput} or null if no output exists.
@@ -85,7 +85,7 @@ public interface MetricOutputForProjectByTimeAndThreshold
     {
 
         /**
-         * Adds a new {@link ScalarOutput} for a collection of metrics to the internal store, merging with existing 
+         * Adds a new {@link DoubleScoreOutput} for a collection of metrics to the internal store, merging with existing 
          * items that share the same key, as required.
          * 
          * @param key the key
@@ -93,10 +93,10 @@ public interface MetricOutputForProjectByTimeAndThreshold
          * @return the builder
          */
 
-        default MetricOutputForProjectByTimeAndThresholdBuilder addScalarOutput( Pair<TimeWindow, Threshold> key,
-                                                                                 Future<MetricOutputMapByMetric<ScalarOutput>> result )
+        default MetricOutputForProjectByTimeAndThresholdBuilder addScoreOutput( Pair<TimeWindow, Threshold> key,
+                                                                                 Future<MetricOutputMapByMetric<DoubleScoreOutput>> result )
         {
-            addScalarOutput( key.getLeft(), key.getRight(), result );
+            addScoreOutput( key.getLeft(), key.getRight(), result );
             return this;
         }
 
@@ -166,7 +166,7 @@ public interface MetricOutputForProjectByTimeAndThreshold
         }
 
         /**
-         * Adds a new {@link ScalarOutput} for a collection of metrics to the internal store, merging with existing 
+         * Adds a new {@link ScoreOutput} for a collection of metrics to the internal store, merging with existing 
          * items that share the same key, as required.
          * 
          * @param timeWindow the time window
@@ -175,9 +175,9 @@ public interface MetricOutputForProjectByTimeAndThreshold
          * @return the builder
          */
 
-        MetricOutputForProjectByTimeAndThresholdBuilder addScalarOutput( TimeWindow timeWindow,
+        MetricOutputForProjectByTimeAndThresholdBuilder addScoreOutput( TimeWindow timeWindow,
                                                                          Threshold threshold,
-                                                                         Future<MetricOutputMapByMetric<ScalarOutput>> result );
+                                                                         Future<MetricOutputMapByMetric<DoubleScoreOutput>> result );
 
         /**
          * Adds a new {@link MultiValuedScoreOutput} for a collection of metrics to the internal store, merging with existing 

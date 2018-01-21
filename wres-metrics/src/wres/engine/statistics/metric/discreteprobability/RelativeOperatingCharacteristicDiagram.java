@@ -14,10 +14,10 @@ import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.metadata.MetricOutputMetadata;
+import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MatrixOutput;
 import wres.datamodel.outputs.MetricOutputMapByMetric;
 import wres.datamodel.outputs.MultiVectorOutput;
-import wres.datamodel.outputs.ScalarOutput;
 import wres.engine.statistics.metric.Diagram;
 import wres.engine.statistics.metric.MetricCollection;
 import wres.engine.statistics.metric.MetricFactory;
@@ -41,7 +41,7 @@ public class RelativeOperatingCharacteristicDiagram extends Diagram<DiscreteProb
      * Components of the ROC.
      */
 
-    private final MetricCollection<DichotomousPairs, MatrixOutput, ScalarOutput> roc;    
+    private final MetricCollection<DichotomousPairs, MatrixOutput, DoubleScoreOutput> roc;    
     
     /**
      * Number of points in the empirical ROC diagram.
@@ -70,7 +70,7 @@ public class RelativeOperatingCharacteristicDiagram extends Diagram<DiscreteProb
             double prob = Precision.round( 1.0 - ( i * constant ), 5 );
             //Compute the PoD/PoFD using the probability threshold to determine whether the event occurred
             //according to the probability on the RHS
-            MetricOutputMapByMetric<ScalarOutput> out =
+            MetricOutputMapByMetric<DoubleScoreOutput> out =
                     roc.apply( slice.transformPairs( s,
                                                      in -> d.pairOf( Double.compare( in.getItemOne(),
                                                                                      1.0 ) == 0,

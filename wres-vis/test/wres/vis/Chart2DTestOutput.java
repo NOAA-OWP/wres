@@ -21,10 +21,10 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.Threshold;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
+import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.datamodel.outputs.MultiVectorOutput;
-import wres.datamodel.outputs.ScalarOutput;
 
 /**
  * Tests the construction of a 3D chart of metric outputs. The building of the charts and images is tested via the unit
@@ -53,7 +53,7 @@ public class Chart2DTestOutput
         outputImageFile.delete();
 
         //Construct some single-valued pairs
-        final MetricOutputMapByTimeAndThreshold<ScalarOutput> input = Chart2DTestDataGenerator.getMetricOutputMapByLeadThresholdOne();
+        final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> input = Chart2DTestDataGenerator.getMetricOutputMapByLeadThresholdOne();
 
         try
         {
@@ -85,7 +85,7 @@ public class Chart2DTestOutput
         outputImageFile.delete();
 
         //Construct some single-valued pairs
-        final MetricOutputMapByTimeAndThreshold<ScalarOutput> input = Chart2DTestDataGenerator.getMetricOutputMapByLeadThresholdTwo();
+        final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> input = Chart2DTestDataGenerator.getMetricOutputMapByLeadThresholdTwo();
 
         try
         {
@@ -718,7 +718,7 @@ public class Chart2DTestOutput
         outputImageFile.delete();
 
         //Construct some single-valued pairs
-        final MetricOutputMapByTimeAndThreshold<ScalarOutput> input = Chart2DTestDataGenerator.getScalarMetricOutputMapForRollingWindows();
+        final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> input = Chart2DTestDataGenerator.getScalarMetricOutputMapForRollingWindows();
 
         try
         {

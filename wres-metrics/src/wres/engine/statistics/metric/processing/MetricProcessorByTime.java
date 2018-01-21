@@ -28,13 +28,14 @@ import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
+import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold.MetricOutputForProjectByTimeAndThresholdBuilder;
 import wres.datamodel.outputs.MetricOutputMapByMetric;
 import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.datamodel.outputs.MultiVectorOutput;
-import wres.datamodel.outputs.ScalarOutput;
+import wres.datamodel.outputs.ScoreOutput;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricCollection;
 import wres.engine.statistics.metric.MetricParameterException;
@@ -130,7 +131,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
          * Scalar results.
          */
 
-        private final ConcurrentMap<Pair<TimeWindow, Threshold>, List<Future<MetricOutputMapByMetric<ScalarOutput>>>> scalar =
+        private final ConcurrentMap<Pair<TimeWindow, Threshold>, List<Future<MetricOutputMapByMetric<DoubleScoreOutput>>>> scalar =
                 new ConcurrentHashMap<>();
         /**
          * Vector results.
@@ -163,7 +164,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
             MetricOutputForProjectByTimeAndThresholdBuilder builder =
                     dataFactory.ofMetricOutputForProjectByTimeAndThreshold();
             //Add outputs for current futures
-            scalar.forEach( ( key, list ) -> list.forEach( value -> builder.addScalarOutput( key, value ) ) );
+            scalar.forEach( ( key, list ) -> list.forEach( value -> builder.addScoreOutput( key, value ) ) );
             vector.forEach( ( key, list ) -> list.forEach( value -> builder.addVectorOutput( key, value ) ) );
             multivector.forEach( ( key, list ) -> list.forEach( value -> builder.addMultiVectorOutput( key, value ) ) );
             boxplot.forEach( ( key, list ) -> list.forEach( value -> builder.addBoxPlotOutput( key, value ) ) );
@@ -198,7 +199,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
              * Scalar results.
              */
 
-            private final ConcurrentMap<Pair<TimeWindow, Threshold>, List<Future<MetricOutputMapByMetric<ScalarOutput>>>> scalar =
+            private final ConcurrentMap<Pair<TimeWindow, Threshold>, List<Future<MetricOutputMapByMetric<DoubleScoreOutput>>>> scalar =
                     new ConcurrentHashMap<>();
             /**
              * Vector results.
@@ -234,17 +235,17 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
             }
 
             /**
-             * Adds a set of future {@link ScalarOutput} to the appropriate internal store.
+             * Adds a set of future {@link ScoreOutput} to the appropriate internal store.
              * 
              * @param key the key
              * @param value the future result
              * @return the builder
              */
 
-            MetricFuturesByTimeBuilder addScalarOutput( Pair<TimeWindow, Threshold> key,
-                                                        Future<MetricOutputMapByMetric<ScalarOutput>> value )
+            MetricFuturesByTimeBuilder addScoreOutput( Pair<TimeWindow, Threshold> key,
+                                                        Future<MetricOutputMapByMetric<DoubleScoreOutput>> value )
             {
-                List<Future<MetricOutputMapByMetric<ScalarOutput>>> result =
+                List<Future<MetricOutputMapByMetric<DoubleScoreOutput>>> result =
                         scalar.putIfAbsent( key, new ArrayList<>( Arrays.asList( value ) ) );
                 if ( Objects.nonNull( result ) )
                 {
@@ -340,7 +341,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
                 {
                     for ( MetricOutputGroup nextGroup : mergeList )
                     {
-                        if ( nextGroup == MetricOutputGroup.SCALAR )
+                        if ( nextGroup == MetricOutputGroup.SCORE )
                         {
                             scalar.putAll( futures.scalar );
                         }
@@ -397,9 +398,9 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
                                    MetricFuturesByTime.MetricFuturesByTimeBuilder futures )
     {
 
-        if ( hasMetrics( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCALAR ) )
+        if ( hasMetrics( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCORE ) )
         {
-            processSingleValuedThresholds( timeWindow, input, futures, MetricOutputGroup.SCALAR );
+            processSingleValuedThresholds( timeWindow, input, futures, MetricOutputGroup.SCORE );
         }
         if ( hasMetrics( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.VECTOR ) )
         {
@@ -546,9 +547,9 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
         MetricCalculationException returnMe = null;
         try
         {
-            if ( outGroup == MetricOutputGroup.SCALAR )
+            if ( outGroup == MetricOutputGroup.SCORE )
             {
-                futures.addScalarOutput( Pair.of( timeWindow, threshold ),
+                futures.addScoreOutput( Pair.of( timeWindow, threshold ),
                                          processSingleValuedThreshold( threshold,
                                                                        input,
                                                                        singleValuedScalar ) );

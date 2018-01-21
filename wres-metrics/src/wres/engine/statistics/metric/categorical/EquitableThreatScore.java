@@ -5,8 +5,8 @@ import java.util.Objects;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
+import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MatrixOutput;
-import wres.datamodel.outputs.ScalarOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 
 /**
@@ -21,13 +21,13 @@ public class EquitableThreatScore extends ContingencyTableScore<DichotomousPairs
 {
 
     @Override
-    public ScalarOutput apply(final DichotomousPairs s)
+    public DoubleScoreOutput apply(final DichotomousPairs s)
     {
         return aggregate(getCollectionInput(s));
     }
 
     @Override
-    public ScalarOutput aggregate(final MatrixOutput output)
+    public DoubleScoreOutput aggregate(final MatrixOutput output)
     {
         if(Objects.isNull(output))
         {
@@ -38,7 +38,7 @@ public class EquitableThreatScore extends ContingencyTableScore<DichotomousPairs
         final double[][] cm = v.getData().getDoubles();
         final double t = cm[0][0] + cm[0][1] + cm[1][0];
         final double hitsRandom = ((cm[0][0] + cm[1][0]) * (cm[0][0] + cm[0][1])) / (t + cm[1][1]);
-        return getDataFactory().ofScalarOutput((cm[0][0] - hitsRandom) / (t - hitsRandom), getMetadata(output));
+        return getDataFactory().ofDoubleScoreOutput((cm[0][0] - hitsRandom) / (t - hitsRandom), getMetadata(output));
     }
 
     @Override
@@ -57,7 +57,7 @@ public class EquitableThreatScore extends ContingencyTableScore<DichotomousPairs
      * A {@link MetricBuilder} to build the metric.
      */
 
-    public static class EquitableThreatScoreBuilder extends OrdinaryScoreBuilder<DichotomousPairs, ScalarOutput>
+    public static class EquitableThreatScoreBuilder extends OrdinaryScoreBuilder<DichotomousPairs, DoubleScoreOutput>
     {
 
         @Override

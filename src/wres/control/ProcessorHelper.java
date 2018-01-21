@@ -42,6 +42,7 @@ import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
+import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MapKey;
 import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.MetricOutputAccessException;
@@ -49,7 +50,7 @@ import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
 import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.datamodel.outputs.MultiVectorOutput;
-import wres.datamodel.outputs.ScalarOutput;
+import wres.datamodel.outputs.ScoreOutput;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.config.MetricConfigHelper;
 import wres.engine.statistics.metric.config.MetricConfigurationException;
@@ -270,12 +271,12 @@ public class ProcessorHelper
             // Multivector outputs by threshold must be cached across time windows
             if ( hasMultiVectorOutputsToCache( projectConfig ) )
             {
-                cacheMe = new MetricOutputGroup[] { MetricOutputGroup.SCALAR, MetricOutputGroup.VECTOR,
+                cacheMe = new MetricOutputGroup[] { MetricOutputGroup.SCORE, MetricOutputGroup.VECTOR,
                                                     MetricOutputGroup.MULTIVECTOR };
             }
             else
             {
-                cacheMe = new MetricOutputGroup[] { MetricOutputGroup.SCALAR, MetricOutputGroup.VECTOR };
+                cacheMe = new MetricOutputGroup[] { MetricOutputGroup.SCORE, MetricOutputGroup.VECTOR };
             }
 
             MetricFactory mF = MetricFactory.getInstance( DATA_FACTORY );
@@ -475,13 +476,13 @@ public class ProcessorHelper
         try
         {
             // Process scalar charts
-            if ( processor.willCacheMetricOutput( MetricOutputGroup.SCALAR )
-                 && processor.getCachedMetricOutput().hasOutput( MetricOutputGroup.SCALAR ) )
+            if ( processor.willCacheMetricOutput( MetricOutputGroup.SCORE )
+                 && processor.getCachedMetricOutput().hasOutput( MetricOutputGroup.SCORE ) )
             {
                 processScalarCharts( feature,
                                      projectConfigPlus,
                                      processor.getCachedMetricOutput()
-                                              .getScalarOutput() );
+                                              .getScoreOutput() );
             }
             // Process vector charts
             if ( processor.willCacheMetricOutput( MetricOutputGroup.VECTOR )
@@ -522,7 +523,7 @@ public class ProcessorHelper
     }
 
     /**
-     * Processes a set of charts associated with {@link ScalarOutput} across multiple metrics, time windows, and
+     * Processes a set of charts associated with {@link ScoreOutput} across multiple metrics, time windows, and
      * thresholds, stored in a {@link MetricOutputMultiMapByTimeAndThreshold}.
      * 
      * @param feature the feature for which the chart is defined
@@ -533,7 +534,7 @@ public class ProcessorHelper
 
     private static void processScalarCharts( final Feature feature,
                                              final ProjectConfigPlus projectConfigPlus,
-                                             final MetricOutputMultiMapByTimeAndThreshold<ScalarOutput> scalarResults )
+                                             final MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> scalarResults )
     {
 
         // Check for results
@@ -545,7 +546,7 @@ public class ProcessorHelper
 
         ProjectConfig config = projectConfigPlus.getProjectConfig();
         // Iterate through each metric 
-        for ( final Map.Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<ScalarOutput>> e : scalarResults.entrySet() )
+        for ( final Map.Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>> e : scalarResults.entrySet() )
         {
             List<DestinationConfig> destinations =
                     ConfigHelper.getGraphicalDestinations( config );
@@ -558,7 +559,7 @@ public class ProcessorHelper
     }
     
     /**
-     * Writes a single chart associated with {@link ScalarOutput} for a single metric and time window, stored in a 
+     * Writes a single chart associated with {@link ScoreOutput} for a single metric and time window, stored in a 
      * {@link MetricOutputMultiMapByTimeAndThreshold}.
      * 
      * @param feature the feature
@@ -573,7 +574,7 @@ public class ProcessorHelper
                                           ProjectConfigPlus projectConfigPlus,
                                           DestinationConfig destConfig,
                                           MetricConstants metricId,
-                                          MetricOutputMapByTimeAndThreshold<ScalarOutput> scalarResults )
+                                          MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> scalarResults )
     {
         // Build charts
         try

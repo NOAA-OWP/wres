@@ -45,10 +45,16 @@ class SafeMultiValuedScoreOutput implements MultiValuedScoreOutput
     }
 
     @Override
-    public VectorOfDoubles getData()
+    public Double getData()
     {
-        return output;
+        return getValue( MetricConstants.MAIN );
     }
+    
+    @Override
+    public double getValue( MetricConstants component )
+    {
+        return output.getDoubles()[template.getMetricComponents().indexOf( component )];
+    }    
 
     @Override
     public ScoreOutputGroup getOutputTemplate()
@@ -65,7 +71,7 @@ class SafeMultiValuedScoreOutput implements MultiValuedScoreOutput
         }
         final SafeMultiValuedScoreOutput v = (SafeMultiValuedScoreOutput) o;
         return meta.equals( v.getMetadata() ) && template.equals( v.template )
-               && Arrays.equals( output.getDoubles(), v.getData().getDoubles() );
+               && Arrays.equals( output.getDoubles(), v.output.getDoubles() );
     }
 
     @Override
@@ -123,12 +129,6 @@ class SafeMultiValuedScoreOutput implements MultiValuedScoreOutput
         this.output = ( (DefaultDataFactory) DefaultDataFactory.getInstance() ).safeVectorOf( output );
         this.meta = meta;
         this.template = template;
-    }
-
-    @Override
-    public double getValue( MetricConstants component )
-    {
-        return output.getDoubles()[template.getMetricComponents().indexOf( component )];
     }
 
 }

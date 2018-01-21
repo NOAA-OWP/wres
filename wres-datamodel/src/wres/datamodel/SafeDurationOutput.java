@@ -4,7 +4,7 @@ import java.time.Duration;
 import java.util.Objects;
 
 import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.DurationOutput;
+import wres.datamodel.outputs.DurationScoreOutput;
 import wres.datamodel.outputs.MetricOutputException;
 
 /**
@@ -15,7 +15,7 @@ import wres.datamodel.outputs.MetricOutputException;
  * @since 0.4
  */
 
-class SafeDurationOutput implements DurationOutput
+class SafeDurationOutput implements DurationScoreOutput
 {
 
     /**

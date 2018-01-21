@@ -32,11 +32,12 @@ import wres.datamodel.inputs.MetricInputSliceException;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.PairedInput;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.MetricOutputForProject;
 import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.datamodel.outputs.MultiVectorOutput;
-import wres.datamodel.outputs.ScalarOutput;
+import wres.datamodel.outputs.ScoreOutput;
 import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricCollection;
@@ -132,10 +133,10 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume {@link SingleValuedPairs} and produce
-     * {@link ScalarOutput}.
+     * {@link ScoreOutput}.
      */
 
-    final MetricCollection<SingleValuedPairs, ScalarOutput, ScalarOutput> singleValuedScalar;
+    final MetricCollection<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput> singleValuedScalar;
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume {@link SingleValuedPairs} and produce
@@ -323,13 +324,13 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         metricFactory = MetricFactory.getInstance( dataFactory );
         //Construct the metrics that are common to more than one type of input pairs
 
-        if ( hasMetrics( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCALAR ) )
+        if ( hasMetrics( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCORE ) )
         {
             singleValuedScalar =
                     metricFactory.ofSingleValuedScalarCollection( metricExecutor,
                                                                   getSelectedMetrics( metrics,
                                                                                       MetricInputGroup.SINGLE_VALUED,
-                                                                                      MetricOutputGroup.SCALAR ) );
+                                                                                      MetricOutputGroup.SCORE ) );
         }
         else
         {

@@ -13,12 +13,11 @@ import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
+import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MatrixOutput;
-import wres.datamodel.outputs.ScalarOutput;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
-import wres.engine.statistics.metric.categorical.EquitableThreatScore;
 import wres.engine.statistics.metric.categorical.EquitableThreatScore.EquitableThreatScoreBuilder;
 
 /**
@@ -63,8 +62,8 @@ public final class EquitableThreatScoreTest
 
         //Check the results
         final MetricFactory metF = MetricFactory.getInstance( outF );
-        final ScalarOutput actual = ets.apply( input );
-        final ScalarOutput expected = outF.ofScalarOutput( 0.43768152544513195, m1 );
+        final DoubleScoreOutput actual = ets.apply( input );
+        final DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 0.43768152544513195, m1 );
         assertTrue( "Actual: " + actual.getData().doubleValue()
                     + ". Expected: "
                     + expected.getData().doubleValue()

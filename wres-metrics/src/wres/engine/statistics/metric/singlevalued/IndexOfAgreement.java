@@ -7,7 +7,7 @@ import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.ScalarOutput;
+import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 
@@ -32,7 +32,7 @@ public class IndexOfAgreement extends DoubleErrorScore<SingleValuedPairs>
     final double exponent;
 
     @Override
-    public ScalarOutput apply( final SingleValuedPairs s )
+    public DoubleScoreOutput apply( final SingleValuedPairs s )
     {
         if(Objects.isNull(s))
         {
@@ -53,7 +53,7 @@ public class IndexOfAgreement extends DoubleErrorScore<SingleValuedPairs>
         //Metadata
         final MetricOutputMetadata metOut = getMetadata( s, s.getData().size(), MetricConstants.MAIN, null );
         //Compute the atomic errors in a stream
-        return getDataFactory().ofScalarOutput( FunctionFactory.skill().applyAsDouble( numerator, denominator ),
+        return getDataFactory().ofDoubleScoreOutput( FunctionFactory.skill().applyAsDouble( numerator, denominator ),
                                                 metOut );
     }
 

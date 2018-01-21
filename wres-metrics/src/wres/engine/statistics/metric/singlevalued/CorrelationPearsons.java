@@ -13,7 +13,7 @@ import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.ScalarOutput;
+import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricCollection;
@@ -29,8 +29,8 @@ import wres.engine.statistics.metric.OrdinaryScore;
  * @version 0.1
  * @since 0.1
  */
-public class CorrelationPearsons extends OrdinaryScore<SingleValuedPairs, ScalarOutput>
-implements Collectable<SingleValuedPairs, ScalarOutput, ScalarOutput>
+public class CorrelationPearsons extends OrdinaryScore<SingleValuedPairs, DoubleScoreOutput>
+implements Collectable<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput>
 {
 
     /**
@@ -40,7 +40,7 @@ implements Collectable<SingleValuedPairs, ScalarOutput, ScalarOutput>
     private final PearsonsCorrelation correlation;
 
     @Override
-    public ScalarOutput apply(SingleValuedPairs s)
+    public DoubleScoreOutput apply(SingleValuedPairs s)
     {
         if(Objects.isNull(s))
         {
@@ -60,7 +60,7 @@ implements Collectable<SingleValuedPairs, ScalarOutput, ScalarOutput>
                                                              MetricConstants.MAIN,
                                                              in.getIdentifier());
             double returnMe = correlation.correlation(slicer.getLeftSide(s), slicer.getRightSide(s));
-            return getDataFactory().ofScalarOutput(returnMe, meta);
+            return getDataFactory().ofDoubleScoreOutput(returnMe, meta);
         }
         catch(Exception e)
         {
@@ -99,13 +99,13 @@ implements Collectable<SingleValuedPairs, ScalarOutput, ScalarOutput>
     }
 
     @Override
-    public ScalarOutput aggregate(ScalarOutput output)
+    public DoubleScoreOutput aggregate(DoubleScoreOutput output)
     {
         return output;
     }
 
     @Override
-    public ScalarOutput getCollectionInput(SingleValuedPairs input)
+    public DoubleScoreOutput getCollectionInput(SingleValuedPairs input)
     {
         return apply(input);
     }
@@ -120,7 +120,7 @@ implements Collectable<SingleValuedPairs, ScalarOutput, ScalarOutput>
      * A {@link MetricBuilder} to build the metric.
      */
 
-    public static class CorrelationPearsonsBuilder extends OrdinaryScoreBuilder<SingleValuedPairs, ScalarOutput>
+    public static class CorrelationPearsonsBuilder extends OrdinaryScoreBuilder<SingleValuedPairs, DoubleScoreOutput>
     {
 
         @Override

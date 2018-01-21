@@ -16,12 +16,12 @@ import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.inputs.InsufficientDataException;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
+import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MetricOutputAccessException;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
 import wres.datamodel.outputs.MultiValuedScoreOutput;
-import wres.datamodel.outputs.ScalarOutput;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.io.config.ProjectConfigPlus;
@@ -58,19 +58,19 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                                       .ofMetricProcessorByTimeEnsemblePairs( config );
         MetricOutputForProjectByTimeAndThreshold results =
                 processor.apply( MetricTestDataFactory.getEnsemblePairsOne() );
-        MetricOutputMapByTimeAndThreshold<ScalarOutput> bias = results.getScalarOutput()
-                                                                      .get( MetricConstants.BIAS_FRACTION );
-        MetricOutputMapByTimeAndThreshold<ScalarOutput> cod =
-                results.getScalarOutput()
+        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> bias = results.getScoreOutput()
+                                                                           .get( MetricConstants.BIAS_FRACTION );
+        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> cod =
+                results.getScoreOutput()
                        .get( MetricConstants.COEFFICIENT_OF_DETERMINATION );
-        MetricOutputMapByTimeAndThreshold<ScalarOutput> rho = results.getScalarOutput()
-                                                                     .get( MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
-        MetricOutputMapByTimeAndThreshold<ScalarOutput> mae = results.getScalarOutput()
-                                                                     .get( MetricConstants.MEAN_ABSOLUTE_ERROR );
-        MetricOutputMapByTimeAndThreshold<ScalarOutput> me =
-                results.getScalarOutput().get( MetricConstants.MEAN_ERROR );
-        MetricOutputMapByTimeAndThreshold<ScalarOutput> rmse = results.getScalarOutput()
-                                                                      .get( MetricConstants.ROOT_MEAN_SQUARE_ERROR );
+        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> rho = results.getScoreOutput()
+                                                                          .get( MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
+        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> mae = results.getScoreOutput()
+                                                                          .get( MetricConstants.MEAN_ABSOLUTE_ERROR );
+        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> me =
+                results.getScoreOutput().get( MetricConstants.MEAN_ERROR );
+        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> rmse = results.getScoreOutput()
+                                                                           .get( MetricConstants.ROOT_MEAN_SQUARE_ERROR );
         MetricOutputMapByTimeAndThreshold<MultiValuedScoreOutput> crps =
                 results.getVectorOutput()
                        .get( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE );
@@ -89,7 +89,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         assertTrue( "Unexpected difference in " + MetricConstants.ROOT_MEAN_SQUARE_ERROR,
                     rmse.getValue( 0 ).getData().equals( 41.01563032408479 ) );
         assertTrue( "Unexpected difference in " + MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
-                    Double.compare( crps.getValue( 0 ).getData().getDoubles()[0], 9.076475676968208 ) == 0 );
+                    Double.compare( crps.getValue( 0 ).getData(), 9.076475676968208 ) == 0 );
     }
 
     /**
@@ -117,10 +117,10 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                                     MetricOutputGroup.values() );
         processor.apply( MetricTestDataFactory.getEnsemblePairsOne() );
         //Obtain the results
-        MetricOutputMultiMapByTimeAndThreshold<ScalarOutput> results = processor.getCachedMetricOutput()
-                                                                                .getScalarOutput();
+        MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> results = processor.getCachedMetricOutput()
+                                                                                     .getScoreOutput();
         //Validate bias
-        MetricOutputMapByTimeAndThreshold<ScalarOutput> bias = results.get( MetricConstants.BIAS_FRACTION );
+        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> bias = results.get( MetricConstants.BIAS_FRACTION );
         assertTrue( "Expected results differ from actual results for " + MetricConstants.BIAS_FRACTION
                     + " at "
                     + bias.getKey( 0 ),
@@ -146,7 +146,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                     + bias.getKey( 5 ),
                     bias.getValue( 5 ).getData().equals( -0.056658160809530816 ) );
         //Validate CoD
-        MetricOutputMapByTimeAndThreshold<ScalarOutput> cod =
+        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> cod =
                 results.get( MetricConstants.COEFFICIENT_OF_DETERMINATION );
         assertTrue( "Expected results differ from actual results for "
                     + MetricConstants.COEFFICIENT_OF_DETERMINATION
@@ -179,7 +179,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                     + cod.getKey( 5 ),
                     cod.getValue( 5 ).getData().equals( 0.7492338765733539 ) );
         //Validate rho
-        MetricOutputMapByTimeAndThreshold<ScalarOutput> rho =
+        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> rho =
                 results.get( MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
         assertTrue( "Expected results differ from actual results for "
                     + MetricConstants.PEARSON_CORRELATION_COEFFICIENT
@@ -212,7 +212,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                     + rho.getKey( 5 ),
                     rho.getValue( 5 ).getData().equals( 0.8655829692024641 ) );
         //Validate mae
-        MetricOutputMapByTimeAndThreshold<ScalarOutput> mae = results.get( MetricConstants.MEAN_ABSOLUTE_ERROR );
+        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> mae = results.get( MetricConstants.MEAN_ABSOLUTE_ERROR );
         assertTrue( "Expected results differ from actual results for " + MetricConstants.MEAN_ABSOLUTE_ERROR
                     + " at "
                     + mae.getKey( 0 ),
@@ -238,7 +238,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                     + mae.getKey( 5 ),
                     mae.getValue( 5 ).getData().equals( 22.094227646773568 ) );
         //Validate me
-        MetricOutputMapByTimeAndThreshold<ScalarOutput> me = results.get( MetricConstants.MEAN_ERROR );
+        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> me = results.get( MetricConstants.MEAN_ERROR );
         assertTrue( "Expected results differ from actual results for " + MetricConstants.MEAN_ERROR
                     + " at "
                     + me.getKey( 0 ),
@@ -264,7 +264,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                     + me.getKey( 5 ),
                     me.getValue( 5 ).getData().equals( -4.218543908073952 ) );
         //Validate rmse
-        MetricOutputMapByTimeAndThreshold<ScalarOutput> rmse =
+        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> rmse =
                 results.get( MetricConstants.ROOT_MEAN_SQUARE_ERROR );
         assertTrue( "Expected results differ from actual results for " + MetricConstants.ROOT_MEAN_SQUARE_ERROR
                     + " at "
@@ -314,16 +314,16 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
                 MetricFactory.getInstance( metIn )
                              .ofMetricProcessorByTimeEnsemblePairs( config,
-                                                                    MetricOutputGroup.SCALAR );
+                                                                    MetricOutputGroup.SCORE );
         processor.apply( MetricTestDataFactory.getEnsemblePairsOne() );
         //Obtain the results
-        MetricOutputMultiMapByTimeAndThreshold<ScalarOutput> results = processor.getCachedMetricOutput()
-                                                                                .getScalarOutput();
+        MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> results = processor.getCachedMetricOutput()
+                                                                                     .getScoreOutput();
 
         //Validate a selection of the outputs only
 
         //Validate bias
-        MetricOutputMapByTimeAndThreshold<ScalarOutput> bias = results.get( MetricConstants.BIAS_FRACTION );
+        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> bias = results.get( MetricConstants.BIAS_FRACTION );
         assertTrue( "Expected results differ from actual results for " + MetricConstants.BIAS_FRACTION
                     + " at "
                     + bias.getKey( 0 ),
@@ -349,7 +349,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                     + bias.getKey( 5 ),
                     bias.getValue( 5 ).getData().equals( -0.056658160809530816 ) );
         //Validate CoD
-        MetricOutputMapByTimeAndThreshold<ScalarOutput> cod =
+        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> cod =
                 results.get( MetricConstants.COEFFICIENT_OF_DETERMINATION );
         assertTrue( "Expected results differ from actual results for "
                     + MetricConstants.COEFFICIENT_OF_DETERMINATION
@@ -382,7 +382,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                     + cod.getKey( 5 ),
                     cod.getValue( 5 ).getData().equals( 0.7492338765733539 ) );
         //Validate rho
-        MetricOutputMapByTimeAndThreshold<ScalarOutput> rho =
+        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> rho =
                 results.get( MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
         assertTrue( "Expected results differ from actual results for "
                     + MetricConstants.PEARSON_CORRELATION_COEFFICIENT
@@ -415,7 +415,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                     + rho.getKey( 5 ),
                     rho.getValue( 5 ).getData().equals( 0.8655829692024641 ) );
         //Validate mae
-        MetricOutputMapByTimeAndThreshold<ScalarOutput> mae = results.get( MetricConstants.MEAN_ABSOLUTE_ERROR );
+        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> mae = results.get( MetricConstants.MEAN_ABSOLUTE_ERROR );
         assertTrue( "Expected results differ from actual results for " + MetricConstants.MEAN_ABSOLUTE_ERROR
                     + " at "
                     + mae.getKey( 0 ),
@@ -441,7 +441,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                     + mae.getKey( 5 ),
                     mae.getValue( 5 ).getData().equals( 22.094227646773568 ) );
         //Validate me
-        MetricOutputMapByTimeAndThreshold<ScalarOutput> me = results.get( MetricConstants.MEAN_ERROR );
+        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> me = results.get( MetricConstants.MEAN_ERROR );
         assertTrue( "Expected results differ from actual results for " + MetricConstants.MEAN_ERROR
                     + " at "
                     + me.getKey( 0 ),
@@ -467,7 +467,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                     + me.getKey( 5 ),
                     me.getValue( 5 ).getData().equals( -4.218543908073952 ) );
         //Validate rmse
-        MetricOutputMapByTimeAndThreshold<ScalarOutput> rmse =
+        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> rmse =
                 results.get( MetricConstants.ROOT_MEAN_SQUARE_ERROR );
         assertTrue( "Expected results differ from actual results for " + MetricConstants.ROOT_MEAN_SQUARE_ERROR
                     + " at "
@@ -513,7 +513,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
             MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
                                  .ofMetricProcessorByTimeEnsemblePairs( config,
-                                                                        MetricOutputGroup.SCALAR );
+                                                                        MetricOutputGroup.SCORE );
             processor.apply( null );
             fail( "Expected a checked exception on processing the project configuration '" + testOne + "'." );
         }
@@ -530,7 +530,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
             MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
                                  .ofMetricProcessorByTimeEnsemblePairs( config,
-                                                                        MetricOutputGroup.SCALAR );
+                                                                        MetricOutputGroup.SCORE );
             processor.apply( MetricTestDataFactory.getEnsemblePairsTwo() );
             fail( "Expected a checked exception on processing the project configuration '" + testTwo
                   + "' with insufficient data." );
@@ -553,7 +553,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
             MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
                                  .ofMetricProcessorByTimeEnsemblePairs( config,
-                                                                        MetricOutputGroup.SCALAR );
+                                                                        MetricOutputGroup.SCORE );
             processor.apply( MetricTestDataFactory.getEnsemblePairsTwo() );
             fail( "Expected a checked exception on processing the project configuration '" + testThree
                   + "' with insufficient data." );
@@ -576,7 +576,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
             MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
                                  .ofMetricProcessorByTimeEnsemblePairs( config,
-                                                                        MetricOutputGroup.SCALAR );
+                                                                        MetricOutputGroup.SCORE );
             processor.apply( MetricTestDataFactory.getEnsemblePairsTwo() );
             fail( "Expected a checked exception on processing the project configuration '" + testFour
                   + "' with a dichotomous metric." );
@@ -599,7 +599,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
             MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
                                  .ofMetricProcessorByTimeEnsemblePairs( config,
-                                                                        MetricOutputGroup.SCALAR );
+                                                                        MetricOutputGroup.SCORE );
             processor.apply( MetricTestDataFactory.getEnsemblePairsTwo() );
             fail( "Expected a checked exception on processing the project configuration '" + testFive
                   + "' with a multicategory metric." );
@@ -622,7 +622,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
             MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
                                  .ofMetricProcessorByTimeEnsemblePairs( config,
-                                                                        MetricOutputGroup.SCALAR );
+                                                                        MetricOutputGroup.SCORE );
             processor.apply( MetricTestDataFactory.getEnsemblePairsTwo() );
             fail( "Expected a checked exception on processing the project configuration '" + testSix
                   + "' with a skill metric that requires a baseline, in the absence of a baseline." );
@@ -689,10 +689,10 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                                     MetricOutputGroup.values() );
         processor.apply( MetricTestDataFactory.getEnsemblePairsOne() );
         //Obtain the results
-        MetricOutputMultiMapByTimeAndThreshold<ScalarOutput> results = processor.getCachedMetricOutput()
-                                                                                .getScalarOutput();
+        MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> results = processor.getCachedMetricOutput()
+                                                                                     .getScoreOutput();
         //Validate bias
-        MetricOutputMapByTimeAndThreshold<ScalarOutput> bias = results.get( MetricConstants.BIAS_FRACTION );
+        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> bias = results.get( MetricConstants.BIAS_FRACTION );
         assertTrue( "Expected results differ from actual results for " + MetricConstants.BIAS_FRACTION
                     + " at "
                     + bias.getKey( 0 ),
@@ -718,7 +718,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                     + bias.getKey( 5 ),
                     bias.getValue( 5 ).getData().equals( -0.056658160809530816 ) );
         //Validate CoD
-        MetricOutputMapByTimeAndThreshold<ScalarOutput> cod =
+        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> cod =
                 results.get( MetricConstants.COEFFICIENT_OF_DETERMINATION );
         assertTrue( "Expected results differ from actual results for "
                     + MetricConstants.COEFFICIENT_OF_DETERMINATION
@@ -751,7 +751,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                     + cod.getKey( 5 ),
                     cod.getValue( 5 ).getData().equals( 0.7492338765733539 ) );
         //Validate rho
-        MetricOutputMapByTimeAndThreshold<ScalarOutput> rho =
+        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> rho =
                 results.get( MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
         assertTrue( "Expected results differ from actual results for "
                     + MetricConstants.PEARSON_CORRELATION_COEFFICIENT
@@ -784,7 +784,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                     + rho.getKey( 5 ),
                     rho.getValue( 5 ).getData().equals( 0.8655829692024641 ) );
         //Validate mae
-        MetricOutputMapByTimeAndThreshold<ScalarOutput> mae = results.get( MetricConstants.MEAN_ABSOLUTE_ERROR );
+        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> mae = results.get( MetricConstants.MEAN_ABSOLUTE_ERROR );
         assertTrue( "Expected results differ from actual results for " + MetricConstants.MEAN_ABSOLUTE_ERROR
                     + " at "
                     + mae.getKey( 0 ),
@@ -810,7 +810,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                     + mae.getKey( 5 ),
                     mae.getValue( 5 ).getData().equals( 22.094227646773568 ) );
         //Validate me
-        MetricOutputMapByTimeAndThreshold<ScalarOutput> me = results.get( MetricConstants.MEAN_ERROR );
+        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> me = results.get( MetricConstants.MEAN_ERROR );
         assertTrue( "Expected results differ from actual results for " + MetricConstants.MEAN_ERROR
                     + " at "
                     + me.getKey( 0 ),
@@ -836,7 +836,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                     + me.getKey( 5 ),
                     me.getValue( 5 ).getData().equals( -4.218543908073952 ) );
         //Validate rmse
-        MetricOutputMapByTimeAndThreshold<ScalarOutput> rmse =
+        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> rmse =
                 results.get( MetricConstants.ROOT_MEAN_SQUARE_ERROR );
         assertTrue( "Expected results differ from actual results for " + MetricConstants.ROOT_MEAN_SQUARE_ERROR
                     + " at "

@@ -12,7 +12,7 @@ import org.junit.Test;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
-import wres.datamodel.outputs.ScalarOutput;
+import wres.datamodel.outputs.DoubleScoreOutput;
 
 /**
  * Tests the {@link MetricTask}.
@@ -32,8 +32,8 @@ public final class MetricTaskTest
     @Test
     public void test1MetricTask() throws MetricParameterException
     {
-        
-        final ExecutorService pairPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+
+        final ExecutorService pairPool = Executors.newFixedThreadPool( Runtime.getRuntime().availableProcessors() );
         try
         {
 
@@ -42,49 +42,49 @@ public final class MetricTaskTest
 
             //Add some appropriate metrics to the collection
             final DataFactory outF = DefaultDataFactory.getInstance();
-            final MetricFactory metF = MetricFactory.getInstance(outF);               
-            final Metric<SingleValuedPairs, ScalarOutput> m = metF.ofMeanError();
+            final MetricFactory metF = MetricFactory.getInstance( outF );
+            final Metric<SingleValuedPairs, DoubleScoreOutput> m = metF.ofMeanError();
 
             //Wrap an input in a future
             final FutureTask<SingleValuedPairs> futureInput =
-                                                            new FutureTask<SingleValuedPairs>(new Callable<SingleValuedPairs>()
-                                                            {
-                                                                public SingleValuedPairs call()
-                                                                {
-                                                                    return input;
-                                                                }
-                                                            });
+                    new FutureTask<SingleValuedPairs>( new Callable<SingleValuedPairs>()
+                    {
+                        public SingleValuedPairs call()
+                        {
+                            return input;
+                        }
+                    } );
             final FutureTask<SingleValuedPairs> futureInputNull =
-                                                                new FutureTask<SingleValuedPairs>(new Callable<SingleValuedPairs>()
-                                                                {
-                                                                    public SingleValuedPairs call()
-                                                                    {
-                                                                        return null;
-                                                                    }
-                                                                });
-            final MetricTask<SingleValuedPairs, ScalarOutput> task = new MetricTask<>(m, futureInput);
+                    new FutureTask<SingleValuedPairs>( new Callable<SingleValuedPairs>()
+                    {
+                        public SingleValuedPairs call()
+                        {
+                            return null;
+                        }
+                    } );
+            final MetricTask<SingleValuedPairs, DoubleScoreOutput> task = new MetricTask<>( m, futureInput );
 
             //Compute the pairs
-            pairPool.submit(futureInput);
-            pairPool.submit(futureInputNull);
+            pairPool.submit( futureInput );
+            pairPool.submit( futureInputNull );
 
             //Should not throw an exception
             try
             {
                 task.call();
             }
-            catch(final Exception e)
+            catch ( final Exception e )
             {
-                fail("Unexpected exception on calling metric task: " + e.getMessage() + ".");
+                fail( "Unexpected exception on calling metric task: " + e.getMessage() + "." );
             }
             //Should throw an exception
             try
             {
-                final MetricTask<SingleValuedPairs, ScalarOutput> task2 = new MetricTask<>(m, futureInputNull);
+                final MetricTask<SingleValuedPairs, DoubleScoreOutput> task2 = new MetricTask<>( m, futureInputNull );
                 task2.call();
-                fail("Expected an exception on calling metric task with null future input.");
+                fail( "Expected an exception on calling metric task with null future input." );
             }
-            catch(final Exception e)
+            catch ( final Exception e )
             {
             }
         }

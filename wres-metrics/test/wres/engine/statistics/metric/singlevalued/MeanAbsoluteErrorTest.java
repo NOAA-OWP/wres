@@ -11,10 +11,9 @@ import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.ScalarOutput;
+import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
-import wres.engine.statistics.metric.singlevalued.MeanAbsoluteError;
 import wres.engine.statistics.metric.singlevalued.MeanAbsoluteError.MeanAbsoluteErrorBuilder;
 
 /**
@@ -56,8 +55,8 @@ public final class MeanAbsoluteErrorTest
         final MeanAbsoluteError mae = b.build();
 
         //Check the results
-        final ScalarOutput actual = mae.apply( input );
-        final ScalarOutput expected = outF.ofScalarOutput( 201.37, m1 );
+        final DoubleScoreOutput actual = mae.apply( input );
+        final DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 201.37, m1 );
         assertTrue( "Actual: " + actual.getData().doubleValue()
                     + ". Expected: "
                     + expected.getData().doubleValue()
