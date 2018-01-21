@@ -76,7 +76,7 @@ public class VolumetricEfficiency extends DoubleErrorScore<SingleValuedPairs>
     {
 
         @Override
-        protected VolumetricEfficiency build() throws MetricParameterException
+        public VolumetricEfficiency build() throws MetricParameterException
         {
             return new VolumetricEfficiency( this );
         }

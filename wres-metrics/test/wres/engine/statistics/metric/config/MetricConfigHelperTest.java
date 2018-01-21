@@ -10,11 +10,9 @@ import org.junit.Test;
 import wres.config.generated.MetricConfigName;
 import wres.config.generated.ThresholdOperator;
 import wres.datamodel.Threshold.Operator;
-import wres.engine.statistics.metric.config.MetricConfigHelper;
-import wres.engine.statistics.metric.config.MetricConfigurationException;
 
 /**
- * Tests the {@link ConfigMapper}.
+ * Tests the {@link MetricConfigHelper}.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
@@ -24,7 +22,7 @@ public final class MetricConfigHelperTest
 {
 
     /**
-     * Tests the {@link ConfigMapper#from(wres.config.generated.MetricConfigName)}.
+     * Tests the {@link MetricConfigHelper#from(wres.config.generated.MetricConfigName)}.
      * @throws MetricConfigurationException if a mapping could not be created
      */
 
@@ -44,7 +42,7 @@ public final class MetricConfigHelperTest
     }
     
     /**
-     * Tests the {@link ConfigMapper#from(ThresholdOperator)}.
+     * Tests the {@link MetricConfigHelper#from(ThresholdOperator)}.
      * @throws MetricConfigurationException if a mapping could not be created
      */
 
@@ -66,7 +64,7 @@ public final class MetricConfigHelperTest
     }
     
     /**
-     * Tests the {@link ConfigMapper} for checked exceptions.
+     * Tests the {@link MetricConfigHelper} for checked exceptions.
      */
     
     @Test

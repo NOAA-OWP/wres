@@ -30,7 +30,6 @@ import wres.datamodel.outputs.ScalarOutput;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricTestDataFactory;
-import wres.engine.statistics.metric.config.MetricConfigurationException;
 import wres.io.config.ProjectConfigPlus;
 
 /**
@@ -51,13 +50,13 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
      * configuration obtained from testinput/metricProcessorSingleValuedPairsByTimeTest/test1ApplyNoThresholds.xml and pairs 
      * obtained from {@link MetricTestDataFactory#getSingleValuedPairsFour()}.
      * 
-     * @throws MetricConfigurationException if the configuration is incorrect
      * @throws IOException if the input data could not be read
      * @throws MetricOutputAccessException if the outputs could not be accessed
+     * @throws MetricProcessorException if the metric processor could not be built 
      */
 
     @Test
-    public void test1ApplyNoThresholds() throws IOException, MetricConfigurationException, MetricOutputAccessException
+    public void test1ApplyNoThresholds() throws IOException, MetricOutputAccessException, MetricProcessorException
     {
         String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/test1ApplyNoThresholds.xml";
 
@@ -66,7 +65,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                 MetricFactory.getInstance( dataFactory )
                              .ofMetricProcessorByTimeSingleValuedPairs( config,
                                                                         Executors.newSingleThreadExecutor(),
-                                                                        null,
+                                                                        Executors.newSingleThreadExecutor(),
                                                                         (MetricOutputGroup[]) null );
         SingleValuedPairs pairs = MetricTestDataFactory.getSingleValuedPairsFour();
         MetricOutputForProjectByTimeAndThreshold results = processor.apply( pairs );
@@ -110,13 +109,13 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
      * pairs obtained from {@link MetricTestDataFactory#getSingleValuedPairsFour()}. Tests the output for multiple 
      * calls with separate forecast lead times.
      * 
-     * @throws MetricConfigurationException if the configuration is incorrect
      * @throws IOException if the input data could not be read
      * @throws MetricOutputAccessException if the outputs could not be accessed
+     * @throws MetricProcessorException if the metric processor could not be built
      */
 
     @Test
-    public void test2ApplyThresholds() throws IOException, MetricConfigurationException, MetricOutputAccessException
+    public void test2ApplyThresholds() throws IOException, MetricOutputAccessException, MetricProcessorException
     {
         final DataFactory metIn = DefaultDataFactory.getInstance();
         String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/test2ApplyThresholds.xml";
@@ -250,7 +249,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                   + "' "
                   + "with no thresholds for metrics that require them." );
         }
-        catch ( MetricConfigurationException e )
+        catch ( MetricProcessorException e )
         {
         }
         catch ( Exception e )
@@ -273,7 +272,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                   + "' "
                   + "with value thresholds that do not apply to left." );
         }
-        catch ( MetricConfigurationException e )
+        catch ( MetricProcessorException e )
         {
         }
         catch ( Exception e )
@@ -296,7 +295,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                   + "' "
                   + "with probability thresholds that do not apply to left." );
         }
-        catch ( MetricConfigurationException e )
+        catch ( MetricProcessorException e )
         {
         }
         catch ( Exception e )
@@ -319,7 +318,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                   + "' "
                   + "with metric-local thresholds that are not supported." );
         }
-        catch ( MetricConfigurationException e )
+        catch ( MetricProcessorException e )
         {
         }
         catch ( Exception e )
@@ -378,12 +377,12 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
      * Tests the construction of a {@link MetricProcessorByTimeSingleValuedPairs} for all valid metrics associated
      * with single-valued inputs.
      * 
-     * @throws MetricConfigurationException if the configuration is incorrect
      * @throws IOException if the input data could not be read
+     * @throws MetricProcessorException if the metric processor could not be built
      */
 
     @Test
-    public void test4AllValid() throws IOException, MetricConfigurationException
+    public void test4AllValid() throws IOException, MetricProcessorException
     {
         final DataFactory metIn = DefaultDataFactory.getInstance();
         String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/test4AllValid.xml";

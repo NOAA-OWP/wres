@@ -11,9 +11,7 @@ import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.ScalarOutput;
 import wres.engine.statistics.metric.DoubleErrorFunction;
 import wres.engine.statistics.metric.FunctionFactory;
-import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricParameterException;
-import wres.engine.statistics.metric.Score;
 
 /**
  * Computes the mean error of a single-valued prediction as a fraction of the mean observed value.
@@ -22,7 +20,7 @@ import wres.engine.statistics.metric.Score;
  * @version 0.1
  * @since 0.1
  */
-public class BiasFraction extends Metric<SingleValuedPairs, ScalarOutput> implements Score
+public class BiasFraction extends DoubleErrorScore<SingleValuedPairs>
 {
 
     @Override
@@ -77,11 +75,11 @@ public class BiasFraction extends Metric<SingleValuedPairs, ScalarOutput> implem
      * A {@link MetricBuilder} to build the metric.
      */
 
-    public static class BiasFractionBuilder extends MetricBuilder<SingleValuedPairs, ScalarOutput>
+    public static class BiasFractionBuilder extends DoubleErrorScoreBuilder<SingleValuedPairs>
     {
 
         @Override
-        protected BiasFraction build() throws MetricParameterException
+        public BiasFraction build() throws MetricParameterException
         {
             return new BiasFraction(this);
         }

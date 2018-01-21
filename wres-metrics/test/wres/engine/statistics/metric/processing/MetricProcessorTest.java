@@ -18,6 +18,7 @@ import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.engine.statistics.metric.MetricFactory;
+import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.config.MetricConfigurationException;
 import wres.io.config.ProjectConfigPlus;
 
@@ -34,12 +35,14 @@ public final class MetricProcessorTest
     /**
      * Tests the {@link MetricProcessor#willCacheMetricOutput()}.
      * 
-     * @throws MetricConfigurationException if the configuration is incorrect
      * @throws IOException if the input data could not be read
+     * @throws MetricProcessorException if the metric processor could not be built
+     * @throws MetricConfigurationException if the metric configuration is incorrect
+     * @throws MetricParameterException if a metric parameter is incorrect
      */
 
     @Test
-    public void test1WillStoreMetricOutput() throws IOException, MetricConfigurationException
+    public void test1WillStoreMetricOutput() throws IOException, MetricConfigurationException, MetricParameterException, MetricProcessorException
     {
         final DataFactory metIn = DefaultDataFactory.getInstance();
         String configPath = "testinput/metricProcessorTest/test1AllValid.xml";
@@ -69,12 +72,14 @@ public final class MetricProcessorTest
      * <li>{@link MetricProcessor#hasThresholdMetrics()}</li>
      * </ol>
      * 
-     * @throws MetricConfigurationException if the configuration is incorrect
      * @throws IOException if the input data could not be read
+     * @throws MetricProcessorException if the metric processor could not be built
+     * @throws MetricConfigurationException if the metric configuration is incorrect
+     * @throws MetricParameterException if a metric parameter is incorrect
      */
 
     @Test
-    public void test2HasMetrics() throws IOException, MetricConfigurationException
+    public void test2HasMetrics() throws IOException, MetricConfigurationException, MetricParameterException, MetricProcessorException
     {
         final DataFactory metIn = DefaultDataFactory.getInstance();
         String configPath = "testinput/metricProcessorTest/test1AllValid.xml";
@@ -100,16 +105,18 @@ public final class MetricProcessorTest
 
     /**
      * Tests that non-score metrics are disallowed when configuring "all valid" metrics in combination with 
-     * {@link PairConfig#getPoolingWindow()} that is not null. Uses the configuration in 
+     * {@link PairConfig#getIssuedDatesPoolingWindow()} that is not null. Uses the configuration in 
      * testinput/metricProcessorTest/test3SingleValued.xml and 
      * testinput/metricProcessorTest/test3Ensemble.xml.
      * 
-     * @throws MetricConfigurationException if the configuration is incorrect
      * @throws IOException if the input data could not be read
+     * @throws MetricProcessorException if the metric processor could not be built
+     * @throws MetricConfigurationException if the metric configuration is incorrect
+     * @throws MetricParameterException if a metric parameter is incorrect
      */
 
     @Test
-    public void test3DisallowNonScores() throws IOException, MetricConfigurationException
+    public void test3DisallowNonScores() throws IOException, MetricConfigurationException, MetricParameterException, MetricProcessorException
     {
         final DataFactory metIn = DefaultDataFactory.getInstance();
         //Single-valued case

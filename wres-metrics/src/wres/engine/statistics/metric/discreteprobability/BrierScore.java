@@ -2,6 +2,7 @@ package wres.engine.statistics.metric.discreteprobability;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
+import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.ProbabilityScore;
 import wres.engine.statistics.metric.singlevalued.MeanSquareError;
@@ -22,7 +23,8 @@ import wres.engine.statistics.metric.singlevalued.MeanSquareError;
  * @version 0.1
  * @since 0.1
  */
-public class BrierScore extends MeanSquareError<DiscreteProbabilityPairs> implements ProbabilityScore
+public class BrierScore extends MeanSquareError<DiscreteProbabilityPairs>
+        implements ProbabilityScore<DiscreteProbabilityPairs, MultiValuedScoreOutput>
 {
 
     @Override
@@ -63,9 +65,9 @@ public class BrierScore extends MeanSquareError<DiscreteProbabilityPairs> implem
     {
 
         @Override
-        protected BrierScore build() throws MetricParameterException
+        public BrierScore build() throws MetricParameterException
         {
-            return new BrierScore(this);
+            return new BrierScore( this );
         }
 
     }
@@ -77,9 +79,9 @@ public class BrierScore extends MeanSquareError<DiscreteProbabilityPairs> implem
      * @throws MetricParameterException if one or more parameters is invalid
      */
 
-    private BrierScore(final BrierScoreBuilder builder) throws MetricParameterException
+    private BrierScore( final BrierScoreBuilder builder ) throws MetricParameterException
     {
-        super(builder);
+        super( builder );
     }
 
 }

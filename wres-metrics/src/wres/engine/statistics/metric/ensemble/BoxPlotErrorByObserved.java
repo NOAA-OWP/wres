@@ -83,7 +83,7 @@ public class BoxPlotErrorByObserved extends BoxPlot
     public static class BoxPlotErrorByObservedBuilder extends BoxPlotBuilder
     {
         @Override
-        protected Metric<EnsemblePairs, BoxPlotOutput> build() throws MetricParameterException
+        public Metric<EnsemblePairs, BoxPlotOutput> build() throws MetricParameterException
         {
             return new BoxPlotErrorByObserved( this );
         }

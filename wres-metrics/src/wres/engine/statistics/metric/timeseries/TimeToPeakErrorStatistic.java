@@ -14,10 +14,9 @@ import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DurationOutput;
 import wres.datamodel.outputs.PairedOutput;
 import wres.engine.statistics.metric.Collectable;
-import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
-import wres.engine.statistics.metric.Score;
+import wres.engine.statistics.metric.OrdinaryScore;
 
 /**
  * A summary statistic that operates on a {@link TimeToPeakError}.
@@ -29,8 +28,8 @@ import wres.engine.statistics.metric.Score;
  * @version 0.1
  * @since 0.1
  */
-public class TimeToPeakErrorStatistic extends Metric<TimeSeriesOfSingleValuedPairs, DurationOutput>
-        implements Score, Collectable<TimeSeriesOfSingleValuedPairs, PairedOutput<Instant, Duration>, DurationOutput>
+public class TimeToPeakErrorStatistic extends OrdinaryScore<TimeSeriesOfSingleValuedPairs, DurationOutput>
+        implements Collectable<TimeSeriesOfSingleValuedPairs, PairedOutput<Instant, Duration>, DurationOutput>
 {
 
     /**
@@ -131,7 +130,7 @@ public class TimeToPeakErrorStatistic extends Metric<TimeSeriesOfSingleValuedPai
      */
 
     public static class TimeToPeakErrorStatisticBuilder
-            extends MetricBuilder<TimeSeriesOfSingleValuedPairs, DurationOutput>
+            extends OrdinaryScoreBuilder<TimeSeriesOfSingleValuedPairs, DurationOutput>
     {
 
         /**
@@ -173,7 +172,7 @@ public class TimeToPeakErrorStatistic extends Metric<TimeSeriesOfSingleValuedPai
         }
 
         @Override
-        protected TimeToPeakErrorStatistic build() throws MetricParameterException
+        public TimeToPeakErrorStatistic build() throws MetricParameterException
         {
             return new TimeToPeakErrorStatistic( this );
         }

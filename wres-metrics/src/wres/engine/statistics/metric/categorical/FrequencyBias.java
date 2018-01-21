@@ -49,10 +49,10 @@ public class FrequencyBias extends ContingencyTableScore<DichotomousPairs>
      * A {@link MetricBuilder} to build the metric.
      */
 
-    public static class FrequencyBiasBuilder extends MetricBuilder<DichotomousPairs, ScalarOutput>
+    public static class FrequencyBiasBuilder extends OrdinaryScoreBuilder<DichotomousPairs, ScalarOutput>
     {
         @Override
-        protected FrequencyBias build() throws MetricParameterException
+        public FrequencyBias build() throws MetricParameterException
         {
             return new FrequencyBias(this);
         }

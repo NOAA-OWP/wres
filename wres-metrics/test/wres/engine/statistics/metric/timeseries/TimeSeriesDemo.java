@@ -25,7 +25,7 @@ import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.singlevalued.MeanError;
 
 /**
- * Illustration of the {@link TimeSeries} API using a {@link RegularTimeSeriesOfSingleValuedPairs}.
+ * Illustration of the {@link TimeSeries} API.
  * 
  * @author james.brown@hydrosolved.com
  */

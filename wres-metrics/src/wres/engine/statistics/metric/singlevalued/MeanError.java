@@ -42,7 +42,7 @@ public class MeanError extends DoubleErrorScore<SingleValuedPairs>
     {
 
         @Override
-        protected MeanError build() throws MetricParameterException
+        public MeanError build() throws MetricParameterException
         {
             return new MeanError(this);
         }

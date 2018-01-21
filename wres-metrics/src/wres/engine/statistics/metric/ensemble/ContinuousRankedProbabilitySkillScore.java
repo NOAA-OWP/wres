@@ -83,7 +83,7 @@ public class ContinuousRankedProbabilitySkillScore extends ContinuousRankedProba
     public static class CRPSSBuilder extends CRPSBuilder
     {
         @Override
-        protected ContinuousRankedProbabilitySkillScore build() throws MetricParameterException
+        public ContinuousRankedProbabilitySkillScore build() throws MetricParameterException
         {
             return new ContinuousRankedProbabilitySkillScore( this );
         }

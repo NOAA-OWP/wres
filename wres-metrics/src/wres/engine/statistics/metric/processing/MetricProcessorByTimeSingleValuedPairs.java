@@ -26,6 +26,7 @@ import wres.datamodel.inputs.pairs.PairOfBooleans;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.TimeWindow;
+import wres.datamodel.outputs.MatrixOutput;
 import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMapByMetric;
@@ -56,7 +57,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
      * {@link ScalarOutput}.
      */
 
-    private final MetricCollection<DichotomousPairs, ScalarOutput> dichotomousScalar;
+    private final MetricCollection<DichotomousPairs, MatrixOutput, ScalarOutput> dichotomousScalar;
 
     @Override
     public MetricOutputForProjectByTimeAndThreshold apply( SingleValuedPairs input )
@@ -121,6 +122,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
      * @param mergeList a list of {@link MetricOutputGroup} whose outputs should be retained and merged across calls to
      *            {@link #apply(SingleValuedPairs)}
      * @throws MetricConfigurationException if the metrics are configured incorrectly
+     * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
     public MetricProcessorByTimeSingleValuedPairs( final DataFactory dataFactory,
@@ -128,28 +130,21 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                                                    final ExecutorService thresholdExecutor,
                                                    final ExecutorService metricExecutor,
                                                    final MetricOutputGroup... mergeList )
-            throws MetricConfigurationException
+            throws MetricConfigurationException, MetricParameterException
     {
         super( dataFactory, config, thresholdExecutor, metricExecutor, mergeList );
         //Construct the metrics
-        try
+        if ( hasMetrics( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCALAR ) )
         {
-            if ( hasMetrics( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCALAR ) )
-            {
-                dichotomousScalar =
-                        metricFactory.ofDichotomousScalarCollection( metricExecutor,
-                                                                     getSelectedMetrics( metrics,
-                                                                                         MetricInputGroup.DICHOTOMOUS,
-                                                                                         MetricOutputGroup.SCALAR ) );
-            }
-            else
-            {
-                dichotomousScalar = null;
-            }
+            dichotomousScalar =
+                    metricFactory.ofDichotomousScalarCollection( metricExecutor,
+                                                                 getSelectedMetrics( metrics,
+                                                                                     MetricInputGroup.DICHOTOMOUS,
+                                                                                     MetricOutputGroup.SCALAR ) );
         }
-        catch ( MetricParameterException e )
+        else
         {
-            throw new MetricConfigurationException( "Failed to construct one or more metrics.", e );
+            dichotomousScalar = null;
         }
     }
 
@@ -272,7 +267,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
     private <T extends MetricOutput<?>> Future<MetricOutputMapByMetric<T>>
             processDichotomousThreshold( Threshold threshold,
                                          SingleValuedPairs pairs,
-                                         MetricCollection<DichotomousPairs, T> collection )
+                                         MetricCollection<DichotomousPairs, MatrixOutput, T> collection )
                     throws MetricInputSliceException
     {
         //Check the data before transformation

@@ -7,15 +7,14 @@ import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.outputs.MultiValuedScoreOutput;
 
 /**
- * A generic implementation of an error score for that is decomposable.
+ * A generic implementation of an error score that is decomposable.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
  * @since 0.1
  */
 
-public abstract class DecomposableDoubleErrorScore<S extends MetricInput<?>> extends Metric<S, MultiValuedScoreOutput>
-        implements Score
+public abstract class DecomposableScore<S extends MetricInput<?>> extends OrdinaryScore<S, MultiValuedScoreOutput>
 {
 
     /**
@@ -42,7 +41,7 @@ public abstract class DecomposableDoubleErrorScore<S extends MetricInput<?>> ext
 
     public static abstract class DecomposableDoubleErrorScoreBuilder<S extends MetricInput<?>>
             extends
-            MetricBuilder<S, MultiValuedScoreOutput>
+            OrdinaryScoreBuilder<S, MultiValuedScoreOutput>
     {
         /**
          * The type of metric decomposition. See {@link ScoreOutputGroup}.
@@ -71,7 +70,7 @@ public abstract class DecomposableDoubleErrorScore<S extends MetricInput<?>> ext
      * @throws MetricParameterException if one or more parameters is invalid
      */
 
-    protected DecomposableDoubleErrorScore( final DecomposableDoubleErrorScoreBuilder<S> builder ) throws MetricParameterException
+    protected DecomposableScore( final DecomposableDoubleErrorScoreBuilder<S> builder ) throws MetricParameterException
     {
         super( builder );
         this.decompositionID = builder.decompositionID;

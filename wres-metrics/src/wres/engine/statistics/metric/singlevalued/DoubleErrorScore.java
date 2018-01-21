@@ -10,9 +10,9 @@ import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.ScalarOutput;
 import wres.engine.statistics.metric.DoubleErrorFunction;
-import wres.engine.statistics.metric.Metric;
+import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricParameterException;
-import wres.engine.statistics.metric.Score;
+import wres.engine.statistics.metric.OrdinaryScore;
 
 /**
  * A generic implementation of an error score that cannot be decomposed. For scores that can be computed in a single-pass,
@@ -23,7 +23,7 @@ import wres.engine.statistics.metric.Score;
  * @version 0.1
  * @since 0.1
  */
-public abstract class DoubleErrorScore<S extends SingleValuedPairs> extends Metric<S, ScalarOutput> implements Score
+public abstract class DoubleErrorScore<S extends SingleValuedPairs> extends OrdinaryScore<S, ScalarOutput>
 {
     /**
      * The error function.
@@ -36,8 +36,8 @@ public abstract class DoubleErrorScore<S extends SingleValuedPairs> extends Metr
      */
 
     public static abstract class DoubleErrorScoreBuilder<S extends SingleValuedPairs>
-    extends
-        MetricBuilder<S, ScalarOutput>
+            extends
+            OrdinaryScoreBuilder<S, ScalarOutput>
     {
 
         /**
@@ -52,7 +52,7 @@ public abstract class DoubleErrorScore<S extends SingleValuedPairs> extends Metr
          * @return the metric builder
          */
 
-        public DoubleErrorScoreBuilder<S> setErrorFunction(final DoubleErrorFunction f)
+        public DoubleErrorScoreBuilder<S> setErrorFunction( final DoubleErrorFunction f )
         {
             this.f = f;
             return this;
@@ -61,37 +61,40 @@ public abstract class DoubleErrorScore<S extends SingleValuedPairs> extends Metr
     }
 
     @Override
-    public ScalarOutput apply(final S s)
+    public ScalarOutput apply( final S s )
     {
-        if(Objects.isNull(s))
+        if ( Objects.isNull( s ) )
         {
-            throw new MetricInputException("Specify non-null input to the '"+this+"'.");
+            throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
         }
-        Objects.requireNonNull(f, "Override or specify a non-null error function for the '" + toString() + "'.");
-        
+        if ( Objects.isNull( f ) )
+        {
+            throw new MetricCalculationException( "Override or specify a non-null error function for the '" + toString()
+                                                  + "'." );
+        }
         //Metadata
         DatasetIdentifier id = null;
-        if(s.hasBaseline() && s.getMetadataForBaseline().hasIdentifier())
+        if ( s.hasBaseline() && s.getMetadataForBaseline().hasIdentifier() )
         {
             id = s.getMetadataForBaseline().getIdentifier();
         }
-        final MetricOutputMetadata metOut = getMetadata(s, s.getData().size(), MetricConstants.MAIN, id);
+        final MetricOutputMetadata metOut = getMetadata( s, s.getData().size(), MetricConstants.MAIN, id );
         //Compute the atomic errors in a stream
-        return getDataFactory().ofScalarOutput(s.getData().stream().mapToDouble(f).average().getAsDouble(), metOut);
+        return getDataFactory().ofScalarOutput( s.getData().stream().mapToDouble( f ).average().getAsDouble(), metOut );
     }
-    
+
     @Override
     public ScoreOutputGroup getScoreOutputGroup()
     {
         return ScoreOutputGroup.NONE;
-    }    
-    
+    }
+
     @Override
     public boolean isDecomposable()
     {
         return false;
-    }    
-    
+    }
+
     /**
      * Hidden constructor.
      * 
@@ -99,9 +102,10 @@ public abstract class DoubleErrorScore<S extends SingleValuedPairs> extends Metr
      * @throws MetricParameterException if one or more parameters is invalid 
      */
 
-    protected DoubleErrorScore(final DoubleErrorScoreBuilder<S> builder) throws MetricParameterException
+    protected DoubleErrorScore( final DoubleErrorScoreBuilder<S> builder ) throws MetricParameterException
     {
-        super(builder);
+        super( builder );
+        // Function can be null if calculation is delegated
         this.f = builder.f;
     }
 

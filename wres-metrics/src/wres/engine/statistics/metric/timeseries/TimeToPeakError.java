@@ -8,11 +8,13 @@ import java.util.Objects;
 
 import org.apache.commons.lang3.tuple.Pair;
 
+import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.metadata.MetricOutputMetadata;
+import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.PairedOutput;
 import wres.datamodel.time.TimeSeries;
 import wres.engine.statistics.metric.Metric;
@@ -28,9 +30,27 @@ import wres.engine.statistics.metric.MetricParameterException;
  * @version 0.1
  * @since 0.4
  */
-public class TimeToPeakError extends Metric<TimeSeriesOfSingleValuedPairs, PairedOutput<Instant, Duration>>
+public class TimeToPeakError implements Metric<TimeSeriesOfSingleValuedPairs, PairedOutput<Instant, Duration>>
 {
 
+    /**
+     * The data factory.
+     */
+
+    private final DataFactory dataFactory;
+
+    @Override
+    public DataFactory getDataFactory()
+    {
+        return dataFactory;
+    }     
+    
+    @Override
+    public String toString()
+    {
+        return getID().toString();
+    }      
+    
     @Override
     public PairedOutput<Instant, Duration> apply( TimeSeriesOfSingleValuedPairs s )
     {
@@ -88,10 +108,31 @@ public class TimeToPeakError extends Metric<TimeSeriesOfSingleValuedPairs, Paire
      */
 
     public static class TimeToPeakErrorBuilder
-            extends MetricBuilder<TimeSeriesOfSingleValuedPairs, PairedOutput<Instant, Duration>>
+            implements MetricBuilder<TimeSeriesOfSingleValuedPairs, PairedOutput<Instant, Duration>>
     {
+        
+        /**
+         * The data factory.
+         */
+        
+        private DataFactory dataFactory;
+
+        /**
+         * Sets the {@link DataFactory} for constructing a {@link MetricOutput}.
+         * 
+         * @param dataFactory the {@link DataFactory}
+         * @return the builder
+         */
+
         @Override
-        protected TimeToPeakError build() throws MetricParameterException
+        public TimeToPeakErrorBuilder setOutputFactory( final DataFactory dataFactory )
+        {
+            this.dataFactory = dataFactory;
+            return this;
+        }  
+        
+        @Override
+        public TimeToPeakError build() throws MetricParameterException
         {
             return new TimeToPeakError( this );
         }
@@ -107,7 +148,15 @@ public class TimeToPeakError extends Metric<TimeSeriesOfSingleValuedPairs, Paire
 
     private TimeToPeakError( final TimeToPeakErrorBuilder builder ) throws MetricParameterException
     {
-        super( builder );
+        if ( Objects.isNull( builder ) )
+        {
+            throw new MetricParameterException( "Cannot construct the metric with a null builder." );
+        }
+        this.dataFactory = builder.dataFactory;
+        if ( Objects.isNull( this.dataFactory ) )
+        {
+            throw new MetricParameterException( "Specify a data factory with which to build the metric." );
+        }
     }
 
 }

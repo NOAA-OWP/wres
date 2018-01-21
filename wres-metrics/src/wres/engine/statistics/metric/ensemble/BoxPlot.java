@@ -14,7 +14,7 @@ import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.BoxPlotOutput;
-import wres.engine.statistics.metric.Metric;
+import wres.engine.statistics.metric.Diagram;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricParameterException;
 
@@ -32,7 +32,7 @@ import wres.engine.statistics.metric.MetricParameterException;
 
 abstract class BoxPlot
         extends
-        Metric<EnsemblePairs, BoxPlotOutput>
+        Diagram<EnsemblePairs, BoxPlotOutput>
 {
 
     /**
@@ -100,7 +100,7 @@ abstract class BoxPlot
      * Builder for the {@link BoxPlot}
      */
 
-    abstract static class BoxPlotBuilder extends MetricBuilder<EnsemblePairs, BoxPlotOutput>
+    abstract static class BoxPlotBuilder extends DiagramBuilder<EnsemblePairs, BoxPlotOutput>
     {
 
         /**

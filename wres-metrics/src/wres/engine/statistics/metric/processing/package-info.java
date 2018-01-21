@@ -1,5 +1,5 @@
 /**
- * A package for generating outputs from multiple metrics with a {@link MetricProcessor}.
+ * A package for processing multiple metrics.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1

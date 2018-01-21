@@ -85,7 +85,7 @@ public class MeanSquareErrorSkillScore<S extends SingleValuedPairs> extends Mean
     {
 
         @Override
-        protected MeanSquareErrorSkillScore<S> build() throws MetricParameterException
+        public MeanSquareErrorSkillScore<S> build() throws MetricParameterException
         {
             return new MeanSquareErrorSkillScore<>(this);
         }

@@ -51,7 +51,7 @@ public class RootMeanSquareError extends DoubleErrorScore<SingleValuedPairs>
     {
 
         @Override
-        protected RootMeanSquareError build() throws MetricParameterException
+        public RootMeanSquareError build() throws MetricParameterException
         {
             return new RootMeanSquareError(this);
         }

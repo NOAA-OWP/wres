@@ -14,7 +14,7 @@ import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MultiValuedScoreOutput;
-import wres.engine.statistics.metric.DecomposableDoubleErrorScore;
+import wres.engine.statistics.metric.DecomposableScore;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.ProbabilityScore;
 
@@ -36,7 +36,8 @@ import wres.engine.statistics.metric.ProbabilityScore;
  * @version 0.1
  * @since 0.1
  */
-public class ContinuousRankedProbabilityScore extends DecomposableDoubleErrorScore<EnsemblePairs> implements ProbabilityScore
+public class ContinuousRankedProbabilityScore extends DecomposableScore<EnsemblePairs>
+        implements ProbabilityScore<EnsemblePairs, MultiValuedScoreOutput>
 {
 
     @Override
@@ -97,7 +98,7 @@ public class ContinuousRankedProbabilityScore extends DecomposableDoubleErrorSco
     public static class CRPSBuilder extends DecomposableDoubleErrorScoreBuilder<EnsemblePairs>
     {
         @Override
-        protected ContinuousRankedProbabilityScore build() throws MetricParameterException
+        public ContinuousRankedProbabilityScore build() throws MetricParameterException
         {
             return new ContinuousRankedProbabilityScore( this );
         }
@@ -120,7 +121,7 @@ public class ContinuousRankedProbabilityScore extends DecomposableDoubleErrorSco
                 break;
             default:
                 throw new MetricParameterException( "Unsupported decomposition identifier: "
-                                                         + getScoreOutputGroup() );
+                                                    + getScoreOutputGroup() );
         }
     }
 
@@ -227,7 +228,7 @@ public class ContinuousRankedProbabilityScore extends DecomposableDoubleErrorSco
         //lower bound of the interval
         return ( pair, inc ) -> {
             //Case 3: observed exceeds ith + 1
-            if ( pair[0] >= pair[inc.member + 1] )  //Correction to Hersbach
+            if ( pair[0] >= pair[inc.member + 1] ) //Correction to Hersbach
             {
                 final double nextAlpha = pair[inc.member + 1] - pair[inc.member];
 //                inc.alphaSum += nextAlpha; //Beta unchanged

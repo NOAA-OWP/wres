@@ -15,6 +15,7 @@ import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.engine.statistics.metric.MetricParameterException;
+import wres.engine.statistics.metric.OrdinaryScore;
 import wres.engine.statistics.metric.ProbabilityScore;
 
 /**
@@ -41,8 +42,8 @@ import wres.engine.statistics.metric.ProbabilityScore;
  * @since 0.1
  */
 
-public class RelativeOperatingCharacteristicScore extends RelativeOperatingCharacteristic<MultiValuedScoreOutput>
-        implements ProbabilityScore
+public class RelativeOperatingCharacteristicScore extends OrdinaryScore<DiscreteProbabilityPairs, MultiValuedScoreOutput>
+        implements ProbabilityScore<DiscreteProbabilityPairs,MultiValuedScoreOutput>
 {
 
     @Override
@@ -100,6 +101,12 @@ public class RelativeOperatingCharacteristicScore extends RelativeOperatingChara
     }
 
     @Override
+    public boolean hasRealUnits()
+    {
+        return false;
+    }
+
+    @Override
     public ScoreOutputGroup getScoreOutputGroup()
     {
         return ScoreOutputGroup.NONE;
@@ -111,11 +118,11 @@ public class RelativeOperatingCharacteristicScore extends RelativeOperatingChara
 
     public static class RelativeOperatingCharacteristicScoreBuilder
             extends
-            MetricBuilder<DiscreteProbabilityPairs, MultiValuedScoreOutput>
+            OrdinaryScoreBuilder<DiscreteProbabilityPairs, MultiValuedScoreOutput>
     {
 
         @Override
-        protected RelativeOperatingCharacteristicScore build() throws MetricParameterException
+        public RelativeOperatingCharacteristicScore build() throws MetricParameterException
         {
             return new RelativeOperatingCharacteristicScore( this );
         }

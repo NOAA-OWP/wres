@@ -31,13 +31,14 @@ import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold.MetricOutputForProjectByTimeAndThresholdBuilder;
-import wres.engine.statistics.metric.MetricCalculationException;
-import wres.engine.statistics.metric.MetricCollection;
-import wres.engine.statistics.metric.config.MetricConfigurationException;
 import wres.datamodel.outputs.MetricOutputMapByMetric;
+import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.ScalarOutput;
-import wres.datamodel.outputs.MultiValuedScoreOutput;
+import wres.engine.statistics.metric.MetricCalculationException;
+import wres.engine.statistics.metric.MetricCollection;
+import wres.engine.statistics.metric.MetricParameterException;
+import wres.engine.statistics.metric.config.MetricConfigurationException;
 
 /**
  * A {@link MetricProcessor} that processes and stores metric results by {@link TimeWindow}.
@@ -468,6 +469,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
      * @param mergeList a list of {@link MetricOutputGroup} whose outputs should be retained and merged across calls to
      *            {@link #apply(Object)}
      * @throws MetricConfigurationException if the metrics are configured incorrectly
+     * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
     MetricProcessorByTime( DataFactory dataFactory,
@@ -475,7 +477,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
                            ExecutorService thresholdExecutor,
                            ExecutorService metricExecutor,
                            MetricOutputGroup[] mergeList )
-            throws MetricConfigurationException
+            throws MetricConfigurationException, MetricParameterException
     {
         super( dataFactory, config, thresholdExecutor, metricExecutor, mergeList );
     }
@@ -590,7 +592,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
     private <T extends MetricOutput<?>> Future<MetricOutputMapByMetric<T>>
             processSingleValuedThreshold( Threshold threshold,
                                           SingleValuedPairs pairs,
-                                          MetricCollection<SingleValuedPairs, T> collection )
+                                          MetricCollection<SingleValuedPairs, T, T> collection )
                     throws MetricInputSliceException
     {
         //Slice the pairs, if required

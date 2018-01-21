@@ -26,7 +26,7 @@ import wres.engine.statistics.metric.singlevalued.MeanSquareErrorSkillScore;
  * @since 0.1
  */
 public class BrierSkillScore extends MeanSquareErrorSkillScore<DiscreteProbabilityPairs>
-        implements ProbabilityScore
+        implements ProbabilityScore<DiscreteProbabilityPairs,MultiValuedScoreOutput>
 {
 
     @Override
@@ -104,7 +104,7 @@ public class BrierSkillScore extends MeanSquareErrorSkillScore<DiscreteProbabili
     {
 
         @Override
-        protected BrierSkillScore build() throws MetricParameterException
+        public BrierSkillScore build() throws MetricParameterException
         {
             return new BrierSkillScore( this );
         }

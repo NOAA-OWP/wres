@@ -19,7 +19,7 @@ import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MultiVectorOutput;
-import wres.engine.statistics.metric.Metric;
+import wres.engine.statistics.metric.Diagram;
 import wres.engine.statistics.metric.MetricParameterException;
 
 /**
@@ -37,7 +37,7 @@ import wres.engine.statistics.metric.MetricParameterException;
  * @since 0.1
  */
 
-public class RankHistogram extends Metric<EnsemblePairs, MultiVectorOutput>
+public class RankHistogram extends Diagram<EnsemblePairs, MultiVectorOutput>
 {
 
     /**
@@ -96,7 +96,7 @@ public class RankHistogram extends Metric<EnsemblePairs, MultiVectorOutput>
      * A {@link MetricBuilder} to build the metric.
      */
 
-    public static class RankHistogramBuilder extends MetricBuilder<EnsemblePairs, MultiVectorOutput>
+    public static class RankHistogramBuilder extends DiagramBuilder<EnsemblePairs, MultiVectorOutput>
     {
         /**
          * Random number generator to assign ties randomly.
@@ -105,7 +105,7 @@ public class RankHistogram extends Metric<EnsemblePairs, MultiVectorOutput>
         private Random rng;
 
         @Override
-        protected RankHistogram build() throws MetricParameterException
+        public RankHistogram build() throws MetricParameterException
         {
             return new RankHistogram( this );
         }

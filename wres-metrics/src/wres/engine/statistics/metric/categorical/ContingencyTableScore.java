@@ -14,7 +14,7 @@ import wres.datamodel.outputs.ScalarOutput;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricParameterException;
-import wres.engine.statistics.metric.Score;
+import wres.engine.statistics.metric.OrdinaryScore;
 import wres.engine.statistics.metric.categorical.ContingencyTable.ContingencyTableBuilder;
 
 /**
@@ -25,8 +25,8 @@ import wres.engine.statistics.metric.categorical.ContingencyTable.ContingencyTab
  * @since 0.1
  */
 
-abstract class ContingencyTableScore<S extends MulticategoryPairs> extends Metric<S, ScalarOutput>
-        implements Score, Collectable<S, MatrixOutput, ScalarOutput>
+abstract class ContingencyTableScore<S extends MulticategoryPairs> extends OrdinaryScore<S, ScalarOutput>
+        implements Collectable<S, MatrixOutput, ScalarOutput>
 {
 
     /**
@@ -161,7 +161,7 @@ abstract class ContingencyTableScore<S extends MulticategoryPairs> extends Metri
      * @throws MetricParameterException if one or more parameters is invalid
      */
 
-    ContingencyTableScore( final MetricBuilder<S, ScalarOutput> builder ) throws MetricParameterException
+    ContingencyTableScore( final OrdinaryScoreBuilder<S, ScalarOutput> builder ) throws MetricParameterException
     {
         super( builder );
         ContingencyTableBuilder<S> ct = new ContingencyTableBuilder<>();

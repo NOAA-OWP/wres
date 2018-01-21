@@ -14,7 +14,7 @@ import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MultiVectorOutput;
-import wres.engine.statistics.metric.Metric;
+import wres.engine.statistics.metric.Diagram;
 import wres.engine.statistics.metric.MetricParameterException;
 
 /**
@@ -27,7 +27,7 @@ import wres.engine.statistics.metric.MetricParameterException;
  * @since 0.1
  */
 
-public class QuantileQuantileDiagram extends Metric<SingleValuedPairs, MultiVectorOutput>
+public class QuantileQuantileDiagram extends Diagram<SingleValuedPairs, MultiVectorOutput>
 {
 
     /**
@@ -89,11 +89,11 @@ public class QuantileQuantileDiagram extends Metric<SingleValuedPairs, MultiVect
      * A {@link MetricBuilder} to build the metric.
      */
 
-    public static class QuantileQuantileDiagramBuilder extends MetricBuilder<SingleValuedPairs, MultiVectorOutput>
+    public static class QuantileQuantileDiagramBuilder extends DiagramBuilder<SingleValuedPairs, MultiVectorOutput>
     {
 
         @Override
-        protected QuantileQuantileDiagram build() throws MetricParameterException
+        public QuantileQuantileDiagram build() throws MetricParameterException
         {
             return new QuantileQuantileDiagram( this );
         }

@@ -42,7 +42,7 @@ public class MeanAbsoluteError extends DoubleErrorScore<SingleValuedPairs>
     {
 
         @Override
-        protected MeanAbsoluteError build() throws MetricParameterException
+        public MeanAbsoluteError build() throws MetricParameterException
         {
             return new MeanAbsoluteError(this);
         }
