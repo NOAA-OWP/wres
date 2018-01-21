@@ -16,7 +16,7 @@ import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MultiVectorOutput;
-import wres.engine.statistics.metric.Metric;
+import wres.engine.statistics.metric.Diagram;
 import wres.engine.statistics.metric.MetricParameterException;
 
 /**
@@ -37,7 +37,7 @@ import wres.engine.statistics.metric.MetricParameterException;
  * @since 0.1
  */
 
-public class ReliabilityDiagram extends Metric<DiscreteProbabilityPairs, MultiVectorOutput>
+public class ReliabilityDiagram extends Diagram<DiscreteProbabilityPairs, MultiVectorOutput>
 {
 
     /**
@@ -120,11 +120,11 @@ public class ReliabilityDiagram extends Metric<DiscreteProbabilityPairs, MultiVe
      * A {@link MetricBuilder} to build the metric.
      */
 
-    public static class ReliabilityDiagramBuilder extends MetricBuilder<DiscreteProbabilityPairs, MultiVectorOutput>
+    public static class ReliabilityDiagramBuilder extends DiagramBuilder<DiscreteProbabilityPairs, MultiVectorOutput>
     {
 
         @Override
-        protected ReliabilityDiagram build() throws MetricParameterException
+        public ReliabilityDiagram build() throws MetricParameterException
         {
             return new ReliabilityDiagram( this );
         }

@@ -64,7 +64,7 @@ public class MeanSquareError<S extends SingleValuedPairs> extends SumOfSquareErr
     {
 
         @Override
-        protected MeanSquareError<S> build() throws MetricParameterException
+        public MeanSquareError<S> build() throws MetricParameterException
         {
             return new MeanSquareError<>( this );
         }

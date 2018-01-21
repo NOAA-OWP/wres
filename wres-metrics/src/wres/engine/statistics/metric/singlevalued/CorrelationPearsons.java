@@ -15,11 +15,10 @@ import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.ScalarOutput;
 import wres.engine.statistics.metric.Collectable;
-import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricCollection;
 import wres.engine.statistics.metric.MetricParameterException;
-import wres.engine.statistics.metric.Score;
+import wres.engine.statistics.metric.OrdinaryScore;
 
 /**
  * Computes Pearson's product-moment correlation coefficient between the left and right sides of the {SingleValuedPairs}
@@ -30,8 +29,8 @@ import wres.engine.statistics.metric.Score;
  * @version 0.1
  * @since 0.1
  */
-public class CorrelationPearsons extends Metric<SingleValuedPairs, ScalarOutput>
-implements Score, Collectable<SingleValuedPairs, ScalarOutput, ScalarOutput>
+public class CorrelationPearsons extends OrdinaryScore<SingleValuedPairs, ScalarOutput>
+implements Collectable<SingleValuedPairs, ScalarOutput, ScalarOutput>
 {
 
     /**
@@ -108,7 +107,6 @@ implements Score, Collectable<SingleValuedPairs, ScalarOutput, ScalarOutput>
     @Override
     public ScalarOutput getCollectionInput(SingleValuedPairs input)
     {
-
         return apply(input);
     }
 
@@ -122,11 +120,11 @@ implements Score, Collectable<SingleValuedPairs, ScalarOutput, ScalarOutput>
      * A {@link MetricBuilder} to build the metric.
      */
 
-    public static class CorrelationPearsonsBuilder extends MetricBuilder<SingleValuedPairs, ScalarOutput>
+    public static class CorrelationPearsonsBuilder extends OrdinaryScoreBuilder<SingleValuedPairs, ScalarOutput>
     {
 
         @Override
-        protected CorrelationPearsons build() throws MetricParameterException
+        public CorrelationPearsons build() throws MetricParameterException
         {
             return new CorrelationPearsons(this);
         }

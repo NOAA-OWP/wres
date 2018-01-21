@@ -1,7 +1,11 @@
 package wres.engine.statistics.metric.config;
 
+import wres.config.ProjectConfigException;
+
 /**
  * A checked exception associated with a metric calculation.
+ * 
+ * TODO: consider extending {@link ProjectConfigException}.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1

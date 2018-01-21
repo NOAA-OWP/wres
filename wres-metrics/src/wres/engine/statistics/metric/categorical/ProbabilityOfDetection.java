@@ -47,11 +47,11 @@ public class ProbabilityOfDetection extends ContingencyTableScore<DichotomousPai
      * A {@link MetricBuilder} to build the metric.
      */
 
-    public static class ProbabilityOfDetectionBuilder extends MetricBuilder<DichotomousPairs, ScalarOutput>
+    public static class ProbabilityOfDetectionBuilder extends OrdinaryScoreBuilder<DichotomousPairs, ScalarOutput>
     {
 
         @Override
-        protected ProbabilityOfDetection build() throws MetricParameterException
+        public ProbabilityOfDetection build() throws MetricParameterException
         {
             return new ProbabilityOfDetection(this);
         }

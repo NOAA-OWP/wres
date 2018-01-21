@@ -117,7 +117,7 @@ public class KlingGuptaEfficiency extends MeanSquareError<SingleValuedPairs>
     {
 
         @Override
-        protected KlingGuptaEfficiency build() throws MetricParameterException
+        public KlingGuptaEfficiency build() throws MetricParameterException
         {
             return new KlingGuptaEfficiency( this );
         }

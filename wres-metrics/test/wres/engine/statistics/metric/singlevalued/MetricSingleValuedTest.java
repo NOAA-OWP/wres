@@ -8,8 +8,6 @@ import org.junit.Test;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.inputs.pairs.SingleValuedPairs;
-import wres.datamodel.outputs.ScalarOutput;
 import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.singlevalued.MeanAbsoluteError.MeanAbsoluteErrorBuilder;
@@ -87,41 +85,6 @@ public final class MetricSingleValuedTest
         {
             b.build();
             fail( "Expected a checked exception on building a metric without an output factory." );
-        }
-        catch ( MetricParameterException e )
-        {
-        }
-        //No builder test
-        class MetricNoBuilder extends Metric<SingleValuedPairs, ScalarOutput>
-        {
-            protected MetricNoBuilder( MetricBuilder<SingleValuedPairs, ScalarOutput> builder )
-                    throws MetricParameterException
-            {
-                super( null );
-            }
-
-            @Override
-            public ScalarOutput apply( SingleValuedPairs s )
-            {
-                return null;
-            }
-
-            @Override
-            public MetricConstants getID()
-            {
-                return null;
-            }
-
-            @Override
-            public boolean hasRealUnits()
-            {
-                return false;
-            }
-        }
-        try
-        {
-            new MetricNoBuilder( null );
-            fail( "Expected a checked exception on building a metric without a builder." );
         }
         catch ( MetricParameterException e )
         {

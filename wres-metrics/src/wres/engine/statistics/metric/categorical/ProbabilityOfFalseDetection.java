@@ -47,11 +47,11 @@ public class ProbabilityOfFalseDetection extends ContingencyTableScore<Dichotomo
      * A {@link MetricBuilder} to build the metric.
      */
 
-    public static class ProbabilityOfFalseDetectionBuilder extends MetricBuilder<DichotomousPairs, ScalarOutput>
+    public static class ProbabilityOfFalseDetectionBuilder extends OrdinaryScoreBuilder<DichotomousPairs, ScalarOutput>
     {
 
         @Override
-        protected ProbabilityOfFalseDetection build() throws MetricParameterException
+        public ProbabilityOfFalseDetection build() throws MetricParameterException
         {
             return new ProbabilityOfFalseDetection(this);
         }

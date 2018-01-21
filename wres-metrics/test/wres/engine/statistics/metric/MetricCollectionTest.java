@@ -7,6 +7,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.FutureTask;
 import java.util.function.BiPredicate;
 
@@ -19,6 +20,7 @@ import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.inputs.pairs.MulticategoryPairs;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.MetricOutputMapByMetric;
 import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.datamodel.outputs.ScalarOutput;
@@ -52,8 +54,9 @@ public class MetricCollectionTest
         final MetricFactory metF = MetricFactory.getInstance( outF );
 
         //Finalize
-        final MetricCollection<SingleValuedPairs, ScalarOutput> collection =
-                metF.ofSingleValuedScalarCollection( MetricConstants.MEAN_ERROR,
+        final MetricCollection<SingleValuedPairs, ScalarOutput, ScalarOutput> collection =
+                metF.ofSingleValuedScalarCollection( ForkJoinPool.commonPool(),
+                                                     MetricConstants.MEAN_ERROR,
                                                      MetricConstants.MEAN_ABSOLUTE_ERROR,
                                                      MetricConstants.ROOT_MEAN_SQUARE_ERROR );
 
@@ -105,10 +108,11 @@ public class MetricCollectionTest
         //Create a collection of dichotomous metrics that produce a scalar output. Since all scores implement 
         //Collectable, they make efficient use of common intermediate data. In this case, all scores require the 2x2
         //Contingency Table, which is computed only once
-        final MetricCollectionBuilder<DichotomousPairs, ScalarOutput> m = MetricCollectionBuilder.of();
+        final MetricCollectionBuilder<DichotomousPairs, MetricOutput<?>, ScalarOutput> m = MetricCollectionBuilder.of();
         final DataFactory outF = DefaultDataFactory.getInstance();
         final MetricFactory metF = MetricFactory.getInstance( outF );
         m.setOutputFactory( outF );
+        m.setExecutorService( ForkJoinPool.commonPool() );
         //Add some appropriate metrics to the collection     
         m.add( metF.ofCriticalSuccessIndex() ); //Should be 0.5734265734265734
         m.add( metF.ofProbabilityOfDetection() ); //Should be 0.780952380952381
@@ -117,7 +121,7 @@ public class MetricCollectionTest
         m.add( metF.ofEquitableThreatScore() ); //Should be 0.43768152544513195
 
         //Finalize
-        final MetricCollection<DichotomousPairs, ScalarOutput> collection = m.build();
+        final MetricCollection<DichotomousPairs, MetricOutput<?>, ScalarOutput> collection = m.build();
 
         //Compute them
         final MetricOutputMapByMetric<ScalarOutput> c = collection.apply( input );
@@ -179,17 +183,20 @@ public class MetricCollectionTest
         final DiscreteProbabilityPairs input = MetricTestDataFactory.getDiscreteProbabilityPairsTwo();
 
         //Create a collection metrics that consume probabilistic pairs and generate vector outputs
-        final MetricCollectionBuilder<DiscreteProbabilityPairs, MultiValuedScoreOutput> n = MetricCollectionBuilder.of();
+        final MetricCollectionBuilder<DiscreteProbabilityPairs, MetricOutput<?>, MultiValuedScoreOutput> n =
+                MetricCollectionBuilder.of();
         final DataFactory outF = DefaultDataFactory.getInstance();
         final MetricFactory metF = MetricFactory.getInstance( outF );
         n.setOutputFactory( outF );
+        n.setExecutorService( ForkJoinPool.commonPool() );
 
         //Add some appropriate metrics to the collection
         n.add( metF.ofBrierScore() ); //Should be 0.26
         n.add( metF.ofBrierSkillScore() ); //Should be 0.11363636363636376
 
         //Finalize
-        final MetricCollection<DiscreteProbabilityPairs, MultiValuedScoreOutput> collection = n.build();
+        final MetricCollection<DiscreteProbabilityPairs, MetricOutput<?>, MultiValuedScoreOutput> collection =
+                n.build();
 
         //Compute them
         final MetricOutputMapByMetric<MultiValuedScoreOutput> d = collection.apply( input );
@@ -231,17 +238,19 @@ public class MetricCollectionTest
         final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsTwo();
 
         //Create a collection metrics that consume single-valued pairs and produce vector outputs
-        final MetricCollectionBuilder<SingleValuedPairs, MultiValuedScoreOutput> n = MetricCollectionBuilder.of();
+        final MetricCollectionBuilder<SingleValuedPairs, MetricOutput<?>, MultiValuedScoreOutput> n =
+                MetricCollectionBuilder.of();
         final DataFactory outF = DefaultDataFactory.getInstance();
         final MetricFactory metF = MetricFactory.getInstance( outF );
         n.setOutputFactory( outF );
+        n.setExecutorService( ForkJoinPool.commonPool() );
 
         //Add some appropriate metrics to the collection
         n.add( metF.ofMeanSquareError() ); //Should be 400003.929
         n.add( metF.ofMeanSquareErrorSkillScore() ); //Should be 0.8007025335093799
 
         //Finalize
-        final MetricCollection<SingleValuedPairs, MultiValuedScoreOutput> collection = n.build();
+        final MetricCollection<SingleValuedPairs, MetricOutput<?>, MultiValuedScoreOutput> collection = n.build();
 
         //Compute them
         final MetricOutputMapByMetric<MultiValuedScoreOutput> d = collection.apply( input );
@@ -284,16 +293,18 @@ public class MetricCollectionTest
         final MulticategoryPairs input = MetricTestDataFactory.getMulticategoryPairsOne();
 
         //Create a collection of multicategory metrics that produce a scalar output. 
-        final MetricCollectionBuilder<MulticategoryPairs, ScalarOutput> n = MetricCollectionBuilder.of();
+        final MetricCollectionBuilder<MulticategoryPairs, MetricOutput<?>, ScalarOutput> n =
+                MetricCollectionBuilder.of();
         final DataFactory outF = DefaultDataFactory.getInstance();
         final MetricFactory metF = MetricFactory.getInstance( outF );
         n.setOutputFactory( outF );
+        n.setExecutorService( ForkJoinPool.commonPool() );
 
         //Add some appropriate metrics to the collection
         n.add( metF.ofMulticategoryScalar( MetricConstants.PEIRCE_SKILL_SCORE ) ); //Should be 0.05057466520850963
 
         //Finalize
-        final MetricCollection<MulticategoryPairs, ScalarOutput> collection = n.build();
+        final MetricCollection<MulticategoryPairs, MetricOutput<?>, ScalarOutput> collection = n.build();
 
         //Compute them
         final MetricOutputMapByMetric<ScalarOutput> c = collection.apply( input );
@@ -337,7 +348,8 @@ public class MetricCollectionTest
             final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
             //Create a collection of metrics that consume single-valued pairs and produce a scalar output
-            final MetricCollectionBuilder<SingleValuedPairs, ScalarOutput> n = MetricCollectionBuilder.of();
+            final MetricCollectionBuilder<SingleValuedPairs, MetricOutput<?>, ScalarOutput> n =
+                    MetricCollectionBuilder.of();
             final DataFactory outF = DefaultDataFactory.getInstance();
             final MetricFactory metF = MetricFactory.getInstance( outF );
             n.setOutputFactory( outF );
@@ -361,7 +373,7 @@ public class MetricCollectionTest
             n.setExecutorService( metricPool );
 
             //Finalize
-            final MetricCollection<SingleValuedPairs, ScalarOutput> collection = n.build();
+            final MetricCollection<SingleValuedPairs, MetricOutput<?>, ScalarOutput> collection = n.build();
 
             //Calling apply should generate an exception
             try
@@ -384,7 +396,8 @@ public class MetricCollectionTest
             //Try to build with an empty output factory
             try
             {
-                final MetricCollectionBuilder<SingleValuedPairs, ScalarOutput> m = MetricCollectionBuilder.of();
+                final MetricCollectionBuilder<SingleValuedPairs, MetricOutput<?>, ScalarOutput> m =
+                        MetricCollectionBuilder.of();
                 m.build();
                 fail( "Expected a checked exception on constructing a metric collection with no output factory." );
             }
@@ -400,20 +413,9 @@ public class MetricCollectionTest
             catch ( final Exception e )
             {
             }
-            //Try to call with no input
-            try
-            {
-                final MetricCollectionBuilder<SingleValuedPairs, ScalarOutput> m = MetricCollectionBuilder.of();
-                m.setOutputFactory( outF ).add( metF.ofMeanError() );
-                final MetricCollection<SingleValuedPairs, ScalarOutput> cTest = m.build();
-                cTest.call();
-                fail( "Expected a checked exception on calling a metric collection without an input." );
-            }
-            catch ( final Exception e )
-            {
-            }
             //Check for interruptions and failed executions
-            final MetricCollectionBuilder<SingleValuedPairs, ScalarOutput> m = MetricCollectionBuilder.of();
+            final MetricCollectionBuilder<SingleValuedPairs, MetricOutput<?>, ScalarOutput> m =
+                    MetricCollectionBuilder.of();
             m.setOutputFactory( outF );
             m.add( new MeanErrorException() );
             try
@@ -427,178 +429,6 @@ public class MetricCollectionTest
         }
         finally
         {
-            metricPool.shutdown();
-        }
-    }
-
-    /**
-     * Tests a {@link MetricCollection} as an implementation of {@link Callable}. Specifically, tests a collection of
-     * {@link Collectable}, each of which is contained in a {@link CollectableTask}.
-     * 
-     * @throws ExecutionException if the execution fails
-     * @throws InterruptedException if the execution is interrupted
-     * @throws MetricCalculationException if the metric calculation fails
-     * @throws MetricParameterException if the metric construction fails 
-     */
-
-    @Test
-    public void test7Callable()
-            throws MetricCalculationException, InterruptedException, ExecutionException, MetricParameterException
-    {
-
-        //Set the input and an executor service
-        final ExecutorService pairPool = Executors.newFixedThreadPool( Runtime.getRuntime().availableProcessors() );
-        final ExecutorService metricPool = Executors.newFixedThreadPool( Runtime.getRuntime().availableProcessors() );
-        //Construct the factories
-        final DataFactory outF = DefaultDataFactory.getInstance();
-        final MetricFactory metF = MetricFactory.getInstance( outF );
-        try
-        {
-
-            //Get the future input
-            final FutureTask<DichotomousPairs> futureInput =
-                    new FutureTask<DichotomousPairs>( new Callable<DichotomousPairs>()
-                    {
-                        public DichotomousPairs call()
-                        {
-                            return MetricTestDataFactory.getDichotomousPairsOne();
-                        }
-                    } );
-
-            //Create an immutable collection of metrics that take dichotomous pairs and produce a scalar output 
-            final MetricCollectionBuilder<DichotomousPairs, ScalarOutput> m = MetricCollectionBuilder.of();
-            final MetricCollection<DichotomousPairs, ScalarOutput> collection = m.add( metF.ofCriticalSuccessIndex() )
-                                                                                 .add( metF.ofProbabilityOfDetection() )
-                                                                                 .add( metF.ofProbabilityOfFalseDetection() )
-                                                                                 .add( metF.ofPeirceSkillScore() )
-                                                                                 .add( metF.ofEquitableThreatScore() )
-                                                                                 .setMetricInput( futureInput )
-                                                                                 .setExecutorService( metricPool )
-                                                                                 .setOutputFactory( outF )
-                                                                                 .build();
-
-            //Compute the pairs
-            pairPool.submit( futureInput );
-
-            //Compute the metric
-            final MetricOutputMapByMetric<ScalarOutput> d = collection.call();
-
-            //Check them
-            final Double expectedFirst = 0.5734265734265734;
-            final Double expectedSecond = 0.780952380952381;
-            final Double expectedThird = 0.14615384615384616;
-            final Double expectedFourth = 0.6347985347985348;
-            final Double expectedFifth = 0.43768152544513195;
-            final Double actualFirst = d.get( MetricConstants.CRITICAL_SUCCESS_INDEX ).getData();
-            final Double actualSecond = d.get( MetricConstants.PROBABILITY_OF_DETECTION ).getData();
-            final Double actualThird = d.get( MetricConstants.PROBABILITY_OF_FALSE_DETECTION ).getData();
-            final Double actualFourth = d.get( MetricConstants.PEIRCE_SKILL_SCORE ).getData();
-            final Double actualFifth = d.get( MetricConstants.EQUITABLE_THREAT_SCORE ).getData();
-
-            final BiPredicate<Double, Double> testMe = FunctionFactory.doubleEquals();
-
-            assertTrue( "Expected value: " + expectedFirst
-                        + ". Actual value: "
-                        + actualFirst
-                        + ".",
-                        testMe.test( actualFirst, expectedFirst ) );
-            assertTrue( "Expected value: " + expectedSecond
-                        + ". Actual value: "
-                        + actualSecond
-                        + ".",
-                        testMe.test( actualSecond, expectedSecond ) );
-            assertTrue( "Expected value: " + expectedThird
-                        + ". Actual value: "
-                        + actualThird
-                        + ".",
-                        testMe.test( actualThird, expectedThird ) );
-            assertTrue( "Expected value: " + expectedFourth
-                        + ". Actual value: "
-                        + actualFourth
-                        + ".",
-                        testMe.test( actualFourth, expectedFourth ) );
-            assertTrue( "Expected value: " + expectedFifth
-                        + ". Actual value: "
-                        + actualFifth
-                        + ".",
-                        testMe.test( actualFifth, expectedFifth ) );
-        }
-        finally
-        {
-            pairPool.shutdown();
-            metricPool.shutdown();
-        }
-    }
-
-    /**
-     * Tests a {@link MetricCollection} as an implementation of {@link Callable}. Specifically, tests a collection of
-     * metrics that do not implement {@link Collectable}, each of which is contained in a {@link MetricTask}.
-     * 
-     * @throws ExecutionException if the execution fails
-     * @throws InterruptedException if the execution is interrupted
-     * @throws MetricCalculationException if the metric calculation fails
-     * @throws MetricParameterException if the metric construction fails 
-     */
-
-    @Test
-    public void test8Callable()
-            throws MetricCalculationException, InterruptedException, ExecutionException, MetricParameterException
-    {
-        final ExecutorService metricPool = Executors.newSingleThreadExecutor();
-        final ExecutorService pairPool = Executors.newSingleThreadExecutor();
-
-        try
-        {
-
-            //Generate some data
-            final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
-
-            //Create a collection of metrics that consume single-valued pairs and produce a scalar output
-            final MetricCollectionBuilder<SingleValuedPairs, ScalarOutput> n = MetricCollectionBuilder.of();
-            final DataFactory outF = DefaultDataFactory.getInstance();
-            final MetricFactory metF = MetricFactory.getInstance( outF );
-            n.setOutputFactory( outF );
-
-            //Add some appropriate metrics to the collection
-            n.add( metF.ofMeanError() );
-
-            //Wrap an input in a future
-            final FutureTask<SingleValuedPairs> futureInput =
-                    new FutureTask<SingleValuedPairs>( new Callable<SingleValuedPairs>()
-                    {
-                        public SingleValuedPairs call()
-                        {
-                            return input;
-                        }
-                    } );
-
-            //Set an executor
-            n.setExecutorService( metricPool );
-
-            //Compute the pairs
-            pairPool.submit( futureInput );
-
-            //Add the data
-            n.setMetricInput( futureInput );
-
-            //Finalize
-            final MetricCollection<SingleValuedPairs, ScalarOutput> collection = n.build();
-            //Compute
-            final MetricOutputMapByMetric<ScalarOutput> d = collection.call();
-            //Check the results
-            //Check them   
-            final Double expectedFirst = 200.55;
-            final Double actualFirst = d.get( MetricConstants.MEAN_ERROR ).getData();
-            final BiPredicate<Double, Double> testMe = FunctionFactory.doubleEquals();
-            assertTrue( "Expected value: " + expectedFirst
-                        + ". Actual value: "
-                        + actualFirst
-                        + ".",
-                        testMe.test( actualFirst, expectedFirst ) );
-        }
-        finally
-        {
-            pairPool.shutdown();
             metricPool.shutdown();
         }
     }
@@ -620,8 +450,9 @@ public class MetricCollectionTest
         final MetricFactory metF = MetricFactory.getInstance( outF );
 
         //Add some appropriate metrics to the collection
-        final MetricCollection<SingleValuedPairs, ScalarOutput> n =
-                metF.ofSingleValuedScalarCollection( MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
+        final MetricCollection<SingleValuedPairs, ScalarOutput, ScalarOutput> n =
+                metF.ofSingleValuedScalarCollection( ForkJoinPool.commonPool(),
+                                                     MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
                                                      MetricConstants.COEFFICIENT_OF_DETERMINATION );
         //Compute them
         final MetricOutputMapByMetric<ScalarOutput> d = n.apply( input );

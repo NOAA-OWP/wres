@@ -15,9 +15,9 @@ import wres.datamodel.outputs.ScalarOutput;
  * @version 0.1
  * @since 0.1
  */
-class SampleSize<S extends PairedInput<?>> extends Metric<S, ScalarOutput> implements Score
+class SampleSize<S extends PairedInput<?>> extends OrdinaryScore<S, ScalarOutput>
 {
-
+    
     @Override
     public ScalarOutput apply( S s )
     {
@@ -28,7 +28,7 @@ class SampleSize<S extends PairedInput<?>> extends Metric<S, ScalarOutput> imple
         return getDataFactory().ofScalarOutput( s.getData().size(),
                                                 getMetadata( s, s.getData().size(), MetricConstants.MAIN, null ) );
     }
-
+    
     @Override
     public boolean isSkillScore()
     {
@@ -63,10 +63,10 @@ class SampleSize<S extends PairedInput<?>> extends Metric<S, ScalarOutput> imple
      * A {@link MetricBuilder} to build the metric.
      */
 
-    static class SampleSizeBuilder<S extends PairedInput<?>> extends MetricBuilder<S, ScalarOutput>
+    static class SampleSizeBuilder<S extends PairedInput<?>> extends OrdinaryScoreBuilder<S, ScalarOutput>
     {
         @Override
-        protected SampleSize<S> build() throws MetricParameterException
+        public SampleSize<S> build() throws MetricParameterException
         {
             return new SampleSize<>( this );
         }
@@ -81,7 +81,7 @@ class SampleSize<S extends PairedInput<?>> extends Metric<S, ScalarOutput> imple
 
     private SampleSize( final SampleSizeBuilder<S> builder ) throws MetricParameterException
     {
-        super( builder );
+        super(builder);
     }
 
 }

@@ -135,21 +135,21 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
      * {@link ScalarOutput}.
      */
 
-    final MetricCollection<SingleValuedPairs, ScalarOutput> singleValuedScalar;
+    final MetricCollection<SingleValuedPairs, ScalarOutput, ScalarOutput> singleValuedScalar;
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume {@link SingleValuedPairs} and produce
      * {@link MultiValuedScoreOutput}.
      */
 
-    final MetricCollection<SingleValuedPairs, MultiValuedScoreOutput> singleValuedVector;
+    final MetricCollection<SingleValuedPairs, MultiValuedScoreOutput, MultiValuedScoreOutput> singleValuedVector;
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume {@link SingleValuedPairs} and produce
      * {@link MultiVectorOutput}.
      */
 
-    final MetricCollection<SingleValuedPairs, MultiVectorOutput> singleValuedMultiVector;
+    final MetricCollection<SingleValuedPairs, MultiVectorOutput, MultiVectorOutput> singleValuedMultiVector;
 
     /**
      * The set of metrics associated with the verification project.
@@ -304,6 +304,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
      * @param mergeList a list of {@link MetricOutputGroup} whose outputs should be retained and merged across calls to
      *            {@link #apply(Object)}
      * @throws MetricConfigurationException if the metrics are configured incorrectly
+     * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
     MetricProcessor( final DataFactory dataFactory,
@@ -311,7 +312,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
                      final ExecutorService thresholdExecutor,
                      final ExecutorService metricExecutor,
                      final MetricOutputGroup... mergeList )
-            throws MetricConfigurationException
+            throws MetricConfigurationException, MetricParameterException
     {
         Objects.requireNonNull( config,
                                 "Specify a non-null project configuration from which to construct the metric processor." );
@@ -321,49 +322,44 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         metrics = MetricConfigHelper.getMetricsFromConfig( config );
         metricFactory = MetricFactory.getInstance( dataFactory );
         //Construct the metrics that are common to more than one type of input pairs
-        try
+
+        if ( hasMetrics( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCALAR ) )
         {
-            if ( hasMetrics( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCALAR ) )
-            {
-                singleValuedScalar =
-                        metricFactory.ofSingleValuedScalarCollection( metricExecutor,
-                                                                      getSelectedMetrics( metrics,
-                                                                                          MetricInputGroup.SINGLE_VALUED,
-                                                                                          MetricOutputGroup.SCALAR ) );
-            }
-            else
-            {
-                singleValuedScalar = null;
-            }
-            if ( hasMetrics( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.VECTOR ) )
-            {
-                singleValuedVector =
-                        metricFactory.ofSingleValuedVectorCollection( metricExecutor,
-                                                                      getSelectedMetrics( metrics,
-                                                                                          MetricInputGroup.SINGLE_VALUED,
-                                                                                          MetricOutputGroup.VECTOR ) );
-            }
-            else
-            {
-                singleValuedVector = null;
-            }
-            if ( hasMetrics( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.MULTIVECTOR ) )
-            {
-                singleValuedMultiVector =
-                        metricFactory.ofSingleValuedMultiVectorCollection( metricExecutor,
-                                                                           getSelectedMetrics( metrics,
-                                                                                               MetricInputGroup.SINGLE_VALUED,
-                                                                                               MetricOutputGroup.MULTIVECTOR ) );
-            }
-            else
-            {
-                singleValuedMultiVector = null;
-            }
+            singleValuedScalar =
+                    metricFactory.ofSingleValuedScalarCollection( metricExecutor,
+                                                                  getSelectedMetrics( metrics,
+                                                                                      MetricInputGroup.SINGLE_VALUED,
+                                                                                      MetricOutputGroup.SCALAR ) );
         }
-        catch ( MetricParameterException e )
+        else
         {
-            throw new MetricConfigurationException( "Failed to construct one or more metrics.", e );
+            singleValuedScalar = null;
         }
+        if ( hasMetrics( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.VECTOR ) )
+        {
+            singleValuedVector =
+                    metricFactory.ofSingleValuedVectorCollection( metricExecutor,
+                                                                  getSelectedMetrics( metrics,
+                                                                                      MetricInputGroup.SINGLE_VALUED,
+                                                                                      MetricOutputGroup.VECTOR ) );
+        }
+        else
+        {
+            singleValuedVector = null;
+        }
+        if ( hasMetrics( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.MULTIVECTOR ) )
+        {
+            singleValuedMultiVector =
+                    metricFactory.ofSingleValuedMultiVectorCollection( metricExecutor,
+                                                                       getSelectedMetrics( metrics,
+                                                                                           MetricInputGroup.SINGLE_VALUED,
+                                                                                           MetricOutputGroup.MULTIVECTOR ) );
+        }
+        else
+        {
+            singleValuedMultiVector = null;
+        }
+
         //Obtain the thresholds for each metric and store them
         localThresholds = new EnumMap<>( MetricConstants.class );
         globalThresholds = new EnumMap<>( MetricInputGroup.class );

@@ -57,11 +57,11 @@ public class EquitableThreatScore extends ContingencyTableScore<DichotomousPairs
      * A {@link MetricBuilder} to build the metric.
      */
 
-    public static class EquitableThreatScoreBuilder extends MetricBuilder<DichotomousPairs, ScalarOutput>
+    public static class EquitableThreatScoreBuilder extends OrdinaryScoreBuilder<DichotomousPairs, ScalarOutput>
     {
 
         @Override
-        protected EquitableThreatScore build() throws MetricParameterException
+        public EquitableThreatScore build() throws MetricParameterException
         {
             return new EquitableThreatScore(this);
         }

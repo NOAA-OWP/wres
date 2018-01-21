@@ -1,7 +1,7 @@
 package wres.engine.statistics.metric.singlevalued;
 
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
-import wres.engine.statistics.metric.DecomposableDoubleErrorScore;
+import wres.engine.statistics.metric.DecomposableScore;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 
@@ -12,7 +12,7 @@ import wres.engine.statistics.metric.MetricParameterException;
  * @version 0.1
  * @since 0.1
  */
-abstract class SumOfSquareError<S extends SingleValuedPairs> extends DecomposableDoubleErrorScore<S>
+abstract class SumOfSquareError<S extends SingleValuedPairs> extends DecomposableScore<S>
 {
 
     @Override

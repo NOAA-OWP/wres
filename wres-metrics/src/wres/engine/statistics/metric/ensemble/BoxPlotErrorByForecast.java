@@ -112,7 +112,7 @@ public class BoxPlotErrorByForecast extends BoxPlot
         private MetricDimension domainDimension = MetricDimension.ENSEMBLE_MEAN;
 
         @Override
-        protected Metric<EnsemblePairs, BoxPlotOutput> build() throws MetricParameterException
+        public Metric<EnsemblePairs, BoxPlotOutput> build() throws MetricParameterException
         {
             return new BoxPlotErrorByForecast( this );
         }

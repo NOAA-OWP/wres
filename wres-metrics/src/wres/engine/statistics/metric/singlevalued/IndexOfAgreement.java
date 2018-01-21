@@ -83,7 +83,7 @@ public class IndexOfAgreement extends DoubleErrorScore<SingleValuedPairs>
     {
 
         @Override
-        protected IndexOfAgreement build() throws MetricParameterException
+        public IndexOfAgreement build() throws MetricParameterException
         {
             return new IndexOfAgreement( this );
         }

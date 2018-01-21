@@ -7,12 +7,12 @@ import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MetricOutput;
 
 /**
- * An interface that allows for a final metric output to be aggregated from an intermediate output, thereby
+ * An interface that allows for a final metric output to be derived from an intermediate output, thereby
  * avoiding the need to recompute intermediate outputs that are common to several metrics. See also
  * {@link MetricCollection}, which collects together metrics with common dependencies and exploits this interface to
  * share intermediate outputs between them. There is no value in implementing this interface unless there are two or
- * more metrics that share a common ancestry. Use {@link #aggregate(MetricOutput)} to compute the aggregate output
- * from the intermediate output.
+ * more metrics that share a common ancestry and have the same input and output types. Use 
+ * {@link #aggregate(MetricOutput)} to compute the aggregate output from the intermediate output.
  * 
  * @param <S> the input type
  * @param <T> the intermediate output type
@@ -21,7 +21,7 @@ import wres.datamodel.outputs.MetricOutput;
  * @version 0.1
  * @since 0.1
  */
-public interface Collectable<S extends MetricInput<?>, T extends MetricOutput<?>, U extends MetricOutput<?>>
+public interface Collectable<S extends MetricInput<?>, T extends MetricOutput<?>, U extends MetricOutput<?>> extends Metric<S,U>
 {
 
     /**
@@ -56,13 +56,5 @@ public interface Collectable<S extends MetricInput<?>, T extends MetricOutput<?>
      */
 
     MetricConstants getCollectionOf();
-
-    /**
-     * Returns the {@link Metric#getID()} of this metric.
-     * 
-     * @return the {@link Metric#getID()} of this metric
-     */
-
-    MetricConstants getID();
 
 }

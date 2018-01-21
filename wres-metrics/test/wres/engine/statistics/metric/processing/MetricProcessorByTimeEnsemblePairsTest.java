@@ -24,7 +24,6 @@ import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.datamodel.outputs.ScalarOutput;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricTestDataFactory;
-import wres.engine.statistics.metric.config.MetricConfigurationException;
 import wres.io.config.ProjectConfigPlus;
 
 /**
@@ -45,13 +44,13 @@ public final class MetricProcessorByTimeEnsemblePairsTest
      * testinput/metricProcessorEnsemblePairsByTimeTest/test1ApplyNoThresholds.xml and pairs obtained from
      * {@link MetricTestDataFactory#getEnsemblePairsOne()}.
      * 
-     * @throws MetricConfigurationException if the configuration is incorrect
      * @throws IOException if the input data could not be read
      * @throws MetricOutputAccessException if the outputs could not be accessed
+     * @throws MetricProcessorException if the metric processor could not be built
      */
 
     @Test
-    public void test1ApplyNoThresholds() throws MetricConfigurationException, IOException, MetricOutputAccessException
+    public void test1ApplyNoThresholds() throws IOException, MetricOutputAccessException, MetricProcessorException
     {
         String configPath = "testinput/metricProcessorEnsemblePairsByTimeTest/test1ApplyNoThresholds.xml";
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
@@ -99,14 +98,14 @@ public final class MetricProcessorByTimeEnsemblePairsTest
      * testinput/metricProcessorEnsemblePairsByTimeTest/test2ApplyWithValueThresholds.xml and pairs obtained from
      * {@link MetricTestDataFactory#getEnsemblePairsOne()}.
      * 
-     * @throws MetricConfigurationException if the configuration is incorrect
      * @throws IOException if the input data could not be read
      * @throws MetricOutputAccessException if the outputs could not be accessed
+     * @throws MetricProcessorException if the metric processor could not be built
      */
 
     @Test
     public void test2ApplyWithValueThresholds()
-            throws IOException, MetricConfigurationException, MetricOutputAccessException
+            throws IOException, MetricOutputAccessException, MetricProcessorException
     {
         final DataFactory metIn = DefaultDataFactory.getInstance();
         String configPath = "testinput/metricProcessorEnsemblePairsByTimeTest/test2ApplyWithValueThresholds.xml";
@@ -299,14 +298,14 @@ public final class MetricProcessorByTimeEnsemblePairsTest
      * testinput/metricProcessorEnsemblePairsByTimeTest/test3ApplyWithProbabilityThresholds.xml and pairs obtained from
      * {@link MetricTestDataFactory#getEnsemblePairsOne()}.
      * 
-     * @throws MetricConfigurationException if the configuration is incorrect
      * @throws IOException if the input data could not be read
      * @throws MetricOutputAccessException if the outputs could not be accessed
+     * @throws MetricProcessorException if the metric processor could not be built
      */
 
     @Test
     public void test3ApplyWithProbabilityThresholds()
-            throws IOException, MetricConfigurationException, MetricOutputAccessException
+            throws IOException, MetricOutputAccessException, MetricProcessorException
     {
         final DataFactory metIn = DefaultDataFactory.getInstance();
         String configPath = "testinput/metricProcessorEnsemblePairsByTimeTest/test3ApplyWithProbabilityThresholds.xml";
@@ -582,7 +581,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
             fail( "Expected a checked exception on processing the project configuration '" + testFour
                   + "' with a dichotomous metric." );
         }
-        catch ( MetricConfigurationException e )
+        catch ( MetricProcessorException e )
         {
         }
         catch ( Exception e )
@@ -605,7 +604,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
             fail( "Expected a checked exception on processing the project configuration '" + testFive
                   + "' with a multicategory metric." );
         }
-        catch ( MetricConfigurationException e )
+        catch ( MetricProcessorException e )
         {
         }
         catch ( Exception e )
@@ -628,7 +627,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
             fail( "Expected a checked exception on processing the project configuration '" + testSix
                   + "' with a skill metric that requires a baseline, in the absence of a baseline." );
         }
-        catch ( MetricConfigurationException e )
+        catch ( MetricProcessorException e )
         {
         }
         catch ( Exception e )
@@ -642,12 +641,12 @@ public final class MetricProcessorByTimeEnsemblePairsTest
      * Tests the construction of a {@link MetricProcessorByTimeEnsemblePairs} for all valid metrics associated
      * with ensemble inputs.
      * 
-     * @throws MetricConfigurationException if the configuration is incorrect
      * @throws IOException if the input data could not be read
+     * @throws MetricProcessorException if the metric processor could not be built
      */
 
     @Test
-    public void test5AllValid() throws IOException, MetricConfigurationException
+    public void test5AllValid() throws IOException, MetricProcessorException
     {
         final DataFactory metIn = DefaultDataFactory.getInstance();
         String configPath = "testinput/metricProcessorEnsemblePairsByTimeTest/test5AllValid.xml";
@@ -671,14 +670,14 @@ public final class MetricProcessorByTimeEnsemblePairsTest
      * obtained from testinput/metricProcessorEnsemblePairsByTimeTest/test2ApplyWithValueThresholds.xml and pairs obtained 
      * from {@link MetricTestDataFactory#getEnsemblePairsOneWithMissings()}.
      * 
-     * @throws MetricConfigurationException if the configuration is incorrect
      * @throws IOException if the input data could not be read
      * @throws MetricOutputAccessException if the outputs could not be accessed
+     * @throws MetricProcessorException if the metric processor could not be built
      */
 
     @Test
     public void test6ApplyWithValueThresholdsAndMissings()
-            throws IOException, MetricConfigurationException, MetricOutputAccessException
+            throws IOException, MetricOutputAccessException, MetricProcessorException
     {
         final DataFactory metIn = DefaultDataFactory.getInstance();
         String configPath = "testinput/metricProcessorEnsemblePairsByTimeTest/test2ApplyWithValueThresholds.xml";

@@ -34,14 +34,8 @@ import wres.datamodel.outputs.MetricOutput;
  * @version 0.1
  * @since 0.1
  */
-public abstract class Metric<S extends MetricInput<?>, T extends MetricOutput<?>> implements Function<S, T>
+public interface Metric<S extends MetricInput<?>, T extends MetricOutput<?>> extends Function<S, T>
 {
-
-    /**
-     * Instance of a {@link DataFactory} for constructing a {@link MetricOutput}.
-     */
-
-    private final DataFactory dataFactory;
 
     /**
      * Applies the function to the input and throws a {@link MetricCalculationException} if the calculation fails.
@@ -53,7 +47,7 @@ public abstract class Metric<S extends MetricInput<?>, T extends MetricOutput<?>
      */
 
     @Override
-    public abstract T apply( S s );
+    T apply( S s );
 
     /**
      * Returns a unique identifier for the metric from {@link MetricConstants}.
@@ -61,7 +55,7 @@ public abstract class Metric<S extends MetricInput<?>, T extends MetricOutput<?>
      * @return a unique identifier
      */
 
-    public abstract MetricConstants getID();
+    MetricConstants getID();
 
     /**
      * Returns true if the metric generates outputs that are dimensioned in real units, false if the outputs are in
@@ -70,29 +64,34 @@ public abstract class Metric<S extends MetricInput<?>, T extends MetricOutput<?>
      * @return true if the outputs are dimensioned in real units, false otherwise
      */
 
-    public abstract boolean hasRealUnits();
+    boolean hasRealUnits();
+    
+    /**
+     * Returns a {@link DataFactory} for constructing a {@link MetricOutput}.
+     * 
+     * @return a {@link DataFactory}
+     */
 
+    DataFactory getDataFactory();
+    
+    /**
+     * Implementations should provide a string representation of the {@link Metric}.
+     * 
+     * @return a string representation
+     */
+
+    @Override
+    String toString();
+    
     /**
      * Returns the unique name of the metric, namely the string representation of {@link #getID()}.
      * 
      * @return the unique metric name
      */
 
-    public String getName()
+    default String getName()
     {
         return getID().toString();
-    }
-
-    /**
-     * Returns {@link #getName()}
-     * 
-     * @return a string representation of the metric.
-     */
-
-    @Override
-    public String toString()
-    {
-        return getName();
     }
 
     /**
@@ -102,61 +101,9 @@ public abstract class Metric<S extends MetricInput<?>, T extends MetricOutput<?>
      * @param o the object to test for equality with the current object
      * @return true if the input is a metric and has an equivalent name to the current metric, false otherwise
      */
-    public boolean nameEquals( final Object o )
+    default boolean nameEquals( final Object o )
     {
         return o != null && o instanceof Metric && ( (Metric<?, ?>) o ).getName().equals( getName() );
-    }
-
-    /**
-     * <p>
-     * An abstract builder to build a {@link Metric}. Implement this interface when building a {@link Metric}, and hide
-     * the constructor. Add setters to set the parameters of the metric, as required, prior to building. For thread
-     * safety, validate the parameters using the hidden constructor of the {@link Metric}, i.e. do not validate the
-     * parameters in the {@link MetricBuilder} before construction.
-     * </p>
-     * <p>
-     * TODO: support construction with parameters by defining an abstract method, setParameters(EnumMap mapping).
-     * </p>
-     */
-
-    public static abstract class MetricBuilder<P extends MetricInput<?>, Q extends MetricOutput<?>>
-    {
-
-        DataFactory dataFactory;
-
-        /**
-         * Build the {@link Metric}.
-         * 
-         * @return a {@link Metric}
-         * @throws MetricParameterException if one or more parameters is incorrect
-         */
-
-        protected abstract Metric<P, Q> build() throws MetricParameterException;
-
-        /**
-         * Sets the {@link DataFactory} for constructing a {@link MetricOutput}.
-         * 
-         * @param dataFactory the {@link DataFactory}
-         * @return the builder
-         */
-
-        public MetricBuilder<P, Q> setOutputFactory( final DataFactory dataFactory )
-        {
-            this.dataFactory = dataFactory;
-            return this;
-        }
-
-    }
-
-    /**
-     * Returns a {@link DataFactory} for constructing a {@link MetricOutput}.
-     * 
-     * @return a {@link DataFactory}
-     */
-
-    protected DataFactory getDataFactory()
-    {
-        return dataFactory;
     }
 
     /**
@@ -174,7 +121,7 @@ public abstract class Metric<S extends MetricInput<?>, T extends MetricOutput<?>
      * @return the metadata
      */
 
-    protected MetricOutputMetadata getMetadata( final MetricInput<?> input,
+    default MetricOutputMetadata getMetadata( final MetricInput<?> input,
                                       final int sampleSize,
                                       final MetricConstants componentID,
                                       final DatasetIdentifier baselineID )
@@ -195,16 +142,16 @@ public abstract class Metric<S extends MetricInput<?>, T extends MetricOutput<?>
         }
         else
         {
-            outputDim = dataFactory.getMetadataFactory().getDimension();
+            outputDim = getDataFactory().getMetadataFactory().getDimension();
         }
         DatasetIdentifier identifier = metIn.getIdentifier();
         //Add the scenario ID associated with the baseline input
         if ( Objects.nonNull( baselineID ) )
         {
             identifier =
-                    dataFactory.getMetadataFactory().getDatasetIdentifier( identifier, baselineID.getScenarioID() );
+                    getDataFactory().getMetadataFactory().getDatasetIdentifier( identifier, baselineID.getScenarioID() );
         }
-        return dataFactory.getMetadataFactory()
+        return getDataFactory().getMetadataFactory()
                           .getOutputMetadata( sampleSize,
                                               outputDim,
                                               metIn.getDimension(),
@@ -212,26 +159,36 @@ public abstract class Metric<S extends MetricInput<?>, T extends MetricOutput<?>
                                               componentID,
                                               identifier,
                                               metIn.getTimeWindow() );
-    }
+    }    
 
     /**
-     * Construct a {@link Metric} with a {@link MetricBuilder}.
-     * 
-     * @param builder the builder
-     * @throws MetricParameterException if one or more parameters is invalid
+     * A builder to build a {@link Metric}. Implement this interface when building a {@link Metric}, and hide
+     * the constructor. Add setters to set the parameters of the metric, as required, prior to building. For thread
+     * safety, validate the parameters using the hidden constructor of the {@link Metric}, i.e. do not validate the
+     * parameters in the {@link MetricBuilder} before construction.
      */
 
-    protected Metric( final MetricBuilder<S, T> builder ) throws MetricParameterException
+    public interface MetricBuilder<P extends MetricInput<?>, Q extends MetricOutput<?>>
     {
-        if ( Objects.isNull( builder ) )
-        {
-            throw new MetricParameterException( "Cannot construct the metric with a null builder." );
-        }
-        if ( Objects.isNull( builder.dataFactory ) )
-        {
-            throw new MetricParameterException( "Specify a data factory with which to build the metric." );
-        }
-        this.dataFactory = builder.dataFactory;
+
+        /**
+         * Build the {@link Metric}.
+         * 
+         * @return a {@link Metric}
+         * @throws MetricParameterException if one or more parameters is incorrect
+         */
+
+        Metric<P, Q> build() throws MetricParameterException;
+
+        /**
+         * Sets the {@link DataFactory} for constructing a {@link MetricOutput}.
+         * 
+         * @param dataFactory the {@link DataFactory}
+         * @return the builder
+         */
+
+        MetricBuilder<P, Q> setOutputFactory( final DataFactory dataFactory );
+
     }
 
 }

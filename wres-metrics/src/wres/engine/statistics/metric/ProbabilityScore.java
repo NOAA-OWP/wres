@@ -1,5 +1,8 @@
 package wres.engine.statistics.metric;
 
+import wres.datamodel.inputs.MetricInput;
+import wres.datamodel.outputs.MetricOutput;
+
 /**
  * <p>
  * Identifies a scoring rule that operates on probabilistic inputs.
@@ -25,7 +28,7 @@ package wres.engine.statistics.metric;
  * @version 0.1
  * @since 0.1
  */
-public interface ProbabilityScore extends Score
+public interface ProbabilityScore<S extends MetricInput<?>, T extends MetricOutput<?>> extends Score<S,T>
 {
 
     /**

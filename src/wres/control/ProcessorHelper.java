@@ -55,6 +55,7 @@ import wres.engine.statistics.metric.config.MetricConfigHelper;
 import wres.engine.statistics.metric.config.MetricConfigurationException;
 import wres.engine.statistics.metric.processing.MetricProcessor;
 import wres.engine.statistics.metric.processing.MetricProcessorByTime;
+import wres.engine.statistics.metric.processing.MetricProcessorException;
 import wres.io.Operations;
 import wres.io.config.ConfigHelper;
 import wres.io.config.ProjectConfigPlus;
@@ -252,6 +253,7 @@ public class ProcessorHelper
         final ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
 
         final String featureDescription = ConfigHelper.getFeatureDescription( feature );
+        final String errorMessage = "While processing feature "+ featureDescription;
 
         LOGGER.info( "Processing feature '{}'", featureDescription );
 
@@ -295,10 +297,9 @@ public class ProcessorHelper
                 processor = ensembleProcessor;
             }
         }
-        catch(final MetricConfigurationException e)
+        catch(final MetricProcessorException | MetricConfigurationException e)
         {
-            throw new WresProcessingException( "While processing the metric configuration:",
-                                               e );
+            throw new WresProcessingException( errorMessage, e );
         }
 
         // Build an InputGenerator for the next feature
@@ -311,8 +312,8 @@ public class ProcessorHelper
         }
         catch ( IngestException e )
         {
-            throw new WresProcessingException( "While attempting to get "
-                                               + "metric inputs:", e );
+            throw new WresProcessingException( "While attempting to get metric inputs for feature "
+                                               + featureDescription, e );
         }
 
         // Queue the various tasks by time window (time window is the pooling dimension for metric calculation here)
@@ -372,9 +373,7 @@ public class ProcessorHelper
             }
 
             // Otherwise, chain and propagate the exception up to the top.
-            String message = "Error while processing feature "
-                             + featureDescription;
-            throw new WresProcessingException( message, e );
+            throw new WresProcessingException( errorMessage, e );
         }
 
         // Generate cached output if available
@@ -925,13 +924,9 @@ public class ProcessorHelper
             // Build the chart engine
             MetricConfig nextConfig = getNamedConfigOrAllValid( metricId, config );
             String templateResourceName = destConfig.getGraphical().getTemplate();
-            if ( Objects.nonNull( nextConfig ) )
+            if ( Objects.nonNull( nextConfig ) && nextConfig.getTemplateResourceName() != null )
             {
-                // Override template name with metric specific name.
-                if (nextConfig.getTemplateResourceName() != null)
-                {
-                    templateResourceName = nextConfig.getTemplateResourceName();
-                }
+                templateResourceName = nextConfig.getTemplateResourceName();
             }
 
             final Map<Pair<TimeWindow, Threshold>, ChartEngine> engines =

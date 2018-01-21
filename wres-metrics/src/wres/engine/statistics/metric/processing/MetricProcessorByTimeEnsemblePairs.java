@@ -63,40 +63,40 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
      * {@link MultiValuedScoreOutput}.
      */
 
-    private final MetricCollection<DiscreteProbabilityPairs, MultiValuedScoreOutput> discreteProbabilityVector;
+    private final MetricCollection<DiscreteProbabilityPairs, MultiValuedScoreOutput, MultiValuedScoreOutput> discreteProbabilityVector;
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume {@link DichotomousPairs} and produce
      * {@link ScalarOutput}.
      */
 
-    private final MetricCollection<DiscreteProbabilityPairs, MultiVectorOutput> discreteProbabilityMultiVector;
+    private final MetricCollection<DiscreteProbabilityPairs, MultiVectorOutput, MultiVectorOutput> discreteProbabilityMultiVector;
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume {@link EnsemblePairs} and produce {@link ScalarOutput}.
      */
 
-    private final MetricCollection<EnsemblePairs, ScalarOutput> ensembleScalar;
+    private final MetricCollection<EnsemblePairs, ScalarOutput, ScalarOutput> ensembleScalar;
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume {@link EnsemblePairs} and produce {@link MultiValuedScoreOutput}.
      */
 
-    private final MetricCollection<EnsemblePairs, MultiValuedScoreOutput> ensembleVector;
+    private final MetricCollection<EnsemblePairs, MultiValuedScoreOutput, MultiValuedScoreOutput> ensembleVector;
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume {@link EnsemblePairs} and produce
      * {@link MultiVectorOutput}.
      */
 
-    private final MetricCollection<EnsemblePairs, MultiVectorOutput> ensembleMultiVector;
+    private final MetricCollection<EnsemblePairs, MultiVectorOutput, MultiVectorOutput> ensembleMultiVector;
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume {@link EnsemblePairs} and produce
      * {@link BoxPlotOutput}.
      */
 
-    final MetricCollection<EnsemblePairs, BoxPlotOutput> ensembleBoxPlot;
+    final MetricCollection<EnsemblePairs, BoxPlotOutput, BoxPlotOutput> ensembleBoxPlot;
 
     /**
      * Default function that maps between ensemble pairs and single-valued pairs.
@@ -181,6 +181,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
      * @param mergeList a list of {@link MetricOutputGroup} whose outputs should be retained and merged across calls to
      *            {@link #apply(EnsemblePairs)}
      * @throws MetricConfigurationException if the metrics are configured incorrectly
+     * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
     public MetricProcessorByTimeEnsemblePairs( final DataFactory dataFactory,
@@ -188,90 +189,84 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                                                final ExecutorService thresholdExecutor,
                                                final ExecutorService metricExecutor,
                                                final MetricOutputGroup... mergeList )
-            throws MetricConfigurationException
+            throws MetricConfigurationException, MetricParameterException
     {
         super( dataFactory, config, thresholdExecutor, metricExecutor, mergeList );
-        try
+
+        //Construct the metrics
+        //Discrete probability input, vector output
+        if ( hasMetrics( MetricInputGroup.DISCRETE_PROBABILITY, MetricOutputGroup.VECTOR ) )
         {
-            //Construct the metrics
-            //Discrete probability input, vector output
-            if ( hasMetrics( MetricInputGroup.DISCRETE_PROBABILITY, MetricOutputGroup.VECTOR ) )
-            {
-                discreteProbabilityVector =
-                        metricFactory.ofDiscreteProbabilityVectorCollection( metricExecutor,
-                                                                             getSelectedMetrics( metrics,
-                                                                                                 MetricInputGroup.DISCRETE_PROBABILITY,
-                                                                                                 MetricOutputGroup.VECTOR ) );
-            }
-            else
-            {
-                discreteProbabilityVector = null;
-            }
-            //Discrete probability input, multi-vector output
-            if ( hasMetrics( MetricInputGroup.DISCRETE_PROBABILITY, MetricOutputGroup.MULTIVECTOR ) )
-            {
-                discreteProbabilityMultiVector =
-                        metricFactory.ofDiscreteProbabilityMultiVectorCollection( metricExecutor,
-                                                                                  getSelectedMetrics( metrics,
-                                                                                                      MetricInputGroup.DISCRETE_PROBABILITY,
-                                                                                                      MetricOutputGroup.MULTIVECTOR ) );
-            }
-            else
-            {
-                discreteProbabilityMultiVector = null;
-            }
-            //Ensemble input, vector output
-            if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.VECTOR ) )
-            {
-                ensembleVector = metricFactory.ofEnsembleVectorCollection( metricExecutor,
-                                                                           getSelectedMetrics( metrics,
-                                                                                               MetricInputGroup.ENSEMBLE,
-                                                                                               MetricOutputGroup.VECTOR ) );
-            }
-            else
-            {
-                ensembleVector = null;
-            }
-            //Ensemble input, scalar output
-            if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.SCALAR ) )
-            {
-                ensembleScalar = metricFactory.ofEnsembleScalarCollection( metricExecutor,
-                                                                           getSelectedMetrics( metrics,
-                                                                                               MetricInputGroup.ENSEMBLE,
-                                                                                               MetricOutputGroup.SCALAR ) );
-            }
-            else
-            {
-                ensembleScalar = null;
-            }
-            //Ensemble input, multi-vector output
-            if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.MULTIVECTOR ) )
-            {
-                ensembleMultiVector = metricFactory.ofEnsembleMultiVectorCollection( metricExecutor,
-                                                                                     getSelectedMetrics( metrics,
-                                                                                                         MetricInputGroup.ENSEMBLE,
-                                                                                                         MetricOutputGroup.MULTIVECTOR ) );
-            }
-            else
-            {
-                ensembleMultiVector = null;
-            }
-            //Ensemble input, box-plot output
-            if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.BOXPLOT ) )
-            {
-                ensembleBoxPlot = metricFactory.ofEnsembleBoxPlotCollection( metricExecutor,
-                                                                             getSelectedMetrics( metrics,
-                                                                                                 MetricInputGroup.ENSEMBLE,
-                                                                                                 MetricOutputGroup.BOXPLOT ) );
-            }
-            else
-            {
-                ensembleBoxPlot = null;
-            }
+            discreteProbabilityVector =
+                    metricFactory.ofDiscreteProbabilityVectorCollection( metricExecutor,
+                                                                         getSelectedMetrics( metrics,
+                                                                                             MetricInputGroup.DISCRETE_PROBABILITY,
+                                                                                             MetricOutputGroup.VECTOR ) );
         }
-        catch ( MetricParameterException e )
+        else
         {
-            throw new MetricConfigurationException( "Failed to construct one or more metrics.", e );
+            discreteProbabilityVector = null;
+        }
+        //Discrete probability input, multi-vector output
+        if ( hasMetrics( MetricInputGroup.DISCRETE_PROBABILITY, MetricOutputGroup.MULTIVECTOR ) )
+        {
+            discreteProbabilityMultiVector =
+                    metricFactory.ofDiscreteProbabilityMultiVectorCollection( metricExecutor,
+                                                                              getSelectedMetrics( metrics,
+                                                                                                  MetricInputGroup.DISCRETE_PROBABILITY,
+                                                                                                  MetricOutputGroup.MULTIVECTOR ) );
+        }
+        else
+        {
+            discreteProbabilityMultiVector = null;
+        }
+        //Ensemble input, vector output
+        if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.VECTOR ) )
+        {
+            ensembleVector = metricFactory.ofEnsembleVectorCollection( metricExecutor,
+                                                                       getSelectedMetrics( metrics,
+                                                                                           MetricInputGroup.ENSEMBLE,
+                                                                                           MetricOutputGroup.VECTOR ) );
+        }
+        else
+        {
+            ensembleVector = null;
+        }
+        //Ensemble input, scalar output
+        if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.SCALAR ) )
+        {
+            ensembleScalar = metricFactory.ofEnsembleScalarCollection( metricExecutor,
+                                                                       getSelectedMetrics( metrics,
+                                                                                           MetricInputGroup.ENSEMBLE,
+                                                                                           MetricOutputGroup.SCALAR ) );
+        }
+        else
+        {
+            ensembleScalar = null;
+        }
+        //Ensemble input, multi-vector output
+        if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.MULTIVECTOR ) )
+        {
+            ensembleMultiVector = metricFactory.ofEnsembleMultiVectorCollection( metricExecutor,
+                                                                                 getSelectedMetrics( metrics,
+                                                                                                     MetricInputGroup.ENSEMBLE,
+                                                                                                     MetricOutputGroup.MULTIVECTOR ) );
+        }
+        else
+        {
+            ensembleMultiVector = null;
+        }
+        //Ensemble input, box-plot output
+        if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.BOXPLOT ) )
+        {
+            ensembleBoxPlot = metricFactory.ofEnsembleBoxPlotCollection( metricExecutor,
+                                                                         getSelectedMetrics( metrics,
+                                                                                             MetricInputGroup.ENSEMBLE,
+                                                                                             MetricOutputGroup.BOXPLOT ) );
+        }
+        else
+        {
+            ensembleBoxPlot = null;
         }
 
         //Construct the default mapper from ensembles to single-values: this is not currently configurable
@@ -582,7 +577,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
     private <T extends MetricOutput<?>> Future<MetricOutputMapByMetric<T>>
             processDiscreteProbabilityThreshold( Threshold threshold,
                                                  EnsemblePairs pairs,
-                                                 MetricCollection<DiscreteProbabilityPairs, T> collection )
+                                                 MetricCollection<DiscreteProbabilityPairs, T, T> collection )
                     throws MetricInputSliceException
     {
         //Check the slice before transformation
@@ -610,7 +605,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
     private <T extends MetricOutput<?>> Future<MetricOutputMapByMetric<T>>
             processEnsembleThreshold( Threshold threshold,
                                       EnsemblePairs pairs,
-                                      MetricCollection<EnsemblePairs, T> collection )
+                                      MetricCollection<EnsemblePairs, T, T> collection )
                     throws MetricInputSliceException
     {
         //Slice the pairs

@@ -73,7 +73,7 @@ public class CoefficientOfDetermination extends CorrelationPearsons
     {
 
         @Override
-        protected CoefficientOfDetermination build() throws MetricParameterException
+        public CoefficientOfDetermination build() throws MetricParameterException
         {
             return new CoefficientOfDetermination(this);
         }

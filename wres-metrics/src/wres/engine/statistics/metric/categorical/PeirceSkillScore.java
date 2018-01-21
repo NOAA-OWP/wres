@@ -94,7 +94,7 @@ public class PeirceSkillScore<S extends MulticategoryPairs> extends ContingencyT
      * A {@link MetricBuilder} to build the dichotomous metric.
      */
 
-    public static class PeirceSkillScoreBuilder<S extends MulticategoryPairs> extends MetricBuilder<S, ScalarOutput>
+    public static class PeirceSkillScoreBuilder<S extends MulticategoryPairs> extends OrdinaryScoreBuilder<S, ScalarOutput>
     {
 
         @Override
