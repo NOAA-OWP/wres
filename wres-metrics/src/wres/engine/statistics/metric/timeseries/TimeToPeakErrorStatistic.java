@@ -11,7 +11,7 @@ import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.DurationOutput;
+import wres.datamodel.outputs.DurationScoreOutput;
 import wres.datamodel.outputs.PairedOutput;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.MetricFactory;
@@ -28,8 +28,8 @@ import wres.engine.statistics.metric.OrdinaryScore;
  * @version 0.1
  * @since 0.1
  */
-public class TimeToPeakErrorStatistic extends OrdinaryScore<TimeSeriesOfSingleValuedPairs, DurationOutput>
-        implements Collectable<TimeSeriesOfSingleValuedPairs, PairedOutput<Instant, Duration>, DurationOutput>
+public class TimeToPeakErrorStatistic extends OrdinaryScore<TimeSeriesOfSingleValuedPairs, DurationScoreOutput>
+        implements Collectable<TimeSeriesOfSingleValuedPairs, PairedOutput<Instant, Duration>, DurationScoreOutput>
 {
 
     /**
@@ -51,7 +51,7 @@ public class TimeToPeakErrorStatistic extends OrdinaryScore<TimeSeriesOfSingleVa
     private final TimeToPeakError timeToPeakError;
 
     @Override
-    public DurationOutput apply( TimeSeriesOfSingleValuedPairs s )
+    public DurationScoreOutput apply( TimeSeriesOfSingleValuedPairs s )
     {
         if ( Objects.isNull( s ) )
         {
@@ -91,7 +91,7 @@ public class TimeToPeakErrorStatistic extends OrdinaryScore<TimeSeriesOfSingleVa
     }
 
     @Override
-    public DurationOutput aggregate( PairedOutput<Instant, Duration> output )
+    public DurationScoreOutput aggregate( PairedOutput<Instant, Duration> output )
     {
         if ( Objects.isNull( output ) )
         {
@@ -130,7 +130,7 @@ public class TimeToPeakErrorStatistic extends OrdinaryScore<TimeSeriesOfSingleVa
      */
 
     public static class TimeToPeakErrorStatisticBuilder
-            extends OrdinaryScoreBuilder<TimeSeriesOfSingleValuedPairs, DurationOutput>
+            extends OrdinaryScoreBuilder<TimeSeriesOfSingleValuedPairs, DurationScoreOutput>
     {
 
         /**

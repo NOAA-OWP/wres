@@ -2,8 +2,8 @@ package wres.engine.statistics.metric.categorical;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
+import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MatrixOutput;
-import wres.datamodel.outputs.ScalarOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 
 /**
@@ -18,19 +18,19 @@ public class FrequencyBias extends ContingencyTableScore<DichotomousPairs>
 {
 
     @Override
-    public ScalarOutput apply(final DichotomousPairs s)
+    public DoubleScoreOutput apply(final DichotomousPairs s)
     {
         return aggregate(getCollectionInput(s));
     }
 
     @Override
-    public ScalarOutput aggregate(final MatrixOutput output)
+    public DoubleScoreOutput aggregate(final MatrixOutput output)
     {
         is2x2ContingencyTable(output, this);
         final MatrixOutput v = output;
         final double[][] cm = v.getData().getDoubles();
         final double score = (cm[0][0] + cm[0][1]) / (cm[0][0] + cm[1][0]);
-        return getDataFactory().ofScalarOutput(score, getMetadata(output));
+        return getDataFactory().ofDoubleScoreOutput(score, getMetadata(output));
     }
 
     @Override
@@ -49,7 +49,7 @@ public class FrequencyBias extends ContingencyTableScore<DichotomousPairs>
      * A {@link MetricBuilder} to build the metric.
      */
 
-    public static class FrequencyBiasBuilder extends OrdinaryScoreBuilder<DichotomousPairs, ScalarOutput>
+    public static class FrequencyBiasBuilder extends OrdinaryScoreBuilder<DichotomousPairs, DoubleScoreOutput>
     {
         @Override
         public FrequencyBias build() throws MetricParameterException

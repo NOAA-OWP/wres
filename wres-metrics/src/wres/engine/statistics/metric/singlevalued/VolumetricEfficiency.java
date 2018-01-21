@@ -7,7 +7,7 @@ import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.ScalarOutput;
+import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 
 /**
@@ -26,7 +26,7 @@ public class VolumetricEfficiency extends DoubleErrorScore<SingleValuedPairs>
 {
 
     @Override
-    public ScalarOutput apply( final SingleValuedPairs s )
+    public DoubleScoreOutput apply( final SingleValuedPairs s )
     {
         if(Objects.isNull(s))
         {
@@ -45,9 +45,9 @@ public class VolumetricEfficiency extends DoubleErrorScore<SingleValuedPairs>
         //Compute the atomic errors in a stream
         if( vO.equals( 0.0 ) )
         {
-            return getDataFactory().ofScalarOutput( Double.POSITIVE_INFINITY, metOut );
+            return getDataFactory().ofDoubleScoreOutput( Double.POSITIVE_INFINITY, metOut );
         }
-        return getDataFactory().ofScalarOutput( ( vO - vP ) / vO, metOut );
+        return getDataFactory().ofDoubleScoreOutput( ( vO - vP ) / vO, metOut );
     }
 
     @Override

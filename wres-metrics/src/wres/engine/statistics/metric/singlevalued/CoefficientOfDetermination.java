@@ -6,7 +6,7 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.ScalarOutput;
+import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 
 /**
@@ -21,7 +21,7 @@ public class CoefficientOfDetermination extends CorrelationPearsons
 {
 
     @Override
-    public ScalarOutput apply(SingleValuedPairs s)
+    public DoubleScoreOutput apply(SingleValuedPairs s)
     {
         return aggregate(getCollectionInput(s));
     }
@@ -33,7 +33,7 @@ public class CoefficientOfDetermination extends CorrelationPearsons
     }
 
     @Override
-    public ScalarOutput aggregate(ScalarOutput output)
+    public DoubleScoreOutput aggregate(DoubleScoreOutput output)
     {
         if ( Objects.isNull( output ) )
         {
@@ -46,11 +46,11 @@ public class CoefficientOfDetermination extends CorrelationPearsons
                                                                                              MetricConstants.COEFFICIENT_OF_DETERMINATION,
                                                                                              MetricConstants.MAIN,
                                                                                              in.getIdentifier() );
-        return getDataFactory().ofScalarOutput(Math.pow(output.getData(), 2), meta);
+        return getDataFactory().ofDoubleScoreOutput(Math.pow(output.getData(), 2), meta);
     }
 
     @Override
-    public ScalarOutput getCollectionInput(SingleValuedPairs input)
+    public DoubleScoreOutput getCollectionInput(SingleValuedPairs input)
     {
         if(Objects.isNull(input))
         {

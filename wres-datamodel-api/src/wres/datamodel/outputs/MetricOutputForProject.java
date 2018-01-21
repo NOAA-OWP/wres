@@ -8,8 +8,8 @@ import wres.datamodel.MetricConstants.MetricOutputGroup;
  * <p>
  * A high-level store of {@link MetricOutput} associated with a verification project. The outputs are stored in a
  * {@link MetricOutputMultiMap}. The {@link MetricOutputMultiMap} are further grouped by {@link MetricOutputGroup},
- * which denotes the atomic type of output stored by the container. For example, the {@link MetricOutputGroup#SCALAR}
- * maps to {@link ScalarOutput}.
+ * which denotes the atomic type of output stored by the container. For example, the {@link MetricOutputGroup#SCORE}
+ * maps to {@link ScoreOutput}.
  * </p>
  * <p>
  * Retrieve the outputs using the instance methods for particular {@link MetricOutputGroup}. If no outputs exist, the
@@ -35,13 +35,13 @@ public interface MetricOutputForProject<T extends MetricOutputMultiMap<?>>
     boolean hasOutput( MetricOutputGroup outGroup );
 
     /**
-     * Returns a {@link MetricOutputMultiMap} of {@link ScalarOutput} or null if no output exists.
+     * Returns a {@link MetricOutputMultiMap} of {@link DoubleScoreOutput} or null if no output exists.
      * 
      * @return the scalar output or null
      * @throws MetricOutputAccessException if the retrieval of {@link MetricOutput} fails for any reason
      */
 
-    MetricOutputMultiMap<ScalarOutput> getScalarOutput() throws MetricOutputAccessException;
+    MetricOutputMultiMap<DoubleScoreOutput> getScoreOutput() throws MetricOutputAccessException;
 
     /**
      * Returns a {@link MetricOutputMultiMap} of {@link MultiValuedScoreOutput} or null if no output exists.

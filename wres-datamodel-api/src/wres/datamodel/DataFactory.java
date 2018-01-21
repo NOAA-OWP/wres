@@ -29,7 +29,8 @@ import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
-import wres.datamodel.outputs.DurationOutput;
+import wres.datamodel.outputs.DoubleScoreOutput;
+import wres.datamodel.outputs.DurationScoreOutput;
 import wres.datamodel.outputs.MapKey;
 import wres.datamodel.outputs.MatrixOutput;
 import wres.datamodel.outputs.MetricOutput;
@@ -43,7 +44,7 @@ import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold.MetricOutpu
 import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.PairedOutput;
-import wres.datamodel.outputs.ScalarOutput;
+import wres.datamodel.outputs.ScoreOutput;
 
 /**
  * A factory class for producing datasets associated with verification metrics.
@@ -683,14 +684,14 @@ public interface DataFactory
     MatrixOfDoubles matrixOf( final double[][] vec );
 
     /**
-     * Return a {@link ScalarOutput}.
+     * Return a {@link DoubleScoreOutput}.
      * 
      * @param output the output data
      * @param meta the metadata
-     * @return a {@link ScalarOutput}
+     * @return a {@link ScoreOutput}
      */
 
-    ScalarOutput ofScalarOutput( final double output, final MetricOutputMetadata meta );
+    DoubleScoreOutput ofDoubleScoreOutput( final double output, final MetricOutputMetadata meta );
 
     /**
      * Return a {@link MultiValuedScoreOutput} with a prescribed decomposition template {@link ScoreOutputGroup}, which
@@ -760,14 +761,14 @@ public interface DataFactory
                                         MetricOutputMetadata meta );
     
     /**
-     * Return a {@link DurationOutput}.
+     * Return a {@link DurationScoreOutput}.
      * 
      * @param output the output data
      * @param meta the metadata
-     * @return a {@link DurationOutput}
+     * @return a {@link DurationScoreOutput}
      */
 
-    DurationOutput ofDurationOutput( final Duration output, final MetricOutputMetadata meta );    
+    DurationScoreOutput ofDurationOutput( final Duration output, final MetricOutputMetadata meta );    
 
     /**
      * Returns a {@link MapKey} to map a {@link MetricOutput} by an elementary key.

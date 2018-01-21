@@ -89,9 +89,9 @@ public final class KlingGuptaEfficiencyTest
         final MultiValuedScoreOutput actual = kge.apply( input );
 
         final MultiValuedScoreOutput expected = outF.ofMultiValuedScoreOutput( new double[] { 0.8921704394462281 }, m1 );
-        assertTrue( "Actual: " + actual.getData().getDoubles()[0]
+        assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
-                    + expected.getData().getDoubles()[0]
+                    + expected.getData()
                     + ".",
                     actual.equals( expected ) );
     }

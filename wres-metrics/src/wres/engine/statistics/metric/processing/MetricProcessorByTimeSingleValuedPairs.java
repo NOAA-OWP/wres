@@ -26,11 +26,12 @@ import wres.datamodel.inputs.pairs.PairOfBooleans;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.TimeWindow;
+import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MatrixOutput;
 import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMapByMetric;
-import wres.datamodel.outputs.ScalarOutput;
+import wres.datamodel.outputs.ScoreOutput;
 import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricCollection;
@@ -54,10 +55,10 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume {@link DichotomousPairs} and produce
-     * {@link ScalarOutput}.
+     * {@link ScoreOutput}.
      */
 
-    private final MetricCollection<DichotomousPairs, MatrixOutput, ScalarOutput> dichotomousScalar;
+    private final MetricCollection<DichotomousPairs, MatrixOutput, DoubleScoreOutput> dichotomousScalar;
 
     @Override
     public MetricOutputForProjectByTimeAndThreshold apply( SingleValuedPairs input )
@@ -134,13 +135,13 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
     {
         super( dataFactory, config, thresholdExecutor, metricExecutor, mergeList );
         //Construct the metrics
-        if ( hasMetrics( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCALAR ) )
+        if ( hasMetrics( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCORE ) )
         {
             dichotomousScalar =
                     metricFactory.ofDichotomousScalarCollection( metricExecutor,
                                                                  getSelectedMetrics( metrics,
                                                                                      MetricInputGroup.DICHOTOMOUS,
-                                                                                     MetricOutputGroup.SCALAR ) );
+                                                                                     MetricOutputGroup.SCORE ) );
         }
         else
         {
@@ -187,7 +188,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
         //Metric-specific overrides are currently unsupported
         String unsupportedException = "Metric-specific threshold overrides are currently unsupported.";
         //Check and obtain the global thresholds by metric group for iteration
-        if ( hasMetrics( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCALAR ) )
+        if ( hasMetrics( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCORE ) )
         {
             //Deal with global thresholds
             if ( hasGlobalThresholds( MetricInputGroup.DICHOTOMOUS ) )
@@ -222,7 +223,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
 
     /**
      * Processes one threshold for metrics that consume {@link DichotomousPairs}, which are mapped from the input pairs,
-     * {@link SingleValuedPairs}, using a configured mapping function, and produce a {@link MetricOutputGroup#SCALAR}. 
+     * {@link SingleValuedPairs}, using a configured mapping function, and produce a {@link MetricOutputGroup#SCORE}. 
      * 
      * @param timeWindow the time window
      * @param input the input pairs
@@ -239,7 +240,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
         MetricCalculationException returnMe = null;
         try
         {
-            futures.addScalarOutput( Pair.of( timeWindow, threshold ),
+            futures.addScoreOutput( Pair.of( timeWindow, threshold ),
                                      processDichotomousThreshold( threshold,
                                                                   input,
                                                                   dichotomousScalar ) );

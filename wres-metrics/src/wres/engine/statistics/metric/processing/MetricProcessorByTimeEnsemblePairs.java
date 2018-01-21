@@ -31,12 +31,13 @@ import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
+import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMapByMetric;
 import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.datamodel.outputs.MultiVectorOutput;
-import wres.datamodel.outputs.ScalarOutput;
+import wres.datamodel.outputs.ScoreOutput;
 import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricCollection;
@@ -67,16 +68,16 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume {@link DichotomousPairs} and produce
-     * {@link ScalarOutput}.
+     * {@link ScoreOutput}.
      */
 
     private final MetricCollection<DiscreteProbabilityPairs, MultiVectorOutput, MultiVectorOutput> discreteProbabilityMultiVector;
 
     /**
-     * A {@link MetricCollection} of {@link Metric} that consume {@link EnsemblePairs} and produce {@link ScalarOutput}.
+     * A {@link MetricCollection} of {@link Metric} that consume {@link EnsemblePairs} and produce {@link DoubleScoreOutput}.
      */
 
-    private final MetricCollection<EnsemblePairs, ScalarOutput, ScalarOutput> ensembleScalar;
+    private final MetricCollection<EnsemblePairs, DoubleScoreOutput, DoubleScoreOutput> ensembleScalar;
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume {@link EnsemblePairs} and produce {@link MultiValuedScoreOutput}.
@@ -233,12 +234,12 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
             ensembleVector = null;
         }
         //Ensemble input, scalar output
-        if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.SCALAR ) )
+        if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.SCORE ) )
         {
             ensembleScalar = metricFactory.ofEnsembleScalarCollection( metricExecutor,
                                                                        getSelectedMetrics( metrics,
                                                                                            MetricInputGroup.ENSEMBLE,
-                                                                                           MetricOutputGroup.SCALAR ) );
+                                                                                           MetricOutputGroup.SCORE ) );
         }
         else
         {
@@ -315,9 +316,9 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
 
     private void processEnsemblePairs( TimeWindow timeWindow, EnsemblePairs input, MetricFuturesByTimeBuilder futures )
     {
-        if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.SCALAR ) )
+        if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.SCORE ) )
         {
-            processEnsembleThresholds( timeWindow, input, futures, MetricOutputGroup.SCALAR );
+            processEnsembleThresholds( timeWindow, input, futures, MetricOutputGroup.SCORE );
         }
         if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.VECTOR ) )
         {
@@ -398,9 +399,9 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         MetricCalculationException returnMe = null;
         try
         {
-            if ( outGroup == MetricOutputGroup.SCALAR )
+            if ( outGroup == MetricOutputGroup.SCORE )
             {
-                futures.addScalarOutput( Pair.of( timeWindow, threshold ),
+                futures.addScoreOutput( Pair.of( timeWindow, threshold ),
                                          processEnsembleThreshold( threshold,
                                                                    input,
                                                                    ensembleScalar ) );

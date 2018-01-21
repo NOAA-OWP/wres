@@ -18,11 +18,10 @@ import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.ScalarOutput;
+import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
-import wres.engine.statistics.metric.singlevalued.CorrelationPearsons;
 import wres.engine.statistics.metric.singlevalued.CorrelationPearsons.CorrelationPearsonsBuilder;
 
 /**
@@ -62,8 +61,8 @@ public final class CorrelationPearsonsTest
                                                                    MetricConstants.MAIN );
 
         //Compute normally
-        final ScalarOutput actual = rho.apply( input );
-        final ScalarOutput expected = dataF.ofScalarOutput( 0.9999999910148981, m1 );
+        final DoubleScoreOutput actual = rho.apply( input );
+        final DoubleScoreOutput expected = dataF.ofDoubleScoreOutput( 0.9999999910148981, m1 );
         assertTrue( "Actual: " + actual.getData().doubleValue()
                     + ". Expected: "
                     + expected.getData().doubleValue()

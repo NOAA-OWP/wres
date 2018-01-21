@@ -7,7 +7,7 @@ import org.junit.Test;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
-import wres.datamodel.outputs.ScalarOutput;
+import wres.datamodel.outputs.ScoreOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.engine.statistics.metric.singlevalued.DoubleErrorScore;
@@ -44,7 +44,7 @@ public final class DoubleErrorScoreTest
         final MeanError me = b.build();
 
         //Check the results
-        final ScalarOutput actual = me.apply(input);
+        final ScoreOutput actual = me.apply(input);
 
         //Check the parameters
         assertTrue("Unexpected baseline identifier for the DoubleErrorScore.",

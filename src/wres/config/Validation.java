@@ -235,7 +235,7 @@ public class Validation
 
                     // Check that the named metric is consistent with any pooling window configuration
                     if ( projectConfigPlus.getProjectConfig().getPair().getIssuedDatesPoolingWindow() != null && checkMe != null
-                         && ! ( checkMe.isInGroup( MetricOutputGroup.SCALAR )
+                         && ! ( checkMe.isInGroup( MetricOutputGroup.SCORE )
                                 || checkMe.isInGroup( MetricOutputGroup.VECTOR ) ) )
                     {
                         result = false;

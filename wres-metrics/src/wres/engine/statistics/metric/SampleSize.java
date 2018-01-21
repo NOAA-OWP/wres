@@ -6,7 +6,7 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.PairedInput;
-import wres.datamodel.outputs.ScalarOutput;
+import wres.datamodel.outputs.DoubleScoreOutput;
 
 /**
  * Constructs a {@link Metric} that returns the sample size.
@@ -15,20 +15,20 @@ import wres.datamodel.outputs.ScalarOutput;
  * @version 0.1
  * @since 0.1
  */
-class SampleSize<S extends PairedInput<?>> extends OrdinaryScore<S, ScalarOutput>
+class SampleSize<S extends PairedInput<?>> extends OrdinaryScore<S, DoubleScoreOutput>
 {
-    
+
     @Override
-    public ScalarOutput apply( S s )
+    public DoubleScoreOutput apply( S s )
     {
         if ( Objects.isNull( s ) )
         {
             throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
         }
-        return getDataFactory().ofScalarOutput( s.getData().size(),
-                                                getMetadata( s, s.getData().size(), MetricConstants.MAIN, null ) );
+        return getDataFactory().ofDoubleScoreOutput( s.getData().size(),
+                                               getMetadata( s, s.getData().size(), MetricConstants.MAIN, null ) );
     }
-    
+
     @Override
     public boolean isSkillScore()
     {
@@ -63,7 +63,7 @@ class SampleSize<S extends PairedInput<?>> extends OrdinaryScore<S, ScalarOutput
      * A {@link MetricBuilder} to build the metric.
      */
 
-    static class SampleSizeBuilder<S extends PairedInput<?>> extends OrdinaryScoreBuilder<S, ScalarOutput>
+    static class SampleSizeBuilder<S extends PairedInput<?>> extends OrdinaryScoreBuilder<S, DoubleScoreOutput>
     {
         @Override
         public SampleSize<S> build() throws MetricParameterException
@@ -81,7 +81,7 @@ class SampleSize<S extends PairedInput<?>> extends OrdinaryScore<S, ScalarOutput
 
     private SampleSize( final SampleSizeBuilder<S> builder ) throws MetricParameterException
     {
-        super(builder);
+        super( builder );
     }
 
 }

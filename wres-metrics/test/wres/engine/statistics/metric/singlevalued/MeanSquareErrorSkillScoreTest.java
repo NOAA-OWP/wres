@@ -70,9 +70,9 @@ public final class MeanSquareErrorSkillScoreTest
         //Check the results
         final MultiValuedScoreOutput actual = mse.apply( input );
         final MultiValuedScoreOutput expected = outF.ofMultiValuedScoreOutput( new double[] { 0.8007025335093799 }, m1 );
-        assertTrue( "Actual: " + actual.getData().getDoubles()[0]
+        assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
-                    + expected.getData().getDoubles()[0]
+                    + expected.getData()
                     + ".",
                     actual.equals( expected ) );
 
@@ -133,9 +133,9 @@ public final class MeanSquareErrorSkillScoreTest
         final MultiValuedScoreOutput actual = mse.apply( input );
 
         final MultiValuedScoreOutput expected = outF.ofMultiValuedScoreOutput( new double[] { 0.7832791707548252 }, m1 );
-        assertTrue( "Actual: " + actual.getData().getDoubles()[0]
+        assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
-                    + expected.getData().getDoubles()[0]
+                    + expected.getData()
                     + ".",
                     actual.equals( expected ) );
     }

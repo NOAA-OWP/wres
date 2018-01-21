@@ -2,7 +2,7 @@ package wres.engine.statistics.metric.singlevalued;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
-import wres.datamodel.outputs.ScalarOutput;
+import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 
@@ -19,10 +19,10 @@ public class RootMeanSquareError extends DoubleErrorScore<SingleValuedPairs>
 {
 
     @Override
-    public ScalarOutput apply(final SingleValuedPairs t)
+    public DoubleScoreOutput apply(final SingleValuedPairs t)
     {      
-        final ScalarOutput intermediate = super.apply(t);
-        return getDataFactory().ofScalarOutput(Math.pow(intermediate.getData(), 0.5),intermediate.getMetadata());
+        final DoubleScoreOutput intermediate = super.apply(t);
+        return getDataFactory().ofDoubleScoreOutput(Math.pow(intermediate.getData(), 0.5),intermediate.getMetadata());
     }
 
     @Override

@@ -17,11 +17,10 @@ import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.ScalarOutput;
+import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
-import wres.engine.statistics.metric.singlevalued.CoefficientOfDetermination;
 import wres.engine.statistics.metric.singlevalued.CoefficientOfDetermination.CoefficientOfDeterminationBuilder;
 
 /**
@@ -60,8 +59,8 @@ public final class CoefficientOfDeterminationTest
                                                                    MetricConstants.MAIN );
 
         //Compute normally
-        final ScalarOutput actual = cod.apply( input );
-        final ScalarOutput expected = dataF.ofScalarOutput( Math.pow( 0.9999999910148981, 2 ), m1 );
+        final DoubleScoreOutput actual = cod.apply( input );
+        final DoubleScoreOutput expected = dataF.ofDoubleScoreOutput( Math.pow( 0.9999999910148981, 2 ), m1 );
         assertTrue( "Actual: " + actual.getData().doubleValue()
                     + ". Expected: "
                     + expected.getData().doubleValue()

@@ -19,7 +19,6 @@ import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.engine.statistics.metric.MetricParameterException;
-import wres.engine.statistics.metric.ensemble.ContinuousRankedProbabilityScore;
 import wres.engine.statistics.metric.ensemble.ContinuousRankedProbabilityScore.CRPSBuilder;
 
 /**
@@ -70,9 +69,9 @@ public final class ContinousRankedProbabilityScoreTest
         //Check the results       
         final MultiValuedScoreOutput actual = crps.apply( input );
         final MultiValuedScoreOutput expected = outF.ofMultiValuedScoreOutput( new double[] { 7.63 }, m1 );
-        assertTrue( "Actual: " + actual.getData().getDoubles()[0]
+        assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
-                    + expected.getData().getDoubles()[0]
+                    + expected.getData()
                     + ".",
                     actual.equals( expected ) );
         //Check the parameters
@@ -125,9 +124,9 @@ public final class ContinousRankedProbabilityScoreTest
         //Check the results       
         final MultiValuedScoreOutput actual = crps.apply( input );
         final MultiValuedScoreOutput expected = outF.ofMultiValuedScoreOutput( new double[] { 8.734401927437641 }, m1 );
-        assertTrue( "Actual: " + actual.getData().getDoubles()[0]
+        assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
-                    + expected.getData().getDoubles()[0]
+                    + expected.getData()
                     + ".",
                     actual.equals( expected ) );
     }
@@ -166,9 +165,9 @@ public final class ContinousRankedProbabilityScoreTest
         //Check the results       
         final MultiValuedScoreOutput actual = crps.apply( input );
         final MultiValuedScoreOutput expected = outF.ofMultiValuedScoreOutput( new double[] { 4.56 }, m1 );
-        assertTrue( "Actual: " + actual.getData().getDoubles()[0]
+        assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
-                    + expected.getData().getDoubles()[0]
+                    + expected.getData()
                     + ".",
                     actual.equals( expected ) );
     }    

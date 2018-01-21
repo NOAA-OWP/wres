@@ -19,7 +19,7 @@ import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.outputs.ScalarOutput;
+import wres.datamodel.outputs.ScoreOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.engine.statistics.metric.singlevalued.IndexOfAgreement.IndexOfAgreementBuilder;
@@ -86,9 +86,9 @@ public final class IndexOfAgreementTest
                     ioa.getScoreOutputGroup() == ScoreOutputGroup.NONE );
 
         //Check the results
-        final ScalarOutput actual = ioa.apply( input );
+        final ScoreOutput actual = ioa.apply( input );
 
-        final ScalarOutput expected = outF.ofScalarOutput( 0.8221179993380173, m1 );
+        final ScoreOutput expected = outF.ofDoubleScoreOutput( 0.8221179993380173, m1 );
         assertTrue( "Actual: " + actual.getData() + ". Expected: " + expected.getData() + ".",
                     actual.equals( expected ) );
     }

@@ -8,7 +8,7 @@ import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.ScalarOutput;
+import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.DoubleErrorFunction;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricParameterException;
@@ -23,7 +23,7 @@ import wres.engine.statistics.metric.OrdinaryScore;
  * @version 0.1
  * @since 0.1
  */
-public abstract class DoubleErrorScore<S extends SingleValuedPairs> extends OrdinaryScore<S, ScalarOutput>
+public abstract class DoubleErrorScore<S extends SingleValuedPairs> extends OrdinaryScore<S, DoubleScoreOutput>
 {
     /**
      * The error function.
@@ -37,7 +37,7 @@ public abstract class DoubleErrorScore<S extends SingleValuedPairs> extends Ordi
 
     public static abstract class DoubleErrorScoreBuilder<S extends SingleValuedPairs>
             extends
-            OrdinaryScoreBuilder<S, ScalarOutput>
+            OrdinaryScoreBuilder<S, DoubleScoreOutput>
     {
 
         /**
@@ -61,7 +61,7 @@ public abstract class DoubleErrorScore<S extends SingleValuedPairs> extends Ordi
     }
 
     @Override
-    public ScalarOutput apply( final S s )
+    public DoubleScoreOutput apply( final S s )
     {
         if ( Objects.isNull( s ) )
         {
@@ -80,7 +80,7 @@ public abstract class DoubleErrorScore<S extends SingleValuedPairs> extends Ordi
         }
         final MetricOutputMetadata metOut = getMetadata( s, s.getData().size(), MetricConstants.MAIN, id );
         //Compute the atomic errors in a stream
-        return getDataFactory().ofScalarOutput( s.getData().stream().mapToDouble( f ).average().getAsDouble(), metOut );
+        return getDataFactory().ofDoubleScoreOutput( s.getData().stream().mapToDouble( f ).average().getAsDouble(), metOut );
     }
 
     @Override

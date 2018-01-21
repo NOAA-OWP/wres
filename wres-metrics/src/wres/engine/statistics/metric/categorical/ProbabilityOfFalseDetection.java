@@ -2,8 +2,8 @@ package wres.engine.statistics.metric.categorical;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
+import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MatrixOutput;
-import wres.datamodel.outputs.ScalarOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 
 /**
@@ -17,18 +17,18 @@ public class ProbabilityOfFalseDetection extends ContingencyTableScore<Dichotomo
 {
 
     @Override
-    public ScalarOutput apply(final DichotomousPairs s)
+    public DoubleScoreOutput apply( final DichotomousPairs s )
     {
-        return aggregate(getCollectionInput(s));
+        return aggregate( getCollectionInput( s ) );
     }
 
     @Override
-    public ScalarOutput aggregate(final MatrixOutput output)
+    public DoubleScoreOutput aggregate( final MatrixOutput output )
     {
-        is2x2ContingencyTable(output, this);
+        is2x2ContingencyTable( output, this );
         final MatrixOutput v = output;
         final double[][] cm = v.getData().getDoubles();
-        return getDataFactory().ofScalarOutput(cm[0][1] / (cm[0][1] + cm[1][1]), getMetadata(output));
+        return getDataFactory().ofDoubleScoreOutput( cm[0][1] / ( cm[0][1] + cm[1][1] ), getMetadata( output ) );
     }
 
     @Override
@@ -47,13 +47,14 @@ public class ProbabilityOfFalseDetection extends ContingencyTableScore<Dichotomo
      * A {@link MetricBuilder} to build the metric.
      */
 
-    public static class ProbabilityOfFalseDetectionBuilder extends OrdinaryScoreBuilder<DichotomousPairs, ScalarOutput>
+    public static class ProbabilityOfFalseDetectionBuilder
+            extends OrdinaryScoreBuilder<DichotomousPairs, DoubleScoreOutput>
     {
 
         @Override
         public ProbabilityOfFalseDetection build() throws MetricParameterException
         {
-            return new ProbabilityOfFalseDetection(this);
+            return new ProbabilityOfFalseDetection( this );
         }
 
     }
@@ -65,8 +66,9 @@ public class ProbabilityOfFalseDetection extends ContingencyTableScore<Dichotomo
      * @throws MetricParameterException if one or more parameters is invalid 
      */
 
-    private ProbabilityOfFalseDetection(final ProbabilityOfFalseDetectionBuilder builder) throws MetricParameterException
+    private ProbabilityOfFalseDetection( final ProbabilityOfFalseDetectionBuilder builder )
+            throws MetricParameterException
     {
-        super(builder);
+        super( builder );
     }
 }

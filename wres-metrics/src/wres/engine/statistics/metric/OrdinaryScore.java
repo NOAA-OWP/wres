@@ -5,6 +5,7 @@ import java.util.Objects;
 import wres.datamodel.DataFactory;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.outputs.MetricOutput;
+import wres.datamodel.outputs.ScoreOutput;
 
 /**
  * An abstract score.
@@ -14,9 +15,9 @@ import wres.datamodel.outputs.MetricOutput;
  * @since 0.1
  */
 
-public abstract class OrdinaryScore<S extends MetricInput<?>, T extends MetricOutput<?>> implements Score<S, T>
+public abstract class OrdinaryScore<S extends MetricInput<?>, T extends ScoreOutput<?>> implements Score<S, T>
 {
-    
+
     /**
      * The data factory.
      */
@@ -27,19 +28,19 @@ public abstract class OrdinaryScore<S extends MetricInput<?>, T extends MetricOu
     public DataFactory getDataFactory()
     {
         return dataFactory;
-    }    
-    
+    }
+
     @Override
     public String toString()
     {
         return getID().toString();
-    }   
-    
+    }
+
     /**
      * A {@link MetricBuilder} to build the metric.
      */
 
-    public static abstract class OrdinaryScoreBuilder<S extends MetricInput<?>, T extends MetricOutput<?>>
+    public static abstract class OrdinaryScoreBuilder<S extends MetricInput<?>, T extends ScoreOutput<?>>
             implements
             MetricBuilder<S, T>
     {
@@ -47,7 +48,7 @@ public abstract class OrdinaryScore<S extends MetricInput<?>, T extends MetricOu
         /**
          * The data factory.
          */
-        
+
         private DataFactory dataFactory;
 
         /**
@@ -58,15 +59,15 @@ public abstract class OrdinaryScore<S extends MetricInput<?>, T extends MetricOu
          */
 
         @Override
-        public OrdinaryScoreBuilder<S,T> setOutputFactory( final DataFactory dataFactory )
+        public OrdinaryScoreBuilder<S, T> setOutputFactory( final DataFactory dataFactory )
         {
             this.dataFactory = dataFactory;
             return this;
-        }        
-        
-    }    
-    
-    
+        }
+
+    }
+
+
     /**
      * Hidden constructor.
      * 
@@ -74,7 +75,7 @@ public abstract class OrdinaryScore<S extends MetricInput<?>, T extends MetricOu
      * @throws MetricParameterException if one or more parameters is invalid
      */
 
-    protected OrdinaryScore( final OrdinaryScoreBuilder<S,T> builder ) throws MetricParameterException
+    protected OrdinaryScore( final OrdinaryScoreBuilder<S, T> builder ) throws MetricParameterException
     {
         if ( Objects.isNull( builder ) )
         {

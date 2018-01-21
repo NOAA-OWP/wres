@@ -2,8 +2,8 @@ package wres.engine.statistics.metric.categorical;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
+import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MatrixOutput;
-import wres.datamodel.outputs.ScalarOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 
 /**
@@ -20,18 +20,18 @@ public class CriticalSuccessIndex extends ContingencyTableScore<DichotomousPairs
 {
 
     @Override
-    public ScalarOutput apply(final DichotomousPairs s)
+    public DoubleScoreOutput apply(final DichotomousPairs s)
     {
         return aggregate(getCollectionInput(s));
     }
 
     @Override
-    public ScalarOutput aggregate(final MatrixOutput output)
+    public DoubleScoreOutput aggregate(final MatrixOutput output)
     {
         is2x2ContingencyTable(output, this);
         final MatrixOutput v = output;
         final double[][] cm = v.getData().getDoubles();
-        return getDataFactory().ofScalarOutput(cm[0][0] / (cm[0][0] + cm[0][1] + cm[1][0]), getMetadata(output));
+        return getDataFactory().ofDoubleScoreOutput(cm[0][0] / (cm[0][0] + cm[0][1] + cm[1][0]), getMetadata(output));
     }
 
     @Override
@@ -50,7 +50,7 @@ public class CriticalSuccessIndex extends ContingencyTableScore<DichotomousPairs
      * A {@link MetricBuilder} to build the metric.
      */
 
-    public static class CriticalSuccessIndexBuilder extends OrdinaryScoreBuilder<DichotomousPairs, ScalarOutput>
+    public static class CriticalSuccessIndexBuilder extends OrdinaryScoreBuilder<DichotomousPairs, DoubleScoreOutput>
     {
 
         @Override

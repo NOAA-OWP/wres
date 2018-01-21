@@ -13,8 +13,8 @@ import org.junit.Test;
 import wres.datamodel.Threshold.Operator;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
+import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
-import wres.datamodel.outputs.ScalarOutput;
 
 /**
  * Tests the {@link SafeMetricOutputMapByTimeAndThreshold}.
@@ -35,7 +35,7 @@ public final class SafeMetricOutputMapByTimeAndThresholdTest
     public void test1ConstructAndFilter()
     {
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
-        final MetricOutputMapByTimeAndThreshold<ScalarOutput> results =
+        final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> results =
                 DataModelTestDataFactory.getScalarMetricOutputMapByLeadThresholdOne();
 
         //Acquire a submap by threshold = 531.88 and lead time = 42
@@ -45,7 +45,7 @@ public final class SafeMetricOutputMapByTimeAndThresholdTest
                                                      Duration.ofHours( 42 ) );
         final Threshold q = outputFactory.getQuantileThreshold( 531.88, 0.005, Operator.GREATER );
         final Pair<TimeWindow, Threshold> testKeyOne = Pair.of( timeWindow, q );
-        final MetricOutputMapByTimeAndThreshold<ScalarOutput> subMap =
+        final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> subMap =
                 results.filterByTime( timeWindow ).filterByThreshold( q );
 
         //Check the results
@@ -58,7 +58,7 @@ public final class SafeMetricOutputMapByTimeAndThresholdTest
                     Double.compare( actualOne, expectedOne ) == 0 );
 
         //Slice by threshold = 531.88
-        final MetricOutputMapByTimeAndThreshold<ScalarOutput> subMap2 = results.filterByThreshold( q );
+        final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> subMap2 = results.filterByThreshold( q );
 
         //Acquire a submap by threshold = all data and lead time = 714
         final TimeWindow timeWindowTwo = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
@@ -73,8 +73,8 @@ public final class SafeMetricOutputMapByTimeAndThresholdTest
         final Pair<TimeWindow, Threshold> testKeyTwo = Pair.of( timeWindowTwo, q2 );
 
         //Slice by threshold = all data
-        final MetricOutputMapByTimeAndThreshold<ScalarOutput> subMap3 = results.filterByTime( timeWindowTwo )
-                                                                               .filterByThreshold( q2 );
+        final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> subMap3 = results.filterByTime( timeWindowTwo )
+                                                                                    .filterByThreshold( q2 );
 
         final double actualTwo = subMap3.get( testKeyTwo ).getData();
         final double expectedTwo = 0.005999378857020621;
@@ -92,7 +92,7 @@ public final class SafeMetricOutputMapByTimeAndThresholdTest
         assertTrue( "Expected quantile thresholds in store.", subMap.hasQuantileThresholds() );
 
         //Filter by lead times directly        
-        final MetricOutputMapByTimeAndThreshold<ScalarOutput> subMap4 =
+        final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> subMap4 =
                 results.filterByLeadTimeInHours( 42 ).filterByThreshold( q );
         final double actualThree = subMap4.get( testKeyOne ).getData();
         final double expectedThree = expectedOne;
@@ -103,12 +103,12 @@ public final class SafeMetricOutputMapByTimeAndThresholdTest
                     Double.compare( actualThree, expectedThree ) == 0 );
         //Check number of lead times
         Set<Long> benchmarkTimes = new TreeSet<>();
-        for(int i = 0; i < 29; i++)
+        for ( int i = 0; i < 29; i++ )
         {
-            benchmarkTimes.add( 42L + i*24 );
+            benchmarkTimes.add( 42L + i * 24 );
         }
         assertTrue( "Unexpected lead times in dataset.",
-                   results.keySetByLeadTimeInHours().equals( benchmarkTimes ) );
+                    results.keySetByLeadTimeInHours().equals( benchmarkTimes ) );
 
     }
 

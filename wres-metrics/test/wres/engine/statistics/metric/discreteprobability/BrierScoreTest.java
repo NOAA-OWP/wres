@@ -15,7 +15,6 @@ import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
-import wres.engine.statistics.metric.discreteprobability.BrierScore;
 import wres.engine.statistics.metric.discreteprobability.BrierScore.BrierScoreBuilder;
 
 /**
@@ -61,9 +60,9 @@ public final class BrierScoreTest
         //Check the results       
         final MultiValuedScoreOutput actual = bs.apply( (DiscreteProbabilityPairs) input );
         final MultiValuedScoreOutput expected = outF.ofMultiValuedScoreOutput( new double[] { 0.26 }, m1 );
-        assertTrue( "Actual: " + actual.getData().getDoubles()[0]
+        assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
-                    + expected.getData().getDoubles()[0]
+                    + expected.getData()
                     + ".",
                     actual.equals( expected ) );
         //Check the parameters

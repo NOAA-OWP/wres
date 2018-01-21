@@ -13,7 +13,7 @@ import wres.datamodel.MetricConstants.ScoreOutputGroup;
  * @since 0.1
  */
 
-public interface MultiValuedScoreOutput extends VectorOutput
+public interface MultiValuedScoreOutput extends DoubleScoreOutput
 {
     
     /**

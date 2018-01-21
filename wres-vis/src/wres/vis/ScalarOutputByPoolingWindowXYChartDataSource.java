@@ -11,11 +11,12 @@ import org.jfree.data.xy.IntervalXYDataset;
 import ohd.hseb.charter.ChartConstants;
 import wres.datamodel.Threshold;
 import wres.datamodel.metadata.TimeWindow;
+import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
-import wres.datamodel.outputs.ScalarOutput;
+import wres.datamodel.outputs.ScoreOutput;
 
 /**
- * A chart data source for a {@link ScalarOutput} plotted by {@link TimeWindow#getMidPointTime()} on the 
+ * A chart data source for a {@link ScoreOutput} plotted by {@link TimeWindow#getMidPointTime()} on the 
  * domain axis, with individual series for each lead time and threshold.
  * 
  * @author james.brown@hydrosolved.com
@@ -23,7 +24,7 @@ import wres.datamodel.outputs.ScalarOutput;
  * @since 0.1
  */
 public class ScalarOutputByPoolingWindowXYChartDataSource
-        extends WRESXYChartDataSource<MetricOutputMapByTimeAndThreshold<ScalarOutput>>
+        extends WRESXYChartDataSource<MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>>
 {
 
     /**
@@ -32,7 +33,7 @@ public class ScalarOutputByPoolingWindowXYChartDataSource
      * @param input The data for which to display a chart.
      */
     public ScalarOutputByPoolingWindowXYChartDataSource( final int orderIndex,
-                                                         final MetricOutputMapByTimeAndThreshold<ScalarOutput> input )
+                                                         final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> input )
     {
         super( orderIndex, input, input.keySetByThreshold().size() * input.keySetByLeadTimeInHours().size() );
 
@@ -53,19 +54,19 @@ public class ScalarOutputByPoolingWindowXYChartDataSource
     {
 
         // Build the TimeSeriesCollection
-        MetricOutputMapByTimeAndThreshold<ScalarOutput> input = getInput();
+        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> input = getInput();
         TimeSeriesCollection returnMe = new TimeSeriesCollection();
 
         // Filter by lead time and then by threshold
         Set<Long> leadTimes = input.keySetByLeadTimeInHours();
         for ( Long nextTime : leadTimes )
         {
-            MetricOutputMapByTimeAndThreshold<ScalarOutput> slice = input.filterByLeadTimeInHours( nextTime );
+            MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> slice = input.filterByLeadTimeInHours( nextTime );
             // Filter by threshold
             Set<Threshold> thresholds = input.keySetByThreshold();
             for ( Threshold nextThreshold : thresholds )
             {
-                MetricOutputMapByTimeAndThreshold<ScalarOutput> finalSlice = slice.filterByThreshold( nextThreshold );
+                MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> finalSlice = slice.filterByThreshold( nextThreshold );
                 // Add the time-series
                 TimeSeries next = new TimeSeries( nextTime + ", " + nextThreshold, FixedMillisecond.class );
                 for ( Pair<TimeWindow, Threshold> key : finalSlice.keySet() )

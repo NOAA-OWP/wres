@@ -26,11 +26,12 @@ import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
+import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMapByMetric;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
-import wres.datamodel.outputs.ScalarOutput;
 import wres.datamodel.outputs.MultiValuedScoreOutput;
+import wres.datamodel.outputs.ScoreOutput;
 
 /**
  * Factory class for generating test datasets for metric calculations.
@@ -43,18 +44,18 @@ public final class DataModelTestDataFactory
 {
 
     /**
-     * Returns a {@link MetricOutputMapByTimeAndThreshold} of {@link ScalarOutput} comprising the CRPSS for selected
+     * Returns a {@link MetricOutputMapByTimeAndThreshold} of {@link ScoreOutput} comprising the CRPSS for selected
      * thresholds and forecast lead times. Reads the input data from
      * testinput/wres/datamodel/metric/getScalarMetricOutputMapByLeadThresholdOne.xml.
      * 
      * @return an output map of verification scores
      */
 
-    public static MetricOutputMapByTimeAndThreshold<ScalarOutput> getScalarMetricOutputMapByLeadThresholdOne()
+    public static MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> getScalarMetricOutputMapByLeadThresholdOne()
     {
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
         final MetadataFactory metaFactory = outputFactory.getMetadataFactory();
-        final Builder<ScalarOutput> builder = new SafeMetricOutputMapByTimeAndThreshold.Builder<>();
+        final Builder<DoubleScoreOutput> builder = new SafeMetricOutputMapByTimeAndThreshold.Builder<>();
         try
         {
             //Create the input file
@@ -102,7 +103,7 @@ public final class DataModelTestDataFactory
                     //Build the scalar result
                     final MetricResult result = t.getResult( f );
                     final double[] res = ( (DoubleMatrix1DResult) result ).getResult().toArray();
-                    final ScalarOutput value = outputFactory.ofScalarOutput( res[0], meta );
+                    final DoubleScoreOutput value = outputFactory.ofDoubleScoreOutput( res[0], meta );
 
                     //Append result
                     builder.put( key, value );
@@ -214,24 +215,24 @@ public final class DataModelTestDataFactory
                                            metaFactory.getDimension(),
                                            metaFactory.getDimension( "CMS" ),
                                            MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE );
-        List<ScalarOutput> fakeData = new ArrayList<>();
+        List<DoubleScoreOutput> fakeData = new ArrayList<>();
 
         //Add some fake numbers
-        fakeData.add( factory.ofScalarOutput( 10.0, fakeMeta ) );
-        fakeData.add( factory.ofScalarOutput( 6.0, fakeMeta ) );
-        fakeData.add( factory.ofScalarOutput( 7.0, fakeMeta ) );
-        fakeData.add( factory.ofScalarOutput( 16.0, fakeMeta ) );
+        fakeData.add( factory.ofDoubleScoreOutput( 10.0, fakeMeta ) );
+        fakeData.add( factory.ofDoubleScoreOutput( 6.0, fakeMeta ) );
+        fakeData.add( factory.ofDoubleScoreOutput( 7.0, fakeMeta ) );
+        fakeData.add( factory.ofDoubleScoreOutput( 16.0, fakeMeta ) );
 
         //Build the input map
-        MetricOutputMapByMetric<ScalarOutput> in = factory.ofMap( fakeData );
+        MetricOutputMapByMetric<DoubleScoreOutput> in = factory.ofMap( fakeData );
 
         final TimeWindow timeWindow = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                      Instant.parse( "2010-12-31T11:59:59Z" ),
                                                      ReferenceTime.VALID_TIME,
                                                      Duration.ofHours( 1 ) );
         //Fake lead time and threshold
-        builder.addScalarOutput( factory.getMapKeyByTimeThreshold( timeWindow, 23.0, Operator.GREATER ),
-                                 CompletableFuture.completedFuture( in ) );
+        builder.addScoreOutput( factory.getMapKeyByTimeThreshold( timeWindow, 23.0, Operator.GREATER ),
+                                CompletableFuture.completedFuture( in ) );
 
         //Return data
         return builder.build();

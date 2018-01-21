@@ -11,7 +11,7 @@ import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.MatrixOutput;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.PairedOutput;
-import wres.datamodel.outputs.ScalarOutput;
+import wres.datamodel.outputs.ScoreOutput;
 import wres.datamodel.outputs.VectorOutput;
 
 /**
@@ -30,7 +30,7 @@ public enum MetricConstants
      * Identifier for fractional bias or relative mean error.
      */
 
-    BIAS_FRACTION( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCALAR ),
+    BIAS_FRACTION( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCORE ),
 
     /**
      * Identifier for a Brier Score.
@@ -60,7 +60,7 @@ public enum MetricConstants
      * Identifier for coefficient of determination.
      */
 
-    COEFFICIENT_OF_DETERMINATION( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCALAR ),
+    COEFFICIENT_OF_DETERMINATION( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCORE ),
 
     /**
      * Identifier for a Mean Continuous Ranked Probability Score
@@ -84,31 +84,31 @@ public enum MetricConstants
      * Identifier for Pearson's product-moment correlation coefficient.
      */
 
-    PEARSON_CORRELATION_COEFFICIENT( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCALAR ),
+    PEARSON_CORRELATION_COEFFICIENT( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCORE ),
 
     /**
      * Identifier for a Critical Success Index.
      */
 
-    CRITICAL_SUCCESS_INDEX( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCALAR ),
+    CRITICAL_SUCCESS_INDEX( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCORE ),
 
     /**
      * Identifier for an Equitable Threat Score.
      */
 
-    EQUITABLE_THREAT_SCORE( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCALAR ),
+    EQUITABLE_THREAT_SCORE( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCORE ),
 
     /**
      * Identifier for a Frequency Bias.
      */
 
-    FREQUENCY_BIAS( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCALAR ),
+    FREQUENCY_BIAS( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCORE ),
 
     /**
      * Identifier for an Index of Agreement.
      */
 
-    INDEX_OF_AGREEMENT( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCALAR ),
+    INDEX_OF_AGREEMENT( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCORE ),
 
     /**
      * Identifier for the Kling-Gupta Efficiency index.
@@ -120,13 +120,13 @@ public enum MetricConstants
      * Identifier for a Mean Absolute Error.
      */
 
-    MEAN_ABSOLUTE_ERROR( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCALAR ),
+    MEAN_ABSOLUTE_ERROR( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCORE ),
 
     /**
      * Identifier for a Mean Error.
      */
 
-    MEAN_ERROR( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCALAR ),
+    MEAN_ERROR( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCORE ),
 
     /**
      * Identifier for a Mean Square Error.
@@ -144,19 +144,19 @@ public enum MetricConstants
      * Identifier for a Peirce Skill Score.
      */
 
-    PEIRCE_SKILL_SCORE( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCALAR ),
+    PEIRCE_SKILL_SCORE( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCORE ),
 
     /**
      * Identifier for a Probability Of Detection.
      */
 
-    PROBABILITY_OF_DETECTION( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCALAR ),
+    PROBABILITY_OF_DETECTION( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCORE ),
 
     /**
      * Identifier for a Probability Of False Detection.
      */
 
-    PROBABILITY_OF_FALSE_DETECTION( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCALAR ),
+    PROBABILITY_OF_FALSE_DETECTION( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCORE ),
 
     /**
      * Quantile-quantile diagram.
@@ -192,19 +192,19 @@ public enum MetricConstants
      * Identifier for a Root Mean Square Error.
      */
 
-    ROOT_MEAN_SQUARE_ERROR( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCALAR ),
+    ROOT_MEAN_SQUARE_ERROR( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCORE ),
 
     /**
      * Identifier for the sample size.
      */
 
-    SAMPLE_SIZE( MetricInputGroup.SINGLE_VALUED, MetricInputGroup.ENSEMBLE, MetricOutputGroup.SCALAR ),
+    SAMPLE_SIZE( MetricInputGroup.SINGLE_VALUED, MetricInputGroup.ENSEMBLE, MetricOutputGroup.SCORE ),
 
     /**
      * Identifier for the Volumetric Efficiency.
      */
     
-    VOLUMETRIC_EFFICIENCY ( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCALAR ),
+    VOLUMETRIC_EFFICIENCY ( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCORE ),
     
     /**
      * Identifier for the Time-to-Peak Error.
@@ -522,10 +522,10 @@ public enum MetricConstants
     {
 
         /**
-         * Metrics that produce a {@link ScalarOutput}.
+         * Metrics that produce a {@link ScoreOutput}.
          */
 
-        SCALAR,
+        SCORE,
 
         /**
          * Metrics that produce a {@link VectorOutput}.
