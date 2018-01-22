@@ -6,7 +6,6 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
-import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.engine.statistics.metric.FunctionFactory;
@@ -39,8 +38,7 @@ public class BrierSkillScore extends MeanSquareErrorSkillScore<DiscreteProbabili
         //Explicit baseline
         if ( s.hasBaseline() )
         {
-            SingleValuedPairs input = s;
-            return super.apply( (DiscreteProbabilityPairs) input );
+            return super.apply( s );
         }
         //Climatological baseline
         else

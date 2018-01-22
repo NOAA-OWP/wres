@@ -95,7 +95,7 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Ensemble
      * A {@link MetricBuilder} to build the metric.
      */
 
-    public static class CRPSBuilder extends DecomposableDoubleErrorScoreBuilder<EnsemblePairs>
+    public static class CRPSBuilder extends DecomposableScoreBuilder<EnsemblePairs>
     {
         @Override
         public ContinuousRankedProbabilityScore build() throws MetricParameterException
