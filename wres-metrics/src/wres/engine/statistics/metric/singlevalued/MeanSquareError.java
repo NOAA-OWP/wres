@@ -60,7 +60,7 @@ public class MeanSquareError<S extends SingleValuedPairs> extends SumOfSquareErr
 
     public static class MeanSquareErrorBuilder<S extends SingleValuedPairs>
             extends
-            DecomposableDoubleErrorScoreBuilder<S>
+            DecomposableScoreBuilder<S>
     {
 
         @Override

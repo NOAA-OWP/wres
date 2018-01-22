@@ -28,7 +28,7 @@ abstract class SumOfSquareError<S extends SingleValuedPairs> extends Decomposabl
      * @throws MetricParameterException if one or more parameters is invalid 
      */
 
-    SumOfSquareError( final DecomposableDoubleErrorScoreBuilder<S> builder ) throws MetricParameterException
+    SumOfSquareError( final DecomposableScoreBuilder<S> builder ) throws MetricParameterException
     {
         super( builder );
     }

@@ -10,7 +10,6 @@ import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.engine.statistics.metric.FunctionFactory;
-import wres.engine.statistics.metric.MetricCollection;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.singlevalued.CorrelationPearsons.CorrelationPearsonsBuilder;
 
@@ -32,8 +31,7 @@ public class KlingGuptaEfficiency extends MeanSquareError<SingleValuedPairs>
 {
 
     /**
-     * Instance of {@link CorrelationPearsons} to use when the result is not otherwise available in a 
-     * {@link MetricCollection}. 
+     * Instance of {@link CorrelationPearsons}.
      */
 
     private final CorrelationPearsons rho;

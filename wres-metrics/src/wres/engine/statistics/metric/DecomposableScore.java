@@ -39,7 +39,7 @@ public abstract class DecomposableScore<S extends MetricInput<?>> extends Ordina
      * A {@link MetricBuilder} to build the metric.
      */
 
-    public static abstract class DecomposableDoubleErrorScoreBuilder<S extends MetricInput<?>>
+    public static abstract class DecomposableScoreBuilder<S extends MetricInput<?>>
             extends
             OrdinaryScoreBuilder<S, MultiValuedScoreOutput>
     {
@@ -56,7 +56,7 @@ public abstract class DecomposableScore<S extends MetricInput<?>> extends Ordina
          * @return the builder
          */
 
-        public DecomposableDoubleErrorScoreBuilder<S> setDecompositionID( final ScoreOutputGroup decompositionID )
+        public DecomposableScoreBuilder<S> setDecompositionID( final ScoreOutputGroup decompositionID )
         {
             this.decompositionID = decompositionID;
             return this;
@@ -70,7 +70,7 @@ public abstract class DecomposableScore<S extends MetricInput<?>> extends Ordina
      * @throws MetricParameterException if one or more parameters is invalid
      */
 
-    protected DecomposableScore( final DecomposableDoubleErrorScoreBuilder<S> builder ) throws MetricParameterException
+    protected DecomposableScore( final DecomposableScoreBuilder<S> builder ) throws MetricParameterException
     {
         super( builder );
         this.decompositionID = builder.decompositionID;
