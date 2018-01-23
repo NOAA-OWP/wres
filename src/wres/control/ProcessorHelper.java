@@ -486,19 +486,19 @@ public class ProcessorHelper
             if ( processor.willCacheMetricOutput( MetricOutputGroup.MULTIVECTOR )
                  && processor.getCachedMetricOutput().hasOutput( MetricOutputGroup.MULTIVECTOR ) )
             {
-                ProcessorHelper.processMultiVectorCharts( feature,
-                                                          projectConfigPlus,
-                                                          processor.getCachedMetricOutput()
-                                                                   .getMultiVectorOutput() );
+                processMultiVectorCharts( feature,
+                                          projectConfigPlus,
+                                          processor.getCachedMetricOutput()
+                                                   .getMultiVectorOutput() );
             }
             // Process box plot charts
             if ( processor.willCacheMetricOutput( MetricOutputGroup.BOXPLOT )
                  && processor.getCachedMetricOutput().hasOutput( MetricOutputGroup.BOXPLOT ) )
             {
-                ProcessorHelper.processBoxPlotCharts( feature,
-                                                      projectConfigPlus,
-                                                      processor.getCachedMetricOutput()
-                                                               .getBoxPlotOutput() );
+                processBoxPlotCharts( feature,
+                                      projectConfigPlus,
+                                      processor.getCachedMetricOutput()
+                                               .getBoxPlotOutput() );
             }
         }
         catch ( final MetricOutputAccessException e )
@@ -513,7 +513,7 @@ public class ProcessorHelper
 
     /**
      * Processes a set of charts associated with {@link DoubleScoreOutput} across multiple metrics, time windows, 
-     * and thresholds, stored in a {@link MetricOutputMultiMapByTimeAndThreshold}. these.
+     * and thresholds, stored in a {@link MetricOutputMultiMapByTimeAndThreshold}.
      * 
      * @param feature the feature for which the chart is defined
      * @param projectConfigPlus the project configuration
