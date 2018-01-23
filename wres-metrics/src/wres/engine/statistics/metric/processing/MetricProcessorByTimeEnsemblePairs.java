@@ -35,7 +35,6 @@ import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMapByMetric;
-import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.ScoreOutput;
 import wres.engine.statistics.metric.Metric;
@@ -61,10 +60,10 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume {@link DiscreteProbabilityPairs} and produce
-     * {@link MultiValuedScoreOutput}.
+     * {@link DoubleScoreOutput}.
      */
 
-    private final MetricCollection<DiscreteProbabilityPairs, MultiValuedScoreOutput, MultiValuedScoreOutput> discreteProbabilityVector;
+    private final MetricCollection<DiscreteProbabilityPairs, DoubleScoreOutput, DoubleScoreOutput> discreteProbabilityScore;
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume {@link DichotomousPairs} and produce
@@ -77,13 +76,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
      * A {@link MetricCollection} of {@link Metric} that consume {@link EnsemblePairs} and produce {@link DoubleScoreOutput}.
      */
 
-    private final MetricCollection<EnsemblePairs, DoubleScoreOutput, DoubleScoreOutput> ensembleScalar;
-
-    /**
-     * A {@link MetricCollection} of {@link Metric} that consume {@link EnsemblePairs} and produce {@link MultiValuedScoreOutput}.
-     */
-
-    private final MetricCollection<EnsemblePairs, MultiValuedScoreOutput, MultiValuedScoreOutput> ensembleVector;
+    private final MetricCollection<EnsemblePairs, DoubleScoreOutput, DoubleScoreOutput> ensembleScore;
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume {@link EnsemblePairs} and produce
@@ -196,17 +189,17 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
 
         //Construct the metrics
         //Discrete probability input, vector output
-        if ( hasMetrics( MetricInputGroup.DISCRETE_PROBABILITY, MetricOutputGroup.VECTOR ) )
+        if ( hasMetrics( MetricInputGroup.DISCRETE_PROBABILITY, MetricOutputGroup.SCORE ) )
         {
-            discreteProbabilityVector =
-                    metricFactory.ofDiscreteProbabilityVectorCollection( metricExecutor,
+            discreteProbabilityScore =
+                    metricFactory.ofDiscreteProbabilityScoreCollection( metricExecutor,
                                                                          getSelectedMetrics( metrics,
                                                                                              MetricInputGroup.DISCRETE_PROBABILITY,
-                                                                                             MetricOutputGroup.VECTOR ) );
+                                                                                             MetricOutputGroup.SCORE ) );
         }
         else
         {
-            discreteProbabilityVector = null;
+            discreteProbabilityScore = null;
         }
         //Discrete probability input, multi-vector output
         if ( hasMetrics( MetricInputGroup.DISCRETE_PROBABILITY, MetricOutputGroup.MULTIVECTOR ) )
@@ -221,30 +214,19 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         {
             discreteProbabilityMultiVector = null;
         }
-        //Ensemble input, vector output
-        if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.VECTOR ) )
-        {
-            ensembleVector = metricFactory.ofEnsembleVectorCollection( metricExecutor,
-                                                                       getSelectedMetrics( metrics,
-                                                                                           MetricInputGroup.ENSEMBLE,
-                                                                                           MetricOutputGroup.VECTOR ) );
-        }
-        else
-        {
-            ensembleVector = null;
-        }
-        //Ensemble input, scalar output
+        //Ensemble input, score output
         if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.SCORE ) )
         {
-            ensembleScalar = metricFactory.ofEnsembleScalarCollection( metricExecutor,
+            ensembleScore = metricFactory.ofEnsembleScoreCollection( metricExecutor,
                                                                        getSelectedMetrics( metrics,
                                                                                            MetricInputGroup.ENSEMBLE,
                                                                                            MetricOutputGroup.SCORE ) );
         }
         else
         {
-            ensembleScalar = null;
+            ensembleScore = null;
         }
+
         //Ensemble input, multi-vector output
         if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.MULTIVECTOR ) )
         {
@@ -292,7 +274,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                                                     + config.getLabel() + "'." );
         }
         //Ensemble input, vector output
-        if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.VECTOR )
+        if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.SCORE )
              && metrics.contains( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE )
              && Objects.isNull( config.getInputs().getBaseline() ) )
         {
@@ -319,10 +301,6 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.SCORE ) )
         {
             processEnsembleThresholds( timeWindow, input, futures, MetricOutputGroup.SCORE );
-        }
-        if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.VECTOR ) )
-        {
-            processEnsembleThresholds( timeWindow, input, futures, MetricOutputGroup.VECTOR );
         }
         if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.MULTIVECTOR ) )
         {
@@ -404,14 +382,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                 futures.addScoreOutput( Pair.of( timeWindow, threshold ),
                                          processEnsembleThreshold( threshold,
                                                                    input,
-                                                                   ensembleScalar ) );
-            }
-            else if ( outGroup == MetricOutputGroup.VECTOR )
-            {
-                futures.addVectorOutput( Pair.of( timeWindow, threshold ),
-                                         processEnsembleThreshold( threshold,
-                                                                   input,
-                                                                   ensembleVector ) );
+                                                                   ensembleScore ) );
             }
             else if ( outGroup == MetricOutputGroup.MULTIVECTOR )
             {
@@ -454,9 +425,9 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                                                   EnsemblePairs input,
                                                   MetricFuturesByTimeBuilder futures )
     {
-        if ( hasMetrics( MetricInputGroup.DISCRETE_PROBABILITY, MetricOutputGroup.VECTOR ) )
+        if ( hasMetrics( MetricInputGroup.DISCRETE_PROBABILITY, MetricOutputGroup.SCORE ) )
         {
-            processDiscreteProbabilityThresholds( timeWindow, input, futures, MetricOutputGroup.VECTOR );
+            processDiscreteProbabilityThresholds( timeWindow, input, futures, MetricOutputGroup.SCORE );
         }
         if ( hasMetrics( MetricInputGroup.DISCRETE_PROBABILITY, MetricOutputGroup.MULTIVECTOR ) )
         {
@@ -538,12 +509,12 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         MetricCalculationException returnMe = null;
         try
         {
-            if ( outGroup == MetricOutputGroup.VECTOR )
+            if ( outGroup == MetricOutputGroup.SCORE )
             {
-                futures.addVectorOutput( Pair.of( timeWindow, threshold ),
+                futures.addScoreOutput( Pair.of( timeWindow, threshold ),
                                          processDiscreteProbabilityThreshold( threshold,
                                                                               input,
-                                                                              discreteProbabilityVector ) );
+                                                                              discreteProbabilityScore ) );
             }
             else if ( outGroup == MetricOutputGroup.MULTIVECTOR )
             {

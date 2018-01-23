@@ -42,7 +42,6 @@ import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
-import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.ScoreOutput;
 
@@ -744,6 +743,8 @@ public abstract class ChartEngineFactory
 
 
     /**
+     * Builds a {@link ChartEngine} for each component of a score.
+     * 
      * @param input The metric output to plot.
      * @param factory The data factory from which arguments will be identified.
      * @param userSpecifiedPlotType An optional plot type to generate, where multiple plot types are supported for the
@@ -756,7 +757,7 @@ public abstract class ChartEngineFactory
      * @throws ChartEngineException if the ChartEngine fails to construct
      */
     public static ConcurrentMap<MetricConstants, ChartEngine>
-            buildVectorOutputChartEngine( final MetricOutputMapByTimeAndThreshold<MultiValuedScoreOutput> input,
+            buildScoreOutputChartEngine( final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> input,
                                           final DataFactory factory,
                                           final PlotTypeSelection userSpecifiedPlotType,
                                           final String userSpecifiedTemplateResourceName,
@@ -770,7 +771,7 @@ public abstract class ChartEngineFactory
                        .filterByMetricComponent( input );
         for ( final Map.Entry<MetricConstants, MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>> entry : slicedInput.entrySet() )
         {
-            final ChartEngine engine = buildGenericScalarOutputChartEngine( entry.getValue(),
+            final ChartEngine engine = buildScoreOutputChartEngine( entry.getValue(),
                                                                             userSpecifiedPlotType,
                                                                             userSpecifiedTemplateResourceName,
                                                                             overrideParametersStr );
@@ -780,6 +781,8 @@ public abstract class ChartEngineFactory
     }
 
     /**
+     * Internal helper that builds a {@link ChartEngine} for one score component.
+     * 
      * @param input The metric output to plot.
      * @param userSpecifiedPlotType The plot type to generate.
      * @param userSpecifiedTemplateResourceName Name of the resource to load which provides the default template for
@@ -791,8 +794,8 @@ public abstract class ChartEngineFactory
      *         construct the image file.
      * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
      */
-    public static ChartEngine
-            buildGenericScalarOutputChartEngine( final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> input,
+    private static ChartEngine
+            buildScoreOutputChartEngine( final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> input,
                                                  final PlotTypeSelection userSpecifiedPlotType,
                                                  final String userSpecifiedTemplateResourceName,
                                                  final String overrideParametersStr )
@@ -823,19 +826,19 @@ public abstract class ChartEngineFactory
         //Lead-threshold is the default.  This is for plots with the lead time on the domain axis and threshold in the legend.
         if ( usedPlotType.equals( PlotTypeSelection.LEAD_THRESHOLD ) )
         {
-            source = new ScalarOutputByLeadAndThresholdXYChartDataSource( 0, input );
+            source = new ScoreOutputByLeadAndThresholdXYChartDataSource( 0, input );
             arguments.addLeadThresholdArguments( input, null );
         }
         //This is for plots with the threshold on the domain axis and lead time in the legend.
         else if ( usedPlotType.equals( PlotTypeSelection.THRESHOLD_LEAD ) )
         {
-            source = new ScalarOutputByThresholdAndLeadXYChartDataSource( 0, input );
+            source = new ScoreOutputByThresholdAndLeadXYChartDataSource( 0, input );
             arguments.addThresholdLeadArguments( input, null );
         }
         //This is for plots that operate with sequences of time windows (e.g. rolling windows)
         else if ( usedPlotType.equals( PlotTypeSelection.POOLING_WINDOW ) )
         {
-            source = new ScalarOutputByPoolingWindowXYChartDataSource( 0, input );
+            source = new ScoreOutputByPoolingWindowXYChartDataSource( 0, input );
             arguments.addPoolingWindowArguments( input );
         }
         else

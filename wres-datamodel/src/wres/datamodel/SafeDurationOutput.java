@@ -1,7 +1,15 @@
 package wres.datamodel;
 
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Objects;
+import java.util.Set;
+import java.util.StringJoiner;
+
+import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DurationScoreOutput;
@@ -62,9 +70,39 @@ class SafeDurationOutput implements DurationScoreOutput
     }
 
     @Override
+    public Duration getValue( MetricConstants component )
+    {
+        if ( component == MetricConstants.MAIN )
+        {
+            return output;
+        }
+        return null;
+    }
+
+    @Override
+    public boolean hasComponent( MetricConstants component )
+    {
+        return component == MetricConstants.MAIN;
+    }
+
+    @Override
+    public Set<MetricConstants> getComponents()
+    {
+        return new HashSet<>( Arrays.asList( MetricConstants.MAIN ) );
+    }
+
+    @Override
+    public Iterator<Pair<MetricConstants, Duration>> iterator()
+    {
+        return Collections.unmodifiableList( Arrays.asList( Pair.of( MetricConstants.MAIN, output ) ) ).iterator();
+    }
+
+    @Override
     public String toString()
     {
-        return output.toString();
+        StringJoiner format = new StringJoiner( ",", "[", "]" );
+        format.add( MetricConstants.MAIN.toString() ).add( output.toString() );
+        return format.toString();
     }
 
     /**

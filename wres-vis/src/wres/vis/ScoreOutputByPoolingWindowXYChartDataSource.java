@@ -23,7 +23,7 @@ import wres.datamodel.outputs.ScoreOutput;
  * @version 0.1
  * @since 0.1
  */
-public class ScalarOutputByPoolingWindowXYChartDataSource
+public class ScoreOutputByPoolingWindowXYChartDataSource
         extends WRESXYChartDataSource<MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>>
 {
 
@@ -32,7 +32,7 @@ public class ScalarOutputByPoolingWindowXYChartDataSource
      *            such as the rendering order, legend order, and so forth.
      * @param input The data for which to display a chart.
      */
-    public ScalarOutputByPoolingWindowXYChartDataSource( final int orderIndex,
+    public ScoreOutputByPoolingWindowXYChartDataSource( final int orderIndex,
                                                          final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> input )
     {
         super( orderIndex, input, input.keySetByThreshold().size() * input.keySetByLeadTimeInHours().size() );
@@ -44,9 +44,9 @@ public class ScalarOutputByPoolingWindowXYChartDataSource
     }
 
     @Override
-    protected ScalarOutputByPoolingWindowXYChartDataSource instantiateCopyOfDataSource()
+    protected ScoreOutputByPoolingWindowXYChartDataSource instantiateCopyOfDataSource()
     {
-        return new ScalarOutputByPoolingWindowXYChartDataSource( getDataSourceOrderIndex(), getInput() );
+        return new ScoreOutputByPoolingWindowXYChartDataSource( getDataSourceOrderIndex(), getInput() );
     }
 
     @Override

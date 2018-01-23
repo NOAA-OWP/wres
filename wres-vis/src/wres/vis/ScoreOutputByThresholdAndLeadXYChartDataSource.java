@@ -4,13 +4,13 @@ import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 
 /**
- * A chart data source for a single verification metric, indexed by forecast lead time and threshold.
+ * A chart data source for a single verification metric, indexed by threshold and forecast lead time.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
  * @since 0.1
  */
-public class ScalarOutputByLeadAndThresholdXYChartDataSource
+public class ScoreOutputByThresholdAndLeadXYChartDataSource
         extends WRESXYChartDataSource<MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>>
 {
     /**
@@ -18,26 +18,26 @@ public class ScalarOutputByLeadAndThresholdXYChartDataSource
      *            such as the rendering order, legend order, and so forth.
      * @param input The data for which to display a chart.
      */
-    public ScalarOutputByLeadAndThresholdXYChartDataSource( final int orderIndex,
+    public ScoreOutputByThresholdAndLeadXYChartDataSource( final int orderIndex,
                                                             final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> input )
     {
-        super( orderIndex, input, input.keySetByThreshold().size() );
+        super( orderIndex, input, input.keySetByTime().size() );
 
-        getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultDomainAxisTitle( "FORECAST LEAD TIME [HOUR]" );
+        getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultDomainAxisTitle( "THRESHOLD VALUE@inputUnitsLabelSuffix@" );
         getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultRangeAxisTitle( "@metricShortName@@metricComponentNameSuffix@@outputUnitsLabelSuffix@" );
         WRESTools.applyDefaultJFreeChartColorSequence( getDefaultFullySpecifiedDataSourceDrawingParameters() );
         WRESTools.applyDefaultJFreeChartShapeSequence( getDefaultFullySpecifiedDataSourceDrawingParameters() );
     }
 
     @Override
-    protected ScalarOutputByLeadAndThresholdXYChartDataSource instantiateCopyOfDataSource()
+    protected ScoreOutputByThresholdAndLeadXYChartDataSource instantiateCopyOfDataSource()
     {
-        return new ScalarOutputByLeadAndThresholdXYChartDataSource( getDataSourceOrderIndex(), getInput() );
+        return new ScoreOutputByThresholdAndLeadXYChartDataSource( getDataSourceOrderIndex(), getInput() );
     }
 
     @Override
-    protected ScalarOutputByLeadAndThresholdXYDataset instantiateXYDataset()
+    protected ScoreOutputByThresholdAndLeadXYDataset instantiateXYDataset()
     {
-        return new ScalarOutputByLeadAndThresholdXYDataset( getInput() );
+        return new ScoreOutputByThresholdAndLeadXYDataset( getInput() );
     }
 }

@@ -11,10 +11,9 @@ import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.ScoreOutput;
+import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
-import wres.engine.statistics.metric.singlevalued.RootMeanSquareError;
 import wres.engine.statistics.metric.singlevalued.RootMeanSquareError.RootMeanSquareErrorBuilder;
 
 /**
@@ -56,8 +55,8 @@ public final class RootMeanSquareErrorTest
         final RootMeanSquareError mse = b.build();
 
         //Check the results
-        final ScoreOutput actual = mse.apply( input );
-        final ScoreOutput expected = outF.ofDoubleScoreOutput( 632.4586381732801, m1 );
+        final DoubleScoreOutput actual = mse.apply( input );
+        final DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 632.4586381732801, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()

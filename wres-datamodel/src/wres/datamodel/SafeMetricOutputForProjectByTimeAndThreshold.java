@@ -26,7 +26,6 @@ import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMapByMetric;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold.MetricOutputMultiMapByTimeAndThresholdBuilder;
-import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.ScoreOutput;
 
@@ -44,17 +43,10 @@ class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForPro
 {
 
     /**
-     * Thread safe map for {@link ScoreOutput}.
+     * Thread safe map for {@link DoubleScoreOutput}.
      */
 
-    private final ConcurrentMap<Pair<TimeWindow, Threshold>, List<Future<MetricOutputMapByMetric<DoubleScoreOutput>>>> scalar =
-            new ConcurrentHashMap<>();
-
-    /**
-     * Thread safe map for {@link MultiValuedScoreOutput}.
-     */
-
-    private final ConcurrentMap<Pair<TimeWindow, Threshold>, List<Future<MetricOutputMapByMetric<MultiValuedScoreOutput>>>> vector =
+    private final ConcurrentMap<Pair<TimeWindow, Threshold>, List<Future<MetricOutputMapByMetric<DoubleScoreOutput>>>> score =
             new ConcurrentHashMap<>();
 
     /**
@@ -85,9 +77,7 @@ class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForPro
         switch ( outGroup )
         {
             case SCORE:
-                return !scalar.isEmpty();
-            case VECTOR:
-                return !vector.isEmpty();
+                return !score.isEmpty();
             case MULTIVECTOR:
                 return !multiVector.isEmpty();
             case MATRIX:
@@ -116,9 +106,6 @@ class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForPro
                     case SCORE:
                         addToBuilder( builder, getScoreOutput() );
                         break;
-                    case VECTOR:
-                        addToBuilder( builder, getVectorOutput() );
-                        break;
                     case MULTIVECTOR:
                         addToBuilder( builder, getMultiVectorOutput() );
                         break;
@@ -144,10 +131,6 @@ class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForPro
         {
             returnMe.add( MetricOutputGroup.SCORE );
         }
-        if ( hasOutput( MetricOutputGroup.VECTOR ) )
-        {
-            returnMe.add( MetricOutputGroup.VECTOR );
-        }
         if ( hasOutput( MetricOutputGroup.MULTIVECTOR ) )
         {
             returnMe.add( MetricOutputGroup.MULTIVECTOR );
@@ -166,14 +149,7 @@ class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForPro
     @Override
     public MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> getScoreOutput() throws MetricOutputAccessException
     {
-        return unwrap( MetricOutputGroup.SCORE, scalar );
-    }
-
-    @Override
-    public MetricOutputMultiMapByTimeAndThreshold<MultiValuedScoreOutput> getVectorOutput()
-            throws MetricOutputAccessException
-    {
-        return unwrap( MetricOutputGroup.VECTOR, vector );
+        return unwrap( MetricOutputGroup.SCORE, score );
     }
 
     @Override
@@ -207,14 +183,7 @@ class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForPro
          * Thread safe map for {@link ScoreOutput}.
          */
 
-        private final ConcurrentMap<Pair<TimeWindow, Threshold>, List<Future<MetricOutputMapByMetric<DoubleScoreOutput>>>> scalarInternal =
-                new ConcurrentHashMap<>();
-
-        /**
-         * Thread safe map for {@link MultiValuedScoreOutput}.
-         */
-
-        private final ConcurrentMap<Pair<TimeWindow, Threshold>, List<Future<MetricOutputMapByMetric<MultiValuedScoreOutput>>>> vectorInternal =
+        private final ConcurrentMap<Pair<TimeWindow, Threshold>, List<Future<MetricOutputMapByMetric<DoubleScoreOutput>>>> scoreInternal =
                 new ConcurrentHashMap<>();
 
         /**
@@ -244,22 +213,7 @@ class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForPro
                                                                                Future<MetricOutputMapByMetric<DoubleScoreOutput>> result )
         {
             List<Future<MetricOutputMapByMetric<DoubleScoreOutput>>> existing =
-                    scalarInternal.putIfAbsent( Pair.of( timeWindow, threshold ),
-                                                new ArrayList<>( Arrays.asList( result ) ) );
-            if ( Objects.nonNull( existing ) )
-            {
-                existing.add( result );
-            }
-            return this;
-        }
-
-        @Override
-        public MetricOutputForProjectByTimeAndThresholdBuilder addVectorOutput( TimeWindow timeWindow,
-                                                                                Threshold threshold,
-                                                                                Future<MetricOutputMapByMetric<MultiValuedScoreOutput>> result )
-        {
-            List<Future<MetricOutputMapByMetric<MultiValuedScoreOutput>>> existing =
-                    vectorInternal.putIfAbsent( Pair.of( timeWindow, threshold ),
+                    scoreInternal.putIfAbsent( Pair.of( timeWindow, threshold ),
                                                 new ArrayList<>( Arrays.asList( result ) ) );
             if ( Objects.nonNull( existing ) )
             {
@@ -329,8 +283,7 @@ class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForPro
 
     private SafeMetricOutputForProjectByTimeAndThreshold( SafeMetricOutputForProjectByTimeAndThresholdBuilder builder )
     {
-        scalar.putAll( builder.scalarInternal );
-        vector.putAll( builder.vectorInternal );
+        score.putAll( builder.scoreInternal );
         multiVector.putAll( builder.multiVectorInternal );
         matrix.putAll( builder.matrixInternal );
         boxplot.putAll( builder.boxplotInternal );

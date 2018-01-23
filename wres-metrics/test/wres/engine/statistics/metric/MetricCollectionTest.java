@@ -23,7 +23,6 @@ import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.MetricOutputMapByMetric;
-import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.engine.statistics.metric.MetricCollection.MetricCollectionBuilder;
 import wres.engine.statistics.metric.singlevalued.DoubleErrorScore;
 
@@ -55,7 +54,7 @@ public class MetricCollectionTest
 
         //Finalize
         final MetricCollection<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput> collection =
-                metF.ofSingleValuedScalarCollection( ForkJoinPool.commonPool(),
+                metF.ofSingleValuedScoreCollection( ForkJoinPool.commonPool(),
                                                      MetricConstants.MEAN_ERROR,
                                                      MetricConstants.MEAN_ABSOLUTE_ERROR,
                                                      MetricConstants.ROOT_MEAN_SQUARE_ERROR );
@@ -185,7 +184,7 @@ public class MetricCollectionTest
         final DiscreteProbabilityPairs input = MetricTestDataFactory.getDiscreteProbabilityPairsTwo();
 
         //Create a collection metrics that consume probabilistic pairs and generate vector outputs
-        final MetricCollectionBuilder<DiscreteProbabilityPairs, MetricOutput<?>, MultiValuedScoreOutput> n =
+        final MetricCollectionBuilder<DiscreteProbabilityPairs, MetricOutput<?>, DoubleScoreOutput> n =
                 MetricCollectionBuilder.of();
         final DataFactory outF = DefaultDataFactory.getInstance();
         final MetricFactory metF = MetricFactory.getInstance( outF );
@@ -197,11 +196,11 @@ public class MetricCollectionTest
         n.add( metF.ofBrierSkillScore() ); //Should be 0.11363636363636376
 
         //Finalize
-        final MetricCollection<DiscreteProbabilityPairs, MetricOutput<?>, MultiValuedScoreOutput> collection =
+        final MetricCollection<DiscreteProbabilityPairs, MetricOutput<?>, DoubleScoreOutput> collection =
                 n.build();
 
         //Compute them
-        final MetricOutputMapByMetric<MultiValuedScoreOutput> d = collection.apply( input );
+        final MetricOutputMapByMetric<DoubleScoreOutput> d = collection.apply( input );
 
         //Print them
         //d.stream().forEach(g -> System.out.println(((ScalarOutput)g).getData().valueOf()));
@@ -240,7 +239,7 @@ public class MetricCollectionTest
         final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsTwo();
 
         //Create a collection metrics that consume single-valued pairs and produce vector outputs
-        final MetricCollectionBuilder<SingleValuedPairs, MetricOutput<?>, MultiValuedScoreOutput> n =
+        final MetricCollectionBuilder<SingleValuedPairs, MetricOutput<?>, DoubleScoreOutput> n =
                 MetricCollectionBuilder.of();
         final DataFactory outF = DefaultDataFactory.getInstance();
         final MetricFactory metF = MetricFactory.getInstance( outF );
@@ -250,12 +249,12 @@ public class MetricCollectionTest
         //Add some appropriate metrics to the collection
         n.add( metF.ofMeanSquareError() ); //Should be 400003.929
         n.add( metF.ofMeanSquareErrorSkillScore() ); //Should be 0.8007025335093799
-
+        
         //Finalize
-        final MetricCollection<SingleValuedPairs, MetricOutput<?>, MultiValuedScoreOutput> collection = n.build();
+        final MetricCollection<SingleValuedPairs, MetricOutput<?>, DoubleScoreOutput> collection = n.build();
 
         //Compute them
-        final MetricOutputMapByMetric<MultiValuedScoreOutput> d = collection.apply( input );
+        final MetricOutputMapByMetric<DoubleScoreOutput> d = collection.apply( input );
 
         //Print them
         //d.stream().forEach(g -> System.out.println(((ScalarOutput)g).getData().valueOf()));
@@ -303,7 +302,7 @@ public class MetricCollectionTest
         n.setExecutorService( ForkJoinPool.commonPool() );
 
         //Add some appropriate metrics to the collection
-        n.add( metF.ofMulticategoryScalar( MetricConstants.PEIRCE_SKILL_SCORE ) ); //Should be 0.05057466520850963
+        n.add( metF.ofMulticategoryScore( MetricConstants.PEIRCE_SKILL_SCORE ) ); //Should be 0.05057466520850963
 
         //Finalize
         final MetricCollection<MulticategoryPairs, MetricOutput<?>, DoubleScoreOutput> collection = n.build();
@@ -453,7 +452,7 @@ public class MetricCollectionTest
 
         //Add some appropriate metrics to the collection
         final MetricCollection<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput> n =
-                metF.ofSingleValuedScalarCollection( ForkJoinPool.commonPool(),
+                metF.ofSingleValuedScoreCollection( ForkJoinPool.commonPool(),
                                                      MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
                                                      MetricConstants.COEFFICIENT_OF_DETERMINATION );
         //Compute them

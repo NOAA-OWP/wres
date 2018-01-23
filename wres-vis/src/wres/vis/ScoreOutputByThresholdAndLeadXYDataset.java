@@ -5,7 +5,7 @@ import java.util.List;
 
 import org.jfree.data.xy.AbstractXYDataset;
 
-import wres.datamodel.Threshold;
+import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.ScoreOutput;
@@ -13,28 +13,27 @@ import wres.datamodel.outputs.ScoreOutput;
 /**
  * An {@link AbstractXYDataset} that wraps a {@link MetricOutputMapByTimeAndThreshold} which contains a set of
  * {@link ScoreOutput} for a single verification metric, indexed by forecast lead time and threshold. Slices the data
- * by threshold to form plots by lead time on the domain axis.
+ * by lead time to form plots by threshold on the domain axis.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
  * @since 0.1
  */
 
-public class ScalarOutputByLeadAndThresholdXYDataset extends
+public class ScoreOutputByThresholdAndLeadXYDataset extends
         WRESAbstractXYDataset<List<MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>>, MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>>
 {
-    private static final long serialVersionUID = 2251263309545763140L;
+    private static final long serialVersionUID = 1598160458133121056L;
 
-    public ScalarOutputByLeadAndThresholdXYDataset(final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> input)
+    public ScoreOutputByThresholdAndLeadXYDataset(final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> input)
     {
         super(input);
 
         //Handling the legend name in here because otherwise the key will be lost (I don't keep the raw data).
-        //The data is processed into a list based on the key that must appear in the legend.
         int seriesIndex = 0;
-        for(final Threshold key: input.keySetByThreshold())
+        for(final TimeWindow lead: input.keySetByTime())
         {
-            setOverrideLegendName(seriesIndex, key.toString());
+            setOverrideLegendName( seriesIndex, Long.toString( lead.getLatestLeadTimeInHours() ) );
             seriesIndex++;
         }
     }
@@ -44,15 +43,16 @@ public class ScalarOutputByLeadAndThresholdXYDataset extends
      * keys (the thresholds) will otherwise be lost when the data is populated.
      * 
      * @param rawData the input data must be of type {@link MetricOutputMapByTimeAndThreshold} with generic
-     *            {@link ScoreOutput}.
+     *            {@link DoubleScoreOutput}.
      */
     @Override
     protected void preparePlotData(final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> rawData)
     {
+        //Cast the raw data input and check the size.
         final List<MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>> data = new ArrayList<>();
-        for(final Threshold key: rawData.keySetByThreshold())
+        for(final TimeWindow lead: rawData.keySetByTime())
         {
-            data.add(rawData.filterByThreshold(key));
+            data.add(rawData.filterByTime(lead));
         }
         setPlotData(data);
     }
@@ -66,12 +66,24 @@ public class ScalarOutputByLeadAndThresholdXYDataset extends
     @Override
     public Number getX(final int series, final int item)
     {
-        return getPlotData().get(series).getKey(item).getLeft().getLatestLeadTimeInHours();
+        //Cannot allow all data (infinite) threshold. Use lower bound if this is a "BETWEEN" threshold
+        final double test = getPlotData().get(series).getKey(item).getRight().getThreshold();
+        if(Double.isInfinite(test))
+        {
+            return Double.MIN_VALUE; //JFreeChart missing protocol is to return finite double for X and null for Y
+        }
+        return test;
     }
 
     @Override
     public Number getY(final int series, final int item)
     {
+        //Cannot allow all data (infinite) threshold
+        final Double test = (Double)getX(series, item);
+        if(test.equals(Double.MIN_VALUE))
+        {
+            return null;
+        }
         return getPlotData().get(series).getValue(item).getData();
     }
 

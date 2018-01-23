@@ -13,7 +13,7 @@ import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.MultiValuedScoreOutput;
+import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.OrdinaryScore;
 import wres.engine.statistics.metric.ProbabilityScore;
@@ -42,12 +42,12 @@ import wres.engine.statistics.metric.ProbabilityScore;
  * @since 0.1
  */
 
-public class RelativeOperatingCharacteristicScore extends OrdinaryScore<DiscreteProbabilityPairs, MultiValuedScoreOutput>
-        implements ProbabilityScore<DiscreteProbabilityPairs,MultiValuedScoreOutput>
+public class RelativeOperatingCharacteristicScore extends OrdinaryScore<DiscreteProbabilityPairs, DoubleScoreOutput>
+        implements ProbabilityScore<DiscreteProbabilityPairs,DoubleScoreOutput>
 {
 
     @Override
-    public MultiValuedScoreOutput apply( final DiscreteProbabilityPairs s )
+    public DoubleScoreOutput apply( final DiscreteProbabilityPairs s )
     {
         if ( Objects.isNull( s ) )
         {
@@ -66,7 +66,7 @@ public class RelativeOperatingCharacteristicScore extends OrdinaryScore<Discrete
             rocScore = 2.0 * getAUCMasonGraham( s ) - 1.0;
         }
         final MetricOutputMetadata metOut = getMetadata( s, s.getData().size(), MetricConstants.NONE, null );
-        return getDataFactory().ofMultiValuedScoreOutput( new double[] { rocScore }, metOut );
+        return getDataFactory().ofDoubleScoreOutput( rocScore, metOut );
     }
 
     @Override
@@ -118,7 +118,7 @@ public class RelativeOperatingCharacteristicScore extends OrdinaryScore<Discrete
 
     public static class RelativeOperatingCharacteristicScoreBuilder
             extends
-            OrdinaryScoreBuilder<DiscreteProbabilityPairs, MultiValuedScoreOutput>
+            OrdinaryScoreBuilder<DiscreteProbabilityPairs, DoubleScoreOutput>
     {
 
         @Override

@@ -23,7 +23,6 @@ import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
-import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.datamodel.outputs.MultiVectorOutput;
 
 /**
@@ -59,13 +58,17 @@ public class Chart2DTestOutput
         {
 
             //Call the factory.
-            final ChartEngine engine = ChartEngineFactory.buildGenericScalarOutputChartEngine( input,
-                                                                                               PlotTypeSelection.LEAD_THRESHOLD,
-                                                                                               null,
-                                                                                               null );
+            final Map<MetricConstants, ChartEngine> engine = ChartEngineFactory.buildScoreOutputChartEngine( input,
+                                                                                                             DefaultDataFactory.getInstance(),
+                                                                                                             PlotTypeSelection.LEAD_THRESHOLD,
+                                                                                                             null,
+                                                                                                             null );
 
             //Generate the output file.
-            ChartTools.generateOutputImageFile( outputImageFile, engine.buildChart(), 800, 600 );
+            ChartTools.generateOutputImageFile( outputImageFile,
+                                                engine.values().iterator().next().buildChart(),
+                                                800,
+                                                600 );
         }
         catch ( final Throwable t )
         {
@@ -91,13 +94,17 @@ public class Chart2DTestOutput
         {
 
             //Call the factory.
-            final ChartEngine engine = ChartEngineFactory.buildGenericScalarOutputChartEngine( input,
-                                                                                               PlotTypeSelection.THRESHOLD_LEAD,
-                                                                                               null,
-                                                                                               null );
+            final Map<MetricConstants, ChartEngine> engine = ChartEngineFactory.buildScoreOutputChartEngine( input,
+                                                                                                             DefaultDataFactory.getInstance(),
+                                                                                                             PlotTypeSelection.THRESHOLD_LEAD,
+                                                                                                             null,
+                                                                                                             null );
 
             //Generate the output file.
-            ChartTools.generateOutputImageFile( outputImageFile, engine.buildChart(), 800, 600 );
+            ChartTools.generateOutputImageFile( outputImageFile,
+                                                engine.values().iterator().next().buildChart(),
+                                                800,
+                                                600 );
         }
         catch ( final Throwable t )
         {
@@ -221,7 +228,7 @@ public class Chart2DTestOutput
      * Generates multiple plots, one for each vector index, by calling the scalar plots repeatedly.
      */
     @Test
-    public void test6VectorMetricOutput()
+    public void test6ScoreMetricOutput()
     {
         final String scenarioName = "test6";
         final String outputImageFileSuffix = scenarioName + "_output.png";
@@ -235,7 +242,7 @@ public class Chart2DTestOutput
         }
 
         //Construct some single-valued pairs
-        final MetricOutputMapByTimeAndThreshold<MultiValuedScoreOutput> input = Chart2DTestDataGenerator.getVectorMetricOutputMapByLeadThreshold();
+        final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> input = Chart2DTestDataGenerator.getScoreMetricOutputMapByLeadThreshold();
 
         try
         {
@@ -243,7 +250,7 @@ public class Chart2DTestOutput
             final DataFactory factory = DefaultDataFactory.getInstance();
 
             //Call the factory.
-            final ConcurrentMap<MetricConstants, ChartEngine> engineMap = ChartEngineFactory.buildVectorOutputChartEngine( input,
+            final ConcurrentMap<MetricConstants, ChartEngine> engineMap = ChartEngineFactory.buildScoreOutputChartEngine( input,
                                                                                                                   factory,
                                                                                                                   PlotTypeSelection.LEAD_THRESHOLD,
                                                                                                                   null,
@@ -722,15 +729,19 @@ public class Chart2DTestOutput
 
         try
         {
-            
+
             //Call the factory.
-            final ChartEngine engine = ChartEngineFactory.buildGenericScalarOutputChartEngine( input,
-                                                                                               PlotTypeSelection.POOLING_WINDOW,
-                                                                                               null,
-                                                                                               null );
+            final Map<MetricConstants, ChartEngine> engine = ChartEngineFactory.buildScoreOutputChartEngine( input,
+                                                                                                             DefaultDataFactory.getInstance(),
+                                                                                                             PlotTypeSelection.POOLING_WINDOW,
+                                                                                                             null,
+                                                                                                             null );
 
             //Generate the output file.
-            ChartTools.generateOutputImageFile( outputImageFile, engine.buildChart(), 800, 600 );
+            ChartTools.generateOutputImageFile( outputImageFile,
+                                                engine.values().iterator().next().buildChart(),
+                                                800,
+                                                600 );
         }
         catch ( final Throwable t )
         {

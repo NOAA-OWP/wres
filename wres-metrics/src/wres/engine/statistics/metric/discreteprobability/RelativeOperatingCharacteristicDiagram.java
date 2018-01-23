@@ -132,7 +132,7 @@ public class RelativeOperatingCharacteristicDiagram extends Diagram<DiscreteProb
     {
         super( builder );
         roc = MetricFactory.getInstance( getDataFactory() )
-                .ofDichotomousScalarCollection( MetricConstants.PROBABILITY_OF_DETECTION,
+                .ofDichotomousScoreCollection( MetricConstants.PROBABILITY_OF_DETECTION,
                                                 MetricConstants.PROBABILITY_OF_FALSE_DETECTION );
         //Set the default points
         points = 10;

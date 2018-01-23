@@ -7,7 +7,7 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.MultiValuedScoreOutput;
+import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.ProbabilityScore;
@@ -25,11 +25,11 @@ import wres.engine.statistics.metric.singlevalued.MeanSquareErrorSkillScore;
  * @since 0.1
  */
 public class BrierSkillScore extends MeanSquareErrorSkillScore<DiscreteProbabilityPairs>
-        implements ProbabilityScore<DiscreteProbabilityPairs,MultiValuedScoreOutput>
+        implements ProbabilityScore<DiscreteProbabilityPairs,DoubleScoreOutput>
 {
 
     @Override
-    public MultiValuedScoreOutput apply( final DiscreteProbabilityPairs s )
+    public DoubleScoreOutput apply( final DiscreteProbabilityPairs s )
     {
         if ( Objects.isNull( s ) )
         {
@@ -47,20 +47,20 @@ public class BrierSkillScore extends MeanSquareErrorSkillScore<DiscreteProbabili
             //Bernoulli R.V. with probability p 
             double p = FunctionFactory.mean().applyAsDouble( d.vectorOf( d.getSlicer().getLeftSide( s ) ) );
             double climP = p * ( 1.0 - p );
-            final double[] result = new double[1];
+            final double result;
             if ( climP > 0 )
             {
-                result[0] =
+                result =
                         FunctionFactory.skill().applyAsDouble( getSumOfSquareError( s ) / s.getData().size(),
                                                                p * ( 1.0 - p ) );
             }
             else
             {
-                result[0] = Double.NaN;
+                result = Double.NaN;
             }
             //Metadata
-            final MetricOutputMetadata metOut = getMetadata( s, s.getData().size(), MetricConstants.NONE, null );
-            return getDataFactory().ofMultiValuedScoreOutput( result, metOut );
+            final MetricOutputMetadata metOut = getMetadata( s );
+            return getDataFactory().ofDoubleScoreOutput( result, metOut );
         }
     }
 

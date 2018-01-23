@@ -8,7 +8,8 @@ import wres.datamodel.Slicer;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.MultiValuedScoreOutput;
+import wres.datamodel.outputs.DoubleScoreOutput;
+import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.singlevalued.CorrelationPearsons.CorrelationPearsonsBuilder;
@@ -22,6 +23,10 @@ import wres.engine.statistics.metric.singlevalued.CorrelationPearsons.Correlatio
  * <p>Kling, H., Fuchs, M. and Paulin, M. (2012). Runoff conditions in the upper Danube basin under an ensemble of 
  * climate change scenarios. <i>Journal of Hydrology</i>, <b>424-425</b>, pp. 264-277, 
  * DOI:10.1016/j.jhydrol.2012.01.011</p>
+ * 
+ * TODO: add this to a {@link Collectable} with {@link CorrelationPearsons} and have both use a {DoubleScoreOutput}
+ * that contains the relevant components for computing both, including the marginal means and variances and the 
+ * covariances. Do the same for any other scores that uses these components.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
@@ -55,7 +60,7 @@ public class KlingGuptaEfficiency extends MeanSquareError<SingleValuedPairs>
     private final double biasWeight;
 
     @Override
-    public MultiValuedScoreOutput apply( final SingleValuedPairs s )
+    public DoubleScoreOutput apply( final SingleValuedPairs s )
     {
         if(Objects.isNull(s))
         {
@@ -67,7 +72,7 @@ public class KlingGuptaEfficiency extends MeanSquareError<SingleValuedPairs>
 
         DataFactory dataFactory = getDataFactory();
         Slicer slicer = dataFactory.getSlicer();
-        double[] result = new double[1];
+        double result;
         //Compute the components
         double rhoVal = rho.apply( s ).getData();
         double meanPred = FunctionFactory.mean().applyAsDouble( dataFactory.vectorOf( slicer.getRightSide( s ) ) );
@@ -81,10 +86,10 @@ public class KlingGuptaEfficiency extends MeanSquareError<SingleValuedPairs>
         double left = Math.pow( rhoWeight * rhoVal - 1, 2 );
         double middle = Math.pow( varWeight * gamma - 1, 2 );
         double right = Math.pow( biasWeight * beta - 1, 2 );
-        result[0] = 1.0 - Math.sqrt( left + middle + right );
+        result = 1.0 - Math.sqrt( left + middle + right );
         //Metadata
-        final MetricOutputMetadata metOut = getMetadata( s, s.getData().size(), MetricConstants.NONE, null );
-        return dataFactory.ofMultiValuedScoreOutput( result, metOut );
+        final MetricOutputMetadata metOut = getMetadata( s );
+        return dataFactory.ofDoubleScoreOutput( result, metOut );
     }
 
     @Override

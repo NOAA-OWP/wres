@@ -35,7 +35,6 @@ import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.MetricOutputForProject;
-import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.ScoreOutput;
 import wres.engine.statistics.metric.Metric;
@@ -136,14 +135,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
      * {@link ScoreOutput}.
      */
 
-    final MetricCollection<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput> singleValuedScalar;
-
-    /**
-     * A {@link MetricCollection} of {@link Metric} that consume {@link SingleValuedPairs} and produce
-     * {@link MultiValuedScoreOutput}.
-     */
-
-    final MetricCollection<SingleValuedPairs, MultiValuedScoreOutput, MultiValuedScoreOutput> singleValuedVector;
+    final MetricCollection<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput> singleValuedScore;
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume {@link SingleValuedPairs} and produce
@@ -326,27 +318,15 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
 
         if ( hasMetrics( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCORE ) )
         {
-            singleValuedScalar =
-                    metricFactory.ofSingleValuedScalarCollection( metricExecutor,
+            singleValuedScore =
+                    metricFactory.ofSingleValuedScoreCollection( metricExecutor,
                                                                   getSelectedMetrics( metrics,
                                                                                       MetricInputGroup.SINGLE_VALUED,
                                                                                       MetricOutputGroup.SCORE ) );
         }
         else
         {
-            singleValuedScalar = null;
-        }
-        if ( hasMetrics( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.VECTOR ) )
-        {
-            singleValuedVector =
-                    metricFactory.ofSingleValuedVectorCollection( metricExecutor,
-                                                                  getSelectedMetrics( metrics,
-                                                                                      MetricInputGroup.SINGLE_VALUED,
-                                                                                      MetricOutputGroup.VECTOR ) );
-        }
-        else
-        {
-            singleValuedVector = null;
+            singleValuedScore = null;
         }
         if ( hasMetrics( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.MULTIVECTOR ) )
         {

@@ -13,7 +13,7 @@ import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.MultiValuedScoreOutput;
+import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.DecomposableScore;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.ProbabilityScore;
@@ -37,11 +37,11 @@ import wres.engine.statistics.metric.ProbabilityScore;
  * @since 0.1
  */
 public class ContinuousRankedProbabilityScore extends DecomposableScore<EnsemblePairs>
-        implements ProbabilityScore<EnsemblePairs, MultiValuedScoreOutput>
+        implements ProbabilityScore<EnsemblePairs, DoubleScoreOutput>
 {
 
     @Override
-    public MultiValuedScoreOutput apply( EnsemblePairs s )
+    public DoubleScoreOutput apply( EnsemblePairs s )
     {
         if ( Objects.isNull( s ) )
         {
@@ -58,7 +58,7 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Ensemble
         crps[0] = crps[0] / s.getData().size();
         //Metadata
         final MetricOutputMetadata metOut = getMetadata( s, s.getData().size(), MetricConstants.NONE, null );
-        return getDataFactory().ofMultiValuedScoreOutput( crps, metOut );
+        return getDataFactory().ofDoubleScoreOutput( crps[0], metOut );
     }
 
     @Override

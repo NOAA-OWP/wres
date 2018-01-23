@@ -22,7 +22,7 @@ import org.jfree.data.xy.XYDataset;
  * <br>
  * 3. Define the constructor to accept an instance of the appropriate raw input data (generic type U) and pass it to the
  * abstract constructor herein. Perform any actions required afterward, such as, in the case for
- * {@link ScalarOutputByLeadAndThresholdXYDataset}, setting override legend names.<br>
+ * {@link ScoreOutputByLeadAndThresholdXYDataset}, setting override legend names.<br>
  * <br>
  * 4. Implement the other {@link AbstractXYDataset} required methods appropriately. Note that the implementation of
  * method {@link #getSeriesKey(int)} should return the value of {@link #getOverrideLegendName(int)} if the method

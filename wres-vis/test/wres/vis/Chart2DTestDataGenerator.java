@@ -37,7 +37,6 @@ import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
-import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.datamodel.outputs.MultiVectorOutput;
 
 public abstract class Chart2DTestDataGenerator
@@ -166,17 +165,17 @@ public abstract class Chart2DTestDataGenerator
     }
 
     /**
-     * Returns a {@link MetricOutputMapByTimeAndThreshold} of {@link MultiValuedScoreOutput} comprising the CRPSS for 
+     * Returns a {@link MetricOutputMapByTimeAndThreshold} of {@link DoubleScoreOutput} comprising the CRPSS for 
      * various thresholds and forecast lead times. Reads the input data from
      * testinput/chart2DTest/getMetricOutputMapByLeadThreshold.xml.
      * 
      * @return an output map of verification scores
      */
-    static MetricOutputMapByTimeAndThreshold<MultiValuedScoreOutput> getVectorMetricOutputMapByLeadThreshold()
+    static MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> getScoreMetricOutputMapByLeadThreshold()
     {
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
         final MetadataFactory metaFactory = outputFactory.getMetadataFactory();
-        final Map<Pair<TimeWindow, Threshold>, MultiValuedScoreOutput> rawData = new TreeMap<>();
+        final Map<Pair<TimeWindow, Threshold>, DoubleScoreOutput> rawData = new TreeMap<>();
     
         try
         {
@@ -222,8 +221,8 @@ public abstract class Chart2DTestDataGenerator
     
                     //Build the scalar result
                     final MetricResult result = t.getResult( f );
-                    final double[] res = ( (DoubleMatrix1DResult) result ).getResult().toArray();
-                    final MultiValuedScoreOutput value = outputFactory.ofMultiValuedScoreOutput( res, meta );
+                    final double res = ( (DoubleMatrix1DResult) result ).getResult().toArray()[0];
+                    final DoubleScoreOutput value = outputFactory.ofDoubleScoreOutput( res, meta );
     
                     //Append result
                     rawData.put( key, value );
