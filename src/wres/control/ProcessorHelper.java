@@ -598,19 +598,24 @@ public class ProcessorHelper
             // Build the outputs
             for ( final Map.Entry<MetricConstants, ChartEngine> nextEntry : engines.entrySet() )
             {
+                // If the map contains more than one output, qualify with the component name
+                String componentName = "";
+                if ( engines.size() > 1 )
+                {
+                    componentName = "_"+nextEntry.getKey().name();
+                }
                 // Build the output file name
                 File destDir = ConfigHelper.getDirectoryFromDestinationConfig( destConfig );
                 Path outputImage = Paths.get( destDir.toString(),
                                               ConfigHelper.getFeatureDescription( feature )
                                                                   + "_"
                                                                   + metricId.name()
+                                                                  + componentName
                                                                   + "_"
                                                                   + config.getInputs()
                                                                           .getRight()
                                                                           .getVariable()
                                                                           .getValue()
-                                                                  + "_"
-                                                                  + nextEntry.getKey().name()
                                                                   + ".png" );
                 ChartWriter.writeChart( outputImage, nextEntry.getValue(), destConfig );
             }
