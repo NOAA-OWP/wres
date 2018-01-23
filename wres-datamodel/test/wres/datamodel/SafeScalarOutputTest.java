@@ -9,7 +9,7 @@ import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.ScoreOutput;
 
 /**
- * Tests the {@link SafeScalarOutput}.
+ * Tests the {@link SafeDoubleScoreOutput}.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
@@ -19,7 +19,7 @@ public final class SafeScalarOutputTest
 {
 
     /**
-     * Constructs a {@link SafeScalarOutput} and tests for equality with another {@link SafeScalarOutput}.
+     * Constructs a {@link SafeDoubleScoreOutput} and tests for equality with another {@link SafeDoubleScoreOutput}.
      */
 
     @Test
@@ -61,7 +61,7 @@ public final class SafeScalarOutputTest
     }
 
     /**
-     * Constructs a {@link SafeScalarOutput} and checks the {@link SafeScalarOutput#toString()} representation.
+     * Constructs a {@link SafeDoubleScoreOutput} and checks the {@link SafeDoubleScoreOutput#toString()} representation.
      */
 
     @Test
@@ -81,7 +81,7 @@ public final class SafeScalarOutputTest
     }
 
     /**
-     * Constructs a {@link SafeScalarOutput} and checks the {@link SafeScalarOutput#getMetadata()}.
+     * Constructs a {@link SafeDoubleScoreOutput} and checks the {@link SafeDoubleScoreOutput#getMetadata()}.
      */
 
     @Test
@@ -107,7 +107,7 @@ public final class SafeScalarOutputTest
     }
 
     /**
-     * Constructs a {@link SafeScalarOutput} and checks the {@link SafeScalarOutput#hashCode()}.
+     * Constructs a {@link SafeDoubleScoreOutput} and checks the {@link SafeDoubleScoreOutput#hashCode()}.
      */
 
     @Test

@@ -57,7 +57,7 @@ public final class BiasFractionTest
 
         //Check the results
         final DoubleScoreOutput actual = bf.apply( input );
-        final DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 0.056796298, m1 );
+        final DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 0.056796297974534414, m1 );
         assertTrue( "Actual: " + actual.getData().doubleValue()
                     + ". Expected: "
                     + expected.getData().doubleValue()

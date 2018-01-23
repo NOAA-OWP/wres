@@ -11,8 +11,8 @@ import wres.datamodel.outputs.MetricOutput;
  * avoiding the need to recompute intermediate outputs that are common to several metrics. See also
  * {@link MetricCollection}, which collects together metrics with common dependencies and exploits this interface to
  * share intermediate outputs between them. There is no value in implementing this interface unless there are two or
- * more metrics that share a common ancestry and have the same input and output types. Use 
- * {@link #aggregate(MetricOutput)} to compute the aggregate output from the intermediate output.
+ * more metrics that have the same input and final output types. Use {@link #aggregate(MetricOutput)} to compute the 
+ * aggregate output from the intermediate output.
  * 
  * @param <S> the input type
  * @param <T> the intermediate output type
@@ -21,7 +21,8 @@ import wres.datamodel.outputs.MetricOutput;
  * @version 0.1
  * @since 0.1
  */
-public interface Collectable<S extends MetricInput<?>, T extends MetricOutput<?>, U extends MetricOutput<?>> extends Metric<S,U>
+public interface Collectable<S extends MetricInput<?>, T extends MetricOutput<?>, U extends MetricOutput<?>>
+        extends Metric<S, U>
 {
 
     /**
@@ -33,7 +34,7 @@ public interface Collectable<S extends MetricInput<?>, T extends MetricOutput<?>
      * @throws MetricInputException if the prescribed input is unexpected
      */
 
-    U aggregate(T output);
+    U aggregate( T output );
 
     /**
      * Returns the result whose method {@link Metric#apply(MetricInput)} provides the input to
@@ -46,7 +47,7 @@ public interface Collectable<S extends MetricInput<?>, T extends MetricOutput<?>
      * @throws MetricCalculationException if the metric could not be computed
      */
 
-    T getCollectionInput(S input);
+    T getCollectionInput( S input );
 
     /**
      * Returns the {@link Metric#getID()} of the metric whose output forms the input to this metric. Metrics with common

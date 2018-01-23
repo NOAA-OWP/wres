@@ -1,9 +1,7 @@
 package wres.datamodel;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -12,7 +10,6 @@ import wres.datamodel.outputs.MatrixOutput;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.PairedOutput;
 import wres.datamodel.outputs.ScoreOutput;
-import wres.datamodel.outputs.VectorOutput;
 
 /**
  * Metric constants. The metric identifiers are grouped by metric input/output type, as defined by the
@@ -36,13 +33,13 @@ public enum MetricConstants
      * Identifier for a Brier Score.
      */
 
-    BRIER_SCORE( MetricInputGroup.DISCRETE_PROBABILITY, MetricOutputGroup.VECTOR ),
+    BRIER_SCORE( MetricInputGroup.DISCRETE_PROBABILITY, MetricOutputGroup.SCORE ),
 
     /**
      * Identifier for a Brier Skill Score.
      */
 
-    BRIER_SKILL_SCORE( MetricInputGroup.DISCRETE_PROBABILITY, MetricOutputGroup.VECTOR ),
+    BRIER_SKILL_SCORE( MetricInputGroup.DISCRETE_PROBABILITY, MetricOutputGroup.SCORE ),
     
     /**
      * Identifier for a box plot of errors by observed value.
@@ -66,13 +63,13 @@ public enum MetricConstants
      * Identifier for a Mean Continuous Ranked Probability Score
      */
 
-    CONTINUOUS_RANKED_PROBABILITY_SCORE( MetricInputGroup.ENSEMBLE, MetricOutputGroup.VECTOR ),
+    CONTINUOUS_RANKED_PROBABILITY_SCORE( MetricInputGroup.ENSEMBLE, MetricOutputGroup.SCORE ),
 
     /**
      * Identifier for a Mean Continuous Ranked Probability Skill Score
      */
 
-    CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE( MetricInputGroup.ENSEMBLE, MetricOutputGroup.VECTOR ),
+    CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE( MetricInputGroup.ENSEMBLE, MetricOutputGroup.SCORE ),
 
     /**
      * Identifier for a Contingency Table.
@@ -114,7 +111,7 @@ public enum MetricConstants
      * Identifier for the Kling-Gupta Efficiency index.
      */
 
-    KLING_GUPTA_EFFICIENCY( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.VECTOR ),
+    KLING_GUPTA_EFFICIENCY( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCORE ),
 
     /**
      * Identifier for a Mean Absolute Error.
@@ -132,13 +129,13 @@ public enum MetricConstants
      * Identifier for a Mean Square Error.
      */
 
-    MEAN_SQUARE_ERROR( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.VECTOR ),
+    MEAN_SQUARE_ERROR( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCORE ),
 
     /**
      * Identifier for a Mean Square Error Skill Score.
      */
 
-    MEAN_SQUARE_ERROR_SKILL_SCORE( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.VECTOR ),
+    MEAN_SQUARE_ERROR_SKILL_SCORE( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCORE ),
 
     /**
      * Identifier for a Peirce Skill Score.
@@ -180,7 +177,7 @@ public enum MetricConstants
      * Identifier for the Relative Operating Characteristic Score.
      */
 
-    RELATIVE_OPERATING_CHARACTERISTIC_SCORE( MetricInputGroup.DISCRETE_PROBABILITY, MetricOutputGroup.VECTOR ),
+    RELATIVE_OPERATING_CHARACTERISTIC_SCORE( MetricInputGroup.DISCRETE_PROBABILITY, MetricOutputGroup.SCORE ),
 
     /**
      * Identifier for the Reliability Diagram.
@@ -410,7 +407,7 @@ public enum MetricConstants
      * @return the components in the {@link ScoreOutputGroup} or null
      */
 
-    public List<MetricConstants> getMetricComponents()
+    public Set<MetricConstants> getMetricComponents()
     {
         return Objects.isNull( decGroup ) ? null : decGroup[0].getMetricComponents();
     }
@@ -528,12 +525,6 @@ public enum MetricConstants
         SCORE,
 
         /**
-         * Metrics that produce a {@link VectorOutput}.
-         */
-
-        VECTOR,
-
-        /**
          * Metrics that produce a {@link MultiVectorOutput}.
          */
 
@@ -631,9 +622,9 @@ public enum MetricConstants
          * @return the {@link MetricConstants} associated with the current {@link ScoreOutputGroup}
          */
 
-        public List<MetricConstants> getMetricComponents()
+        public Set<MetricConstants> getMetricComponents()
         {
-            List<MetricConstants> all = new ArrayList<>( EnumSet.allOf( MetricConstants.class ) );
+            Set<MetricConstants> all = EnumSet.allOf( MetricConstants.class );
             //Remove constants with the same name across MetricConstants and MetricDecompositionGroup
             all.removeIf( a -> Objects.isNull( a.decGroup ) || a.name().equals( name() )
                                || !Arrays.asList( a.decGroup ).contains( this ) );

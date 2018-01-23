@@ -13,7 +13,7 @@ import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.MultiValuedScoreOutput;
+import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.engine.statistics.metric.discreteprobability.BrierSkillScore.BrierSkillScoreBuilder;
@@ -61,8 +61,8 @@ public final class BrierSkillScoreTest
                                                                                                  "ESP" ) );
 
         //Check the results 
-        final MultiValuedScoreOutput actual = bss.apply( input );
-        final MultiValuedScoreOutput expected = outF.ofMultiValuedScoreOutput( new double[] { 0.11363636363636376 }, m1 );
+        final DoubleScoreOutput actual = bss.apply( input );
+        final DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 0.11363636363636376, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -111,8 +111,8 @@ public final class BrierSkillScoreTest
                                                                                                  "HEFS" ) );
 
         //Check the results 
-        final MultiValuedScoreOutput actual = bss.apply( input );
-        final MultiValuedScoreOutput expected = outF.ofMultiValuedScoreOutput( new double[] { -0.040000000000000036 }, m1 );
+        final DoubleScoreOutput actual = bss.apply( input );
+        final DoubleScoreOutput expected = outF.ofDoubleScoreOutput( -0.040000000000000036, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()

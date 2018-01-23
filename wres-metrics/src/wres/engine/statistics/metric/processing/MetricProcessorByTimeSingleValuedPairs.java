@@ -138,7 +138,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
         if ( hasMetrics( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCORE ) )
         {
             dichotomousScalar =
-                    metricFactory.ofDichotomousScalarCollection( metricExecutor,
+                    metricFactory.ofDichotomousScoreCollection( metricExecutor,
                                                                  getSelectedMetrics( metrics,
                                                                                      MetricInputGroup.DICHOTOMOUS,
                                                                                      MetricOutputGroup.SCORE ) );

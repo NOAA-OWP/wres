@@ -18,7 +18,7 @@ import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.MultiValuedScoreOutput;
+import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.engine.statistics.metric.ensemble.ContinuousRankedProbabilitySkillScore.CRPSSBuilder;
@@ -76,8 +76,8 @@ public final class ContinousRankedProbabilitySkillScoreTest
                                            MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
                                            MetricConstants.NONE );
         //Check the results       
-        final MultiValuedScoreOutput actual = crpss.apply( input );
-        final MultiValuedScoreOutput expected = outF.ofMultiValuedScoreOutput( new double[] { 0.0779168348809044 }, m1 );
+        final DoubleScoreOutput actual = crpss.apply( input );
+        final DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 0.0779168348809044, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()

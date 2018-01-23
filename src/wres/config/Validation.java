@@ -29,7 +29,6 @@ import wres.config.generated.Feature;
 import wres.config.generated.Format;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
-import wres.config.generated.MetricsConfig;
 import wres.config.generated.PairConfig;
 import wres.config.generated.PlotTypeSelection;
 import wres.config.generated.PoolingWindowConfig;
@@ -235,8 +234,7 @@ public class Validation
 
                     // Check that the named metric is consistent with any pooling window configuration
                     if ( projectConfigPlus.getProjectConfig().getPair().getIssuedDatesPoolingWindow() != null && checkMe != null
-                         && ! ( checkMe.isInGroup( MetricOutputGroup.SCORE )
-                                || checkMe.isInGroup( MetricOutputGroup.VECTOR ) ) )
+                         && ! ( checkMe.isInGroup( MetricOutputGroup.SCORE ) ) )
                     {
                         result = false;
                         if ( LOGGER.isWarnEnabled() )

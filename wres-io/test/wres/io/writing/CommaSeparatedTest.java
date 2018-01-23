@@ -211,10 +211,12 @@ public class CommaSeparatedTest
         Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ),
                                      LID + ".csv" );
         List<String> result = Files.readAllLines( pathToFile );
+
         assertTrue( result.get(0).contains( "," ) );
         assertTrue( result.get(0).contains( "ERROR" ) );
         assertTrue( result.get( 1 )
-                          .equals( "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,1,1,3.0,2.0,1.0" ) );
+                          .equals( "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,1,1,"
+                                  + "3.0,2.0,1.0" ) );
 
         // If all succeeded, remove the file, otherwise leave to help debugging.
         Files.deleteIfExists( pathToFile );

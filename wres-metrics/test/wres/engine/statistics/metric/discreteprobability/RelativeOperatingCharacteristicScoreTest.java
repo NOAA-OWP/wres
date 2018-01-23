@@ -18,7 +18,7 @@ import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.MultiValuedScoreOutput;
+import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.discreteprobability.RelativeOperatingCharacteristicScore.RelativeOperatingCharacteristicScoreBuilder;
 
@@ -77,8 +77,8 @@ public final class RelativeOperatingCharacteristicScoreTest
                                                                    MetricConstants.NONE );
 
         //Check the results       
-        final MultiValuedScoreOutput actual = rocs.apply( input );
-        final MultiValuedScoreOutput expected = outF.ofMultiValuedScoreOutput( new double[] { 0.6785714285714286 }, m1 );
+        final DoubleScoreOutput actual = rocs.apply( input );
+        final DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 0.6785714285714286, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -141,8 +141,8 @@ public final class RelativeOperatingCharacteristicScoreTest
                                                                    MetricConstants.NONE );
 
         //Check the results       
-        final MultiValuedScoreOutput actual = rocs.apply( input );
-        final MultiValuedScoreOutput expected = outF.ofMultiValuedScoreOutput( new double[] { 0.75 }, m1 );
+        final DoubleScoreOutput actual = rocs.apply( input );
+        final DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 0.75, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -150,8 +150,8 @@ public final class RelativeOperatingCharacteristicScoreTest
                     actual.equals( expected ) );
         //Check against a baseline
         final DiscreteProbabilityPairs inputBase = outF.ofDiscreteProbabilityPairs( values, values, meta, meta );
-        final MultiValuedScoreOutput actualBase = rocs.apply( inputBase );
-        final MultiValuedScoreOutput expectedBase = outF.ofMultiValuedScoreOutput( new double[] { 0.0 }, m1 );
+        final DoubleScoreOutput actualBase = rocs.apply( inputBase );
+        final DoubleScoreOutput expectedBase = outF.ofDoubleScoreOutput( 0.0, m1 );
         assertTrue( "Actual: " + actualBase.getData()
                     + ". Expected: "
                     + expectedBase.getData()
@@ -204,8 +204,8 @@ public final class RelativeOperatingCharacteristicScoreTest
                                                                    MetricConstants.NONE );
 
         //Check the results       
-        final MultiValuedScoreOutput actual = rocs.apply( input );
-        final MultiValuedScoreOutput expected = outF.ofMultiValuedScoreOutput( new double[] { Double.NaN }, m1 );
+        final DoubleScoreOutput actual = rocs.apply( input );
+        final DoubleScoreOutput expected = outF.ofDoubleScoreOutput( Double.NaN, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()

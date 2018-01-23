@@ -21,7 +21,6 @@ import wres.datamodel.outputs.MetricOutputAccessException;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
-import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.io.config.ProjectConfigPlus;
@@ -71,8 +70,8 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                 results.getScoreOutput().get( MetricConstants.MEAN_ERROR );
         MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> rmse = results.getScoreOutput()
                                                                            .get( MetricConstants.ROOT_MEAN_SQUARE_ERROR );
-        MetricOutputMapByTimeAndThreshold<MultiValuedScoreOutput> crps =
-                results.getVectorOutput()
+        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> crps =
+                results.getScoreOutput()
                        .get( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE );
 
         //Test contents

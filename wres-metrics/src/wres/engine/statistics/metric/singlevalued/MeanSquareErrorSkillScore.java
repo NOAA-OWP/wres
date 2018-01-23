@@ -3,13 +3,12 @@ package wres.engine.statistics.metric.singlevalued;
 import java.util.Objects;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.MultiValuedScoreOutput;
+import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 
@@ -25,7 +24,7 @@ public class MeanSquareErrorSkillScore<S extends SingleValuedPairs> extends Mean
 {
 
     @Override
-    public MultiValuedScoreOutput apply(final S s)
+    public DoubleScoreOutput apply(final S s)
     {
         if(Objects.isNull(s))
         {
@@ -33,13 +32,11 @@ public class MeanSquareErrorSkillScore<S extends SingleValuedPairs> extends Mean
         }
         //TODO: implement any required decompositions, based on the instance parameters and return the decomposition
         //template as the componentID in the metadata
-        DatasetIdentifier baselineIdentifier = null;
         double numerator = getSumOfSquareError(s);
         double denominator = 0.0;
         if(s.hasBaseline())
         {
             denominator = getSumOfSquareError(s.getBaselineData());
-            baselineIdentifier = s.getMetadataForBaseline().getIdentifier();
         }
         else
         {
@@ -50,11 +47,10 @@ public class MeanSquareErrorSkillScore<S extends SingleValuedPairs> extends Mean
                 denominator += Math.pow(next.getItemOne() - meanRight, 2);
             }
         }
-        final double[] result = new double[]{FunctionFactory.skill().applyAsDouble(numerator, denominator)};
+        final double result = FunctionFactory.skill().applyAsDouble(numerator, denominator);
         //Metadata
-        final MetricOutputMetadata metOut =
-                                          getMetadata(s, s.getData().size(), MetricConstants.NONE, baselineIdentifier);
-        return getDataFactory().ofMultiValuedScoreOutput(result, metOut);
+        final MetricOutputMetadata metOut = getMetadata( s );
+        return getDataFactory().ofDoubleScoreOutput(result, metOut);
     }
 
     @Override

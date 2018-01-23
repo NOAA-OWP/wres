@@ -32,22 +32,13 @@ public interface MetricOutputForProjectByTimeAndThreshold
 {
 
     /**
-     * Returns a {@link MetricOutputMultiMap} of {@link ScoreOutput} or null if no output exists.
+     * Returns a {@link MetricOutputMultiMap} of {@link DoubleScoreOutput} or null if no output exists.
      * 
      * @return the scalar output or null
      * @throws MetricOutputAccessException if the retrieval of {@link MetricOutput} fails for any reason
      */
 
     MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> getScoreOutput() throws MetricOutputAccessException;
-
-    /**
-     * Returns a {@link MetricOutputMultiMap} of {@link MultiValuedScoreOutput} or null if no output exists.
-     * 
-     * @return the vector output or null
-     * @throws MetricOutputAccessException if the retrieval of {@link MetricOutput} fails for any reason
-     */
-
-    MetricOutputMultiMapByTimeAndThreshold<MultiValuedScoreOutput> getVectorOutput() throws MetricOutputAccessException;
 
     /**
      * Returns a {@link MetricOutputMultiMap} of {@link MultiVectorOutput} or null if no output exists.
@@ -101,22 +92,6 @@ public interface MetricOutputForProjectByTimeAndThreshold
         }
 
         /**
-         * Adds a new {@link MultiValuedScoreOutput} for a collection of metrics to the internal store, merging with existing 
-         * items that share the same key, as required.
-         * 
-         * @param key the key
-         * @param result the result
-         * @return the builder
-         */
-
-        default MetricOutputForProjectByTimeAndThresholdBuilder addVectorOutput( Pair<TimeWindow, Threshold> key,
-                                                                                 Future<MetricOutputMapByMetric<MultiValuedScoreOutput>> result )
-        {
-            addVectorOutput( key.getLeft(), key.getRight(), result );
-            return this;
-        }
-
-        /**
          * Adds a new {@link MultiVectorOutput} for a collection of metrics to the internal store, merging with 
          * existing items that share the same key, as required.
          * 
@@ -166,7 +141,7 @@ public interface MetricOutputForProjectByTimeAndThreshold
         }
 
         /**
-         * Adds a new {@link ScoreOutput} for a collection of metrics to the internal store, merging with existing 
+         * Adds a new {@link DoubleScoreOutput} for a collection of metrics to the internal store, merging with existing 
          * items that share the same key, as required.
          * 
          * @param timeWindow the time window
@@ -178,20 +153,6 @@ public interface MetricOutputForProjectByTimeAndThreshold
         MetricOutputForProjectByTimeAndThresholdBuilder addScoreOutput( TimeWindow timeWindow,
                                                                          Threshold threshold,
                                                                          Future<MetricOutputMapByMetric<DoubleScoreOutput>> result );
-
-        /**
-         * Adds a new {@link MultiValuedScoreOutput} for a collection of metrics to the internal store, merging with existing 
-         * items that share the same key, as required.
-         * 
-         * @param timeWindow the time window
-         * @param threshold the threshold
-         * @param result the result
-         * @return the builder
-         */
-
-        MetricOutputForProjectByTimeAndThresholdBuilder addVectorOutput( TimeWindow timeWindow,
-                                                                         Threshold threshold,
-                                                                         Future<MetricOutputMapByMetric<MultiValuedScoreOutput>> result );
 
         /**
          * Adds a new {@link MultiVectorOutput} for a collection of metrics to the internal store, merging with existing 

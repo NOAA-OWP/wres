@@ -17,7 +17,7 @@ import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.MultiValuedScoreOutput;
+import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.ensemble.ContinuousRankedProbabilityScore.CRPSBuilder;
 
@@ -67,8 +67,8 @@ public final class ContinousRankedProbabilityScoreTest
                                            MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
                                            MetricConstants.NONE );
         //Check the results       
-        final MultiValuedScoreOutput actual = crps.apply( input );
-        final MultiValuedScoreOutput expected = outF.ofMultiValuedScoreOutput( new double[] { 7.63 }, m1 );
+        final DoubleScoreOutput actual = crps.apply( input );
+        final DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 7.63, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -122,8 +122,8 @@ public final class ContinousRankedProbabilityScoreTest
                                            MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
                                            MetricConstants.NONE );
         //Check the results       
-        final MultiValuedScoreOutput actual = crps.apply( input );
-        final MultiValuedScoreOutput expected = outF.ofMultiValuedScoreOutput( new double[] { 8.734401927437641 }, m1 );
+        final DoubleScoreOutput actual = crps.apply( input );
+        final DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 8.734401927437641, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -163,8 +163,8 @@ public final class ContinousRankedProbabilityScoreTest
                                            MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
                                            MetricConstants.NONE );
         //Check the results       
-        final MultiValuedScoreOutput actual = crps.apply( input );
-        final MultiValuedScoreOutput expected = outF.ofMultiValuedScoreOutput( new double[] { 4.56 }, m1 );
+        final DoubleScoreOutput actual = crps.apply( input );
+        final DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 4.56, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()

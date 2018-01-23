@@ -13,7 +13,7 @@ import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.MultiValuedScoreOutput;
+import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
@@ -58,8 +58,8 @@ public final class MeanSquareErrorTest
         final MeanSquareError<SingleValuedPairs> mse = b.build();
 
         //Check the results
-        final MultiValuedScoreOutput actual = mse.apply( input );
-        final MultiValuedScoreOutput expected = outF.ofMultiValuedScoreOutput( new double[] { 400003.929 }, m1 );
+        final DoubleScoreOutput actual = mse.apply( input );
+        final DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 400003.929, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()

@@ -2,11 +2,16 @@ package wres.engine.statistics.metric.singlevalued;
 
 import java.util.Objects;
 
+import wres.datamodel.DatasetIdentifier;
+import wres.datamodel.Dimension;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.MultiValuedScoreOutput;
+import wres.datamodel.outputs.DoubleScoreOutput;
+import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricParameterException;
 
@@ -16,18 +21,19 @@ import wres.engine.statistics.metric.MetricParameterException;
  * or three-component decompositions.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
+ * @version 0.2
  * @since 0.1
  */
 public class MeanSquareError<S extends SingleValuedPairs> extends SumOfSquareError<S>
+        implements Collectable<S, DoubleScoreOutput, DoubleScoreOutput>
 {
 
     @Override
-    public MultiValuedScoreOutput apply( final S s )
+    public DoubleScoreOutput apply( final S s )
     {
-        if(Objects.isNull(s))
+        if ( Objects.isNull( s ) )
         {
-            throw new MetricInputException("Specify non-null input to the '"+this+"'.");
+            throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
         }
         switch ( getScoreOutputGroup() )
         {
@@ -38,7 +44,7 @@ public class MeanSquareError<S extends SingleValuedPairs> extends SumOfSquareErr
             case CR_AND_LBR:
             default:
                 throw new MetricCalculationException( "The Mean Square Error decomposition is not currently "
-                                                         + "implemented." );
+                                                      + "implemented." );
         }
     }
 
@@ -50,6 +56,24 @@ public class MeanSquareError<S extends SingleValuedPairs> extends SumOfSquareErr
 
     @Override
     public MetricConstants getID()
+    {
+        return MetricConstants.MEAN_SQUARE_ERROR;
+    }
+
+    @Override
+    public DoubleScoreOutput aggregate( DoubleScoreOutput output )
+    {
+        return output;
+    }
+
+    @Override
+    public DoubleScoreOutput getCollectionInput( S input )
+    {
+        return apply( input );
+    }
+
+    @Override
+    public MetricConstants getCollectionOf()
     {
         return MetricConstants.MEAN_SQUARE_ERROR;
     }
@@ -84,18 +108,49 @@ public class MeanSquareError<S extends SingleValuedPairs> extends SumOfSquareErr
     }
 
     /**
+     * Returns the {@link MetricOutputMetadata} associated with the score.
+     * 
+     * @param input the input
+     * @return the metdata
+     */
+
+    protected MetricOutputMetadata getMetadata( SingleValuedPairs input )
+    {
+        final Metadata metIn = input.getMetadata();
+        final MetadataFactory f = getDataFactory().getMetadataFactory();
+        DatasetIdentifier identifier = metIn.getIdentifier();
+        // Add the baseline scenario identifier
+        if ( input.hasBaseline() )
+        {
+            identifier = f.getDatasetIdentifier( identifier,
+                                                 input.getMetadataForBaseline().getIdentifier().getScenarioID() );
+        }
+        // Set the output dimension
+        Dimension outputDimension = f.getDimension();
+        if( hasRealUnits() )
+        {
+            outputDimension = metIn.getDimension();
+        }
+        return f.getOutputMetadata( input.getData().size(),
+                                    outputDimension,
+                                    metIn.getDimension(),
+                                    getID(),
+                                    MetricConstants.NONE,
+                                    identifier,
+                                    metIn.getTimeWindow() );
+    }
+
+    /**
      * Returns the Mean Square Error without any decomposition.
      * 
      * @param s the pairs
      * @return the mean square error without decomposition
      */
 
-    private MultiValuedScoreOutput getMSENoDecomp( final SingleValuedPairs s )
+    private DoubleScoreOutput getMSENoDecomp( final SingleValuedPairs s )
     {
         double mse = getSumOfSquareError( s ) / s.getData().size();
-        //Metadata
-        final MetricOutputMetadata metOut = getMetadata( s, s.getData().size(), MetricConstants.NONE, null );
-        return getDataFactory().ofMultiValuedScoreOutput( new double[] { mse }, metOut );
+        return getDataFactory().ofDoubleScoreOutput( mse, getMetadata( s ) );
     }
 
 }

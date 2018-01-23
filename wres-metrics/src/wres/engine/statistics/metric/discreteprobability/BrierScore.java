@@ -2,7 +2,7 @@ package wres.engine.statistics.metric.discreteprobability;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
-import wres.datamodel.outputs.MultiValuedScoreOutput;
+import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.ProbabilityScore;
 import wres.engine.statistics.metric.singlevalued.MeanSquareError;
@@ -24,7 +24,7 @@ import wres.engine.statistics.metric.singlevalued.MeanSquareError;
  * @since 0.1
  */
 public class BrierScore extends MeanSquareError<DiscreteProbabilityPairs>
-        implements ProbabilityScore<DiscreteProbabilityPairs, MultiValuedScoreOutput>
+        implements ProbabilityScore<DiscreteProbabilityPairs, DoubleScoreOutput>
 {
 
     @Override

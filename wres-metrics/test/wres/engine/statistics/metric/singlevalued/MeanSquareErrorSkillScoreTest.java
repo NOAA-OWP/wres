@@ -19,7 +19,7 @@ import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.outputs.MultiValuedScoreOutput;
+import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.engine.statistics.metric.singlevalued.MeanSquareErrorSkillScore.MeanSquareErrorSkillScoreBuilder;
@@ -68,8 +68,8 @@ public final class MeanSquareErrorSkillScoreTest
         final MeanSquareErrorSkillScore<SingleValuedPairs> mse = b.build();
 
         //Check the results
-        final MultiValuedScoreOutput actual = mse.apply( input );
-        final MultiValuedScoreOutput expected = outF.ofMultiValuedScoreOutput( new double[] { 0.8007025335093799 }, m1 );
+        final DoubleScoreOutput actual = mse.apply( input );
+        final DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 0.8007025335093799, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -130,9 +130,9 @@ public final class MeanSquareErrorSkillScoreTest
         final MeanSquareErrorSkillScore<SingleValuedPairs> mse = b.build();
 
         //Check the results
-        final MultiValuedScoreOutput actual = mse.apply( input );
+        final DoubleScoreOutput actual = mse.apply( input );
 
-        final MultiValuedScoreOutput expected = outF.ofMultiValuedScoreOutput( new double[] { 0.7832791707548252 }, m1 );
+        final DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 0.7832791707548252, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()

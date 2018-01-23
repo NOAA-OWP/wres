@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.DoublePredicate;
 import java.util.function.DoubleUnaryOperator;
@@ -30,7 +31,6 @@ import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
-import wres.datamodel.outputs.MultiValuedScoreOutput;
 
 /**
  * Default implementation of a utility class for slicing/dicing and transforming datasets associated with verification
@@ -294,14 +294,14 @@ class DefaultSlicer implements Slicer
 
     @Override
     public Map<MetricConstants, MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>>
-            filterByMetricComponent( MetricOutputMapByTimeAndThreshold<MultiValuedScoreOutput> input )
+            filterByMetricComponent( MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> input )
     {
         Objects.requireNonNull( input, NULL_INPUT );
         Map<MetricConstants, Map<Pair<TimeWindow, Threshold>, DoubleScoreOutput>> sourceMap =
                 new EnumMap<>( MetricConstants.class );
         MetadataFactory metaFac = dataFac.getMetadataFactory();
         input.forEach( ( key, value ) -> {
-            List<MetricConstants> components = value.getOutputTemplate().getMetricComponents();
+            Set<MetricConstants> components = value.getComponents();
             for ( MetricConstants next : components )
             {
                 Map<Pair<TimeWindow, Threshold>, DoubleScoreOutput> nextMap = null;

@@ -41,10 +41,8 @@ import wres.datamodel.outputs.MetricOutputMapByMetric;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold.MetricOutputMultiMapByTimeAndThresholdBuilder;
-import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.PairedOutput;
-import wres.datamodel.outputs.ScoreOutput;
 
 /**
  * A factory class for producing datasets associated with verification metrics.
@@ -319,19 +317,6 @@ public interface DataFactory
                                            final VectorOfDoubles climatology )
     {
         return ofEnsemblePairs( pairs, null, meta, null, climatology );
-    }
-
-    /**
-     * Return a {@link MultiValuedScoreOutput} with a default decomposition template of {@link ScoreOutputGroup#NONE}.
-     * 
-     * @param output the output data
-     * @param meta the metadata
-     * @return a {@link MultiValuedScoreOutput}
-     */
-
-    default MultiValuedScoreOutput ofMultiValuedScoreOutput( final double[] output, final MetricOutputMetadata meta )
-    {
-        return ofMultiValuedScoreOutput( output, ScoreOutputGroup.NONE, meta );
     }
 
     /**
@@ -684,28 +669,37 @@ public interface DataFactory
     MatrixOfDoubles matrixOf( final double[][] vec );
 
     /**
-     * Return a {@link DoubleScoreOutput}.
+     * Return a {@link DoubleScoreOutput} with a single score component corresponding to {@link MetricConstants#MAIN}.
      * 
      * @param output the output data
      * @param meta the metadata
-     * @return a {@link ScoreOutput}
+     * @return a {@link DoubleScoreOutput}
      */
 
     DoubleScoreOutput ofDoubleScoreOutput( final double output, final MetricOutputMetadata meta );
-
+    
     /**
-     * Return a {@link MultiValuedScoreOutput} with a prescribed decomposition template {@link ScoreOutputGroup}, which
-     * maps the output to specific components in a specific order.
+     * Return a {@link DoubleScoreOutput} with multiple components.
      * 
      * @param output the output data
-     * @param template the template for the output
      * @param meta the metadata
-     * @return a {@link MultiValuedScoreOutput}
+     * @return a {@link DoubleScoreOutput}
      */
 
-    MultiValuedScoreOutput ofMultiValuedScoreOutput( final double[] output,
-                                 final ScoreOutputGroup template,
-                                 final MetricOutputMetadata meta );
+    DoubleScoreOutput ofDoubleScoreOutput( final Map<MetricConstants, Double> output, final MetricOutputMetadata meta );
+
+    /**
+     * Return a {@link DoubleScoreOutput} with multiple components that are ordered according to the template provided.
+     * 
+     * @param output the output data
+     * @param template the template
+     * @param meta the metadata
+     * @return a {@link DoubleScoreOutput}
+     */
+
+    DoubleScoreOutput ofDoubleScoreOutput( final double[] output,
+                                           ScoreOutputGroup template,
+                                           final MetricOutputMetadata meta );
 
     /**
      * Return a {@link MultiVectorOutput}.

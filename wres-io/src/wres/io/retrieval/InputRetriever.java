@@ -41,7 +41,6 @@ import wres.io.retrieval.scripting.Scripter;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
 import wres.io.writing.PairWriter;
-import wres.util.Strings;
 import wres.util.TimeHelper;
 
 /**

@@ -48,9 +48,7 @@ import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.MetricOutputAccessException;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
-import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.datamodel.outputs.MultiVectorOutput;
-import wres.datamodel.outputs.ScoreOutput;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.config.MetricConfigHelper;
 import wres.engine.statistics.metric.config.MetricConfigurationException;
@@ -271,12 +269,12 @@ public class ProcessorHelper
             // Multivector outputs by threshold must be cached across time windows
             if ( hasMultiVectorOutputsToCache( projectConfig ) )
             {
-                cacheMe = new MetricOutputGroup[] { MetricOutputGroup.SCORE, MetricOutputGroup.VECTOR,
+                cacheMe = new MetricOutputGroup[] { MetricOutputGroup.SCORE,
                                                     MetricOutputGroup.MULTIVECTOR };
             }
             else
             {
-                cacheMe = new MetricOutputGroup[] { MetricOutputGroup.SCORE, MetricOutputGroup.VECTOR };
+                cacheMe = new MetricOutputGroup[] { MetricOutputGroup.SCORE };
             }
 
             MetricFactory mF = MetricFactory.getInstance( DATA_FACTORY );
@@ -475,23 +473,14 @@ public class ProcessorHelper
 
         try
         {
-            // Process scalar charts
+            // Process vector charts
             if ( processor.willCacheMetricOutput( MetricOutputGroup.SCORE )
                  && processor.getCachedMetricOutput().hasOutput( MetricOutputGroup.SCORE ) )
             {
-                processScalarCharts( feature,
+                processScoreCharts( feature,
                                      projectConfigPlus,
                                      processor.getCachedMetricOutput()
                                               .getScoreOutput() );
-            }
-            // Process vector charts
-            if ( processor.willCacheMetricOutput( MetricOutputGroup.VECTOR )
-                 && processor.getCachedMetricOutput().hasOutput( MetricOutputGroup.VECTOR ) )
-            {
-                processVectorCharts( feature,
-                                     projectConfigPlus,
-                                     processor.getCachedMetricOutput()
-                                              .getVectorOutput() );
             }
             // Process multivector charts
             if ( processor.willCacheMetricOutput( MetricOutputGroup.MULTIVECTOR )
@@ -520,129 +509,24 @@ public class ProcessorHelper
             }
             throw new WresProcessingException( "Error while processing charts:", e );
         }
-    }
+    }  
 
     /**
-     * Processes a set of charts associated with {@link ScoreOutput} across multiple metrics, time windows, and
-     * thresholds, stored in a {@link MetricOutputMultiMapByTimeAndThreshold}.
-     * 
-     * @param feature the feature for which the chart is defined
-     * @param projectConfigPlus the project configuration
-     * @param scalarResults the metric results
-     * @throws WresProcessingException when an error occurs during processing
-     */
-
-    private static void processScalarCharts( final Feature feature,
-                                             final ProjectConfigPlus projectConfigPlus,
-                                             final MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> scalarResults )
-    {
-
-        // Check for results
-        if ( Objects.isNull( scalarResults ) )
-        {
-            LOGGER.warn( "No scalar outputs from which to generate charts." );
-            return;
-        }
-
-        ProjectConfig config = projectConfigPlus.getProjectConfig();
-        // Iterate through each metric 
-        for ( final Map.Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>> e : scalarResults.entrySet() )
-        {
-            List<DestinationConfig> destinations =
-                    ConfigHelper.getGraphicalDestinations( config );
-            // Iterate through each destination
-            for ( DestinationConfig destConfig : destinations )
-            {
-                writeScalarChart( feature, projectConfigPlus, destConfig, e.getKey().getKey(), e.getValue() );
-            }
-        }
-    }
-    
-    /**
-     * Writes a single chart associated with {@link ScoreOutput} for a single metric and time window, stored in a 
-     * {@link MetricOutputMultiMapByTimeAndThreshold}.
-     * 
-     * @param feature the feature
-     * @param projectConfigPlus the project configuration
-     * @param destConfig the destination configuration for the written output
-     * @param metricId the metric identifier
-     * @param scalarResults the metric results
-     * @throws WresProcessingException when an error occurs during writing
-     */
-
-    private static void writeScalarChart( Feature feature,
-                                          ProjectConfigPlus projectConfigPlus,
-                                          DestinationConfig destConfig,
-                                          MetricConstants metricId,
-                                          MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> scalarResults )
-    {
-        // Build charts
-        try
-        {
-            String graphicsString = projectConfigPlus.getGraphicsStrings().get( destConfig );
-            // Build the chart engine
-            MetricConfig nextConfig = getNamedConfigOrAllValid( metricId, projectConfigPlus.getProjectConfig() );
-            // Default to global type parameter
-            PlotTypeSelection plotType = destConfig.getGraphical().getPlotType();
-            String templateResourceName = destConfig.getGraphical().getTemplate();
-            if ( Objects.nonNull( nextConfig ) )
-            {
-                // Local type parameter
-                if ( nextConfig.getPlotType() != null )
-                {
-                    plotType = nextConfig.getPlotType();
-                }
-                
-                // Override template name with metric specific name.
-                if (nextConfig.getTemplateResourceName() != null)
-                {
-                    templateResourceName = nextConfig.getTemplateResourceName();
-                }
-            }
-
-            ChartEngine engine = ChartEngineFactory.buildGenericScalarOutputChartEngine( scalarResults,
-                                                                                         plotType,
-                                                                                         templateResourceName,
-                                                                                         graphicsString );
-            //Build the output
-            File destDir = ConfigHelper.getDirectoryFromDestinationConfig( destConfig );
-            Path outputImage = Paths.get( destDir.toString(),
-                                          ConfigHelper.getFeatureDescription( feature )
-                                                              + "_"
-                                                              + metricId.name()
-                                                              + "_"
-                                                              + projectConfigPlus.getProjectConfig()
-                                                                                 .getInputs()
-                                                                                 .getRight()
-                                                                                 .getVariable()
-                                                                                 .getValue()
-                                                              + ".png" );
-            ChartWriter.writeChart( outputImage, engine, destConfig );
-        }
-        catch ( ChartEngineException
-                | ChartWritingException
-                | ProjectConfigException e )
-        {
-            throw new WresProcessingException( "Error while generating scalar charts:", e );
-        }
-    }   
-
-    /**
-     * Processes a set of charts associated with {@link MultiValuedScoreOutput} across multiple metrics, time windows, 
+     * Processes a set of charts associated with {@link DoubleScoreOutput} across multiple metrics, time windows, 
      * and thresholds, stored in a {@link MetricOutputMultiMapByTimeAndThreshold}. these.
      * 
      * @param feature the feature for which the chart is defined
      * @param projectConfigPlus the project configuration
-     * @param vectorResults the metric results
+     * @param scoreResults the metric results
      * @throws WresProcessingException when an error occurs during processing
      */
 
-    private static void processVectorCharts( final Feature feature,
+    private static void processScoreCharts( final Feature feature,
                                              final ProjectConfigPlus projectConfigPlus,
-                                             final MetricOutputMultiMapByTimeAndThreshold<MultiValuedScoreOutput> vectorResults )
+                                             final MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> scoreResults )
     {
         // Check for results
-        if ( Objects.isNull( vectorResults ) )
+        if ( Objects.isNull( scoreResults ) )
         {
             LOGGER.warn( "No vector outputs from which to generate charts." );
             return;
@@ -650,35 +534,35 @@ public class ProcessorHelper
 
         ProjectConfig config = projectConfigPlus.getProjectConfig();
         // Iterate through each metric 
-        for ( final Map.Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<MultiValuedScoreOutput>> e : vectorResults.entrySet() )
+        for ( final Map.Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>> e : scoreResults.entrySet() )
         {
             List<DestinationConfig> destinations =
                     ConfigHelper.getGraphicalDestinations( config );
             // Iterate through each destination
             for ( DestinationConfig destConfig : destinations )
             {
-                writeVectorCharts( feature, projectConfigPlus, destConfig, e.getKey().getKey(), e.getValue() );
+                writeScoreCharts( feature, projectConfigPlus, destConfig, e.getKey().getKey(), e.getValue() );
             }
         }
     }
     
     /**
-     * Writes a set of charts associated with {@link MultiValuedScoreOutput} for a single metric and time window, 
+     * Writes a set of charts associated with {@link DoubleScoreOutput} for a single metric and time window, 
      * stored in a {@link MetricOutputMultiMapByTimeAndThreshold}.
      * 
      * @param feature the feature
      * @param projectConfigPlus the project configuration
      * @param destConfig the destination configuration for the written output
      * @param metricId the metric identifier
-     * @param vectorResults the metric results
+     * @param scoreResults the metric results
      * @throws WresProcessingException when an error occurs during writing
      */
 
-    private static void writeVectorCharts( Feature feature,
+    private static void writeScoreCharts( Feature feature,
                                           ProjectConfigPlus projectConfigPlus,
                                           DestinationConfig destConfig,
                                           MetricConstants metricId,
-                                          MetricOutputMapByTimeAndThreshold<MultiValuedScoreOutput> vectorResults )
+                                          MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> scoreResults )
     {
         // Build charts
         try
@@ -706,7 +590,7 @@ public class ProcessorHelper
                 }
             }
             Map<MetricConstants, ChartEngine> engines =
-                    ChartEngineFactory.buildVectorOutputChartEngine( vectorResults,
+                    ChartEngineFactory.buildScoreOutputChartEngine( scoreResults,
                                                                      DATA_FACTORY,
                                                                      plotType,
                                                                      templateResourceName,

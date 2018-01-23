@@ -44,15 +44,6 @@ public interface MetricOutputForProject<T extends MetricOutputMultiMap<?>>
     MetricOutputMultiMap<DoubleScoreOutput> getScoreOutput() throws MetricOutputAccessException;
 
     /**
-     * Returns a {@link MetricOutputMultiMap} of {@link MultiValuedScoreOutput} or null if no output exists.
-     * 
-     * @return the vector output or null
-     * @throws MetricOutputAccessException if the retrieval of {@link MetricOutput} fails for any reason
-     */
-
-    MetricOutputMultiMap<MultiValuedScoreOutput> getVectorOutput() throws MetricOutputAccessException;
-
-    /**
      * Returns a {@link MetricOutputMultiMap} of {@link MultiVectorOutput} or null if no output exists.
      * 
      * @return the multi-vector output or null

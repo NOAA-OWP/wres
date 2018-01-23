@@ -133,7 +133,7 @@ public final class MetricProcessorTest
         //Check that no non-score metrics are defined
         for ( MetricOutputGroup next : MetricOutputGroup.values() )
         {
-            if ( !next.equals( MetricOutputGroup.SCORE ) && !next.equals( MetricOutputGroup.VECTOR ) )
+            if ( !next.equals( MetricOutputGroup.SCORE ) )
             {
                 assertFalse( "Did not expect metrics for '" + next
                              + "'.",
@@ -155,7 +155,7 @@ public final class MetricProcessorTest
         //Check that no non-score metrics are defined
         for ( MetricOutputGroup next : MetricOutputGroup.values() )
         {
-            if ( !next.equals( MetricOutputGroup.SCORE ) && !next.equals( MetricOutputGroup.VECTOR ) )
+            if ( !next.equals( MetricOutputGroup.SCORE ) )
             {
                 assertFalse( "Did not expect metrics for '" + next
                              + "'.",

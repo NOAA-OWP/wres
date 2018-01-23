@@ -12,6 +12,7 @@ import java.text.DecimalFormat;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.SortedMap;
 import java.util.StringJoiner;
@@ -35,7 +36,6 @@ import wres.datamodel.outputs.MetricOutputAccessException;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
-import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.io.config.ConfigHelper;
 
 /**
@@ -146,30 +146,21 @@ public class CommaSeparated
 
         SortedMap<TimeWindow, StringJoiner> rows = new TreeMap<>();
 
-        MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> scalarOutput = null;
-        MetricOutputMultiMapByTimeAndThreshold<MultiValuedScoreOutput> vectorOutput = null;
+        MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> scoreOutput = null;
 
         try
         {
-            scalarOutput = storedMetricOutput.getScoreOutput();
-            vectorOutput = storedMetricOutput.getVectorOutput();
+            scoreOutput = storedMetricOutput.getScoreOutput();
         }
         catch ( final MetricOutputAccessException e )
         {
             throw new IOException( "While getting numeric output:", e );
         }
 
-        if ( scalarOutput != null ) // currently requiring some scalar output
+        if ( scoreOutput != null ) // currently requiring some score output
         {
             SortedMap<TimeWindow, StringJoiner> intermediate =
-                    CommaSeparated.getScalarRows( scalarOutput, formatter );
-
-            if ( vectorOutput != null )
-            {
-                CommaSeparated.appendVectorColumns( intermediate,
-                                                    vectorOutput,
-                                                    formatter );
-            }
+                    CommaSeparated.getScoreRows( scoreOutput, formatter );
 
             for ( Map.Entry<TimeWindow, StringJoiner> e : intermediate.entrySet() )
             {
@@ -181,14 +172,14 @@ public class CommaSeparated
     }
 
     /**
-     * Get csv rows by lead time in intermediate format (StringJoiner)
+     * Get csv rows by lead time in intermediate format (StringJoiner).
      *
      * @param output data to iterate through
      * @param formatter optional formatter to format doubles with, can be null
      * @return a SortedMap
      */
 
-    private static SortedMap<TimeWindow, StringJoiner> getScalarRows(
+    private static SortedMap<TimeWindow, StringJoiner> getScoreRows(
             MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> output,
             DecimalFormat formatter )
     {
@@ -199,62 +190,17 @@ public class CommaSeparated
                  .add( "LATEST" + HEADER_DELIMITER + "TIME" )
                  .add( "EARLIEST" + HEADER_DELIMITER + "LEAD" + HEADER_DELIMITER + "HOUR" )
                  .add( "LATEST" + HEADER_DELIMITER + "LEAD" + HEADER_DELIMITER + "HOUR" );
-        for ( Map.Entry<MapKey<MetricConstants>,
-                MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>> m
-                : output.entrySet() )
+        
+        // Loop across scores
+        for ( Map.Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>> m : output.entrySet() )
         {
-            String name = m.getKey().getKey().toString();
-
-            for ( Threshold t : m.getValue().keySetByThreshold() )
-            {
-                String column = name + HEADER_DELIMITER + t;
-                headerRow.add( column );
-
-                for ( TimeWindow timeWindow : m.getValue().keySetByTime() )
-                {
-                    if ( !rows.containsKey( timeWindow ) )
-                    {
-                        StringJoiner row = new StringJoiner( "," );
-                        row.add( timeWindow.getEarliestTime().toString() );
-                        row.add( timeWindow.getLatestTime().toString() );
-                        row.add( Long.toString( timeWindow.getEarliestLeadTimeInHours() ) );
-                        row.add( Long.toString( timeWindow.getLatestLeadTimeInHours() ) );
-                        rows.put( timeWindow, row );
-                    }
-
-                    StringJoiner row = rows.get( timeWindow );
-
-                    // To maintain rectangular CSV output, construct keys using
-                    // both dimensions. If we do not find a value, use NA.
-                    Pair<TimeWindow,Threshold> key = Pair.of( timeWindow, t );
-
-                    DoubleScoreOutput value = m.getValue()
-                                          .get( key );
-
-                    String toWrite = "NA";
-
-                    if ( value != null && !value.getData().equals( Double.NaN ) )
-                    {
-                        if ( formatter != null )
-                        {
-                            toWrite = formatter.format( value.getData() );
-                        }
-                        else
-                        {
-                            toWrite = value.toString();
-                        }
-                    }
-
-                    row.add( toWrite );
-
-                }
-            }
+            addRowsForOneScore( m.getKey().getKey(), m.getValue(), headerRow, rows, formatter );
         }
 
         SortedMap<TimeWindow,StringJoiner> result = new TreeMap<>();
         result.put( HEADER_INDEX, headerRow );
 
-        for ( Map.Entry<TimeWindow, StringJoiner> e : rows.entrySet() )
+        for ( Entry<TimeWindow, StringJoiner> e : rows.entrySet() )
         {
             result.put( e.getKey(), e.getValue() );
         }
@@ -262,6 +208,103 @@ public class CommaSeparated
         return result;
     }
 
+    /**
+     * Mutates the input header and rows, adding results for one score.
+     *
+     * @param scoreName the score name
+     * @param score the score results
+     * @param headerRow the header row
+     * @param rows the data rows
+     * @param formatter optional formatter to format doubles with, can be null
+     */
+
+    private static void addRowsForOneScore( MetricConstants scoreName,
+                                            MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> score,
+                                            StringJoiner headerRow,
+                                            SortedMap<TimeWindow, StringJoiner> rows,
+                                            DecimalFormat formatter )
+    {
+        // Slice score by components
+        Map<MetricConstants, MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>> helper =
+                DefaultDataFactory.getInstance()
+                                  .getSlicer()
+                                  .filterByMetricComponent( score );
+
+        String outerName = scoreName.toString();
+        // Loop across components
+        for ( Entry<MetricConstants, MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>> e : helper.entrySet() )
+        {
+            // Add the component name if more than one component, otherwise leave blank
+            String name = outerName;
+            if ( helper.size() > 1 )
+            {
+                name = name + HEADER_DELIMITER + e.getKey().toString();
+            }
+            addRowsForOneScoreComponent( name, e.getValue(), headerRow, rows, formatter );
+        }
+    }   
+    
+    /**
+     * Mutates the input header and rows, adding results for one score component.
+     *
+     * @param name the column name
+     * @param component the score component results
+     * @param headerRow the header row
+     * @param rows the data rows
+     * @param formatter optional formatter to format doubles with, can be null
+     */
+
+    private static void addRowsForOneScoreComponent( String name,
+                                                     MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> component,
+                                                     StringJoiner headerRow,
+                                                     SortedMap<TimeWindow, StringJoiner> rows,
+                                                     DecimalFormat formatter )
+    {
+        // Loop across the thresholds
+        for ( Threshold t : component.keySetByThreshold() )
+        {
+            String column = name + HEADER_DELIMITER + t;
+            headerRow.add( column );
+            // Loop across time windows
+            for ( TimeWindow timeWindow : component.keySetByTime() )
+            {
+                if ( !rows.containsKey( timeWindow ) )
+                {
+                    StringJoiner row = new StringJoiner( "," );
+                    row.add( timeWindow.getEarliestTime().toString() );
+                    row.add( timeWindow.getLatestTime().toString() );
+                    row.add( Long.toString( timeWindow.getEarliestLeadTimeInHours() ) );
+                    row.add( Long.toString( timeWindow.getLatestLeadTimeInHours() ) );
+                    rows.put( timeWindow, row );
+                }
+
+                StringJoiner row = rows.get( timeWindow );
+
+                // To maintain rectangular CSV output, construct keys using
+                // both dimensions. If we do not find a value, use NA.
+                Pair<TimeWindow, Threshold> key = Pair.of( timeWindow, t );
+
+                DoubleScoreOutput value = component.get( key );
+
+                String toWrite = "NA";
+
+                // Write the current score component at the current window and threshold
+                if ( value != null && !value.getData().equals( Double.NaN ) )
+                {
+                    if ( formatter != null )
+                    {
+                        toWrite = formatter.format( value.getData() );
+                    }
+                    else
+                    {
+                        toWrite = value.getData().toString();
+                    }
+                }
+
+                row.add( toWrite );
+            }
+        }
+    }       
 
     /**
      * Mutate existing intermediate rows by appending additional columns of
@@ -270,17 +313,19 @@ public class CommaSeparated
      * @param existingRows the existing rows to mutate - side effecting!
      * @param output the vectoroutput data to append
      * @param formatter the format to use for doubles
+     * @deprecated
      */
 
+    @Deprecated
     private static void appendVectorColumns(
             SortedMap<TimeWindow, StringJoiner> existingRows,
-            MetricOutputMultiMapByTimeAndThreshold<MultiValuedScoreOutput> output,
+            MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> output,
             DecimalFormat formatter )
     {
         StringJoiner headerRow = existingRows.get( HEADER_INDEX );
 
         for ( Map.Entry<MapKey<MetricConstants>,
-                MetricOutputMapByTimeAndThreshold<MultiValuedScoreOutput>> m
+                MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>> m
                 : output.entrySet() )
         {
             Map<MetricConstants, MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>> helper

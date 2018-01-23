@@ -6,7 +6,7 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.MultiValuedScoreOutput;
+import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 
@@ -25,7 +25,7 @@ public class ContinuousRankedProbabilitySkillScore extends ContinuousRankedProba
 {
 
     @Override
-    public MultiValuedScoreOutput apply( EnsemblePairs s )
+    public DoubleScoreOutput apply( EnsemblePairs s )
     {
         if(Objects.isNull(s))
         {
@@ -39,11 +39,11 @@ public class ContinuousRankedProbabilitySkillScore extends ContinuousRankedProba
         //TODO: implement the decomposition
         double numerator = super.apply( s ).getValue( MetricConstants.MAIN );
         double denominator = super.apply( s.getBaselineData() ).getValue( MetricConstants.MAIN );
-        final double[] result = new double[] { FunctionFactory.skill().applyAsDouble( numerator, denominator ) };
+        final double result = FunctionFactory.skill().applyAsDouble( numerator, denominator );
 
         //Metadata
         final MetricOutputMetadata metOut = getMetadata( s, s.getData().size(), MetricConstants.NONE, null );
-        return getDataFactory().ofMultiValuedScoreOutput( result, metOut );
+        return getDataFactory().ofDoubleScoreOutput( result, metOut );
     }
 
     @Override

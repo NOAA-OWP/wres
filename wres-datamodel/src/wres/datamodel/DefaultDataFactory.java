@@ -41,7 +41,6 @@ import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold.MetricOut
 import wres.datamodel.outputs.MetricOutputMapByMetric;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
-import wres.datamodel.outputs.MultiValuedScoreOutput;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.PairedOutput;
 
@@ -265,15 +264,21 @@ public class DefaultDataFactory implements DataFactory
     @Override
     public DoubleScoreOutput ofDoubleScoreOutput( final double output, final MetricOutputMetadata meta )
     {
-        return new SafeScalarOutput( output, meta );
+        return new SafeDoubleScoreOutput( output, meta );
     }
 
     @Override
-    public MultiValuedScoreOutput ofMultiValuedScoreOutput( final double[] output,
-                                        final ScoreOutputGroup template,
-                                        final MetricOutputMetadata meta )
+    public DoubleScoreOutput ofDoubleScoreOutput( Map<MetricConstants, Double> output, MetricOutputMetadata meta )
     {
-        return new SafeMultiValuedScoreOutput( vectorOf( output ), template, meta );
+        return new SafeDoubleScoreOutput( output, meta );
+    }
+
+    @Override
+    public DoubleScoreOutput ofDoubleScoreOutput( double[] output,
+                                                  ScoreOutputGroup template,
+                                                  MetricOutputMetadata meta )
+    {
+        return new SafeDoubleScoreOutput( output, template, meta );
     }
 
     @Override
@@ -305,15 +310,15 @@ public class DefaultDataFactory implements DataFactory
     @Override
     public <S, T> PairedOutput<S, T> ofPairedOutput( List<Pair<S, T>> output, MetricOutputMetadata meta )
     {
-        return new SafePairedOutput<>(output, meta);
+        return new SafePairedOutput<>( output, meta );
     }
-    
+
     @Override
     public DurationScoreOutput ofDurationOutput( Duration output, MetricOutputMetadata meta )
     {
         return new SafeDurationOutput( output, meta );
     }
-    
+
     @Override
     public <T extends MetricOutput<?>> MetricOutputMapByMetric<T> ofMap( final List<T> input )
     {
@@ -544,7 +549,7 @@ public class DefaultDataFactory implements DataFactory
         }
         return SafeMatrixOfDoubles.of( input.getDoubles() );
     }
-    
+
     /**
      * Default implementation of a pair of booleans.
      */
