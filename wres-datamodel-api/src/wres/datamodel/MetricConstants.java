@@ -210,6 +210,42 @@ public enum MetricConstants
     TIME_TO_PEAK_ERROR ( MetricInputGroup.SINGLE_VALUED_TIME_SERIES, MetricOutputGroup.MAP ),    
     
     /**
+     * Identifier for a statistic derived from the Time-to-Peak Error.
+     */
+    
+    TIME_TO_PEAK_ERROR_STATISTIC ( MetricInputGroup.SINGLE_VALUED_TIME_SERIES, MetricOutputGroup.SCORE ),    
+
+    /**
+     * Mean statistic.
+     */
+    
+    MEAN (ScoreOutputGroup.UNIVARIATE_STATISTIC ), 
+    
+    /**
+     * Median statistic.
+     */
+    
+    MEDIAN (ScoreOutputGroup.UNIVARIATE_STATISTIC ),    
+    
+    /**
+     * Standard deviation statistic.
+     */
+    
+    STANDARD_DEVIATION (ScoreOutputGroup.UNIVARIATE_STATISTIC ),     
+    
+    /**
+     * Minimum statistic.
+     */
+    
+    MINIMUM (ScoreOutputGroup.UNIVARIATE_STATISTIC ), 
+    
+    /**
+     * Maximum statistic.
+     */
+    
+    MAXIMUM (ScoreOutputGroup.UNIVARIATE_STATISTIC ), 
+    
+    /**
      * Indicator for no decomposition.
      */
 
@@ -305,7 +341,7 @@ public enum MetricConstants
      * {@link MetricConstants} does not belong to a {@link ScoreOutputGroup}.
      */
 
-    private final ScoreOutputGroup[] decGroup;
+    private final ScoreOutputGroup[] scoreTypeGroup;
 
     /**
      * Default constructor
@@ -315,7 +351,7 @@ public enum MetricConstants
     {
         inGroup = null;
         outGroup = null;
-        decGroup = null;
+        scoreTypeGroup = null;
     }
 
     /**
@@ -329,7 +365,7 @@ public enum MetricConstants
     {
         this.inGroup = new MetricInputGroup[] { inGroup };
         this.outGroup = outGroup;
-        decGroup = null;
+        scoreTypeGroup = null;
     }
 
     /**
@@ -344,7 +380,7 @@ public enum MetricConstants
     {
         this.inGroup = new MetricInputGroup[] { firstGroup, secondGroup };
         this.outGroup = outGroup;
-        decGroup = null;
+        scoreTypeGroup = null;
     }
 
     /**
@@ -355,7 +391,7 @@ public enum MetricConstants
 
     private MetricConstants( ScoreOutputGroup... decGroup )
     {
-        this.decGroup = decGroup;
+        this.scoreTypeGroup = decGroup;
         inGroup = null;
         outGroup = null;
     }
@@ -371,7 +407,7 @@ public enum MetricConstants
     {
         return Arrays.asList( this.inGroup ).contains( inGroup );
     }
-
+    
     /**
      * Returns true if the input {@link MetricOutputGroup} contains the current {@link MetricConstants}, false
      * otherwise.
@@ -385,6 +421,18 @@ public enum MetricConstants
         return this.outGroup == outGroup;
     }
 
+    /**
+     * Returns true if the input {@link ScoreOutputGroup} contains the current {@link MetricConstants}, false otherwise.
+     * 
+     * @param inGroup the {@link ScoreOutputGroup}
+     * @return true if the input {@link ScoreOutputGroup} contains the current {@link MetricConstants}, false otherwise
+     */
+
+    public boolean isInGroup( ScoreOutputGroup inGroup )
+    {
+        return Arrays.asList( this.scoreTypeGroup ).contains( inGroup );
+    }    
+    
     /**
      * Returns true if the input {@link MetricInputGroup} and {@link MetricOutputGroup} both contain the current
      * {@link MetricConstants}, false otherwise.
@@ -409,7 +457,7 @@ public enum MetricConstants
 
     public Set<MetricConstants> getMetricComponents()
     {
-        return Objects.isNull( decGroup ) ? null : decGroup[0].getMetricComponents();
+        return Objects.isNull( scoreTypeGroup ) ? null : scoreTypeGroup[0].getMetricComponents();
     }
 
     /**
@@ -576,7 +624,7 @@ public enum MetricConstants
     }
     
     /**
-     * A template associated with one or more scalar values that compose a verification score.
+     * A template associated with one or more scalar values that compose a score.
      */
 
     public enum ScoreOutputGroup
@@ -614,7 +662,13 @@ public enum MetricConstants
          * Identifier for the score and components of both the CR and LBR factorizations.
          */
 
-        CR_AND_LBR;
+        CR_AND_LBR,
+        
+        /**
+         * Identifier for a univariate statistic, such as the mean or median.
+         */
+        
+        UNIVARIATE_STATISTIC;
 
         /**
          * Returns all {@link MetricConstants} associated with the current {@link ScoreOutputGroup}.
@@ -626,8 +680,8 @@ public enum MetricConstants
         {
             Set<MetricConstants> all = EnumSet.allOf( MetricConstants.class );
             //Remove constants with the same name across MetricConstants and MetricDecompositionGroup
-            all.removeIf( a -> Objects.isNull( a.decGroup ) || a.name().equals( name() )
-                               || !Arrays.asList( a.decGroup ).contains( this ) );
+            all.removeIf( a -> Objects.isNull( a.scoreTypeGroup ) || a.name().equals( name() )
+                               || !Arrays.asList( a.scoreTypeGroup ).contains( this ) );
             return all;
         }
 

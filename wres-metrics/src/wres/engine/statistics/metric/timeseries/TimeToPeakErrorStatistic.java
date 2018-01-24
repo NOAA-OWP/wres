@@ -14,6 +14,7 @@ import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DurationScoreOutput;
 import wres.datamodel.outputs.PairedOutput;
 import wres.engine.statistics.metric.Collectable;
+import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.OrdinaryScore;
@@ -22,11 +23,12 @@ import wres.engine.statistics.metric.OrdinaryScore;
  * A summary statistic that operates on a {@link TimeToPeakError}.
  * 
  * TODO: consider implementing an API for summary statistics that work with {@link Duration}. Currently, this 
- * implementation works with {@link AbstractUnivariateStatistic}.
+ * implementation works with {@link AbstractUnivariateStatistic}, which requires mapping between <code>double</code>
+ * times in fixed units and {@link Duration}.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
- * @since 0.1
+ * @since 0.4
  */
 public class TimeToPeakErrorStatistic extends OrdinaryScore<TimeSeriesOfSingleValuedPairs, DurationScoreOutput>
         implements Collectable<TimeSeriesOfSingleValuedPairs, PairedOutput<Instant, Duration>, DurationScoreOutput>
@@ -69,7 +71,7 @@ public class TimeToPeakErrorStatistic extends OrdinaryScore<TimeSeriesOfSingleVa
     @Override
     public MetricConstants getID()
     {
-        return identifier;
+        return MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC;
     }
 
     @Override
@@ -102,11 +104,12 @@ public class TimeToPeakErrorStatistic extends OrdinaryScore<TimeSeriesOfSingleVa
         double[] input = output.getData().stream().mapToDouble( a -> a.getValue().toMillis() ).toArray();
 
         MetricOutputMetadata in = output.getMetadata();
+        // Create output metadata with the identifier of the statistic as the component identifier
         MetricOutputMetadata meta = getDataFactory().getMetadataFactory().getOutputMetadata( in.getSampleSize(),
                                                                                              in.getDimension(),
                                                                                              in.getInputDimension(),
                                                                                              getID(),
-                                                                                             MetricConstants.MAIN,
+                                                                                             identifier,
                                                                                              in.getIdentifier() );
         // Loss of precision here (albeit not consequential)
         Duration returnMe = Duration.ofMillis( (long) statistic.evaluate( input ) );
@@ -137,37 +140,18 @@ public class TimeToPeakErrorStatistic extends OrdinaryScore<TimeSeriesOfSingleVa
          * The identifier for the summary statistic.
          */
 
-        private MetricConstants identifier;
+        private MetricConstants statistic;
 
         /**
-         * The summary statistic.
-         */
-
-        private AbstractUnivariateStatistic statistic;
-
-        /**
-         * Sets the summary statistic.
+         * Sets the statistic.
          * 
-         * @param statistic the statistic
+         * @param statistic the identifier
          * @return the builder
          */
 
-        public TimeToPeakErrorStatisticBuilder setStatistic( AbstractUnivariateStatistic statistic )
+        public TimeToPeakErrorStatisticBuilder setStatistic( MetricConstants statistic )
         {
             this.statistic = statistic;
-            return this;
-        }
-
-        /**
-         * Sets the metric identifier.
-         * 
-         * @param identifier the identifier
-         * @return the builder
-         */
-
-        public TimeToPeakErrorStatisticBuilder setIdentifier( MetricConstants identifier )
-        {
-            this.identifier = identifier;
             return this;
         }
 
@@ -190,17 +174,20 @@ public class TimeToPeakErrorStatistic extends OrdinaryScore<TimeSeriesOfSingleVa
     {
         super( builder );
         // Copy
-        this.identifier = builder.identifier;
-        this.statistic = builder.statistic;
+        this.identifier = builder.statistic;
         // Validate
         if ( Objects.isNull( this.identifier ) )
         {
-            throw new MetricParameterException( "Specify a non-null metric identifier." );
-        }
-        if ( Objects.isNull( this.statistic ) )
-        {
             throw new MetricParameterException( "Specify a non-null summary statistic." );
         }
+        // Derive the statistic from the identifier
+        try {
+            this.statistic = FunctionFactory.ofStatistic( this.identifier );
+        }
+        catch (Exception e)
+        {
+            throw new MetricParameterException( "While constructing the timing error summary statistic: ", e);
+        }        
         // Build the metric of which this is a collection
         timeToPeakError = MetricFactory.getInstance( getDataFactory() ).ofTimeToPeakError();
     }

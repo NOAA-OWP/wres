@@ -2,11 +2,23 @@ package wres.engine.statistics.metric;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.DoubleBinaryOperator;
 import java.util.function.ToDoubleFunction;
 
+import org.apache.commons.math3.stat.descriptive.AbstractUnivariateStatistic;
+import org.apache.commons.math3.stat.descriptive.moment.Mean;
+import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
+import org.apache.commons.math3.stat.descriptive.rank.Max;
+import org.apache.commons.math3.stat.descriptive.rank.Median;
+import org.apache.commons.math3.stat.descriptive.rank.Min;
+
+import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 
@@ -20,7 +32,13 @@ import wres.datamodel.inputs.pairs.PairOfDoubles;
 
 public class FunctionFactory
 {
-    
+
+    /**
+     * Map of summary statistics.
+     */
+
+    private static final Map<MetricConstants, AbstractUnivariateStatistic> STATISTICS = new HashMap<>();
+       
     /**
      * Return a function that computes the difference between the second and first entries in a {@link PairOfDoubles}.
      * 
@@ -131,6 +149,33 @@ public class FunctionFactory
                               / (a.size() - 1.0) );
         };
     }
+    
+    /**
+     * Returns a statistic associated with a {@link MetricConstants} that belongs to the 
+     * {@link ScoreOutputGroup#UNIVARIATE_STATISTIC}.
+     * 
+     * @throws NullPointerException if the input is null
+     * @throws IllegalArgumentException if the input does not belong to {@link ScoreOutputGroup#UNIVARIATE_STATISTIC} 
+     *            or the statistic does not exist
+     */
+    
+    public static AbstractUnivariateStatistic ofStatistic( MetricConstants statistic )
+    {
+        Objects.requireNonNull( statistic );
+        if( ! statistic.isInGroup( ScoreOutputGroup.UNIVARIATE_STATISTIC ) )
+        {
+            throw new IllegalArgumentException( "The statistic '"+statistic+"' is not a recognized statistic "
+                    + "in this context." );
+        }
+        // Lazy build the map
+        buildStatisticsMap();
+        if( ! STATISTICS.containsKey( statistic ) )
+        {
+            throw new IllegalArgumentException( "The statistic '"+statistic+"' has not been implemented." );
+        }
+        return STATISTICS.get( statistic );
+    }
+    
 
     /**
      * No argument constructor.
@@ -139,5 +184,18 @@ public class FunctionFactory
     private FunctionFactory()
     {
     };
+    
+    /**
+     * Builds the map of statistics.
+     */
 
+    private static void buildStatisticsMap()
+    {
+        STATISTICS.put( MetricConstants.MEAN, new Mean() );
+        STATISTICS.put( MetricConstants.MEDIAN, new Median() );
+        STATISTICS.put( MetricConstants.STANDARD_DEVIATION, new StandardDeviation() );
+        STATISTICS.put( MetricConstants.MINIMUM, new Min() );
+        STATISTICS.put( MetricConstants.MAXIMUM, new Max() );       
+    }
+    
 }
