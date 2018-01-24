@@ -74,7 +74,7 @@ public final class ContinousRankedProbabilitySkillScoreTest
                                            metaFac.getDimension(),
                                            metaFac.getDimension(),
                                            MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
-                                           MetricConstants.NONE );
+                                           MetricConstants.MAIN );
         //Check the results       
         final DoubleScoreOutput actual = crpss.apply( input );
         final DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 0.0779168348809044, m1 );

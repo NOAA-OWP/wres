@@ -65,9 +65,9 @@ public interface DataFactory
      * @return a map key
      */
 
-    default  Pair<TimeWindow, Threshold> getMapKeyByTimeThreshold( final TimeWindow timeWindow,
-                                                                   final Double threshold,
-                                                                   final Operator condition )
+    default Pair<TimeWindow, Threshold> getMapKeyByTimeThreshold( final TimeWindow timeWindow,
+                                                                  final Double threshold,
+                                                                  final Operator condition )
     {
         return Pair.of( timeWindow, getThreshold( threshold, condition ) );
     }
@@ -83,10 +83,10 @@ public interface DataFactory
      * @return a map key
      */
 
-    default  Pair<TimeWindow, Threshold> getMapKeyByTimeThreshold( final TimeWindow timeWindow,
-                                                                   final Double threshold,
-                                                                   final Double thresholdUpper,
-                                                                   final Operator condition )
+    default Pair<TimeWindow, Threshold> getMapKeyByTimeThreshold( final TimeWindow timeWindow,
+                                                                  final Double threshold,
+                                                                  final Double thresholdUpper,
+                                                                  final Operator condition )
     {
         return Pair.of( timeWindow, getThreshold( threshold, thresholdUpper, condition ) );
     }
@@ -669,7 +669,8 @@ public interface DataFactory
     MatrixOfDoubles matrixOf( final double[][] vec );
 
     /**
-     * Return a {@link DoubleScoreOutput} with a single score component corresponding to {@link MetricConstants#MAIN}.
+     * Return a {@link DoubleScoreOutput} with a single component. The score component is stored against the 
+     * {@link MetricOutputMetadata#getMetricComponentID()} if this is defined, otherwise {@link MetricConstants#MAIN}.
      * 
      * @param output the output data
      * @param meta the metadata
@@ -677,7 +678,7 @@ public interface DataFactory
      */
 
     DoubleScoreOutput ofDoubleScoreOutput( final double output, final MetricOutputMetadata meta );
-    
+
     /**
      * Return a {@link DoubleScoreOutput} with multiple components.
      * 
@@ -739,7 +740,7 @@ public interface DataFactory
                                    MetricOutputMetadata meta,
                                    MetricDimension domainAxisDimension,
                                    MetricDimension rangeAxisDimension );
-    
+
     /**
      * Return a {@link PairedOutput} that contains a list of pairs.
      * 
@@ -752,17 +753,29 @@ public interface DataFactory
      */
 
     <S, T> PairedOutput<S, T> ofPairedOutput( List<Pair<S, T>> output,
-                                        MetricOutputMetadata meta );
-    
+                                              MetricOutputMetadata meta );
+
     /**
-     * Return a {@link DurationScoreOutput}.
+     * Return a {@link DurationScoreOutput} with a single component. The score component is stored against the 
+     * {@link MetricOutputMetadata#getMetricComponentID()} if this is defined, otherwise {@link MetricConstants#MAIN}.
      * 
      * @param output the output data
      * @param meta the metadata
      * @return a {@link DurationScoreOutput}
      */
 
-    DurationScoreOutput ofDurationOutput( final Duration output, final MetricOutputMetadata meta );    
+    DurationScoreOutput ofDurationScoreOutput( final Duration output, final MetricOutputMetadata meta );
+
+    /**
+     * Return a {@link DurationScoreOutput} with multiple components.
+     * 
+     * @param output the output data
+     * @param meta the metadata
+     * @return a {@link DurationScoreOutput}
+     */
+
+    DurationScoreOutput ofDurationScoreOutput( final Map<MetricConstants, Duration> output,
+                                             final MetricOutputMetadata meta );
 
     /**
      * Returns a {@link MapKey} to map a {@link MetricOutput} by an elementary key.
@@ -859,13 +872,13 @@ public interface DataFactory
      */
 
     MetricOutputForProjectByTimeAndThresholdBuilder ofMetricOutputForProjectByTimeAndThreshold();
-    
+
     /**
      * Returns a builder for a {@link TimeSeriesOfSingleValuedPairs} with a regular timestep.
      * 
      * @return a {@link RegularTimeSeriesOfSingleValuedPairsBuilder}
      */
-    
+
     RegularTimeSeriesOfSingleValuedPairsBuilder ofRegularTimeSeriesOfSingleValuedPairsBuilder();
 
     /**
@@ -873,9 +886,9 @@ public interface DataFactory
      * 
      * @return a {@link RegularTimeSeriesOfEnsemblePairsBuilder}
      */
-    
+
     RegularTimeSeriesOfEnsemblePairsBuilder ofRegularTimeSeriesOfEnsemblePairsBuilder();
-    
+
     /**
      * Returns a {@link MetricOutputMapByMetric} from the raw list of inputs.
      * 

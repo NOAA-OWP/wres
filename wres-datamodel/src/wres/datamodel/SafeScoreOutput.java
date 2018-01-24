@@ -159,7 +159,14 @@ abstract class SafeScoreOutput<T> implements ScoreOutput<T>
             throw new MetricOutputException( "Specify non-null metadata." );
         }
         this.output = new EnumMap<>( MetricConstants.class );
-        this.output.put( MetricConstants.MAIN, output );
+        if( Objects.nonNull( meta.getMetricComponentID() ) )
+        {
+            this.output.put( meta.getMetricComponentID(), output );
+        }
+        else
+        {
+            this.output.put( MetricConstants.MAIN, output );
+        }
         this.meta = meta;
     }
 

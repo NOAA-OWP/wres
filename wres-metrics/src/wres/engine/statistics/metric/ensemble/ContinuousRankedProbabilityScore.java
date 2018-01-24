@@ -57,7 +57,7 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Ensemble
         //Compute the average (implicitly weighted by the number of pairs in each group)
         crps[0] = crps[0] / s.getData().size();
         //Metadata
-        final MetricOutputMetadata metOut = getMetadata( s, s.getData().size(), MetricConstants.NONE, null );
+        final MetricOutputMetadata metOut = getMetadata( s, s.getData().size(), MetricConstants.MAIN, null );
         return getDataFactory().ofDoubleScoreOutput( crps[0], metOut );
     }
 

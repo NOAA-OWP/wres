@@ -42,7 +42,7 @@ public class ContinuousRankedProbabilitySkillScore extends ContinuousRankedProba
         final double result = FunctionFactory.skill().applyAsDouble( numerator, denominator );
 
         //Metadata
-        final MetricOutputMetadata metOut = getMetadata( s, s.getData().size(), MetricConstants.NONE, null );
+        final MetricOutputMetadata metOut = getMetadata( s, s.getData().size(), MetricConstants.MAIN, null );
         return getDataFactory().ofDoubleScoreOutput( result, metOut );
     }
 

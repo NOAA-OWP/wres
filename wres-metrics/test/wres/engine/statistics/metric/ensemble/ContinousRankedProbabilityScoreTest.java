@@ -65,7 +65,7 @@ public final class ContinousRankedProbabilityScoreTest
                                            metaFac.getDimension(),
                                            metaFac.getDimension(),
                                            MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
-                                           MetricConstants.NONE );
+                                           MetricConstants.MAIN );
         //Check the results       
         final DoubleScoreOutput actual = crps.apply( input );
         final DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 7.63, m1 );
@@ -120,7 +120,7 @@ public final class ContinousRankedProbabilityScoreTest
                                            metaFac.getDimension(),
                                            metaFac.getDimension(),
                                            MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
-                                           MetricConstants.NONE );
+                                           MetricConstants.MAIN );
         //Check the results       
         final DoubleScoreOutput actual = crps.apply( input );
         final DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 8.734401927437641, m1 );
@@ -161,7 +161,7 @@ public final class ContinousRankedProbabilityScoreTest
                                            metaFac.getDimension(),
                                            metaFac.getDimension(),
                                            MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
-                                           MetricConstants.NONE );
+                                           MetricConstants.MAIN );
         //Check the results       
         final DoubleScoreOutput actual = crps.apply( input );
         final DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 4.56, m1 );

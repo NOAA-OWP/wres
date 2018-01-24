@@ -135,7 +135,7 @@ public class MeanSquareError<S extends SingleValuedPairs> extends SumOfSquareErr
                                     outputDimension,
                                     metIn.getDimension(),
                                     getID(),
-                                    MetricConstants.NONE,
+                                    MetricConstants.MAIN,
                                     identifier,
                                     metIn.getTimeWindow() );
     }
