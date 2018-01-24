@@ -383,7 +383,7 @@ project(':wres-config')
     }
 }
 
-project(':wres-io')
+project(':wres-thredds-facade')
 {
     dependencies
     {
