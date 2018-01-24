@@ -316,7 +316,7 @@ public class DefaultDataFactory implements DataFactory
     @Override
     public DurationScoreOutput ofDurationOutput( Duration output, MetricOutputMetadata meta )
     {
-        return new SafeDurationOutput( output, meta );
+        return new SafeDurationScoreOutput( output, meta );
     }
 
     @Override
