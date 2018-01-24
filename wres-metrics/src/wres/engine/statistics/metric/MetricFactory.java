@@ -10,6 +10,7 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
+import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
@@ -71,6 +72,8 @@ import wres.engine.statistics.metric.singlevalued.VolumetricEfficiency;
 import wres.engine.statistics.metric.singlevalued.VolumetricEfficiency.VolumetricEfficiencyBuilder;
 import wres.engine.statistics.metric.timeseries.TimeToPeakError;
 import wres.engine.statistics.metric.timeseries.TimeToPeakError.TimeToPeakErrorBuilder;
+import wres.engine.statistics.metric.timeseries.TimeToPeakErrorStatistics;
+import wres.engine.statistics.metric.timeseries.TimeToPeakErrorStatistics.TimeToPeakErrorStatisticBuilder;
 
 /**
  * <p>
@@ -1390,6 +1393,24 @@ public class MetricFactory
     }
 
     /**
+     * Return a default {@link TimeToPeakErrorStatistics} function for a prescribed set of {@link MetricConstants}.
+     * For each of the {@link MetricConstants}, the {@link MetricConstants#isInGroup(ScoreOutputGroup)} should return 
+     * <code>true</code> when supplied with {@link ScoreOutputGroup#UNIVARIATE_STATISTIC}.
+     * 
+     * @param statistics the identifiers for summary statistics
+     * @return a default {@link TimeToPeakErrorStatistics} function
+     * @throws MetricParameterException if one or more parameter values is incorrect
+     */
+
+    public TimeToPeakErrorStatistics ofTimeToPeakErrorStatistics( MetricConstants... statistics )
+            throws MetricParameterException
+    {
+        return (TimeToPeakErrorStatistics) new TimeToPeakErrorStatisticBuilder().setStatistic( statistics )
+                                                                               .setOutputFactory( outputFactory )
+                                                                               .build();
+    }
+
+    /**
      * Hidden constructor.
      * 
      * @param dataFactory a {@link DataFactory}
@@ -1565,4 +1586,5 @@ public class MetricFactory
                                  new BoxPlotErrorByForecastBuilder().setOutputFactory( outputFactory ).build() );
         }
     }
+
 }

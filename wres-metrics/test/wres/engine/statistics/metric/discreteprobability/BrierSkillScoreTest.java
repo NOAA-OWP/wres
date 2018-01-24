@@ -54,7 +54,7 @@ public final class BrierSkillScoreTest
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension(),
                                                                    MetricConstants.BRIER_SKILL_SCORE,
-                                                                   MetricConstants.NONE,
+                                                                   MetricConstants.MAIN,
                                                                    metaFac.getDatasetIdentifier( "DRRC2",
                                                                                                  "SQIN",
                                                                                                  "HEFS",
@@ -105,7 +105,7 @@ public final class BrierSkillScoreTest
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension(),
                                                                    MetricConstants.BRIER_SKILL_SCORE,
-                                                                   MetricConstants.NONE,
+                                                                   MetricConstants.MAIN,
                                                                    metaFac.getDatasetIdentifier( "DRRC2",
                                                                                                  "SQIN",
                                                                                                  "HEFS" ) );

@@ -246,6 +246,12 @@ public enum MetricConstants
     MAXIMUM (ScoreOutputGroup.UNIVARIATE_STATISTIC ), 
     
     /**
+     * Mean absolute statistic.
+     */
+    
+    MEAN_ABSOLUTE (ScoreOutputGroup.UNIVARIATE_STATISTIC ), 
+    
+    /**
      * Indicator for no decomposition.
      */
 

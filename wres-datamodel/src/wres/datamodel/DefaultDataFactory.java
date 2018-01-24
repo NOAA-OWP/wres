@@ -272,6 +272,12 @@ public class DefaultDataFactory implements DataFactory
     {
         return new SafeDoubleScoreOutput( output, meta );
     }
+    
+    @Override
+    public DurationScoreOutput ofDurationScoreOutput( Map<MetricConstants, Duration> output, MetricOutputMetadata meta )
+    {
+        return new SafeDurationScoreOutput( output, meta );
+    }    
 
     @Override
     public DoubleScoreOutput ofDoubleScoreOutput( double[] output,
@@ -314,7 +320,7 @@ public class DefaultDataFactory implements DataFactory
     }
 
     @Override
-    public DurationScoreOutput ofDurationOutput( Duration output, MetricOutputMetadata meta )
+    public DurationScoreOutput ofDurationScoreOutput( Duration output, MetricOutputMetadata meta )
     {
         return new SafeDurationScoreOutput( output, meta );
     }

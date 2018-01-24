@@ -50,7 +50,7 @@ public final class MeanSquareErrorTest
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension(),
                                                                    MetricConstants.MEAN_SQUARE_ERROR,
-                                                                   MetricConstants.NONE );
+                                                                   MetricConstants.MAIN );
 
         //Build the metric
         final MeanSquareErrorBuilder<SingleValuedPairs> b = new MeanSquareError.MeanSquareErrorBuilder<>();
