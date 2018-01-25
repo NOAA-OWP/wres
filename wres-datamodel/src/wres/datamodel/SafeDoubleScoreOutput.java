@@ -1,14 +1,7 @@
 package wres.datamodel;
 
-import java.util.Collections;
-import java.util.EnumMap;
-import java.util.Iterator;
+import java.util.Arrays;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Objects;
-import java.util.Set;
-
-import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.metadata.MetricOutputMetadata;
@@ -16,129 +9,15 @@ import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MetricOutputException;
 
 /**
- * An immutable score output.
+ * An immutable output that contains <code>double</code> values associated with a score.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
- * @since 0.1
+ * @since 0.4
  */
 
-class SafeDoubleScoreOutput implements DoubleScoreOutput
+class SafeDoubleScoreOutput extends SafeScoreOutput<Double> implements DoubleScoreOutput
 {
-
-    /**
-     * Line separator for printing.
-     */
-
-    private static final String NEWLINE = System.lineSeparator();
-
-    /**
-     * The output.
-     */
-
-    private final EnumMap<MetricConstants, Double> output;
-
-    /**
-     * The metadata associated with the output.
-     */
-
-    private final MetricOutputMetadata meta;
-
-    @Override
-    public MetricOutputMetadata getMetadata()
-    {
-        return meta;
-    }
-
-    @Override
-    public boolean equals( final Object o )
-    {
-        if ( ! ( o instanceof SafeDoubleScoreOutput ) )
-        {
-            return false;
-        }
-        final SafeDoubleScoreOutput v = (SafeDoubleScoreOutput) o;
-        boolean start = meta.equals( v.getMetadata() );
-        if ( !start )
-        {
-            return false;
-        }
-        return output.equals( v.output );
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return Objects.hash( output, meta );
-    }
-
-    @Override
-    public Double getData()
-    {
-        return output.get( MetricConstants.MAIN );
-    }
-
-    @Override
-    public Double getValue( MetricConstants component )
-    {
-        return output.get( component );
-    }
-
-    @Override
-    public Iterator<Pair<MetricConstants, Double>> iterator()
-    {
-        return new Iterator<Pair<MetricConstants, Double>>()
-        {
-            private final Iterator<Entry<MetricConstants, Double>> iterator = output.entrySet().iterator();
-
-            @Override
-            public boolean hasNext()
-            {
-                return iterator.hasNext();
-            }
-
-            @Override
-            public Pair<MetricConstants, Double> next()
-            {
-                Entry<MetricConstants, Double> next = iterator.next();
-                return Pair.of( next.getKey(), next.getValue() );
-            }
-
-            @Override
-            public void remove()
-            {
-                throw new UnsupportedOperationException( "Cannot modify this immutable container of score outputs." );
-            }
-        };
-
-    }
-
-    @Override
-    public Set<MetricConstants> getComponents()
-    {
-        return Collections.unmodifiableSet( output.keySet() );
-    }
-
-    @Override
-    public boolean hasComponent( MetricConstants component )
-    {
-        return output.containsKey( component );
-    }
-
-    @Override
-    public String toString()
-    {
-        StringBuilder b = new StringBuilder();
-        output.forEach( ( key, value ) -> b.append( "[" )
-                                           .append( key )
-                                           .append( ", " )
-                                           .append( value )
-                                           .append( "]" )
-                                           .append( NEWLINE ) );
-        int lines = b.length();
-        b.delete( lines - NEWLINE.length(), lines );
-        return b.toString();
-    }
 
     /**
      * Construct the output.
@@ -150,17 +29,7 @@ class SafeDoubleScoreOutput implements DoubleScoreOutput
 
     SafeDoubleScoreOutput( final double output, final MetricOutputMetadata meta )
     {
-        if ( Objects.isNull( output ) )
-        {
-            throw new MetricOutputException( "Specify a non-null output." );
-        }
-        if ( Objects.isNull( meta ) )
-        {
-            throw new MetricOutputException( "Specify non-null metadata." );
-        }
-        this.output = new EnumMap<>( MetricConstants.class );
-        this.output.put( MetricConstants.MAIN, output );
-        this.meta = meta;
+        super( output, meta );
     }
 
     /**
@@ -173,24 +42,7 @@ class SafeDoubleScoreOutput implements DoubleScoreOutput
 
     SafeDoubleScoreOutput( final Map<MetricConstants, Double> output, final MetricOutputMetadata meta )
     {
-        this.output = new EnumMap<>( MetricConstants.class );
-        this.output.putAll( output );
-        this.meta = meta;
-        // Validate
-        if ( Objects.isNull( output ) )
-        {
-            throw new MetricOutputException( "Specify a non-null output." );
-        }
-        if ( Objects.isNull( meta ) )
-        {
-            throw new MetricOutputException( "Specify non-null metadata." );
-        }
-        output.forEach( ( key, value ) -> {
-            if ( Objects.isNull( key ) || Objects.isNull( value ) )
-            {
-                throw new MetricOutputException( "Cannot build a score with null components." );
-            }
-        } );
+        super( output, meta );
     }
 
     /**
@@ -204,40 +56,7 @@ class SafeDoubleScoreOutput implements DoubleScoreOutput
 
     SafeDoubleScoreOutput( final double[] output, final ScoreOutputGroup template, final MetricOutputMetadata meta )
     {
-        this.output = new EnumMap<>( MetricConstants.class );
-        this.meta = meta;
-        Set<MetricConstants> components = template.getMetricComponents();
-        // Validate
-        if ( Objects.isNull( output ) )
-        {
-            throw new MetricOutputException( "Specify a non-null output." );
-        }
-        if ( Objects.isNull( meta ) )
-        {
-            throw new MetricOutputException( "Specify non-null metadata." );
-        }
-        if ( Objects.isNull( template ) )
-        {
-            throw new MetricOutputException( "Specify a non-null output group for the score output." );
-        }
-        //Check that the decomposition template is compatible
-        if ( components.size() != output.length )
-        {
-            throw new MetricOutputException( "The specified output template '" + template
-                                             + "' has more components than metric inputs provided ["
-                                             + template.getMetricComponents().size()
-                                             + ", "
-                                             + output.length
-                                             + "]." );
-        }
-        // Add the components
-        Iterator<MetricConstants> iterator = components.iterator();
-        int index = 0;
-        while ( iterator.hasNext() )
-        {
-            this.output.put( iterator.next(), output[index] );
-            index++;
-        }
+        super( Arrays.stream( output ).boxed().toArray( Double[]::new ), template, meta );
     }
 
 }

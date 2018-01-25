@@ -103,8 +103,6 @@
                             <xs:attribute name="zoneOffset" type="xs:string" />
                             <!-- missingValue may have multiple comma delimited values like "-999, -996"-->
                             <xs:attribute name="missingValue" type="xs:string" default="-999.0" />
-                            <xs:attribute name="all" type="xs:boolean" default="false"/>
-                            <xs:attribute name="recursive" type="xs:boolean" default="false" />
                         </xs:extension>
                     </xs:simpleContent>
                 </xs:complexType>

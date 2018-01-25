@@ -5,14 +5,12 @@
     <inputs>
         <left label="">
             <type>observations</type>
-            <source all="true" format="PI-XML" missingValue="-999.0" 
-                recursive="true" unit="">../data/DRRC2QME.xml</source>
+            <source format="PI-XML">../data/DRRC2QME.xml</source>
             <variable>QME</variable>
         </left>
         <right label="HEFS">
             <type>ensemble forecasts</type>
-            <source all="false" format="PI-XML" missingValue="-999.0"
-                recursive="false" unit="">../data/drrc2ForecastsOneMonth/</source>
+            <source format="PI-XML">../data/drrc2ForecastsOneMonth/</source>
             <variable>SQIN</variable>
         </right>
     </inputs>

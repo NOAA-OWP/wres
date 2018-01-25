@@ -5,15 +5,13 @@
     <inputs>
         <left label="">
             <type>observations</type>
-            <source all="true" format="PI-XML" missingValue="-999.0" 
-                recursive="true" unit="">../data/DRRC2QINE.xml</source>
+            <source format="PI-XML">../data/DRRC2QINE.xml</source>
             <variable>QINE</variable>
         </left>
         <right label="HEFS">
             <type>ensemble forecasts</type>
 <!-- The bad path name triggers an immediate exit from WRES. -->
-            <source all="false" format="PI-XML" missingValue="-999.0"
-                recursive="false" unit="">/THIS BETTER NOT EXIST/</source>
+            <source format="PI-XML">/THIS BETTER NOT EXIST/</source>
             <variable>SQIN</variable>
         </right>
     </inputs>

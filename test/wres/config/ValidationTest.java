@@ -60,8 +60,6 @@ public class ValidationTest
                         null,
                         null,
                         "-0500",
-                        null,
-                        null,
                         null
                 );
 
