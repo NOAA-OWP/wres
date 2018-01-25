@@ -456,24 +456,26 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
 
         if (ConfigHelper.isForecast( sourceConfig ))
         {
+            Integer offset = this.projectDetails.getLeadOffset( this.feature );
+
+            if (offset == null)
+            {
+                throw new IOException( "The last lead of the window could not "
+                                       + "be determined because the offset for "
+                                       + "the window could not be determined." );
+            }
+
             try
             {
                 lastLead = this.progress *
                            this.projectDetails.getAggregationFrequency() +
                            this.projectDetails.getWindowWidth() * 1.0 +
-                           this.projectDetails.getLeadOffset( this.feature );
+                           offset;
             }
             catch ( InvalidPropertiesFormatException e )
             {
                 throw new IOException( "The width of the standard window for this "
                                        + "project could not be determined.", e );
-            }
-            catch ( NoDataException e )
-            {
-                throw new IOException( "The last lead of the window could not "
-                                       + "be determined because the offset for "
-                                       + "the window could not be determined.",
-                                       e );
             }
         }
 

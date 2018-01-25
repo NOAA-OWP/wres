@@ -287,7 +287,14 @@ public final class Collections
     {
         if (items.size() == 1)
         {
-            return String.valueOf( items.toArray()[0] );
+            String item = String.valueOf( items.toArray()[0] );
+
+            if (typeName.equalsIgnoreCase( "text" ) || typeName.contains( "char" ))
+            {
+                item = "'" + item + "'";
+            }
+
+            return item;
         }
 
         StringJoiner anyJoiner = new StringJoiner( ",", "ANY('{", "}'::" + typeName + "[])" );

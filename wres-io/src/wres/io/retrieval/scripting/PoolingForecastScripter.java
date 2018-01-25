@@ -154,18 +154,10 @@ class PoolingForecastScripter extends Scripter
                                        + "not be retrieved from the database.",
                                        e );
         }
-        catch ( InvalidPropertiesFormatException e )
+
+        if (offset == null)
         {
-            throw new NoDataException( "The time specification for the desired "
-                                       + "time aggregation could not be used to "
-                                       + "identify the width of the window to "
-                                       + "retrieve.", e );
-        }
-        catch ( NoDataException e )
-        {
-            throw new NoDataException( "The offset for pooling forecasts could "
-                                       + "not be determined based on the "
-                                       + "available data.", e );
+            throw new NoDataException( "There is not a valid offset for this feature." );
         }
 
         return super.getProgress() + offset;

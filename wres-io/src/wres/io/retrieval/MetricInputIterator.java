@@ -389,15 +389,17 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
                                        this.getProjectDetails().getLeadOffset( this.getFeature() ));
             }
         }
-        catch ( SQLException | InvalidPropertiesFormatException e )
+        catch ( SQLException e )
         {
             this.getLogger().error( Strings.getStackTrace( e ));
+            throw new IterationFailedException( "The data provided could not be "
+                                                + "used to determine if another "
+                                                + "object is present for "
+                                                + "iteration.", e );
         }
-        catch ( NoDataException e )
+        catch ( InvalidPropertiesFormatException e )
         {
-            this.getLogger().error("The last lead time for pairing could not be " +
-                                   "determined; There is no data to pair and " +
-                                   "iterate over.");
+            this.getLogger().error( Strings.getStackTrace( e ));
         }
 
         if (!next)
@@ -462,8 +464,16 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
             throws InvalidPropertiesFormatException, NoDataException,
             SQLException
     {
+        Integer offset = this.getProjectDetails().getLeadOffset( feature );
+
+        if (offset == null)
+        {
+            throw new NoDataException( "There was not enough data to evaluate a "
+                                       + "lead time offset for the location: " +
+                                       ConfigHelper.getFeatureDescription( feature ) );
+        }
         return ( this.getWindowNumber() * this.getProjectDetails().getWindowWidth()) +
-               this.getProjectDetails().getLeadOffset( this.getFeature() );
+               offset;
     }
 
     abstract int calculateWindowCount()

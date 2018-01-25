@@ -10,9 +10,11 @@ import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -24,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.Executor;
+import wres.io.config.ConfigHelper;
 import wres.io.config.SystemSettings;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.Projects;
@@ -288,17 +291,32 @@ public final class Operations {
         return project.toString();
     }
 
-    public static Set<Feature> decomposeFeatures(ProjectConfig projectConfig)
+    public static Set<Feature> decomposeFeatures(ProjectConfig projectConfig,
+                                                 List<IngestResult> availableSources)
             throws SQLException
     {
-        // TODO: Would it be better to use a stream?
-        Set<Feature> atomicFeatures = new HashSet<>();
+        Set<Feature> atomicFeatures = new TreeSet<>( Comparator.comparing(
+                ConfigHelper::getFeatureDescription ));
+
+        ProjectDetails projectDetails =
+                Projects.getProjectFromIngest( projectConfig,
+                                               availableSources );
 
         for (FeatureDetails details : Features.getAllDetails( projectConfig ))
         {
             // Check if the feature has any intersecting values
+            Feature feature = details.toFeature();
 
-            atomicFeatures.add( details.toFeature() );
+            if ( projectDetails == null || projectDetails.getLeadOffset( feature ) != null)
+            {
+                atomicFeatures.add(details.toFeature());
+            }
+            else
+            {
+                LOGGER.debug( "The location '{}' will not be evaluated because "
+                             + "it doesn't have any intersecting data between "
+                             + "left and right inputs.", details );
+            }
         }
 
         return Collections.unmodifiableSet( atomicFeatures );

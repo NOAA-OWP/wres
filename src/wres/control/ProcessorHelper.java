@@ -128,7 +128,8 @@ public class ProcessorHelper
 
         try
         {
-            decomposedFeatures = Operations.decomposeFeatures( projectConfig );
+            decomposedFeatures = Operations.decomposeFeatures( projectConfig, availableSources );
+            featureCount = decomposedFeatures.size();
         }
         catch ( SQLException e )
         {
@@ -163,6 +164,8 @@ public class ProcessorHelper
                 }
                 missingDataFeatures.add( result.getFeature() );
             }
+
+            completedFeatureCount++;
         }
 
         printFeaturesReport( projectConfigPlus,
@@ -254,7 +257,7 @@ public class ProcessorHelper
         final String featureDescription = ConfigHelper.getFeatureDescription( feature );
         final String errorMessage = "While processing feature "+ featureDescription;
 
-        LOGGER.info( "Processing feature '{}'", featureDescription );
+        LOGGER.info( "[{}/{}] Processing feature '{}'", completedFeatureCount, featureCount, featureDescription );
 
         // Sink for the results: the results are added incrementally to an immutable store via a builder
         // Some output types are processed at the end of the pipeline, others after each input is processed
@@ -1026,4 +1029,7 @@ public class ProcessorHelper
         }
         return hasMultiVectorType && hasThresholdLeadType;
     }
+
+    private static Integer featureCount = 0;
+    private static Integer completedFeatureCount = 1;
 }

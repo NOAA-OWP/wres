@@ -227,7 +227,6 @@ public final class NetCDF {
                                                "' is not valid National Water Model Data.");
         }
 
-        Map<String, String> ensemble = new TreeMap<>();
         String[] parts = NetCDF.getNWMFilenameParts( file );
         String name = Collections.find(parts, (String possibility) ->
                         Strings.hasValue( possibility) &&
