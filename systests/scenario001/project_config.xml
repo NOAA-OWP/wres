@@ -61,19 +61,3 @@
 
 </project>
 
-<!-- Other Metric Options: -->
-<!-- <metric><name>all valid</name></metric> -->
-<!-- <metric><name>correlation pearsons</name></metric> -->
-<!-- <metric><name>mean absolute error</name></metric> -->
-<!-- <metric><name>bias fraction</name></metric> -->
-<!-- <metric><name>coefficient of determination</name></metric> -->
-<!-- <metric><name>root mean square error</name></metric> -->
-<!-- <metric><name>mean square error</name></metric> -->
-<!-- <metric><name>mean square error skill score</name></metric> -->
-<!-- <metric><name>brier skill score</name></metric> -->
-<!-- <metric><name>rank histogram</name></metric> -->
-<!-- <metric><name>relative operating characteristic diagram</name></metric> -->
-<!-- <metric><name>relative operating characteristic score</name></metric> -->
-<!-- <metric><name>continuous ranked probability score</name></metric> -->
-<!-- <metric><name>continuous ranked probability skill score</name></metric> -->
-<!-- <metric><name>sample size</name></metric> -->

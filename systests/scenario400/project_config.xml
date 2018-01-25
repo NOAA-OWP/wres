@@ -8,22 +8,12 @@
             <type>observations</type>
             <source format="datacard" zoneOffset="CST" unit="CFS" >../data/singleValuedEx_ABRFC_ARCFUL_OBS/GLOO2X.QINE.19951101.20170905.datacard</source>
             <variable>QINE</variable>
-            <existingTimeScale>
-                <function>avg</function>
-                <period>1</period>
-                <unit>nanos</unit>
-            </existingTimeScale>
         </left>
         <right label="Operational Single-Valued Forecasts" >
             <type>single valued forecasts</type>
             <source all="false" format="PI-XML" missingValue="-999.0"
                 recursive="false" unit="CMS">../data/singleValuedEx_ABRFC_ARCFUL_QINE</source>
             <variable>QINE</variable>
-            <existingTimeScale>
-                <function>avg</function>
-                <period>1</period>
-                <unit>nanos</unit>
-            </existingTimeScale>
         </right>
     </inputs>
 
