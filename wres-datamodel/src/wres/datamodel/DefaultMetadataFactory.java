@@ -127,8 +127,11 @@ public class DefaultMetadataFactory implements MetadataFactory
             @Override
             public int hashCode()
             {
-                return super.hashCode() + Integer.hashCode(sampleSize) + getMetricID().hashCode()
-                    + getMetricComponentID().hashCode() + getInputDimension().hashCode();
+                return Objects.hash( super.hashCode(),
+                                     sampleSize,
+                                     getMetricID(),
+                                     getMetricComponentID(),
+                                     getInputDimension() );
             }
 
             @Override
@@ -220,7 +223,7 @@ public class DefaultMetadataFactory implements MetadataFactory
             @Override
             public int hashCode()
             {
-                return Boolean.hashCode(hasDimension());
+                return Objects.hash( hasDimension(), dimension );
             }
 
             @Override
@@ -309,17 +312,7 @@ public class DefaultMetadataFactory implements MetadataFactory
         @Override
         public int hashCode()
         {
-            int returnMe = getDimension().hashCode() + Boolean.hashCode(hasIdentifier())
-                + Boolean.hashCode(hasTimeWindow());
-            if(hasIdentifier())
-            {
-                returnMe += identifier.hashCode();
-            }
-            if(hasTimeWindow())
-            {
-                returnMe += timeWindow.hashCode();
-            }
-            return returnMe;
+            return Objects.hash( getDimension(), hasIdentifier(), hasTimeWindow(), identifier, timeWindow );
         }
 
         @Override
@@ -449,8 +442,7 @@ public class DefaultMetadataFactory implements MetadataFactory
         @Override
         public int hashCode()
         {
-            final String uniqueID = getGeospatialID() + getVariableID() + getScenarioID() + getScenarioIDForBaseline();
-            return uniqueID.hashCode();
+            return Objects.hash( getGeospatialID(), getVariableID(), getScenarioID(), getScenarioIDForBaseline() );
         }
     }
 

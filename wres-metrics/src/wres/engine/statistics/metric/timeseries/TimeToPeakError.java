@@ -9,10 +9,12 @@ import java.util.Objects;
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.DataFactory;
+import wres.datamodel.Dimension;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
+import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.PairedOutput;
@@ -43,14 +45,14 @@ public class TimeToPeakError implements Metric<TimeSeriesOfSingleValuedPairs, Pa
     public DataFactory getDataFactory()
     {
         return dataFactory;
-    }     
-    
+    }
+
     @Override
     public String toString()
     {
         return getID().toString();
-    }      
-    
+    }
+
     @Override
     public PairedOutput<Instant, Duration> apply( TimeSeriesOfSingleValuedPairs s )
     {
@@ -87,8 +89,18 @@ public class TimeToPeakError implements Metric<TimeSeriesOfSingleValuedPairs, Pa
             // Duration.between is negative if the predicted/right or "end" is before the observed/left or "start"
             returnMe.add( Pair.of( next.getEarliestBasisTime(), Duration.between( peakLeftTime, peakRightTime ) ) );
         }
-        final MetricOutputMetadata metOut = getMetadata( s, s.getBasisTimes().size(), MetricConstants.MAIN, null );
-        return getDataFactory().ofPairedOutput( returnMe, metOut );
+
+        // Create output metadata with the identifier of the statistic as the component identifier
+        Metadata in = s.getMetadata();
+        Dimension outputDimension = getDataFactory().getMetadataFactory().getDimension( "DURATION" );
+        MetricOutputMetadata meta = getDataFactory().getMetadataFactory().getOutputMetadata( s.getBasisTimes().size(),
+                                                                                             outputDimension,
+                                                                                             in.getDimension(),
+                                                                                             getID(),
+                                                                                             MetricConstants.MAIN,
+                                                                                             in.getIdentifier(),
+                                                                                             in.getTimeWindow() );
+        return getDataFactory().ofPairedOutput( returnMe, meta );
     }
 
     @Override
@@ -110,11 +122,11 @@ public class TimeToPeakError implements Metric<TimeSeriesOfSingleValuedPairs, Pa
     public static class TimeToPeakErrorBuilder
             implements MetricBuilder<TimeSeriesOfSingleValuedPairs, PairedOutput<Instant, Duration>>
     {
-        
+
         /**
          * The data factory.
          */
-        
+
         private DataFactory dataFactory;
 
         /**
@@ -129,8 +141,8 @@ public class TimeToPeakError implements Metric<TimeSeriesOfSingleValuedPairs, Pa
         {
             this.dataFactory = dataFactory;
             return this;
-        }  
-        
+        }
+
         @Override
         public TimeToPeakError build() throws MetricParameterException
         {

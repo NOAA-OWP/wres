@@ -6,36 +6,19 @@
     <inputs>
         <left label="">
             <type>observations</type>
-            <source all="true" format="PI-XML" missingValue="-999.0"
-                recursive="true" unit="">../data/abrfcExample/LGNN5_QME.xml</source>
+            <source format="PI-XML">../data/abrfcExample/LGNN5_QME.xml</source>
             <variable>QME</variable>
-            <existingTimeScale>
-                <function>avg</function>
-                <period>24</period>
-                <unit>hours</unit>
-            </existingTimeScale>
         </left>
         <right label="HEFS" >
             <type>ensemble forecasts</type>
-            <source all="false" format="PI-XML" missingValue="-999.0"
-                recursive="false" unit="">../data/abrfcExample/LGNN5_hefs_flow_1yr.tgz</source>
+            <source format="PI-XML">../data/abrfcExample/LGNN5_hefs_flow_1yr.tgz</source>
             <variable>QINE</variable>
-            <existingTimeScale>
-                <function>avg</function>
-                <period>1</period>
-                <unit>nanos</unit>
-            </existingTimeScale>
         </right>
         <baseline label="ESP" >
             <type>ensemble forecasts</type>
-            <source all="false" format="PI-XML" missingValue="-999.0"
-                recursive="false" unit="">../data/abrfcExample/LGNN5_hefs-mefp_flow_1yr.tgz</source>
+            <source format="PI-XML"
+>../data/abrfcExample/LGNN5_hefs-mefp_flow_1yr.tgz</source>
             <variable>QINE</variable>
-            <existingTimeScale>
-                <function>avg</function>
-                <period>1</period>
-                <unit>nanos</unit>
-            </existingTimeScale>
         </baseline>
 
     </inputs>

@@ -44,5 +44,5 @@ public interface Score<S extends MetricInput<?>, T extends ScoreOutput<?>> exten
      */
 
     ScoreOutputGroup getScoreOutputGroup();
-
+    
 }

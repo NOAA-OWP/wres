@@ -289,7 +289,7 @@ public class CommaSeparated
                 String toWrite = "NA";
 
                 // Write the current score component at the current window and threshold
-                if ( value != null && !value.getData().equals( Double.NaN ) )
+                if ( value != null && value.getData() != null && !value.getData().isNaN() )
                 {
                     if ( formatter != null )
                     {

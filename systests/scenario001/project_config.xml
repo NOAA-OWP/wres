@@ -5,15 +5,13 @@
     <inputs>
         <left label="">
             <type>simulations</type>
-            <source all="true" format="PI-XML" missingValue="-999.0" 
-                recursive="true" unit="">../data/DRRC2QINE.xml</source>
+            <source format="PI-XML">../data/DRRC2QINE.xml</source>
             <variable>QINE</variable>
 
         </left>
         <right label="HEFS">
             <type>ensemble forecasts</type>
-            <source all="false" format="PI-XML" missingValue="-999.0"
-                recursive="false" unit="">../data/drrc2ForecastsOneMonth/</source>
+            <source format="PI-XML">../data/drrc2ForecastsOneMonth/</source>
             <variable>SQIN</variable>
 
         </right>
@@ -61,19 +59,3 @@
 
 </project>
 
-<!-- Other Metric Options: -->
-<!-- <metric><name>all valid</name></metric> -->
-<!-- <metric><name>correlation pearsons</name></metric> -->
-<!-- <metric><name>mean absolute error</name></metric> -->
-<!-- <metric><name>bias fraction</name></metric> -->
-<!-- <metric><name>coefficient of determination</name></metric> -->
-<!-- <metric><name>root mean square error</name></metric> -->
-<!-- <metric><name>mean square error</name></metric> -->
-<!-- <metric><name>mean square error skill score</name></metric> -->
-<!-- <metric><name>brier skill score</name></metric> -->
-<!-- <metric><name>rank histogram</name></metric> -->
-<!-- <metric><name>relative operating characteristic diagram</name></metric> -->
-<!-- <metric><name>relative operating characteristic score</name></metric> -->
-<!-- <metric><name>continuous ranked probability score</name></metric> -->
-<!-- <metric><name>continuous ranked probability skill score</name></metric> -->
-<!-- <metric><name>sample size</name></metric> -->

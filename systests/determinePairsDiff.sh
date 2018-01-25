@@ -26,7 +26,10 @@ then
     echo "$echoPrefix Sorting and comparing pairs file with benchmark..."
     # do sorting here
 #echo "Ready to sort out the output/pairs.csv and compare the sorted output with benchmarks/sorted_pairs.csv"
-    sort output/pairs.csv > output/sorted_pairs.csv
+#    sort output/pairs.csv > output/sorted_pairs.csv
+# sort the output/pairs.csv file with options -t, use a comman as delimiter; -k1s,1 column1 as directionary order 1st;
+# -k4n,4 column 4 as numeric order 2nd; and -k2n,2 column 2 as numeric order 3rd
+    sort -t, -k1d,1 -k4n,4 -k2n,2 output/pairs.csv > output/sorted_pairs.csv
     #diff --brief output/sorted_pairs.csv benchmarks/sorted_pairs.csv 2>&1 | tee diff_sorted_pairs.txt # output the diffs with benchmarks
     diff --brief output/sorted_pairs.csv benchmarks/sorted_pairs.csv  | tee /dev/stderr
 elif [ ! -f output/pairs.csv ]

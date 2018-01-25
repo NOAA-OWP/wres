@@ -66,7 +66,7 @@ public final class KlingGuptaEfficiencyTest
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension( "MM/DAY" ),
                                                                    MetricConstants.KLING_GUPTA_EFFICIENCY,
-                                                                   MetricConstants.NONE,
+                                                                   MetricConstants.MAIN,
                                                                    metaFac.getDatasetIdentifier( "103.1",
                                                                                                  "QME",
                                                                                                  "NVE" ),
