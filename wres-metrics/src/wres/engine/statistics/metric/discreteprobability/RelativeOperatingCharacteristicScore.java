@@ -65,7 +65,7 @@ public class RelativeOperatingCharacteristicScore extends OrdinaryScore<Discrete
         {
             rocScore = 2.0 * getAUCMasonGraham( s ) - 1.0;
         }
-        final MetricOutputMetadata metOut = getMetadata( s, s.getData().size(), MetricConstants.NONE, null );
+        final MetricOutputMetadata metOut = getMetadata( s, s.getData().size(), MetricConstants.MAIN, null );
         return getDataFactory().ofDoubleScoreOutput( rocScore, metOut );
     }
 

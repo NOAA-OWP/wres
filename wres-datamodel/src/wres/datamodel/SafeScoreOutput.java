@@ -75,7 +75,15 @@ abstract class SafeScoreOutput<T> implements ScoreOutput<T>
     @Override
     public T getData()
     {
-        return output.get( MetricConstants.MAIN );
+        if( hasComponent( MetricConstants.MAIN ) )
+        {
+            return output.get( MetricConstants.MAIN );
+        }
+        else if( output.size() == 1 )
+        {
+            return output.values().iterator().next();
+        }
+        return null;
     }
 
     @Override

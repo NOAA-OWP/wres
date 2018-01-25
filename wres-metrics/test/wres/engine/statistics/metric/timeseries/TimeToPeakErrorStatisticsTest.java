@@ -41,7 +41,7 @@ public final class TimeToPeakErrorStatisticsTest
      */
 
     @Test
-    public void test1TimeToPeakErrorStatistic() throws MetricParameterException
+    public void test1TimeToPeakErrorStatistics() throws MetricParameterException
     {
         // Obtain the factories
         final DataFactory outF = DefaultDataFactory.getInstance();
