@@ -59,8 +59,8 @@ public class USGSReader extends BasicSource
     private static final String INSTANTANEOUS_VALUE = "iv";
     private static final String DAILY_VALUE = "dv";
 
-    private static final String EARLIEST_DATE = "epoch";
-    private static final String LATEST_DATE = "now";
+    public static final String EARLIEST_DATE = "epoch";
+    public static final String LATEST_DATE = "now";
     /**
      * Epsilon value used to test floating point equivalency
      */
@@ -152,7 +152,7 @@ public class USGSReader extends BasicSource
         try
         {
             LOGGER.debug( "There are a grand total of {} different locations that we want to save data to.",
-                          Operations.decomposeFeatures(this.getProjectConfig()).size() );
+                          this.getFeatureDetailsSet().size());
         }
         catch ( SQLException e )
         {

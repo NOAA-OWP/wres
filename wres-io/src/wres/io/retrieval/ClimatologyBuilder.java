@@ -9,14 +9,17 @@ import wres.io.concurrency.WRESRunnable;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.UnitConversions;
 import wres.io.data.details.ProjectDetails;
+import wres.io.reading.usgs.USGSReader;
 import wres.io.utilities.Database;
 import wres.util.Collections;
 import wres.util.Strings;
+import wres.util.TimeHelper;
 
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -43,24 +46,6 @@ class ClimatologyBuilder
     {
         public DateRange(String beginning, String end)
         {
-            /*if (!TimeHelper.isTimestamp( beginning ))
-            {
-                throw new InvalidParameterException (
-                        "The value '" +
-                        String.valueOf(beginning) +
-                        "' must be formatted as a timestamp to build a date range."
-                );
-            }
-            else if (!TimeHelper.isTimestamp( end ))
-            {
-                throw new InvalidParameterException (
-                        "The value '" +
-                        String.valueOf(end) +
-                        "' must be formatted as a timestamp to build a date range."
-                );
-            }*/
-
-
             this.startDate = beginning;
             this.endDate = end;
         }
@@ -419,6 +404,44 @@ class ClimatologyBuilder
             message += " side of the data source specification.";
             throw new IOException( message, e );
         }
+
+        // Impose date limitations to keep a consistent climatology for USGS projects
+        if (ConfigHelper.usesUSGSData( this.projectDetails.getProjectConfig() ))
+        {
+            Instant
+                    date = ConfigHelper.getEarliestDateTimeFromDataSources( this.projectDetails.getProjectConfig() );
+
+            String earliest = "'";
+            String latest = "'";
+
+            if (date == null)
+            {
+                earliest += USGSReader.EARLIEST_DATE;
+            }
+            else
+            {
+                earliest += TimeHelper.normalize( date.toString() );
+            }
+
+            earliest += "'";
+
+            date = ConfigHelper.getLatestDateTimeFromDataSources( this.projectDetails.getProjectConfig() );
+
+            if (date == null)
+            {
+                latest += USGSReader.LATEST_DATE;
+            }
+            else
+            {
+                latest += TimeHelper.normalize( date.toString() );
+            }
+
+            latest += "'";
+
+            script.append("    AND O.observation_date >= ").append(earliest).append(NEWLINE);
+            script.append("    AND O.observation_date <= ").append(latest).append(NEWLINE);
+        }
+
         script.append("    AND EXISTS (").append(NEWLINE);
         script.append("        SELECT 1").append(NEWLINE);
         script.append("        FROM wres.ProjectSource PS").append(NEWLINE);

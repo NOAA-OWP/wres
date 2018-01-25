@@ -7,12 +7,22 @@ import java.time.MonthDay;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.InvalidPropertiesFormatException;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -28,12 +38,15 @@ import wres.config.generated.PoolingWindowConfig;
 import wres.config.generated.TimeScaleConfig;
 import wres.config.generated.TimeScaleFunction;
 import wres.config.generated.TimeWindowMode;
+import wres.io.concurrency.ValueRetriever;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.Variables;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
 import wres.io.utilities.ScriptGenerator;
+import wres.util.FormattedStopwatch;
+import wres.util.Strings;
 import wres.util.TimeHelper;
 
 /**
@@ -59,7 +72,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     private final Map<Integer, String> rightHashes = new ConcurrentHashMap<>(  );
     private final Map<Integer, String> baselineHashes = new ConcurrentHashMap<>(  );
     private final Map<Feature, Integer> lastLeads = new ConcurrentHashMap<>(  );
-    private final Map<Feature, Integer> leadOffsets = new ConcurrentHashMap<>(  );
+    private final Map<Feature, Integer> leadOffsets = new ConcurrentSkipListMap<>( ConfigHelper.getFeatureComparator() );
     private final Map<Feature, String> zeroDates = new ConcurrentHashMap<>(  );
     private final Map<Feature, Integer> poolCounts = new ConcurrentHashMap<>(  );
 
@@ -566,57 +579,365 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return ConfigHelper.getPairDestinations( this.projectConfig );
     }
 
-    public Integer getLeadOffset(Feature feature)
-            throws SQLException, InvalidPropertiesFormatException,
-            NoDataException
+    public Integer getLeadOffset(Feature feature) throws SQLException
     {
-        boolean offsetIsMissing = !this.leadOffsets.containsKey( feature );
-
-        if ( offsetIsMissing && ConfigHelper.isSimulation( this.getRight() ))
+        if (!ConfigHelper.isForecast( this.getRight() ))
         {
-            this.leadOffsets.put(feature, 0);
+            return 0;
         }
-        else if (offsetIsMissing)
+
+        if (this.leadOffsets.isEmpty())
         {
-            Integer leadOffset = ConfigHelper.getLeadOffset( this,
-                                                             feature);
-
-            if (leadOffset == null)
-            {
-                String message = "A valid offset for matching lead values could not be determined. ";
-                message += "The first acceptable lead time is ";
-                message += String.valueOf(
-                        ConfigHelper.getMinimumLeadHour( this.projectConfig )
-                );
-
-                if ( ConfigHelper.isMaximumLeadHourSpecified( this.projectConfig ) )
-                {
-                    message += ", the last acceptable lead time is ";
-                    message += String.valueOf(
-                            ConfigHelper.getMaximumLeadHour( this.projectConfig )
-                    );
-                    message += ",";
-                }
-
-                message += " and the size of each evaluation window is ";
-                message += String.valueOf(this.getAggregationPeriod());
-                message += " ";
-                message += String.valueOf(this.getAggregationPeriod());
-                message += "s. ";
-
-                message += "A full evaluation window could not be found ";
-                message += "between the left hand data and the right ";
-                message += "data that fits within these parameters.";
-
-                throw new NoDataException( message );
-            }
-            else
-            {
-                this.leadOffsets.put( feature, leadOffset );
-            }
+            this.populateLeadOffsets();
         }
 
         return this.leadOffsets.get( feature );
+    }
+
+    private void populateLeadOffsets()
+            throws SQLException
+    {
+        FormattedStopwatch timer = new FormattedStopwatch();
+        timer.start();
+        Double width;
+
+        try
+        {
+            width = ConfigHelper.getWindowWidth( this.getProjectConfig() );
+        }
+        catch ( InvalidPropertiesFormatException e )
+        {
+            throw new SQLException( "The width of the window for the project "
+                                    + "could not be formatted for a sql "
+                                    + "statement.", e );
+        }
+
+        String script = "";
+
+        script += "WITH forecast_positions AS" + NEWLINE;
+        script += "(" + NEWLINE;
+        script += "    SELECT TS.variableposition_id, feature_id" + NEWLINE;
+        script += "    FROM wres.TimeSeries TS" + NEWLINE;
+        script += "    INNER JOIN wres.VariableByFeature VBF" + NEWLINE;
+        script += "        ON VBF.variableposition_id = TS.variableposition_id" + NEWLINE;
+        script += "    WHERE VBF.variable_name = '" + this.getRightVariableName() + "'" + NEWLINE;
+
+        Set<String> hucs = new HashSet<>(  );
+        Set<String> lids = new HashSet<>(  );
+        Set<String> rfcs = new HashSet<>(  );
+        Set<Long> comids = new HashSet<>(  );
+        Set<String> gageIds = new HashSet<>(  );
+
+        for (Feature feature : this.getProjectConfig().getPair().getFeature())
+        {
+            if (feature.getComid() != null)
+            {
+                comids.add( feature.getComid() );
+            }
+
+            if (Strings.hasValue( feature.getLocationId()))
+            {
+                lids.add( feature.getLocationId().toUpperCase() );
+            }
+
+            if (Strings.hasValue( feature.getHuc() ))
+            {
+                hucs.add( feature.getHuc() + "%" );
+            }
+
+            if (Strings.hasValue( feature.getRfc() ))
+            {
+                rfcs.add( feature.getRfc().toUpperCase() );
+            }
+
+            if (Strings.hasValue( feature.getGageId() ))
+            {
+                gageIds.add(feature.getGageId());
+            }
+        }
+
+        String lidStatement = "";
+        String comidStatement = "";
+        String hucStatement = "";
+        String gageStatement = "";
+        String rfcStatement = "";
+
+        if (lids.size() > 0)
+        {
+            lidStatement += "        AND VBF.lid = ";
+            lidStatement += wres.util.Collections.formAnyStatement( lids, "text" );
+            lidStatement += NEWLINE;
+        }
+
+        if (comids.size() > 0)
+        {
+            comidStatement += "        AND VBF.comid = ";
+            comidStatement += wres.util.Collections.formAnyStatement( comids, "int" );
+            comidStatement += NEWLINE;
+        }
+
+        if (hucs.size() > 0)
+        {
+            hucStatement += "        AND VBF.huc LIKE ";
+            hucStatement += wres.util.Collections.formAnyStatement( hucs, "text" );
+            hucStatement += NEWLINE;
+        }
+
+        if (gageIds.size() > 0)
+        {
+            gageStatement += "        AND VBF.gage_id = ";
+            gageStatement += wres.util.Collections.formAnyStatement( gageIds, "text" );
+            gageStatement += NEWLINE;
+        }
+
+        if (rfcs.size() > 0)
+        {
+            rfcStatement += "        AND VBF.rfc = ";
+            rfcStatement += wres.util.Collections.formAnyStatement( rfcs, "text" );
+            rfcStatement += NEWLINE;
+        }
+
+        script += lidStatement;
+        script += comidStatement;
+        script += hucStatement;
+        script += gageStatement;
+        script += rfcStatement;
+
+        script += "        AND EXISTS (" + NEWLINE;
+        script += "            SELECT 1" + NEWLINE;
+        script += "            FROM wres.ProjectSource PS" + NEWLINE;
+        script += "            INNER JOIN wres.ForecastSource FS" + NEWLINE;
+        script += "                ON FS.source_id = PS.source_id" + NEWLINE;
+        script += "            WHERE PS.project_id = " + this.getId() + NEWLINE;
+        script += "                AND PS.member = 'right'" + NEWLINE;
+        script += "                AND FS.forecast_id = TS.timeseries_id" + NEWLINE;
+        script += "         )" + NEWLINE;
+        script += "    GROUP BY TS.variableposition_id, VBF.feature_id" + NEWLINE;
+        script += ")," + NEWLINE;
+        script += "observation_positions AS " + NEWLINE;
+        script += "(" + NEWLINE;
+        script += "    SELECT VBF.variableposition_id, feature_id" + NEWLINE;
+        script += "    FROM wres.Observation O" + NEWLINE;
+        script += "    INNER JOIN wres.VariableByFeature VBF" + NEWLINE;
+        script += "        ON VBF.variableposition_id = O.variableposition_id" + NEWLINE;
+        script += "    WHERE VBF.variable_name = '" + this.getLeftVariableName() + "'" + NEWLINE;
+
+        script += lidStatement;
+        script += comidStatement;
+        script += hucStatement;
+        script += gageStatement;
+        script += rfcStatement;
+
+        script += "        AND EXISTS (" + NEWLINE;
+        script += "            SELECT 1" + NEWLINE;
+        script += "            FROM wres.ProjectSource PS" + NEWLINE;
+        script += "            WHERE PS.project_id = " + this.getId() + NEWLINE;
+        script += "                AND PS.member = 'left'" + NEWLINE;
+        script += "                AND PS.source_id = O.source_id" + NEWLINE;
+        script += "         )" + NEWLINE;
+        script += "    GROUP BY VBF.variableposition_id, feature_id" + NEWLINE;
+        script += ")" + NEWLINE;
+        script += "SELECT FP.variableposition_id AS forecast_position," + NEWLINE;
+        script += "    O.variableposition_id AS observation_position," + NEWLINE;
+        script += "    comid," + NEWLINE;
+        script += "    gage_id," + NEWLINE;
+        script += "    huc," + NEWLINE;
+        script += "    lid" + NEWLINE;
+        script += "FROM forecast_positions FP" + NEWLINE;
+        script += "INNER JOIN observation_positions O" + NEWLINE;
+        script += "    ON O.feature_id = FP.feature_id" + NEWLINE;
+        script += "INNER JOIN wres.Feature F" + NEWLINE;
+        script += "    ON O.feature_id = F.feature_id;";
+
+        String beginning = "";
+
+        beginning += "SELECT (FV.lead - " + width + ")::integer AS offset" + NEWLINE;
+        beginning += "FROM (" + NEWLINE;
+        beginning += "    SELECT TS.timeseries_id, TS.initialization_date" + NEWLINE;
+        beginning += "    FROM wres.TimeSeries TS" + NEWLINE;
+        beginning += "    WHERE TS.variableposition_id = ";
+
+        String middle = "";
+
+        if (Strings.hasValue( this.getEarliestIssueDate() ))
+        {
+            middle += "        AND TS.initialization_date >= '" + this.getEarliestIssueDate() + "'" + NEWLINE;
+        }
+
+        if (Strings.hasValue( this.getLatestIssueDate() ))
+        {
+            middle += "        AND TS.initialization_date <= '" + this.getLatestIssueDate() + "'" + NEWLINE;
+        }
+
+        middle += "        AND EXISTS (" + NEWLINE;
+        middle += "            SELECT 1" + NEWLINE;
+        middle += "            FROM wres.ProjectSource PS" + NEWLINE;
+        middle += "            INNER JOIN wres.ForecastSource FS" + NEWLINE;
+        middle += "                ON FS.source_id = PS.source_id" + NEWLINE;
+        middle += "            WHERE PS.project_id = " + this.getId() + NEWLINE;
+        middle += "                AND PS.member = 'right'" + NEWLINE;
+        middle += "                AND FS.forecast_id = TS.timeseries_id" + NEWLINE;
+        middle += "        )" + NEWLINE;
+        middle += "    ) AS TS" + NEWLINE;
+        middle += "INNER JOIN wres.ForecastValue FV" + NEWLINE;
+        middle += "    ON FV.timeseries_id = TS.timeseries_id" + NEWLINE;
+        middle += "WHERE " + NEWLINE;
+
+        boolean clauseAdded = false;
+
+        if (width > 1)
+        {
+            middle += "FV.lead - " + width + " >= 0" + NEWLINE;
+            clauseAdded = true;
+        }
+
+        if ( ConfigHelper.isMinimumLeadHourSpecified( this.getProjectConfig() ))
+        {
+            if (clauseAdded)
+            {
+                middle += "    AND ";
+            }
+
+            middle += "FV.lead >= " + this.getMinimumLeadHour() + NEWLINE;
+            clauseAdded = true;
+        }
+
+
+        if (ConfigHelper.isMaximumLeadHourSpecified( this.getProjectConfig() ))
+        {
+            if (clauseAdded)
+            {
+                middle += "    AND ";
+            }
+
+            middle += "FV.lead <= " + ConfigHelper.getMaximumLeadHour( this.getProjectConfig() ) + NEWLINE;
+            clauseAdded = true;
+        }
+
+        if (clauseAdded)
+        {
+            middle += "    AND ";
+        }
+
+        middle += "EXISTS (" + NEWLINE;
+        middle += "    SELECT 1" + NEWLINE;
+        middle += "    FROM wres.ProjectSource PS" + NEWLINE;
+        middle += "    INNER JOIN wres.observation o" + NEWLINE;
+        middle += "        ON PS.source_id = O.source_id" + NEWLINE;
+        middle += "    WHERE PS.project_id = " + this.getId() + NEWLINE;
+        middle += "        AND PS.member = 'left'" + NEWLINE;
+        middle += "        AND O.variableposition_id = ";
+
+        String end = "";
+
+        if (Strings.hasValue( this.getEarliestDate() ))
+        {
+            end += "        AND O.observation_time >= '" + this.getEarliestDate() + "'" + NEWLINE;
+        }
+
+        if (Strings.hasValue( this.getLatestDate() ))
+        {
+            end += "        AND O.observation_time <= '" + this.getLatestDate() + "'" + NEWLINE;
+        }
+
+        end += "        AND O.observation_time = TS.initialization_date + INTERVAL '1 HOUR' * (FV.lead + " + width + ")" + NEWLINE;
+        end += "    )" + NEWLINE;
+        end += "ORDER BY FV.lead" + NEWLINE;
+        end += "LIMIT 1;";
+
+        Connection connection = null;
+        ResultSet resultSet = null;
+        Map<FeatureDetails.FeatureKey, Future<Integer>> futureOffsets = new LinkedHashMap<>(  );
+        Map<FeatureDetails.FeatureKey, Integer> failCounts = new HashMap<>(  );
+
+        try
+        {
+            connection = Database.getConnection();
+            resultSet = Database.getResults( connection, script );
+
+            LOGGER.trace("Variable position metadata loaded...");
+
+            while (resultSet.next())
+            {
+                script = beginning +
+                         Database.getValue( resultSet, "forecast_position" ) +
+                         middle +
+                         Database.getValue(resultSet, "observation_position") +
+                         end;
+
+                FeatureDetails.FeatureKey key = new FeatureDetails.FeatureKey(
+                        Database.getValue(resultSet, "comid"),
+                        Database.getValue(resultSet, "lid"),
+                        Database.getValue( resultSet,"gage_id"),
+                        Database.getValue(resultSet,"huc" )
+                );
+
+                futureOffsets.put(
+                        key,
+                        Database.submit(
+                                new ValueRetriever<>(  script, "offset" )
+                        )
+                );
+
+                LOGGER.trace( "A task has been created to find the offset for {}.", key );
+            }
+        }
+        finally
+        {
+            if (resultSet != null)
+            {
+                resultSet.close();
+            }
+
+            if (connection != null)
+            {
+                Database.returnConnection( connection );
+            }
+        }
+
+        while (!futureOffsets.isEmpty())
+        {
+            FeatureDetails.FeatureKey key = ( FeatureDetails.FeatureKey)futureOffsets.keySet().toArray()[0];
+            Future<Integer> futureOffset = futureOffsets.remove( key );
+            Feature feature = new FeatureDetails( key ).toFeature();
+            Integer offset = null;
+            try
+            {
+                LOGGER.trace( "Loading the offset for '{}'", ConfigHelper.getFeatureDescription( feature ));
+                offset = futureOffset.get( 500, TimeUnit.MILLISECONDS);
+                if (offset == null)
+                {
+                    continue;
+                }
+                LOGGER.trace("The offset was: {}", offset);
+
+                this.leadOffsets.put(
+                        feature,
+                        offset
+                );
+                LOGGER.trace( "An offset for {} was loaded!", ConfigHelper.getFeatureDescription( feature ) );
+            }
+            catch ( InterruptedException e )
+            {
+                e.printStackTrace();
+            }
+            catch ( ExecutionException e )
+            {
+                e.printStackTrace();
+                futureOffsets.put( key, futureOffset );
+            }
+            catch ( TimeoutException e )
+            {
+                LOGGER.debug("It took took too long to get the offset for '{}'; "
+                             + "moving on to another location while we wait "
+                             + "for the output on this location",
+                             ConfigHelper.getFeatureDescription( feature ));
+                futureOffsets.put( key, futureOffset );
+            }
+        }
+
+        timer.stop();
+        LOGGER.debug( "It took {} to get the offsets for all locations.", timer.getFormattedDuration() );
     }
 
     public Integer getPoolCount( Feature feature) throws SQLException
@@ -917,15 +1238,6 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
                                                                   this.getRightVariableID(),
                                                                   "TS" ) +
                           NEWLINE;
-                script += "    AND EXISTS (" + NEWLINE;
-                script += "        SELECT 1" + NEWLINE;
-                script += "        FROM wres.ProjectSource PS" + NEWLINE;
-                script += "        INNER JOIN wres.ForecastSource FS" + NEWLINE;
-                script += "            ON FS.source_id = PS.source_id" + NEWLINE;
-                script += "        WHERE PS.project_id = " + this.getId() + NEWLINE;
-                script += "            AND PS.inactive_time IS NULL" + NEWLINE;
-                script += "            AND FS.forecast_id = TS.timeseries_id" + NEWLINE;
-                script += "    )";
 
                 if ( ConfigHelper.isMaximumLeadHourSpecified( this.projectConfig ) )
                 {
@@ -940,6 +1252,36 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
                               + ConfigHelper.getMinimumLeadHour( this.projectConfig )
                               + NEWLINE;
                 }
+
+                if ( Strings.hasValue( this.getEarliestIssueDate()))
+                {
+                    script += "    AND TS.initialization_date >= '" + this.getEarliestIssueDate() + "'" + NEWLINE;
+                }
+
+                if (Strings.hasValue( this.getLatestIssueDate()))
+                {
+                    script += "    AND TS.initialization_date <= '" + this.getLatestIssueDate() + "'" + NEWLINE;
+                }
+
+                if ( Strings.hasValue( this.getEarliestDate() ))
+                {
+                    script += "    AND TS.initialization_date + INTERVAL '1 HOUR' * FV.lead >= '" + this.getEarliestDate() + "'" + NEWLINE;
+                }
+
+                if (Strings.hasValue( this.getLatestDate() ))
+                {
+                    script += "    AND TS.initialization_date + INTERVAL '1 HOUR' * FV.lead <= '" + this.getLatestDate() + "'" + NEWLINE;
+                }
+
+                script += "    AND EXISTS (" + NEWLINE;
+                script += "        SELECT 1" + NEWLINE;
+                script += "        FROM wres.ProjectSource PS" + NEWLINE;
+                script += "        INNER JOIN wres.ForecastSource FS" + NEWLINE;
+                script += "            ON FS.source_id = PS.source_id" + NEWLINE;
+                script += "        WHERE PS.project_id = " + this.getId() + NEWLINE;
+                script += "            AND PS.inactive_time IS NULL" + NEWLINE;
+                script += "            AND FS.forecast_id = TS.timeseries_id" + NEWLINE;
+                script += "    )";
             }
             else
             {

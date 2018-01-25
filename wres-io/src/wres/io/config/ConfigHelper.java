@@ -13,6 +13,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.InvalidPropertiesFormatException;
 import java.util.List;
 import java.util.Objects;
@@ -32,6 +33,7 @@ import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.DurationUnit;
 import wres.config.generated.Feature;
+import wres.config.generated.Format;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
@@ -59,6 +61,74 @@ public class ConfigHelper
     private ConfigHelper()
     {
         // prevent construction
+    }
+
+    public static boolean usesUSGSData(ProjectConfig projectConfig)
+    {
+        for ( DataSourceConfig.Source source : projectConfig.getInputs().getLeft().getSource())
+        {
+            if ( source.getFormat() == Format.USGS )
+            {
+                return true;
+            }
+        }
+
+        for ( DataSourceConfig.Source source : projectConfig.getInputs().getRight().getSource())
+        {
+            if ( source.getFormat() == Format.USGS )
+            {
+                return true;
+            }
+        }
+
+        if (projectConfig.getInputs().getBaseline() != null)
+        {
+            for ( DataSourceConfig.Source source : projectConfig.getInputs()
+                                                                .getBaseline()
+                                                                .getSource() )
+            {
+                if ( source.getFormat() == Format.USGS )
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    public static boolean usesNetCDFData(ProjectConfig projectConfig)
+    {
+        for ( DataSourceConfig.Source source : projectConfig.getInputs().getLeft().getSource())
+        {
+            if (source.getFormat() == Format.NET_CDF)
+            {
+                return true;
+            }
+        }
+
+        for ( DataSourceConfig.Source source : projectConfig.getInputs().getRight().getSource())
+        {
+            if (source.getFormat() == Format.NET_CDF)
+            {
+                return true;
+            }
+        }
+
+        if (projectConfig.getInputs().getBaseline() != null)
+        {
+            for ( DataSourceConfig.Source source : projectConfig.getInputs()
+                                                                .getBaseline()
+                                                                .getSource() )
+            {
+                if (source.getFormat() == Format.NET_CDF)
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     public static boolean usesProbabilityThresholds(final ProjectConfig projectConfig)
@@ -213,7 +283,35 @@ public class ConfigHelper
         StringBuilder script = new StringBuilder(  );
 
         script.append("SELECT FV.lead - ").append(width).append(" AS offset").append(newline);
-        script.append("FROM wres.TimeSeries TS").append(newline);
+        script.append("FROM (").append(newline);
+        script.append("    SELECT TS.timeseries_id, TS.initialization_date").append(newline);
+        script.append("    FROM wres.TimeSeries TS").append(newline);
+        script.append("    WHERE ").append(rightVariablepositionClause).append(newline);
+
+        if (Strings.hasValue( projectDetails.getEarliestIssueDate()))
+        {
+            script.append("        AND TS.initialization_date >= '").append(projectDetails.getEarliestIssueDate()).append("'").append(newline);
+        }
+
+        if (Strings.hasValue( projectDetails.getLatestIssueDate() ))
+        {
+            script.append("        AND TS.initialization_date <= '").append(projectDetails.getLatestIssueDate()).append("'").append(newline);
+        }
+
+        script.append("         AND EXISTS (").append(newline);
+        script.append("             SELECT 1").append(newline);
+        script.append("             FROM wres.ProjectSource OPS").append(newline);
+        script.append("             INNER JOIN wres.ForecastSource OFS").append(newline);
+        script.append("                 ON OFS.source_id = OPS.source_id").append(newline);
+        script.append("             WHERE OPS.project_id = ").append(projectDetails.getId()).append(newline);
+        script.append("                 AND OPS.member = 'right'").append(newline);
+        script.append("                 AND OFS.forecast_id = TS.timeseries_id").append(newline);
+        script.append("         )").append(newline);
+        script.append("    ) AS TS").append(newline);
+        script.append("INNER JOIN wres.ForecastValue FV").append(newline);
+        script.append("    ON FV.timeseries_id = TS.timeseries_id").append(newline);
+
+        /*script.append("FROM wres.TimeSeries TS").append(newline);
         script.append("INNER JOIN wres.ForecastValue FV").append(newline);
         script.append("     ON FV.timeseries_id = TS.timeseries_id").append(newline);
         script.append("INNER JOIN wres.Observation O").append(newline);
@@ -231,97 +329,78 @@ public class ConfigHelper
             script.append(" + INTERVAL '1 HOUR' *").append(projectDetails.getRight().getTimeShift().getWidth());
         }
 
-        script.append(newline);
-        script.append("WHERE ").append(leftVariablepositionClause).append(newline);
-        script.append("     AND ").append(rightVariablepositionClause).append(newline);
+        script.append(newline);*/
+        script.append("WHERE ");
+
+        boolean clauseAdded = false;
 
         if (width > 1)
         {
-            script.append( "     AND FV.lead - " )
+            script.append( "FV.lead - " )
                   .append( width )
                   .append( " >= 0" )
                   .append( newline );
+
+            clauseAdded = true;
         }
 
         if ( ConfigHelper.isMinimumLeadHourSpecified( projectConfig ) )
         {
-            script.append( "     AND FV.lead >= " )
+            if (clauseAdded)
+            {
+                script.append("    AND ");
+            }
+
+            script.append( "FV.lead >= " )
                   .append( ConfigHelper.getMinimumLeadHour( projectConfig ) )
                   .append( newline );
+
+            clauseAdded = true;
         }
 
         if ( ConfigHelper.isMaximumLeadHourSpecified( projectConfig ))
         {
-            script.append( "     AND FV.lead <= " )
+            if (clauseAdded)
+            {
+                script.append("    AND ");
+            }
+
+            script.append( "FV.lead <= " )
                   .append( ConfigHelper.getMaximumLeadHour( projectConfig ) )
                   .append( newline );
+
+            clauseAdded = true;
         }
 
-        if ( projectConfig.getPair()
-                          .getDates() != null )
+        if (clauseAdded)
         {
-            if ( projectConfig.getPair()
-                              .getDates()
-                              .getEarliest() != null
-                 && !projectConfig.getPair()
-                                  .getDates()
-                                  .getEarliest()
-                                  .trim()
-                                  .isEmpty() )
-            {
-                script.append("     AND TS.initialization_date >= '")
-                      .append( projectConfig.getPair()
-                                            .getDates()
-                                            .getEarliest() )
-                      .append("'")
-                      .append(newline);
-                script.append("     AND O.observation_time >= '")
-                      .append( projectConfig.getPair()
-                                            .getDates()
-                                            .getEarliest() )
-                      .append("'")
-                      .append(newline);
-            }
-
-            if ( projectConfig.getPair()
-                              .getDates()
-                              .getLatest() != null
-                 && !projectConfig.getPair()
-                                  .getDates()
-                                  .getLatest()
-                                  .trim()
-                                  .isEmpty() )
-            {
-                script.append("     AND TS.initialization_date <= '")
-                      .append( projectConfig.getPair()
-                                            .getDates()
-                                            .getLatest() )
-                      .append("'")
-                      .append(newline);
-                script.append("     AND O.observation_time <= '")
-                      .append( projectConfig.getPair().getDates().getLatest())
-                      .append("'")
-                      .append(newline);
-            }
+            script.append("    AND ");
         }
 
         // Filtering on existence guarantees early exit
-        script.append("     AND EXISTS (").append(newline);
-        script.append("         SELECT 1").append(newline);
-        script.append("         FROM wres.ProjectSource OPS").append(newline);
-        script.append("         INNER JOIN wres.ForecastSource OFS").append(newline);
-        script.append("             ON OFS.source_id = OPS.source_id").append(newline);
-        script.append("         WHERE OPS.project_id = ").append(projectDetails.getId()).append(newline);
-        script.append("             AND OPS.member = 'right'").append(newline);
-        script.append("             AND OFS.forecast_id = TS.timeseries_id").append(newline);
-        script.append("     )").append(newline);
-        script.append("     AND EXISTS (").append(newline);
-        script.append("         SELECT 1").append(newline);
-        script.append("         FROM wres.ProjectSource OPS").append(newline);
-        script.append("         WHERE OPS.project_id = ").append(projectDetails.getId()).append(newline);
-        script.append("             AND OPS.member =  'left'").append(newline);
-        script.append("             AND OPS.source_id = O.source_id").append(newline);
-        script.append("     )").append(newline);
+        script.append("EXISTS (").append(newline);
+        script.append("     SELECT 1").append(newline);
+        script.append("     FROM wres.ProjectSource OPS").append(newline);
+
+        script.append("    INNER JOIN wres.Observation O").append(newline);
+        script.append("        ON OPS.source_id = O.source_id").append(newline);
+        script.append("     WHERE OPS.project_id = ").append(projectDetails.getId()).append(newline);
+        script.append("         AND OPS.member =  'left'").append(newline);
+        script.append("        AND ").append(leftVariablepositionClause).append(newline);
+
+        if (Strings.hasValue( projectDetails.getEarliestDate() ))
+        {
+            script.append("        AND O.observation_time >= '").append(projectDetails.getEarliestDate()).append("'").append(newline);
+        }
+
+        if (Strings.hasValue( projectDetails.getLatestDate() ))
+        {
+            script.append("        AND O.observation_time <= '").append(projectDetails.getLatestDate()).append("'").append(newline);
+        }
+
+        script.append("        AND O.observation_time = TS.initialization_date + INTERVAL '1 HOUR' * (FV.lead + ").append(width).append(")").append(newline);
+
+        script.append(" )").append(newline);
 
         script.append("ORDER BY FV.lead").append(newline);
         script.append("LIMIT 1;");
@@ -338,6 +417,118 @@ public class ConfigHelper
         }
 
         return offset;
+    }
+
+    public static Comparator<Feature> getFeatureComparator()
+    {
+        return ( feature, t1 ) -> {
+
+            String featureDescription = getFeatureDescription(feature);
+            String t1Description = getFeatureDescription( t1 );
+            try
+            {
+                if (Strings.hasValue(feature.getLocationId()) &&
+                    Strings.hasValue(t1.getLocationId()))
+                {
+                    return feature.getLocationId().compareTo( t1.getLocationId() );
+                }
+                else
+                {
+                    LOGGER.info("Either {} and {} have the same location ids or "
+                                + "one or both of them don't have one.",
+                                featureDescription,
+                                t1Description);
+                }
+            }
+            catch (Exception e)
+            {
+                LOGGER.error("Error occurred when comparing locations between '{}' "
+                             + "and '{}'",
+                             featureDescription,
+                             t1Description);
+                throw e;
+            }
+
+            try
+            {
+                if ( Strings.hasValue( feature.getHuc() ) &&
+                     Strings.hasValue( t1.getHuc() ) )
+                {
+                    return feature.getHuc().compareTo( t1.getHuc() );
+                }
+                else
+                {
+                    LOGGER.info("Either {} and {} have the same huc or "
+                                + "one or both of them don't have one.",
+                                featureDescription,
+                                t1Description);
+                }
+            }
+            catch (Exception e)
+            {
+                LOGGER.error("Error occurred when comparing hucs between '{}' "
+                             + "and '{}'",
+                             featureDescription,
+                             t1Description);
+                throw e;
+            }
+
+            try
+            {
+                if (Strings.hasValue( feature.getGageId() ) &&
+                    Strings.hasValue(t1.getGageId()))
+                {
+                    return feature.getGageId().compareTo( t1.getGageId() );
+                }
+                else
+                {
+                    LOGGER.info("Either {} and {} have the same gage ids or "
+                                + "one or both of them don't have one.",
+                                featureDescription,
+                                t1Description);
+                }
+            }
+            catch (Exception e)
+            {
+                LOGGER.error("Error occurred when comparing gages between '{}' "
+                             + "and '{}'",
+                             featureDescription,
+                             t1Description);
+                throw e;
+            }
+
+            try
+            {
+                if (feature.getComid() != null &&
+                    t1.getComid() != null)
+                {
+                    return feature.getComid().compareTo( t1.getComid() );
+                }
+                else
+                {
+                    LOGGER.info("Either {} and {} have the same com ids or "
+                                + "one or both of them don't have one.",
+                                featureDescription,
+                                t1Description);
+                }
+            }
+            catch (Exception e)
+            {
+                LOGGER.error("Error occurred when comparing comids between '{}' "
+                             + "and '{}'",
+                             featureDescription,
+                             t1Description);
+                throw e;
+            }
+
+            LOGGER.info("A proper comparison couldn't be made between {} and {}."
+                        + " Now saying that {} is greater than {}.",
+                        featureDescription,
+                        t1Description,
+                        featureDescription,
+                        t1Description);
+            return 1;
+        };
     }
 
     public static int getValueCount(ProjectDetails projectDetails,

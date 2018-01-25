@@ -4,11 +4,13 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +19,7 @@ import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
 import wres.config.generated.Format;
 import wres.config.generated.ProjectConfig;
+import wres.io.config.ConfigHelper;
 import wres.io.data.details.FeatureDetails;
 import wres.io.utilities.Database;
 import wres.util.Strings;
@@ -134,13 +137,13 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
 
     public static Set<FeatureDetails> getAllDetails( ProjectConfig projectConfig ) throws SQLException
     {
-        Set<FeatureDetails> features = new HashSet<>(  );
-        boolean hasNetCDF = usesNetCDFData( projectConfig );
-        boolean hasUSGS = usesUSGSData( projectConfig );
+        Set<FeatureDetails> features = new HashSet<>();
+        boolean hasNetCDF = ConfigHelper.usesNetCDFData( projectConfig );
+        boolean hasUSGS = ConfigHelper.usesUSGSData( projectConfig );
 
         for (Feature feature : projectConfig.getPair().getFeature())
         {
-            for (FeatureDetails details : Features.getAllDetails( feature ))
+            for (FeatureDetails details : Features.getAllDetails( feature, hasUSGS, hasNetCDF ))
             {
                 if (shouldAddFeature( details, hasUSGS, hasNetCDF ))
                 {
@@ -191,6 +194,16 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         {
             return true;
         }
+        // We're using NetCDF but this location is missing NetCDF metadata
+        else if (usesNetCDF && feature.getNwmIndex() == null)
+        {
+            return false;
+        }
+        // We're using USGS but this location is missing USGS metadata
+        else if (usesUSGS && !Strings.hasValue(feature.getGageID()))
+        {
+            return false;
+        }
         // If we are using both NetCDF and USGS data, we need both Gage IDs
         // and indexes for NetCDF files to be able to load any sort of
         // data for evaluation
@@ -215,81 +228,16 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         return false;
     }
 
-    private static boolean usesUSGSData(ProjectConfig projectConfig)
-    {
-        for ( DataSourceConfig.Source source : projectConfig.getInputs().getLeft().getSource())
-        {
-            if ( source.getFormat() == Format.USGS )
-            {
-                return true;
-            }
-        }
-
-        for ( DataSourceConfig.Source source : projectConfig.getInputs().getRight().getSource())
-        {
-            if ( source.getFormat() == Format.USGS )
-            {
-                return true;
-            }
-        }
-
-        if (projectConfig.getInputs().getBaseline() != null)
-        {
-            for ( DataSourceConfig.Source source : projectConfig.getInputs()
-                                                                .getBaseline()
-                                                                .getSource() )
-            {
-                if ( source.getFormat() == Format.USGS )
-                {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
-    private static boolean usesNetCDFData(ProjectConfig projectConfig)
-    {
-        for ( DataSourceConfig.Source source : projectConfig.getInputs().getLeft().getSource())
-        {
-            if (source.getFormat() == Format.NET_CDF)
-            {
-                return true;
-            }
-        }
-
-        for ( DataSourceConfig.Source source : projectConfig.getInputs().getRight().getSource())
-        {
-            if (source.getFormat() == Format.NET_CDF)
-            {
-                return true;
-            }
-        }
-
-        if (projectConfig.getInputs().getBaseline() != null)
-        {
-            for ( DataSourceConfig.Source source : projectConfig.getInputs()
-                                                                .getBaseline()
-                                                                .getSource() )
-            {
-                if (source.getFormat() == Format.NET_CDF)
-                {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
-    public static Set<FeatureDetails> getAllDetails(Feature feature) throws SQLException
+    public static Set<FeatureDetails> getAllDetails(Feature feature,
+                                                    boolean usesUSGS,
+                                                    boolean usesNetCDF)
+            throws SQLException
     {
         Set<FeatureDetails> details = new HashSet<>(  );
 
         if (Strings.hasValue( feature.getHuc() ))
         {
-            details.addAll( Features.getDetailsByHUC( feature.getHuc() ) );
+            details.addAll( Features.getDetailsByHUC( feature.getHuc(), usesUSGS, usesNetCDF ) );
         }
 
         if (feature.getCoordinate() != null)
@@ -298,14 +246,18 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
                     Features.getDetailsByCoordinates(
                             feature.getCoordinate().getLongitude(),
                             feature.getCoordinate().getLatitude(),
-                            feature.getCoordinate().getRange()
+                            feature.getCoordinate().getRange(),
+                            usesUSGS,
+                            usesNetCDF
                     )
             );
         }
 
         if (Strings.hasValue(feature.getRfc()))
         {
-            details.addAll(Features.getDetailsByRFC( feature.getRfc().toUpperCase() ));
+            details.addAll(Features.getDetailsByRFC( feature.getRfc().toUpperCase(),
+                                                     usesUSGS,
+                                                     usesNetCDF ));
         }
 
         if (Strings.hasValue( feature.getLocationId() ))
@@ -351,7 +303,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         return Features.getDetails( null, null, gageID, null );
     }
 
-    public static List<FeatureDetails> getDetailsByCoordinates(Float longitude, Float latitude, Float range)
+    public static List<FeatureDetails> getDetailsByCoordinates(Float longitude, Float latitude, Float range, boolean usesUSGS, boolean usesNetCDF)
             throws SQLException
     {
         Double radianLatitude = Math.toRadians( latitude );
@@ -375,6 +327,28 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         script += "(" + NEWLINE;
         script += "    SELECT SQRT((" + latitude + " - latitude)^2 + (" + longitude + " - longitude)^2) AS distance, *" + NEWLINE;
         script += "    FROM wres.Feature" + NEWLINE;
+
+        if (usesUSGS || usesNetCDF)
+        {
+            script += "    WHERE ";
+
+            if (usesUSGS && usesNetCDF)
+            {
+                script += "gage_id IS NOT null" + NEWLINE;
+                script += "        AND gage_id != ''" + NEWLINE;
+                script += "        AND nwm_index IS NOT null" + NEWLINE;
+            }
+            else if (usesUSGS)
+            {
+                script += "gage_id IS NOT null" + NEWLINE;
+                script += "        AND gage_id != ''" + NEWLINE;
+            }
+            else
+            {
+                script += "nwm_index IS NOT null" + NEWLINE;
+            }
+        }
+
         script += ")" + NEWLINE;
         script += "SELECT *" + NEWLINE;
         script += "FROM feature_and_distance" + NEWLINE;
@@ -414,14 +388,39 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
 
     }
 
-    public static List<FeatureDetails> getDetailsByHUC(String huc)
+    public static List<FeatureDetails> getDetailsByHUC(String huc,
+                                                       boolean usesUSGS,
+                                                       boolean usesNetCDF)
             throws SQLException
     {
         String script = "";
 
         script += "SELECT *" + NEWLINE;
         script += "FROM wres.Feature" + NEWLINE;
-        script += "WHERE huc LIKE '" + huc + "%';";
+        script += "WHERE huc LIKE '" + huc + "%'";
+
+        if (usesUSGS || usesNetCDF)
+        {
+            script += NEWLINE;
+
+            if (usesUSGS && usesNetCDF)
+            {
+                script += "    AND gage_id IS NOT null" + NEWLINE;
+                script += "    AND gage_id != ''" + NEWLINE;
+                script += "    AND nwm_index IS NOT null";
+            }
+            else if (usesUSGS)
+            {
+                script += "    AND gage_id IS NOT null" + NEWLINE;
+                script += "    AND gage_id != ''";
+            }
+            else
+            {
+                script += "    AND nwm_index IS NOT null";
+            }
+        }
+
+        script += ";";
 
         Connection connection = null;
         ResultSet hucFeatures = null;
@@ -455,13 +454,36 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         return features;
     }
 
-    public static List<FeatureDetails> getDetailsByRFC(String rfc)
+    public static List<FeatureDetails> getDetailsByRFC(String rfc,
+                                                       boolean usesUSGS,
+                                                       boolean usesNetCDF)
             throws SQLException
     {
         String script = "";
         script += "SELECT *" + NEWLINE;
         script += "FROM wres.Feature" + NEWLINE;
-        script += "WHERE rfc = '" + rfc + "';";
+        script += "WHERE rfc = '" + rfc + "'" + NEWLINE;
+
+        if (usesUSGS || usesNetCDF)
+        {
+            if (usesUSGS && usesNetCDF)
+            {
+                script += "    AND gage_id IS NOT null" + NEWLINE;
+                script += "    AND gage_id != ''" + NEWLINE;
+                script += "    AND nwm_index IS NOT null";
+            }
+            else if (usesUSGS)
+            {
+                script += "    AND gage_id IS NOT null" + NEWLINE;
+                script += "    AND gage_id != ''";
+            }
+            else
+            {
+                script += "    AND nwm_index IS NOT null";
+            }
+        }
+
+        script += ";";
 
         Connection connection = null;
         ResultSet rfcFeatures = null;

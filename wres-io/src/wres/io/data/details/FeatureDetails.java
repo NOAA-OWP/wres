@@ -3,6 +3,7 @@ package wres.io.data.details;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -18,6 +19,8 @@ import wres.util.Strings;
  */
 public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDetails.FeatureKey>
 {
+    private static Comparator<FeatureDetails> alphabeticalComparator = null;
+
 	private String lid = null;
 	private String featureName = null;
 	private Integer featureId = null;
@@ -931,6 +934,10 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
         {
             name = "Gage: " + this.getGageID();
         }
+        else if (this.getComid() != null)
+        {
+            name = "NHDPlus ID: " + this.getComid();
+        }
 
         return name;
     }
@@ -985,6 +992,15 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
             this.lid = lid;
             this.gageID = gageID;
             this.huc = huc;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Comid: '" + String.valueOf(comid) +
+                   "', lid: '" + String.valueOf(lid) +
+                   "', gageID: '" + String.valueOf(gageID) +
+                   "', huc: '" + String.valueOf(huc) + "'";
         }
 
         @Override

@@ -17,6 +17,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -826,7 +828,19 @@ public final class Database {
                 lockStatement.execute( lockQuery );
             }
 
+            Timer scriptTimer = null;
+
+            if (LOGGER.isDebugEnabled())
+            {
+                scriptTimer = createScriptTimer( query );
+            }
+
             results = statement.executeQuery(query);
+
+            if (LOGGER.isDebugEnabled())
+            {
+                scriptTimer.cancel();
+            }
 
             ResultSetMetaData metaData = results.getMetaData();
 
@@ -1143,7 +1157,20 @@ public final class Database {
 
 		try
 		{
+			Timer timer = null;
+
+			if (LOGGER.isDebugEnabled())
+			{
+				timer = Database.createScriptTimer( query );
+			}
+
 			results = statement.executeQuery(query);
+
+			if (LOGGER.isDebugEnabled())
+			{
+				timer.cancel();
+			}
+
 		}
 		catch (SQLException error)
 		{
@@ -1152,6 +1179,26 @@ public final class Database {
 		}
         return results; 
     }
+
+    public static Timer createScriptTimer(final String query)
+	{
+		TimerTask task = new TimerTask() {
+			@Override
+			public void run()
+			{
+				LOGGER.debug( "A long running query has been encountered:" +
+                              System.lineSeparator() +
+                              query );
+				this.cancel();
+			}
+		};
+
+		Timer timer = new Timer( "Script Timer" );
+
+		// Sets the delay for 6 seconds; if a script takes this long, it will be written
+		timer.schedule( task, 6000L );
+		return timer;
+	}
 
     /**
      * Removes all user data from the database
@@ -1232,19 +1279,6 @@ public final class Database {
 			LOGGER.error(Strings.getStackTrace(e));
 			throw e;
 		}
-	}
-
-    /**
-     * Truncates a query for output if the query is too long
-     * @param query The query to format
-     * @return The query formatted for friendly display on the screen
-     */
-	private static String formatQueryForOutput(String query)
-	{
-		if (query.length() > 1000) {
-			query = query.substring(0, 1000) + " (...)";
-		}
-		return query;
 	}
 
     /**
