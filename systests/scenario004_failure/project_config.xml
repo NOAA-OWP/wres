@@ -7,8 +7,7 @@
         </left>
         <right label="HEFS">
             <type>ensemble forecasts</type>
-            <source all="false" format="PI-XML" missingValue="-999.0"
-                recursive="false" unit="">../data/drrc2ForecastsOneMonth/</source>
+            <source format="PI-XML">../data/drrc2ForecastsOneMonth/</source>
             <variable>SQIN</variable>
         </right>
     </inputs>

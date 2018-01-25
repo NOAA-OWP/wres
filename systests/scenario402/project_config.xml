@@ -12,8 +12,7 @@
         </left>
         <right label="Operational Single-Valued Forecasts" >
             <type>single valued forecasts</type>
-            <source all="false" format="PI-XML" missingValue="-999.0"
-                recursive="false" unit="CMS">../data/singleValuedEx_ABRFC_ARCFUL_QINE</source>
+            <source format="PI-XML">../data/singleValuedEx_ABRFC_ARCFUL_QINE</source>
             <variable>QINE</variable>
         </right>
     </inputs>
