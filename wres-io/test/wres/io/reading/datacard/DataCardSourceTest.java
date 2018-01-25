@@ -123,9 +123,7 @@ public class DataCardSourceTest
                                                         "IN",
                                                         "DRRC2",
                                                         "EST",
-                                                        "-999.0",
-                                                        true,
-                                                        true);
+                                                        "-999.0" );
 
         sourceList.add(confSource);
 
@@ -200,7 +198,7 @@ public class DataCardSourceTest
             throws IOException
     {
         String current = new java.io.File( "." ).getCanonicalPath();
-        List<DataSourceConfig.Source> sourceList = new ArrayList<DataSourceConfig.Source>();
+        List<DataSourceConfig.Source> sourceList = new ArrayList<>();
         Format format = Format.fromValue("datacard");
 
         DataSourceConfig.Source confSource = new Source(current,
@@ -208,9 +206,7 @@ public class DataCardSourceTest
                                                         "IN",
                                                         "DRRC2",
                                                         "EST",
-                                                        "-997",
-                                                        true,
-                                                        true);
+                                                        "-997" );
 
         sourceList.add(confSource);
 
