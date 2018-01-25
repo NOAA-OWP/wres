@@ -45,7 +45,12 @@ public interface ScoreOutput<T> extends MetricOutput<T>, Iterable<Pair<MetricCon
     Set<MetricConstants> getComponents();
     
     /**
-     * Returns the score component that corresponds to {@link MetricConstants#MAIN}, otherwise null.
+     * Returns the score component that corresponds to {@link MetricConstants#MAIN}, or the first component in a store
+     * that contains only one component, otherwise null. Use {@link #getValue(MetricConstants)} to return a specific
+     * value.
+     * 
+     * @return the component that corresponds to {@link MetricConstants#MAIN}, or the first component in a store of one
+     *            component, otherwise null
      */
     @Override
     T getData();

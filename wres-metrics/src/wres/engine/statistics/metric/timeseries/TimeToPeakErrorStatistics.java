@@ -109,7 +109,7 @@ public class TimeToPeakErrorStatistics extends OrdinaryScore<TimeSeriesOfSingleV
         // Create output metadata with the identifier of the statistic as the component identifier
         MetricOutputMetadata in = output.getMetadata();
         MetricConstants singleIdentifier = null;
-        // If the metric is defined with only one summary statistics, list this component in the metadata
+        // If the metric is defined with only one summary statistic, list this component in the metadata
         if ( statistics.size() == 1 )
         {
             singleIdentifier = nextIdentifier;
