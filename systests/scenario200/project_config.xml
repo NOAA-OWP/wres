@@ -5,14 +5,12 @@
     <inputs>
         <left label="">
             <type>observations</type>
-            <source all="true" format="PI-XML" missingValue="-999.0" 
-                recursive="true" unit="">../data/DOSC1_QIN.xml</source>
+            <source format="PI-XML">../data/DOSC1_QIN.xml</source>
             <variable>QIN</variable>
         </left>
         <right label="HEFS">
             <type>simulations</type>
-            <source all="false" format="PI-XML" missingValue="-999.0"
-                recursive="false" unit="">../data/DOSC1_SQIN.xml</source>
+            <source format="PI-XML">../data/DOSC1_SQIN.xml</source>
             <variable>SQIN</variable>
         </right>
     </inputs>

@@ -6,8 +6,7 @@
     <inputs>
         <left label="">
             <type>observations</type>
-            <source all="true" format="PI-XML" missingValue="-999.0"
-                recursive="true" unit="">../data/archive/baselineValidationExample/AMCK1_QME.xml</source>
+            <source format="PI-XML">../data/archive/baselineValidationExample/AMCK1_QME.xml</source>
             <variable>QME</variable>
             <existingTimeScale>
                 <function>avg</function>
@@ -17,8 +16,7 @@
         </left>
         <right label="HEFS" >
             <type>ensemble forecasts</type>
-            <source all="false" format="PI-XML" missingValue="-999.0"
-                recursive="false" unit="">../data/archive/baselineValidationExample/AMCK1_Streamflow_hefs-mefp_Baseline_Validation.tgz</source>
+            <source format="PI-XML">../data/archive/baselineValidationExample/AMCK1_Streamflow_hefs-mefp_Baseline_Validation.tgz</source>
             <variable>QINE</variable>
             <existingTimeScale>
                 <function>avg</function>

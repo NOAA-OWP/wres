@@ -6,14 +6,12 @@
     <inputs>
         <left label="">
             <type>observations</type>
-            <source all="true" format="PI-XML" missingValue="-999.0" 
-                recursive="true" unit="">../data/abrfcExample/LGNN5_MAP.xml</source>
+            <source format="PI-XML">../data/abrfcExample/LGNN5_MAP.xml</source>
             <variable>MAP</variable>
         </left>
         <right label="HEFS">
             <type>ensemble forecasts</type>
-            <source all="false" format="PI-XML" missingValue="-999.0"
-                recursive="false" unit="">../data/abrfcExample/LGNN5_precip_1yr.tgz</source>
+            <source format="PI-XML">../data/abrfcExample/LGNN5_precip_1yr.tgz</source>
             <variable>MAPX</variable>
         </right>
     </inputs>
