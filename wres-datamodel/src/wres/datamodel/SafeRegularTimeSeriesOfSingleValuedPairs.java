@@ -305,8 +305,7 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
     SafeRegularTimeSeriesOfSingleValuedPairs( final SafeRegularTimeSeriesOfSingleValuedPairsBuilder b )
     {
         super( b );
-        bP =
-                new SafeRegularTimeSeriesOfPairs<>( getData(),
+        bP =  new SafeRegularTimeSeriesOfPairs<>( getData(),
                                                     b.timeStep,
                                                     b.basisTimes,
                                                     b.basisTimesBaseline,
