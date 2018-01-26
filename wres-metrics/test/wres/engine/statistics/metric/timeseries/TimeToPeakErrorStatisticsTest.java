@@ -6,6 +6,8 @@ import static org.junit.Assert.fail;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.junit.Test;
 
@@ -35,13 +37,13 @@ public final class TimeToPeakErrorStatisticsTest
 {
 
     /**
-     * Constructs a {@link TimeToPeakErrorStatistics} and compares the actual result to the expected result. Also, checks 
-     * the parameters.
+     * Tests the {@link TimeToPeakErrorStatistics#apply(TimeSeriesOfSingleValuedPairs)} and compares the actual result 
+     * to the expected result when adding one summary statistic to each instance. 
      * @throws MetricParameterException if the metric could not be constructed 
      */
 
     @Test
-    public void test1TimeToPeakErrorStatistics() throws MetricParameterException
+    public void test1ApplyOneStatisticPerInstance() throws MetricParameterException
     {
         // Obtain the factories
         final DataFactory outF = DefaultDataFactory.getInstance();
@@ -112,8 +114,8 @@ public final class TimeToPeakErrorStatisticsTest
                     min.getValue( MetricConstants.MINIMUM ).equals( Duration.ofHours( -6 ) ) );
         // Mean absolute error = 9
         DurationScoreOutput meanAbs = b.setStatistic( MetricConstants.MEAN_ABSOLUTE )
-                                   .build()
-                                   .apply( input );
+                                       .build()
+                                       .apply( input );
         assertTrue( "Actual: " + meanAbs.getValue( MetricConstants.MEAN_ABSOLUTE )
                     + ". Expected: "
                     + Duration.ofHours( 9 )
@@ -122,12 +124,67 @@ public final class TimeToPeakErrorStatisticsTest
     }
 
     /**
+     * Tests the {@link TimeToPeakErrorStatistics#apply(TimeSeriesOfSingleValuedPairs)} and compares the actual result 
+     * to the expected result when adding multiple summary statistics to one instance. 
+     * @throws MetricParameterException if the metric could not be constructed 
+     */
+
+    @Test
+    public void test2ApplyMultipleStatisticInOneInstance() throws MetricParameterException
+    {
+        // Obtain the factories
+        final DataFactory outF = DefaultDataFactory.getInstance();
+        final MetadataFactory metaFac = outF.getMetadataFactory();
+
+        // Generate some data
+        TimeSeriesOfSingleValuedPairs input = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsOne();
+
+        // Metadata for the output
+        final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                 Instant.parse( "1985-01-02T00:00:00Z" ),
+                                                 ReferenceTime.ISSUE_TIME,
+                                                 Duration.ofHours( 6 ),
+                                                 Duration.ofHours( 18 ) );
+        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getBasisTimes().size(),
+                                                                   metaFac.getDimension( "DURATION" ),
+                                                                   metaFac.getDimension( "CMS" ),
+                                                                   MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
+                                                                   null,
+                                                                   metaFac.getDatasetIdentifier( "A",
+                                                                                                 "Streamflow" ),
+                                                                   window );
+        // Build the metric
+        final TimeToPeakErrorStatisticBuilder b = new TimeToPeakErrorStatisticBuilder();
+        b.setStatistic( MetricConstants.MEAN,
+                        MetricConstants.MAXIMUM,
+                        MetricConstants.MINIMUM,
+                        MetricConstants.MEAN_ABSOLUTE )
+         .setOutputFactory( outF );
+        final TimeToPeakErrorStatistics ttps = b.build();
+
+        // Check the results
+        final DurationScoreOutput actual = ttps.apply( input );
+        final Duration expectedMean = Duration.ofHours( 3 );
+        final Duration expectedMin = Duration.ofHours( -6 );
+        final Duration expectedMax = Duration.ofHours( 12 );
+        final Duration expectedMeanAbs = Duration.ofHours( 9 );
+        Map<MetricConstants, Duration> expectedSource = new HashMap<>();
+        expectedSource.put( MetricConstants.MEAN, expectedMean );
+        expectedSource.put( MetricConstants.MINIMUM, expectedMin );
+        expectedSource.put( MetricConstants.MAXIMUM, expectedMax );
+        expectedSource.put( MetricConstants.MEAN_ABSOLUTE, expectedMeanAbs );
+        // Expected, which uses identifier of MetricConstants.MAIN for convenience
+        final DurationScoreOutput expected = outF.ofDurationScoreOutput( expectedSource, m1 );
+        assertTrue( "Actual and expected results differ.", actual.equals( expected ) );
+    }
+
+    /**
      * Constructs a {@link TimeToPeakErrorStatistics} and checks for exceptional cases.
      * @throws MetricParameterException if the metric could not be constructed
      */
 
     @Test
-    public void test2Exceptions() throws MetricParameterException
+    public void test3Exceptions() throws MetricParameterException
     {
         //Build the metric
         final DataFactory outF = DefaultDataFactory.getInstance();
@@ -142,6 +199,26 @@ public final class TimeToPeakErrorStatisticsTest
         catch ( MetricParameterException e )
         {
         }
+        // Empty statistic
+        try
+        {
+            b.setStatistic( new MetricConstants[0] );
+            b.build();
+            fail( "Expected an exception on a missing statistic." );
+        }
+        catch ( MetricParameterException e )
+        {
+        }      
+        // Null statistic
+        try
+        {
+            b.setStatistic( new MetricConstants[1] );
+            b.build();
+            fail( "Expected an exception on a missing statistic." );
+        }
+        catch ( MetricParameterException e )
+        {
+        }  
         // Unrecognized statistic
         try
         {
