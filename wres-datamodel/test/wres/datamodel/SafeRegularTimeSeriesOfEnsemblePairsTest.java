@@ -20,7 +20,6 @@ import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairs;
-import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.time.TimeSeries;
@@ -588,7 +587,7 @@ public final class SafeRegularTimeSeriesOfEnsemblePairsTest
         }
         try
         {
-            Iterator<TimeSeriesOfSingleValuedPairs> it = ts.ensembleTraceIterator().iterator();
+            Iterator<TimeSeries<PairOfDoubles>> it = ts.ensembleTraceIterator().iterator();
             it.forEachRemaining( a -> a.equals( null ) );
             it.next();
             fail( "Expected a checked exception on iterating a time-series with no more ensemble traces left." );
@@ -618,7 +617,7 @@ public final class SafeRegularTimeSeriesOfEnsemblePairsTest
         }
         try
         {
-            Iterator<TimeSeriesOfSingleValuedPairs> it = ts.ensembleTraceIterator().iterator();
+            Iterator<TimeSeries<PairOfDoubles>> it = ts.ensembleTraceIterator().iterator();
             it.next();
             it.remove();
             fail( "Expected a checked exception on attempting to remove an ensemble trace from an immutable "

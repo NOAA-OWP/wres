@@ -1,6 +1,5 @@
 package wres.datamodel.inputs.pairs;
 
-import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.time.TimeSeries;
 
 /**
@@ -13,12 +12,7 @@ import wres.datamodel.time.TimeSeries;
 public interface TimeSeriesOfSingleValuedPairs extends SingleValuedPairs, TimeSeries<PairOfDoubles>
 {
 
-    /**
-     * Returns the baseline data as a {@link MetricInput} or null if no baseline is defined. 
-     * 
-     * @return the baseline
-     */
-
+    @Override
     TimeSeriesOfSingleValuedPairs getBaselineData();
 
 }

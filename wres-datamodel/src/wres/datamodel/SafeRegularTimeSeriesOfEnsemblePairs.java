@@ -542,17 +542,17 @@ class SafeRegularTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
     }
 
     @Override
-    public Iterable<TimeSeriesOfSingleValuedPairs> ensembleTraceIterator()
+    public Iterable<TimeSeries<PairOfDoubles>> ensembleTraceIterator()
     {
         //Construct an iterable view of the ensemble traces
         //Start with the basis times
         //Iterator<TimeSeries<PairOfDoubleAndVectorOfDoubles>> basisTimes = basisTimeIterator().iterator();       
-        class IterableTimeSeries implements Iterable<TimeSeriesOfSingleValuedPairs>
+        class IterableTimeSeries implements Iterable<TimeSeries<PairOfDoubles>>
         {
             @Override
-            public Iterator<TimeSeriesOfSingleValuedPairs> iterator()
+            public Iterator<TimeSeries<PairOfDoubles>> iterator()
             {
-                return new Iterator<TimeSeriesOfSingleValuedPairs>()
+                return new Iterator<TimeSeries<PairOfDoubles>>()
                 {
                     int currentBasisTime = -1;
                     int totalBasisTimes = bP.getBasisTimes().size() - 1; //currentBasisTime starts at -1
