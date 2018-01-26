@@ -6,8 +6,10 @@ import static org.junit.Assert.fail;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.StringJoiner;
@@ -683,7 +685,8 @@ public final class SafeRegularTimeSeriesOfEnsemblePairsTest
             values.add( metIn.pairOf( i, new double[] { i, i + 1, i + 2 } ) );
         }
         Metadata meta = metaFac.getMetadata();
-        b.addData( basisTime, values ).setTimeStep( Duration.ofDays( 1 ) ).setMetadata( meta );
+        Duration timeStep = Duration.ofDays( 1 );
+        b.addData( basisTime, values ).setTimeStep( timeStep ).setMetadata( meta );
         StringJoiner joiner = new StringJoiner( System.lineSeparator() );
         for ( int i = 0; i < 5; i++ )
         {
@@ -722,6 +725,14 @@ public final class SafeRegularTimeSeriesOfEnsemblePairsTest
         }
         assertTrue( "Unexpected string representation of compound time-series.",
                     joiner.toString().equals( b.build().toString() ) );
+        
+        //Check for equality of string representations when building in two different ways
+        Map<Instant, List<PairOfDoubleAndVectorOfDoubles>> input = new HashMap<>();
+        input.put( basisTime, values );
+        input.put( nextBasisTime, values );
+        TimeSeriesOfEnsemblePairs pairs = metIn.ofRegularTimeSeriesOfEnsemblePairs( input, meta, timeStep );
+        assertTrue( "Unequal string representation of two time-series that should have an equal representation.",
+                    joiner.toString().equals( pairs.toString() ) );
     }
 
 }

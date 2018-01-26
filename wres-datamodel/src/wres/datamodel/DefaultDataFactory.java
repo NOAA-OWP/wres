@@ -1,6 +1,7 @@
 package wres.datamodel;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -25,6 +26,8 @@ import wres.datamodel.inputs.pairs.PairOfBooleans;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairs;
+import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.inputs.pairs.builders.RegularTimeSeriesOfEnsemblePairsBuilder;
 import wres.datamodel.inputs.pairs.builders.RegularTimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.metadata.Metadata;
@@ -272,12 +275,12 @@ public class DefaultDataFactory implements DataFactory
     {
         return new SafeDoubleScoreOutput( output, meta );
     }
-    
+
     @Override
     public DurationScoreOutput ofDurationScoreOutput( Map<MetricConstants, Duration> output, MetricOutputMetadata meta )
     {
         return new SafeDurationScoreOutput( output, meta );
-    }    
+    }
 
     @Override
     public DoubleScoreOutput ofDoubleScoreOutput( double[] output,
@@ -371,6 +374,44 @@ public class DefaultDataFactory implements DataFactory
     {
         return new SafeMetricOutputMultiMapByTimeAndThresholdBuilder<>();
     }
+
+
+    @Override
+    public TimeSeriesOfSingleValuedPairs
+            ofRegularTimeSeriesOfSingleValuedPairs( Map<Instant, List<PairOfDoubles>> timeSeries,
+                                                    Metadata mainMeta,
+                                                    Map<Instant, List<PairOfDoubles>> timeSeriesBaseline,
+                                                    Metadata baselineMeta,
+                                                    Duration timeStep )
+    {
+        SafeRegularTimeSeriesOfSingleValuedPairsBuilder builder = new SafeRegularTimeSeriesOfSingleValuedPairsBuilder();
+        builder.addData( timeSeries ).setTimeStep( timeStep ).setMetadata( mainMeta );
+        if ( Objects.nonNull( timeSeriesBaseline ) )
+        {
+            builder.addDataForBaseline( timeSeriesBaseline );
+            builder.setMetadataForBaseline( baselineMeta );
+        }
+        return builder.build();
+    }
+
+    @Override
+    public TimeSeriesOfEnsemblePairs
+            ofRegularTimeSeriesOfEnsemblePairs( Map<Instant, List<PairOfDoubleAndVectorOfDoubles>> timeSeries,
+                                                Metadata mainMeta,
+                                                Map<Instant, List<PairOfDoubleAndVectorOfDoubles>> timeSeriesBaseline,
+                                                Metadata baselineMeta,
+                                                Duration timeStep )
+    {
+        SafeRegularTimeSeriesOfEnsemblePairsBuilder builder = new SafeRegularTimeSeriesOfEnsemblePairsBuilder();
+        builder.addData( timeSeries ).setTimeStep( timeStep ).setMetadata( mainMeta );
+        if ( Objects.nonNull( timeSeriesBaseline ) )
+        {
+            builder.addDataForBaseline( timeSeriesBaseline );
+            builder.setMetadataForBaseline( baselineMeta );
+        }
+        return builder.build();
+    }
+
 
     @Override
     public RegularTimeSeriesOfSingleValuedPairsBuilder ofRegularTimeSeriesOfSingleValuedPairsBuilder()
