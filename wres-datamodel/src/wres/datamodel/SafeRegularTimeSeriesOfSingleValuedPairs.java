@@ -5,10 +5,11 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.SortedSet;
-import java.util.TreeSet;
 import java.util.function.Predicate;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -138,9 +139,9 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
     }
 
     @Override
-    public SortedSet<Instant> getBasisTimes()
+    public List<Instant> getBasisTimes()
     {
-        return new TreeSet<>( bP.getBasisTimes() );
+        return new ArrayList<>( bP.getBasisTimes() );
     }
 
     @Override
@@ -219,45 +220,28 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
         private List<Integer> timeStepCountBaseline = new ArrayList<>();
 
         @Override
-        public SafeRegularTimeSeriesOfSingleValuedPairsBuilder addData( Instant basisTime,
-                                                                        List<PairOfDoubles> values )
+        public SafeRegularTimeSeriesOfSingleValuedPairsBuilder addData( Map<Instant, List<PairOfDoubles>> values )
         {
-            Objects.requireNonNull( basisTime, "Enter a non-null basis time for the time-series." );
-            //Does basis time already exist?
-            if ( basisTimes.contains( basisTime ) )
+            Objects.requireNonNull( values, "Enter non-null data for the time-series." );
+            for ( Entry<Instant, List<PairOfDoubles>> next : values.entrySet() )
             {
-                int index = basisTimes.indexOf( basisTime );
-                int insertAt = timeStepCount.get( index ) * ( index + 1 );
-                mainInput.addAll( insertAt, values );
-                timeStepCount.set( index, timeStepCount.get( index ) + values.size() );
-            }
-            else
-            {
-                addData( values );
-                timeStepCount.add( values.size() );
-                basisTimes.add( basisTime );
+                addData( next.getValue() );
+                timeStepCount.add( next.getValue().size() );
+                basisTimes.add( next.getKey() );
             }
             return this;
         }
 
         @Override
-        public SafeRegularTimeSeriesOfSingleValuedPairsBuilder addDataForBaseline( Instant basisTime,
-                                                                                   List<PairOfDoubles> values )
+        public SafeRegularTimeSeriesOfSingleValuedPairsBuilder
+                addDataForBaseline( Map<Instant, List<PairOfDoubles>> values )
         {
-            Objects.requireNonNull( basisTime, "Enter a non-null basis time for the baseline time-series." );
-            //Does basis time already exist?
-            if ( basisTimesBaseline.contains( basisTime ) )
+            Objects.requireNonNull( values, "Enter non-null data for the time-series." );
+            for ( Entry<Instant, List<PairOfDoubles>> next : values.entrySet() )
             {
-                int index = basisTimesBaseline.indexOf( basisTime );
-                int insertAt = timeStepCountBaseline.get( index ) * ( index + 1 );
-                baselineInput.addAll( insertAt, values );
-                timeStepCountBaseline.set( index, timeStepCountBaseline.get( index ) + values.size() );
-            }
-            else
-            {
-                addDataForBaseline( values );
-                timeStepCountBaseline.add( values.size() );
-                basisTimesBaseline.add( basisTime );
+                addDataForBaseline( next.getValue() );
+                timeStepCountBaseline.add( next.getValue().size() );
+                basisTimesBaseline.add( next.getKey() );
             }
             return this;
         }
@@ -267,6 +251,11 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
                 addTimeSeries( TimeSeriesOfSingleValuedPairs timeSeries )
         {
             //Validate where possible
+            if ( !timeSeries.isRegular() )
+            {
+                throw new MetricInputException( "Cannot add an irregular time-series to a container of regular "
+                                                + "time-series." );
+            }
             if ( Objects.nonNull( timeStep ) && !timeSeries.getRegularDuration().equals( timeStep ) )
             {
                 throw new MetricInputException( "The input time-series has a time-step of '"
@@ -276,12 +265,13 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
                                                 + "'." );
             }
             setTimeStep( timeSeries.getRegularDuration() );
-            //Add the main data
             for ( TimeSeries<PairOfDoubles> a : timeSeries.basisTimeIterator() )
             {
+                //Add the main data
                 TimeSeriesOfSingleValuedPairs next = (TimeSeriesOfSingleValuedPairs) a;
                 addData( next.getEarliestBasisTime(), next.getData() );
                 setMetadata( next.getMetadata() );
+                //Add the baseline data if required
                 if ( next.hasBaseline() )
                 {
                     addDataForBaseline( next.getEarliestBasisTime(), next.getDataForBaseline() );

@@ -193,7 +193,6 @@ public final class SafeRegularTimeSeriesOfEnsemblePairsTest
         int nextValue = 1;
         for ( TimeSeries<PairOfDoubles> next : ts.ensembleTraceIterator() )
         {
-            System.out.println( next );
             for ( Pair<Instant, PairOfDoubles> nextPair : next.timeIterator() )
             {
                 assertTrue( "Unexpected pair in ensemble trace iteration of time-series.",
@@ -256,11 +255,11 @@ public final class SafeRegularTimeSeriesOfEnsemblePairsTest
     }
 
     /**
-     * Tests the appending together of time-series.
+     * Tests the addition of several time-series with a common basis time.
      */
 
     @Test
-    public void test5AppendTimeSeries()
+    public void test5AddMultipleTimeSeriesWithSameBasisTime()
     {
         //Build a time-series with one basis times and three separate sets of data to append
         List<PairOfDoubleAndVectorOfDoubles> first = new ArrayList<>();
@@ -292,17 +291,20 @@ public final class SafeRegularTimeSeriesOfEnsemblePairsTest
         third.add( metIn.pairOf( 7, new double[] { 7, 8, 9 } ) );
         third.add( metIn.pairOf( 8, new double[] { 8, 9, 10 } ) );
         third.add( metIn.pairOf( 9, new double[] { 9, 10, 11 } ) );
-        c.addData( basisTime, second ).addData( basisTime, third );
-        c.addDataForBaseline( basisTime, second ).addDataForBaseline( basisTime, third );
-
-        TimeSeriesOfEnsemblePairs tsAppend = c.build();
+        c.addData( basisTime, second )
+         .addData( basisTime, third )
+         .addDataForBaseline( basisTime, second )
+         .addDataForBaseline( basisTime, third );
+        
+        TimeSeriesOfEnsemblePairs tsCombined = c.build();
+        
         //Check dataset dimensions
-        assertTrue( "Expected a time-series with one basis time and three lead times.",
-                    tsAppend.getDurations().size() == 9 && tsAppend.getBasisTimes().size() == 1 );
+        assertTrue( "Expected a time-series with three basis times and three lead times.",
+                    tsCombined.getDurations().size() == 3 && tsCombined.getBasisTimes().size() == 3 );
         //Check dataset
         //Iterate and test
         int nextValue = 1;
-        for ( Pair<Instant, PairOfDoubleAndVectorOfDoubles> nextPair : tsAppend.timeIterator() )
+        for ( Pair<Instant, PairOfDoubleAndVectorOfDoubles> nextPair : tsCombined.timeIterator() )
         {
             assertTrue( "Unexpected pair in lead-time iteration of baseline time-series.",
                         nextPair.getRight()
@@ -353,7 +355,7 @@ public final class SafeRegularTimeSeriesOfEnsemblePairsTest
         assertTrue( "Unexpected number of issue times in the filtered time-series.",
                     filtered.getBasisTimes().size() == 1 );
         assertTrue( "Unexpected issue time in the filtered time-series.",
-                    filtered.getBasisTimes().first().equals( secondBasisTime ) );
+                    filtered.getBasisTimes().get( 0 ).equals( secondBasisTime ) );
         assertTrue( "Unexpected value in the filtered time-series.",
                     filtered.timeIterator()
                             .iterator()

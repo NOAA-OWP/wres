@@ -69,19 +69,19 @@ class SafeRegularTimeSeriesOfPairs<T>
      */
 
     private final Iterable<Pair<Instant, T>> timeIterator;
-    
+
     /**
      * Error message denoting attempt to modify an immutable time-series via an iterator.
      */
 
-    static final String UNSUPPORTED_MODIFICATION = "While attempting to modify an immutable time-series.";    
-    
+    static final String UNSUPPORTED_MODIFICATION = "While attempting to modify an immutable time-series.";
+
     /**
      * Returns an iterator over each pair.
      * 
      * @return an iterator over each pair
      */
-    
+
     Iterable<Pair<Instant, T>> timeIterator()
     {
         return timeIterator;
@@ -92,12 +92,12 @@ class SafeRegularTimeSeriesOfPairs<T>
      * 
      * @return an iterator over the basis times
      */
-    
+
     Iterable<TimeSeries<T>> basisTimeIterator()
     {
         return basisTimeIterator;
     }
-    
+
     /**
      * Returns an iterator over the durations.
      * 
@@ -108,7 +108,7 @@ class SafeRegularTimeSeriesOfPairs<T>
     {
         return durationIterator;
     }
-    
+
     /**
      * Returns the basis times.
      * 
@@ -129,14 +129,14 @@ class SafeRegularTimeSeriesOfPairs<T>
     List<Instant> getBasisTimesBaseline()
     {
         return Collections.unmodifiableList( basisTimesBaseline );
-    }    
-    
+    }
+
     /**
      * Returns the durations.
      * 
      * @return the durations
      */
-    
+
     SortedSet<Duration> getDurations()
     {
         SortedSet<Duration> returnMe = new TreeSet<>();
@@ -146,7 +146,7 @@ class SafeRegularTimeSeriesOfPairs<T>
         }
         return returnMe;
     }
-    
+
     /**
      * Returns true if the store contains multiple time-series, false otherwise.
      * 
@@ -157,7 +157,7 @@ class SafeRegularTimeSeriesOfPairs<T>
     {
         return basisTimes.size() > 1;
     }
-    
+
     /**
      * Returns the regular duration.
      * 
@@ -168,7 +168,7 @@ class SafeRegularTimeSeriesOfPairs<T>
     {
         return timeStep;
     }
-    
+
     /**
      * Returns the number of timesteps in each time-series.
      * 
@@ -179,13 +179,13 @@ class SafeRegularTimeSeriesOfPairs<T>
     {
         return timeStepCount;
     }
-    
+
     /**
      * Returns the earliest basis time.
      * 
      * @return the earliest basis time
      */
-    
+
     Instant getEarliestBasisTime()
     {
         if ( basisTimes.size() == 1 )
@@ -277,7 +277,7 @@ class SafeRegularTimeSeriesOfPairs<T>
         this.durationIterator = durationIterator;
         this.timeIterator = getTimeIterator( data );
     }
-    
+
     /**
      * Returns an {@link Iterable} view of the pairs of times and values.
      * 
@@ -331,8 +331,7 @@ class SafeRegularTimeSeriesOfPairs<T>
                                         int basisIndex =
                                                 (int) Math.floor( ( (double) returnedSoFar ) / getTimeStepCount() );
                                         int residual = returnedSoFar - ( basisIndex * getTimeStepCount() );
-                                        return getBasisTimes()
-                                                              .get( basisIndex )
+                                        return getBasisTimes().get( basisIndex )
                                                               .plus( getRegularDuration().multipliedBy( (long) residual
                                                                                                         + 1 ) );
                                     }
@@ -346,8 +345,7 @@ class SafeRegularTimeSeriesOfPairs<T>
                                     @Override
                                     public String toString()
                                     {
-                                        return getLeft() + ","
-                                               + getRight();
+                                        return getLeft() + "," + getRight();
                                     }
 
                                 };
