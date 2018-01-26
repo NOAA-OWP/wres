@@ -31,7 +31,19 @@ abstract class SafeScoreOutput<T> implements ScoreOutput<T>
      */
 
     private static final String NEWLINE = System.lineSeparator();
+    
+    /**
+     * Null output message.
+     */
 
+    private static final String NULL_OUTPUT_MESSAGE = "Specify a non-null output.";
+    
+    /**
+     * Null metadata message.
+     */
+
+    private static final String NULL_METADATA_MESSAGE = "Specify non-null metadata.";
+        
     /**
      * The output.
      */
@@ -160,11 +172,11 @@ abstract class SafeScoreOutput<T> implements ScoreOutput<T>
     {
         if ( Objects.isNull( output ) )
         {
-            throw new MetricOutputException( "Specify a non-null output." );
+            throw new MetricOutputException( NULL_OUTPUT_MESSAGE );
         }
         if ( Objects.isNull( meta ) )
         {
-            throw new MetricOutputException( "Specify non-null metadata." );
+            throw new MetricOutputException( NULL_METADATA_MESSAGE );
         }
         this.output = new EnumMap<>( MetricConstants.class );
         if( Objects.nonNull( meta.getMetricComponentID() ) )
@@ -194,11 +206,11 @@ abstract class SafeScoreOutput<T> implements ScoreOutput<T>
         // Validate
         if ( Objects.isNull( output ) )
         {
-            throw new MetricOutputException( "Specify a non-null output." );
+            throw new MetricOutputException( NULL_OUTPUT_MESSAGE );
         }
         if ( Objects.isNull( meta ) )
         {
-            throw new MetricOutputException( "Specify non-null metadata." );
+            throw new MetricOutputException( NULL_METADATA_MESSAGE );
         }
         output.forEach( ( key, value ) -> {
             if ( Objects.isNull( key ) || Objects.isNull( value ) )
@@ -221,21 +233,21 @@ abstract class SafeScoreOutput<T> implements ScoreOutput<T>
     {
         this.output = new EnumMap<>( MetricConstants.class );
         this.meta = meta;
-        Set<MetricConstants> components = template.getMetricComponents();
         // Validate
-        if ( Objects.isNull( output ) )
-        {
-            throw new MetricOutputException( "Specify a non-null output." );
-        }
-        if ( Objects.isNull( meta ) )
-        {
-            throw new MetricOutputException( "Specify non-null metadata." );
-        }
         if ( Objects.isNull( template ) )
         {
             throw new MetricOutputException( "Specify a non-null output group for the score output." );
         }
-        //Check that the decomposition template is compatible
+        if ( Objects.isNull( output ) )
+        {
+            throw new MetricOutputException( NULL_OUTPUT_MESSAGE );
+        }
+        if ( Objects.isNull( meta ) )
+        {
+            throw new MetricOutputException( NULL_METADATA_MESSAGE );
+        }
+        // Check that the decomposition template is compatible
+        Set<MetricConstants> components = template.getMetricComponents();
         if ( components.size() != output.length )
         {
             throw new MetricOutputException( "The specified output template '" + template
