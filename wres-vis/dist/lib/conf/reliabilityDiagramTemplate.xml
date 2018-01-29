@@ -76,7 +76,8 @@
         <subtitle>
             <font family="Dialog" size="12" style="0"/>
             <color alpha="255" blue="0" green="0" red="0"/>
-            <text></text>  <!-- Empty! -->
+            <text>
+</text>  <!-- Empty! -->
             <border>
                 <lineWidths bottom="0.0" left="0.0" right="0.0" top="0.0"/>
                 <color alpha="255" blue="0" green="0" red="0"/>
