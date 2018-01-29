@@ -106,8 +106,10 @@ public class DefaultMetadataFactory implements MetadataFactory
             @Override
             public boolean minimumEquals(final MetricOutputMetadata o)
             {
-                return o.getMetricID() == getMetricID() && o.getMetricComponentID() == getMetricComponentID()
-                    && o.getDimension().equals(getDimension()) && o.getInputDimension().equals(getInputDimension());
+                return o.getMetricID() == getMetricID()
+                       && o.getMetricComponentID() == getMetricComponentID()
+                       && o.getDimension().equals( getDimension() )
+                       && o.getInputDimension().equals( getInputDimension() );
             }
 
             @Override
@@ -245,23 +247,7 @@ public class DefaultMetadataFactory implements MetadataFactory
         private final DatasetIdentifier identifier;
         private final TimeWindow timeWindow;
         private static final String DIMNULL = "Specify a non-null dimension from which to construct the metadata.";
-        
-        private MetadataImpl(final Dimension dim)
-        {
-            Objects.requireNonNull(dim,DIMNULL);
-            this.dim = dim;
-            this.identifier = null;
-            this.timeWindow = null;
-        }
-        
-        private MetadataImpl(final Dimension dim, final DatasetIdentifier identifier)
-        {
-            Objects.requireNonNull(dim,DIMNULL);
-            this.dim = dim;
-            this.identifier = identifier;
-            this.timeWindow = null;
-        }
-        
+
         private MetadataImpl(final Dimension dim, final DatasetIdentifier identifier, final TimeWindow timeWindow)
         {
             Objects.requireNonNull(dim,DIMNULL);
@@ -417,9 +403,10 @@ public class DefaultMetadataFactory implements MetadataFactory
                 return false;
             }
             final DatasetIdentifier check = (DatasetIdentifier)o;
-            boolean returnMe = hasGeospatialID() == check.hasGeospatialID() && hasVariableID() == check.hasVariableID()
-                && hasScenarioID() == check.hasScenarioID()
-                && hasScenarioIDForBaseline() == check.hasScenarioIDForBaseline();
+            boolean returnMe = hasGeospatialID() == check.hasGeospatialID()
+                               && hasVariableID() == check.hasVariableID()
+                               && hasScenarioID() == check.hasScenarioID()
+                               && hasScenarioIDForBaseline() == check.hasScenarioIDForBaseline();
             if(hasGeospatialID())
             {
                 returnMe = returnMe && getGeospatialID().equals(check.getGeospatialID());
