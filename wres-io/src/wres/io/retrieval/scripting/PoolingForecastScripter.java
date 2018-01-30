@@ -1,5 +1,6 @@
 package wres.io.retrieval.scripting;
 
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.InvalidPropertiesFormatException;
 import java.util.StringJoiner;
@@ -25,8 +26,7 @@ class PoolingForecastScripter extends Scripter
     }
 
     @Override
-    String formScript() throws SQLException, InvalidPropertiesFormatException,
-            NoDataException
+    String formScript() throws SQLException, IOException
     {
         // TODO: Break out into separate functions
         this.addLine("WITH forecasts AS");
@@ -134,7 +134,7 @@ class PoolingForecastScripter extends Scripter
     }
 
     @Override
-    protected int getProgress() throws NoDataException
+    protected int getProgress() throws IOException
     {
         Integer offset;
 

@@ -295,7 +295,7 @@ public final class Operations {
 
     public static Set<Feature> decomposeFeatures(ProjectConfig projectConfig,
                                                  List<IngestResult> availableSources)
-            throws SQLException
+            throws SQLException, IOException
     {
         Set<Feature> atomicFeatures = new TreeSet<>( Comparator.comparing(
                 ConfigHelper::getFeatureDescription ));

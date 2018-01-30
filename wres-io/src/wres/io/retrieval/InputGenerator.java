@@ -1,5 +1,6 @@
 package wres.io.retrieval;
 
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.InvalidPropertiesFormatException;
 import java.util.Iterator;
@@ -38,7 +39,7 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>>
             switch (this.projectDetails.getPoolingMode())
             {
                 case ROLLING:
-                    iterator = new RollingMetricInputIterator( this.feature,
+                    iterator = new PoolingMetricInputIterator( this.feature,
                                                                this.projectDetails );
                     break;
                 case BACK_TO_BACK:
@@ -51,18 +52,11 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>>
                                                        "' has not been implemented." );
             }
         }
-        catch (SQLException | NotImplementedException | InvalidPropertiesFormatException e)
+        catch (SQLException | IOException e)
         {
             String message = "A MetricInputIterator could not be created for '"
                              + ConfigHelper.getFeatureDescription( this.feature )
                              + "'.";
-            throw new IterationFailedException( message, e );
-        }
-        catch ( NoDataException e )
-        {
-            String message = "A MetricInputIterator could not be created for '{"
-                             + ConfigHelper.getFeatureDescription( this.feature )
-                             + "}'. There's no data to iterate over.";
             throw new IterationFailedException( message, e );
         }
         return iterator;

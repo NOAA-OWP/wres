@@ -1,5 +1,6 @@
 package wres.io.retrieval.scripting;
 
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.InvalidPropertiesFormatException;
 import java.util.StringJoiner;
@@ -24,8 +25,7 @@ class BackToBackForecastScripter extends Scripter
     }
 
     @Override
-    String formScript() throws SQLException, InvalidPropertiesFormatException,
-            NoDataException
+    String formScript() throws SQLException, IOException
     {
         this.add("SELECT ");
         this.applyValueDate();
@@ -74,8 +74,7 @@ class BackToBackForecastScripter extends Scripter
         return "TS.initialization_date";
     }
 
-    private int getLeadOffset() throws NoDataException, SQLException,
-            InvalidPropertiesFormatException
+    private int getLeadOffset() throws SQLException, IOException
     {
         if (this.leadOffset == null)
         {
@@ -84,8 +83,7 @@ class BackToBackForecastScripter extends Scripter
         return this.leadOffset;
     }
 
-    private void applyLeadQualifier() throws SQLException, NoDataException,
-            InvalidPropertiesFormatException
+    private void applyLeadQualifier() throws SQLException, IOException
     {
         this.addLine(
                 "    AND ",
