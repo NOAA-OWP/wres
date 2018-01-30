@@ -6,12 +6,12 @@
     <inputs>
         <left label="Observations">
             <type>observations</type>
-            <source format="datacard" zoneOffset="CST" unit="CFS" >systests/data/singleValuedEx_ABRFC_ARCFUL_OBS/GLOO2X.QINE.19951101.20170905.datacard</source>
+            <source format="datacard" zoneOffset="CST" unit="CFS" >../data/singleValuedEx_ABRFC_ARCFUL_OBS/GLOO2X.QINE.19951101.20170905.datacard</source>
             <variable>QINE</variable>
         </left>
         <right label="Operational Single-Valued Forecasts" >
             <type>single valued forecasts</type>
-            <source format="PI-XML">systests/data/singleValuedEx_ABRFC_ARCFUL_QINE</source>
+            <source format="PI-XML">../data/singleValuedEx_ABRFC_ARCFUL_QINE</source>
             <variable>QINE</variable>
         </right>
     </inputs>
@@ -37,14 +37,14 @@
     </metrics>
     <outputs>
         <destination type="pairs" decimalFormat="0.000000">
-            <path>output/scenario403/</path>
+            <path>output/</path>
         </destination>
         <destination type="numeric" decimalFormat="0.000000">
-            <path>output/scenario403/</path>
+            <path>output/</path>
         </destination>
         <!--
         <destination type="graphic">
-            <path>output/scenario403/</path>
+            <path>output/</path>
             <graphical width="800" height="600">
                 <plotType>lead threshold</plotType>
             </graphical>

@@ -6,15 +6,15 @@
     <inputs>
         <left label="Observations">
             <type>observations</type>
-            <source format="datacard" zoneOffset="CST" unit="CFS" locationId="GLOO2">systests/data/singleValuedEx_ABRFC_ARCFUL_OBS/GLOO2X.QINE.19951101.20170905.datacard</source>
-            <source format="datacard" zoneOffset="CST" unit="CFS" locationId="ANTO2">systests/data/singleValuedEx_ABRFC_ARCFUL_OBS/ANTO2X.QINE.20071001.20170905.datacard</source>
-            <source format="datacard" zoneOffset="CST" unit="CFS" locationId="ARCT2">systests/data/singleValuedEx_ABRFC_ARCFUL_OBS/ARCT2X.QINE.19951101.20170905.datacard</source>
-            <source format="datacard" zoneOffset="CST" unit="CFS" locationId="BLUO2">systests/data/singleValuedEx_ABRFC_ARCFUL_OBS/BLUO2X.QINE.19951101.20170905.datacard</source>
+            <source format="datacard" zoneOffset="CST" unit="CFS" locationId="GLOO2">../data/singleValuedEx_ABRFC_ARCFUL_OBS/GLOO2X.QINE.19951101.20170905.datacard</source>
+            <source format="datacard" zoneOffset="CST" unit="CFS" locationId="ANTO2">../data/singleValuedEx_ABRFC_ARCFUL_OBS/ANTO2X.QINE.20071001.20170905.datacard</source>
+            <source format="datacard" zoneOffset="CST" unit="CFS" locationId="ARCT2">../data/singleValuedEx_ABRFC_ARCFUL_OBS/ARCT2X.QINE.19951101.20170905.datacard</source>
+            <source format="datacard" zoneOffset="CST" unit="CFS" locationId="BLUO2">../data/singleValuedEx_ABRFC_ARCFUL_OBS/BLUO2X.QINE.19951101.20170905.datacard</source>
             <variable>QINE</variable>
         </left>
         <right label="Operational Single-Valued Forecasts" >
             <type>single valued forecasts</type>
-            <source format="PI-XML">systests/data/singleValuedEx_ABRFC_ARCFUL_QINE</source>
+            <source format="PI-XML">../data/singleValuedEx_ABRFC_ARCFUL_QINE</source>
             <variable>QINE</variable>
         </right>
     </inputs>
@@ -45,14 +45,14 @@
     </metrics>
     <outputs>
         <destination type="pairs" decimalFormat="0.000000">
-            <path>output/scenario405/</path>
+            <path>output/</path>
         </destination>
         <destination type="numeric" decimalFormat="0.000000">
-            <path>output/scenario405/</path>
+            <path>output/</path>
         </destination>
         <!--
         <destination type="graphic">
-            <path>output/scenario405/</path>
+            <path>output/</path>
             <graphical width="800" height="600">
                 <plotType>lead threshold</plotType>
             </graphical>
