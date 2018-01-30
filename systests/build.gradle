@@ -28,11 +28,12 @@ distributions
             from('.')
             {
                 include '*.sh'
-                include 'scenario*/project_config.xml'
+                include 'scenario*/*.xml'
                 include 'scenario*/CLEAN'
                 include 'scenario*/FAILS'
                 include 'scenario*/benchmarks/**'
                 include 'smalldata/**'
+		exclude 'scenario*/output'
             }
         }
     }
