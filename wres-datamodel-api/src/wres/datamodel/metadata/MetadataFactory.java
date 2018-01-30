@@ -245,6 +245,26 @@ public interface MetadataFactory
     }
 
     /**
+     * Builds a {@link MetricOutputMetadata} with an input source and an override for the sample size.
+     * 
+     * @param source the input source
+     * @param sampleSize the sample size
+     * @return a {@link MetricOutputMetadata} object
+     */
+
+    default MetricOutputMetadata getOutputMetadata( final MetricOutputMetadata source,
+                                                    final int sampleSize )
+    {
+        return getOutputMetadata( sampleSize,
+                                  source.getDimension(),
+                                  source.getInputDimension(),
+                                  source.getMetricID(),
+                                  source.getMetricComponentID(),
+                                  source.getIdentifier(),
+                                  source.getTimeWindow() );
+    }
+
+    /**
      * Build a {@link Metadata} object with a prescribed {@link Dimension} and an optional {@link DatasetIdentifier} and
      * {@link TimeWindow}.
      * 
