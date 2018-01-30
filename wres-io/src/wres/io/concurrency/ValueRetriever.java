@@ -20,6 +20,7 @@ public class ValueRetriever<V> extends WRESCallable<V>
 	/**
 	 * Creates the thread with the passed in SQL script
 	 * @param script The script to execute
+	 * @param label The label
 	 */
 	public ValueRetriever( String script, String label) {
 		this.script = script;
@@ -34,6 +35,7 @@ public class ValueRetriever<V> extends WRESCallable<V>
 	 * @param displayErrors Determines if errors occuring in the database
 	 *                      should be logged/displayed as errors or logged as
 	 *                      debug records
+	 * @param label The label
 	 */
 	public ValueRetriever( String script, String label, boolean displayErrors)
 	{

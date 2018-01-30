@@ -19,6 +19,7 @@ import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.PairedOutput;
 import wres.datamodel.time.TimeSeries;
+import wres.engine.statistics.metric.Incremental;
 import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricParameterException;
 
@@ -32,7 +33,8 @@ import wres.engine.statistics.metric.MetricParameterException;
  * @version 0.1
  * @since 0.4
  */
-public class TimeToPeakError implements Metric<TimeSeriesOfSingleValuedPairs, PairedOutput<Instant, Duration>>
+public class TimeToPeakError implements Metric<TimeSeriesOfSingleValuedPairs, PairedOutput<Instant, Duration>>,
+        Incremental<TimeSeriesOfSingleValuedPairs, PairedOutput<Instant, Duration>, PairedOutput<Instant, Duration>>
 {
 
     /**
@@ -113,6 +115,36 @@ public class TimeToPeakError implements Metric<TimeSeriesOfSingleValuedPairs, Pa
     public boolean hasRealUnits()
     {
         return true;
+    }
+
+    @Override
+    public PairedOutput<Instant, Duration> combine( TimeSeriesOfSingleValuedPairs input,
+                                                    PairedOutput<Instant, Duration> output )
+    {
+        // Validate
+        if ( Objects.isNull( input ) )
+        {
+            throw new MetricInputException( "Specify non-null input to combine with '" + this + "'." );
+        }
+        if ( Objects.isNull( output ) )
+        {
+            throw new MetricInputException( "Specify non-null output to combine with '" + this + "'." );
+        }
+        // Add the earlier output to a new list
+        List<Pair<Instant, Duration>> combined = new ArrayList<>( output.getData() );
+        // Compute the new output
+        PairedOutput<Instant, Duration> next = apply( input );
+        // Add the new output
+        combined.addAll( next.getData() );
+        MetricOutputMetadata meta =
+                getDataFactory().getMetadataFactory().getOutputMetadata( output.getMetadata(), combined.size() );
+        return getDataFactory().ofPairedOutput( combined, meta );
+    }
+
+    @Override
+    public PairedOutput<Instant, Duration> complete( PairedOutput<Instant, Duration> output )
+    {
+        return output;
     }
 
     /**
