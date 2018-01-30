@@ -244,8 +244,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
     }
 
     private String getLoadScript(DataSourceConfig dataSourceConfig)
-            throws SQLException, InvalidPropertiesFormatException,
-            NoDataException
+            throws SQLException, IOException
     {
         String loadScript;
 
@@ -270,8 +269,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
 
     // TODO: REFACTOR
     private List<PairOfDoubleAndVectorOfDoubles> createPairs(DataSourceConfig dataSourceConfig)
-            throws InvalidPropertiesFormatException, SQLException,
-            ProjectConfigException, NoDataException
+            throws SQLException, ProjectConfigException, IOException
     {
         List<PairOfDoubleAndVectorOfDoubles> pairs = new ArrayList<>();
         String loadScript = getLoadScript( dataSourceConfig );

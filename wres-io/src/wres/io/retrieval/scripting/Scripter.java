@@ -1,5 +1,6 @@
 package wres.io.retrieval.scripting;
 
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.InvalidPropertiesFormatException;
 
@@ -33,8 +34,7 @@ public abstract class Scripter
                                         Feature feature,
                                         int progress,
                                         int sequenceStep)
-            throws NoDataException, SQLException,
-            InvalidPropertiesFormatException
+            throws SQLException, IOException
     {
         Scripter loadScripter;
 
@@ -101,8 +101,7 @@ public abstract class Scripter
         return loadScripter.formScript();
     }
 
-    abstract String formScript() throws SQLException,
-            InvalidPropertiesFormatException, NoDataException;
+    abstract String formScript() throws SQLException, IOException;
 
     abstract String getBaseDateName();
 
@@ -123,7 +122,7 @@ public abstract class Scripter
         return this.feature;
     }
 
-    protected int getProgress() throws NoDataException
+    protected int getProgress() throws IOException
     {
         return this.progress;
     }

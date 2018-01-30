@@ -88,8 +88,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
         this.poolingStep = poolingStep;
     }
 
-    protected Integer getWindowCount() throws NoDataException, SQLException,
-            InvalidPropertiesFormatException
+    protected Integer getWindowCount() throws SQLException, IOException
     {
         if (this.windowCount == null)
         {
@@ -134,8 +133,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
 
     public MetricInputIterator( final Feature feature,
                                 final ProjectDetails projectDetails )
-            throws SQLException, NoDataException,
-            InvalidPropertiesFormatException
+            throws SQLException, IOException
     {
 
         this.projectDetails = projectDetails;
@@ -357,7 +355,11 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
                     int nextWindowNumber = this.getWindowNumber() + 1;
                     int offset = this.getProjectDetails().getLeadOffset( this.getFeature() );
 
-                    Integer end = this.getProjectDetails().getAggregationPeriod() + nextWindowNumber * this.getProjectDetails().getAggregationFrequency() + offset;
+                    // Creates a range of (beginning, end], or
+                    // (next Window Number * lead frequency + Lead Offset, next Window Number * lead frequency + lead offset + lead period]
+                    Integer end = this.getProjectDetails().getAggregationPeriod() +
+                                  nextWindowNumber * this.getProjectDetails().getAggregationFrequency() +
+                                  offset;
                     Integer beginning = nextWindowNumber * this.getProjectDetails().getAggregationFrequency() + offset;
 
                     int lastLead = this.getProjectDetails().getLastLead( this.getFeature() );
@@ -396,17 +398,13 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
                                        this.getProjectDetails().getLeadOffset( this.getFeature() ));
             }
         }
-        catch ( SQLException e )
+        catch ( SQLException | IOException e )
         {
             this.getLogger().error( Strings.getStackTrace( e ));
             throw new IterationFailedException( "The data provided could not be "
                                                 + "used to determine if another "
                                                 + "object is present for "
                                                 + "iteration.", e );
-        }
-        catch ( InvalidPropertiesFormatException e )
-        {
-            this.getLogger().error( Strings.getStackTrace( e ));
         }
 
         if (!next)
@@ -468,8 +466,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
     }
 
     protected int getFirstLeadInWindow()
-            throws InvalidPropertiesFormatException, NoDataException,
-            SQLException
+            throws SQLException, IOException
     {
         Integer offset = this.getProjectDetails().getLeadOffset( feature );
 
@@ -483,10 +480,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
                offset;
     }
 
-    abstract int calculateWindowCount()
-            throws SQLException,
-            InvalidPropertiesFormatException,
-            NoDataException;
+    abstract int calculateWindowCount() throws SQLException, IOException;
 
     abstract Logger getLogger();
 }

@@ -1,5 +1,6 @@
 package wres.io.retrieval.scripting;
 
+import java.io.IOException;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
@@ -30,7 +31,7 @@ class PersistenceForecastScripter extends Scripter
                                  Feature feature,
                                  int progress,
                                  int sequenceStep )
-            throws SQLException, NoDataException
+            throws SQLException, IOException
     {
         super( projectDetails, dataSourceConfig, feature, progress, sequenceStep );
 

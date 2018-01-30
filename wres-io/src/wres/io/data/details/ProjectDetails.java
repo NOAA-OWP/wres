@@ -1,5 +1,6 @@
 package wres.io.data.details;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -15,8 +16,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.TreeMap;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ExecutionException;
@@ -43,7 +42,6 @@ import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.Variables;
 import wres.io.utilities.Database;
-import wres.io.utilities.NoDataException;
 import wres.io.utilities.ScriptGenerator;
 import wres.util.FormattedStopwatch;
 import wres.util.Strings;
@@ -579,7 +577,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return ConfigHelper.getPairDestinations( this.projectConfig );
     }
 
-    public Integer getLeadOffset(Feature feature) throws SQLException
+    public Integer getLeadOffset(Feature feature) throws SQLException, IOException
     {
         if (ConfigHelper.isSimulation( this.getRight() ))
         {
@@ -595,7 +593,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     }
 
     private void populateLeadOffsets()
-            throws SQLException
+            throws IOException
     {
         FormattedStopwatch timer = new FormattedStopwatch();
         timer.start();
@@ -607,7 +605,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         }
         catch ( InvalidPropertiesFormatException e )
         {
-            throw new SQLException( "The width of the window for the project "
+            throw new IOException( "The width of the window for the project "
                                     + "could not be formatted for a sql "
                                     + "statement.", e );
         }
@@ -848,7 +846,6 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         Connection connection = null;
         ResultSet resultSet = null;
         Map<FeatureDetails.FeatureKey, Future<Integer>> futureOffsets = new LinkedHashMap<>(  );
-        Map<FeatureDetails.FeatureKey, Integer> failCounts = new HashMap<>(  );
 
         try
         {
@@ -882,11 +879,23 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
                 LOGGER.trace( "A task has been created to find the offset for {}.", key );
             }
         }
+        catch ( SQLException e )
+        {
+            throw new IOException("Tasks used to evaluate lead hour offsets "
+                                  + "could not be created.", e);
+        }
         finally
         {
             if (resultSet != null)
             {
-                resultSet.close();
+                try
+                {
+                    resultSet.close();
+                }
+                catch ( SQLException e )
+                {
+                    LOGGER.debug("A database result set could not be closed.", e);
+                }
             }
 
             if (connection != null)
@@ -919,11 +928,12 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
             }
             catch ( InterruptedException e )
             {
-                e.printStackTrace();
+                throw new IOException( "Population of lead offsets has been interrupted.", e );
             }
             catch ( ExecutionException e )
             {
-                e.printStackTrace();
+                LOGGER.debug("An error occured while populating the future"
+                             + "offsets. Trying again...", e);
                 futureOffsets.put( key, futureOffset );
             }
             catch ( TimeoutException e )

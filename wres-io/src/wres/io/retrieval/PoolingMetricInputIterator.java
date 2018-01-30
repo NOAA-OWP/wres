@@ -1,32 +1,28 @@
 package wres.io.retrieval;
 
+import java.io.IOException;
 import java.sql.SQLException;
-import java.util.InvalidPropertiesFormatException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.generated.Feature;
 import wres.io.data.details.ProjectDetails;
-import wres.io.utilities.NoDataException;
 
-public class RollingMetricInputIterator extends MetricInputIterator
+public class PoolingMetricInputIterator extends MetricInputIterator
 {
     private static final Logger LOGGER =
-            LoggerFactory.getLogger(RollingMetricInputIterator.class);
+            LoggerFactory.getLogger(PoolingMetricInputIterator.class);
 
-    RollingMetricInputIterator( Feature feature,
+    PoolingMetricInputIterator( Feature feature,
                                 ProjectDetails projectDetails )
-            throws SQLException, InvalidPropertiesFormatException,
-            NoDataException
+            throws SQLException, IOException
     {
         super( feature, projectDetails );
     }
 
     @Override
-    int calculateWindowCount()
-            throws SQLException, InvalidPropertiesFormatException,
-            NoDataException
+    int calculateWindowCount() throws SQLException
     {
         return this.getProjectDetails().getPoolCount( this.getFeature() );
     }

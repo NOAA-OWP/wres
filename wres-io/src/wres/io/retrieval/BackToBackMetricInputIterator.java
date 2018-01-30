@@ -1,5 +1,6 @@
 package wres.io.retrieval;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -33,16 +34,14 @@ final class BackToBackMetricInputIterator extends MetricInputIterator
 
     BackToBackMetricInputIterator( Feature feature,
                                    ProjectDetails projectDetails )
-            throws SQLException, InvalidPropertiesFormatException,
-            NoDataException
+            throws SQLException, IOException
     {
         super( feature, projectDetails );
     }
 
     @Override
     int calculateWindowCount()
-            throws SQLException, InvalidPropertiesFormatException,
-            NoDataException
+            throws SQLException, IOException
     {
         int count;
         if ( ConfigHelper.isForecast( this.getRight() ))
