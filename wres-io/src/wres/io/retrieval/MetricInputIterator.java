@@ -302,10 +302,10 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
 
                     // Creates a range of (beginning, end], or
                     // (next Window Number * lead frequency + Lead Offset, next Window Number * lead frequency + lead offset + lead period]
-                    Integer end = this.getProjectDetails().getAggregationPeriod() +
-                                  nextWindowNumber * this.getProjectDetails().getAggregationFrequency() +
+                    Integer end = this.getProjectDetails().getLeadPeriod() +
+                                  nextWindowNumber * this.getProjectDetails().getLeadFrequency() +
                                   offset;
-                    Integer beginning = nextWindowNumber * this.getProjectDetails().getAggregationFrequency() + offset;
+                    Integer beginning = nextWindowNumber * this.getProjectDetails().getLeadFrequency() + offset;
 
                     int lastLead = this.getProjectDetails().getLastLead( this.getFeature() );
 
