@@ -598,7 +598,7 @@ public final class PIXMLReader extends XMLReader
 						}
 					}
 					
-					timeStep = TimeHelper.unitsToHours( unit, multiplier).intValue();
+					timeStep = TimeHelper.unitsToLeadUnits( unit, multiplier).intValue();
 				}
 				else if (localName.equalsIgnoreCase("parameterId"))
 				{

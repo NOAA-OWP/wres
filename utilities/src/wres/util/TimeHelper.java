@@ -202,27 +202,26 @@ public final class TimeHelper
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DATE_FORMAT);
         return actualDate.format(formatter);
     }
-    
-    public static Double unitsToHours(String unit, double count) throws InvalidPropertiesFormatException {
 
+    /**
+     * Converts the unit and count to the standard unit for lead times
+     *
+     * The current lead unit is hours. If we seek to change the standard to
+     * minutes or seconds, we do it here.
+     *
+     * TODO: Change the standard to either minutes or seconds
+     *
+     * @param unit The current unit of time of the count
+     * @param count The number of units
+     * @return The count converted into the standard unit for lead times
+     */
+    public static Double unitsToLeadUnits( String unit, double count)
+    {
         if (!HOUR_CONVERSION.containsKey(unit))
         {
             throw new IllegalArgumentException(unit + " is not an acceptable unit of time.");
         }
 
-        Double hours;
-
-        try
-        {
-            hours = HOUR_CONVERSION.get(unit) * count;
-        }
-        catch (RuntimeException exception)
-        {
-            throw new InvalidPropertiesFormatException("An error was encountered while trying to multiply the value " +
-                                                               String.valueOf(count) +
-                                                               " times the factor indicated by " +
-                                                               String.valueOf(unit));
-        }
-        return hours;
+        return HOUR_CONVERSION.get(unit) * count;
     }
 }

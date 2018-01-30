@@ -8,7 +8,6 @@ import java.time.MonthDay;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.InvalidPropertiesFormatException;
 import java.util.LinkedHashMap;
@@ -450,13 +449,70 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return latest;
     }
 
+    public Integer getLeadPeriod()
+    {
+        Integer period;
+
+        if (this.projectConfig.getPair().getLeadTimesPoolingWindow() != null)
+        {
+            period = this.projectConfig.getPair().getLeadTimesPoolingWindow().getPeriod();
+        }
+        else if (this.getAggregation() != null)
+        {
+            period = this.getAggregationPeriod();
+        }
+        else
+        {
+            period = null;
+        }
+
+        return period;
+    }
+
+    public String getLeadUnit()
+    {
+        String unit;
+
+        if (this.projectConfig.getPair().getLeadTimesPoolingWindow() != null)
+        {
+            unit = this.projectConfig.getPair().getLeadTimesPoolingWindow().getUnit().value();
+        }
+        else
+        {
+            unit = this.getAggregationUnit();
+        }
+
+        return unit;
+    }
+
+    public Integer getLeadFrequency()
+    {
+        Integer frequency;
+
+        if (this.projectConfig.getPair().getLeadTimesPoolingWindow() != null)
+        {
+            frequency = this.projectConfig.getPair().getLeadTimesPoolingWindow().getFrequency();
+        }
+        else
+        {
+            frequency = this.getAggregationFrequency();
+        }
+
+        return frequency;
+    }
+
     public Integer getAggregationPeriod()
     {
-        Integer period = null;
+        Integer period;
 
         if (this.getAggregation() != null)
         {
             period = this.getAggregation().getPeriod();
+        }
+        else
+        {
+            // TODO: write logic for determining the correct period from the existingTimeScale
+            period = null;
         }
 
         return period;
@@ -464,11 +520,16 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
 
     public String getAggregationUnit()
     {
-        String unit = null;
+        String unit;
 
         if (this.getAggregation() != null)
         {
             unit = this.getAggregation().getUnit().value();
+        }
+        else
+        {
+            // TODO: Write logic for determining the correct unit from the existingTimeScale
+            unit = null;
         }
 
         return unit;
@@ -493,29 +554,27 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     {
         int frequency;
 
-        if (this.getAggregation().getFrequency() != null)
+        if (this.getAggregation() != null)
         {
-            frequency = this.getAggregation().getFrequency();
+            if ( this.getAggregation().getFrequency() != null )
+            {
+                frequency = this.getAggregation().getFrequency();
+            }
+            else
+            {
+                frequency = this.getAggregationPeriod();
+            }
         }
         else
         {
-            frequency = this.getAggregationPeriod();
+            // TODO: Write the logic for determining the frequency from the existing time scale
+            frequency = 1;
         }
 
-        try
-        {
-            frequency = TimeHelper.unitsToHours(
-                    this.getAggregationUnit(),
-                    frequency
-            ).intValue();
-        }
-        catch (InvalidPropertiesFormatException e)
-        {
-            LOGGER.debug( "The period for the aggregation could not be"
-                          + "determined, but it was needed in order to"
-                          + "specify the unconfigured lead time frequency."
-                          + "Defaulting to 1.", e );
-        }
+        frequency = TimeHelper.unitsToLeadUnits(
+                this.getAggregationUnit(),
+                frequency
+        ).intValue();
 
         return frequency;
     }
@@ -1321,7 +1380,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     {
         TimeScaleConfig
                 timeAggregationConfig = ConfigHelper.getTimeScale( projectConfig );
-        return TimeHelper.unitsToHours( timeAggregationConfig.getUnit().name(),
+        return TimeHelper.unitsToLeadUnits( timeAggregationConfig.getUnit().name(),
                                   1.0 * windowNumber +
                                   this.getAggregationFrequency() * timeAggregationConfig.getPeriod()).intValue();
     }

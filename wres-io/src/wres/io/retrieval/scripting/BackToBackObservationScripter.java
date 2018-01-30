@@ -2,13 +2,11 @@ package wres.io.retrieval.scripting;
 
 import java.sql.SQLException;
 import java.util.InvalidPropertiesFormatException;
-import java.util.List;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
 import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.NoDataException;
-import wres.util.Collections;
 import wres.util.TimeHelper;
 
 class BackToBackObservationScripter extends Scripter
@@ -97,7 +95,7 @@ class BackToBackObservationScripter extends Scripter
     {
         if (this.windowPeriod == null)
         {
-            this.windowPeriod = TimeHelper.unitsToHours(
+            this.windowPeriod = TimeHelper.unitsToLeadUnits(
                     this.getProjectDetails().getAggregationUnit(),
                     this.getProjectDetails().getAggregationPeriod()
             ).intValue();

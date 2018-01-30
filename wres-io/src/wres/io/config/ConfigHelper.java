@@ -39,7 +39,6 @@ import wres.config.generated.Format;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
-import wres.config.generated.PoolingWindowConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.TimeScaleConfig;
 import wres.config.generated.TimeScaleFunction;
@@ -241,8 +240,8 @@ public class ConfigHelper
             throws InvalidPropertiesFormatException
     {
         TimeScaleConfig timeAggregationConfig = projectConfig.getPair().getDesiredTimeScale();
-        return TimeHelper.unitsToHours( timeAggregationConfig.getUnit().value(),
-                                        timeAggregationConfig.getPeriod() );
+        return TimeHelper.unitsToLeadUnits( timeAggregationConfig.getUnit().value(),
+                                            timeAggregationConfig.getPeriod() );
     }
 
     public static Comparator<Feature> getFeatureComparator()
@@ -842,8 +841,8 @@ public class ConfigHelper
                 step = projectDetails.getPoolingWindow().getPeriod();
             }
 
-            Double frequencyOffset = TimeHelper.unitsToHours( projectDetails.getPoolingWindowUnit(),
-                                                              step )
+            Double frequencyOffset = TimeHelper.unitsToLeadUnits( projectDetails.getPoolingWindowUnit(),
+                                                                  step )
                                      * sequenceStep;
 
             Instant first = Instant.parse( projectDetails.getEarliestIssueDate() );
