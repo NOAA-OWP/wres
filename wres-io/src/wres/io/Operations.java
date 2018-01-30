@@ -11,7 +11,6 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.StringJoiner;
@@ -39,6 +38,7 @@ import wres.io.reading.SourceLoader;
 import wres.io.reading.fews.PIXMLReader;
 import wres.io.utilities.Database;
 import wres.io.retrieval.InputGenerator;
+import wres.io.writing.PairWriter;
 import wres.util.Strings;
 
 public final class Operations {
@@ -128,6 +128,7 @@ public final class Operations {
     public static void shutdown()
     {
         LOGGER.info("Shutting down the IO layer...");
+        PairWriter.flushAndCloseAllWriters();
         Database.addNewIndexes();
         Executor.complete();
         Database.shutdown();
@@ -136,6 +137,7 @@ public final class Operations {
     public static void shutdownWithAbandon( long timeOut, TimeUnit timeUnit )
     {
         LOGGER.info( "Forcefully shutting down the IO module..." );
+        PairWriter.flushAndCloseAllWriters();
         Database.addNewIndexes();
         List<Runnable> executorTasks =
                 Executor.shutdownWithAbandon( timeOut / 2, timeUnit );
@@ -272,7 +274,6 @@ public final class Operations {
 
     private static String getFileContents( Path path )
     {
-        //StringBuilder project = new StringBuilder();
         StringJoiner project = new StringJoiner( System.lineSeparator() );
 
         try
@@ -280,8 +281,6 @@ public final class Operations {
             for ( String line : Files.readAllLines( path ) )
             {
                 project.add( line );
-                /*project.append( line );
-                project.append( System.lineSeparator() );*/
             }
         }
         catch ( IOException ioe )

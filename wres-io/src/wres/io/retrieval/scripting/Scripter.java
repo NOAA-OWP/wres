@@ -38,6 +38,8 @@ public abstract class Scripter
     {
         Scripter loadScripter;
 
+        // TODO: This function probably needs to be modified to also include the PersistenceForecastScripter
+        // TimeWindowMode is probably no longer viable
         TimeWindowMode mode = projectDetails.getPoolingMode();
         boolean isForecast = ConfigHelper.isForecast( dataSourceConfig );
 

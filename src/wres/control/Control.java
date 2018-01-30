@@ -131,13 +131,6 @@ public class Control implements Function<String[], Integer>
             shutDownGracefully(metricExecutor);
             shutDownGracefully(thresholdExecutor);
             shutDownGracefully(pairExecutor);
-        
-            /**
-             * Added by Hank to ensure that all buffered writers for pairs are closed.
-             * I know this is cheesy.
-             */
-            PairWriter.flushAndCloseAllWriters();
-
         }
     }
 
