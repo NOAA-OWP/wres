@@ -450,17 +450,17 @@
             <!-- values min and max should be in the unit above -->
             <xs:element name="values" type="doubleBoundsType" minOccurs="0" />
 
-            <xs:element name="desiredTimeScale" type="timeScale" />
+            <xs:element name="desiredTimeScale" type="timeScale" minOccurs="0" />
 
-            <xs:element name="issuedDatesPoolingWindow" type="poolingWindow" minOccurs="0" maxOccurs="1"/>
-            <xs:element name="leadTimesPoolingWindow" type="poolingWindow" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="issuedDatesPoolingWindow" type="poolingWindow" minOccurs="0"/>
+            <xs:element name="leadTimesPoolingWindow" type="poolingWindow" minOccurs="0"/>
 
             <!-- idea here is mask is a WKT, or optionally a filename,
                  so you could do either:
                  <mask file="file:///my/file.shp" />
                  OR
                  <mask>poly( whatever well-known-text )</mask> -->
-            <xs:element name="mask" minOccurs="0" maxOccurs="1">
+            <xs:element name="mask" minOccurs="0">
                 <xs:complexType>
                     <xs:simpleContent>
                         <xs:extension base="xs:string">
