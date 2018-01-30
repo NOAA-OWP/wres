@@ -356,4 +356,29 @@ public final class TimeWindowTest
         assertTrue( "Expected unbounded time window on the high bound.", partlyHigh.hasUnboundedTimes() );
     }
 
+    /**
+     * Tests the {@link TimeWindow#unionWith(TimeWindow)}.
+     */
+
+    @Test
+    public void test8UnionWith()
+    {
+        TimeWindow first = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                          Instant.parse( "2017-12-31T11:59:59Z" ),
+                                          ReferenceTime.VALID_TIME,
+                                          Duration.ofHours( 5 ),
+                                          Duration.ofHours( 25 ) );
+        TimeWindow second = TimeWindow.of( Instant.parse( "1983-01-01T00:00:00Z" ),
+                                           Instant.parse( "2015-12-31T11:59:59Z" ),
+                                           ReferenceTime.VALID_TIME,
+                                           Duration.ofHours( -5 ),
+                                           Duration.ofHours( 20 ) );
+        TimeWindow expected = TimeWindow.of( Instant.parse( "1983-01-01T00:00:00Z" ),
+                                             Instant.parse( "2017-12-31T11:59:59Z" ),
+                                             ReferenceTime.VALID_TIME,
+                                             Duration.ofHours( -5 ),
+                                             Duration.ofHours( 25 ) );
+        assertTrue( "Unexpected union of two time windows.", first.unionWith( second ).equals( expected ) );
+    }
+
 }
