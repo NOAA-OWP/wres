@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDateTime;
 import java.util.InvalidPropertiesFormatException;
 import java.util.Iterator;
 import java.util.List;
@@ -28,6 +29,7 @@ import wres.io.utilities.NoDataException;
 import wres.util.Collections;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
+import wres.util.TimeHelper;
 
 abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
 {
@@ -40,7 +42,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
     private final Feature feature;
 
     private final ProjectDetails projectDetails;
-    private NavigableMap<String, Double> leftHandMap;
+    private NavigableMap<LocalDateTime, Double> leftHandMap;
     private VectorOfDoubles climatology;
     private int poolingStep;
     private int finalPoolingStep = 0;
@@ -107,7 +109,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
         return this.projectDetails;
     }
 
-    protected void addLeftHandValue(String date, Double measurement)
+    protected void addLeftHandValue(LocalDateTime date, Double measurement)
     {
         if (this.leftHandMap == null)
         {
@@ -156,6 +158,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
         ProgressMonitor.setSteps( Long.valueOf( this.getWindowCount() ) * 2 );
     }
 
+    // TODO: Put into its own class
     void createLeftHandCache() throws SQLException, NoDataException
     {
         Integer desiredMeasurementUnitID =
@@ -179,13 +182,13 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
             latestDate = "'" + latestDate + "'";
         }
 
-        Integer timeShift = null;
+        String timeShift = null;
 
         String variablepositionClause = ConfigHelper.getVariablePositionClause(this.getFeature(), leftVariableID, "");
 
-        if (left.getTimeShift() != null && left.getTimeShift().getWidth() != 0)
+        if (left.getTimeShift() != null)
         {
-            timeShift = left.getTimeShift().getWidth();
+            timeShift = "'" + left.getTimeShift().getWidth() + " " + left.getTimeShift() + "'";
         }
 
         // TODO: Put this script generation into another class
@@ -203,7 +206,8 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
             }
 
             script.append("SELECT ");
-            if (left.getExistingTimeScale() != null) {
+            if (left.getExistingTimeScale() != null)
+            {
                 script.append(left.getExistingTimeScale().getFunction());
             }
             else
@@ -215,12 +219,12 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
             script.append("     TS.measurementunit_id,").append(NEWLINE);
             script.append("     (TS.initialization_date + INTERVAL '1 hour' * FV.lead");
 
-            if (timeShift != null)
+            if ( timeShift != null)
             {
-                script.append(" + INTERVAL '1 hour' * ").append(timeShift);
+                script.append(" + ").append(timeShift);
             }
 
-            script.append(")::text AS left_date").append(NEWLINE);
+            script.append(") AS left_date").append(NEWLINE);
 
             script.append("FROM wres.TimeSeries TS").append(NEWLINE);
             script.append("INNER JOIN wres.ForecastValue FV" ).append(NEWLINE);
@@ -246,10 +250,10 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
 
             if (timeShift != null)
             {
-                script.append(" + INTERVAL '1 hour' * ").append(timeShift);
+                script.append(" + ").append(timeShift);
             }
 
-            script.append(")::text AS left_date,").append(NEWLINE);
+            script.append(") AS left_date,").append(NEWLINE);
             script.append("     O.observed_value AS left_value,").append(NEWLINE);
             script.append("     O.measurementunit_id").append(NEWLINE);
             script.append("FROM wres.ProjectSource PS").append(NEWLINE);
@@ -298,7 +302,9 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
 
             while(resultSet.next())
             {
-                String date = Database.getValue( resultSet, "left_date" );
+                LocalDateTime date = TimeHelper.convertStringToDate(
+                        resultSet.getString( "left_date" ),
+                        LocalDateTime::from);
                 Double measurement = Database.getValue( resultSet, "left_value" );
 
                 int unitID = Database.getValue( resultSet, "measurementunit_id" );
@@ -316,7 +322,8 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
                     ( measurement >= this.getProjectDetails().getMinimumValue() &&
                       measurement <= this.getProjectDetails().getMaximumValue() ))
                 {
-                    this.addLeftHandValue( date, measurement );
+                    this.addLeftHandValue( date,
+                                           measurement );
                 }
             }
         }
@@ -421,7 +428,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
         {
             // TODO: Pass the leftHandMap instead of the function
             InputRetriever retriever = new InputRetriever( this.getProjectDetails(),
-                                                           (String firstDate, String lastDate) -> Collections
+                                                           ( LocalDateTime firstDate, LocalDateTime lastDate) -> Collections
                                                                    .getValuesInRange( this.leftHandMap, firstDate, lastDate ) );
             retriever.setFeature(feature);
             retriever.setClimatology( this.getClimatology() );

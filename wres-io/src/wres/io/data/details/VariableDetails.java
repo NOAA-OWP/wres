@@ -33,21 +33,21 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
     }
 
     private Integer measurementunitId = null;
-	private Integer variable_id = null;
+	private Integer variableID = null;
 	private String variablePositionPartitionName;
 	private static final Object saveLock = new Object();
 
 	/**
 	 * Sets the name of the variable. The ID of the variable is invalidated if its name changes
-	 * @param variable_name The new name of the variable
+	 * @param variableName The new name of the variable
 	 */
-	public void setVariableName(String variable_name)
+	public void setVariableName(String variableName)
 	{
-		if (this.variableName != null && !this.variableName.equalsIgnoreCase(variable_name))
+		if (this.variableName != null && !this.variableName.equalsIgnoreCase(variableName))
 		{
-			this.variable_id = null;
+			this.variableID = null;
 		}
-        this.variableName = variable_name;
+        this.variableName = variableName;
 	}
 
 	public String getVariablePositionPartitionName()
@@ -80,14 +80,14 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
 
 	@Override
 	public int compareTo(VariableDetails other) {
-		Integer id = this.variable_id;
+		Integer id = this.variableID;
 		
 		if (id == null)
 		{
 			id = -1;
 		}
 		
-		return id.compareTo(other.variable_id);
+		return id.compareTo(other.variableID);
 	}
 
 	@Override
@@ -97,7 +97,7 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
 
 	@Override
 	public Integer getId() {
-		return this.variable_id;
+		return this.variableID;
 	}
 
 	@Override
@@ -138,6 +138,6 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
 	@Override
 	public void setID(Integer id)
 	{
-		this.variable_id = id;
+		this.variableID = id;
 	}
 }

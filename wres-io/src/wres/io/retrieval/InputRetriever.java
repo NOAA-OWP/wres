@@ -4,6 +4,9 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalAdjuster;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.InvalidPropertiesFormatException;
@@ -51,7 +54,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
     private static final Logger LOGGER = LoggerFactory.getLogger(InputRetriever.class);
 
     public InputRetriever ( ProjectDetails projectDetails,
-                            BiFunction<String, String, List<Double>> getLeftValues )
+                            BiFunction<LocalDateTime, LocalDateTime, List<Double>> getLeftValues )
     {
         this.projectDetails = projectDetails;
         this.getLeftValues = getLeftValues;
@@ -155,7 +158,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
 
     private MetricInput<?> createInput() throws IOException, SQLException
     {
-        MetricInput<?> input = null;
+        MetricInput<?> input;
 
         DatasourceType dataType = this.projectDetails.getRight().getType();
 
@@ -277,7 +280,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         ResultSet resultSet = null;
 
         Integer aggHour = null;
-        String valueDate = null;
+        LocalDateTime valueDate = null;
 
         Map<Integer, List<Double>> rightValues = new TreeMap<>();
 
@@ -387,8 +390,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                 }
 
                 aggHour = resultSet.getInt( "agg_hour" );
-
-                valueDate = resultSet.getString("value_date");
+                valueDate = TimeHelper.convertStringToDate( resultSet.getString( "value_date" ), LocalDateTime::from );
 
                 Double[] measurements = (Double[])resultSet.getArray("measurements").getArray();
 
@@ -421,7 +423,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
     }
 
     private List<PairOfDoubleAndVectorOfDoubles> addPair( List<PairOfDoubleAndVectorOfDoubles> pairs,
-                                                          String valueDate,
+                                                          LocalDateTime valueDate,
                                                           Map<Integer, List<Double>> rightValues,
                                                           DataSourceConfig dataSourceConfig,
                                                           int lead)
@@ -488,7 +490,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                                             timeWindow );
     }
 
-    private PairOfDoubleAndVectorOfDoubles getPair(String lastDate,
+    private PairOfDoubleAndVectorOfDoubles getPair(LocalDateTime lastDate,
                                                    Map<Integer, List<Double>> rightValues)
             throws InvalidPropertiesFormatException, ProjectConfigException,
             NoDataException
@@ -498,14 +500,13 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             throw new NoDataException( "No values could be retrieved to pair with with any possible set of left values." );
         }
 
-        String firstDate;
+        LocalDateTime firstDate;
 
         if (this.projectDetails.shouldAggregate())
         {
             // This works for both rolling and back-to-back because of how the grouping of agg_hours works
-            firstDate = TimeHelper.minus( lastDate,
-                                          this.projectDetails.getAggregationUnit(),
-                                          this.projectDetails.getAggregationPeriod());
+            firstDate = lastDate.minus( this.projectDetails.getAggregationPeriod().longValue(),
+                                        ChronoUnit.valueOf( this.projectDetails.getAggregationUnit().toUpperCase() ));
         }
         else
         {
@@ -514,9 +515,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             // we end up with no left hand values. We instead decrement a short
             // period of time prior to ensure we end up with an actual range of
             // values containing the one value
-            firstDate =  TimeHelper.minus( lastDate,
-                                           "minute",
-                                           1);
+            firstDate = lastDate.minus(1L, ChronoUnit.MINUTES);
         }
 
         List<Double> leftValues = this.getLeftValues.apply( firstDate, lastDate );
@@ -571,7 +570,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                                                                         .size()] ) );
     }
 
-    private void writePair( String date,
+    private void writePair( TemporalAdjuster date,
                             PairOfDoubleAndVectorOfDoubles pair,
                             DataSourceConfig dataSourceConfig,
                             int lead)
@@ -601,7 +600,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
     private int poolingStep;
     private final ProjectDetails projectDetails;
     private Feature feature;
-    private final BiFunction<String, String, List<Double>> getLeftValues;
+    private final BiFunction<LocalDateTime, LocalDateTime, List<Double>> getLeftValues;
     private VectorOfDoubles climatology;
     private List<PairOfDoubleAndVectorOfDoubles> primaryPairs;
     private List<PairOfDoubleAndVectorOfDoubles> baselinePairs;

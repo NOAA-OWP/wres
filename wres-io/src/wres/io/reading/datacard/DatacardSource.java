@@ -270,7 +270,7 @@ public class DatacardSource extends BasicSource
 			while ((line = reader.readLine()) != null)
 			{
 			    lineNumber++;
-				line = Strings.rtrim(line);
+				line = Strings.rightTrim( line);
 				
 				// loop through all values in one line
 				for (valIdxInRecord = 0; valIdxInRecord < valuesPerRecord; valIdxInRecord++)
@@ -581,13 +581,13 @@ public class DatacardSource extends BasicSource
         this.currentLocationId = currentLocationId;
     }
 
-    private final static String INSERT_OBSERVATION_HEADER = "wres.Observation(variableposition_id, " +
+    private static final String INSERT_OBSERVATION_HEADER = "wres.Observation(variableposition_id, " +
                                                             "observation_time, " +
                                                             "observed_value, " +
                                                             "measurementunit_id, " +
                                                             "source_id)";
 
-	private final static String DATE_TIME_FORMAT = "^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}";
+	private static final String DATE_TIME_FORMAT = "^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}";
 
 	private int firstMonth = 0;
 	private int firstYear = 0;

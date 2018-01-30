@@ -581,7 +581,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
 
     public Integer getLeadOffset(Feature feature) throws SQLException
     {
-        if (!ConfigHelper.isForecast( this.getRight() ))
+        if (ConfigHelper.isSimulation( this.getRight() ))
         {
             return 0;
         }
@@ -791,7 +791,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
             clauseAdded = true;
         }
 
-        if ( ConfigHelper.isMinimumLeadHourSpecified( this.getProjectConfig() ))
+        if ( this.getMinimumLeadHour() != Integer.MIN_VALUE)
         {
             if (clauseAdded)
             {
@@ -803,14 +803,14 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         }
 
 
-        if (ConfigHelper.isMaximumLeadHourSpecified( this.getProjectConfig() ))
+        if ( this.getMaximumLeadHour() != Integer.MAX_VALUE )
         {
             if (clauseAdded)
             {
                 middle += "    AND ";
             }
 
-            middle += "FV.lead <= " + ConfigHelper.getMaximumLeadHour( this.getProjectConfig() ) + NEWLINE;
+            middle += "FV.lead <= " + this.getMaximumLeadHour( ) + NEWLINE;
             clauseAdded = true;
         }
 
@@ -1239,17 +1239,17 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
                                                                   "TS" ) +
                           NEWLINE;
 
-                if ( ConfigHelper.isMaximumLeadHourSpecified( this.projectConfig ) )
+                if ( this.getMaximumLeadHour() != Integer.MAX_VALUE )
                 {
                     script += "    AND FV.lead <= "
-                              + ConfigHelper.getMaximumLeadHour( this.projectConfig )
+                              + this.getMaximumLeadHour( )
                               + NEWLINE;
                 }
 
-                if ( ConfigHelper.isMinimumLeadHourSpecified( this.projectConfig ) )
+                if ( this.getMinimumLeadHour() != Integer.MIN_VALUE )
                 {
                     script += "    AND FV.lead >= "
-                              + ConfigHelper.getMinimumLeadHour( this.projectConfig )
+                              + this.getMinimumLeadHour( )
                               + NEWLINE;
                 }
 
@@ -1316,9 +1316,51 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
                                   this.getAggregationFrequency() * timeAggregationConfig.getPeriod()).intValue();
     }
 
+
+    /**
+     * Get the minimum lead hours from a project config or a default.
+     * @return the minimum value specified or a default of Integer.MIN_VALUE
+     */
     public Integer getMinimumLeadHour()
     {
-        return ConfigHelper.getMinimumLeadHour( this.projectConfig );
+        int result = Integer.MIN_VALUE;
+
+        if ( this.getProjectConfig().getPair() != null
+             && this.getProjectConfig().getPair()
+                    .getLeadHours() != null
+             && this.getProjectConfig().getPair()
+                    .getLeadHours()
+                    .getMinimum() != null )
+        {
+            result = this.getProjectConfig().getPair()
+                         .getLeadHours()
+                         .getMinimum();
+        }
+
+        return result;
+    }
+
+    /**
+     * Get the maximum lead hours from a project config or a default.
+     * @return the maximum value specified or a default of Integer.MAX_VALUE
+     */
+    private int getMaximumLeadHour()
+    {
+        int result = Integer.MAX_VALUE;
+
+        if ( this.getProjectConfig().getPair() != null
+             && this.getProjectConfig().getPair()
+                    .getLeadHours() != null
+             && this.getProjectConfig().getPair()
+                    .getLeadHours()
+                    .getMaximum() != null )
+        {
+            result = this.getProjectConfig().getPair()
+                         .getLeadHours()
+                         .getMaximum();
+        }
+
+        return result;
     }
 
     public int getWindowWidth() throws InvalidPropertiesFormatException

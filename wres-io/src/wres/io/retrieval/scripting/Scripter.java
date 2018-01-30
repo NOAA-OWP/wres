@@ -206,7 +206,7 @@ public abstract class Scripter
     {
         this.add("(", this.getValueDate());
         this.applyTimeShift();
-        this.addLine(")::text AS value_date,");
+        this.addLine(") AS value_date,");
     }
 
     protected void applyTimeShift()
@@ -274,14 +274,7 @@ public abstract class Scripter
     {
         if (this.member == null)
         {
-            if ( projectDetails.getRight().equals(dataSourceConfig) )
-            {
-                this.member = ProjectDetails.RIGHT_MEMBER;
-            }
-            else
-            {
-                this.member = ProjectDetails.BASELINE_MEMBER;
-            }
+            this.member = this.projectDetails.getInputName( this.dataSourceConfig );
         }
         return this.member;
     }

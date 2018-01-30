@@ -65,9 +65,9 @@ public final class PIXMLReader extends XMLReader
     /**
      * Alias for the system agnostic newline separator
      */
-	private final static String NEWLINE = System.lineSeparator();
+	private static final String NEWLINE = System.lineSeparator();
 
-	private final static String INSERT_OBSERVATION_HEADER = "wres.Observation(variableposition_id, " +
+	private static final String INSERT_OBSERVATION_HEADER = "wres.Observation(variableposition_id, " +
 																			  "observation_time, " +
 																			  "observed_value, " +
 																			  "measurementunit_id, " +
@@ -815,21 +815,21 @@ public final class PIXMLReader extends XMLReader
             // In order to interrogate the Cache, we need the key, not the
             // actual SourceDetails class itself.
 
-            SourceDetails.SourceKey deetsKey =
+            SourceDetails.SourceKey sourceKey =
                     new SourceDetails.SourceKey( this.getFilename(),
                                                  output_time,
                                                  null,
                                                  this.getHash() );
 
             // Ask the cache "do you have this source?"
-            boolean wasInCache = DataSources.isCached( deetsKey );
+            boolean wasInCache = DataSources.isCached( sourceKey );
             boolean wasThisReaderTheOneThatInserted = false;
             SourceDetails deets = null;
 
             if ( !wasInCache )
             {
                 // We *might* be the one in charge of doing this source ingest.
-                deets = new SourceDetails( deetsKey );
+                deets = new SourceDetails( sourceKey );
                 deets.save();
                 if ( deets.performedInsert() )
                 {

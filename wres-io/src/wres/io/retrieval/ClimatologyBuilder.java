@@ -36,7 +36,7 @@ class ClimatologyBuilder
 {
     private static final Logger
             LOGGER = LoggerFactory.getLogger( ClimatologyBuilder.class );
-    private final static String NEWLINE = System.lineSeparator();
+    private static final String NEWLINE = System.lineSeparator();
     /**
      * Serves as a fuzzy key for date values. The idea is that, given a date
      * of either an offsetdatetime or in a string, the value should
@@ -201,7 +201,6 @@ class ClimatologyBuilder
     private Map<DateRange, List<Double>> values;
 
     private Future<?> futureClimatologicalDates;
-    //private Future<DataSet> futureValues;
     private VectorOfDoubles climatology;
     private Map<Integer, UnitConversions.Conversion> conversions;
     private final ProjectDetails projectDetails;
@@ -250,8 +249,19 @@ class ClimatologyBuilder
                 {
                     StringBuilder script = new StringBuilder("SELECT").append(NEWLINE);
                     script.append("    (")
-                          .append(earliestDate).append("::timestamp without time zone")
-                          .append(" + ( member_number || ' ")
+                          .append(earliestDate).append("::timestamp without time zone");
+
+                    if (dataSourceConfig.getTimeShift() != null)
+                    {
+                        script.append(" + '")
+                              .append(dataSourceConfig.getTimeShift().getWidth())
+                              .append(" ")
+                              .append(dataSourceConfig.getTimeShift().getUnit())
+                              .append("'");
+                    }
+
+
+                    script.append(" + ( member_number || ' ")
                           .append(projectDetails.getAggregationUnit())
                           .append("')::INTERVAL)::TEXT AS start_date,").append(NEWLINE);
                     script.append("    (")
@@ -349,7 +359,8 @@ class ClimatologyBuilder
 
     private void setupDates() throws IOException
     {
-        String errorPrepend = "The process of determining dates within which to aggregate ";
+        final String errorPrepend = "The process of determining dates within "
+                                    + "which to aggregate ";
         try
         {
             this.futureClimatologicalDates.get();
@@ -373,7 +384,18 @@ class ClimatologyBuilder
 
         script.append("SELECT O.observed_value,").append(NEWLINE);
         script.append("    O.measurementunit_id,").append(NEWLINE);
-        script.append("    O.observation_time::text").append(NEWLINE);
+        script.append("    O.observation_time").append(NEWLINE);
+
+        if (this.dataSourceConfig.getTimeShift() != null)
+        {
+            script.append(" + '")
+                  .append(this.dataSourceConfig.getTimeShift().getWidth())
+                  .append(" ")
+                  .append(this.dataSourceConfig.getTimeShift().getUnit())
+                  .append("'");
+        }
+
+        script.append("::text").append(NEWLINE);
         script.append("FROM wres.Observation O").append(NEWLINE);
         try
         {
@@ -388,18 +410,7 @@ class ClimatologyBuilder
             String message = "The proper variable used to generate climatology ";
             message += "data could not be gleaned from the ";
 
-            if (this.projectDetails.getLeft() == this.dataSourceConfig)
-            {
-                message += ProjectDetails.LEFT_MEMBER;
-            }
-            else if (this.projectDetails.getRight() == this.dataSourceConfig)
-            {
-                message += ProjectDetails.RIGHT_MEMBER;
-            }
-            else
-            {
-                message += ProjectDetails.BASELINE_MEMBER;
-            }
+            message += this.projectDetails.getInputName( this.dataSourceConfig );
 
             message += " side of the data source specification.";
             throw new IOException( message, e );
@@ -408,8 +419,7 @@ class ClimatologyBuilder
         // Impose date limitations to keep a consistent climatology for USGS projects
         if (ConfigHelper.usesUSGSData( this.projectDetails.getProjectConfig() ))
         {
-            Instant
-                    date = ConfigHelper.getEarliestDateTimeFromDataSources( this.projectDetails.getProjectConfig() );
+            Instant date = ConfigHelper.getEarliestDateTimeFromDataSources( this.projectDetails.getProjectConfig() );
 
             String earliest = "'";
             String latest = "'";
@@ -420,7 +430,7 @@ class ClimatologyBuilder
             }
             else
             {
-                earliest += TimeHelper.normalize( date.toString() );
+                earliest += date.toString();
             }
 
             earliest += "'";
@@ -433,35 +443,46 @@ class ClimatologyBuilder
             }
             else
             {
-                latest += TimeHelper.normalize( date.toString() );
+                latest += date.toString();
             }
 
             latest += "'";
 
-            script.append("    AND O.observation_date >= ").append(earliest).append(NEWLINE);
-            script.append("    AND O.observation_date <= ").append(latest).append(NEWLINE);
+            script.append("    AND O.observation_date");
+
+            if (this.dataSourceConfig.getTimeShift() != null)
+            {
+                script.append(" + '")
+                      .append(this.dataSourceConfig.getTimeShift().getWidth())
+                      .append(" ")
+                      .append(this.dataSourceConfig.getTimeShift().getUnit())
+                      .append("'")
+                      .append(NEWLINE);
+            }
+
+            script.append(" >= ").append(earliest).append(NEWLINE);
+            script.append("    AND O.observation_date");
+
+            if (this.dataSourceConfig.getTimeShift() != null)
+            {
+                script.append(" + '")
+                      .append(this.dataSourceConfig.getTimeShift().getWidth())
+                      .append(" ")
+                      .append(this.dataSourceConfig.getTimeShift().getUnit())
+                      .append("'")
+                      .append(NEWLINE);
+            }
+
+            script.append(" <= ").append(latest).append(NEWLINE);
         }
 
         script.append("    AND EXISTS (").append(NEWLINE);
         script.append("        SELECT 1").append(NEWLINE);
         script.append("        FROM wres.ProjectSource PS").append(NEWLINE);
         script.append("        WHERE PS.project_id = ").append(this.projectDetails.getId()).append(NEWLINE);
-        script.append("            AND PS.member = ");
-
-        if (this.projectDetails.getLeft().equals(this.dataSourceConfig))
-        {
-            script.append(ProjectDetails.LEFT_MEMBER);
-        }
-        else if (this.projectDetails.getRight().equals(this.dataSourceConfig))
-        {
-            script.append(ProjectDetails.RIGHT_MEMBER);
-        }
-        else
-        {
-            script.append(ProjectDetails.BASELINE_MEMBER);
-        }
-
-        script.append(NEWLINE);
+        script.append("            AND PS.member = ")
+              .append(this.projectDetails.getInputName( this.dataSourceConfig ))
+              .append(NEWLINE);
         script.append("        AND PS.source_id = O.source_id").append(NEWLINE);
         script.append("        AND PS.inactive_time IS NULL").append(NEWLINE);
         script.append(");");

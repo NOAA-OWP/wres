@@ -6,11 +6,10 @@ import ucar.nc2.Attribute;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
 
-import java.time.OffsetDateTime;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.Map;
 import java.util.Objects;
-import java.util.TreeMap;
+import java.util.regex.Pattern;
 
 /**
  * Created by ctubbs on 7/7/17.
@@ -18,8 +17,9 @@ import java.util.TreeMap;
 public final class NetCDF {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NetCDF.class);
-    private static final String NWM_NAME_PATTERN =
-            "^nwm\\.t\\d\\dz\\.(short|medium|long|analysis)_(range|assim)\\.[a-zA-Z]+(_rt)?(_\\d)?\\.(f\\d\\d\\d|tm\\d\\d)\\.conus\\.nc(\\.gz)?$";
+    private static final Pattern NWM_NAME_PATTERN = Pattern.compile(
+            "^nwm\\.t\\d\\dz\\.(short|medium|long|analysis)_(range|assim)\\.[a-zA-Z]+(_rt)?(_\\d)?\\.(f\\d\\d\\d|tm\\d\\d)\\.conus\\.nc(\\.gz)?$"
+    );
 
     public static class Ensemble
     {
@@ -121,39 +121,19 @@ public final class NetCDF {
                                                        "' is not valid National Water Model Data.");
         }
 
-        OffsetDateTime initialization = TimeHelper.convertStringToDate( NetCDF.getInitializedTime( file));
-        OffsetDateTime valid = TimeHelper.convertStringToDate( NetCDF.getValidTime( file));
-
+        LocalDateTime initialization = LocalDateTime.parse(NetCDF.getInitializedTime( file));
+        LocalDateTime valid = LocalDateTime.parse(NetCDF.getValidTime( file));
         return ((Long)initialization.until(valid, ChronoUnit.HOURS)).intValue();
     }
 
-    public static String getNWMRange(NetcdfFile file)
-    {
-        if (!NetCDF.isNWMData(file))
-        {
-            throw new IllegalArgumentException("The NetCDF data in '" +
-                                                       file.getLocation() +
-                                                       "' is not valid National Water Model Data.");
-        }
-        String range = Collections.find(NetCDF.getNWMFilenameParts(file), (String possibility) -> {
-            return Strings.hasValue(possibility) && (possibility.endsWith("range") || possibility.endsWith("assim"));
-        });
-
-        // This is somewhat like hitting it with a hammer. Without this line, we get results like "short_range" or
-        // "analysis_assim", both of which aren't completely human friendy ('_' = bad), nor are they in the forecast
-        // type table
-        range = Strings.removePattern(range, "_[a-zA-Z]+");
-        return range;
-    }
-
-    public static String getInitializedTime(NetcdfFile file)
+    public static String getInitializedTime( NetcdfFile file)
     {
         String initializationTime = null;
 
         Attribute initializationAttribute = file.findGlobalAttributeIgnoreCase("model_initialization_time");
         if (initializationAttribute != null)
         {
-            initializationTime = initializationAttribute.getStringValue().replace("_", " ").trim();
+            initializationTime = initializationAttribute.getStringValue().replace("_", "T").trim();
         }
 
         return initializationTime;
@@ -165,12 +145,12 @@ public final class NetCDF {
         Attribute validTimeAttribute = file.findGlobalAttributeIgnoreCase("model_output_valid_time");
         if (validTimeAttribute != null)
         {
-            validTime = validTimeAttribute.getStringValue().replace("_", " ").trim();
+            validTime = validTimeAttribute.getStringValue().replace("_", "T").trim();
         }
         return validTime;
     }
 
-    public static Attribute getVariableAttribute(Variable variable, String attributeName)
+    public static Attribute getVariableAttribute(final Variable variable, final String attributeName)
     {
         return Collections.find(variable.getAttributes(), (Attribute attribute) -> {
             return attribute.getShortName().equalsIgnoreCase(attributeName);
@@ -179,6 +159,7 @@ public final class NetCDF {
 
     public static String[] getNWMFilenameParts(NetcdfFile file)
     {
+        // TODO: Can this be done with a regex Pattern?
         String name = Strings.getFileName(file.getLocation());
         name = Strings.removePattern(name, "\\.gz");
         name = Strings.removePattern(name, "nwm\\.");
@@ -201,7 +182,7 @@ public final class NetCDF {
 
     public static boolean isNWMData(String filename)
     {
-        return filename.matches( NetCDF.NWM_NAME_PATTERN );
+        return NetCDF.NWM_NAME_PATTERN.matcher( filename ).matches();
     }
 
 
@@ -214,6 +195,8 @@ public final class NetCDF {
                                                        "' is not valid National Water Model Data.");
         }
 
+        // TODO: Implement the use of a compiled regex (just good practice;
+        // shouldn't improve performance by much)
         return Strings.extractWord(Strings.getFileName(file.getLocation()),
                                    "(?<=(assim|range)\\.)[a-zA-Z_\\d]+(?=\\.(tm\\d\\d|f\\d\\d\\d))");
     }

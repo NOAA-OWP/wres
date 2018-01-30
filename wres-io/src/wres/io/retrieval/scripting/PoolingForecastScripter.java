@@ -136,12 +136,6 @@ class PoolingForecastScripter extends Scripter
     @Override
     protected int getProgress() throws NoDataException
     {
-        // TODO: Change ConfigHelper.getLeadQualifier to suit this need
-        // ConfigHelper.getLeadQualifier cannot be currently used since it
-        // relies on the alias 'FV'
-
-        // TODO: Determine a better, centralized exception type
-
         Integer offset;
 
         try

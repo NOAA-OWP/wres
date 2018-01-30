@@ -38,6 +38,7 @@ import wres.io.utilities.Database;
 import wres.util.NetCDF;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
+import wres.util.TimeHelper;
 
 class VectorNWMValueSaver extends WRESRunnable
 {
@@ -164,7 +165,6 @@ class VectorNWMValueSaver extends WRESRunnable
     private Integer variableID;
     private final Future<String> futureHash;
     private String hash;
-    private final ProjectConfig projectConfig;
     private final DataSourceConfig dataSourceConfig;
     private Integer measurementUnitID;
     private Integer sourceID;
@@ -173,8 +173,7 @@ class VectorNWMValueSaver extends WRESRunnable
 
     public VectorNWMValueSaver( String filename,
                                 Future<String> futureHash,
-                                DataSourceConfig dataSourceConfig,
-                                ProjectConfig projectConfig)
+                                DataSourceConfig dataSourceConfig)
     {
         if (filename == null || filename.isEmpty())
         {
@@ -187,7 +186,6 @@ class VectorNWMValueSaver extends WRESRunnable
 
         this.filePath = Paths.get(filename);
         this.futureHash = futureHash;
-        this.projectConfig = projectConfig;
         this.dataSourceConfig = dataSourceConfig;
     }
 
@@ -281,29 +279,29 @@ class VectorNWMValueSaver extends WRESRunnable
     {
         if (this.sourceID == null)
         {
-            SourceDetails.SourceKey deetsKey =
+            SourceDetails.SourceKey sourceKey =
                     new SourceDetails.SourceKey( this.filePath.toAbsolutePath().toString(),
                                                  NetCDF.getInitializedTime( this.getSource() ),
                                                  this.getLead(),
                                                  this.getHash() );
 
             // Ask the cache "do you have this source?"
-            boolean wasInCache = DataSources.isCached( deetsKey );
+            boolean wasInCache = DataSources.isCached( sourceKey );
             boolean wasThisReaderTheOneThatInserted = false;
-            SourceDetails deets = null;
+            SourceDetails sourceDetails;
 
             if ( !wasInCache )
             {
                 // We *might* be the one in charge of doing this source ingest.
-                deets = new SourceDetails( deetsKey );
-                deets.save();
-                if ( deets.performedInsert() )
+                sourceDetails = new SourceDetails( sourceKey );
+                sourceDetails.save();
+                if ( sourceDetails.performedInsert() )
                 {
                     // Now we have the definitive answer from the database.
                     wasThisReaderTheOneThatInserted = true;
 
                     // Now that ball is in our court we should put in cache
-                    DataSources.put( deets );
+                    DataSources.put( sourceDetails );
                 }
             }
 
