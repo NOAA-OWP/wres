@@ -14,6 +14,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.StringJoiner;
 import java.util.TreeSet;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -271,14 +272,16 @@ public final class Operations {
 
     private static String getFileContents( Path path )
     {
-        StringBuilder project = new StringBuilder();
+        //StringBuilder project = new StringBuilder();
+        StringJoiner project = new StringJoiner( System.lineSeparator() );
 
         try
         {
             for ( String line : Files.readAllLines( path ) )
             {
-                project.append( line );
-                project.append( System.lineSeparator() );
+                project.add( line );
+                /*project.append( line );
+                project.append( System.lineSeparator() );*/
             }
         }
         catch ( IOException ioe )
@@ -313,7 +316,7 @@ public final class Operations {
             }
             else
             {
-                LOGGER.debug( "The location '{}' will not be evaluated because "
+                LOGGER.info( "The location '{}' will not be evaluated because "
                              + "it doesn't have any intersecting data between "
                              + "left and right inputs.", details );
             }

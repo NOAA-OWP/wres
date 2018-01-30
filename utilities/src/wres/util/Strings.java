@@ -21,15 +21,28 @@ import org.slf4j.LoggerFactory;
 public final class Strings
 {
 	private static final Logger LOGGER = LoggerFactory.getLogger( Strings.class );
+	private static final Pattern RTRIM = Pattern.compile("\\s+$");
+	private static final Pattern NUMERIC_PATTERN = Pattern.compile( "^[-]?\\d*\\.?\\d+$" );
 
-	private final static int TRUNCATE_SIZE = 2000;
+	private static final int TRUNCATE_SIZE = 2000;
 
     private Strings(){}
 	
 	/**
 	 * Static list of string values that might map to the boolean value 'true'
 	 */
-	private static final List<String> POSSIBLE_TRUE_VALUES = Arrays.asList("true", "True", "TRUE", "T", "t", "y", "yes", "Yes", "YES", "Y", "1");
+	private static final List<String> POSSIBLE_TRUE_VALUES =
+			Arrays.asList("true",
+						  "True",
+						  "TRUE",
+						  "T",
+						  "t",
+						  "y",
+						  "yes",
+						  "Yes",
+						  "YES",
+						  "Y",
+						  "1");
 	
 	public static boolean isTrue(String possibleBoolean)
 	{
@@ -72,28 +85,6 @@ public final class Strings
 		}
 		return truncatedMessage;
 	}
-	
-	/**
-	 * Finds every substring that in the source that matches the pattern
-	 * @param source The string to extract the words from
-	 * @param pattern The pattern to match
-	 * @return A string array containing all matched substrings
-	 */
-	public static String[] extractWords(String source, String pattern) {
-		String[] matches = null;
-		
-		Pattern regex = Pattern.compile(pattern);
-		Matcher match = regex.matcher(source);
-		
-		if (match.find()) {
-			matches = new String[match.groupCount() + 1];
-			for (int match_index = 0; match_index <= match.groupCount(); ++match_index) {
-				matches[match_index] = match.group(match_index);
-			}
-		}
-				
-		return matches;
-	}
 
 	public static boolean contains(String full, String pattern)
 	{
@@ -112,7 +103,8 @@ public final class Strings
 	 * @return True if the possibleNumber really is a number
 	 */
 	public static boolean isNumeric(String possibleNumber) {
-		return hasValue(possibleNumber) && possibleNumber.trim().matches("^[-]?\\d*\\.?\\d+$");
+		return hasValue(possibleNumber) &&
+               NUMERIC_PATTERN.matcher( possibleNumber.trim() ).matches();
 	}
 	
 	public static String getStackTrace(Exception error)
@@ -139,11 +131,6 @@ public final class Strings
 
 		return isOne;
 	}
-
-    public static String getAbsolutePath(String filename)
-    {
-        return Paths.get(filename).toAbsolutePath().toString();
-    }
 
     public static String getFileName(String path)
     {
@@ -217,19 +204,11 @@ public final class Strings
         return algorithm;
     }
 
-    public static String rtrim(String string)
+    public static String rightTrim( String string)
 	{
 		if( Strings.hasValue( string ))
 		{
-			int whitespaceIndex = string.length() - 1;
-		    
-		    while (whitespaceIndex >= 0 &&
-				   Character.isWhitespace(string.charAt(whitespaceIndex)))
-			{
-			    whitespaceIndex--;
-			}
-		    
-		    string = string.substring(0, whitespaceIndex + 1);
+			return RTRIM.matcher( string ).replaceAll( "" );
 		}
 	
 		return string;
@@ -247,6 +226,7 @@ public final class Strings
 		catch ( InvalidPathException invalid )
 		{
 			// If it isn't valid, we want to catch this, but not break
+            LOGGER.trace("The path '{}' doesn't exist.", path);
 		}
 
 		return isValid;

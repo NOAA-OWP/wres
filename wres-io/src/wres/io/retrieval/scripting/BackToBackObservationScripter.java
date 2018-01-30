@@ -53,14 +53,13 @@ class BackToBackObservationScripter extends Scripter
         this.addLine("FROM wres.Observation O");
 
         this.applyVariablePositionClause();
-        this.applySourceConstraint();
 
         this.applyEarliestDateConstraint();
         this.applyLatestDateConstraint();
 
         this.applySeasonConstraint();
         this.applyProjectConstraint();
-
+        this.addLine( "ORDER BY value_date" );
         return this.getScript();
     }
 
@@ -105,27 +104,6 @@ class BackToBackObservationScripter extends Scripter
             ).intValue();
         }
         return this.windowPeriod;
-    }
-
-    private void applySourceConstraint() throws SQLException
-    {
-        List<Integer> sourceIds;
-
-        if (this.getProjectDetails().getLeft().equals(this.getDataSourceConfig()))
-        {
-            sourceIds = this.getProjectDetails().getLeftSources();
-        }
-        else if (this.getProjectDetails().getRight().equals(this.getDataSourceConfig()))
-        {
-            sourceIds = this.getProjectDetails().getRightSources();
-        }
-        else
-        {
-            sourceIds = this.getProjectDetails().getBaselineSources();
-        }
-
-        this.addLine( "    AND O.source_id = ",
-                      Collections.formAnyStatement(sourceIds, "int"));
     }
 
     @Override

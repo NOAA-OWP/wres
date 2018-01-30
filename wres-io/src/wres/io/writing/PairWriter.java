@@ -8,10 +8,11 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.text.DecimalFormat;
+import java.time.LocalDateTime;
+import java.time.temporal.TemporalAccessor;
+import java.time.temporal.TemporalAdjuster;
 import java.util.Arrays;
-import java.util.InvalidPropertiesFormatException;
 import java.util.StringJoiner;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,6 +25,7 @@ import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.io.concurrency.WRESCallable;
 import wres.io.config.ConfigHelper;
 import wres.io.data.details.ProjectDetails;
+import wres.util.TimeHelper;
 
 public class PairWriter extends WRESCallable<Boolean>
 {
@@ -52,7 +54,7 @@ public class PairWriter extends WRESCallable<Boolean>
 
     // TODO: IMPLEMENT BUILDER
     public PairWriter( DestinationConfig destinationConfig,
-                       String date,
+                       TemporalAdjuster date,
                        Feature feature,
                        int windowNum,
                        PairOfDoubleAndVectorOfDoubles pair,
@@ -62,7 +64,7 @@ public class PairWriter extends WRESCallable<Boolean>
                        int lead)
     {
         this.destinationConfig = destinationConfig;
-        this.date = date;
+        this.date = TimeHelper.convertDateToString(( TemporalAccessor)date);
         this.feature = feature;
         this.windowNum = windowNum;
         this.pair = pair;
@@ -199,8 +201,7 @@ public class PairWriter extends WRESCallable<Boolean>
         return this.feature;
     }
 
-    private String getWindow()
-            throws SQLException, InvalidPropertiesFormatException
+    private String getWindow() throws SQLException
     {
 
         int window = this.getWindowNum();

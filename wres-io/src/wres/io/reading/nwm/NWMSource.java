@@ -74,8 +74,7 @@ public class NWMSource extends BasicSource
                 {
                     saver = new VectorNWMValueSaver( this.getFilename(),
 													 this.getFutureHash(),
-													 this.dataSourceConfig,
-                                                     this.getProjectConfig() );
+													 this.dataSourceConfig );
                 }
 
                 saver.setOnRun(ProgressMonitor.onThreadStartHandler());

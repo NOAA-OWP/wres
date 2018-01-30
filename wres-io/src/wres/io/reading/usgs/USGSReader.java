@@ -299,7 +299,7 @@ public class USGSReader extends BasicSource
                 this.parameterCode = this.getParameter().getParameterCode();
             }
         }
-        return this.getParameter().getParameterCode();
+        return this.parameterCode;
     }
 
     private USGSParameters.USGSParameter getParameter()
@@ -314,10 +314,6 @@ public class USGSReader extends BasicSource
             if (variableName.matches( ".+,.+" ))
             {
                 this.parameter = USGSParameters.getParameterByDescription( variableName );
-            }
-            else if (variableName.matches( "\\d{5}" ))
-            {
-                this.parameter = USGSParameters.getParameterByCode( variableName );
             }
             else
             {
@@ -400,8 +396,6 @@ public class USGSReader extends BasicSource
                 this.startDate = earliest.toString();
             }
 
-            this.startDate = TimeHelper.normalize( this.startDate );
-
             switch (this.dataSourceConfig.getExistingTimeScale().getUnit())
             {
                 case DAYS:
@@ -435,8 +429,6 @@ public class USGSReader extends BasicSource
             {
                 this.endDate = latest.toString();
             }
-
-            this.endDate = TimeHelper.normalize( this.endDate );
 
             switch (this.dataSourceConfig.getExistingTimeScale().getUnit())
             {
@@ -543,7 +535,7 @@ public class USGSReader extends BasicSource
     {
         this.upsertValues.add(
                 new UpsertValue( gageID,
-                                 TimeHelper.normalize( observationTime ),
+                                 observationTime,
                                  value )
         );
 

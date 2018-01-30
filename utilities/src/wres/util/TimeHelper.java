@@ -2,15 +2,14 @@ package wres.util;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoField;
-import java.util.Arrays;
+import java.time.temporal.TemporalAccessor;
+import java.time.temporal.TemporalQuery;
 import java.util.InvalidPropertiesFormatException;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
+import java.util.regex.Pattern;
 
 /**
  * Helper class containing functions used to interpret and modify time data
@@ -21,8 +20,13 @@ public final class TimeHelper
     /**
      * The global format for dates is {@value}
      */
-    public final static String DATE_FORMAT = "yyyy-MM-dd[ [HH][:mm][:ss]";
+    public static final String DATE_FORMAT = "yyyy-MM-dd[ [HH][:mm][:ss]";
 
+    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern( DATE_FORMAT );
+    private static final Pattern TIMESTAMP_PATTERN =
+            Pattern.compile( "\\d\\d\\d\\d-\\d\\d-\\d\\d(T| )\\d?\\d:\\d\\d(:\\d\\d\\.?\\d*)?((-|\\+)\\d\\d:?\\d\\d)?Z?" );
+    private static final Pattern DATE_PATTERN = Pattern.compile( "\\d\\d\\d\\d(-|/)?\\d\\d(-|/)?\\d\\d" );
+    private static final Pattern OFFSET_PATTERN = Pattern.compile( ".+(-|\\+)\\d\\d\\d\\d" );
     /**
      * Mapping between common date indicators to their conversion multipliers
      * from hours
@@ -58,16 +62,13 @@ public final class TimeHelper
      */
     public static boolean isTimestamp(String possibleTimestamp)
     {
-        return Strings.hasValue( possibleTimestamp ) && (
-                possibleTimestamp.matches("\\d\\d\\d\\d-\\d\\d-\\d\\d(T| )\\d?\\d:\\d\\d(:\\d\\d\\.?\\d*)?((-|\\+)\\d\\d:?\\d\\d)?Z?") ||
-                Arrays.asList("epoch", "infinity", "-infinity", "now", "today", "tomorrow", "yesterday").contains(possibleTimestamp));
+        return Strings.hasValue( possibleTimestamp ) &&
+               TIMESTAMP_PATTERN.matcher( possibleTimestamp ).matches();
     }
 
     public static boolean isDate(String possibleDate)
     {
-        return Strings.hasValue( possibleDate ) &&
-               (possibleDate.length() == 8 || possibleDate.length() == 10) &&
-               possibleDate.matches( "\\d\\d\\d\\d(-|/)?\\d\\d(-|/)?\\d\\d" );
+        return Strings.hasValue( possibleDate ) && DATE_PATTERN.matcher( possibleDate ).matches();
     }
     
     /**
@@ -101,14 +102,18 @@ public final class TimeHelper
     }
 
     /**
-     * Converts a passed in time object to the system accepted string format
+     * Converts a passed in time object to the system standard string format
      * @param datetime The date and time to interpret
      * @return The string interpretation of datetime formatted to match {@value #DATE_FORMAT}
      */
-    public static String convertDateToString(OffsetDateTime datetime)
+    public static String convertDateToString(TemporalAccessor datetime)
     {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DATE_FORMAT);
-        return datetime.format(formatter);
+        return DATE_TIME_FORMATTER.format( datetime );
+    }
+
+    public static <R extends TemporalAccessor> R convertStringToDate(String dateTime, TemporalQuery<R> query)
+    {
+        return convertStringToDate( dateTime ).query( query );
     }
 
     /**
@@ -123,59 +128,26 @@ public final class TimeHelper
      * @param datetime A string representation of a date
      * @return A date and time object representing the described date
      */
-    public static OffsetDateTime convertStringToDate(String datetime)
+    public static TemporalAccessor convertStringToDate(String datetime)
     {
         Objects.requireNonNull( datetime );
-
-        // This function allows us to use many possible formats without having
-        // to use many different DateTimeFormatter objects.
 
         OffsetDateTime date = null;
 
         datetime = datetime.trim();
 
-        if (datetime.equalsIgnoreCase("epoch"))
-        {
-            date = OffsetDateTime.of(1970, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC);
-        }
-        else if (datetime.equalsIgnoreCase("infinity"))
-        {
-            date = OffsetDateTime.MAX;
-        }
-        else if (datetime.equalsIgnoreCase("-infinity"))
-        {
-            date = OffsetDateTime.MIN;
-        }
-        else if (datetime.equalsIgnoreCase("today"))
-        {
-            date = OffsetDateTime.now();
-            date = date.minusNanos(date.get(ChronoField.NANO_OF_DAY));
-        }
-        else if (datetime.equalsIgnoreCase("tomorrow"))
-        {
-            date = OffsetDateTime.now().plusDays(1L);
-            date = date.minusNanos(date.get(ChronoField.NANO_OF_DAY));
-        }
-        else if (datetime.equalsIgnoreCase("now"))
-        {
-            date = OffsetDateTime.now(ZoneId.of( "UTC" ));
-        }
-        else if (datetime.equalsIgnoreCase("yesterday"))
-        {
-            date = OffsetDateTime.now().minusDays(1L);
-            date = date.minusNanos(date.get(ChronoField.NANO_OF_DAY));
-        }
-        else if (isTimestamp(datetime))
+        if (isTimestamp(datetime))
         {
             // Allows the use of timestamps of the form "2017-08-08 00:00:00-0600",
-            // which can't be parsed; they must be "2017-08-08 00:00:00-06:00"
-            if (datetime.matches( ".+(-|\\+)\\d\\d\\d\\d" ))
+            // which can't be parsed; they must be "2017-08-08 00:00:00"
+            if ( OFFSET_PATTERN.matcher( datetime ).matches())
             {
                 datetime = datetime.substring( 0, datetime.length() - 2 ) + ":" + datetime.substring( datetime.length() - 2 );
             }
             // Allows the use of timestamps of the form "2017-08-08 00:00:00",
-            // which can't be parsed
-            else if (!datetime.matches( ".+(-|\\+)\\d\\d:?\\d\\d" ) && !datetime.endsWith("Z"))
+            // (i.e. without an offset) which can't be parsed. Forces non-offset
+            // timestamps into Z time
+            else if (!datetime.endsWith("Z"))
             {
                 datetime += "Z";
             }
@@ -188,7 +160,8 @@ public final class TimeHelper
             }
 
             // Timestamps such as "2017-08-08T6:00:00-06:30" cannot be parsed,
-            // but "2017-08-08T06:00:00-06:30" can.
+            // but "2017-08-08T06:00:00-06:30". Basically, if there aren't
+            // two digits after the T, pad it
             if (datetime.charAt( 13 ) != ':' || datetime.matches( "T\\d:" ))
             {
                 datetime = datetime.substring( 0, 11 ) + "0" + datetime.substring( 11 );
@@ -198,13 +171,17 @@ public final class TimeHelper
         }
         else if (isDate( datetime ))
         {
+            // If the date time is missing delimiters between yyyy-mm-dd, add them
             if (datetime.length() == 8)
             {
                 datetime = datetime.substring( 0, 4 ) + "-" + datetime.substring( 4, 6 ) + "-" + datetime.substring( 6 );
             }
 
+            // If there were any delimiters of "/" instead of "-", replace them
             datetime = datetime.replaceAll( "/", "-" );
 
+            // Add the 0Z time to the end of it to ensure that it is marked as
+            // the beginning of the day
             datetime += "T00:00:00Z";
             date = OffsetDateTime.parse(datetime);
 
@@ -220,8 +197,8 @@ public final class TimeHelper
 
     public static String convertStringDateTimeToDate(String datetime)
     {
-        OffsetDateTime actualDateTime = TimeHelper.convertStringToDate( datetime );
-        LocalDate actualDate = actualDateTime.toLocalDate();
+        TemporalAccessor actualDateTime = TimeHelper.convertStringToDate( datetime );
+        LocalDate actualDate = LocalDate.from( actualDateTime );
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DATE_FORMAT);
         return actualDate.format(formatter);
     }
@@ -247,65 +224,5 @@ public final class TimeHelper
                                                                String.valueOf(unit));
         }
         return hours;
-    }
-
-    /**
-     * Converts a parsed time representation to the format agnostic
-     * pattern used across the system
-     * @param date The time stamp to normalize
-     * @return An updated time string adhering to the defined standard
-     */
-    public static String normalize(String date)
-    {
-        Objects.requireNonNull( date );
-
-        OffsetDateTime absoluteDate = TimeHelper.convertStringToDate( date);
-        absoluteDate = absoluteDate.withOffsetSameInstant( ZoneOffset.UTC );
-        return TimeHelper.convertDateToString( absoluteDate);
-    }
-
-    /**
-     * Subtract the specified unit of time from a parsed timestamp
-     * @param time The parsed time stamp
-     * @param unit The unit that we want to subtract (DAY, HOUR, etc)
-     * @param amount The number of the unit to subtract
-     * @return A string detailing the updated time stamp
-     * @throws InvalidPropertiesFormatException Thrown if the amount to
-     * subtract could not be determined from the unit description
-     */
-    public static String minus(String time, String unit, double amount)
-            throws InvalidPropertiesFormatException
-    {
-        if (time == null)
-        {
-            throw new IllegalArgumentException( String.valueOf( amount ) +
-                                                " " + String.valueOf(unit) +
-                                                " could not be removed from " +
-                                                "a nonexistent time.");
-        }
-
-        // Convert to hours, then convert to seconds
-        Double amountToSubtract = TimeHelper.unitsToHours( unit, amount ) * 3600;
-        OffsetDateTime actualTime = convertStringToDate( time );
-        return convertDateToString(
-                actualTime.minusSeconds( amountToSubtract.longValue() )
-        );
-    }
-
-    public static String plus(String time, String unit, double amount) throws InvalidPropertiesFormatException
-    {
-        if (time == null)
-        {
-            throw new IllegalArgumentException( String.valueOf( amount ) +
-                                                " " + String.valueOf(unit) +
-                                                " could not be added to " +
-                                                "a nonexistent time." );
-        }
-
-        // Convert to hours, then convert to seconds
-        Double amountToAdd = TimeHelper.unitsToHours( unit, amount) * 3600;
-        OffsetDateTime actualTime = TimeHelper.convertStringToDate( time );
-
-        return TimeHelper.convertDateToString( actualTime.plusSeconds( amountToAdd.longValue() ) );
     }
 }

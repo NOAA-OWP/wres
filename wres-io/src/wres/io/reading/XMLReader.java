@@ -17,7 +17,6 @@ import javax.xml.transform.stax.StAXSource;
 import javax.xml.transform.stream.StreamResult;
 
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import wres.util.Strings;
 

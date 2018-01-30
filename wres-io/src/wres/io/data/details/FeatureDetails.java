@@ -922,13 +922,13 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
     {
         String name = "Unknown";
 
-        if (Strings.hasValue( this.getFeatureName() ))
-        {
-            name = this.getFeatureName();
-        }
-        else if (Strings.hasValue( this.getLid() ))
+        if (Strings.hasValue( this.getLid() ))
         {
             name = this.getLid();
+        }
+        else if (Strings.hasValue( this.getFeatureName() ))
+        {
+            name = this.getFeatureName();
         }
         else if (Strings.hasValue( this.getGageID() ))
         {

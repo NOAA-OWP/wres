@@ -9,9 +9,9 @@ import java.time.DateTimeException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.MonthDay;
-import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.InvalidPropertiesFormatException;
@@ -240,183 +240,6 @@ public class ConfigHelper
         TimeScaleConfig timeAggregationConfig = projectConfig.getPair().getDesiredTimeScale();
         return TimeHelper.unitsToHours( timeAggregationConfig.getUnit().value(),
                                         timeAggregationConfig.getPeriod() );
-    }
-
-    public static Integer getLeadOffset( ProjectDetails projectDetails, Feature feature )
-            throws InvalidPropertiesFormatException, SQLException
-    {
-        ProjectConfig projectConfig = projectDetails.getProjectConfig();
-        Integer offset;
-        String newline = System.lineSeparator();
-        int width = getWindowWidth( projectConfig ).intValue();
-        String leftVariablepositionClause;
-        String rightVariablepositionClause;
-
-        try
-        {
-            leftVariablepositionClause =
-                    ConfigHelper.getVariablePositionClause( feature,
-                                                            projectDetails.getLeftVariableID(),
-                                                            "O" );
-        }
-        catch (SQLException e)
-        {
-            throw new SQLException( "Information about the variable used in the "
-                                    + "left data set could not be retrieved "
-                                    + "from the database.", e );
-        }
-
-        try
-        {
-            rightVariablepositionClause =
-                    ConfigHelper.getVariablePositionClause( feature,
-                                                            projectDetails.getRightVariableID(),
-                                                            "TS" );
-        }
-        catch (SQLException e)
-        {
-            throw new SQLException( "Information about the variable used in the "
-                                    + "right data set could not be retrieved "
-                                    + "from the database.", e );
-        }
-
-        StringBuilder script = new StringBuilder(  );
-
-        script.append("SELECT FV.lead - ").append(width).append(" AS offset").append(newline);
-        script.append("FROM (").append(newline);
-        script.append("    SELECT TS.timeseries_id, TS.initialization_date").append(newline);
-        script.append("    FROM wres.TimeSeries TS").append(newline);
-        script.append("    WHERE ").append(rightVariablepositionClause).append(newline);
-
-        if (Strings.hasValue( projectDetails.getEarliestIssueDate()))
-        {
-            script.append("        AND TS.initialization_date >= '").append(projectDetails.getEarliestIssueDate()).append("'").append(newline);
-        }
-
-        if (Strings.hasValue( projectDetails.getLatestIssueDate() ))
-        {
-            script.append("        AND TS.initialization_date <= '").append(projectDetails.getLatestIssueDate()).append("'").append(newline);
-        }
-
-        script.append("         AND EXISTS (").append(newline);
-        script.append("             SELECT 1").append(newline);
-        script.append("             FROM wres.ProjectSource OPS").append(newline);
-        script.append("             INNER JOIN wres.ForecastSource OFS").append(newline);
-        script.append("                 ON OFS.source_id = OPS.source_id").append(newline);
-        script.append("             WHERE OPS.project_id = ").append(projectDetails.getId()).append(newline);
-        script.append("                 AND OPS.member = 'right'").append(newline);
-        script.append("                 AND OFS.forecast_id = TS.timeseries_id").append(newline);
-        script.append("         )").append(newline);
-        script.append("    ) AS TS").append(newline);
-        script.append("INNER JOIN wres.ForecastValue FV").append(newline);
-        script.append("    ON FV.timeseries_id = TS.timeseries_id").append(newline);
-
-        /*script.append("FROM wres.TimeSeries TS").append(newline);
-        script.append("INNER JOIN wres.ForecastValue FV").append(newline);
-        script.append("     ON FV.timeseries_id = TS.timeseries_id").append(newline);
-        script.append("INNER JOIN wres.Observation O").append(newline);
-        script.append("     ON O.observation_time");
-
-        if (projectDetails.getLeftTimeShift() != 0)
-        {
-            script.append(" + INTERVAL '1 HOUR' *").append(projectDetails.getLeft().getTimeShift().getWidth());
-        }
-
-        script.append(" = TS.initialization_date + INTERVAL '1 HOUR' * (FV.lead + ").append(width).append(")");
-
-        if (projectDetails.getRightTimeShift() != 0)
-        {
-            script.append(" + INTERVAL '1 HOUR' *").append(projectDetails.getRight().getTimeShift().getWidth());
-        }
-
-        script.append(newline);*/
-        script.append("WHERE ");
-
-        boolean clauseAdded = false;
-
-        if (width > 1)
-        {
-            script.append( "FV.lead - " )
-                  .append( width )
-                  .append( " >= 0" )
-                  .append( newline );
-
-            clauseAdded = true;
-        }
-
-        if ( ConfigHelper.isMinimumLeadHourSpecified( projectConfig ) )
-        {
-            if (clauseAdded)
-            {
-                script.append("    AND ");
-            }
-
-            script.append( "FV.lead >= " )
-                  .append( ConfigHelper.getMinimumLeadHour( projectConfig ) )
-                  .append( newline );
-
-            clauseAdded = true;
-        }
-
-        if ( ConfigHelper.isMaximumLeadHourSpecified( projectConfig ))
-        {
-            if (clauseAdded)
-            {
-                script.append("    AND ");
-            }
-
-            script.append( "FV.lead <= " )
-                  .append( ConfigHelper.getMaximumLeadHour( projectConfig ) )
-                  .append( newline );
-
-            clauseAdded = true;
-        }
-
-        if (clauseAdded)
-        {
-            script.append("    AND ");
-        }
-
-        // Filtering on existence guarantees early exit
-        script.append("EXISTS (").append(newline);
-        script.append("     SELECT 1").append(newline);
-        script.append("     FROM wres.ProjectSource OPS").append(newline);
-
-        script.append("    INNER JOIN wres.Observation O").append(newline);
-        script.append("        ON OPS.source_id = O.source_id").append(newline);
-        script.append("     WHERE OPS.project_id = ").append(projectDetails.getId()).append(newline);
-        script.append("         AND OPS.member =  'left'").append(newline);
-        script.append("        AND ").append(leftVariablepositionClause).append(newline);
-
-        if (Strings.hasValue( projectDetails.getEarliestDate() ))
-        {
-            script.append("        AND O.observation_time >= '").append(projectDetails.getEarliestDate()).append("'").append(newline);
-        }
-
-        if (Strings.hasValue( projectDetails.getLatestDate() ))
-        {
-            script.append("        AND O.observation_time <= '").append(projectDetails.getLatestDate()).append("'").append(newline);
-        }
-
-        script.append("        AND O.observation_time = TS.initialization_date + INTERVAL '1 HOUR' * (FV.lead + ").append(width).append(")").append(newline);
-
-        script.append(" )").append(newline);
-
-        script.append("ORDER BY FV.lead").append(newline);
-        script.append("LIMIT 1;");
-
-        try
-        {
-            offset = Database.getResult( script.toString(), "offset" );
-        }
-        catch (SQLException e)
-        {
-            throw new SQLException( "The script used to extract the lead time "
-                                    + "offset for pairing could not be "
-                                    + "retrieved from the database.", e );
-        }
-
-        return offset;
     }
 
     public static Comparator<Feature> getFeatureComparator()
@@ -847,7 +670,6 @@ public class ConfigHelper
      * @return a description of all features
      * @throws NullPointerException when list of features is null
      */
-
     public static String getFeaturesDescription( List<Feature> features )
     {
         Objects.requireNonNull( features );
@@ -970,92 +792,6 @@ public class ConfigHelper
         return getDestinationsOfType( config, DestinationType.PAIRS );
     }
 
-
-    /**
-     * Get whether the minimum lead hour from a project config was specified.
-     * @param config the config to use
-     * @return true if the config specified a lead hour, false otherwise
-     */
-
-    public static boolean isMaximumLeadHourSpecified( ProjectConfig config )
-    {
-        return config.getPair() != null
-               && config.getPair()
-                        .getLeadHours() != null
-               && config.getPair()
-                        .getLeadHours()
-                        .getMaximum() != null;
-    }
-
-
-    /**
-     * Get the maximum lead hours from a project config or a default.
-     * @param config the config to use
-     * @return the maximum value specified or a default of Integer.MAX_VALUE
-     */
-
-    public static int getMaximumLeadHour( ProjectConfig config )
-    {
-        int result = Integer.MAX_VALUE;
-
-        if ( config.getPair() != null
-             && config.getPair()
-                      .getLeadHours() != null
-             && config.getPair()
-                      .getLeadHours()
-                      .getMaximum() != null )
-        {
-            result = config.getPair()
-                           .getLeadHours()
-                           .getMaximum();
-        }
-
-        return result;
-    }
-
-
-    /**
-     * Get whether the minimum lead hour from a project config was specified.
-     * @param config the config to use
-     * @return true if the config specified a lead hour, false otherwise
-     */
-
-    public static boolean isMinimumLeadHourSpecified( ProjectConfig config )
-    {
-        return config.getPair() != null
-               && config.getPair()
-                        .getLeadHours() != null
-               && config.getPair()
-                        .getLeadHours()
-                        .getMinimum() != null;
-    }
-
-
-    /**
-     * Get the minimum lead hours from a project config or a default.
-     * @param config the config to use
-     * @return the minimum value specified or a default of Integer.MIN_VALUE
-     */
-
-    public static int getMinimumLeadHour( ProjectConfig config )
-    {
-        int result = Integer.MIN_VALUE;
-
-        if ( config.getPair() != null
-             && config.getPair()
-                      .getLeadHours() != null
-             && config.getPair()
-                      .getLeadHours()
-                      .getMinimum() != null )
-        {
-            result = config.getPair()
-                           .getLeadHours()
-                           .getMinimum();
-        }
-
-        return result;
-    }
-
     /**
      * <p>Returns a {@link TimeWindow} from the input configuration using the specified lead time to form the interval
      * on the forecast horizon. The earliest and latest times on the UTC timeline are determined by whichever of the
@@ -1090,7 +826,7 @@ public class ConfigHelper
         Objects.requireNonNull( projectDetails );
         TimeWindow windowMetadata;
 
-        if ( projectDetails.getPoolingMode() == TimeWindowMode.ROLLING )// projectDetails.getPoolingWindow() != null )
+        if ( projectDetails.getPoolingMode() == TimeWindowMode.ROLLING )
         {
             // Determine the position in hours of this window within the sequence
             Integer step = projectDetails.getPoolingWindow().getFrequency();
@@ -1103,25 +839,17 @@ public class ConfigHelper
                 step = projectDetails.getPoolingWindow().getPeriod();
             }
 
-            double frequencyOffset = TimeHelper.unitsToHours( projectDetails.getPoolingWindowUnit(),
+            Double frequencyOffset = TimeHelper.unitsToHours( projectDetails.getPoolingWindowUnit(),
                                                               step )
                                      * sequenceStep;
 
-            // Get the first date that matching data for a feature is valid
-            String firstDate = projectDetails.getEarliestIssueDate();
+            Instant first = Instant.parse( projectDetails.getEarliestIssueDate() );
+            first = first.plus( frequencyOffset.longValue(), ChronoUnit.HOURS );
+            Instant second = first.plus( projectDetails.getPoolingWindow().getPeriod(),
+                                         ChronoUnit.valueOf( projectDetails.getPoolingWindowUnit().toUpperCase() ));
 
-            // Add the frequency offset to focus date to jump to the correct
-            // sequence
-            firstDate = TimeHelper.plus( firstDate, "hours", frequencyOffset );
-            String lastDate = TimeHelper.plus( firstDate,
-                                        projectDetails.getPoolingWindowUnit(),
-                                        projectDetails.getPoolingWindow().getPeriod());
-
-            OffsetDateTime first = TimeHelper.convertStringToDate( firstDate );
-            OffsetDateTime last = TimeHelper.convertStringToDate( lastDate );
-
-            windowMetadata = TimeWindow.of( first.toInstant(),
-                                            last.toInstant(),
+            windowMetadata = TimeWindow.of( first,
+                                            second,
                                             ReferenceTime.ISSUE_TIME,
                                             Duration.ofHours( lead ),
                                             Duration.ofHours( lead ) );

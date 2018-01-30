@@ -459,7 +459,8 @@ class GriddedNWMValueSaver extends WRESRunnable
             String outputTime = attr.getStringValue().replaceAll("_", " ");
 
             if (range.equalsIgnoreCase("analysis")) {
-                OffsetDateTime originalAssimTime = TimeHelper.convertStringToDate( outputTime).minusHours( lead);
+                OffsetDateTime originalAssimTime = OffsetDateTime.from( TimeHelper.convertStringToDate( outputTime));
+                originalAssimTime = originalAssimTime.minusHours( lead );
                 outputTime = TimeHelper.convertDateToString( originalAssimTime);
             }
 

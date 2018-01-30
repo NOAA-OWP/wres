@@ -183,7 +183,7 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey> {
 
 	public static SourceKey createKey(String sourcePath, String sourceTime, Integer lead, String hash)
 	{
-	    return new SourceKey( sourcePath, TimeHelper.normalize( sourceTime), lead, hash);
+	    return new SourceKey( sourcePath, sourceTime, lead, hash);
 	}
 
 	public static class SourceKey implements Comparable<SourceKey>
