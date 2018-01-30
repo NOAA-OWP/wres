@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 import com.sun.xml.bind.Locatable;
 
 import wres.config.generated.DataSourceConfig;
+import wres.config.generated.DatasourceType;
 import wres.config.generated.DateCondition;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DurationUnit;
@@ -1245,6 +1246,20 @@ public class Validation
         DataSourceConfig left = projectConfig.getInputs().getLeft();
         DataSourceConfig right = projectConfig.getInputs().getRight();
         DataSourceConfig baseline = projectConfig.getInputs().getBaseline();
+
+        if ( left.getType() == DatasourceType.SINGLE_VALUED_FORECASTS ||
+             left.getType() == DatasourceType.ENSEMBLE_FORECASTS)
+        {
+            // The message is the same whether for period or duration
+            if (LOGGER.isWarnEnabled() )
+            {
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                             + " The left data source cannot be any type of forecast.",
+                             projectConfigPlus,
+                             left.sourceLocation().getLineNumber(),
+                             left.sourceLocation().getColumnNumber() );
+            }
+        }
 
         result = Validation.isDataSourceConfigValid( projectConfigPlus,
                                                      left )

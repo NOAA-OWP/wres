@@ -190,102 +190,47 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
         }
 
         // TODO: Put this script generation into another class
-        if (ConfigHelper.isForecast(left))
+        script.append("SELECT (O.observation_time");
+
+        if (timeShift != null)
         {
-            List<Integer> forecastIDs = this.getProjectDetails().getLeftForecastIDs();
+            script.append(" + ").append(timeShift);
+        }
 
-            if (forecastIDs.size() == 0)
-            {
-                throw new NoDataException("There is no forecast data that " +
-                                          "can be loaded for comparison " +
-                                          "purposes. Please supply new " +
-                                          "data or adjust the project " +
-                                          "specifications.");
-            }
+        script.append(") AS left_date,").append(NEWLINE);
+        script.append("     O.observed_value AS left_value,").append(NEWLINE);
+        script.append("     O.measurementunit_id").append(NEWLINE);
+        script.append("FROM wres.ProjectSource PS").append(NEWLINE);
+        script.append("INNER JOIN wres.Observation O").append(NEWLINE);
+        script.append("     ON O.source_id = PS.source_id").append(NEWLINE);
+        script.append("WHERE PS.project_id = ")
+              .append(this.getProjectDetails().getId())
+              .append(NEWLINE);
+        script.append("     AND PS.member = 'left'").append(NEWLINE);
+        script.append("     AND ").append(variablepositionClause).append(NEWLINE);
 
-            script.append("SELECT ");
-            if (left.getExistingTimeScale() != null)
-            {
-                script.append(left.getExistingTimeScale().getFunction());
-            }
-            else
-            {
-                // Default is the average - will not change if there is only one value
-                script.append("AVG");
-            }
-            script.append("(FV.forecasted_value) AS left_value,").append(NEWLINE);
-            script.append("     TS.measurementunit_id,").append(NEWLINE);
-            script.append("     (TS.initialization_date + INTERVAL '1 hour' * FV.lead");
-
-            if ( timeShift != null)
-            {
-                script.append(" + ").append(timeShift);
-            }
-
-            script.append(") AS left_date").append(NEWLINE);
-
-            script.append("FROM wres.TimeSeries TS").append(NEWLINE);
-            script.append("INNER JOIN wres.ForecastValue FV" ).append(NEWLINE);
-            script.append("     ON FV.timeseries_id = TS.timeseries_id").append(NEWLINE);
-            script.append("WHERE TS.timeseries_id = ")
-                  .append( Collections.formAnyStatement(
-                          this.getProjectDetails().getLeftForecastIDs(),
-                          "int" ))
-                  .append(NEWLINE);
-
-            script.append("GROUP BY TS.initialization_date + INTERVAL '1 hour' * FV.lead");
+        if (earliestDate != null)
+        {
+            script.append("     AND O.observation_time");
 
             if (timeShift != null)
             {
                 script.append(" + INTERVAL '1 hour' * ").append(timeShift);
             }
 
-            script.append(", TS.measurementunit_id");
+            script.append(" >= ").append(earliestDate).append(NEWLINE);
         }
-        else
+
+        if (latestDate != null)
         {
-            script.append("SELECT (O.observation_time");
+            script.append("     AND O.observation_time");
 
             if (timeShift != null)
             {
-                script.append(" + ").append(timeShift);
+                script.append(" + INTERVAL '1 hour' * ").append(timeShift);
             }
 
-            script.append(") AS left_date,").append(NEWLINE);
-            script.append("     O.observed_value AS left_value,").append(NEWLINE);
-            script.append("     O.measurementunit_id").append(NEWLINE);
-            script.append("FROM wres.ProjectSource PS").append(NEWLINE);
-            script.append("INNER JOIN wres.Observation O").append(NEWLINE);
-            script.append("     ON O.source_id = PS.source_id").append(NEWLINE);
-            script.append("WHERE PS.project_id = ")
-                  .append(this.getProjectDetails().getId())
-                  .append(NEWLINE);
-            script.append("     AND PS.member = 'left'").append(NEWLINE);
-            script.append("     AND ").append(variablepositionClause).append(NEWLINE);
-
-            if (earliestDate != null)
-            {
-                script.append("     AND O.observation_time");
-
-                if (timeShift != null)
-                {
-                    script.append(" + INTERVAL '1 hour' * ").append(timeShift);
-                }
-
-                script.append(" >= ").append(earliestDate).append(NEWLINE);
-            }
-
-            if (latestDate != null)
-            {
-                script.append("     AND O.observation_time");
-
-                if (timeShift != null)
-                {
-                    script.append(" + INTERVAL '1 hour' * ").append(timeShift);
-                }
-
-                script.append(" <= ").append(latestDate).append(NEWLINE);
-            }
+            script.append(" <= ").append(latestDate).append(NEWLINE);
         }
 
         script.append(";");

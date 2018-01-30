@@ -2,7 +2,6 @@ package wres.io.retrieval.scripting;
 
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.InvalidPropertiesFormatException;
 import java.util.StringJoiner;
 
 import wres.config.generated.DataSourceConfig;
@@ -40,22 +39,22 @@ class PoolingForecastScripter extends Scripter
         this.addLine("    FROM wres.Forecasts F");
         this.addLine("    WHERE F.variable_id = ", this.getVariableID());
 
-        Double frequency = TimeHelper.unitsToHours( this.getProjectDetails().getPoolingWindowUnit(), this.getProjectDetails().getPoolingWindow().getFrequency() );
-        Double span = TimeHelper.unitsToHours( this.getProjectDetails().getPoolingWindowUnit(), this.getProjectDetails().getPoolingWindow().getPeriod());
+        Double frequency = TimeHelper.unitsToLeadUnits( this.getProjectDetails().getPoolingWindowUnit(), this.getProjectDetails().getPoolingWindow().getFrequency() );
+        Double span = TimeHelper.unitsToLeadUnits( this.getProjectDetails().getPoolingWindowUnit(), this.getProjectDetails().getPoolingWindow().getPeriod());
 
         this.addLine( "        AND F.feature_id = ", Features.getFeatureID(this.getFeature()));
         this.addLine( "        AND F.lead > ", this.getProgress() );
         this.add( "        AND F.lead <= ");
         this.addLine(
                 this.getProgress() +
-                TimeHelper.unitsToHours(
+                TimeHelper.unitsToLeadUnits(
                         this.getProjectDetails().getAggregationUnit(),
                         this.getProjectDetails().getAggregationPeriod()
                 )
         );
 
         this.add( "        AND F.basis_time >= ('", this.getProjectDetails().getEarliestIssueDate(), "'::timestamp without time zone + (INTERVAL '1 HOUR' * ");
-        this.add( TimeHelper.unitsToHours( getProjectDetails().getPoolingWindowUnit(), frequency ) );
+        this.add( TimeHelper.unitsToLeadUnits( getProjectDetails().getPoolingWindowUnit(), frequency ) );
         this.addLine(" ) * ", this.getSequenceStep(), ")");
         this.add( "        AND F.basis_time <= ('", this.getProjectDetails().getEarliestIssueDate() );
         this.add("'::timestamp without time zone + (INTERVAL '1 HOUR' * ", frequency, ") * ", this.getSequenceStep(), ") ");
