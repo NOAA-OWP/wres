@@ -21,7 +21,6 @@ import wres.config.Validation;
 import wres.config.generated.ProjectConfig;
 import wres.io.config.ProjectConfigPlus;
 import wres.io.config.SystemSettings;
-import wres.io.writing.PairWriter;
 
 /**
  * A complete implementation of a processing pipeline originating from one or more {@link ProjectConfig}.
