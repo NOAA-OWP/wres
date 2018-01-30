@@ -6,8 +6,10 @@ import static org.junit.Assert.fail;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.StringJoiner;
@@ -188,11 +190,11 @@ public final class SafeRegularTimeSeriesOfSingleValuedPairsTest
     }
 
     /**
-     * Tests the appending together of time-series.
+     * Tests the addition of several time-series with a common basis time.
      */
 
     @Test
-    public void test4AppendTimeSeries()
+    public void test4AddMultipleTimeSeriesWithSameBasisTime()
     {
         //Build a time-series with one basis times and three separate sets of data to append
         List<PairOfDoubles> first = new ArrayList<>();
@@ -224,13 +226,15 @@ public final class SafeRegularTimeSeriesOfSingleValuedPairsTest
         third.add( metIn.pairOf( 7, 7 ) );
         third.add( metIn.pairOf( 8, 8 ) );
         third.add( metIn.pairOf( 9, 9 ) );
-        c.addData( basisTime, second ).addData( basisTime, third );
-        c.addDataForBaseline( basisTime, second ).addDataForBaseline( basisTime, third );
+        c.addData( basisTime, second )
+         .addData( basisTime, third )
+         .addDataForBaseline( basisTime, second )
+         .addDataForBaseline( basisTime, third );
 
         TimeSeriesOfSingleValuedPairs tsAppend = c.build();
         //Check dataset dimensions
-        assertTrue( "Expected a time-series with one basis time and three lead times.",
-                    tsAppend.getDurations().size() == 9 && tsAppend.getBasisTimes().size() == 1 );
+        assertTrue( "Expected a time-series with three basis times and three lead times.",
+                    tsAppend.getDurations().size() == 3 && tsAppend.getBasisTimes().size() == 3 );
         //Check dataset
         //Iterate and test
         int nextValue = 1;
@@ -283,7 +287,7 @@ public final class SafeRegularTimeSeriesOfSingleValuedPairsTest
         assertTrue( "Unexpected number of issue times in the filtered time-series.",
                     filtered.getBasisTimes().size() == 1 );
         assertTrue( "Unexpected issue time in the filtered time-series.",
-                    filtered.getBasisTimes().first().equals( secondBasisTime ) );
+                    filtered.getBasisTimes().get( 0 ).equals( secondBasisTime ) );
         assertTrue( "Unexpected value in the filtered time-series.",
                     filtered.timeIterator().iterator().next().getRight().equals( metIn.pairOf( 4, 4 ) ) );
         //Check for nullity on none filter
@@ -474,7 +478,6 @@ public final class SafeRegularTimeSeriesOfSingleValuedPairsTest
         }
     }
 
-
     /**
      * Tests the {@link SafeRegularTimeSeriesOfSingleValuedPairs#toString()} method.
      */
@@ -492,7 +495,8 @@ public final class SafeRegularTimeSeriesOfSingleValuedPairsTest
             values.add( metIn.pairOf( 1, 1 ) );
         }
         Metadata meta = metaFac.getMetadata();
-        b.addData( basisTime, values ).setTimeStep( Duration.ofDays( 1 ) ).setMetadata( meta );
+        Duration timeStep = Duration.ofDays( 1 );
+        b.addData( basisTime, values ).setTimeStep( timeStep ).setMetadata( meta );
         StringJoiner joiner = new StringJoiner( System.lineSeparator() );
         for ( int i = 0; i < 5; i++ )
         {
@@ -511,6 +515,15 @@ public final class SafeRegularTimeSeriesOfSingleValuedPairsTest
         }
         assertTrue( "Unexpected string representation of compound time-series.",
                     joiner.toString().equals( b.build().toString() ) );
+
+        //Check for equality of string representations when building in two different ways
+        Map<Instant, List<PairOfDoubles>> input = new HashMap<>();
+        input.put( basisTime, values );
+        input.put( nextBasisTime, values );
+        TimeSeriesOfSingleValuedPairs pairs = metIn.ofRegularTimeSeriesOfSingleValuedPairs( input, meta, timeStep );
+        assertTrue( "Unequal string representation of two time-series that should have an equal representation.",
+                    joiner.toString().equals( pairs.toString() ) );
+
     }
 
 }

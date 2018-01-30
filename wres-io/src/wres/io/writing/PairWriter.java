@@ -12,6 +12,9 @@ import java.time.LocalDateTime;
 import java.time.temporal.TemporalAccessor;
 import java.time.temporal.TemporalAdjuster;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.InvalidPropertiesFormatException;
+import java.util.Map.Entry;
 import java.util.StringJoiner;
 
 import org.slf4j.Logger;
@@ -36,8 +39,12 @@ public class PairWriter extends WRESCallable<Boolean>
     private static final String PAIR_FILENAME = "/pairs.csv";
     private static final String BASELINE_FILENAME = "/baseline_pairs.csv";
 
-    private static boolean headerHasBeenWritten;
+    /**
+     * Stores a map of open writers so we don't have to constantly reopen the files.
+     */
+    private static final HashMap<String, BufferedWriter> PATH_NAME_TO_WRITER_MAP = new HashMap<>();
 
+    private static boolean headerHasBeenWritten;
     private static boolean baselineHeaderHasBeenWritten;
 
     private final DestinationConfig destinationConfig;
@@ -51,6 +58,7 @@ public class PairWriter extends WRESCallable<Boolean>
     private final int lead;
 
     private DecimalFormat formatter;
+
 
     // TODO: IMPLEMENT BUILDER
     public PairWriter( DestinationConfig destinationConfig,
@@ -101,10 +109,12 @@ public class PairWriter extends WRESCallable<Boolean>
                 Files.deleteIfExists( Paths.get( actualFileDestination) );
             }
 
-            try ( FileWriter fileWriter = new FileWriter( actualFileDestination,
-                                                         true );
-                  BufferedWriter writer = new BufferedWriter( fileWriter ) )
+//            try ( FileWriter fileWriter = new FileWriter( actualFileDestination,
+//                                                         true );
+//                  BufferedWriter writer = new BufferedWriter( fileWriter ) )
+            try
             {
+                BufferedWriter writer = obtainWriter( actualFileDestination );
                 if ( this.isBaseline && !PairWriter.baselineHeaderHasBeenWritten)
                 {
                     writer.write( OUTPUT_HEADER );
@@ -291,5 +301,43 @@ public class PairWriter extends WRESCallable<Boolean>
         }
 
         return this.formatter;
+    }
+
+    /**
+     * @param absPathName
+     * @return Either an already open writer or creates a new one.
+     * @throws IOException
+     */
+    private static BufferedWriter obtainWriter(String absPathName) throws IOException
+    {
+        if (PATH_NAME_TO_WRITER_MAP.containsKey( absPathName ))
+        {
+            return PATH_NAME_TO_WRITER_MAP.get( absPathName );
+        }
+        FileWriter fileWriter = new FileWriter( absPathName,
+                                                true );
+        BufferedWriter bufferedWriter = new BufferedWriter( fileWriter );
+        PATH_NAME_TO_WRITER_MAP.put(absPathName, bufferedWriter);
+        return bufferedWriter;
+    }
+
+    /**
+     * Close all of the writers in the map.
+     */
+    public static void flushAndCloseAllWriters()
+    {
+        for (Entry<String, BufferedWriter> entry : PATH_NAME_TO_WRITER_MAP.entrySet())
+        {
+            try
+            {
+                entry.getValue().flush();
+                entry.getValue().close();
+            }
+            catch ( IOException e )
+            {
+                LOGGER.warn( "Failed to flush and close pairs file, " + entry.getKey() + ".");
+            }
+        }
+        PATH_NAME_TO_WRITER_MAP.clear();
     }
 }

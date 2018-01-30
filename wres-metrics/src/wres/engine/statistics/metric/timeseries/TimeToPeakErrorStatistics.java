@@ -193,12 +193,17 @@ public class TimeToPeakErrorStatistics extends OrdinaryScore<TimeSeriesOfSingleV
         {
             for ( MetricConstants next : input )
             {
+                if ( Objects.isNull( next ) )
+                {
+                    throw new MetricParameterException( "Cannot build the metric with a null statistic." );
+                }
                 statistics.put( next, FunctionFactory.ofStatistic( next ) );
             }
         }
         catch ( Exception e )
         {
-            throw new MetricParameterException( "While constructing the timing error summary statistic: ", e );
+            throw new MetricParameterException( "While constructing the timing error summary statistic: "
+                                                + e.getMessage(), e );
         }
         // Build the metric of which this is a collection
         timeToPeakError = MetricFactory.getInstance( getDataFactory() ).ofTimeToPeakError();

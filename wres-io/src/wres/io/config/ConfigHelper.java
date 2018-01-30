@@ -25,6 +25,8 @@ import java.util.concurrent.ConcurrentSkipListSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static wres.config.generated.SourceTransformationType.PERSISTENCE;
+
 import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
@@ -37,6 +39,7 @@ import wres.config.generated.Format;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
+import wres.config.generated.PoolingWindowConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.TimeScaleConfig;
 import wres.config.generated.TimeScaleFunction;
@@ -929,6 +932,32 @@ public class ConfigHelper
         return result;
     }
 
+
+    /**
+     * Returns true if the sourceConfig from projectConfig is a persistence
+     * baseline element.
+     * @param projectConfig the project config
+     * @param sourceConfig the source config
+     * @return true when sourceConfig indicates persistence baseline.
+     */
+
+    public static boolean isPersistence( ProjectConfig projectConfig,
+                                         DataSourceConfig sourceConfig )
+    {
+        return projectConfig.getInputs()
+                            .getBaseline() != null
+               && ConfigHelper.getLeftOrRightOrBaseline( projectConfig,
+                                                         sourceConfig )
+                              .equals( LeftOrRightOrBaseline.BASELINE )
+               && projectConfig.getInputs()
+                               .getBaseline()
+                               .getTransformation() != null
+               && projectConfig.getInputs()
+                               .getBaseline()
+                               .getTransformation()
+                               .equals( PERSISTENCE );
+    }
+
     private enum ConusZoneId
     {
         UTC ( "+0000" ),
@@ -1149,5 +1178,17 @@ public class ConfigHelper
         }
         return null;
     }
-    
+
+    /**
+     * Get a duration of a period from a timescale config
+     * @param timeScaleConfig the config
+     * @return the duration
+     */
+    public static Duration getDurationFromTimeScale( TimeScaleConfig timeScaleConfig )
+    {
+        ChronoUnit unit = ChronoUnit.valueOf( timeScaleConfig.getUnit()
+                                                             .value()
+                                                             .toUpperCase() );
+        return Duration.of( timeScaleConfig.getPeriod(), unit );
+    }
 }

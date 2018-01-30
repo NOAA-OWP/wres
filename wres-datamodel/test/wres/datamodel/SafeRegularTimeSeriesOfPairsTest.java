@@ -157,7 +157,7 @@ public final class SafeRegularTimeSeriesOfPairsTest
         assertTrue( "Expected a time-series with two basis times.", pairs.getBasisTimes().size() == 2 );
         //Check the basis times
         assertTrue( "First basis time missing from time-series.",
-                    pairs.getBasisTimes().first().equals( basisTime ) );
+                    pairs.getBasisTimes().get( 0 ).equals( basisTime ) );
         Iterator<Instant> it = pairs.getBasisTimes().iterator();
         it.next();
         assertTrue( "Second basis time missing from time-series.", it.next().equals( nextBasisTime ) );

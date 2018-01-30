@@ -18,11 +18,9 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
 import wres.config.generated.Format;
-import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.Executor;
 import wres.io.concurrency.IngestSaver;
@@ -100,16 +98,6 @@ public class SourceLoader
                                                                             this.projectConfig
                                                                                     .getPair()
                                                                                     .getFeature() ) ));
-                    continue;
-                }
-                else if ( source.getFormat() == Format.PERSISTENCE )
-                {
-                    if ( !ConfigHelper.getLeftOrRightOrBaseline( this.projectConfig,
-                                                                 config )
-                                      .equals( LeftOrRightOrBaseline.BASELINE ) )
-                    {
-                        throw new IllegalArgumentException( "Cannot use persistence type outside of baseline." );
-                    }
                     continue;
                 }
 
