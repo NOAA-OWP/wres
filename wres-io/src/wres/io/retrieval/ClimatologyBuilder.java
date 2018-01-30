@@ -262,21 +262,21 @@ class ClimatologyBuilder
 
 
                     script.append(" + ( member_number || ' ")
-                          .append(projectDetails.getAggregationUnit())
+                          .append(projectDetails.getLeadUnit())
                           .append("')::INTERVAL)::TEXT AS start_date,").append(NEWLINE);
                     script.append("    (")
                           .append(earliestDate).append("::timestamp without time zone")
-                          .append(" + ( ( member_number + ").append(projectDetails.getAggregationPeriod())
-                          .append(" ) || ' ").append(projectDetails.getAggregationUnit()).append("')::INTERVAL)::TEXT AS end_date")
+                          .append(" + ( ( member_number + ").append(projectDetails.getLeadPeriod())
+                          .append(" ) || ' ").append(projectDetails.getLeadUnit()).append("')::INTERVAL)::TEXT AS end_date")
                           .append(NEWLINE);
                     script.append("FROM generate_series(0, ")
                           .append( ConfigHelper.getValueCount(projectDetails,
                                                               dataSourceConfig,
                                                               feature))
                           .append(" * ")
-                          .append(projectDetails.getAggregationPeriod())
+                          .append(projectDetails.getLeadPeriod())
                           .append(", ")
-                          .append(projectDetails.getAggregationPeriod())
+                          .append(projectDetails.getLeadPeriod())
                           .append(") AS member_number;");
                     connection = Database.getConnection();
                     results = Database.getResults( connection, script.toString() );

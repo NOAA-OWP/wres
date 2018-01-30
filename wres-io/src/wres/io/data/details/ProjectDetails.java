@@ -491,7 +491,18 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
 
         if (this.projectConfig.getPair().getLeadTimesPoolingWindow() != null)
         {
-            frequency = this.projectConfig.getPair().getLeadTimesPoolingWindow().getFrequency();
+            if (this.projectConfig.getPair().getLeadTimesPoolingWindow().getFrequency() != null)
+            {
+                frequency = this.projectConfig.getPair()
+                                              .getLeadTimesPoolingWindow()
+                                              .getFrequency();
+            }
+            else
+            {
+                frequency = this.projectConfig.getPair()
+                                              .getLeadTimesPoolingWindow()
+                                              .getPeriod();
+            }
         }
         else
         {
@@ -581,10 +592,9 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
 
     public boolean shouldAggregate()
     {
-        return !TimeScaleFunction.NONE.value()
-                                            .equalsIgnoreCase(
-                                                    this.getAggregationFunction()
-                                            );
+        return this.getAggregation() != null &&
+               !TimeScaleFunction.NONE
+                       .value().equalsIgnoreCase(this.getAggregationFunction());
     }
 
     public TimeScaleConfig getAggregation()
@@ -656,18 +666,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     {
         FormattedStopwatch timer = new FormattedStopwatch();
         timer.start();
-        Double width;
-
-        try
-        {
-            width = ConfigHelper.getWindowWidth( this.getProjectConfig() );
-        }
-        catch ( InvalidPropertiesFormatException e )
-        {
-            throw new IOException( "The width of the window for the project "
-                                    + "could not be formatted for a sql "
-                                    + "statement.", e );
-        }
+        Integer width = this.getWindowWidth();
 
         String script = "";
 
@@ -1074,15 +1073,6 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return this.inputCode;
     }
 
-    public List<Integer> getLeftForecastIDs() throws SQLException
-    {
-        if (this.leftForecastIDs.isEmpty())
-        {
-            this.loadForecastIDs( ProjectDetails.LEFT_MEMBER );
-        }
-        return this.leftForecastIDs;
-    }
-
     private void loadForecastIDs(String member) throws SQLException
     {
 
@@ -1122,34 +1112,6 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         Database.populateCollection(forecastIDs,
                                     script.toString(),
                                     "timeseries_id");
-    }
-
-    public List<Integer> getLeftSources() throws SQLException
-    {
-        if (this.leftSources.isEmpty())
-        {
-            this.loadSources( ProjectDetails.LEFT_MEMBER );
-        }
-        return this.leftSources;
-    }
-
-    public List<Integer> getRightSources() throws SQLException
-    {
-        if (this.rightSources.isEmpty())
-        {
-            this.loadSources( ProjectDetails.RIGHT_MEMBER );
-        }
-        return this.rightSources;
-    }
-
-    public List<Integer> getBaselineSources() throws SQLException
-    {
-        if (this.hasBaseline() && this.baselineSources.isEmpty())
-        {
-            this.loadSources( ProjectDetails.BASELINE_MEMBER );
-        }
-
-        return this.baselineSources;
     }
 
     private void loadSources(String member) throws SQLException
@@ -1378,11 +1340,9 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     public Integer getLead(int windowNumber)
             throws InvalidPropertiesFormatException
     {
-        TimeScaleConfig
-                timeAggregationConfig = ConfigHelper.getTimeScale( projectConfig );
-        return TimeHelper.unitsToLeadUnits( timeAggregationConfig.getUnit().name(),
+        return TimeHelper.unitsToLeadUnits( this.getLeadUnit(),
                                   1.0 * windowNumber +
-                                  this.getAggregationFrequency() * timeAggregationConfig.getPeriod()).intValue();
+                                  this.getLeadFrequency() * this.getLeadPeriod()).intValue();
     }
 
 
@@ -1434,7 +1394,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
 
     public int getWindowWidth() throws InvalidPropertiesFormatException
     {
-        return ConfigHelper.getWindowWidth( this.projectConfig ).intValue();
+        return TimeHelper.unitsToLeadUnits( this.getLeadUnit(), this.getLeadPeriod() ).intValue();
     }
 
     public String getZeroDate(DataSourceConfig sourceConfig, Feature feature) throws SQLException

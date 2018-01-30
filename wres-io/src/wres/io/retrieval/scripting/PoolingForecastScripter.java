@@ -48,8 +48,8 @@ class PoolingForecastScripter extends Scripter
         this.addLine(
                 this.getProgress() +
                 TimeHelper.unitsToLeadUnits(
-                        this.getProjectDetails().getAggregationUnit(),
-                        this.getProjectDetails().getAggregationPeriod()
+                        this.getProjectDetails().getLeadUnit(),
+                        this.getProjectDetails().getLeadPeriod()
                 )
         );
 
