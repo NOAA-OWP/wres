@@ -468,7 +468,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             try
             {
                 lastLead = this.progress *
-                           this.projectDetails.getAggregationFrequency() +
+                           this.projectDetails.getLeadFrequency() +
                            this.projectDetails.getWindowWidth() * 1.0 +
                            offset;
             }
@@ -503,8 +503,8 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         if (this.projectDetails.shouldAggregate())
         {
             // This works for both rolling and back-to-back because of how the grouping of agg_hours works
-            firstDate = lastDate.minus( this.projectDetails.getAggregationPeriod().longValue(),
-                                        ChronoUnit.valueOf( this.projectDetails.getAggregationUnit().toUpperCase() ));
+            firstDate = lastDate.minus( this.projectDetails.getLeadPeriod().longValue(),
+                                        ChronoUnit.valueOf( this.projectDetails.getLeadUnit().toUpperCase() ));
         }
         else
         {

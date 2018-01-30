@@ -188,12 +188,13 @@ public class ConfigHelper
     {
         String qualifier;
 
-        if (!(projectDetails.getAggregationPeriod() == 1 &&
-              projectDetails.getAggregationUnit().equalsIgnoreCase( DurationUnit.HOURS.toString() )))
+        // TODO: Change HOURS to the correct unit once the lead standard unit changes
+        if (!(projectDetails.getLeadPeriod() == 1 &&
+              projectDetails.getLeadUnit().equalsIgnoreCase( DurationUnit.HOURS.toString() )))
         {
-            int beginning = windowNumber * projectDetails.getAggregationFrequency();
-            int end = (projectDetails.getAggregationFrequency() * windowNumber) +
-                      projectDetails.getAggregationPeriod();
+            int beginning = windowNumber * projectDetails.getLeadFrequency();
+            int end = (projectDetails.getLeadFrequency() * windowNumber) +
+                      projectDetails.getLeadPeriod();
 
             qualifier = String.valueOf(end + offset);
             qualifier += " >= FV.lead AND FV.lead > ";
@@ -234,14 +235,6 @@ public class ConfigHelper
         }
 
         return clause.toString();
-    }
-
-    public static Double getWindowWidth( ProjectConfig projectConfig )
-            throws InvalidPropertiesFormatException
-    {
-        TimeScaleConfig timeAggregationConfig = projectConfig.getPair().getDesiredTimeScale();
-        return TimeHelper.unitsToLeadUnits( timeAggregationConfig.getUnit().value(),
-                                            timeAggregationConfig.getPeriod() );
     }
 
     public static Comparator<Feature> getFeatureComparator()

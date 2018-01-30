@@ -96,8 +96,8 @@ class BackToBackObservationScripter extends Scripter
         if (this.windowPeriod == null)
         {
             this.windowPeriod = TimeHelper.unitsToLeadUnits(
-                    this.getProjectDetails().getAggregationUnit(),
-                    this.getProjectDetails().getAggregationPeriod()
+                    this.getProjectDetails().getLeadUnit(),
+                    this.getProjectDetails().getLeadPeriod()
             ).intValue();
         }
         return this.windowPeriod;
