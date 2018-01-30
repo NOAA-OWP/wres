@@ -136,7 +136,7 @@ public class Control implements Function<String[], Integer>
              * Added by Hank to ensure that all buffered writers for pairs are closed.
              * I know this is cheesy.
              */
-            PairWriter.closeAndFlushAllWriters();
+            PairWriter.flushAndCloseAllWriters();
 
         }
     }
