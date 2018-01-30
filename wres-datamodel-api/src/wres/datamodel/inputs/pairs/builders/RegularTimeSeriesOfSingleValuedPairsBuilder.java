@@ -2,7 +2,9 @@ package wres.datamodel.inputs.pairs.builders;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
@@ -13,9 +15,6 @@ import wres.datamodel.time.TimeSeries;
 /**
  * <p>A builder for a regular {@link TimeSeries} of {@link SingleValuedPairs}.</p>
  * 
- * <p>Every time-series in the container must contain the same number of ensemble members, thereby allowing for 
- * iteration by ensemble trace.</p>
- * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
  * @since 0.4
@@ -25,28 +24,57 @@ public interface RegularTimeSeriesOfSingleValuedPairsBuilder extends PairedInput
 {
 
     /**
-     * Adds an atomic time-series to the builder. If the basis time already exists, the values are appended 
-     * (i.e. are assumed to represent later values). 
+     * Adds an atomic time-series to the builder.  The values must be time-ordered, moving away from the basis time.
      * 
      * @param basisTime the basis time for the time-series
      * @param values the time-series values, ordered from earliest to latest
      * @return the builder
      */
 
-    RegularTimeSeriesOfSingleValuedPairsBuilder addData( Instant basisTime,
-                                                         List<PairOfDoubles> values );
+    default RegularTimeSeriesOfSingleValuedPairsBuilder addData( Instant basisTime,
+                                                                 List<PairOfDoubles> values )
+    {
+        Map<Instant, List<PairOfDoubles>> input = new HashMap<>();
+        input.put( basisTime, values );
+        return addData( input );
+    }
 
     /**
-     * Adds an atomic time-series to the builder for a baseline. If the basis time already exists, the values are 
-     * appended (i.e. are assumed to represent later values). 
+     * Adds an atomic time-series to the builder for a baseline.  The values must be time-ordered, moving away from 
+     * the basis time.
      * 
      * @param basisTime the basis time for the time-series
      * @param values the time-series values, ordered from earliest to latest
      * @return the builder
      */
 
-    RegularTimeSeriesOfSingleValuedPairsBuilder addDataForBaseline( Instant basisTime,
-                                                                    List<PairOfDoubles> values );
+    default RegularTimeSeriesOfSingleValuedPairsBuilder addDataForBaseline( Instant basisTime,
+                                                                            List<PairOfDoubles> values )
+    {
+        Map<Instant, List<PairOfDoubles>> input = new HashMap<>();
+        input.put( basisTime, values );
+        return addDataForBaseline( input );
+    }
+
+    /**
+     * Adds several time-series to the builder, each one stored against its basis time.  The values must be time-
+     * ordered, moving away from the basis time.
+     * 
+     * @param timeSeries the time-series, stored against their basis times
+     * @return the builder
+     */
+
+    RegularTimeSeriesOfSingleValuedPairsBuilder addData( Map<Instant, List<PairOfDoubles>> timeSeries );
+
+    /**
+     * Adds several time-series to the builder for a baseline, each one stored against its basis time. The values must
+     * be time-ordered, moving away from the basis time.
+     * 
+     * @param timeSeries the time-series, stored against their basis times
+     * @return the builder
+     */
+
+    RegularTimeSeriesOfSingleValuedPairsBuilder addDataForBaseline( Map<Instant, List<PairOfDoubles>> timeSeries );
 
     /**
      * Adds a time-series to the builder.

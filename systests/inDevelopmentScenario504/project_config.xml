@@ -17,8 +17,9 @@
         </right>
         <baseline>
             <type>observations</type>
-            <source format="persistence" />
+            <source>../smalldata/25510317T00_FAKE2_observations.xml</source>
             <variable>DISCHARGE</variable>
+            <transformation>persistence</transformation>
         </baseline>
     </inputs>
 

@@ -3,6 +3,7 @@ package wres.datamodel.time;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Iterator;
+import java.util.List;
 import java.util.SortedSet;
 import java.util.function.Predicate;
 
@@ -16,25 +17,23 @@ import org.apache.commons.lang3.tuple.Pair;
  * 
  * <p>In this context, a time is an instant on the UTC timeline, which is represented by an {@link Instant}. 
  * Each atomic time-series in the {@link TimeSeries} container is anchored to a specific basis time, which is also 
- * represented by an {@link Instant}. A {@link TimeSeries} can only contain one atomic time-series that originates at 
- * a particular {@link Instant}.</p>
+ * represented by an {@link Instant}. 
  * 
- * <p>A {@link TimeSeries} may be regular or irregular. A {@link TimeSeries} is regular iif each time is separated by 
- * exactly the same {@link Duration}, there are no missing times between the earliest and latest times, and the number
- * of times in each atomic time-series is constant; by implication a regular {@link TimeSeries} cannot contain more
- * than one value with the same time and basis time. If the timeline is viewed as a function of unit time, a regular 
- * time-series is a linear function whose first derivative is the regular timestep.</p>
+ * <p>A {@link TimeSeries} may be regular or irregular. A {@link TimeSeries} is regular if and only if each value is 
+ * separated by exactly the same {@link Duration}, there are no missing times between the earliest and latest times, 
+ * and the number of times in each atomic time-series is constant; by implication a regular {@link TimeSeries} cannot 
+ * contain more than one value with the same valid time that originates from the same basis time. 
  * 
  * <p>A duration is defined as the {@link Duration} between the basis time and the (valid) time associated with a 
  * value. If {@link #isRegular()} returns <code>true</code>, the {@link #getRegularDuration()} corresponds to the 
- * first derivative of the timeline, i.e. the duration between successive times in the time-series.</p>
+ * fixed duration between successive times in the time-series.</p>
  * 
  * <p><b>Implementation Requirements:</b></p>
  * 
  * <p>This class is immutable and thread-safe. For example, implementations of the methods that return {@link Iterable} 
  * views should not allow {@link Iterator#remove()} to remove an element from the underlying time-series.</p>
  * 
- * @param <T> the designated atomic type stored by this container
+ * @param <T> the atomic type of data
  * @version 0.1
  * @since 0.3
  * @author james.brown@hydrosolved.com
@@ -94,14 +93,14 @@ public interface TimeSeries<T>
     TimeSeries<T> filterByBasisTime( Predicate<Instant> basisTime );
 
     /**
-     * Returns the basis times associated with all the atomic time-series in the container. The results are ordered 
-     * from the earliest basis time to the latest. If {@link #hasMultipleTimeSeries()} returns <code>false</code>, the
-     * returned list will contain a single element, otherwise more than one element.
+     * Returns the basis times associated with all the atomic time-series in the container. If 
+     * {@link #hasMultipleTimeSeries()} returns <code>false</code>, the returned list will contain a single element, 
+     * otherwise more than one element.
      * 
      * @return the basis times
      */
 
-    SortedSet<Instant> getBasisTimes();
+    List<Instant> getBasisTimes();
 
     /**
      * Returns the durations associated with all the atomic time-series in the container. The results are ordered 

@@ -51,11 +51,13 @@ public interface MetricOutputMetadata extends Metadata
 
     /**
      * <p>
-     * Returns true if the input is minimally equal to the current metadata. The two metadata objects are minimally
-     * equal if all of the following are equal.
+     * Returns <code>true</code> if the input is minimally equal to this {@link MetricOutputMetadata}, otherwise
+     * <code>false</code>. The two metadata objects are minimally equal if all of the following are equal, otherwise 
+     * they are minimally unequal (and hence also unequal in terms of the stricter {@link Object#equals(Object)}.
      * </p>
      * <ol>
      * <li>{@link #getDimension()}</li>
+     * <li>{@link #getInputDimension()}</li>
      * <li>{@link #getMetricID()}</li>
      * <li>{@link #getMetricComponentID()}</li>
      * </ol>

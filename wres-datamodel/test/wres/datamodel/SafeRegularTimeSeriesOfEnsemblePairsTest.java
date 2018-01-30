@@ -6,8 +6,10 @@ import static org.junit.Assert.fail;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.StringJoiner;
@@ -20,7 +22,6 @@ import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairs;
-import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.time.TimeSeries;
@@ -194,7 +195,6 @@ public final class SafeRegularTimeSeriesOfEnsemblePairsTest
         int nextValue = 1;
         for ( TimeSeries<PairOfDoubles> next : ts.ensembleTraceIterator() )
         {
-            System.out.println( next );
             for ( Pair<Instant, PairOfDoubles> nextPair : next.timeIterator() )
             {
                 assertTrue( "Unexpected pair in ensemble trace iteration of time-series.",
@@ -257,11 +257,11 @@ public final class SafeRegularTimeSeriesOfEnsemblePairsTest
     }
 
     /**
-     * Tests the appending together of time-series.
+     * Tests the addition of several time-series with a common basis time.
      */
 
     @Test
-    public void test5AppendTimeSeries()
+    public void test5AddMultipleTimeSeriesWithSameBasisTime()
     {
         //Build a time-series with one basis times and three separate sets of data to append
         List<PairOfDoubleAndVectorOfDoubles> first = new ArrayList<>();
@@ -293,17 +293,20 @@ public final class SafeRegularTimeSeriesOfEnsemblePairsTest
         third.add( metIn.pairOf( 7, new double[] { 7, 8, 9 } ) );
         third.add( metIn.pairOf( 8, new double[] { 8, 9, 10 } ) );
         third.add( metIn.pairOf( 9, new double[] { 9, 10, 11 } ) );
-        c.addData( basisTime, second ).addData( basisTime, third );
-        c.addDataForBaseline( basisTime, second ).addDataForBaseline( basisTime, third );
-
-        TimeSeriesOfEnsemblePairs tsAppend = c.build();
+        c.addData( basisTime, second )
+         .addData( basisTime, third )
+         .addDataForBaseline( basisTime, second )
+         .addDataForBaseline( basisTime, third );
+        
+        TimeSeriesOfEnsemblePairs tsCombined = c.build();
+        
         //Check dataset dimensions
-        assertTrue( "Expected a time-series with one basis time and three lead times.",
-                    tsAppend.getDurations().size() == 9 && tsAppend.getBasisTimes().size() == 1 );
+        assertTrue( "Expected a time-series with three basis times and three lead times.",
+                    tsCombined.getDurations().size() == 3 && tsCombined.getBasisTimes().size() == 3 );
         //Check dataset
         //Iterate and test
         int nextValue = 1;
-        for ( Pair<Instant, PairOfDoubleAndVectorOfDoubles> nextPair : tsAppend.timeIterator() )
+        for ( Pair<Instant, PairOfDoubleAndVectorOfDoubles> nextPair : tsCombined.timeIterator() )
         {
             assertTrue( "Unexpected pair in lead-time iteration of baseline time-series.",
                         nextPair.getRight()
@@ -354,7 +357,7 @@ public final class SafeRegularTimeSeriesOfEnsemblePairsTest
         assertTrue( "Unexpected number of issue times in the filtered time-series.",
                     filtered.getBasisTimes().size() == 1 );
         assertTrue( "Unexpected issue time in the filtered time-series.",
-                    filtered.getBasisTimes().first().equals( secondBasisTime ) );
+                    filtered.getBasisTimes().get( 0 ).equals( secondBasisTime ) );
         assertTrue( "Unexpected value in the filtered time-series.",
                     filtered.timeIterator()
                             .iterator()
@@ -588,7 +591,7 @@ public final class SafeRegularTimeSeriesOfEnsemblePairsTest
         }
         try
         {
-            Iterator<TimeSeriesOfSingleValuedPairs> it = ts.ensembleTraceIterator().iterator();
+            Iterator<TimeSeries<PairOfDoubles>> it = ts.ensembleTraceIterator().iterator();
             it.forEachRemaining( a -> a.equals( null ) );
             it.next();
             fail( "Expected a checked exception on iterating a time-series with no more ensemble traces left." );
@@ -618,7 +621,7 @@ public final class SafeRegularTimeSeriesOfEnsemblePairsTest
         }
         try
         {
-            Iterator<TimeSeriesOfSingleValuedPairs> it = ts.ensembleTraceIterator().iterator();
+            Iterator<TimeSeries<PairOfDoubles>> it = ts.ensembleTraceIterator().iterator();
             it.next();
             it.remove();
             fail( "Expected a checked exception on attempting to remove an ensemble trace from an immutable "
@@ -682,7 +685,8 @@ public final class SafeRegularTimeSeriesOfEnsemblePairsTest
             values.add( metIn.pairOf( i, new double[] { i, i + 1, i + 2 } ) );
         }
         Metadata meta = metaFac.getMetadata();
-        b.addData( basisTime, values ).setTimeStep( Duration.ofDays( 1 ) ).setMetadata( meta );
+        Duration timeStep = Duration.ofDays( 1 );
+        b.addData( basisTime, values ).setTimeStep( timeStep ).setMetadata( meta );
         StringJoiner joiner = new StringJoiner( System.lineSeparator() );
         for ( int i = 0; i < 5; i++ )
         {
@@ -721,6 +725,14 @@ public final class SafeRegularTimeSeriesOfEnsemblePairsTest
         }
         assertTrue( "Unexpected string representation of compound time-series.",
                     joiner.toString().equals( b.build().toString() ) );
+        
+        //Check for equality of string representations when building in two different ways
+        Map<Instant, List<PairOfDoubleAndVectorOfDoubles>> input = new HashMap<>();
+        input.put( basisTime, values );
+        input.put( nextBasisTime, values );
+        TimeSeriesOfEnsemblePairs pairs = metIn.ofRegularTimeSeriesOfEnsemblePairs( input, meta, timeStep );
+        assertTrue( "Unequal string representation of two time-series that should have an equal representation.",
+                    joiner.toString().equals( pairs.toString() ) );
     }
 
 }
