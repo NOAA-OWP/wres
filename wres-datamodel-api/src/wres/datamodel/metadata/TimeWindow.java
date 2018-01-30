@@ -129,6 +129,43 @@ public final class TimeWindow implements Comparable<TimeWindow>
         return new TimeWindow( earliestTime, latestTime, ReferenceTime.VALID_TIME, zero, zero );
     }
 
+    /**
+     * Using the current {@link TimeWindow} as a base, returns a {@link TimeWindow} whose {@link #earliestTime} and 
+     * {@link #latestTime} and {@link #earliestLead} and {@link #latestLead} are the earliest and latest instances, 
+     * respectively, across the current window and the input window.
+     * 
+     * @param input the input window
+     * @return the union of the input and the current window with respect to dates and lead times
+     * @throws NullPointerException if the input is null
+     */
+
+    public TimeWindow unionWith( TimeWindow input )
+    {
+        Objects.requireNonNull( input, "Cannot determine the union of time windows for a null input." );
+        // Check and set time parameters
+        Instant earliestT = earliestTime;
+        Instant latestT = latestTime;
+        Duration earliestL = earliestLead;
+        Duration latestL = latestLead;
+        if ( earliestTime.isAfter( input.earliestTime ) )
+        {
+            earliestT = input.earliestTime;
+        }
+        if ( latestTime.isBefore( input.latestTime ) )
+        {
+            latestT = input.latestTime;
+        }
+        if ( earliestLead.compareTo( input.earliestLead ) > 0 )
+        {
+            earliestL = input.earliestLead;
+        }
+        if ( latestLead.compareTo( input.latestLead ) < 0 )
+        {
+            latestL = input.latestLead;
+        }
+        return new TimeWindow( earliestT, latestT, referenceTime, earliestL, latestL );
+    }
+
     @Override
     public int compareTo( TimeWindow o )
     {
@@ -219,12 +256,12 @@ public final class TimeWindow implements Comparable<TimeWindow>
      * 
      * @return true if the timeline is unbounded, false otherwise
      */
-    
+
     public boolean hasUnboundedTimes()
     {
         return earliestTime.equals( Instant.MIN ) || latestTime.equals( Instant.MAX );
     }
-    
+
     /**
      * Returns the mid-point on the UTC timeline between the {@link #earliestTime} and the {@link #latestTime}.
      * 
