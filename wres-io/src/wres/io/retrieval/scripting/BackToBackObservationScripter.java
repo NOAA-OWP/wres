@@ -59,7 +59,6 @@ class BackToBackObservationScripter extends Scripter
 
         this.applySeasonConstraint();
         this.applyProjectConstraint();
-        this.addLine( "ORDER BY value_date" );
         return this.getScript();
     }
 
