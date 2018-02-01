@@ -4,6 +4,29 @@ suppressMessages( suppressWarnings( library( hydroGOF ) ) )
 
 ##########################################################################################
 #
+# When adding a new metric, put it into the correct list below (or add a new list) and
+# then edit the getMetric method to return the appropriate metric function. When adding
+# a new category of metrics (i.e. a new list), the getTransform also needs to be edited
+# to handle the expected transformation of the pairs. For example, ensemble forecasts 
+# must be translated to ensemble mean forecasts for single.valued.continuous, whereas 
+# they must be translated to forecast probabilities for discrete.probability.
+#
+##########################################################################################
+
+single.valued.continuous <-list(
+	c( rep("mean error", 2) ),
+	c( rep("mean absolute error", 2) ),
+	c( rep("root mean square error", 2) ),
+	c( rep("pearson correlation coefficient", 2) ),
+	c( rep("coefficient of determination", 2) ),
+	c( rep("mean square error skill score", 2) ),
+	c( rep("kling gupta efficiency", 2) ),
+	c( rep("volumetric efficiency", 2) ),
+	c( rep("index of agreement", 2) )
+)
+
+##########################################################################################
+#
 # A function that generates one or more named metrics at one threshold and for all 
 # features in the input pairs.
 #
@@ -17,11 +40,24 @@ suppressMessages( suppressWarnings( library( hydroGOF ) ) )
 generateAllMetricsForAllFeatures <- function( pairs, threshold, ... ) 
 {
       # Read, skip dates, fill header row, which may not be the first row
-	data <- fread( pairs, fill = TRUE, drop = "V2", stringsAsFactors = FALSE )
-	data <- data[ data$V1!="Feature", ]
+	test <- read.table( file = pairs, nrows = 1, stringsAsFactors = FALSE )
+      # Header row
+	if( grepl("Feature", test$V1 ) )
+	{	
+		# Need to jump through hoops here, as header causes problems for read.table with header=T
+		con <- file( pairs, "r", blocking = FALSE)
+		lines <- readLines( con )
+		dataString<-paste0(lines[2:length(lines)], collapse="\n")
+		data <- read.csv(textConnection(dataString),header=FALSE, stringsAsFactors=FALSE)
+	} 
+	else 
+	{
+		data <- fread( pairs, fill = TRUE, stringsAsFactors = FALSE )
+		data <- data[ data$V1!="Feature", ]
+	}
 	# Convert columns with header information to numeric type
-	data[,4] <- sapply( data[,4],as.numeric )
 	data[,5] <- sapply( data[,5],as.numeric )
+	data[,6] <- sapply( data[,6],as.numeric )
 	# Find the features
       features <- unique(data$V1)
 	# Iterate through the features and generate the metrics for each one
@@ -92,12 +128,12 @@ generateOneMetricForOneFeature <- function( pairs, threshold, metric )
 
 		# Transform the pairs in a metric-appropriate way
 		nextWindow <- suppressWarnings( transformPairs( nextWindow, metric, threshold ) )
-		nextLeft <- unlist( nextWindow[,4] )  # Observations in column 4
-		nextRight <- unlist( nextWindow[,5] )
+		nextLeft <- unlist( nextWindow[,5] )  # Observations in column 5
+		nextRight <- unlist( nextWindow[,6] )
 		# Compute the mean if the right has more than one column, i.e. ensemble mean
-		if( ncol(pairs) > 5 )
+		if( ncol(pairs) > 6 )
 		{	
-			nextRight <- rowMeans( data.frame( nextWindow[,5:ncol(nextWindow)] ) )
+			nextRight <- rowMeans( data.frame( nextWindow[,6:ncol(nextWindow)] ) )
 		}
 		metric.results[i,1] = windows[i]
 		metric.results[i,2] = metricToCompute( nextRight, nextLeft )
@@ -119,7 +155,8 @@ generateOneMetricForOneFeature <- function( pairs, threshold, metric )
 
 transformPairs <- function( pairs, metric, threshold )
 {
-	if( tolower( metric ) == "mean error" )    # Add more continuous possibilities here
+      # Continuous measures for single-valued input
+	if( doesThisMetricExist( tolower( metric ), single.valued.continuous ) )   
 	{
 		# All data
 		if( is.na( threshold ) )
@@ -128,7 +165,7 @@ transformPairs <- function( pairs, metric, threshold )
 		}
 		else 
 		{
-	      	# Observations in column 4, or V5
+	      	# Observations in V5
 			pairs[ pairs$V5 >= threshold , ]     # Assumed >=
 		}
 	}
@@ -151,16 +188,70 @@ transformPairs <- function( pairs, metric, threshold )
 
 getMetric <- function( metric )
 {
+	lower <- tolower( metric )
 	# Find metric
-	if( tolower( metric ) == "mean error" )
+	if( lower == "mean error" )
 	{
 		me
+	}
+	else if( lower  == "mean absolute error" )
+	{
+		mae
+	}
+	else if( lower  == "root mean square error" )
+	{
+		rms
+	}
+	else if( lower  == "pearson correlation coefficient" )
+	{
+		cor
+	}
+	else if( lower  == "coefficient of determination" )
+	{
+		R2
+	}
+	else if( lower  == "mean square error skill score" )
+	{
+		NSE
+	}
+	else if( lower  == "kling gupta efficiency" )
+	{
+		KGE
+	}
+	else if( lower  == "volumetric efficiency" )
+	{
+		VE
+	}
+	else if( lower  == "index of agreement" )
+	{
+		md
 	}
 	else 	
 	{
 		stop( paste( "Could not find metric: ", metric ) )
 	}
 } 
+
+##########################################################################################
+#
+# Function that returns true if the named metric exists in a particular list, false 
+# otherwise.
+#
+# metric         The named metric
+# metric.list    The list of named metrics to check
+# Return         True if the metric exists in the metric.list, false otherwise
+#
+##########################################################################################
+
+doesThisMetricExist<-function(metric, metric.list) 
+{
+	returnMe = match(TRUE,sapply(1:length(metric.list), function(i) any(metric.list[[i]] == metric)))
+	if(is.na(returnMe))
+	{
+		return(0)
+	}
+	return(returnMe)
+}
 
 ##########################################################################################
 #
@@ -190,7 +281,6 @@ main <- function()
 	generateAllMetricsForAllFeatures( args[1], as.numeric( args[3] ), args[2] )
 }
 main()
-
 
 
 
