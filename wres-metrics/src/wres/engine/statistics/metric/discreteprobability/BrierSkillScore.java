@@ -1,14 +1,8 @@
 package wres.engine.statistics.metric.discreteprobability;
 
-import java.util.Objects;
-
-import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
-import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
-import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.ProbabilityScore;
 import wres.engine.statistics.metric.singlevalued.MeanSquareErrorSkillScore;
@@ -27,42 +21,6 @@ import wres.engine.statistics.metric.singlevalued.MeanSquareErrorSkillScore;
 public class BrierSkillScore extends MeanSquareErrorSkillScore<DiscreteProbabilityPairs>
         implements ProbabilityScore<DiscreteProbabilityPairs,DoubleScoreOutput>
 {
-
-    @Override
-    public DoubleScoreOutput apply( final DiscreteProbabilityPairs s )
-    {
-        if ( Objects.isNull( s ) )
-        {
-            throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
-        }
-        //Explicit baseline
-        if ( s.hasBaseline() )
-        {
-            return super.apply( s );
-        }
-        //Climatological baseline
-        else
-        {
-            DataFactory d = getDataFactory();
-            //Bernoulli R.V. with probability p 
-            double p = FunctionFactory.mean().applyAsDouble( d.vectorOf( d.getSlicer().getLeftSide( s ) ) );
-            double climP = p * ( 1.0 - p );
-            final double result;
-            if ( climP > 0 )
-            {
-                result =
-                        FunctionFactory.skill().applyAsDouble( getSumOfSquareError( s ) / s.getData().size(),
-                                                               p * ( 1.0 - p ) );
-            }
-            else
-            {
-                result = Double.NaN;
-            }
-            //Metadata
-            final MetricOutputMetadata metOut = getMetadata( s );
-            return getDataFactory().ofDoubleScoreOutput( result, metOut );
-        }
-    }
 
     @Override
     public MetricConstants getID()
