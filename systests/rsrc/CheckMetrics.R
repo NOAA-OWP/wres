@@ -22,7 +22,8 @@ single.valued.continuous <-list(
 	c( rep("mean square error skill score", 2) ),
 	c( rep("kling gupta efficiency", 2) ),
 	c( rep("volumetric efficiency", 2) ),
-	c( rep("index of agreement", 2) )
+	c( rep("index of agreement", 2) ),
+	c( rep("sample size", 2) )
 )
 
 ##########################################################################################
@@ -225,6 +226,10 @@ getMetric <- function( metric )
 	else if( lower  == "index of agreement" )
 	{
 		md
+	}
+	else if( lower  == "sample size" )
+	{
+		function( left, right ) length( left )
 	}
 	else 	
 	{
