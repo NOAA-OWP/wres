@@ -14,7 +14,6 @@ import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
 import wres.io.config.ConfigHelper;
 import wres.io.data.details.ProjectDetails;
-import wres.io.utilities.NoDataException;
 
 class PersistenceForecastScripter extends Scripter
 {
@@ -42,7 +41,7 @@ class PersistenceForecastScripter extends Scripter
                                      .replace( "'", "" )
                              + "Z";
         Instant usualZeroDate = Instant.parse( isoZeroDate );
-        this.timeScaleWidth = ConfigHelper.getDurationFromTimeScale( projectDetails.getAggregation() );
+        this.timeScaleWidth = ConfigHelper.getDurationFromTimeScale( projectDetails.getScale() );
         this.zeroDate = usualZeroDate.minus( this.timeScaleWidth );
         this.progress = super.getProgress();
         this.sequenceStep = super.getSequenceStep();

@@ -4,6 +4,10 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.temporal.ChronoField;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -59,8 +63,8 @@ public class USGSReader extends BasicSource
     private static final String INSTANTANEOUS_VALUE = "iv";
     private static final String DAILY_VALUE = "dv";
 
-    public static final String EARLIEST_DATE = "epoch";
-    public static final String LATEST_DATE = "now";
+    public static final String EARLIEST_DATE = "2008-01-01T00:00:00Z";
+    public static final String LATEST_DATE = TimeHelper.convertDateToString( OffsetDateTime.now( ZoneId.of( "UTC" ) ) );
     /**
      * Epsilon value used to test floating point equivalency
      */
@@ -104,7 +108,7 @@ public class USGSReader extends BasicSource
         public UpsertValue(String gageID, String observationTime, Double value)
         {
             this.gageID = gageID;
-            this.observationTime = observationTime;
+            this.observationTime = TimeHelper.standardize( observationTime );
             this.value = value;
         }
 
@@ -437,8 +441,26 @@ public class USGSReader extends BasicSource
                     this.endDate = TimeHelper.convertStringDateTimeToDate( this.endDate );
                     break;
                 default:
+
+                    // USGS is [inclusive, exclusive) where we need
+                    // [inclusive, inclusive]. We add time to ensure that we
+                    // have all the data we need
+                    OffsetDateTime dateTime = OffsetDateTime.parse( this.endDate );
+                    dateTime = dateTime.withOffsetSameInstant( ZoneOffset.UTC );
+                    dateTime = dateTime.plus(
+                            this.dataSourceConfig.getExistingTimeScale().getPeriod(),
+                            ChronoUnit.valueOf(
+                                    this.dataSourceConfig.getExistingTimeScale()
+                                                         .getUnit()
+                                                         .value()
+                                                         .toUpperCase()
+                            )
+                    );
+                    this.endDate = TimeHelper.convertDateToString( dateTime );
+
                     // The space inbetween the date and time needs to be split with a T
                     this.endDate = this.endDate.replaceAll( " ", "T" );
+                    this.endDate += "Z";
                     break;
             }
         }

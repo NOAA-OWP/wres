@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project label="Lead Time Pooling Window Example (Mimics Scenario001)" name="scenario017">
+
+    <inputs>
+        <left label="">
+            <type>simulations</type>
+            <source format="PI-XML">../data/DRRC2QINE.xml</source>
+            <variable>QINE</variable>
+
+        </left>
+        <right label="HEFS">
+            <type>ensemble forecasts</type>
+            <source format="PI-XML">../data/drrc2ForecastsOneMonth/</source>
+            <variable>SQIN</variable>
+
+        </right>
+    </inputs>
+
+    <pair label="Pairs by location and lead time">
+        <unit>CMS</unit>
+        <feature locationId="DRRC2" />
+        <leadHours minimum="1" maximum="24" />
+        <leadTimesPoolingWindow>
+            <period>1</period>
+            <unit>hours</unit>
+        </leadTimesPoolingWindow>
+    </pair>
+
+    <metrics>
+        <probabilityThresholds>
+            <applyTo>left</applyTo>
+            <commaSeparatedValues>0.1,0.25,0.5,0.75,0.9,0.95</commaSeparatedValues>
+            <operator>greater than or equal to</operator>
+        </probabilityThresholds>
+        <metric> <name>mean error</name> </metric>
+        <metric> <name>brier score</name> </metric>
+        <metric> <name>reliability diagram</name> </metric>
+        <metric> <name>sample size</name> </metric>
+
+    </metrics>
+    <outputs>
+        <destination type="pairs" decimalFormat="0.000000">
+            <path>output/</path>
+        </destination>
+
+        <destination type="numeric" decimalFormat="0.000000">
+            <path>output/</path>
+        </destination>
+        <destination type="graphic">
+            <path>output/</path>
+            <graphical width="800" height="600">
+                <plotType>lead threshold</plotType>
+<config>
+<chartDrawingParameters>
+    <subtitleList>
+        <subtitle>
+            <font family="Dialog" size="12" style="0"/>
+            <color alpha="255" blue="0" green="0" red="0"/>
+            <text>
+</text>  <!-- Empty! -->
+            <border>
+                <lineWidths bottom="0.0" left="0.0" right="0.0" top="0.0"/>
+                <color alpha="255" blue="0" green="0" red="0"/>
+            </border>
+            <horizontalAlignment>CENTER</horizontalAlignment>
+            <textAlignment>CENTER</textAlignment>
+            <textInsets bottom="0.0" left="0.0" right="0.0" top="0.0"/>
+            <position>RIGHT</position>  <!-- Positioned on the RIGHT! -->
+        </subtitle>
+    </subtitleList>
+</chartDrawingParameters>
+</config>
+            </graphical>
+        </destination>
+    </outputs>
+
+</project>
+

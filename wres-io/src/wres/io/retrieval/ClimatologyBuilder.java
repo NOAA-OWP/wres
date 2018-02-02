@@ -13,7 +13,6 @@ import wres.io.reading.usgs.USGSReader;
 import wres.io.utilities.Database;
 import wres.util.Collections;
 import wres.util.Strings;
-import wres.util.TimeHelper;
 
 import java.io.IOException;
 import java.sql.Connection;
@@ -333,11 +332,11 @@ class ClimatologyBuilder
 
             for (List<Double> valuesToAggregate : this.getValues().values())
             {
-                if (this.projectDetails.shouldAggregate())
+                if (this.projectDetails.shouldScale())
                 {
                     Double aggregation = Collections.aggregate(
                             valuesToAggregate,
-                            this.projectDetails.getAggregationFunction() );
+                            this.projectDetails.getScalingFunction() );
                     if ( !Double.isNaN( aggregation ) )
                     {
                         aggregatedValues.add( aggregation );
@@ -384,7 +383,7 @@ class ClimatologyBuilder
 
         script.append("SELECT O.observed_value,").append(NEWLINE);
         script.append("    O.measurementunit_id,").append(NEWLINE);
-        script.append("    O.observation_time").append(NEWLINE);
+        script.append("    (O.observation_time");
 
         if (this.dataSourceConfig.getTimeShift() != null)
         {
@@ -395,7 +394,7 @@ class ClimatologyBuilder
                   .append("'");
         }
 
-        script.append("::text").append(NEWLINE);
+        script.append(")::text AS observation_time").append(NEWLINE);
         script.append("FROM wres.Observation O").append(NEWLINE);
         try
         {
@@ -448,7 +447,7 @@ class ClimatologyBuilder
 
             latest += "'";
 
-            script.append("    AND O.observation_date");
+            script.append("    AND O.observation_time");
 
             if (this.dataSourceConfig.getTimeShift() != null)
             {
@@ -461,7 +460,7 @@ class ClimatologyBuilder
             }
 
             script.append(" >= ").append(earliest).append(NEWLINE);
-            script.append("    AND O.observation_date");
+            script.append("    AND O.observation_time");
 
             if (this.dataSourceConfig.getTimeShift() != null)
             {

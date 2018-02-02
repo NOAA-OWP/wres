@@ -173,6 +173,8 @@ public class ConfigHelper
 
     /**
      *
+     * TODO: Move to ProjectDetails
+     *
      * @param projectDetails The configuration that controls how windows are calculated
      * @param windowNumber The indicator of the window whose lead description needs.  In the simplest case, the first
      *                     window could represent 'lead = 1' while the third 'lead = 3'. In more complicated cases,
@@ -202,9 +204,6 @@ public class ConfigHelper
         }
         else
         {
-            // We add the plus one because the value yielded by
-            // getLead(projectDetails, windowNumber) grants us the first exclusive
-            // value, not the first inclusive value
             qualifier = "FV.lead = " + projectDetails.getLead(windowNumber);
         }
 
@@ -823,25 +822,23 @@ public class ConfigHelper
 
         if ( projectDetails.getPoolingMode() == TimeWindowMode.ROLLING )
         {
-            // Determine the position in hours of this window within the sequence
-            Integer step = projectDetails.getPoolingWindow().getFrequency();
-
-            // TODO: Determine how this fits in the paradigm where all is rolling
-            // A pooling window with TimeWindowMode.BACK_TO_BACK has an unspecified frequency
-            // that is equal to the period
-            if ( projectDetails.getPoolingMode() == TimeWindowMode.BACK_TO_BACK )
-            {
-                step = projectDetails.getPoolingWindow().getPeriod();
-            }
-
-            Double frequencyOffset = TimeHelper.unitsToLeadUnits( projectDetails.getPoolingWindowUnit(),
-                                                                  step )
+            Double frequencyOffset = TimeHelper.unitsToLeadUnits( projectDetails.getIssuePoolingWindowUnit(),
+                                                                  projectDetails.getIssuePoolingWindowFrequency() )
                                      * sequenceStep;
 
             Instant first = Instant.parse( projectDetails.getEarliestIssueDate() );
             first = first.plus( frequencyOffset.longValue(), ChronoUnit.HOURS );
-            Instant second = first.plus( projectDetails.getPoolingWindow().getPeriod(),
-                                         ChronoUnit.valueOf( projectDetails.getPoolingWindowUnit().toUpperCase() ));
+            Instant second;
+
+            if (projectDetails.getIssuePoolingWindowPeriod() > 0)
+            {
+                second = first.plus( projectDetails.getIssuePoolingWindowPeriod(),
+                                     ChronoUnit.valueOf( projectDetails.getIssuePoolingWindowUnit().toUpperCase() ));
+            }
+            else
+            {
+                second = first;
+            }
 
             windowMetadata = TimeWindow.of( first,
                                             second,
