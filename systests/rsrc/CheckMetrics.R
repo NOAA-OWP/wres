@@ -1,7 +1,8 @@
 # Import libraries silently
 suppressMessages( suppressWarnings( library( data.table ) ) )
 suppressMessages( suppressWarnings( library( hydroGOF ) ) ) 
-suppressMessages( suppressWarnings( library( verification ) ) ) 
+suppressMessages( suppressWarnings( library( verification ) ) )
+suppressMessages( suppressWarnings( library( SpecsVerification ) ) ) 
 
 ##########################################################################################
 #
@@ -39,6 +40,10 @@ categorical <-list(
 	c( rep("critical success index", 2) ),
 	c( rep("peirce skill score", 2) ),
 	c( rep("equitable threat score", 2) )
+)
+
+ensemble <-list(
+	c( rep("continuous ranked probability score", 2) )
 )
 
 ##########################################################################################
@@ -151,14 +156,22 @@ generateOneMetricForOneFeature <- function( pairs, threshold, metric )
 			nextWindow <- na.omit( nextWindow )			
 		}
 		nextLeft <- as.vector( unlist( nextWindow[,5] ) )  # Observations in column 5
-		nextRight <-  as.vector( unlist( nextWindow[,6] ) )
-		# Compute the mean if the right has more than one column, i.e. ensemble mean
-		if( doesThisMetricExist( metric, single.valued.continuous ) && ncol( nextWindow ) > 6 )
-		{	
-			nextRight <- rowMeans( data.frame( nextWindow[,6:ncol(nextWindow)] ), na.rm = TRUE )
+		nextRight <-  nextWindow[,6:ncol( nextWindow )]
+		# Single-valued metrics: transform right
+		if( doesThisMetricExist( metric, single.valued.continuous ) )
+		{
+			# Ensemble mean required
+			if( ncol( nextWindow ) > 6 )
+			{	
+				nextRight <- rowMeans( data.frame( nextWindow[,6:ncol(nextWindow)] ), na.rm = TRUE )
+			}
+			else 
+			{
+				nextRight <- as.vector( unlist( nextWindow[,6] ) )
+			}
 		}
 		metric.results[i,1] = windows[i]
-		metric.results[i,2] = metricToCompute( nextRight, nextLeft )
+		metric.results[i,2] = metricToCompute( nextLeft, nextRight )
 	}
 	metric.results
 }
@@ -235,6 +248,19 @@ transformPairs <- function( pairs, metric, threshold )
 			pairs
 		}
 	}
+	else if( doesThisMetricExist( tolower( metric ), ensemble ) )
+	{
+		# All data
+		if( is.na( threshold ) )
+		{
+			pairs
+		}
+		else 
+		{
+	      	# Observations in V5
+			pairs[ pairs$V5 >= threshold , ]     # Assumed >=
+		}
+	}
 	else 	
 	{
 		stop( paste( "Could not find metric: ", metric ) )
@@ -278,19 +304,19 @@ getMetric <- function( metric )
 	}
 	else if( lower  == "mean square error skill score" )
 	{
-		NSE
+		function( left, right ) NSE( right, left )
 	}
 	else if( lower  == "kling gupta efficiency" )
 	{
-		function( left, right) KGE( left, right, method = "2012" )
+		function( left, right) KGE( right, left, method = "2012" )
 	}
 	else if( lower  == "volumetric efficiency" )
 	{
-		VE
+		function( left, right ) VE( right, left )
 	}
 	else if( lower  == "index of agreement" )
 	{
-		md
+		function( left, right ) md( right, left )
 	}
 	else if( lower  == "sample size" )
 	{
@@ -298,7 +324,7 @@ getMetric <- function( metric )
 	}
 	else if( lower  == "mean square error" )
 	{
-		mse
+		function( left, right ) mse( right, left )
 	}
 	else if( lower  == "brier score" )
 	{
@@ -314,7 +340,7 @@ getMetric <- function( metric )
 	}
 	else if( lower  == "brier skill score" )
 	{
-		NSE #NSE in probability space
+		function( left, right ) NSE( right, left ) #NSE in probability space
 	}
 	else if( lower  == "probability of detection" )
 	{
@@ -346,6 +372,14 @@ getMetric <- function( metric )
 		{		
 			result <- table.stats( obs=left, pred=right, silent = TRUE )
 	      	result$ETS
+		}		
+	}
+	else if( lower  == "continuous ranked probability score" )
+	{
+		# Mean CRPS using Hersbach (2000)
+		function( left, right )
+		{		
+			mean( EnsCrps( as.matrix( right ), left ) )
 		}		
 	}
 	else 	
