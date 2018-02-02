@@ -208,7 +208,7 @@ getMetric <- function( metric )
 	}
 	else if( lower  == "coefficient of determination" )
 	{
-		R2
+		function( left, right ) cor( left, right )^2 
 	}
 	else if( lower  == "mean square error skill score" )
 	{
