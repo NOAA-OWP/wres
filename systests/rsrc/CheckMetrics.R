@@ -218,7 +218,7 @@ getMetric <- function( metric )
 	}
 	else if( lower  == "kling gupta efficiency" )
 	{
-		KGE
+		function( left, right) KGE( left, right, method = "2012" )
 	}
 	else if( lower  == "volumetric efficiency" )
 	{
