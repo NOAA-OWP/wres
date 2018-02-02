@@ -36,7 +36,8 @@ public final class MeanSquareErrorSkillScoreTest
 
     /**
      * Constructs a {@link MeanSquareErrorSkillScore} with an explicit baseline and compares the actual result to the
-     * expected result. Also, checks the parameters of the metric.
+     * expected result. Also, checks the parameters of the metric. Uses data from 
+     * {@link MetricTestDataFactory#getSingleValuedPairsTwo()}.
      * @throws MetricParameterException if the metric could not be constructed
      */
 
@@ -87,7 +88,7 @@ public final class MeanSquareErrorSkillScoreTest
 
     /**
      * Constructs a {@link MeanSquareErrorSkillScore} with a no-skill baseline and compares the actual result to
-     * the expected result.
+     * the expected result. Uses data from {@link MetricTestDataFactory#getSingleValuedPairsFive()}.
      * @throws MetricParameterException if the metric could not be constructed
      */
 
@@ -132,7 +133,7 @@ public final class MeanSquareErrorSkillScoreTest
         //Check the results
         final DoubleScoreOutput actual = mse.apply( input );
 
-        final DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 0.7832791707548252, m1 );
+        final DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 0.7832791707526114, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -141,12 +142,51 @@ public final class MeanSquareErrorSkillScoreTest
     }
 
     /**
+     * Constructs a {@link MeanSquareErrorSkillScore} with a no-skill baseline and compares the actual result to
+     * the expected result. Uses data from {@link MetricTestDataFactory#getSingleValuedPairsOne()}.
+     * @throws MetricParameterException if the metric could not be constructed
+     */
+
+    @Test
+    public void test3MeanSquareErrorSkillScoreWithoutBaseline() throws MetricParameterException
+    {
+        //Obtain the factories
+        final DataFactory outF = DefaultDataFactory.getInstance();
+        final MetadataFactory metaFac = outF.getMetadataFactory();
+
+        //Generate some data
+        SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
+        //Metadata for the output
+        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getData().size(),
+                                                                   metaFac.getDimension(),
+                                                                   metaFac.getDimension(),
+                                                                   MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE,
+                                                                   MetricConstants.MAIN );
+
+        //Build the metric
+        final MeanSquareErrorSkillScoreBuilder<SingleValuedPairs> b =
+                new MeanSquareErrorSkillScore.MeanSquareErrorSkillScoreBuilder<>();
+        b.setOutputFactory( outF );
+        final MeanSquareErrorSkillScore<SingleValuedPairs> mse = b.build();
+
+        //Check the results
+        final DoubleScoreOutput actual = mse.apply( input );
+
+        final DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 0.9963647159052861, m1 );
+        assertTrue( "Actual: " + actual.getData()
+                    + ". Expected: "
+                    + expected.getData()
+                    + ".",
+                    actual.equals( expected ) );
+    }    
+    
+    /**
      * Constructs a {@link MeanSquareErrorSkillScore} and checks for exceptional cases.
      * @throws MetricParameterException if the metric could not be constructed
      */
 
     @Test
-    public void test3Exceptions() throws MetricParameterException
+    public void test4Exceptions() throws MetricParameterException
     {
 
         //Build the metric

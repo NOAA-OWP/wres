@@ -41,10 +41,10 @@ public class MeanSquareErrorSkillScore<S extends SingleValuedPairs> extends Mean
         else
         {
             DataFactory d = getDataFactory();
-            double meanRight = FunctionFactory.mean().applyAsDouble(d.vectorOf(d.getSlicer().getRightSide(s)));
-            for(PairOfDoubles next: s.getData())
+            double meanLeft = FunctionFactory.mean().applyAsDouble( d.vectorOf( d.getSlicer().getLeftSide( s ) ) );
+            for ( PairOfDoubles next : s.getData() )
             {
-                denominator += Math.pow(next.getItemOne() - meanRight, 2);
+                denominator += Math.pow( next.getItemOne() - meanLeft, 2 );
             }
         }
         final double result = FunctionFactory.skill().applyAsDouble(numerator, denominator);
