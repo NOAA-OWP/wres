@@ -1,6 +1,7 @@
 # Import libraries silently
 suppressMessages( suppressWarnings( library( data.table ) ) )
 suppressMessages( suppressWarnings( library( hydroGOF ) ) ) 
+# suppressMessages( suppressWarnings( library( verification ) ) ) 
 
 ##########################################################################################
 #
@@ -25,6 +26,11 @@ single.valued.continuous <-list(
 	c( rep("volumetric efficiency", 2) ),
 	c( rep("index of agreement", 2) ),
 	c( rep("sample size", 2) )
+)
+
+discrete.probability <-list(
+	c( rep("brier score", 2) ),
+	c( rep("brier skill score", 2) )
 )
 
 ##########################################################################################
@@ -130,10 +136,10 @@ generateOneMetricForOneFeature <- function( pairs, threshold, metric )
 
 		# Transform the pairs in a metric-appropriate way
 		nextWindow <- suppressWarnings( transformPairs( nextWindow, metric, threshold ) )
-		nextLeft <- unlist( nextWindow[,5] )  # Observations in column 5
-		nextRight <- unlist( nextWindow[,6] )
+		nextLeft <- as.vector( unlist( nextWindow[,5] ) )  # Observations in column 5
+		nextRight <-  as.vector( unlist( nextWindow[,6] ) )
 		# Compute the mean if the right has more than one column, i.e. ensemble mean
-		if( ncol(pairs) > 6 )
+		if( doesThisMetricExist( metric, single.valued.continuous ) && ncol( nextWindow ) > 6 )
 		{	
 			nextRight <- rowMeans( data.frame( nextWindow[,6:ncol(nextWindow)] ), na.rm = TRUE )
 		}
@@ -169,6 +175,26 @@ transformPairs <- function( pairs, metric, threshold )
 		{
 	      	# Observations in V5
 			pairs[ pairs$V5 >= threshold , ]     # Assumed >=
+		}
+	}
+	else if ( doesThisMetricExist( tolower( metric ), discrete.probability ) )
+	{	
+		# All data
+		if( is.na( threshold ) )
+		{
+			stop( "Cannot use the threshold 'NA' or 'All data' for a
+					 discrete probability metric.")
+		}
+		else 
+		{
+			# Convert to probabilities
+			subPairs<-pairs[,5:ncol( pairs )]
+			subPairs <- apply( subPairs, 2, function(x) as.double ( x >= threshold ) )
+			counts <- apply( subPairs, 1, function(x) sum( !is.na(x) ) ) - 1		
+			f.probs <- rowSums( subPairs[,2:ncol( subPairs )] ) / counts
+			pairs[,5] <- subPairs[,1]	
+			pairs[,6] <- f.probs			
+			pairs[,1:6]
 		}
 	}
 	else 	
@@ -235,6 +261,22 @@ getMetric <- function( metric )
 	else if( lower  == "mean square error" )
 	{
 		mse
+	}
+	else if( lower  == "brier score" )
+	{
+		mse #MSE in probability space
+		
+		# Equivalently
+	      #function( left, right )
+		#{		
+		#	result <- verify( obs=left, pred=right, show = FALSE, 
+		#		bins = FALSE, frcst.type="prob", obs.type="binary" )
+	      #	result$bs
+		#}
+	}
+	else if( lower  == "brier skill score" )
+	{
+		NSE #NSE in probability space
 	}
 	else 	
 	{
