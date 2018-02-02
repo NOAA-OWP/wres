@@ -407,7 +407,7 @@
         </xs:annotation>
 
         <xs:sequence>
-            <xs:element name="period" type="duration" />
+            <xs:element name="period" type="duration" minOccurs="0" />
             <xs:element name="frequency" type="duration" minOccurs="0"/>
             <xs:element name="unit" type="durationUnit" />
         </xs:sequence>

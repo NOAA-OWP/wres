@@ -96,15 +96,15 @@ public final class ScriptGenerator
         script.append( "                           - MIN( TS.initialization_date )" )
               .append( NEWLINE );
         script.append( "                           - INTERVAL '" );
-        script.append( projectDetails.getPoolingWindow().getPeriod() );
+        script.append(projectDetails.getIssuePoolingWindowPeriod());
         script.append( " " );
-        script.append( projectDetails.getPoolingWindow().getUnit().value() );
+        script.append( projectDetails.getIssuePoolingWindowUnit() );
         script.append( "' ) )").append( NEWLINE );
         script.append( "     /").append( NEWLINE );
         script.append( "     EXTRACT( epoch FROM ( INTERVAL '" );
-        script.append( projectDetails.getPoolingWindow().getFrequency() );
+        script.append( projectDetails.getIssuePoolingWindowFrequency() );
         script.append( " " );
-        script.append( projectDetails.getPoolingWindow().getUnit().value() );
+        script.append( projectDetails.getIssuePoolingWindowUnit() );
         script.append( "' ) )" ).append( NEWLINE );
         script.append( "    )::int + 1 AS window_count" ).append( NEWLINE );
         script.append("FROM wres.TimeSeries TS").append(NEWLINE);
