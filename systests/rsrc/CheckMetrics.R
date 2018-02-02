@@ -133,7 +133,7 @@ generateOneMetricForOneFeature <- function( pairs, threshold, metric )
 		# Compute the mean if the right has more than one column, i.e. ensemble mean
 		if( ncol(pairs) > 6 )
 		{	
-			nextRight <- rowMeans( data.frame( nextWindow[,6:ncol(nextWindow)] ) )
+			nextRight <- rowMeans( data.frame( nextWindow[,6:ncol(nextWindow)] ), na.rm = TRUE )
 		}
 		metric.results[i,1] = windows[i]
 		metric.results[i,2] = metricToCompute( nextRight, nextLeft )
