@@ -202,7 +202,7 @@ getMetric <- function( metric )
 	}
 	else if( lower  == "root mean square error" )
 	{
-		rms
+		rmse
 	}
 	else if( lower  == "pearson correlation coefficient" )
 	{
