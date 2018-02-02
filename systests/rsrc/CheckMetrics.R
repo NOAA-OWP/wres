@@ -26,12 +26,14 @@ single.valued.continuous <-list(
 	c( rep("kling gupta efficiency", 2) ),
 	c( rep("volumetric efficiency", 2) ),
 	c( rep("index of agreement", 2) ),
-	c( rep("sample size", 2) )
+	c( rep("sample size", 2) ),
+	c( rep("bias fraction", 2) )
 )
 
 discrete.probability <-list(
 	c( rep("brier score", 2) ),
-	c( rep("brier skill score", 2) )
+	c( rep("brier skill score", 2) ),
+	c( rep("relative operating characteristic score", 2) )
 )
 
 categorical <-list(
@@ -169,6 +171,11 @@ generateOneMetricForOneFeature <- function( pairs, threshold, metric )
 			{
 				nextRight <- as.vector( unlist( nextWindow[,6] ) )
 			}
+		}
+		# Discrete probability: requires vector
+		else if ( doesThisMetricExist( metric, discrete.probability ) )
+		{
+			nextRight <- as.vector( unlist( nextRight ) )
 		}
 		metric.results[i,1] = windows[i]
 		metric.results[i,2] = metricToCompute( nextLeft, nextRight )
@@ -338,6 +345,14 @@ getMetric <- function( metric )
 	      #	result$bs
 		#}
 	}
+	else if( lower  == "relative operating characteristic score" )
+	{
+	      function( left, right )
+		{		
+			result <- suppressWarnings( roc.area( obs = left, pred = right ) )
+	      	2 * result$A - 1
+		}
+	}
 	else if( lower  == "brier skill score" )
 	{
 		function( left, right ) NSE( right, left ) #NSE in probability space
@@ -380,6 +395,14 @@ getMetric <- function( metric )
 		function( left, right )
 		{		
 			mean( EnsCrps( as.matrix( right ), left ) )
+		}		
+	}
+	else if( lower  == "bias fraction" )
+	{
+		# Mean CRPS using Hersbach (2000)
+		function( left, right )
+		{		
+			me( right, left ) / mean( left )
 		}		
 	}
 	else 	
