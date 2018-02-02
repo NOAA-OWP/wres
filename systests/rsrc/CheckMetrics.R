@@ -16,6 +16,7 @@ suppressMessages( suppressWarnings( library( hydroGOF ) ) )
 single.valued.continuous <-list(
 	c( rep("mean error", 2) ),
 	c( rep("mean absolute error", 2) ),
+	c( rep("mean square error", 2) ),
 	c( rep("root mean square error", 2) ),
 	c( rep("pearson correlation coefficient", 2) ),
 	c( rep("coefficient of determination", 2) ),
@@ -230,6 +231,10 @@ getMetric <- function( metric )
 	else if( lower  == "sample size" )
 	{
 		function( left, right ) length( left )
+	}
+	else if( lower  == "mean square error" )
+	{
+		mse
 	}
 	else 	
 	{
