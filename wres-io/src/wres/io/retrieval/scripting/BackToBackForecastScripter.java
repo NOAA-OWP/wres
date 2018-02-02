@@ -8,10 +8,12 @@ import java.util.StringJoiner;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.EnsembleCondition;
 import wres.config.generated.Feature;
+import wres.config.generated.TimeScaleConfig;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.NoDataException;
+import wres.util.TimeHelper;
 
 class BackToBackForecastScripter extends Scripter
 {
@@ -29,7 +31,8 @@ class BackToBackForecastScripter extends Scripter
     {
         this.add("SELECT ");
         this.applyValueDate();
-        this.addLine("    FV.lead AS agg_hour,");
+        this.applyAggHour();
+        this.addLine( "    FV.lead,");
         this.addLine( "    ARRAY_AGG(FV.forecasted_value ORDER BY TS.ensemble_id) AS measurements," );
         this.addLine( "    TS.measurementunit_id" );
         this.addLine( "FROM wres.TimeSeries TS" );
@@ -95,6 +98,31 @@ class BackToBackForecastScripter extends Scripter
         );
     }
 
+    private void applyAggHour() throws IOException, SQLException
+    {
+        TimeScaleConfig timeScaleConfig = this.getProjectDetails().getScale();
+
+        this.add("    ");
+
+        if (timeScaleConfig == null)
+        {
+            this.add("FV.lead");
+        }
+        else
+        {
+            Integer firstLead = this.getProgress() * this.getProjectDetails().getLeadFrequency() + 1;
+            firstLead += this.getLeadOffset();
+            this.add( "(FV.lead - ",
+                      firstLead,
+                      ") % ");
+            this.add( TimeHelper.unitsToLeadUnits( this.getProjectDetails()
+                                                       .getScalingUnit(),
+                                                   this.getProjectDetails()
+                                                       .getScalingPeriod() ) );
+        }
+        this.addLine(" AS scale_member,");
+    }
+
     @Override
     protected String getValueDate()
     {
@@ -154,7 +182,7 @@ class BackToBackForecastScripter extends Scripter
 
     private void applyOrdering()
     {
-        this.addLine("ORDER BY ", this.getBaseDateName(), ", agg_hour");
+        this.addLine("ORDER BY ", this.getBaseDateName(), ", lead, scale_member");
     }
 
     private String validTimeCalculation;

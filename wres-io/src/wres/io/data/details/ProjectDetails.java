@@ -453,17 +453,33 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     {
         Integer period;
 
-        if (this.projectConfig.getPair().getLeadTimesPoolingWindow() != null)
+        if (this.projectConfig.getPair().getLeadTimesPoolingWindow() != null &&
+            this.projectConfig.getPair().getLeadTimesPoolingWindow().getPeriod() != null)
         {
-            period = this.projectConfig.getPair().getLeadTimesPoolingWindow().getPeriod();
+            period = this.projectConfig.getPair()
+                                       .getLeadTimesPoolingWindow()
+                                       .getPeriod();
         }
-        else if (this.getAggregation() != null)
+        else if ( this.getScale() != null)
         {
-            period = this.getAggregationPeriod();
+            period = this.getScalingPeriod();
         }
         else
         {
             period = null;
+        }
+
+        return period;
+    }
+
+    public int getIssuePoolingWindowPeriod()
+    {
+        // Indicates one basis per period
+        int period = 0;
+
+        if (this.getIssuePoolingWindow().getPeriod() != null)
+        {
+            period = this.getIssuePoolingWindow().getPeriod();
         }
 
         return period;
@@ -479,7 +495,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         }
         else
         {
-            unit = this.getAggregationUnit();
+            unit = this.getScalingUnit();
         }
 
         return unit;
@@ -506,19 +522,19 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         }
         else
         {
-            frequency = this.getAggregationFrequency();
+            frequency = this.getScalingFrequency();
         }
 
         return frequency;
     }
 
-    public Integer getAggregationPeriod()
+    public Integer getScalingPeriod()
     {
         Integer period;
 
-        if (this.getAggregation() != null)
+        if ( this.getScale() != null)
         {
-            period = this.getAggregation().getPeriod();
+            period = this.getScale().getPeriod();
         }
         else
         {
@@ -529,13 +545,13 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return period;
     }
 
-    public String getAggregationUnit()
+    public String getScalingUnit()
     {
         String unit;
 
-        if (this.getAggregation() != null)
+        if ( this.getScale() != null)
         {
-            unit = this.getAggregation().getUnit().value();
+            unit = this.getScale().getUnit().value();
         }
         else
         {
@@ -546,7 +562,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return unit;
     }
 
-    public String getAggregationFunction()
+    public String getScalingFunction()
     {
         String function = null;
 
@@ -561,19 +577,19 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return function;
     }
 
-    public int getAggregationFrequency()
+    public int getScalingFrequency()
     {
         int frequency;
 
-        if (this.getAggregation() != null)
+        if ( this.getScale() != null)
         {
-            if ( this.getAggregation().getFrequency() != null )
+            if ( this.getScale().getFrequency() != null )
             {
-                frequency = this.getAggregation().getFrequency();
+                frequency = this.getScale().getFrequency();
             }
             else
             {
-                frequency = this.getAggregationPeriod();
+                frequency = this.getScalingPeriod();
             }
         }
         else
@@ -583,26 +599,48 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         }
 
         frequency = TimeHelper.unitsToLeadUnits(
-                this.getAggregationUnit(),
+                this.getScalingUnit(),
                 frequency
         ).intValue();
 
         return frequency;
     }
 
-    public boolean shouldAggregate()
+    public boolean shouldScale()
     {
-        return this.getAggregation() != null &&
+        return this.getScale() != null &&
                !TimeScaleFunction.NONE
-                       .value().equalsIgnoreCase(this.getAggregationFunction());
+                       .value().equalsIgnoreCase(this.getScalingFunction());
     }
 
-    public TimeScaleConfig getAggregation()
+    public TimeScaleConfig getScale()
     {
         return this.projectConfig.getPair().getDesiredTimeScale();
     }
+
+    // TODO: This is a piece to the puzzle of finding out how to magically
+    // align the left and right data
+    public Integer getCurrentRightHandPeriod()
+    {
+        Integer scale = 1;
+        TimeScaleConfig timeScaleConfig = this.getLeft().getExistingTimeScale();
+
+        if (timeScaleConfig == null)
+        {
+            // TODO: Somehow determine the scale (i.e. span between values) from the right hand data
+        }
+        else
+        {
+            scale = TimeHelper.unitsToLeadUnits(
+                    timeScaleConfig.getUnit().value(),
+                    timeScaleConfig.getPeriod()
+            ).intValue();
+        }
+
+        return scale;
+    }
     
-    public PoolingWindowConfig getPoolingWindow()
+    public PoolingWindowConfig getIssuePoolingWindow()
     {
         return this.projectConfig.getPair().getIssuedDatesPoolingWindow();
     }
@@ -611,8 +649,8 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     {
         TimeWindowMode mode = TimeWindowMode.BACK_TO_BACK;
 
-        // Can't use "this.getAggregationFrequency because it uses this
-        if ( this.getPoolingWindow() != null )
+        // Can't use "this.getScalingFrequency because it uses this
+        if ( this.getIssuePoolingWindow() != null )
         {
             mode = TimeWindowMode.ROLLING;
         }
@@ -620,7 +658,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return mode;
     }
     
-    public String getPoolingWindowUnit()
+    public String getIssuePoolingWindowUnit()
     {
         String unit = null;
 
@@ -634,7 +672,24 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         }
 
         return unit;
-    }    
+    }
+
+    public int getIssuePoolingWindowFrequency()
+    {
+        // If there isn't a definition, we want to move a single unit at a time
+        int frequency = 1;
+
+        if (this.getIssuePoolingWindow().getFrequency() != null)
+        {
+            frequency = this.getIssuePoolingWindow().getFrequency();
+        }
+        else if ( this.getIssuePoolingWindowPeriod() > 0)
+        {
+            frequency = this.getIssuePoolingWindowPeriod();
+        }
+
+        return frequency;
+    }
 
     public String getDesiredMeasurementUnit()
     {
@@ -666,7 +721,29 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     {
         FormattedStopwatch timer = new FormattedStopwatch();
         timer.start();
-        Integer width = this.getWindowWidth();
+
+        // TODO: Implement dynamic scaling to determine the offset
+        // This will end up grabbing the offset based off of the lead pool or
+        // the scale, although we only ever need the offset in order to match
+        // the scale. If there's not a need to scale, theoretically, we wouldn't
+        // need to mess with a width. All seems to work out with the below
+        // method based on the scale, but it starts to fall apart when there
+        // isn't an "existing scale" tag; it defaults to an hour but won't
+        // match if that's not the current scale.  For reference, see scenarios
+        // 403 and 405. There needs to be a function that will find the least
+        // common multiple of either the defined existing scales or the data in
+        // the database.
+        Integer width = TimeHelper.unitsToLeadUnits( this.getLeadUnit(), this.getLeadPeriod() ).intValue();
+/*
+        if (this.getScale() != null)
+        {
+            width = TimeHelper.unitsToLeadUnits( this.getScalingUnit(), this.getScalingPeriod() ).intValue();
+        }
+        else
+        {
+            width = this.getCurrentRightHandPeriod();
+        }
+*/
 
         String script = "";
 
@@ -807,6 +884,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
 
         String beginning = "";
 
+        // TODO: An invalid width is determined by the
         beginning += "SELECT (FV.lead - " + width + ")::integer AS offset" + NEWLINE;
         beginning += "FROM (" + NEWLINE;
         beginning += "    SELECT TS.timeseries_id, TS.initialization_date" + NEWLINE;
@@ -896,7 +974,30 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
             end += "        AND O.observation_time <= '" + this.getLatestDate() + "'" + NEWLINE;
         }
 
-        end += "        AND O.observation_time = TS.initialization_date + INTERVAL '1 HOUR' * (FV.lead + " + width + ")" + NEWLINE;
+        end += "        AND O.observation_time ";
+
+        if (this.getLeft().getTimeShift() != null)
+        {
+            end += "+ '";
+            end += this.getLeft().getTimeShift().getWidth();
+            end += " ";
+            end += this.getLeft().getTimeShift().getUnit().value();
+            end += "' ";
+        }
+
+        end += "= TS.initialization_date + INTERVAL '1 HOUR' * (FV.lead + " + width + ")";
+
+        if (this.getRight().getTimeShift() != null)
+        {
+            end += " + '";
+            end += this.getRight().getTimeShift().getWidth();
+            end += " ";
+            end += this.getRight().getTimeShift().getUnit().value();
+            end += "'";
+        }
+
+        end += NEWLINE;
+
         end += "    )" + NEWLINE;
         end += "ORDER BY FV.lead" + NEWLINE;
         end += "LIMIT 1;";
@@ -990,13 +1091,12 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
             }
             catch ( ExecutionException e )
             {
-                LOGGER.debug("An error occured while populating the future"
+                throw new IOException("An error occured while populating the future"
                              + "offsets. Trying again...", e);
-                futureOffsets.put( key, futureOffset );
             }
             catch ( TimeoutException e )
             {
-                LOGGER.debug("It took took too long to get the offset for '{}'; "
+                LOGGER.trace("It took took too long to get the offset for '{}'; "
                              + "moving on to another location while we wait "
                              + "for the output on this location",
                              ConfigHelper.getFeatureDescription( feature ));

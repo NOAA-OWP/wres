@@ -39,8 +39,8 @@ class PoolingForecastScripter extends Scripter
         this.addLine("    FROM wres.Forecasts F");
         this.addLine("    WHERE F.variable_id = ", this.getVariableID());
 
-        Double frequency = TimeHelper.unitsToLeadUnits( this.getProjectDetails().getPoolingWindowUnit(), this.getProjectDetails().getPoolingWindow().getFrequency() );
-        Double span = TimeHelper.unitsToLeadUnits( this.getProjectDetails().getPoolingWindowUnit(), this.getProjectDetails().getPoolingWindow().getPeriod());
+        Double frequency = TimeHelper.unitsToLeadUnits( this.getProjectDetails().getIssuePoolingWindowUnit(), this.getProjectDetails().getIssuePoolingWindowFrequency() );
+        Double span = TimeHelper.unitsToLeadUnits( this.getProjectDetails().getIssuePoolingWindowUnit(), this.getProjectDetails().getIssuePoolingWindowPeriod());
 
         this.addLine( "        AND F.feature_id = ", Features.getFeatureID(this.getFeature()));
         this.addLine( "        AND F.lead > ", this.getProgress() );
@@ -54,11 +54,19 @@ class PoolingForecastScripter extends Scripter
         );
 
         this.add( "        AND F.basis_time >= ('", this.getProjectDetails().getEarliestIssueDate(), "'::timestamp without time zone + (INTERVAL '1 HOUR' * ");
-        this.add( TimeHelper.unitsToLeadUnits( getProjectDetails().getPoolingWindowUnit(), frequency ) );
+        this.add( TimeHelper.unitsToLeadUnits( getProjectDetails().getIssuePoolingWindowUnit(), frequency ) );
         this.addLine(" ) * ", this.getSequenceStep(), ")");
         this.add( "        AND F.basis_time <= ('", this.getProjectDetails().getEarliestIssueDate() );
-        this.add("'::timestamp without time zone + (INTERVAL '1 HOUR' * ", frequency, ") * ", this.getSequenceStep(), ") ");
-        this.addLine( "+ INTERVAL '", span, " HOUR'");
+        this.add("'::timestamp without time zone + (INTERVAL '1 HOUR' * ", frequency, ") * ", this.getSequenceStep(), ")");
+
+        if (span > 0)
+        {
+            this.addLine( " + INTERVAL '", span, " HOUR'" );
+        }
+        else
+        {
+            this.addLine();
+        }
 
         this.applyEnsembleConstraint();
 
@@ -72,8 +80,10 @@ class PoolingForecastScripter extends Scripter
         this.addLine( "                AND FS.forecast_id = F.timeseries_id" );
         this.addLine( "        )" );
         this.addLine(")");
-        this.addLine("SELECT F.lead AS agg_hour,");
+        this.addLine("SELECT ");
+        this.applyAggHour();
         this.applyValueDate();
+        this.addLine("    F.lead,");
         this.addLine("    ARRAY_AGG(F.forecasted_value ORDER BY F.ensemble_id) AS measurements,");
         this.addLine("    F.measurementunit_id");
         this.addLine( "FROM forecasts F" );
@@ -81,6 +91,23 @@ class PoolingForecastScripter extends Scripter
         this.addLine( "ORDER BY F.valid_time, F.lead;" );
 
         return this.getScript();
+    }
+
+    private void applyAggHour() throws IOException
+    {
+        if (this.getProjectDetails().getScale() == null)
+        {
+            this.add("F.lead");
+        }
+        else
+        {
+            this.add( "(F.lead - ", this.getProgress() + 1, ") % " );
+            this.add( TimeHelper.unitsToLeadUnits( this.getProjectDetails()
+                                                       .getScalingUnit(),
+                                                   this.getProjectDetails()
+                                                       .getScalingPeriod() ) );
+        }
+        this.addLine( " AS scale_member," );
     }
 
     private void applyEnsembleConstraint() throws SQLException
@@ -135,6 +162,11 @@ class PoolingForecastScripter extends Scripter
     @Override
     protected int getProgress() throws IOException
     {
+        return super.getProgress() + this.getLeadOffset();
+    }
+
+    private int getLeadOffset() throws IOException
+    {
         Integer offset;
 
         try
@@ -153,6 +185,6 @@ class PoolingForecastScripter extends Scripter
             throw new NoDataException( "There is not a valid offset for this feature." );
         }
 
-        return super.getProgress() + offset;
+        return offset;
     }
 }
