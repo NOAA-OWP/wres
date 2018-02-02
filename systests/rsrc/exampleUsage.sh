@@ -7,6 +7,15 @@
 #000 series
 for name in "brier score" "brier skill score" "mean error" "mean absolute error" "mean square error" "root mean square error" "pearson correlation coefficient" "coefficient of determination" "mean square error skill score" "kling gupta efficiency" "volumetric efficiency" "index of agreement" "sample size"; do 
   echo "============================================================ $name" >> deleteme.txt; 
+  for value in NA 0.5358 0.6565 1.1435 3.40835 11.94128 18.59037; do 
+    Rscript ../../rsrc/CheckMetrics.R "sorted_pairs.csv" "$name" $value ; 
+done; 
+done 
+
+
+#003 test
+for name in "brier score" "brier skill score" "mean error" "mean absolute error" "mean square error" "root mean square error" "pearson correlation coefficient" "coefficient of determination" "mean square error skill score" "kling gupta efficiency" "volumetric efficiency" "index of agreement" "sample size"; do 
+  echo "============================================================ $name" >> deleteme.txt; 
   for value in NA 0.5 1.0 2.0 5.0 10.0 15.0 20.0 25.0; do 
     Rscript ../../rsrc/CheckMetrics.R "sorted_pairs.csv" "$name" $value >> deleteme.txt; 
 done; 
