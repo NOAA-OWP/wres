@@ -1,7 +1,7 @@
 # Import libraries silently
 suppressMessages( suppressWarnings( library( data.table ) ) )
 suppressMessages( suppressWarnings( library( hydroGOF ) ) ) 
-# suppressMessages( suppressWarnings( library( verification ) ) ) 
+suppressMessages( suppressWarnings( library( verification ) ) ) 
 
 ##########################################################################################
 #
@@ -31,6 +31,14 @@ single.valued.continuous <-list(
 discrete.probability <-list(
 	c( rep("brier score", 2) ),
 	c( rep("brier skill score", 2) )
+)
+
+categorical <-list(
+	c( rep("probability of detection", 2) ),
+	c( rep("probability of false detection", 2) ),
+	c( rep("critical success index", 2) ),
+	c( rep("peirce skill score", 2) ),
+	c( rep("equitable threat score", 2) )
 )
 
 ##########################################################################################
@@ -136,6 +144,12 @@ generateOneMetricForOneFeature <- function( pairs, threshold, metric )
 
 		# Transform the pairs in a metric-appropriate way
 		nextWindow <- suppressWarnings( transformPairs( nextWindow, metric, threshold ) )
+		
+		# For single-valued input, remove any rows with NaN
+		if( ncol( nextWindow ) == 6 )
+		{
+			nextWindow <- na.omit( nextWindow )			
+		}
 		nextLeft <- as.vector( unlist( nextWindow[,5] ) )  # Observations in column 5
 		nextRight <-  as.vector( unlist( nextWindow[,6] ) )
 		# Compute the mean if the right has more than one column, i.e. ensemble mean
@@ -177,6 +191,7 @@ transformPairs <- function( pairs, metric, threshold )
 			pairs[ pairs$V5 >= threshold , ]     # Assumed >=
 		}
 	}
+	# Discrete probability measures for ensemble input
 	else if ( doesThisMetricExist( tolower( metric ), discrete.probability ) )
 	{	
 		# All data
@@ -195,6 +210,29 @@ transformPairs <- function( pairs, metric, threshold )
 			pairs[,5] <- subPairs[,1]	
 			pairs[,6] <- f.probs			
 			pairs[,1:6]
+		}
+	}
+	# Categorical measures for single-valued input
+	else if ( doesThisMetricExist( tolower( metric ), categorical ) )
+	{	
+		# All data
+		if( is.na( threshold ) )
+		{
+			stop( "Cannot use the threshold 'NA' or 'All data' for a
+					 discrete probability metric.")
+		}
+		else if( ncol( pairs ) > 6 )
+		{
+			stop( paste( "Expected single-valued input for the ",metric,sep="" ) )
+		}
+		else 
+		{			
+			# Convert to binary obs and pred
+			subPairs<-pairs[,5:ncol( pairs )]
+			subPairs <- apply( subPairs, 2, function(x) as.double ( x >= threshold ) )
+			pairs[,5] <- subPairs[,1]	
+			pairs[,6] <- subPairs[,2]			
+			pairs
 		}
 	}
 	else 	
@@ -277,6 +315,38 @@ getMetric <- function( metric )
 	else if( lower  == "brier skill score" )
 	{
 		NSE #NSE in probability space
+	}
+	else if( lower  == "probability of detection" )
+	{
+		function( left, right )
+		{		
+			result <- table.stats( obs=left, pred=right, silent = TRUE )
+	      	result$POD
+		}		
+	}
+	else if( lower  == "probability of false detection" )
+	{
+		function( left, right )
+		{		
+			result <- table.stats( obs=left, pred=right, silent = TRUE )
+	      	result$F
+		}		
+	}
+	else if( lower  == "critical success index" )
+	{
+		function( left, right )
+		{		
+			result <- table.stats( obs=left, pred=right, silent = TRUE )
+	      	result$TS
+		}		
+	}
+	else if( lower  == "equitable threat score" )
+	{
+		function( left, right )
+		{		
+			result <- table.stats( obs=left, pred=right, silent = TRUE )
+	      	result$ETS
+		}		
 	}
 	else 	
 	{
