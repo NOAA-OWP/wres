@@ -53,26 +53,6 @@
             <path>output/</path>
             <graphical width="800" height="600">
                 <plotType>lead threshold</plotType>
-<config>
-<chartDrawingParameters>
-    <subtitleList>
-        <subtitle>
-            <font family="Dialog" size="12" style="0"/>
-            <color alpha="255" blue="0" green="0" red="0"/>
-            <text>
-</text>  <!-- Empty! -->
-            <border>
-                <lineWidths bottom="0.0" left="0.0" right="0.0" top="0.0"/>
-                <color alpha="255" blue="0" green="0" red="0"/>
-            </border>
-            <horizontalAlignment>CENTER</horizontalAlignment>
-            <textAlignment>CENTER</textAlignment>
-            <textInsets bottom="0.0" left="0.0" right="0.0" top="0.0"/>
-            <position>RIGHT</position>  <!-- Positioned on the RIGHT! -->
-        </subtitle>
-    </subtitleList>
-</chartDrawingParameters>
-</config>
             </graphical>
         </destination>
     </outputs>

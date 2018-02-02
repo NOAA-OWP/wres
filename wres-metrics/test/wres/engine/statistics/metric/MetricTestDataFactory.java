@@ -158,7 +158,13 @@ public final class MetricTestDataFactory
 
     /**
      * <p>Returns a small test dataset with predictions and corresponding observations from location "103.1" from
-     * https://github.com/NVE/RunoffTestData. The data are stored in:</p>
+     * https://github.com/NVE/RunoffTestData:
+     * 
+     * https://github.com/NVE/RunoffTestData/blob/master/24h/qobs_calib/103.1.txt
+     * https://github.com/NVE/RunoffTestData/blob/master/Example/calib_txt/103_1_station.txt
+     * </p>
+     * 
+     * <p>The data are stored in:</p>
      *  
      * <p>testinput/metricTestDataFactory/getSingleValuedPairsFive.asc</p>
      * 

@@ -36,7 +36,7 @@ public final class KlingGuptaEfficiencyTest
 
     /**
      * Constructs a {@link KlingGuptaEfficiency} and compares the actual result to the expected result. Also, checks 
-     * the parameters.
+     * the parameters. Uses data from {@link MetricTestDataFactory#getSingleValuedPairsFive()}.
      * @throws MetricParameterException if the metric construction fails 
      */
 
@@ -94,15 +94,53 @@ public final class KlingGuptaEfficiencyTest
                     + expected.getData()
                     + ".",
                     actual.equals( expected ) );
-    }
+    }    
 
+    /**
+     * Constructs a {@link KlingGuptaEfficiency} with a no-skill baseline and compares the actual result to
+     * the expected result. Uses data from {@link MetricTestDataFactory#getSingleValuedPairsOne()}.
+     * @throws MetricParameterException if the metric could not be constructed
+     */
+
+    @Test
+    public void test2KlingGuptaEfficiency() throws MetricParameterException
+    {
+        //Obtain the factories
+        final DataFactory outF = DefaultDataFactory.getInstance();
+        final MetadataFactory metaFac = outF.getMetadataFactory();
+
+        //Generate some data
+        SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
+        //Metadata for the output
+        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getData().size(),
+                                                                   metaFac.getDimension(),
+                                                                   metaFac.getDimension(),
+                                                                   MetricConstants.KLING_GUPTA_EFFICIENCY,
+                                                                   MetricConstants.MAIN );
+
+        //Build the metric
+        final KlingGuptaEfficiencyBuilder b = new KlingGuptaEfficiencyBuilder();
+        b.setOutputFactory( outF );
+        final KlingGuptaEfficiency kge = b.build();
+
+        //Check the results
+        final DoubleScoreOutput actual = kge.apply( input );
+
+        final DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 0.9432025316651065, m1 );
+        assertTrue( "Actual: " + actual.getData()
+                    + ". Expected: "
+                    + expected.getData()
+                    + ".",
+                    actual.equals( expected ) );
+    }    
+    
     /**
      * Constructs a {@link KlingGuptaEfficiency} and checks for exceptional cases.
      * @throws MetricParameterException if the metric construction fails
      */
 
     @Test
-    public void test2Exceptions() throws MetricParameterException
+    public void test3Exceptions() throws MetricParameterException
     {
         //Build the metric
         final DataFactory outF = DefaultDataFactory.getInstance();

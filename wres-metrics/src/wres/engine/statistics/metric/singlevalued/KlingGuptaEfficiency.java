@@ -5,6 +5,7 @@ import java.util.Objects;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Slicer;
+import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MetricOutputMetadata;
@@ -74,18 +75,18 @@ public class KlingGuptaEfficiency extends MeanSquareError<SingleValuedPairs>
         Slicer slicer = dataFactory.getSlicer();
         double result;
         //Compute the components
+        VectorOfDoubles leftValues = dataFactory.vectorOf( slicer.getLeftSide( s ) );
+        VectorOfDoubles rightValues = dataFactory.vectorOf( slicer.getRightSide( s ) );
         double rhoVal = rho.apply( s ).getData();
-        double meanPred = FunctionFactory.mean().applyAsDouble( dataFactory.vectorOf( slicer.getRightSide( s ) ) );
-        double meanObs = FunctionFactory.mean().applyAsDouble( dataFactory.vectorOf( slicer.getLeftSide( s ) ) );
-        double sdPred =
-                FunctionFactory.standardDeviation().applyAsDouble( dataFactory.vectorOf( slicer.getRightSide( s ) ) );
-        double sdObs =
-                FunctionFactory.standardDeviation().applyAsDouble( dataFactory.vectorOf( slicer.getLeftSide( s ) ) );
+        double meanPred = FunctionFactory.mean().applyAsDouble( rightValues );
+        double meanObs = FunctionFactory.mean().applyAsDouble( leftValues );
+        double sdPred = FunctionFactory.standardDeviation().applyAsDouble( rightValues );
+        double sdObs = FunctionFactory.standardDeviation().applyAsDouble( leftValues );
         double gamma = ( sdPred / meanPred ) / ( sdObs / meanObs );
         double beta = meanPred / meanObs;
-        double left = Math.pow( rhoWeight * rhoVal - 1, 2 );
-        double middle = Math.pow( varWeight * gamma - 1, 2 );
-        double right = Math.pow( biasWeight * beta - 1, 2 );
+        double left = Math.pow( rhoWeight * ( rhoVal - 1.0 ), 2 );
+        double middle = Math.pow( varWeight * ( gamma - 1.0 ), 2 );
+        double right = Math.pow( biasWeight * ( beta - 1.0 ), 2 );
         result = 1.0 - Math.sqrt( left + middle + right );
         //Metadata
         final MetricOutputMetadata metOut = getMetadata( s );
