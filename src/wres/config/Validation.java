@@ -37,6 +37,7 @@ import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
 import wres.config.generated.TimeScaleConfig;
 import wres.config.generated.TimeScaleFunction;
+import wres.config.generated.TimeSeriesMetricConfig;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.engine.statistics.metric.config.MetricConfigHelper;
@@ -145,6 +146,9 @@ public class Validation
         // Validate pair section
         result = Validation.isPairConfigValid( projectConfigPlus ) && result;
         
+        // Validate metrics section
+        result = Validation.isMetricsConfigValid( projectConfigPlus ) && result;        
+        
         // Validate outputs section
         result = Validation.isOutputConfigValid( projectConfigPlus ) && result;
 
@@ -155,6 +159,28 @@ public class Validation
         return result;
     }
 
+    /**
+     * Validates the metrics portion of the project config.
+     * 
+     * @param projectConfigPlus the project configuration
+     * @return true if the output configuration is valid, false otherwise
+     * @throws NullPointerException when projectConfigPlus is null
+     */
+
+    private static boolean isMetricsConfigValid( ProjectConfigPlus projectConfigPlus )
+    {
+        Objects.requireNonNull( projectConfigPlus, NON_NULL );
+
+        // Validate that metric configuration is internally consistent
+        boolean result = Validation.isMetricConfigInternallyConsistent( projectConfigPlus );
+
+        // Check that each named metric is consistent with the other configuration
+        result = result && Validation.areMetricsConsistentWithOtherConfig( projectConfigPlus );
+
+        return result;
+    }    
+    
+    
     /**
      * Validates the output portion of the project config.
      * 
@@ -168,15 +194,7 @@ public class Validation
         Objects.requireNonNull( projectConfigPlus, NON_NULL );
 
         // Validate that outputs are writeable directories
-        boolean result = Validation.areAllOutputPathsWriteableDirectories( projectConfigPlus );
-
-        // Validate that metric configuration is internally consistent
-        result = result && Validation.isMetricConfigInternallyConsistent( projectConfigPlus );
-
-        // Check that each named metric is consistent with the other configuration
-        result = result && Validation.areMetricsConsistentWithOtherConfig( projectConfigPlus );
-
-        return result;
+        return  Validation.areAllOutputPathsWriteableDirectories( projectConfigPlus );
     }
 
     /**
@@ -190,8 +208,31 @@ public class Validation
     private static boolean isMetricConfigInternallyConsistent( ProjectConfigPlus projectConfigPlus )
     {
         Objects.requireNonNull( projectConfigPlus, NON_NULL );
-        // Cannot define specific metrics together with all valid
+
+        // Must define one of metric or timeSeriesMetric
         List<MetricConfig> metrics = projectConfigPlus.getProjectConfig().getMetrics().getMetric();
+        List<TimeSeriesMetricConfig> timeSeriesMetrics =
+                projectConfigPlus.getProjectConfig().getMetrics().getTimeSeriesMetric();
+        if( metrics.isEmpty() && timeSeriesMetrics.isEmpty() )
+        {
+            if ( LOGGER.isWarnEnabled() )
+            {
+                LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                             + " No metrics are listed for calculation: add one of metric or timeSeriesMetric.",
+                             projectConfigPlus,
+                             projectConfigPlus.getProjectConfig()
+                                              .getMetrics()
+                                              .sourceLocation()
+                                              .getLineNumber(),
+                             projectConfigPlus.getProjectConfig()
+                                              .getMetrics()
+                                              .sourceLocation()
+                                              .getColumnNumber() );
+            }
+            return false;
+        }
+        
+        // Cannot define specific metrics together with all valid        
         for ( MetricConfig next : metrics )
         {
             //Unnamed metric
@@ -199,8 +240,11 @@ public class Validation
             {
                 if ( LOGGER.isWarnEnabled() )
                 {
-                    LOGGER.warn( "In file {}, 'all valid' metrics cannot be requested alongside named metrics.",
-                                 projectConfigPlus.getPath() );
+                    LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                                 + " All valid' metrics cannot be requested alongside named metrics.",
+                                 projectConfigPlus,
+                                 next.sourceLocation().getLineNumber(),
+                                 next.sourceLocation().getColumnNumber() );
                 }
                 return false;
             }
