@@ -140,7 +140,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         {
             String message = "Error occured while calculating pairs for";
 
-            if ( this.projectDetails.getPoolingWindow() != null )
+            if ( this.projectDetails.getIssuePoolingWindow() != null )
             {
                 message += " sequence ";
                 message += String.valueOf( this.poolingStep );
@@ -277,7 +277,8 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         Connection connection = null;
         ResultSet resultSet = null;
 
-        Integer aggHour = null;
+        Integer scaleMember = null;
+        Integer lead = null;
         LocalDateTime valueDate = null;
 
         Map<Integer, List<Double>> rightValues = new TreeMap<>();
@@ -362,33 +363,34 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                  *
                  * I tried returning the time of the start of the block,
                  * but the made calculations take ~3.5 minutes for six
-                 * months of data, but switching to the agg_hour set up
+                 * months of data, but switching to the scale_member set up
                  * reduced that to 1.25 minutes.  Due to that speed up,
-                 * we are using the agg_hour method instead of the more
+                 * we are using the scale_member method instead of the more
                  * straight forward process.
                  */
 
-                // TODO: The agg_hour doesn't always link basis times; see
+                // TODO: The scale_member doesn't always link basis times; see
                 // scenario400, where we have the same date for lead time 2
                 // for 7/27 and lead time 6 for 7/28. It tries to lump the
                 // two together, which crosses basis times.
-                // Consider adding an identity function that igores the
-                // agg_hour or bringing/lumping together based on basis time
+                // Consider adding an identity function that ignores the
+                // scale_member or bringing/lumping together based on basis time
                 // (probably a way better solution)
                 //
                 // See Bug #41816
 
-                if (aggHour != null &&
-                    (resultSet.getInt( "agg_hour" ) <= aggHour ||
-                     !this.projectDetails.shouldAggregate()))
+                if (scaleMember != null &&
+                    (resultSet.getInt( "scale_member" ) <= scaleMember ||
+                     !this.projectDetails.shouldScale()))
                 {
-                    pairs = this.addPair( pairs, valueDate, rightValues, dataSourceConfig, aggHour );
+                    pairs = this.addPair( pairs, valueDate, rightValues, dataSourceConfig, lead );
 
                     rightValues = new TreeMap<>(  );
                 }
 
-                aggHour = resultSet.getInt( "agg_hour" );
+                scaleMember = resultSet.getInt( "scale_member" );
                 valueDate = TimeHelper.convertStringToDate( resultSet.getString( "value_date" ), LocalDateTime::from );
+                lead = Database.getValue( resultSet, "lead" );
 
                 Double[] measurements = (Double[])resultSet.getArray("measurements").getArray();
 
@@ -402,7 +404,19 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                 }
             }
 
-            pairs = this.addPair( pairs, valueDate, rightValues, dataSourceConfig, aggHour );
+            // Organizing scaling periods is done based on a modulo operation -
+            // meaning that, for a period of 6, there should be a 6 values, but
+            // the last one won't have a scaleMember equalling the period. The
+            // scaleMember of the last number is actually one below.  If there isn't
+            // a scaling operation, we don't care.
+            if (this.projectDetails.getScale() == null || scaleMember == this.projectDetails.getScalingPeriod() - 1)
+            {
+                pairs = this.addPair( pairs,
+                                      valueDate,
+                                      rightValues,
+                                      dataSourceConfig,
+                                      lead );
+            }
         }
         finally
         {
@@ -500,9 +514,9 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
 
         LocalDateTime firstDate;
 
-        if (this.projectDetails.shouldAggregate())
+        if (this.projectDetails.shouldScale())
         {
-            // This works for both rolling and back-to-back because of how the grouping of agg_hours works
+            // This works for both rolling and back-to-back because of how the grouping of scale_member works
             firstDate = lastDate.minus( this.projectDetails.getLeadPeriod().longValue(),
                                         ChronoUnit.valueOf( this.projectDetails.getLeadUnit().toUpperCase() ));
         }
@@ -526,11 +540,11 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
 
         Double leftAggregation;
 
-        if (this.projectDetails.shouldAggregate())
+        if (this.projectDetails.shouldScale())
         {
             leftAggregation =
                 wres.util.Collections.aggregate( leftValues,
-                                                 this.projectDetails.getAggregationFunction() );
+                                                 this.projectDetails.getScalingFunction() );
         }
         else
         {
@@ -546,12 +560,12 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
 
         for (List<Double> values : rightValues.values())
         {
-            if (this.projectDetails.shouldAggregate())
+            if (this.projectDetails.shouldScale())
             {
                 validAggregations.add(
                         wres.util.Collections.aggregate(
                                 values,
-                                this.projectDetails.getAggregationFunction()
+                                this.projectDetails.getScalingFunction()
                         )
                 );
             }

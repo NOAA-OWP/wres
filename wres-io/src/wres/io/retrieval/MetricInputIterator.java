@@ -5,9 +5,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
-import java.util.InvalidPropertiesFormatException;
 import java.util.Iterator;
-import java.util.List;
 import java.util.NavigableMap;
 import java.util.NoSuchElementException;
 import java.util.TreeMap;
@@ -17,7 +15,6 @@ import org.slf4j.Logger;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
-import wres.config.generated.TimeWindowMode;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.VectorOfDoubles;
 import wres.io.config.ConfigHelper;
@@ -186,7 +183,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
 
         if (left.getTimeShift() != null)
         {
-            timeShift = "'" + left.getTimeShift().getWidth() + " " + left.getTimeShift() + "'";
+            timeShift = "'" + left.getTimeShift().getWidth() + " " + left.getTimeShift().getUnit().value() + "'";
         }
 
         // TODO: Put this script generation into another class

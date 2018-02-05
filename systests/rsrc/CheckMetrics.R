@@ -1,7 +1,8 @@
 # Import libraries silently
 suppressMessages( suppressWarnings( library( data.table ) ) )
 suppressMessages( suppressWarnings( library( hydroGOF ) ) ) 
-# suppressMessages( suppressWarnings( library( verification ) ) ) 
+suppressMessages( suppressWarnings( library( verification ) ) )
+suppressMessages( suppressWarnings( library( SpecsVerification ) ) ) 
 
 ##########################################################################################
 #
@@ -25,12 +26,26 @@ single.valued.continuous <-list(
 	c( rep("kling gupta efficiency", 2) ),
 	c( rep("volumetric efficiency", 2) ),
 	c( rep("index of agreement", 2) ),
-	c( rep("sample size", 2) )
+	c( rep("sample size", 2) ),
+	c( rep("bias fraction", 2) )
 )
 
 discrete.probability <-list(
 	c( rep("brier score", 2) ),
-	c( rep("brier skill score", 2) )
+	c( rep("brier skill score", 2) ),
+	c( rep("relative operating characteristic score", 2) )
+)
+
+categorical <-list(
+	c( rep("probability of detection", 2) ),
+	c( rep("probability of false detection", 2) ),
+	c( rep("critical success index", 2) ),
+	c( rep("peirce skill score", 2) ),
+	c( rep("equitable threat score", 2) )
+)
+
+ensemble <-list(
+	c( rep("continuous ranked probability score", 2) )
 )
 
 ##########################################################################################
@@ -136,15 +151,34 @@ generateOneMetricForOneFeature <- function( pairs, threshold, metric )
 
 		# Transform the pairs in a metric-appropriate way
 		nextWindow <- suppressWarnings( transformPairs( nextWindow, metric, threshold ) )
+		
+		# For single-valued input, remove any rows with NaN
+		if( ncol( nextWindow ) == 6 )
+		{
+			nextWindow <- na.omit( nextWindow )			
+		}
 		nextLeft <- as.vector( unlist( nextWindow[,5] ) )  # Observations in column 5
-		nextRight <-  as.vector( unlist( nextWindow[,6] ) )
-		# Compute the mean if the right has more than one column, i.e. ensemble mean
-		if( doesThisMetricExist( metric, single.valued.continuous ) && ncol( nextWindow ) > 6 )
-		{	
-			nextRight <- rowMeans( data.frame( nextWindow[,6:ncol(nextWindow)] ), na.rm = TRUE )
+		nextRight <-  nextWindow[,6:ncol( nextWindow )]
+		# Single-valued metrics: transform right
+		if( doesThisMetricExist( metric, single.valued.continuous ) )
+		{
+			# Ensemble mean required
+			if( ncol( nextWindow ) > 6 )
+			{	
+				nextRight <- rowMeans( data.frame( nextWindow[,6:ncol(nextWindow)] ), na.rm = TRUE )
+			}
+			else 
+			{
+				nextRight <- as.vector( unlist( nextWindow[,6] ) )
+			}
+		}
+		# Discrete probability: requires vector
+		else if ( doesThisMetricExist( metric, discrete.probability ) )
+		{
+			nextRight <- as.vector( unlist( nextRight ) )
 		}
 		metric.results[i,1] = windows[i]
-		metric.results[i,2] = metricToCompute( nextRight, nextLeft )
+		metric.results[i,2] = metricToCompute( nextLeft, nextRight )
 	}
 	metric.results
 }
@@ -177,6 +211,7 @@ transformPairs <- function( pairs, metric, threshold )
 			pairs[ pairs$V5 >= threshold , ]     # Assumed >=
 		}
 	}
+	# Discrete probability measures for ensemble input
 	else if ( doesThisMetricExist( tolower( metric ), discrete.probability ) )
 	{	
 		# All data
@@ -195,6 +230,42 @@ transformPairs <- function( pairs, metric, threshold )
 			pairs[,5] <- subPairs[,1]	
 			pairs[,6] <- f.probs			
 			pairs[,1:6]
+		}
+	}
+	# Categorical measures for single-valued input
+	else if ( doesThisMetricExist( tolower( metric ), categorical ) )
+	{	
+		# All data
+		if( is.na( threshold ) )
+		{
+			stop( "Cannot use the threshold 'NA' or 'All data' for a
+					 discrete probability metric.")
+		}
+		else if( ncol( pairs ) > 6 )
+		{
+			stop( paste( "Expected single-valued input for the ",metric,sep="" ) )
+		}
+		else 
+		{			
+			# Convert to binary obs and pred
+			subPairs<-pairs[,5:ncol( pairs )]
+			subPairs <- apply( subPairs, 2, function(x) as.double ( x >= threshold ) )
+			pairs[,5] <- subPairs[,1]	
+			pairs[,6] <- subPairs[,2]			
+			pairs
+		}
+	}
+	else if( doesThisMetricExist( tolower( metric ), ensemble ) )
+	{
+		# All data
+		if( is.na( threshold ) )
+		{
+			pairs
+		}
+		else 
+		{
+	      	# Observations in V5
+			pairs[ pairs$V5 >= threshold , ]     # Assumed >=
 		}
 	}
 	else 	
@@ -240,19 +311,19 @@ getMetric <- function( metric )
 	}
 	else if( lower  == "mean square error skill score" )
 	{
-		NSE
+		function( left, right ) NSE( right, left )
 	}
 	else if( lower  == "kling gupta efficiency" )
 	{
-		function( left, right) KGE( left, right, method = "2012" )
+		function( left, right) KGE( right, left, method = "2012" )
 	}
 	else if( lower  == "volumetric efficiency" )
 	{
-		VE
+		function( left, right ) VE( right, left )
 	}
 	else if( lower  == "index of agreement" )
 	{
-		md
+		function( left, right ) md( right, left )
 	}
 	else if( lower  == "sample size" )
 	{
@@ -260,7 +331,7 @@ getMetric <- function( metric )
 	}
 	else if( lower  == "mean square error" )
 	{
-		mse
+		function( left, right ) mse( right, left )
 	}
 	else if( lower  == "brier score" )
 	{
@@ -274,9 +345,65 @@ getMetric <- function( metric )
 	      #	result$bs
 		#}
 	}
+	else if( lower  == "relative operating characteristic score" )
+	{
+	      function( left, right )
+		{		
+			result <- suppressWarnings( roc.area( obs = left, pred = right ) )
+	      	2 * result$A - 1
+		}
+	}
 	else if( lower  == "brier skill score" )
 	{
-		NSE #NSE in probability space
+		function( left, right ) NSE( right, left ) #NSE in probability space
+	}
+	else if( lower  == "probability of detection" )
+	{
+		function( left, right )
+		{		
+			result <- table.stats( obs=left, pred=right, silent = TRUE )
+	      	result$POD
+		}		
+	}
+	else if( lower  == "probability of false detection" )
+	{
+		function( left, right )
+		{		
+			result <- table.stats( obs=left, pred=right, silent = TRUE )
+	      	result$F
+		}		
+	}
+	else if( lower  == "critical success index" )
+	{
+		function( left, right )
+		{		
+			result <- table.stats( obs=left, pred=right, silent = TRUE )
+	      	result$TS
+		}		
+	}
+	else if( lower  == "equitable threat score" )
+	{
+		function( left, right )
+		{		
+			result <- table.stats( obs=left, pred=right, silent = TRUE )
+	      	result$ETS
+		}		
+	}
+	else if( lower  == "continuous ranked probability score" )
+	{
+		# Mean CRPS using Hersbach (2000)
+		function( left, right )
+		{		
+			mean( EnsCrps( as.matrix( right ), left ) )
+		}		
+	}
+	else if( lower  == "bias fraction" )
+	{
+		# Mean CRPS using Hersbach (2000)
+		function( left, right )
+		{		
+			me( right, left ) / mean( left )
+		}		
 	}
 	else 	
 	{

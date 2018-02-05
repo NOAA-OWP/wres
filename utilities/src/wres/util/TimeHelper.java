@@ -2,6 +2,7 @@ package wres.util;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAccessor;
 import java.time.temporal.TemporalQuery;
@@ -26,7 +27,8 @@ public final class TimeHelper
     private static final Pattern TIMESTAMP_PATTERN =
             Pattern.compile( "\\d\\d\\d\\d-\\d\\d-\\d\\d(T| )\\d?\\d:\\d\\d(:\\d\\d\\.?\\d*)?((-|\\+)\\d\\d:?\\d\\d)?Z?" );
     private static final Pattern DATE_PATTERN = Pattern.compile( "\\d\\d\\d\\d(-|/)?\\d\\d(-|/)?\\d\\d" );
-    private static final Pattern OFFSET_PATTERN = Pattern.compile( ".+(-|\\+)\\d\\d\\d\\d" );
+    private static final Pattern IMPROPER_OFFSET_PATTERN = Pattern.compile( ".+(-|\\+)\\d\\d\\d\\d$" );
+    private static final Pattern PROPER_OFFSET_PATTERN = Pattern.compile( ".+(-|\\+)\\d\\d(:\\d\\d)?$" );
     /**
      * Mapping between common date indicators to their conversion multipliers
      * from hours
@@ -139,15 +141,16 @@ public final class TimeHelper
         if (isTimestamp(datetime))
         {
             // Allows the use of timestamps of the form "2017-08-08 00:00:00-0600",
-            // which can't be parsed; they must be "2017-08-08 00:00:00"
-            if ( OFFSET_PATTERN.matcher( datetime ).matches())
+            // which can't be parsed; they must be "2017-08-08 00:00:00-06:00"
+            if ( IMPROPER_OFFSET_PATTERN.matcher( datetime ).matches())
             {
                 datetime = datetime.substring( 0, datetime.length() - 2 ) + ":" + datetime.substring( datetime.length() - 2 );
             }
+
             // Allows the use of timestamps of the form "2017-08-08 00:00:00",
             // (i.e. without an offset) which can't be parsed. Forces non-offset
             // timestamps into Z time
-            else if (!datetime.endsWith("Z"))
+            if ( !PROPER_OFFSET_PATTERN.matcher( datetime ).matches() && !datetime.endsWith("Z"))
             {
                 datetime += "Z";
             }
@@ -167,7 +170,7 @@ public final class TimeHelper
                 datetime = datetime.substring( 0, 11 ) + "0" + datetime.substring( 11 );
             }
 
-            date = OffsetDateTime.parse(datetime);
+            date = OffsetDateTime.parse(datetime).withOffsetSameInstant( ZoneOffset.UTC );
         }
         else if (isDate( datetime ))
         {
@@ -180,12 +183,7 @@ public final class TimeHelper
             // If there were any delimiters of "/" instead of "-", replace them
             datetime = datetime.replaceAll( "/", "-" );
 
-            // Add the 0Z time to the end of it to ensure that it is marked as
-            // the beginning of the day
-            datetime += "T00:00:00Z";
-            date = OffsetDateTime.parse(datetime);
-
-            // would it be faster to perform LocalDate.parse(datetime).atTime(0,0).atOffset(ZoneOffset.UTC)?
+            date = LocalDate.parse( datetime ).atTime( 0, 0 ).atOffset( ZoneOffset.UTC );
         }
 
         Objects.requireNonNull( date, "The given date ('" +
@@ -201,6 +199,22 @@ public final class TimeHelper
         LocalDate actualDate = LocalDate.from( actualDateTime );
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DATE_FORMAT);
         return actualDate.format(formatter);
+    }
+
+    /**
+     * Takes the string representation of most time formats and forces them
+     * into a complete UTC timestamp.
+     *
+     * We have no control over the format of string dates that the system
+     * receives. As a result, they must be standardized.
+     *
+     * @param datetime A string date of an uncertain format
+     * @return A string date in UTC
+     */
+    public static String standardize(String datetime)
+    {
+        TemporalAccessor dateObject = TimeHelper.convertStringToDate( datetime );
+        return TimeHelper.convertDateToString( dateObject );
     }
 
     /**
