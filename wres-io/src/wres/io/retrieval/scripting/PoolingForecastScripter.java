@@ -95,7 +95,7 @@ class PoolingForecastScripter extends Scripter
 
     private void applyAggHour() throws IOException
     {
-        if (this.getProjectDetails().getScale() == null)
+        if ( !this.getProjectDetails().shouldScale() )
         {
             this.add("F.lead");
         }
@@ -103,9 +103,9 @@ class PoolingForecastScripter extends Scripter
         {
             this.add( "(F.lead - ", this.getProgress() + 1, ") % " );
             this.add( TimeHelper.unitsToLeadUnits( this.getProjectDetails()
-                                                       .getScalingUnit(),
+                                                       .getScale().getUnit().value(),
                                                    this.getProjectDetails()
-                                                       .getScalingPeriod() ) );
+                                                       .getScale().getPeriod() ) );
         }
         this.addLine( " AS scale_member," );
     }

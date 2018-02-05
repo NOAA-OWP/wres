@@ -11,6 +11,7 @@ import wres.io.data.caching.UnitConversions;
 import wres.io.data.details.ProjectDetails;
 import wres.io.reading.usgs.USGSReader;
 import wres.io.utilities.Database;
+import wres.io.utilities.NoDataException;
 import wres.util.Collections;
 import wres.util.Strings;
 
@@ -294,7 +295,7 @@ class ClimatologyBuilder
                         );
                     }
                 }
-                catch ( SQLException e )
+                catch ( SQLException | NoDataException e )
                 {
                     LOGGER.error( Strings.getStackTrace(e));
                 }
@@ -336,7 +337,7 @@ class ClimatologyBuilder
                 {
                     Double aggregation = Collections.aggregate(
                             valuesToAggregate,
-                            this.projectDetails.getScalingFunction() );
+                            this.projectDetails.getScale().getFunction().value() );
                     if ( !Double.isNaN( aggregation ) )
                     {
                         aggregatedValues.add( aggregation );

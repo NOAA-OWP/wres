@@ -2,7 +2,6 @@ package wres.io.retrieval.scripting;
 
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.InvalidPropertiesFormatException;
 import java.util.StringJoiner;
 
 import wres.config.generated.DataSourceConfig;
@@ -12,7 +11,6 @@ import wres.config.generated.TimeScaleConfig;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.details.ProjectDetails;
-import wres.io.utilities.NoDataException;
 import wres.util.TimeHelper;
 
 class BackToBackForecastScripter extends Scripter
@@ -31,7 +29,7 @@ class BackToBackForecastScripter extends Scripter
     {
         this.add("SELECT ");
         this.applyValueDate();
-        this.applyAggHour();
+        this.applyScaleMember();
         this.addLine( "    FV.lead,");
         this.addLine( "    ARRAY_AGG(FV.forecasted_value ORDER BY TS.ensemble_id) AS measurements," );
         this.addLine( "    TS.measurementunit_id" );
@@ -98,13 +96,13 @@ class BackToBackForecastScripter extends Scripter
         );
     }
 
-    private void applyAggHour() throws IOException, SQLException
+    private void applyScaleMember() throws IOException, SQLException
     {
         TimeScaleConfig timeScaleConfig = this.getProjectDetails().getScale();
 
         this.add("    ");
 
-        if (timeScaleConfig == null)
+        if ( !this.getProjectDetails().shouldScale())
         {
             this.add("FV.lead");
         }
@@ -116,9 +114,9 @@ class BackToBackForecastScripter extends Scripter
                       firstLead,
                       ") % ");
             this.add( TimeHelper.unitsToLeadUnits( this.getProjectDetails()
-                                                       .getScalingUnit(),
+                                                       .getScale().getUnit().value(),
                                                    this.getProjectDetails()
-                                                       .getScalingPeriod() ) );
+                                                       .getScale().getPeriod() ) );
         }
         this.addLine(" AS scale_member,");
     }

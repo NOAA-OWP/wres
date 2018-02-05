@@ -1,6 +1,7 @@
 package wres.io.data.details;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -21,6 +22,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.BiFunction;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -28,6 +30,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DestinationConfig;
+import wres.config.generated.DurationUnit;
 import wres.config.generated.EnsembleCondition;
 import wres.config.generated.Feature;
 import wres.config.generated.PairConfig;
@@ -41,6 +44,8 @@ import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.Variables;
 import wres.io.utilities.Database;
+import wres.io.utilities.NoDataException;
+import wres.io.utilities.ScriptBuilder;
 import wres.io.utilities.ScriptGenerator;
 import wres.util.FormattedStopwatch;
 import wres.util.Strings;
@@ -86,6 +91,11 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     private boolean performedInsert;
 
     private final int inputCode;
+
+    private Integer leftScale = -1;
+    private Integer rightScale = -1;
+    private Integer baselineScale = -1;
+    private TimeScaleConfig desiredTimeScale;
 
     private static final Object POOL_LOCK = new Object();
 
@@ -449,7 +459,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return latest;
     }
 
-    public Integer getLeadPeriod()
+    public Integer getLeadPeriod() throws NoDataException
     {
         Integer period;
 
@@ -460,13 +470,9 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
                                        .getLeadTimesPoolingWindow()
                                        .getPeriod();
         }
-        else if ( this.getScale() != null)
-        {
-            period = this.getScalingPeriod();
-        }
         else
         {
-            period = null;
+            period = this.getScale().getPeriod();
         }
 
         return period;
@@ -485,7 +491,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return period;
     }
 
-    public String getLeadUnit()
+    public String getLeadUnit() throws NoDataException
     {
         String unit;
 
@@ -495,13 +501,13 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         }
         else
         {
-            unit = this.getScalingUnit();
+            unit = this.getScale().getUnit().value();
         }
 
         return unit;
     }
 
-    public Integer getLeadFrequency()
+    public Integer getLeadFrequency() throws NoDataException
     {
         Integer frequency;
 
@@ -522,112 +528,91 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         }
         else
         {
-            frequency = this.getScalingFrequency();
+            frequency = this.getScale().getFrequency();
+            if (frequency == null)
+            {
+                frequency = this.getScale().getPeriod();
+            }
         }
 
         return frequency;
     }
 
-    public Integer getScalingPeriod()
-    {
-        Integer period;
-
-        if ( this.getScale() != null)
-        {
-            period = this.getScale().getPeriod();
-        }
-        else
-        {
-            // TODO: write logic for determining the correct period from the existingTimeScale
-            period = null;
-        }
-
-        return period;
-    }
-
-    public String getScalingUnit()
-    {
-        String unit;
-
-        if ( this.getScale() != null)
-        {
-            unit = this.getScale().getUnit().value();
-        }
-        else
-        {
-            // TODO: Write logic for determining the correct unit from the existingTimeScale
-            unit = null;
-        }
-
-        return unit;
-    }
-
-    public String getScalingFunction()
-    {
-        String function = null;
-
-        if (this.projectConfig.getPair().getDesiredTimeScale() != null)
-        {
-            function = this.projectConfig.getPair()
-                                         .getDesiredTimeScale()
-                                         .getFunction()
-                                         .value();
-        }
-
-        return function;
-    }
-
-    public int getScalingFrequency()
-    {
-        int frequency;
-
-        if ( this.getScale() != null)
-        {
-            if ( this.getScale().getFrequency() != null )
-            {
-                frequency = this.getScale().getFrequency();
-            }
-            else
-            {
-                frequency = this.getScalingPeriod();
-            }
-        }
-        else
-        {
-            // TODO: Write the logic for determining the frequency from the existing time scale
-            frequency = 1;
-        }
-
-        frequency = TimeHelper.unitsToLeadUnits(
-                this.getScalingUnit(),
-                frequency
-        ).intValue();
-
-        return frequency;
-    }
-
-    public boolean shouldScale()
+    public boolean shouldScale() throws NoDataException
     {
         return this.getScale() != null &&
                !TimeScaleFunction.NONE
-                       .value().equalsIgnoreCase(this.getScalingFunction());
+                       .value().equalsIgnoreCase(this.getScale().getFunction().value());
     }
 
-    public TimeScaleConfig getScale()
+    public TimeScaleConfig getScale() throws NoDataException
     {
-        return this.projectConfig.getPair().getDesiredTimeScale();
+        if (this.desiredTimeScale == null)
+        {
+            this.desiredTimeScale = this.projectConfig.getPair().getDesiredTimeScale();
+        }
+
+        if (this.desiredTimeScale == null)
+        {
+            try
+            {
+                Integer leastCommonMultiplier;
+                Integer leftScale = this.getLeftScale();
+                Integer rightScale = this.getRightScale();
+
+                if (Math.max(leftScale, rightScale) % Math.min(leftScale, rightScale) == 0)
+                {
+                    leastCommonMultiplier = Math.max(leftScale, rightScale);
+                }
+                else
+                {
+
+                    BigInteger left = BigInteger.valueOf( leftScale );
+
+                    Integer greatestCommonFactor =
+                            left.gcd( BigInteger.valueOf( rightScale ) )
+                                .intValue();
+
+                    leastCommonMultiplier =
+                            leftScale * rightScale / greatestCommonFactor;
+                }
+
+                // TODO: When the lead scale is changed from hours,
+                // this duration unit needs to change as well
+                this.desiredTimeScale = new TimeScaleConfig(
+                        TimeScaleFunction.NONE,
+                        leastCommonMultiplier,
+                        leastCommonMultiplier,
+                        DurationUnit.HOURS,
+                        "Dynamic Scale" );
+            }
+            catch ( NoDataException e )
+            {
+                throw new NoDataException( "The common scale between left and"
+                                           + "right inputs could not be evaluated.",
+                                           e );
+            }
+            catch ( SQLException e )
+            {
+                throw new NoDataException( "The database could not determine "
+                                           + "what the desired scale is.", e );
+            }
+        }
+
+        return this.desiredTimeScale;
     }
 
     // TODO: This is a piece to the puzzle of finding out how to magically
     // align the left and right data
     public Integer getCurrentRightHandPeriod()
+            throws NoDataException, SQLException
     {
-        Integer scale = 1;
+        Integer scale;
         TimeScaleConfig timeScaleConfig = this.getLeft().getExistingTimeScale();
 
         if (timeScaleConfig == null)
         {
-            // TODO: Somehow determine the scale (i.e. span between values) from the right hand data
+            scale = this.getRightScale();
         }
         else
         {
@@ -733,7 +718,9 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         // 403 and 405. There needs to be a function that will find the least
         // common multiple of either the defined existing scales or the data in
         // the database.
-        Integer width = TimeHelper.unitsToLeadUnits( this.getLeadUnit(), this.getLeadPeriod() ).intValue();
+        Integer width = TimeHelper.unitsToLeadUnits( this.getScale().getUnit().value(),
+                                                     this.getScale().getPeriod()).intValue();
+
 /*
         if (this.getScale() != null)
         {
@@ -1173,6 +1160,156 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return this.inputCode;
     }
 
+    public Integer getLeftScale() throws NoDataException, SQLException
+    {
+        synchronized ( this.leftScale )
+        {
+            if (this.leftScale == -1)
+            {
+                if (this.getLeft().getExistingTimeScale() == null)
+                {
+                    this.leftScale = this.getScale( this.getLeft() );
+                }
+                else
+                {
+                    this.leftScale =
+                            TimeHelper.unitsToLeadUnits( this.getLeft()
+                                                             .getExistingTimeScale()
+                                                             .getUnit()
+                                                             .value(),
+                                                         this.getLeft()
+                                                             .getExistingTimeScale()
+                                                             .getPeriod() ).intValue();
+                }
+            }
+        }
+
+        return leftScale;
+    }
+
+    public Integer getRightScale() throws NoDataException, SQLException
+    {
+        synchronized ( this.rightScale )
+        {
+            if (this.rightScale == -1)
+            {
+                if (this.getRight().getExistingTimeScale() == null)
+                {
+                    this.rightScale = this.getScale( this.getRight() );
+                }
+                else
+                {
+                    this.rightScale =
+                            TimeHelper.unitsToLeadUnits(
+                                    this.getRight().getExistingTimeScale().getUnit().value(),
+                                    this.getRight().getExistingTimeScale().getPeriod()
+                            ).intValue();
+                }
+            }
+        }
+
+        return this.rightScale;
+    }
+
+    public Integer getBaselineScale() throws NoDataException, SQLException
+    {
+        synchronized ( this.baselineScale )
+        {
+            if ( this.getBaseline() != null && this.baselineScale == -1)
+            {
+                    this.baselineScale = this.getScale( this.getBaseline() );
+            }
+        }
+
+        return this.baselineScale;
+    }
+
+    private int getScale(DataSourceConfig dataSourceConfig)
+            throws NoDataException, SQLException
+    {
+        Integer leadScale;
+
+        if (ConfigHelper.isForecast( dataSourceConfig ))
+        {
+            leadScale = this.getForecastScale( dataSourceConfig );
+        }
+        else
+        {
+            leadScale = this.getObservationScale( dataSourceConfig );
+        }
+
+        if (leadScale == null || leadScale < 1)
+        {
+            throw new NoDataException("The scale for the " +
+                                      this.getInputName( dataSourceConfig ) +
+                                      " either could not be determined or was "
+                                      + "invalid. (lead = " +
+                                      String.valueOf(leadScale) +
+                                      ")");
+        }
+
+        return leadScale;
+    }
+
+    private Integer getForecastScale(DataSourceConfig dataSourceConfig)
+            throws SQLException
+    {
+        ScriptBuilder script = new ScriptBuilder(  );
+
+        script.addLine("WITH differences AS");
+        script.addLine("(");
+        script.addLine("    SELECT lead - lag(lead) OVER (ORDER BY lead) AS difference");// / (row_number() OVER (ORDER BY lead) - 1) AS difference");
+        script.addLine("    FROM wres.ForecastValue FV");
+        script.addLine("    WHERE EXISTS (");
+        script.addLine("        SELECT 1");
+        script.addLine("        FROM wres.ProjectSource PS");
+        script.addLine("        INNER JOIN wres.ForecastSource FS");
+        script.addLine("            ON FS.source_id = PS.source_id");
+        script.addLine("        INNER JOIN wres.TimeSeries TS");
+        script.addLine("            ON TS.timeseries_id = FS.forecast_id");
+        script.addLine("        WHERE PS.project_id = ", this.getId());
+        script.addLine("            AND PS.member = ", this.getInputName( dataSourceConfig ));
+        script.addLine("            AND TS.timeseries_id = FV.timeseries_id");
+        script.addLine("    )");
+        script.addLine("    GROUP BY FV.lead");
+        script.addLine(")");
+        script.addLine("SELECT MIN(difference)::integer AS scale");
+        script.addLine("FROM differences");
+        script.addLine("WHERE difference IS NOT NULL");
+        script.addLine("    AND difference >= 0");
+        //script.addLine("GROUP BY difference;");
+
+        return script.retrieve( "scale" );
+    }
+
+    private int getObservationScale(DataSourceConfig dataSourceConfig)
+            throws SQLException
+    {
+        ScriptBuilder script = new ScriptBuilder(  );
+
+        script.addLine("WITH differences AS");
+        script.addLine("(");
+        script.addLine("    SELECT AGE(observation_time, (LAG(observation_time) OVER (ORDER BY observation_time)))");
+        script.addLine("    FROM wres.Observation O");
+        script.addLine("    WHERE EXISTS (");
+        script.addLine("        SELECT 1");
+        script.addLine("        FROM wres.ProjectSource PS");
+        script.addLine("        WHERE PS.project_id = ", this.getId());
+        script.addLine("            AND PS.member = ", this.getInputName( dataSourceConfig ) );
+        script.addLine("            AND PS.source_id = O.source_id");
+        script.addLine("    )");
+        script.addLine("    GROUP BY observation_time");
+        script.addLine(")");
+
+        // TODO: When we change the scale of the lead column, we need to change this as well
+        script.addLine("SELECT EXTRACT( hours FROM MIN(age))::integer AS scale");
+        script.addLine("FROM differences");
+        script.addLine("WHERE age IS NOT NULL");
+        script.addLine("GROUP BY age;");
+
+        return script.retrieve( "scale" );
+    }
+
     private void loadForecastIDs(String member) throws SQLException
     {
 
@@ -1438,7 +1575,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     }
 
     public Integer getLead(int windowNumber)
-            throws InvalidPropertiesFormatException
+            throws InvalidPropertiesFormatException, NoDataException
     {
         return TimeHelper.unitsToLeadUnits( this.getLeadUnit(),
                                   1.0 * windowNumber +
@@ -1492,7 +1629,8 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return result;
     }
 
-    public int getWindowWidth() throws InvalidPropertiesFormatException
+    public int getWindowWidth()
+            throws InvalidPropertiesFormatException, NoDataException
     {
         return TimeHelper.unitsToLeadUnits( this.getLeadUnit(), this.getLeadPeriod() ).intValue();
     }

@@ -49,6 +49,7 @@ import wres.io.data.caching.Features;
 import wres.io.data.caching.Variables;
 import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.Database;
+import wres.io.utilities.NoDataException;
 import wres.util.Collections;
 import wres.util.Strings;
 import wres.util.TimeHelper;
@@ -186,7 +187,7 @@ public class ConfigHelper
     public static String getLeadQualifier(ProjectDetails projectDetails,
                                           int windowNumber,
                                           int offset)
-            throws InvalidPropertiesFormatException
+            throws InvalidPropertiesFormatException, NoDataException
     {
         String qualifier;
 

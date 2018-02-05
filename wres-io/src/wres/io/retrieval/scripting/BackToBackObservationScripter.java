@@ -92,7 +92,8 @@ class BackToBackObservationScripter extends Scripter
         return this.zeroDate;
     }
 
-    private Integer getWindowPeriod() throws InvalidPropertiesFormatException
+    private Integer getWindowPeriod()
+            throws InvalidPropertiesFormatException, NoDataException
     {
         if (this.windowPeriod == null)
         {
