@@ -149,11 +149,11 @@ abstract class SafeScoreOutput<T> implements ScoreOutput<T>
     public String toString()
     {
         StringBuilder b = new StringBuilder();
-        output.forEach( ( key, value ) -> b.append( "[" )
+        output.forEach( ( key, value ) -> b.append( "(" )
                                            .append( key )
-                                           .append( ", " )
+                                           .append( "," )
                                            .append( value )
-                                           .append( "]" )
+                                           .append( ")" )
                                            .append( NEWLINE ) );
         int lines = b.length();
         b.delete( lines - NEWLINE.length(), lines );

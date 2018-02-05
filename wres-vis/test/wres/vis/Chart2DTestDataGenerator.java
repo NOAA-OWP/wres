@@ -6,6 +6,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -36,8 +37,10 @@ import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.DoubleScoreOutput;
+import wres.datamodel.outputs.DurationScoreOutput;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.MultiVectorOutput;
+import wres.datamodel.outputs.PairedOutput;
 
 public abstract class Chart2DTestDataGenerator
 {
@@ -875,4 +878,94 @@ public abstract class Chart2DTestDataGenerator
         }
         return outputFactory.ofMap( rawData );
     }
+    
+    /**
+     * Returns a {@link PairedOutput} that comprises a {@link Duration} that represents a time-to-peak error against an 
+     * {@link Instant} that represents the origin (basis time) of the time-series from which the timing error 
+     * originates. Contains results for forecasts issued at 12Z each day from 1985-01-01T12:00:00Z to 
+     * 1985-01-10T12:00:00Z and with a forecast horizon of 336h. 
+     * 
+     * @return a paired output of timing errors by basis time
+     */
+    
+    public static PairedOutput<Instant,Duration> getTimeToPeakErrors()
+    {
+        // Create a list of pairs
+        DataFactory outputFactory = DefaultDataFactory.getInstance();
+        MetadataFactory metaFac = outputFactory.getMetadataFactory();
+        List<Pair<Instant, Duration>> input = new ArrayList<>();
+        // Add some fake time-to-peak errors to the list
+        input.add( Pair.of( Instant.parse( "1985-01-01T12:00:00Z" ), Duration.ofHours( -12 ) ) );
+        input.add( Pair.of( Instant.parse( "1985-01-02T12:00:00Z" ), Duration.ofHours( -2 ) ) );
+        input.add( Pair.of( Instant.parse( "1985-01-03T12:00:00Z" ), Duration.ofHours( +2 ) ) );
+        input.add( Pair.of( Instant.parse( "1985-01-04T12:00:00Z" ), Duration.ofHours( +4 ) ) );
+        input.add( Pair.of( Instant.parse( "1985-01-05T12:00:00Z" ), Duration.ofHours( +8 ) ) );
+        input.add( Pair.of( Instant.parse( "1985-01-06T12:00:00Z" ), Duration.ofHours( -12 ) ) );
+        input.add( Pair.of( Instant.parse( "1985-01-07T12:00:00Z" ), Duration.ofHours( -16 ) ) );
+        input.add( Pair.of( Instant.parse( "1985-01-08T12:00:00Z" ), Duration.ofHours( -22 ) ) );
+        input.add( Pair.of( Instant.parse( "1985-01-09T12:00:00Z" ), Duration.ofHours( 0 ) ) );
+        input.add( Pair.of( Instant.parse( "1985-01-10T12:00:00Z" ), Duration.ofHours( 24 ) ) );       
+        // Create the metadata
+        TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                           Instant.parse( "1985-01-10T00:00:00Z" ),
+                                           ReferenceTime.ISSUE_TIME,
+                                           Duration.ofHours( 6 ),
+                                           Duration.ofHours( 336 ) );
+        MetricOutputMetadata meta = metaFac.getOutputMetadata( input.size(),
+                                                               metaFac.getDimension( "DURATION" ),
+                                                               metaFac.getDimension( "CMS" ),
+                                                               MetricConstants.TIME_TO_PEAK_ERROR,
+                                                               MetricConstants.MAIN,
+                                                               metaFac.getDatasetIdentifier( "DRRC2",
+                                                                                             "Streamflow" ),
+                                                               window );
+        // Build and return
+        return outputFactory.ofPairedOutput( input, meta );
+    }    
+    
+    /**
+     * <p>Returns a {@link DurationOutput} that summarizes the time-to-peak errors associated with 
+     * {@link getTimeToPeakErrors()}. The output includes:</p>
+     * <ol>
+     * <li>{@link MetricConstants#MEAN}</li>
+     * <li>{@link MetricConstants#MEDIAN}</li>
+     * <li>{@link MetricConstants#STANDARD_DEVIATION}</li>
+     * <li>{@link MetricConstants#MINIMUM}</li>
+     * <li>{@link MetricConstants#MAXIMUM}</li>
+     * <li>{@link MetricConstants#MEAN_ABSOLUTE}</li>
+     * </ol>
+     * 
+     * @return a set of summary statistics for time-to-peak errors
+     */
+
+    public static DurationScoreOutput getTimeToPeakErrorStatistics()
+    {
+        // Create a list of pairs
+        DataFactory outF = DefaultDataFactory.getInstance();
+        MetadataFactory metaFac = outF.getMetadataFactory();
+        Map<MetricConstants, Duration> returnMe = new HashMap<>();
+        returnMe.put( MetricConstants.MEAN, Duration.ofMinutes( 156 ) );
+        returnMe.put( MetricConstants.MEDIAN, Duration.ofHours( -1 ) );
+        returnMe.put( MetricConstants.STANDARD_DEVIATION, Duration.ofMillis( 48364615 ) );
+        returnMe.put( MetricConstants.MINIMUM, Duration.ofHours( -22 ) );
+        returnMe.put( MetricConstants.MAXIMUM, Duration.ofHours( 24 ) );
+        returnMe.put( MetricConstants.MEAN_ABSOLUTE, Duration.ofMinutes( 612 ) );
+        
+        // Expected, which uses identifier of MetricConstants.MAIN for convenience
+        TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                           Instant.parse( "1985-01-10T00:00:00Z" ),
+                                           ReferenceTime.ISSUE_TIME,
+                                           Duration.ofHours( 6 ),
+                                           Duration.ofHours( 336 ) );
+        MetricOutputMetadata meta = metaFac.getOutputMetadata( 10,
+                                                               metaFac.getDimension( "DURATION" ),
+                                                               metaFac.getDimension( "CMS" ),
+                                                               MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
+                                                               MetricConstants.MAIN,
+                                                               metaFac.getDatasetIdentifier( "DRRC2",
+                                                                                             "Streamflow" ),
+                                                               window );        
+        return outF.ofDurationScoreOutput( returnMe, meta );        
+    }    
+    
 }
