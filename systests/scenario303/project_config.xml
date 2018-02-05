@@ -33,7 +33,7 @@
         </season>
 
         <desiredTimeScale>
-            <function>sum</function>
+            <function>none</function>
             <period>6</period>
             <unit>hours</unit>
         </desiredTimeScale>
