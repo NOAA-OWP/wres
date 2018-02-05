@@ -379,11 +379,22 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                 //
                 // See Bug #41816
 
+                // If we have a preexisting scale member and the new one is
+                // either less than the old or the new is more than one than
+                // the previous...
                 if (scaleMember != null &&
-                    (resultSet.getInt( "scale_member" ) <= scaleMember ||
-                     !this.projectDetails.shouldScale()))
+                    (!this.projectDetails.shouldScale() || resultSet.getInt( "scale_member" ) <= scaleMember ))
                 {
-                    pairs = this.addPair( pairs, valueDate, rightValues, dataSourceConfig, lead );
+                    if (this.shouldAddPair( scaleMember ))
+                    {
+                        pairs = this.addPair( pairs, valueDate, rightValues, dataSourceConfig, lead );
+                    }
+                    else
+                    {
+                        LOGGER.trace("A pair isn't being added for validation"
+                                     + "because it represents an incomplete"
+                                     + "dataset.");
+                    }
 
                     rightValues = new TreeMap<>(  );
                 }
@@ -409,7 +420,11 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             // the last one won't have a scaleMember equalling the period. The
             // scaleMember of the last number is actually one below.  If there isn't
             // a scaling operation, we don't care.
-            if (this.projectDetails.getScale() == null || scaleMember == this.projectDetails.getScalingPeriod() - 1)
+            if ( rightValues.size() > 0 &&
+                 (!this.projectDetails.shouldScale() ||
+                 scaleMember == TimeHelper.unitsToLeadUnits(
+                         this.projectDetails.getScale().getUnit().value(),
+                         this.projectDetails.getScale().getPeriod()) - 1))
             {
                 pairs = this.addPair( pairs,
                                       valueDate,
@@ -432,6 +447,14 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         }
 
         return Collections.unmodifiableList( pairs );
+    }
+
+    private boolean shouldAddPair(Integer scaleMember) throws NoDataException
+    {
+        return !this.projectDetails.shouldScale() ||
+               scaleMember == TimeHelper.unitsToLeadUnits(
+                       this.projectDetails.getScale().getUnit().value(),
+                       this.projectDetails.getScale().getPeriod()) - 1;
     }
 
     private List<PairOfDoubleAndVectorOfDoubles> addPair( List<PairOfDoubleAndVectorOfDoubles> pairs,
@@ -509,7 +532,9 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
     {
         if (rightValues == null || rightValues.size() == 0)
         {
-            throw new NoDataException( "No values could be retrieved to pair with with any possible set of left values." );
+            throw new NoDataException( "No values could be retrieved to pair "
+                                       + "with with any possible set of left "
+                                       + "values." );
         }
 
         LocalDateTime firstDate;
@@ -544,7 +569,9 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         {
             leftAggregation =
                 wres.util.Collections.aggregate( leftValues,
-                                                 this.projectDetails.getScalingFunction() );
+                                                 this.projectDetails.getScale()
+                                                                    .getFunction()
+                                                                    .value() );
         }
         else
         {
@@ -565,7 +592,9 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                 validAggregations.add(
                         wres.util.Collections.aggregate(
                                 values,
-                                this.projectDetails.getScalingFunction()
+                                this.projectDetails.getScale()
+                                                   .getFunction()
+                                                   .value()
                         )
                 );
             }

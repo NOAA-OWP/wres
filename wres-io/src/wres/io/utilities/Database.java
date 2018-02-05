@@ -1195,8 +1195,8 @@ public final class Database {
 
 		Timer timer = new Timer( "Script Timer" );
 
-		// Sets the delay for 6 seconds; if a script takes this long, it will be written
-		timer.schedule( task, 6000L );
+		// Sets the delay for 3 seconds; if a script takes this long, it will be written
+		timer.schedule( task, 3000L );
 		return timer;
 	}
 

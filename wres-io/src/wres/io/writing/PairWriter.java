@@ -26,6 +26,7 @@ import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.io.concurrency.WRESCallable;
 import wres.io.config.ConfigHelper;
 import wres.io.data.details.ProjectDetails;
+import wres.io.utilities.NoDataException;
 import wres.util.TimeHelper;
 
 public class PairWriter extends WRESCallable<Boolean>
@@ -209,7 +210,7 @@ public class PairWriter extends WRESCallable<Boolean>
         return this.feature;
     }
 
-    private String getWindow() throws SQLException
+    private String getWindow() throws SQLException, NoDataException
     {
 
         int window = this.getWindowNum();
