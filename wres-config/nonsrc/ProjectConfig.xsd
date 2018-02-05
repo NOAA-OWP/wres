@@ -229,9 +229,39 @@
             <xs:enumeration value="reliability diagram" />
             <xs:enumeration value="root mean square error" />
             <xs:enumeration value="sample size" />
+	    <xs:enumeration value="time to peak error" />
             <xs:enumeration value="volumetric efficiency" />
         </xs:restriction>
     </xs:simpleType>
+
+    <!-- An enumeration of summary statistics associated with a metric -->
+    <xs:simpleType name="summaryStatisticsName">
+        <xs:restriction base="xs:string">
+            <!-- Allows for all summary statistics -->
+            <xs:enumeration value="all valid" />
+
+            <xs:enumeration value="mean" />
+            <xs:enumeration value="median" />
+            <xs:enumeration value="minimum" />
+            <xs:enumeration value="maximum" />
+            <xs:enumeration value="standard deviation" />
+            <xs:enumeration value="mean absolute" />
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:complexType name="summaryStatistics">
+
+        <!-- for class naming using xjc-->
+        <xs:annotation>
+            <xs:appinfo>
+                <jaxb:class name="SummaryStatisticsConfig" />
+            </xs:appinfo>
+        </xs:annotation>
+
+        <xs:sequence>
+            <xs:element name="name" type="summaryStatisticsName" minOccurs="1" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
 
     <xs:complexType name="metric">
 
@@ -251,6 +281,25 @@
         </xs:sequence>
 
         <xs:attribute name="label" type="xs:string" />
+    </xs:complexType>
+
+    <!-- Metrics that consume time-series and may have summary statistics associated with them -->
+    <xs:complexType name="timeSeriesMetric">
+
+        <!-- for class naming using xjc-->
+        <xs:annotation>
+            <xs:appinfo>
+                <jaxb:class name="TimeSeriesMetricConfig" />
+            </xs:appinfo>
+        </xs:annotation>
+
+        <xs:complexContent>
+            <xs:extension base="metric">
+                <xs:sequence>
+                    <xs:element name="summaryStatistics" type="summaryStatistics" minOccurs="0" maxOccurs="1"/>
+                </xs:sequence>
+            </xs:extension>
+        </xs:complexContent>
     </xs:complexType>
 
     <xs:simpleType name="destinationType">
@@ -486,7 +535,8 @@
         <xs:sequence>
             <xs:element name="valueThresholds" type="valueThreshold" minOccurs="0" maxOccurs="1"/>
             <xs:element name="probabilityThresholds" type="probabilityThreshold" minOccurs="0" maxOccurs="1"/>
-            <xs:element name="metric" type="metric" minOccurs="1" maxOccurs="unbounded"/>
+            <xs:element name="metric" type="metric" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="timeSeriesMetric" type="timeSeriesMetric" minOccurs="0" maxOccurs="unbounded"/>
         </xs:sequence>
 
     </xs:complexType>
