@@ -1196,7 +1196,7 @@ public class Validation
                            + "earliest and latest issue dates.");
         }
 
-        // Non-null frequency must be >= 1
+        // Non-null frequency must be >= 1. Otherwise there'd be an infinite loop
         if ( poolingConfig.getFrequency() != null && poolingConfig.getFrequency() < 1 )
         {
             valid = false;
@@ -1214,7 +1214,7 @@ public class Validation
                             "move on to the next window." );
         }
 
-        if ( poolingConfig.getPeriod() < 1 )
+        if ( poolingConfig.getPeriod() != null && poolingConfig.getPeriod() < 0 )
         {
             valid = false;
 
@@ -1224,7 +1224,7 @@ public class Validation
             }
 
             warning.append( "The period of a window for time pooling " +
-                            "must be at least 1." );
+                            "must be at least 0." );
         }
         
         // TODO: validate time units

@@ -357,4 +357,3 @@ WTTO2.csv
 WYEA4.csv
 YUKO2.csv
 ZENK1.csv
-pairs.csv
