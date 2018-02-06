@@ -21,7 +21,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.DestinationConfig;
@@ -352,7 +351,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
     // TODO: REFACTOR
     private List<Pair<Instant,PairOfDoubleAndVectorOfDoubles>>
     createPairs(DataSourceConfig dataSourceConfig)
-            throws SQLException, ProjectConfigException, IOException
+            throws SQLException, IOException
     {
         List<Pair<Instant,PairOfDoubleAndVectorOfDoubles>> pairs = new ArrayList<>();
         String loadScript = getLoadScript( dataSourceConfig );
@@ -556,7 +555,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
     private List<Pair<Instant,PairOfDoubleAndVectorOfDoubles>>
     createPersistencePairs( DataSourceConfig dataSourceConfig,
                             List<Pair<Instant,PairOfDoubleAndVectorOfDoubles>> primaryPairs )
-            throws SQLException, IOException, ProjectConfigException
+            throws SQLException, IOException
     {
         List<Pair<Instant,PairOfDoubleAndVectorOfDoubles>> pairs = new ArrayList<>();
 
@@ -641,7 +640,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
              DataSourceConfig dataSourceConfig,
              int lead,
              Instant basisTime )
-            throws ProjectConfigException, NoDataException
+            throws NoDataException
     {
         if ( !rightValues.isEmpty() )
         {
