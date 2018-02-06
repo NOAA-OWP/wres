@@ -888,11 +888,11 @@ public abstract class Chart2DTestDataGenerator
      * @return a paired output of timing errors by basis time
      */
     
-    public static PairedOutput<Instant,Duration> getTimeToPeakErrors()
+    public static MetricOutputMapByTimeAndThreshold<PairedOutput<Instant,Duration>> getTimeToPeakErrors()
     {
         // Create a list of pairs
-        DataFactory outputFactory = DefaultDataFactory.getInstance();
-        MetadataFactory metaFac = outputFactory.getMetadataFactory();
+        DataFactory outF = DefaultDataFactory.getInstance();
+        MetadataFactory metaFac = outF.getMetadataFactory();
         List<Pair<Instant, Duration>> input = new ArrayList<>();
         // Add some fake time-to-peak errors to the list
         input.add( Pair.of( Instant.parse( "1985-01-01T12:00:00Z" ), Duration.ofHours( -12 ) ) );
@@ -920,7 +920,10 @@ public abstract class Chart2DTestDataGenerator
                                                                                              "Streamflow" ),
                                                                window );
         // Build and return
-        return outputFactory.ofPairedOutput( input, meta );
+        Map<Pair<TimeWindow, Threshold>, PairedOutput<Instant, Duration>> rawData = new TreeMap<>();
+        rawData.put( Pair.of( window, outF.getThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER ) ),
+                     outF.ofPairedOutput( input, meta ) );
+        return outF.ofMap( rawData );
     }    
     
     /**
@@ -938,7 +941,7 @@ public abstract class Chart2DTestDataGenerator
      * @return a set of summary statistics for time-to-peak errors
      */
 
-    public static DurationScoreOutput getTimeToPeakErrorStatistics()
+    public static MetricOutputMapByTimeAndThreshold<DurationScoreOutput> getTimeToPeakErrorStatistics()
     {
         // Create a list of pairs
         DataFactory outF = DefaultDataFactory.getInstance();
@@ -950,7 +953,7 @@ public abstract class Chart2DTestDataGenerator
         returnMe.put( MetricConstants.MINIMUM, Duration.ofHours( -22 ) );
         returnMe.put( MetricConstants.MAXIMUM, Duration.ofHours( 24 ) );
         returnMe.put( MetricConstants.MEAN_ABSOLUTE, Duration.ofMinutes( 612 ) );
-        
+
         // Expected, which uses identifier of MetricConstants.MAIN for convenience
         TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                            Instant.parse( "1985-01-10T00:00:00Z" ),
@@ -964,8 +967,11 @@ public abstract class Chart2DTestDataGenerator
                                                                MetricConstants.MAIN,
                                                                metaFac.getDatasetIdentifier( "DRRC2",
                                                                                              "Streamflow" ),
-                                                               window );        
-        return outF.ofDurationScoreOutput( returnMe, meta );        
-    }    
-    
+                                                               window );
+        Map<Pair<TimeWindow, Threshold>, DurationScoreOutput> rawData = new TreeMap<>();
+        rawData.put( Pair.of( window, outF.getThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER ) ),
+                     outF.ofDurationScoreOutput( returnMe, meta ) );
+        return outF.ofMap( rawData );
+    }   
+
 }
