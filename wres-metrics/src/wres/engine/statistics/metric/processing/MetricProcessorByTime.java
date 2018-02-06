@@ -59,6 +59,17 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
     ConcurrentMap<TimeWindow, MetricFuturesByTime> futures = new ConcurrentSkipListMap<>();
 
     /**
+     * Returns true if a prior call led to the caching of metric outputs.
+     * 
+     * @return true if stored results are available, false otherwise
+     */
+    @Override
+    public boolean hasCachedMetricOutput()
+    {
+        return futures.values().stream().anyMatch( MetricFuturesByTime::hasFutureOutputs );
+    }
+
+    /**
      * Returns a {@link MetricOutputForProjectByTimeAndThreshold} for the last available results or null if
      * {@link #hasCachedMetricOutput()} returns false.
      * 
@@ -66,7 +77,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
      */
 
     @Override
-    public MetricOutputForProjectByTimeAndThreshold getCachedMetricOutput()
+    MetricOutputForProjectByTimeAndThreshold getCachedMetricOutputInternal()
     {
         MetricOutputForProjectByTimeAndThreshold returnMe = null;
         if ( hasCachedMetricOutput() )
@@ -81,19 +92,8 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
             returnMe = builder.build().getMetricOutput();
         }
         return returnMe;
-    }
-
-    /**
-     * Returns true if a prior call led to the caching of metric outputs.
-     * 
-     * @return true if stored results are available, false otherwise
-     */
-    @Override
-    public boolean hasCachedMetricOutput()
-    {
-        return futures.values().stream().anyMatch( MetricFuturesByTime::hasFutureOutputs );
-    }
-
+    }    
+    
     /**
      * Adds the input {@link MetricFuturesByTime} to the internal store of existing {@link MetricFuturesByTime} 
      * defined for this processor.

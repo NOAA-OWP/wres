@@ -207,7 +207,7 @@ public enum MetricConstants
      * Identifier for the Time-to-Peak Error.
      */
     
-    TIME_TO_PEAK_ERROR ( MetricInputGroup.SINGLE_VALUED_TIME_SERIES, MetricOutputGroup.MAP ),    
+    TIME_TO_PEAK_ERROR ( MetricInputGroup.SINGLE_VALUED_TIME_SERIES, MetricOutputGroup.PAIRED ),    
     
     /**
      * Identifier for a statistic derived from the Time-to-Peak Error.
@@ -461,9 +461,9 @@ public enum MetricConstants
      * @return the components in the {@link ScoreOutputGroup} or null
      */
 
-    public Set<MetricConstants> getMetricComponents()
+    public Set<MetricConstants> getAllComponents()
     {
-        return Objects.isNull( scoreTypeGroup ) ? null : scoreTypeGroup[0].getMetricComponents();
+        return Objects.isNull( scoreTypeGroup ) ? null : scoreTypeGroup[0].getAllComponents();
     }
 
     /**
@@ -600,7 +600,7 @@ public enum MetricConstants
          * Metrics that produce a {@link PairedOutput}.
          */
 
-        MAP;
+        PAIRED;
 
         /**
          * Returns all {@link MetricConstants} associated with the current {@link MetricOutputGroup}.
@@ -682,7 +682,7 @@ public enum MetricConstants
          * @return the {@link MetricConstants} associated with the current {@link ScoreOutputGroup}
          */
 
-        public Set<MetricConstants> getMetricComponents()
+        public Set<MetricConstants> getAllComponents()
         {
             Set<MetricConstants> all = EnumSet.allOf( MetricConstants.class );
             //Remove constants with the same name across MetricConstants and MetricDecompositionGroup
@@ -702,7 +702,7 @@ public enum MetricConstants
 
         public boolean contains( MetricConstants input )
         {
-            return getMetricComponents().contains( input );
+            return getAllComponents().contains( input );
         }
 
     }

@@ -1,5 +1,7 @@
 package wres.engine.statistics.metric.processing;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -12,6 +14,7 @@ import java.util.function.Function;
 
 import org.apache.commons.lang3.tuple.Pair;
 
+import wres.config.generated.MetricConfigName;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
@@ -25,19 +28,23 @@ import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.PairOfBooleans;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MatrixOutput;
 import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMapByMetric;
+import wres.datamodel.outputs.PairedOutput;
 import wres.datamodel.outputs.ScoreOutput;
 import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricCollection;
 import wres.engine.statistics.metric.MetricParameterException;
+import wres.engine.statistics.metric.config.MetricConfigHelper;
 import wres.engine.statistics.metric.config.MetricConfigurationException;
 import wres.engine.statistics.metric.processing.MetricProcessorByTime.MetricFuturesByTime.MetricFuturesByTimeBuilder;
+import wres.engine.statistics.metric.timeseries.TimeToPeakErrorStatistics;
 
 /**
  * Builds and processes all {@link MetricCollection} associated with a {@link ProjectConfig} for metrics that consume
@@ -59,6 +66,19 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
      */
 
     private final MetricCollection<DichotomousPairs, MatrixOutput, DoubleScoreOutput> dichotomousScalar;
+    
+    /**
+     * A {@link MetricCollection} of {@link Metric} that consume {@link TimeSeriesOfSingleValuedPairs} and produce
+     * {@link PairedOutput}.
+     */
+
+    private final MetricCollection<TimeSeriesOfSingleValuedPairs, PairedOutput<Instant, Duration>, PairedOutput<Instant, Duration>> timeSeries;
+
+    /**
+     * An instance of {@link TimeToPeakErrorStatistics}.
+     */
+
+    private final TimeToPeakErrorStatistics timeToPeakErrorStats;    
 
     @Override
     public MetricOutputForProjectByTimeAndThreshold apply( SingleValuedPairs input )
@@ -135,6 +155,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
     {
         super( dataFactory, config, thresholdExecutor, metricExecutor, mergeList );
         //Construct the metrics
+        //Dichotomous scores
         if ( hasMetrics( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCORE ) )
         {
             dichotomousScalar =
@@ -146,6 +167,31 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
         else
         {
             dichotomousScalar = null;
+        }
+        //Time-series 
+        if ( hasMetrics( MetricInputGroup.SINGLE_VALUED_TIME_SERIES, MetricOutputGroup.PAIRED ) )
+        {
+            timeSeries = metricFactory.ofSingleValuedTimeSeriesCollection( metricExecutor,
+                                                                           getSelectedMetrics( metrics,
+                                                                                               MetricInputGroup.SINGLE_VALUED_TIME_SERIES,
+                                                                                               MetricOutputGroup.PAIRED ) );
+            //Summary statistics, currently done for time-to-peak only
+            //TODO: add time-to-peak to a collection if/when other measures of the same type are added                    
+            if ( MetricConfigHelper.hasSummaryStatisticsFor( config, MetricConfigName.TIME_TO_PEAK_ERROR ) )
+            {
+                timeToPeakErrorStats =
+                        metricFactory.ofTimeToPeakErrorStatistics( MetricConfigHelper.getSummaryStatisticsFor( config,
+                                                                                                               MetricConfigName.TIME_TO_PEAK_ERROR ) );
+            }
+            else
+            {
+                timeToPeakErrorStats = null;
+            }
+        }
+        else
+        {
+            timeSeries = null;
+            timeToPeakErrorStats = null;
         }
     }
 
@@ -167,7 +213,14 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
             }
         }
     }
-
+    
+    @Override
+    void completeCachedOutput()
+    {        
+        //Add the summary statistics for the cached output if they do not already exist
+        
+    }
+    
     /**
      * Processes a set of metric futures that consume {@link DichotomousPairs}, which are mapped from the input pairs,
      * {@link SingleValuedPairs}, using a configured mapping function. Skips any thresholds for which
@@ -308,5 +361,5 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                                                  + "'." );
         }
     }
-
+    
 }

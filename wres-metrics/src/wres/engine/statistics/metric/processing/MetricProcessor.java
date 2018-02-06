@@ -175,31 +175,28 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
     private static final int DECIMALS = 5;
 
     /**
-     * Returns a {@link MetricOutputForProject} for the last available results or null if
-     * {@link #hasCachedMetricOutput()} returns false.
-     * 
-     * @return a {@link MetricOutputForProject} or null
-     */
-
-    public abstract T getCachedMetricOutput();
-
-    /**
      * Returns true if a prior call led to the caching of metric outputs.
      * 
      * @return true if stored results are available, false otherwise
      */
 
     public abstract boolean hasCachedMetricOutput();
-
+    
     /**
-     * Validates the configuration and throws a {@link MetricConfigurationException} if the configuration is invalid.
+     * Returns a {@link MetricOutputForProject} for the last available results or null if
+     * {@link #hasCachedMetricOutput()} returns false.
      * 
-     * @param config the configuration to validate
-     * @throws MetricConfigurationException if the configuration is invalid
+     * @return a {@link MetricOutputForProject} or null
      */
 
-    abstract void validate( ProjectConfig config ) throws MetricConfigurationException;
-
+    public T getCachedMetricOutput()
+    {
+        //Complete any end-of-pipeline processing
+        completeCachedOutput();
+        //Return the results
+        return getCachedMetricOutputInternal();
+    }    
+    
     /**
      * Returns true if one or more metric outputs will be cached across successive calls to {@link #apply(Object)},
      * false otherwise.
@@ -284,6 +281,31 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         return hasMetrics( MetricInputGroup.DISCRETE_PROBABILITY ) || hasMetrics( MetricInputGroup.DICHOTOMOUS )
                || hasMetrics( MetricInputGroup.MULTICATEGORY );
     }
+    
+    /**
+     * Validates the configuration and throws a {@link MetricConfigurationException} if the configuration is invalid.
+     * 
+     * @param config the configuration to validate
+     * @throws MetricConfigurationException if the configuration is invalid
+     */
+
+    abstract void validate( ProjectConfig config ) throws MetricConfigurationException;
+    
+    /**
+     * Completes any processing of cached output at the end of a processing pipeline. This may be required when 
+     * computing results that rely on other cached results (e.g. summary statistics). 
+     */
+    
+    abstract void completeCachedOutput();
+    
+    /**
+     * Returns a {@link MetricOutputForProject} for the last available results or null if
+     * {@link #hasCachedMetricOutput()} returns false.
+     * 
+     * @return a {@link MetricOutputForProject} or null
+     */
+
+    abstract T getCachedMetricOutputInternal();    
 
     /**
      * Constructor.
