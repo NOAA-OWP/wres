@@ -247,12 +247,12 @@ abstract class SafeScoreOutput<T> implements ScoreOutput<T>
             throw new MetricOutputException( NULL_METADATA_MESSAGE );
         }
         // Check that the decomposition template is compatible
-        Set<MetricConstants> components = template.getMetricComponents();
+        Set<MetricConstants> components = template.getAllComponents();
         if ( components.size() != output.length )
         {
             throw new MetricOutputException( "The specified output template '" + template
                                              + "' has more components than metric inputs provided ["
-                                             + template.getMetricComponents().size()
+                                             + template.getAllComponents().size()
                                              + ", "
                                              + output.length
                                              + "]." );

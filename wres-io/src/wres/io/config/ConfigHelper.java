@@ -1,5 +1,7 @@
 package wres.io.config;
 
+import static wres.config.generated.SourceTransformationType.PERSISTENCE;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -24,8 +26,6 @@ import java.util.concurrent.ConcurrentSkipListSet;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static wres.config.generated.SourceTransformationType.PERSISTENCE;
 
 import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
@@ -183,6 +183,7 @@ public class ConfigHelper
      * @param offset The offset                    
      * @return A description of what a window number means in terms of lead times
      * @throws InvalidPropertiesFormatException Thrown if the time aggregation unit is not supported
+     * @throws NoDataException if no data is found
      */
     public static String getLeadQualifier(ProjectDetails projectDetails,
                                           int windowNumber,

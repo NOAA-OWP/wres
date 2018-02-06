@@ -1,5 +1,7 @@
 package wres.engine.statistics.metric;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
@@ -18,10 +20,12 @@ import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.MulticategoryPairs;
 import wres.datamodel.inputs.pairs.PairedInput;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MatrixOutput;
 import wres.datamodel.outputs.MultiVectorOutput;
+import wres.datamodel.outputs.PairedOutput;
 import wres.engine.statistics.metric.MetricCollection.MetricCollectionBuilder;
 import wres.engine.statistics.metric.SampleSize.SampleSizeBuilder;
 import wres.engine.statistics.metric.categorical.ContingencyTable;
@@ -148,6 +152,12 @@ public class MetricFactory
 
     private Map<MetricConstants, Metric<EnsemblePairs, BoxPlotOutput>> ensembleBoxPlot;
 
+    /**
+     * Cached {@link Metric} that consume {@link TimeSeriesOfSingleValuedPairs} and produce {@link PairedOutput}. 
+     */
+
+    private Map<MetricConstants, Metric<TimeSeriesOfSingleValuedPairs, PairedOutput<Instant,Duration>>> singleValuedTimeSeries;
+    
     /**
      * Returns an instance of a {@link MetricFactory}.
      * 
@@ -464,6 +474,25 @@ public class MetricFactory
     }
 
     /**
+     * <p>Returns a {@link MetricCollection} of metrics that consume {@link TimeSeriesOfSingleValuedPairs} and produce
+     * {@link PairedOutput}.</p>
+     * 
+     * <p>Uses the {@link ForkJoinPool#commonPool()} for execution.</p>
+     * 
+     * @param metric the metric identifiers
+     * @return a collection of metrics
+     * @throws MetricParameterException if one or more parameter values is incorrect
+     * @throws IllegalArgumentException if a metric identifier is not recognized
+     */
+
+    public MetricCollection<TimeSeriesOfSingleValuedPairs, PairedOutput<Instant, Duration>, PairedOutput<Instant, Duration>>
+            ofSingleValuedTimeSeriesCollection( MetricConstants... metric )
+                    throws MetricParameterException
+    {
+        return ofSingleValuedTimeSeriesCollection( ForkJoinPool.commonPool(), metric );
+    }
+
+    /**
      * Returns a {@link MetricCollection} of metrics that consume {@link SingleValuedPairs} and produce
      * {@link DoubleScoreOutput}.
      * 
@@ -767,6 +796,38 @@ public class MetricFactory
             throw new IllegalArgumentException( error + " '" + metric + "'." );
         }
     }
+    
+    /**
+     * Returns a {@link MetricCollection} of metrics that consume {@link TimeSeriesOfSingleValuedPairs} and produce
+     * {@link PairedOutput}.
+     * 
+     * @param executor an optional {@link ExecutorService} for executing the metrics
+     * @param metric the metric identifiers
+     * @return a collection of metrics
+     * @throws MetricParameterException if one or more parameter values is incorrect
+     * @throws IllegalArgumentException if a metric identifier is not recognized
+     */
+
+    public MetricCollection<TimeSeriesOfSingleValuedPairs, PairedOutput<Instant, Duration>, PairedOutput<Instant, Duration>>
+            ofSingleValuedTimeSeriesCollection( ExecutorService executor,
+                                                MetricConstants... metric )
+                    throws MetricParameterException
+    {
+        final MetricCollectionBuilder<TimeSeriesOfSingleValuedPairs, PairedOutput<Instant, Duration>, PairedOutput<Instant, Duration>> builder =
+                MetricCollectionBuilder.of();
+        // Build the store if required
+        buildSingleValuedScoreStore();
+        for ( MetricConstants next : metric )
+        {
+            if ( !singleValuedTimeSeries.containsKey( next ) )
+            {
+                throw new IllegalArgumentException( error + " '" + metric + "'." );
+            }
+            builder.add( singleValuedTimeSeries.get( next ) );
+        }
+        builder.setOutputFactory( outputFactory ).setExecutorService( executor );
+        return builder.build();
+    }  
 
     /**
      * Returns a {@link Metric} that consumes {@link SingleValuedPairs} and produces {@link MultiVectorOutput}.
@@ -1389,7 +1450,8 @@ public class MetricFactory
 
     public TimeToPeakError ofTimeToPeakError() throws MetricParameterException
     {
-        return new TimeToPeakErrorBuilder().setOutputFactory( outputFactory ).build();
+        buildSingleValuedTimeSeriesStore();
+        return (TimeToPeakError) singleValuedTimeSeries.get( MetricConstants.TIME_TO_PEAK_ERROR );
     }
 
     /**
@@ -1584,6 +1646,22 @@ public class MetricFactory
                                  new BoxPlotErrorByObservedBuilder().setOutputFactory( outputFactory ).build() );
             ensembleBoxPlot.put( MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE,
                                  new BoxPlotErrorByForecastBuilder().setOutputFactory( outputFactory ).build() );
+        }
+    }
+    
+    /**
+     * Builds the store of metrics that consumes {@link TimeSeriesOfSingleValuedPairs} and produces 
+     * {@link PairedOutput}. 
+     * @throws MetricParameterException if one or more parameter values is incorrect
+     */
+
+    private void buildSingleValuedTimeSeriesStore() throws MetricParameterException
+    {
+        if ( Objects.isNull( singleValuedTimeSeries ) )
+        {
+            singleValuedTimeSeries = new EnumMap<>( MetricConstants.class );
+            singleValuedTimeSeries.put( MetricConstants.TIME_TO_PEAK_ERROR,
+                                        new TimeToPeakErrorBuilder().setOutputFactory( outputFactory ).build() );
         }
     }
 

@@ -608,7 +608,7 @@ public final class DefaultSlicerTest
 
         //Check the results
         assertTrue( "Expected five slices of data.",
-                    sliced.size() == toSlice.getMetadata().getMetricComponentID().getMetricComponents().size() );
+                    sliced.size() == toSlice.getMetadata().getMetricComponentID().getAllComponents().size() );
         sliced.forEach( ( key, value ) -> assertTrue( "Expected 638 elements in each slice.", value.size() == 638 ) );
     }
 

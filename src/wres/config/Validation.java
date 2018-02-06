@@ -218,7 +218,7 @@ public class Validation
             if ( LOGGER.isWarnEnabled() )
             {
                 LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                             + " No metrics are listed for calculation: add one of metric or timeSeriesMetric.",
+                             + " No metrics are listed for calculation: add a regular metric or time-series metric.",
                              projectConfigPlus,
                              projectConfigPlus.getProjectConfig()
                                               .getMetrics()
@@ -230,6 +230,25 @@ public class Validation
                                               .getColumnNumber() );
             }
             return false;
+        }
+        
+        // Currently, timeSeriesMetric require single-valued forecasts
+        if ( !timeSeriesMetrics.isEmpty()
+             && projectConfigPlus.getProjectConfig()
+                                 .getInputs()
+                                 .getRight()
+                                 .getType() != DatasourceType.SINGLE_VALUED_FORECASTS )
+        {
+            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                         + " Currently, time-series metrics can only be applied to single-valued forecasts.",
+                         projectConfigPlus,
+                         projectConfigPlus.getProjectConfig().getMetrics()
+                                          .sourceLocation()
+                                          .getLineNumber(),
+                         projectConfigPlus.getProjectConfig()
+                                          .getMetrics()
+                                          .sourceLocation()
+                                          .getColumnNumber() );            
         }
         
         // Cannot define specific metrics together with all valid        
