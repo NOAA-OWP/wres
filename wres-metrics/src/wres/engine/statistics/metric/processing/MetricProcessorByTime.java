@@ -1,5 +1,7 @@
 package wres.engine.statistics.metric.processing;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -34,6 +36,7 @@ import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold.MetricOutputForProjectByTimeAndThresholdBuilder;
 import wres.datamodel.outputs.MetricOutputMapByMetric;
 import wres.datamodel.outputs.MultiVectorOutput;
+import wres.datamodel.outputs.PairedOutput;
 import wres.datamodel.outputs.ScoreOutput;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricCollection;
@@ -92,8 +95,8 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
             returnMe = builder.build().getMetricOutput();
         }
         return returnMe;
-    }    
-    
+    }
+
     /**
      * Adds the input {@link MetricFuturesByTime} to the internal store of existing {@link MetricFuturesByTime} 
      * defined for this processor.
@@ -148,6 +151,13 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
                 new ConcurrentHashMap<>();
 
         /**
+         * Paired results.
+         */
+
+        private final ConcurrentMap<Pair<TimeWindow, Threshold>, List<Future<MetricOutputMapByMetric<PairedOutput<Instant, Duration>>>>> paired =
+                new ConcurrentHashMap<>();
+
+        /**
          * Returns the results associated with the futures.
          * 
          * @return the metric results
@@ -161,6 +171,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
             score.forEach( ( key, list ) -> list.forEach( value -> builder.addScoreOutput( key, value ) ) );
             multiVector.forEach( ( key, list ) -> list.forEach( value -> builder.addMultiVectorOutput( key, value ) ) );
             boxplot.forEach( ( key, list ) -> list.forEach( value -> builder.addBoxPlotOutput( key, value ) ) );
+            paired.forEach( ( key, list ) -> list.forEach( value -> builder.addPairedOutput( key, value ) ) );
             return builder.build();
         }
 
@@ -172,7 +183,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
 
         boolean hasFutureOutputs()
         {
-            return ! ( score.isEmpty() && multiVector.isEmpty() && boxplot.isEmpty() );
+            return ! ( score.isEmpty() && multiVector.isEmpty() && boxplot.isEmpty() && paired.isEmpty() );
         }
 
         /**
@@ -194,7 +205,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
 
             private final ConcurrentMap<Pair<TimeWindow, Threshold>, List<Future<MetricOutputMapByMetric<DoubleScoreOutput>>>> score =
                     new ConcurrentHashMap<>();
-            
+
             /**
              * Multivector results.
              */
@@ -207,6 +218,13 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
              */
 
             private final ConcurrentMap<Pair<TimeWindow, Threshold>, List<Future<MetricOutputMapByMetric<BoxPlotOutput>>>> boxplot =
+                    new ConcurrentHashMap<>();
+
+            /**
+             * Paired results.
+             */
+
+            private final ConcurrentMap<Pair<TimeWindow, Threshold>, List<Future<MetricOutputMapByMetric<PairedOutput<Instant, Duration>>>>> paired =
                     new ConcurrentHashMap<>();
 
             /**
@@ -231,7 +249,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
              */
 
             MetricFuturesByTimeBuilder addScoreOutput( Pair<TimeWindow, Threshold> key,
-                                                        Future<MetricOutputMapByMetric<DoubleScoreOutput>> value )
+                                                       Future<MetricOutputMapByMetric<DoubleScoreOutput>> value )
             {
                 List<Future<MetricOutputMapByMetric<DoubleScoreOutput>>> result =
                         score.putIfAbsent( key, new ArrayList<>( Arrays.asList( value ) ) );
@@ -283,6 +301,26 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
             }
 
             /**
+             * Adds a set of future {@link PairedOutput} to the appropriate internal store.
+             * 
+             * @param key the key
+             * @param value the future result
+             * @return the builder
+             */
+
+            MetricFuturesByTimeBuilder addPairedOutput( Pair<TimeWindow, Threshold> key,
+                                                        Future<MetricOutputMapByMetric<PairedOutput<Instant, Duration>>> value )
+            {
+                List<Future<MetricOutputMapByMetric<PairedOutput<Instant, Duration>>>> result =
+                        paired.putIfAbsent( key, new ArrayList<>( Arrays.asList( value ) ) );
+                if ( Objects.nonNull( result ) )
+                {
+                    result.add( value );
+                }
+                return this;
+            }
+
+            /**
              * Build the metric futures.
              * 
              * @return the metric futures
@@ -321,6 +359,10 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
                         {
                             boxplot.putAll( futures.boxplot );
                         }
+                        else if ( nextGroup == MetricOutputGroup.PAIRED )
+                        {
+                            paired.putAll( futures.paired );
+                        }
                     }
                 }
                 return this;
@@ -340,6 +382,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
             score.putAll( builder.score );
             multiVector.putAll( builder.multiVector );
             boxplot.putAll( builder.boxplot );
+            paired.putAll( builder.paired );
             dataFactory = builder.dataFactory;
         }
 
@@ -509,9 +552,9 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
             if ( outGroup == MetricOutputGroup.SCORE )
             {
                 futures.addScoreOutput( Pair.of( timeWindow, threshold ),
-                                         processSingleValuedThreshold( threshold,
-                                                                       input,
-                                                                       singleValuedScore ) );
+                                        processSingleValuedThreshold( threshold,
+                                                                      input,
+                                                                      singleValuedScore ) );
             }
             else if ( outGroup == MetricOutputGroup.MULTIVECTOR )
             {

@@ -1,5 +1,7 @@
 package wres.datamodel.outputs;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.concurrent.Future;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -38,7 +40,7 @@ public interface MetricOutputForProjectByTimeAndThreshold
      * @throws MetricOutputAccessException if the retrieval of {@link MetricOutput} fails for any reason
      */
 
-    MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> getScoreOutput() throws MetricOutputAccessException;
+    MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> getDoubleScoreOutput() throws MetricOutputAccessException;
 
     /**
      * Returns a {@link MetricOutputMultiMap} of {@link MultiVectorOutput} or null if no output exists.
@@ -69,6 +71,16 @@ public interface MetricOutputForProjectByTimeAndThreshold
     MetricOutputMultiMapByTimeAndThreshold<BoxPlotOutput> getBoxPlotOutput() throws MetricOutputAccessException;
 
     /**
+     * Returns a {@link MetricOutputMultiMap} of {@link PairedOutput} or null if no output exists.
+     * 
+     * @return the matrix output or null
+     * @throws MetricOutputAccessException if the retrieval of {@link MetricOutput} fails for any reason
+     */
+
+    MetricOutputMultiMapByTimeAndThreshold<PairedOutput<Instant, Duration>> getPairedOutput()
+            throws MetricOutputAccessException;
+
+    /**
      * Builder.
      */
 
@@ -85,7 +97,7 @@ public interface MetricOutputForProjectByTimeAndThreshold
          */
 
         default MetricOutputForProjectByTimeAndThresholdBuilder addScoreOutput( Pair<TimeWindow, Threshold> key,
-                                                                                 Future<MetricOutputMapByMetric<DoubleScoreOutput>> result )
+                                                                                Future<MetricOutputMapByMetric<DoubleScoreOutput>> result )
         {
             addScoreOutput( key.getLeft(), key.getRight(), result );
             return this;
@@ -141,6 +153,22 @@ public interface MetricOutputForProjectByTimeAndThreshold
         }
 
         /**
+         * Adds a new {@link PairedOutput} for a collection of metrics to the internal store, merging with existing 
+         * items that share the same key, as required.
+         * 
+         * @param key the key
+         * @param result the result
+         * @return the builder
+         */
+
+        default MetricOutputForProjectByTimeAndThresholdBuilder addPairedOutput( Pair<TimeWindow, Threshold> key,
+                                                                                 Future<MetricOutputMapByMetric<PairedOutput<Instant, Duration>>> result )
+        {
+            addPairedOutput( key.getLeft(), key.getRight(), result );
+            return this;
+        }
+
+        /**
          * Adds a new {@link DoubleScoreOutput} for a collection of metrics to the internal store, merging with existing 
          * items that share the same key, as required.
          * 
@@ -151,8 +179,8 @@ public interface MetricOutputForProjectByTimeAndThreshold
          */
 
         MetricOutputForProjectByTimeAndThresholdBuilder addScoreOutput( TimeWindow timeWindow,
-                                                                         Threshold threshold,
-                                                                         Future<MetricOutputMapByMetric<DoubleScoreOutput>> result );
+                                                                        Threshold threshold,
+                                                                        Future<MetricOutputMapByMetric<DoubleScoreOutput>> result );
 
         /**
          * Adds a new {@link MultiVectorOutput} for a collection of metrics to the internal store, merging with existing 
@@ -195,6 +223,20 @@ public interface MetricOutputForProjectByTimeAndThreshold
         MetricOutputForProjectByTimeAndThresholdBuilder addBoxPlotOutput( TimeWindow timeWindow,
                                                                           Threshold threshold,
                                                                           Future<MetricOutputMapByMetric<BoxPlotOutput>> result );
+
+        /**
+         * Adds a new {@link PairedOutput} for a collection of metrics to the internal store, merging with existing 
+         * items that share the same key, as required.
+         * 
+         * @param timeWindow the time window
+         * @param threshold the threshold
+         * @param result the result
+         * @return the builder
+         */
+
+        MetricOutputForProjectByTimeAndThresholdBuilder addPairedOutput( TimeWindow timeWindow,
+                                                                         Threshold threshold,
+                                                                         Future<MetricOutputMapByMetric<PairedOutput<Instant, Duration>>> result );
 
         /**
          * Returns a {@link MetricOutputForProjectByTimeAndThreshold}.

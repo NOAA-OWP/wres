@@ -22,6 +22,7 @@ import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.Slicer;
 import wres.datamodel.Threshold;
+import wres.datamodel.Threshold.Operator;
 import wres.datamodel.inputs.InsufficientDataException;
 import wres.datamodel.inputs.MetricInputSliceException;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
@@ -66,7 +67,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
      */
 
     private final MetricCollection<DichotomousPairs, MatrixOutput, DoubleScoreOutput> dichotomousScalar;
-    
+
     /**
      * A {@link MetricCollection} of {@link Metric} that consume {@link TimeSeriesOfSingleValuedPairs} and produce
      * {@link PairedOutput}.
@@ -78,7 +79,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
      * An instance of {@link TimeToPeakErrorStatistics}.
      */
 
-    private final TimeToPeakErrorStatistics timeToPeakErrorStats;    
+    private final TimeToPeakErrorStatistics timeToPeakErrorStats;
 
     @Override
     public MetricOutputForProjectByTimeAndThreshold apply( SingleValuedPairs input )
@@ -90,12 +91,14 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
         //Slicer
         Slicer slicer = dataFactory.getSlicer();
 
-        //Remove missing values. 
-        //TODO: when time-series metrics are supported, leave missings in place for time-series
+        //Remove missing values, except for ordered input, such as time-series
         SingleValuedPairs inputNoMissing = input;
         try
         {
-            inputNoMissing = slicer.filter( input, ADMISSABLE_DATA, true );
+            if ( ! ( input instanceof TimeSeriesOfSingleValuedPairs ) )
+            {
+                inputNoMissing = slicer.filter( input, ADMISSABLE_DATA, true );
+            }
         }
         catch ( MetricInputSliceException e )
         {
@@ -114,6 +117,10 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
         if ( hasMetrics( MetricInputGroup.DICHOTOMOUS ) )
         {
             processDichotomousPairs( timeWindow, inputNoMissing, futures );
+        }
+        if ( hasMetrics( MetricInputGroup.SINGLE_VALUED_TIME_SERIES ) )
+        {
+            processTimeSeriesPairs( timeWindow, (TimeSeriesOfSingleValuedPairs) inputNoMissing, futures );
         }
 
         // Log
@@ -160,9 +167,9 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
         {
             dichotomousScalar =
                     metricFactory.ofDichotomousScoreCollection( metricExecutor,
-                                                                 getSelectedMetrics( metrics,
-                                                                                     MetricInputGroup.DICHOTOMOUS,
-                                                                                     MetricOutputGroup.SCORE ) );
+                                                                getSelectedMetrics( metrics,
+                                                                                    MetricInputGroup.DICHOTOMOUS,
+                                                                                    MetricOutputGroup.SCORE ) );
         }
         else
         {
@@ -176,7 +183,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                                                                                                MetricInputGroup.SINGLE_VALUED_TIME_SERIES,
                                                                                                MetricOutputGroup.PAIRED ) );
             //Summary statistics, currently done for time-to-peak only
-            //TODO: add time-to-peak to a collection if/when other measures of the same type are added                    
+            //TODO: replace with a collection if/when other measures of the same type are added                    
             if ( MetricConfigHelper.hasSummaryStatisticsFor( config, MetricConfigName.TIME_TO_PEAK_ERROR ) )
             {
                 timeToPeakErrorStats =
@@ -213,14 +220,14 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
             }
         }
     }
-    
+
     @Override
     void completeCachedOutput()
-    {        
+    {
         //Add the summary statistics for the cached output if they do not already exist
-        
+
     }
-    
+
     /**
      * Processes a set of metric futures that consume {@link DichotomousPairs}, which are mapped from the input pairs,
      * {@link SingleValuedPairs}, using a configured mapping function. Skips any thresholds for which
@@ -275,6 +282,33 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
     }
 
     /**
+     * Processes a set of metric futures that consume {@link TimeSeriesOfSingleValuedPairs}. 
+     * 
+     * @param timeWindow the time window
+     * @param input the input pairs
+     * @param futures the metric futures
+     * @throws MetricCalculationException if the metrics cannot be computed
+     * @throws InsufficientDataException if there is insufficient data to compute any metrics
+     */
+
+    private void processTimeSeriesPairs( TimeWindow timeWindow,
+                                         TimeSeriesOfSingleValuedPairs input,
+                                         MetricFuturesByTimeBuilder futures )
+    {
+        //Check and obtain the global thresholds by metric group for iteration
+        if ( hasMetrics( MetricInputGroup.SINGLE_VALUED_TIME_SERIES, MetricOutputGroup.PAIRED ) )
+        {
+            //Build the future result
+            Future<MetricOutputMapByMetric<PairedOutput<Instant, Duration>>> output =
+                    CompletableFuture.supplyAsync( () -> timeSeries.apply( input ), thresholdExecutor );
+            //Add the future result to the store
+            futures.addPairedOutput( Pair.of( timeWindow,
+                                              dataFactory.getThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER ) ),
+                                     output );
+        }
+    }
+
+    /**
      * Processes one threshold for metrics that consume {@link DichotomousPairs}, which are mapped from the input pairs,
      * {@link SingleValuedPairs}, using a configured mapping function, and produce a {@link MetricOutputGroup#SCORE}. 
      * 
@@ -294,9 +328,9 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
         try
         {
             futures.addScoreOutput( Pair.of( timeWindow, threshold ),
-                                     processDichotomousThreshold( threshold,
-                                                                  input,
-                                                                  dichotomousScalar ) );
+                                    processDichotomousThreshold( threshold,
+                                                                 input,
+                                                                 dichotomousScalar ) );
         }
         //Insufficient data for one threshold: log, but allow
         catch ( MetricInputSliceException e )
@@ -361,5 +395,5 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                                                  + "'." );
         }
     }
-    
+
 }

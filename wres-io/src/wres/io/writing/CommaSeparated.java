@@ -150,7 +150,7 @@ public class CommaSeparated
 
         try
         {
-            scoreOutput = storedMetricOutput.getScoreOutput();
+            scoreOutput = storedMetricOutput.getDoubleScoreOutput();
         }
         catch ( final MetricOutputAccessException e )
         {
