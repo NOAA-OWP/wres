@@ -506,8 +506,9 @@ public final class PIXMLReader extends XMLReader
 	 */
 
     private void parseHeader( XMLStreamReader reader )
-            throws XMLStreamException, SQLException,
-            InvalidPropertiesFormatException, InvalidInputDataException
+            throws XMLStreamException,
+			SQLException,
+            InvalidInputDataException
     {
 		//	If the current tag is the header tag itself, move on to the next tag
 		if (reader.isStartElement() && reader.getLocalName().equalsIgnoreCase("header"))

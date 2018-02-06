@@ -7,7 +7,6 @@ import java.util.StringJoiner;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.EnsembleCondition;
 import wres.config.generated.Feature;
-import wres.config.generated.TimeScaleConfig;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.details.ProjectDetails;
@@ -98,8 +97,6 @@ class BackToBackForecastScripter extends Scripter
 
     private void applyScaleMember() throws IOException, SQLException
     {
-        TimeScaleConfig timeScaleConfig = this.getProjectDetails().getScale();
-
         this.add("    ");
 
         if ( !this.getProjectDetails().shouldScale())

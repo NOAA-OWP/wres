@@ -538,6 +538,20 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return frequency;
     }
 
+    /**
+     * Determines if strict leads should be used instead of a range of leads
+     * @return True if the period is our finest unit (1 hour for now) or there
+     * is neither a lead time pooling window nor a desired time scale specified.
+     * @throws NoDataException
+     */
+    public boolean useStrictLeads() throws NoDataException
+    {
+        return (this.getLeadPeriod() == 1 &&
+                this.getLeadUnit().equalsIgnoreCase( DurationUnit.HOURS.value() )) ||
+               (this.projectConfig.getPair().getLeadTimesPoolingWindow() == null &&
+                this.projectConfig.getPair().getDesiredTimeScale() == null);
+    }
+
     public boolean shouldScale() throws NoDataException
     {
         return this.getScale() != null &&
@@ -557,24 +571,24 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
             try
             {
                 Integer leastCommonMultiplier;
-                Integer leftScale = this.getLeftScale();
-                Integer rightScale = this.getRightScale();
+                Integer left = this.getLeftScale();
+                Integer right = this.getRightScale();
 
-                if (Math.max(leftScale, rightScale) % Math.min(leftScale, rightScale) == 0)
+                if (Math.max(left, right) % Math.min(leftScale, right) == 0)
                 {
-                    leastCommonMultiplier = Math.max(leftScale, rightScale);
+                    leastCommonMultiplier = Math.max(left, right);
                 }
                 else
                 {
 
-                    BigInteger left = BigInteger.valueOf( leftScale );
+                    BigInteger bigLeft = BigInteger.valueOf( left );
 
                     Integer greatestCommonFactor =
-                            left.gcd( BigInteger.valueOf( rightScale ) )
-                                .intValue();
+                            bigLeft.gcd( BigInteger.valueOf( right ) )
+                                   .intValue();
 
                     leastCommonMultiplier =
-                            leftScale * rightScale / greatestCommonFactor;
+                            left * right / greatestCommonFactor;
                 }
 
                 // TODO: When the lead scale is changed from hours,
@@ -600,29 +614,6 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         }
 
         return this.desiredTimeScale;
-    }
-
-    // TODO: This is a piece to the puzzle of finding out how to magically
-    // align the left and right data
-    public Integer getCurrentRightHandPeriod()
-            throws NoDataException, SQLException
-    {
-        Integer scale;
-        TimeScaleConfig timeScaleConfig = this.getLeft().getExistingTimeScale();
-
-        if (timeScaleConfig == null)
-        {
-            scale = this.getRightScale();
-        }
-        else
-        {
-            scale = TimeHelper.unitsToLeadUnits(
-                    timeScaleConfig.getUnit().value(),
-                    timeScaleConfig.getPeriod()
-            ).intValue();
-        }
-
-        return scale;
     }
     
     public PoolingWindowConfig getIssuePoolingWindow()
@@ -686,7 +677,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return ConfigHelper.getPairDestinations( this.projectConfig );
     }
 
-    public Integer getLeadOffset(Feature feature) throws SQLException, IOException
+    public Integer getLeadOffset(Feature feature) throws IOException
     {
         if (ConfigHelper.isSimulation( this.getRight() ))
         {
@@ -720,17 +711,6 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         // the database.
         Integer width = TimeHelper.unitsToLeadUnits( this.getScale().getUnit().value(),
                                                      this.getScale().getPeriod()).intValue();
-
-/*
-        if (this.getScale() != null)
-        {
-            width = TimeHelper.unitsToLeadUnits( this.getScalingUnit(), this.getScalingPeriod() ).intValue();
-        }
-        else
-        {
-            width = this.getCurrentRightHandPeriod();
-        }
-*/
 
         String script = "";
 
@@ -871,7 +851,6 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
 
         String beginning = "";
 
-        // TODO: An invalid width is determined by the
         beginning += "SELECT (FV.lead - " + width + ")::integer AS offset" + NEWLINE;
         beginning += "FROM (" + NEWLINE;
         beginning += "    SELECT TS.timeseries_id, TS.initialization_date" + NEWLINE;
@@ -1162,25 +1141,22 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
 
     public Integer getLeftScale() throws NoDataException, SQLException
     {
-        synchronized ( this.leftScale )
+        if (this.leftScale == -1)
         {
-            if (this.leftScale == -1)
+            if (this.getLeft().getExistingTimeScale() == null)
             {
-                if (this.getLeft().getExistingTimeScale() == null)
-                {
-                    this.leftScale = this.getScale( this.getLeft() );
-                }
-                else
-                {
-                    this.leftScale =
-                            TimeHelper.unitsToLeadUnits( this.getLeft()
-                                                             .getExistingTimeScale()
-                                                             .getUnit()
-                                                             .value(),
-                                                         this.getLeft()
-                                                             .getExistingTimeScale()
-                                                             .getPeriod() ).intValue();
-                }
+                this.leftScale = this.getScale( this.getLeft() );
+            }
+            else
+            {
+                this.leftScale =
+                        TimeHelper.unitsToLeadUnits( this.getLeft()
+                                                         .getExistingTimeScale()
+                                                         .getUnit()
+                                                         .value(),
+                                                     this.getLeft()
+                                                         .getExistingTimeScale()
+                                                         .getPeriod() ).intValue();
             }
         }
 
@@ -1189,22 +1165,19 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
 
     public Integer getRightScale() throws NoDataException, SQLException
     {
-        synchronized ( this.rightScale )
+        if (this.rightScale == -1)
         {
-            if (this.rightScale == -1)
+            if (this.getRight().getExistingTimeScale() == null)
             {
-                if (this.getRight().getExistingTimeScale() == null)
-                {
-                    this.rightScale = this.getScale( this.getRight() );
-                }
-                else
-                {
-                    this.rightScale =
-                            TimeHelper.unitsToLeadUnits(
-                                    this.getRight().getExistingTimeScale().getUnit().value(),
-                                    this.getRight().getExistingTimeScale().getPeriod()
-                            ).intValue();
-                }
+                this.rightScale = this.getScale( this.getRight() );
+            }
+            else
+            {
+                this.rightScale =
+                        TimeHelper.unitsToLeadUnits(
+                                this.getRight().getExistingTimeScale().getUnit().value(),
+                                this.getRight().getExistingTimeScale().getPeriod()
+                        ).intValue();
             }
         }
 
@@ -1213,11 +1186,16 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
 
     public Integer getBaselineScale() throws NoDataException, SQLException
     {
-        synchronized ( this.baselineScale )
+        if ( this.getBaseline() != null && this.baselineScale == -1)
         {
-            if ( this.getBaseline() != null && this.baselineScale == -1)
+            if (this.getBaseline().getExistingTimeScale() == null)
             {
-                    this.baselineScale = this.getScale( this.getBaseline() );
+                this.baselineScale = this.getScale( this.getBaseline() );
+            }
+            else
+            {
+                this.baselineScale = TimeHelper.unitsToLeadUnits( this.getBaseline().getExistingTimeScale().getUnit().value(),
+                                                                  this.getBaseline().getExistingTimeScale().getPeriod() ).intValue();
             }
         }
 
@@ -1244,7 +1222,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
                                       this.getInputName( dataSourceConfig ) +
                                       " either could not be determined or was "
                                       + "invalid. (lead = " +
-                                      String.valueOf(leadScale) +
+                                      leadScale +
                                       ")");
         }
 
@@ -1258,26 +1236,25 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
 
         script.addLine("WITH differences AS");
         script.addLine("(");
-        script.addLine("    SELECT lead - lag(lead) OVER (ORDER BY lead) AS difference");// / (row_number() OVER (ORDER BY lead) - 1) AS difference");
+        script.addLine("    SELECT lead - lag(lead) OVER (ORDER BY timeseries_id, lead) AS difference");
         script.addLine("    FROM wres.ForecastValue FV");
-        script.addLine("    WHERE EXISTS (");
-        script.addLine("        SELECT 1");
-        script.addLine("        FROM wres.ProjectSource PS");
-        script.addLine("        INNER JOIN wres.ForecastSource FS");
-        script.addLine("            ON FS.source_id = PS.source_id");
-        script.addLine("        INNER JOIN wres.TimeSeries TS");
-        script.addLine("            ON TS.timeseries_id = FS.forecast_id");
-        script.addLine("        WHERE PS.project_id = ", this.getId());
-        script.addLine("            AND PS.member = ", this.getInputName( dataSourceConfig ));
-        script.addLine("            AND TS.timeseries_id = FV.timeseries_id");
-        script.addLine("    )");
-        script.addLine("    GROUP BY FV.lead");
+        script.addLine("    WHERE lead > 0");
+        script.addLine("        AND EXISTS (");
+        script.addLine("            SELECT 1");
+        script.addLine("            FROM wres.ProjectSource PS");
+        script.addLine("            INNER JOIN wres.ForecastSource FS");
+        script.addLine("                ON FS.source_id = PS.source_id");
+        script.addLine("            INNER JOIN wres.TimeSeries TS");
+        script.addLine("                ON TS.timeseries_id = FS.forecast_id");
+        script.addLine("            WHERE PS.project_id = ", this.getId());
+        script.addLine("                AND PS.member = ", this.getInputName( dataSourceConfig ));
+        script.addLine("                AND TS.timeseries_id = FV.timeseries_id");
+        script.addLine("        )");
         script.addLine(")");
         script.addLine("SELECT MIN(difference)::integer AS scale");
         script.addLine("FROM differences");
         script.addLine("WHERE difference IS NOT NULL");
         script.addLine("    AND difference >= 0");
-        //script.addLine("GROUP BY difference;");
 
         return script.retrieve( "scale" );
     }
@@ -1308,107 +1285,6 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         script.addLine("GROUP BY age;");
 
         return script.retrieve( "scale" );
-    }
-
-    private void loadForecastIDs(String member) throws SQLException
-    {
-
-        Integer memberVariableID;
-        List<Integer> forecastIDs;
-
-        if (member.equals( ProjectDetails.LEFT_MEMBER ))
-        {
-            memberVariableID = this.getLeftVariableID();
-            forecastIDs = this.leftForecastIDs;
-        }
-        else if (member.equals( ProjectDetails.RIGHT_MEMBER ))
-        {
-            memberVariableID = this.getRightVariableID();
-            forecastIDs = this.rightForecastIDs;
-        }
-        else
-        {
-            memberVariableID = this.getBaselineVariableID();
-            forecastIDs = this.baselineForecastIDs;
-        }
-
-        StringBuilder script = new StringBuilder(  );
-        script.append( "SELECT TS.timeseries_id" ).append(NEWLINE);
-        script.append( "FROM wres.ForecastSource FS").append(NEWLINE);
-        script.append( "INNER JOIN wres.ProjectSource PS").append(NEWLINE);
-        script.append( "    ON PS.source_id = FS.source_id").append(NEWLINE);
-        script.append( "INNER JOIN wres.TimeSeries TS").append(NEWLINE);
-        script.append( "    ON TS.timeseries_id = FS.forecast_id").append(NEWLINE);
-        script.append( "INNER JOIN wres.VariablePosition VP").append(NEWLINE);
-        script.append( "    ON VP.variableposition_id = TS.variableposition_id").append(NEWLINE);
-        script.append( "WHERE PS.project_id = ").append(this.projectID).append(NEWLINE);
-        script.append( "    AND PS.member = ").append(member).append(NEWLINE);
-        script.append("     AND PS.inactive_time IS NULL").append(NEWLINE);
-        script.append("     AND VP.variable_id = ").append(memberVariableID).append(";");
-
-        Database.populateCollection(forecastIDs,
-                                    script.toString(),
-                                    "timeseries_id");
-    }
-
-    private void loadSources(String member) throws SQLException
-    {
-        StringBuilder script = new StringBuilder(  );
-
-        script.append( "SELECT PS.source_id, S.hash").append(NEWLINE);
-        script.append( "FROM wres.ProjectSource PS").append(NEWLINE);
-        script.append( "INNER JOIN wres.Source S").append(NEWLINE);
-        script.append( "    ON S.source_id = PS.source_id").append(NEWLINE);
-        script.append( "WHERE PS.project_id = ").append(this.projectID).append(NEWLINE);
-        script.append( "    AND PS.member = ").append(member).append(NEWLINE);
-        script.append( "    AND PS.inactive_time IS NULL;").append(NEWLINE);
-
-        Connection connection = null;
-        ResultSet resultSet = null;
-
-        Map<Integer, String> sourceHashes;
-        List<Integer> sourceIDs;
-
-        if (member.equals( ProjectDetails.LEFT_MEMBER ))
-        {
-            sourceHashes = this.leftHashes;
-            sourceIDs = this.leftSources;
-        }
-        else if (member.equals( ProjectDetails.RIGHT_MEMBER ))
-        {
-            sourceHashes = this.rightHashes;
-            sourceIDs = this.rightSources;
-        }
-        else
-        {
-            sourceHashes = this.baselineHashes;
-            sourceIDs = this.baselineSources;
-        }
-
-        try
-        {
-            connection = Database.getHighPriorityConnection();
-            resultSet = Database.getResults( connection, script.toString( ) );
-
-            while (resultSet.next())
-            {
-                sourceIDs.add( resultSet.getInt( "source_id" ) );
-                sourceHashes.put(resultSet.getInt( "source_id" ),
-                                    resultSet.getString( "hash" ));
-            }
-        }
-        finally
-        {
-            if (resultSet != null)
-            {
-                resultSet.close();
-            }
-
-            if (connection != null)
-            {
-                Database.returnHighPriorityConnection( connection );
-            }
-        }
     }
 
     public boolean hasBaseline()
@@ -1574,14 +1450,6 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return this.lastLeads.get(feature);
     }
 
-    public Integer getLead(int windowNumber)
-            throws InvalidPropertiesFormatException, NoDataException
-    {
-        return TimeHelper.unitsToLeadUnits( this.getLeadUnit(),
-                                  1.0 * windowNumber +
-                                  this.getLeadFrequency() * this.getLeadPeriod()).intValue();
-    }
-
 
     /**
      * Get the minimum lead hours from a project config or a default.
@@ -1629,8 +1497,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return result;
     }
 
-    public int getWindowWidth()
-            throws InvalidPropertiesFormatException, NoDataException
+    public int getWindowWidth() throws NoDataException
     {
         return TimeHelper.unitsToLeadUnits( this.getLeadUnit(), this.getLeadPeriod() ).intValue();
     }

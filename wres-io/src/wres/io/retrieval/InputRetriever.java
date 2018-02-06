@@ -502,18 +502,10 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                                        + "the window could not be determined." );
             }
 
-            try
-            {
-                lastLead = this.progress *
-                           this.projectDetails.getLeadFrequency() +
-                           this.projectDetails.getWindowWidth() * 1.0 +
-                           offset;
-            }
-            catch ( InvalidPropertiesFormatException e )
-            {
-                throw new IOException( "The width of the standard window for this "
-                                       + "project could not be determined.", e );
-            }
+            lastLead = this.progress *
+                       this.projectDetails.getLeadFrequency() +
+                       this.projectDetails.getWindowWidth() * 1.0 +
+                       offset;
         }
 
         TimeWindow timeWindow = ConfigHelper.getTimeWindow( this.projectDetails,

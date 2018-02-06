@@ -41,7 +41,6 @@ import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.TimeScaleConfig;
-import wres.config.generated.TimeScaleFunction;
 import wres.config.generated.TimeWindowMode;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
@@ -155,23 +154,6 @@ public class ConfigHelper
                                        dataSourceConfig.getVariable().getUnit());
     }
 
-    public static TimeScaleConfig getTimeScale(ProjectConfig projectConfig)
-    {
-        TimeScaleConfig timeAggregationConfig = projectConfig.getPair().getDesiredTimeScale();
-
-        if (timeAggregationConfig == null)
-        {
-            timeAggregationConfig = new TimeScaleConfig(
-                                                               TimeScaleFunction.AVG,
-                                                               1,
-                                                               1,
-                                                               DurationUnit.HOURS,
-                                                               "");
-        }
-
-        return timeAggregationConfig;
-    }
-
     /**
      *
      * TODO: Move to ProjectDetails
@@ -182,30 +164,28 @@ public class ConfigHelper
      *                     the first window could be '40 &gt; lead AND lead &ge; 1' and the second '80 &gt; lead AND lead &ge; 40'
      * @param offset The offset                    
      * @return A description of what a window number means in terms of lead times
-     * @throws InvalidPropertiesFormatException Thrown if the time aggregation unit is not supported
      */
     public static String getLeadQualifier(ProjectDetails projectDetails,
                                           int windowNumber,
                                           int offset)
-            throws InvalidPropertiesFormatException, NoDataException
+            throws NoDataException
     {
         String qualifier;
+        int beginning = windowNumber * TimeHelper.unitsToLeadUnits(projectDetails.getLeadUnit(), projectDetails.getLeadFrequency()).intValue();
+        beginning += offset;
+        int end = beginning + TimeHelper.unitsToLeadUnits( projectDetails.getLeadUnit(), projectDetails.getLeadPeriod()).intValue();
 
         // TODO: Change HOURS to the correct unit once the lead standard unit changes
-        if (!(projectDetails.getLeadPeriod() == 1 &&
-              projectDetails.getLeadUnit().equalsIgnoreCase( DurationUnit.HOURS.toString() )))
+        if (projectDetails.useStrictLeads())
         {
-            int beginning = windowNumber * projectDetails.getLeadFrequency();
-            int end = (projectDetails.getLeadFrequency() * windowNumber) +
-                      projectDetails.getLeadPeriod();
-
-            qualifier = String.valueOf(end + offset);
-            qualifier += " >= FV.lead AND FV.lead > ";
-            qualifier += String.valueOf(beginning + offset);
+            qualifier = "FV.lead = " + end;
         }
         else
         {
-            qualifier = "FV.lead = " + projectDetails.getLead(windowNumber);
+
+            qualifier = String.valueOf(end);
+            qualifier += " >= FV.lead AND FV.lead > ";
+            qualifier += String.valueOf(beginning);
         }
 
         return qualifier;
@@ -816,7 +796,6 @@ public class ConfigHelper
      */
 
     public static TimeWindow getTimeWindow( ProjectDetails projectDetails, long lead, int sequenceStep)
-            throws InvalidPropertiesFormatException
     {
         Objects.requireNonNull( projectDetails );
         TimeWindow windowMetadata;

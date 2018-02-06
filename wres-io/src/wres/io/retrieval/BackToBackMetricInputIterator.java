@@ -1,25 +1,15 @@
 package wres.io.retrieval;
 
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.InvalidPropertiesFormatException;
-import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
-import wres.config.generated.ProjectConfig;
 import wres.io.config.ConfigHelper;
-import wres.io.data.caching.MeasurementUnits;
-import wres.io.data.caching.UnitConversions;
 import wres.io.data.details.ProjectDetails;
-import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
-import wres.util.Collections;
 
 final class BackToBackMetricInputIterator extends MetricInputIterator
 {

@@ -7,6 +7,7 @@ import java.util.StringJoiner;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.EnsembleCondition;
 import wres.config.generated.Feature;
+import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.details.ProjectDetails;
@@ -26,6 +27,22 @@ class PoolingForecastScripter extends Scripter
 
     @Override
     String formScript() throws SQLException, IOException
+    {
+        this.applyCommonTableExpression();
+        this.addLine("SELECT ");
+        this.applyScaleMember();
+        this.applyValueDate();
+        this.addLine("    F.lead,");
+        this.applyMeasurementArray();
+        this.addLine("    F.measurementunit_id");
+        this.addLine( "FROM forecasts F" );
+        this.applyGroupAndOrderBy();
+
+        return this.getScript();
+    }
+
+    private void applyCommonTableExpression()
+            throws SQLException, IOException
     {
         // TODO: Break out into separate functions
         this.addLine("WITH forecasts AS");
@@ -80,20 +97,20 @@ class PoolingForecastScripter extends Scripter
         this.addLine( "                AND FS.forecast_id = F.timeseries_id" );
         this.addLine( "        )" );
         this.addLine(")");
-        this.addLine("SELECT ");
-        this.applyAggHour();
-        this.applyValueDate();
-        this.addLine("    F.lead,");
-        this.addLine("    ARRAY_AGG(F.forecasted_value ORDER BY F.ensemble_id) AS measurements,");
-        this.addLine("    F.measurementunit_id");
-        this.addLine( "FROM forecasts F" );
-        this.addLine( "GROUP BY F.valid_time, F.lead, F.measurementunit_id" );
-        this.addLine( "ORDER BY F.valid_time, F.lead;" );
-
-        return this.getScript();
     }
 
-    private void applyAggHour() throws IOException
+    private void applyMeasurementArray()
+    {
+        this.addLine("    ARRAY_AGG(F.forecasted_value ORDER BY F.ensemble_id) AS measurements,");
+    }
+
+    private void applyGroupAndOrderBy()
+    {
+        this.addLine( "GROUP BY F.valid_time, F.lead, F.measurementunit_id" );
+        this.addLine( "ORDER BY F.valid_time, F.lead;" );
+    }
+
+    private void applyScaleMember() throws IOException
     {
         if ( !this.getProjectDetails().shouldScale() )
         {
@@ -167,22 +184,12 @@ class PoolingForecastScripter extends Scripter
 
     private int getLeadOffset() throws IOException
     {
-        Integer offset;
-
-        try
-        {
-            offset = this.getProjectDetails().getLeadOffset( this.getFeature() );
-        }
-        catch ( SQLException e )
-        {
-            throw new NoDataException( "Information about the lead offset could "
-                                       + "not be retrieved from the database.",
-                                       e );
-        }
+        Integer offset  = this.getProjectDetails().getLeadOffset( this.getFeature() );
 
         if (offset == null)
         {
-            throw new NoDataException( "There is not a valid offset for this feature." );
+            throw new NoDataException( "There is not a valid offset for '" + ConfigHelper
+                    .getFeatureDescription(this.getFeature()) + "'." );
         }
 
         return offset;
