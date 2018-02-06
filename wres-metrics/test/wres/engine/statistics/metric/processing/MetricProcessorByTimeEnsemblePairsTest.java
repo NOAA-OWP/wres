@@ -57,21 +57,21 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                                       .ofMetricProcessorByTimeEnsemblePairs( config );
         MetricOutputForProjectByTimeAndThreshold results =
                 processor.apply( MetricTestDataFactory.getEnsemblePairsOne() );
-        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> bias = results.getScoreOutput()
+        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> bias = results.getDoubleScoreOutput()
                                                                            .get( MetricConstants.BIAS_FRACTION );
         MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> cod =
-                results.getScoreOutput()
+                results.getDoubleScoreOutput()
                        .get( MetricConstants.COEFFICIENT_OF_DETERMINATION );
-        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> rho = results.getScoreOutput()
+        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> rho = results.getDoubleScoreOutput()
                                                                           .get( MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
-        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> mae = results.getScoreOutput()
+        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> mae = results.getDoubleScoreOutput()
                                                                           .get( MetricConstants.MEAN_ABSOLUTE_ERROR );
         MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> me =
-                results.getScoreOutput().get( MetricConstants.MEAN_ERROR );
-        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> rmse = results.getScoreOutput()
+                results.getDoubleScoreOutput().get( MetricConstants.MEAN_ERROR );
+        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> rmse = results.getDoubleScoreOutput()
                                                                            .get( MetricConstants.ROOT_MEAN_SQUARE_ERROR );
         MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> crps =
-                results.getScoreOutput()
+                results.getDoubleScoreOutput()
                        .get( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE );
 
         //Test contents
@@ -117,7 +117,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         processor.apply( MetricTestDataFactory.getEnsemblePairsOne() );
         //Obtain the results
         MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> results = processor.getCachedMetricOutput()
-                                                                                     .getScoreOutput();
+                                                                                     .getDoubleScoreOutput();
         //Validate bias
         MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> bias = results.get( MetricConstants.BIAS_FRACTION );
         assertTrue( "Expected results differ from actual results for " + MetricConstants.BIAS_FRACTION
@@ -317,7 +317,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         processor.apply( MetricTestDataFactory.getEnsemblePairsOne() );
         //Obtain the results
         MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> results = processor.getCachedMetricOutput()
-                                                                                     .getScoreOutput();
+                                                                                     .getDoubleScoreOutput();
 
         //Validate a selection of the outputs only
 
@@ -689,7 +689,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         processor.apply( MetricTestDataFactory.getEnsemblePairsOne() );
         //Obtain the results
         MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> results = processor.getCachedMetricOutput()
-                                                                                     .getScoreOutput();
+                                                                                     .getDoubleScoreOutput();
         //Validate bias
         MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> bias = results.get( MetricConstants.BIAS_FRACTION );
         assertTrue( "Expected results differ from actual results for " + MetricConstants.BIAS_FRACTION
