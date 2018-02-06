@@ -7,6 +7,8 @@ import static org.junit.Assert.fail;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 import org.junit.Test;
@@ -378,7 +380,10 @@ public final class TimeWindowTest
                                              ReferenceTime.VALID_TIME,
                                              Duration.ofHours( -5 ),
                                              Duration.ofHours( 25 ) );
-        assertTrue( "Unexpected union of two time windows.", first.unionWith( second ).equals( expected ) );
+        List<TimeWindow> union = new ArrayList<>();
+        union.add( first );
+        union.add( second );
+        assertTrue( "Unexpected union of two time windows.", TimeWindow.unionOf( union ).equals( expected ) );
     }
 
 }
