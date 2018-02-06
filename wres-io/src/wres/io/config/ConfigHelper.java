@@ -230,9 +230,12 @@ public class ConfigHelper
                 clause.append("variableposition_id = ").append(variablePositionId);
             }
         }
-        catch (Exception e)
+        catch ( SQLException se )
         {
-            LOGGER.error(Strings.getStackTrace(e));
+            // Should this really be log-and-continue? Or should it propagate?
+            // If it's really an error, then it should propagate or be
+            // translated. If it's not an error, why bother logging?
+            LOGGER.warn( "{}", se);
         }
 
         return clause.toString();
@@ -927,14 +930,18 @@ public class ConfigHelper
     /**
      * Returns true if the sourceConfig from projectConfig is a persistence
      * baseline element.
-     * @param projectConfig the project config
-     * @param sourceConfig the source config
+     * @param projectConfig the project config, not null
+     * @param sourceConfig the source config, not null
      * @return true when sourceConfig indicates persistence baseline.
+     * @throws NullPointerException when projectConfig or sourceConfig are null
      */
 
     public static boolean isPersistence( ProjectConfig projectConfig,
                                          DataSourceConfig sourceConfig )
     {
+        Objects.requireNonNull( projectConfig );
+        Objects.requireNonNull( sourceConfig );
+
         return projectConfig.getInputs()
                             .getBaseline() != null
                && ConfigHelper.getLeftOrRightOrBaseline( projectConfig,
@@ -948,6 +955,30 @@ public class ConfigHelper
                                .getTransformation()
                                .equals( PERSISTENCE );
     }
+
+
+    /**
+     * Report if the projectConfig has a persistence baseline
+     * @param projectConfig the project config to look at
+     * @return true if the projectConfig has persistence baseline, false otherwise
+     * @throws NullPointerException when projectConfig or its inputs are null
+     */
+
+    public static boolean hasPersistenceBaseline( ProjectConfig projectConfig )
+    {
+        Objects.requireNonNull( projectConfig );
+        Objects.requireNonNull( projectConfig.getInputs() );
+
+        if ( projectConfig.getInputs().getBaseline() != null
+             && ConfigHelper.isPersistence( projectConfig,
+                                            projectConfig.getInputs().getBaseline() ) )
+        {
+            return true;
+        }
+
+        return false;
+    }
+
 
     private enum ConusZoneId
     {
