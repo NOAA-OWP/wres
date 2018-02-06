@@ -2,7 +2,6 @@ package wres.io.retrieval;
 
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.InvalidPropertiesFormatException;
 import java.util.Iterator;
 import java.util.concurrent.Future;
 
@@ -10,7 +9,6 @@ import wres.config.generated.Feature;
 import wres.datamodel.inputs.MetricInput;
 import wres.io.config.ConfigHelper;
 import wres.io.data.details.ProjectDetails;
-import wres.io.utilities.NoDataException;
 import wres.util.NotImplementedException;
 
 /**

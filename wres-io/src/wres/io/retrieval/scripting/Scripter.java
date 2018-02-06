@@ -10,11 +10,11 @@ import wres.config.generated.TimeWindowMode;
 import wres.io.config.ConfigHelper;
 import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.NoDataException;
+import wres.io.utilities.ScriptBuilder;
 import wres.util.NotImplementedException;
 
-public abstract class Scripter
+public abstract class Scripter extends ScriptBuilder
 {
-    private static final String NEWLINE = System.lineSeparator();
 
     protected Scripter( ProjectDetails projectDetails,
                         DataSourceConfig dataSourceConfig,
@@ -179,30 +179,6 @@ public abstract class Scripter
         return this.timeShift;
     }
 
-    protected void add(Object... details)
-    {
-        if (this.script == null)
-        {
-            this.script = new StringBuilder(  );
-        }
-
-        for (Object detail : details)
-        {
-            this.script.append( detail );
-        }
-    }
-
-    protected void addLine()
-    {
-        this.add(NEWLINE);
-    }
-
-    protected void addLine(Object... details)
-    {
-        this.add(details);
-        this.addLine();
-    }
-
     protected void applyValueDate()
     {
         this.add("(", this.getValueDate());
@@ -282,7 +258,7 @@ public abstract class Scripter
 
     protected String getScript()
     {
-        return this.script.toString();
+        return this.toString();
     }
 
     private final ProjectDetails projectDetails;
@@ -295,6 +271,5 @@ public abstract class Scripter
     private String variablePositionClause;
     private Integer timeShift;
     private String member;
-    private StringBuilder script;
 
 }

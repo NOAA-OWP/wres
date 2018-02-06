@@ -154,7 +154,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
     }
 
     // TODO: Put into its own class
-    void createLeftHandCache() throws SQLException, NoDataException
+    void createLeftHandCache() throws SQLException
     {
         Integer desiredMeasurementUnitID =
                 MeasurementUnits.getMeasurementUnitID( this.getProjectDetails()
