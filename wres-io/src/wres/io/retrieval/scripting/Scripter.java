@@ -2,7 +2,10 @@ package wres.io.retrieval.scripting;
 
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.InvalidPropertiesFormatException;
+import java.time.Instant;
+import java.util.List;
+import java.util.Objects;
+
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
@@ -99,6 +102,36 @@ public abstract class Scripter
         }
 
         return loadScripter.formScript();
+    }
+
+    public static String getPersistenceLoadScript( ProjectDetails projectDetails,
+                                                   DataSourceConfig dataSourceConfig,
+                                                   Feature feature,
+                                                   List<Instant> basisTimes )
+            throws SQLException, NoDataException
+    {
+        Objects.requireNonNull( projectDetails );
+        Objects.requireNonNull( dataSourceConfig );
+        Objects.requireNonNull( feature );
+        Objects.requireNonNull( basisTimes );
+
+        if ( !ConfigHelper.isPersistence( projectDetails.getProjectConfig(),
+                                          dataSourceConfig ) )
+        {
+            throw new IllegalArgumentException( "Must pass a persistence dataSourceConfig" );
+        }
+
+        // I doubt that "progress" or "sequenceStep" have any meaning for the
+        // persistence forecast (other than following contract of Scripter), so
+        // use a placeholder for those values.
+        final int DUMMY_PLACE_HOLDER = -9;
+        PersistenceForecastScripter s = new PersistenceForecastScripter( projectDetails,
+                                                                         dataSourceConfig,
+                                                                         feature,
+                                                                         DUMMY_PLACE_HOLDER,
+                                                                         DUMMY_PLACE_HOLDER );
+        s.setInstantsToGetValueFor( basisTimes );
+        return s.formScript();
     }
 
     abstract String formScript() throws SQLException, IOException;
