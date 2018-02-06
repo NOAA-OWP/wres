@@ -33,6 +33,7 @@ class BackToBackForecastScripter extends Scripter
         this.addLine( "    FV.lead,");
         this.addLine( "    ARRAY_AGG(FV.forecasted_value ORDER BY TS.ensemble_id) AS measurements," );
         this.addLine( "    TS.measurementunit_id" );
+        this.addLine( this.getPersistenceRelatedFieldLines() );
         this.addLine( "FROM wres.TimeSeries TS" );
         this.addLine( "INNER JOIN wres.ForecastValue FV");
         this.addLine( "    ON FV.timeseries_id = TS.timeseries_id" );
@@ -73,6 +74,16 @@ class BackToBackForecastScripter extends Scripter
     String getBaseDateName()
     {
         return "TS.initialization_date";
+    }
+
+    private String getPersistenceRelatedFieldLines()
+    {
+        if ( ConfigHelper.hasPersistenceBaseline( this.getProjectDetails().getProjectConfig() ) )
+
+        {
+            return "    , EXTRACT( epoch from " + this.getBaseDateName() + " ) as basis_epoch_time";
+        }
+        return "";
     }
 
     private int getLeadOffset() throws SQLException, IOException

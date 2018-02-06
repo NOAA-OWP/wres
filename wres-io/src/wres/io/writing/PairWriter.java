@@ -8,13 +8,13 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.text.DecimalFormat;
-import java.time.temporal.TemporalAccessor;
-import java.time.temporal.TemporalAdjuster;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map.Entry;
 import java.util.StringJoiner;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,7 +27,6 @@ import wres.io.concurrency.WRESCallable;
 import wres.io.config.ConfigHelper;
 import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.NoDataException;
-import wres.util.TimeHelper;
 
 public class PairWriter extends WRESCallable<Boolean>
 {
@@ -47,10 +46,10 @@ public class PairWriter extends WRESCallable<Boolean>
     private static boolean baselineHeaderHasBeenWritten;
 
     private final DestinationConfig destinationConfig;
-    private final String date;
+    private final Instant date;
     private final Feature feature;
     private final int windowNum;
-    private final PairOfDoubleAndVectorOfDoubles pair;
+    private final Pair<Instant,PairOfDoubleAndVectorOfDoubles> pair;
     private final boolean isBaseline;
     private final int poolingStep;
     private final ProjectDetails projectDetails;
@@ -61,17 +60,17 @@ public class PairWriter extends WRESCallable<Boolean>
 
     // TODO: IMPLEMENT BUILDER
     public PairWriter( DestinationConfig destinationConfig,
-                       TemporalAdjuster date,
+                       Instant date,
                        Feature feature,
                        int windowNum,
-                       PairOfDoubleAndVectorOfDoubles pair,
+                       Pair<Instant,PairOfDoubleAndVectorOfDoubles> pair,
                        boolean isBaseline,
                        int poolingStep,
                        ProjectDetails projectDetails,
                        int lead)
     {
         this.destinationConfig = destinationConfig;
-        this.date = TimeHelper.convertDateToString(( TemporalAccessor)date);
+        this.date = date;
         this.feature = feature;
         this.windowNum = windowNum;
         this.pair = pair;
@@ -132,7 +131,14 @@ public class PairWriter extends WRESCallable<Boolean>
                 StringJoiner line = new StringJoiner( DELIMITER );
 
                 line.add( ConfigHelper.getFeatureDescription( this.getFeature() ) );
-                line.add(this.date);
+
+                // Avoid changing date format to iso format because benchmarks
+                line.add( this.date.toString()
+                                   .replace( "T", " " )
+                                   .replace( "Z", "" ) );
+
+                // But above could be as simple as this (and be more precise):
+                //line.add( this.date.toString() );
 
                 line.add(String.valueOf(this.lead));
 
@@ -171,7 +177,7 @@ public class PairWriter extends WRESCallable<Boolean>
             throw new IllegalArgumentException(
                     "No feature was specified for where pairs belong to." );
         }
-        else if ( this.getDate() == null || this.getDate().isEmpty() )
+        else if ( this.getDate() == null )
         {
             throw new IllegalArgumentException(
                     "No date was specified for when the paired data occurred." );
@@ -200,7 +206,7 @@ public class PairWriter extends WRESCallable<Boolean>
         return this.destinationConfig;
     }
 
-    private String getDate()
+    private Instant getDate()
     {
         return this.date;
     }
@@ -241,7 +247,7 @@ public class PairWriter extends WRESCallable<Boolean>
     private String getLeftValue()
     {
 
-        double leftValue = pair.getItemOne();
+        double leftValue = pair.getRight().getItemOne();
         String left;
 
         if ( Double.compare( leftValue, Double.NaN ) == 0 )
@@ -262,7 +268,7 @@ public class PairWriter extends WRESCallable<Boolean>
 
     private String getRightValues()
     {
-        double[] rightValues = pair.getItemTwo();
+        double[] rightValues = pair.getRight().getItemTwo();
         StringJoiner arrayJoiner = new StringJoiner( DELIMITER );
 
         Arrays.sort( rightValues );
