@@ -16,6 +16,8 @@ import java.util.TreeSet;
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.inputs.MetricInputException;
+import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.time.TimeSeries;
 
 /**
@@ -75,6 +77,90 @@ class SafeRegularTimeSeriesOfPairs<T>
      */
 
     static final String UNSUPPORTED_MODIFICATION = "While attempting to modify an immutable time-series.";
+
+    /**
+     * Helper method that adjusts the earliest and latest basis times of the {@link TimeWindow} associated with the 
+     * input {@link Metadata} when iterating over the atomic time-series by basis time.
+     * 
+     * @param input the input metadata
+     * @param earliestTime the earliest basis time for the new metadata
+     * @param latestTime the latest basis time for the new metadata
+     * @return the adjusted metadata
+     * @throws NullPointerException if any of the inputs are null
+     */
+
+    static Metadata getBasisTimeAdjustedMetadata( Metadata input, Instant earliestTime, Instant latestTime )
+    {
+        //Test the input only, as the others are tested on construction
+        Objects.requireNonNull( "Specify non-null input for the current metadata." );
+        Metadata returnMe = input;
+        if ( input.hasTimeWindow() )
+        {
+            TimeWindow current = input.getTimeWindow();
+            returnMe = DefaultMetadataFactory.getInstance()
+                                             .getMetadata( returnMe,
+                                                           TimeWindow.of( earliestTime,
+                                                                          latestTime,
+                                                                          current.getReferenceTime(),
+                                                                          current.getEarliestLeadTime(),
+                                                                          current.getLatestLeadTime() ) );
+        }
+        return returnMe;
+    }
+
+    /**
+     * Helper method that adjusts the earliest and latest durations of the {@link TimeWindow} associated with the input
+     * {@link Metadata} when iterating over the atomic time-series by duration.
+     * 
+     * @param input the input metadata
+     * @param earliestDuration the earliest duration for the new metadata
+     * @param latestDuration the latest duration for the new metadata
+     * @return the adjusted metadata
+     * @throws NullPointerException if any of the inputs are null
+     */
+
+    static Metadata getDurationAdjustedMetadata( Metadata input, Duration earliestDuration, Duration latestDuration )
+    {
+        //Test the input only, as the others are tested on construction
+        Objects.requireNonNull( "Specify non-null input for the current metadata." );
+        Metadata returnMe = input;
+        if ( input.hasTimeWindow() )
+        {
+            TimeWindow current = input.getTimeWindow();
+            returnMe = DefaultMetadataFactory.getInstance()
+                                             .getMetadata( returnMe,
+                                                           TimeWindow.of( current.getEarliestTime(),
+                                                                          current.getLatestTime(),
+                                                                          current.getReferenceTime(),
+                                                                          earliestDuration,
+                                                                          latestDuration ) );
+        }
+        return returnMe;
+    }
+
+    /**
+     * Helper method that adjusts the {@link TimeWindow} associated with the input metadata to the union of the 
+     * {@link TimeWindow} associated with the atomic time-series. This is necessary when filtering data.
+     * 
+     * @param input the input metadata
+     * @param atomicWindows the time windows associated with the atomic time-series
+     * @return the adjusted metadata or null if the input metadata is null
+     */
+
+    static Metadata getMetadataWithUnionOfTimeWindows( Metadata input, List<TimeWindow> atomicWindows )
+    {
+        if ( Objects.isNull( input ) )
+        {
+            return null;
+        }
+        Metadata returnMe = input;
+        if ( !atomicWindows.isEmpty() )
+        {
+            returnMe = DefaultMetadataFactory.getInstance().getMetadata( input,
+                                                                         TimeWindow.unionOf( atomicWindows ) );
+        }
+        return returnMe;
+    }
 
     /**
      * Returns an iterator over each pair.

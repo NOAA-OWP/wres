@@ -67,6 +67,19 @@ public interface MetadataFactory
     }
 
     /**
+     * Builds a {@link Metadata} from a prescribed input source and a new {@link TimeWindow}.
+     * 
+     * @param input the source metadata
+     * @param timeWindow the new time window
+     * @return a {@link Metadata} object
+     */
+
+    default Metadata getMetadata( final Metadata input, final TimeWindow timeWindow )
+    {
+        return getMetadata( input.getDimension(), input.getIdentifier(), timeWindow );
+    } 
+
+    /**
      * Returns a dataset identifier.
      * 
      * @param geospatialID an optional geospatial identifier (may be null)
