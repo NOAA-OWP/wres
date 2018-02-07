@@ -272,12 +272,12 @@ public class ProcessorHelper
             // Multivector outputs by threshold must be cached across time windows
             if ( hasMultiVectorOutputsToCache( projectConfig ) )
             {
-                cacheMe = new MetricOutputGroup[] { MetricOutputGroup.SCORE,
+                cacheMe = new MetricOutputGroup[] { MetricOutputGroup.DOUBLE_SCORE,
                                                     MetricOutputGroup.MULTIVECTOR };
             }
             else
             {
-                cacheMe = new MetricOutputGroup[] { MetricOutputGroup.SCORE };
+                cacheMe = new MetricOutputGroup[] { MetricOutputGroup.DOUBLE_SCORE };
             }
 
             MetricFactory mF = MetricFactory.getInstance( DATA_FACTORY );
@@ -442,7 +442,7 @@ public class ProcessorHelper
                                                    + "</destination>",
                                                    pce );
             }
-            catch ( IOException e )
+            catch ( IOException | MetricOutputAccessException e )
             {
                 throw new WresProcessingException( "While writing output files: ",
                                                    e );
@@ -476,9 +476,9 @@ public class ProcessorHelper
 
         try
         {
-            // Process vector charts
-            if ( processor.willCacheMetricOutput( MetricOutputGroup.SCORE )
-                 && processor.getCachedMetricOutput().hasOutput( MetricOutputGroup.SCORE ) )
+            // Process score charts
+            if ( processor.willCacheMetricOutput( MetricOutputGroup.DOUBLE_SCORE )
+                 && processor.getCachedMetricOutput().hasOutput( MetricOutputGroup.DOUBLE_SCORE ) )
             {
                 processScoreCharts( feature,
                                      projectConfigPlus,

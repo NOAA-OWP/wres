@@ -6,6 +6,8 @@ import java.util.Objects;
 import java.util.Set;
 
 import wres.datamodel.outputs.BoxPlotOutput;
+import wres.datamodel.outputs.DoubleScoreOutput;
+import wres.datamodel.outputs.DurationScoreOutput;
 import wres.datamodel.outputs.MatrixOutput;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.PairedOutput;
@@ -600,7 +602,19 @@ public enum MetricConstants
          * Metrics that produce a {@link PairedOutput}.
          */
 
-        PAIRED;
+        PAIRED,
+        
+        /**
+         * Metrics that produce a {@link DoubleScoreOutput}.
+         */
+
+        DOUBLE_SCORE,       
+        
+        /**
+         * Metrics that produce a {@link DurationScoreOutput}.
+         */
+
+        DURATION_SCORE;                 
 
         /**
          * Returns all {@link MetricConstants} associated with the current {@link MetricOutputGroup}.

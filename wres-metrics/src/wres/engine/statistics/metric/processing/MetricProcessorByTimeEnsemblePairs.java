@@ -159,7 +159,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         //Process and return the result       
         MetricFuturesByTime futureResults = futures.build();
         //Add for merge with existing futures, if required
-        addToMergeMap( timeWindow, futureResults );
+        addToMergeList( futureResults );
         return futureResults.getMetricOutput();
     }
 
@@ -385,7 +385,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         {
             if ( outGroup == MetricOutputGroup.SCORE )
             {
-                futures.addScoreOutput( Pair.of( timeWindow, threshold ),
+                futures.addDoubleScoreOutput( Pair.of( timeWindow, threshold ),
                                          processEnsembleThreshold( threshold,
                                                                    input,
                                                                    ensembleScore ) );
@@ -517,7 +517,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         {
             if ( outGroup == MetricOutputGroup.SCORE )
             {
-                futures.addScoreOutput( Pair.of( timeWindow, threshold ),
+                futures.addDoubleScoreOutput( Pair.of( timeWindow, threshold ),
                                          processDiscreteProbabilityThreshold( threshold,
                                                                               input,
                                                                               discreteProbabilityScore ) );

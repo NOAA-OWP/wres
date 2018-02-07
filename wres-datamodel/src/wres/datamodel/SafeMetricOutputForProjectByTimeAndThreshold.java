@@ -21,6 +21,7 @@ import wres.datamodel.SafeMetricOutputMultiMapByTimeAndThreshold.SafeMetricOutpu
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.DoubleScoreOutput;
+import wres.datamodel.outputs.DurationScoreOutput;
 import wres.datamodel.outputs.MatrixOutput;
 import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.MetricOutputAccessException;
@@ -30,7 +31,6 @@ import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold.MetricOutputMultiMapByTimeAndThresholdBuilder;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.PairedOutput;
-import wres.datamodel.outputs.ScoreOutput;
 
 /**
  * <p>
@@ -49,8 +49,15 @@ class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForPro
      * Thread safe map for {@link DoubleScoreOutput}.
      */
 
-    private final ConcurrentMap<Pair<TimeWindow, Threshold>, List<Future<MetricOutputMapByMetric<DoubleScoreOutput>>>> score =
+    private final ConcurrentMap<Pair<TimeWindow, Threshold>, List<Future<MetricOutputMapByMetric<DoubleScoreOutput>>>> doubleScore =
             new ConcurrentHashMap<>();
+    
+    /**
+     * Thread safe map for {@link DurationScoreOutput}.
+     */
+
+    private final ConcurrentMap<Pair<TimeWindow, Threshold>, List<Future<MetricOutputMapByMetric<DurationScoreOutput>>>> durationScore =
+            new ConcurrentHashMap<>();    
 
     /**
      * Thread safe map for {@link MultiVectorOutput}.
@@ -72,7 +79,7 @@ class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForPro
 
     private final ConcurrentMap<Pair<TimeWindow, Threshold>, List<Future<MetricOutputMapByMetric<BoxPlotOutput>>>> boxplot =
             new ConcurrentHashMap<>();
-    
+
     /**
      * Thread safe map for {@link PairedOutput}.
      */
@@ -85,8 +92,10 @@ class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForPro
     {
         switch ( outGroup )
         {
-            case SCORE:
-                return !score.isEmpty();
+            case DOUBLE_SCORE:
+                return !doubleScore.isEmpty();
+            case DURATION_SCORE:
+                return !durationScore.isEmpty();
             case MULTIVECTOR:
                 return !multiVector.isEmpty();
             case MATRIX:
@@ -114,8 +123,11 @@ class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForPro
             {
                 switch ( next )
                 {
-                    case SCORE:
+                    case DOUBLE_SCORE:
                         addToBuilder( builder, getDoubleScoreOutput() );
+                        break;
+                    case DURATION_SCORE:
+                        addToBuilder( builder, getDurationScoreOutput() );
                         break;
                     case MULTIVECTOR:
                         addToBuilder( builder, getMultiVectorOutput() );
@@ -141,9 +153,13 @@ class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForPro
     public MetricOutputGroup[] getOutputTypes()
     {
         List<MetricOutputGroup> returnMe = new ArrayList<>();
-        if ( hasOutput( MetricOutputGroup.SCORE ) )
+        if ( hasOutput( MetricOutputGroup.DOUBLE_SCORE ) )
         {
-            returnMe.add( MetricOutputGroup.SCORE );
+            returnMe.add( MetricOutputGroup.DOUBLE_SCORE );
+        }
+        if ( hasOutput( MetricOutputGroup.DURATION_SCORE ) )
+        {
+            returnMe.add( MetricOutputGroup.DURATION_SCORE );
         }
         if ( hasOutput( MetricOutputGroup.MULTIVECTOR ) )
         {
@@ -165,11 +181,19 @@ class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForPro
     }
 
     @Override
-    public MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> getDoubleScoreOutput() throws MetricOutputAccessException
+    public MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> getDoubleScoreOutput()
+            throws MetricOutputAccessException
     {
-        return unwrap( MetricOutputGroup.SCORE, score );
+        return unwrap( MetricOutputGroup.DOUBLE_SCORE, doubleScore );
     }
 
+    @Override
+    public MetricOutputMultiMapByTimeAndThreshold<DurationScoreOutput> getDurationScoreOutput()
+            throws MetricOutputAccessException
+    {
+        return unwrap( MetricOutputGroup.DURATION_SCORE, durationScore );
+    }    
+    
     @Override
     public MetricOutputMultiMapByTimeAndThreshold<MultiVectorOutput> getMultiVectorOutput()
             throws MetricOutputAccessException
@@ -188,7 +212,7 @@ class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForPro
     {
         return unwrap( MetricOutputGroup.BOXPLOT, boxplot );
     }
-    
+
     @Override
     public MetricOutputMultiMapByTimeAndThreshold<PairedOutput<Instant, Duration>> getPairedOutput()
             throws MetricOutputAccessException
@@ -205,10 +229,17 @@ class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForPro
     {
 
         /**
-         * Thread safe map for {@link ScoreOutput}.
+         * Thread safe map for {@link DoubleScoreOutput}.
          */
 
-        private final ConcurrentMap<Pair<TimeWindow, Threshold>, List<Future<MetricOutputMapByMetric<DoubleScoreOutput>>>> scoreInternal =
+        private final ConcurrentMap<Pair<TimeWindow, Threshold>, List<Future<MetricOutputMapByMetric<DoubleScoreOutput>>>> doubleScoreInternal =
+                new ConcurrentHashMap<>();
+
+        /**
+         * Thread safe map for {@link DurationScoreOutput}.
+         */
+
+        private final ConcurrentMap<Pair<TimeWindow, Threshold>, List<Future<MetricOutputMapByMetric<DurationScoreOutput>>>> durationScoreInternal =
                 new ConcurrentHashMap<>();
 
         /**
@@ -231,22 +262,37 @@ class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForPro
 
         private final ConcurrentMap<Pair<TimeWindow, Threshold>, List<Future<MetricOutputMapByMetric<BoxPlotOutput>>>> boxplotInternal =
                 new ConcurrentHashMap<>();
-        
+
         /**
          * Thread safe map for {@link PairedOutput}.
          */
 
-        private final ConcurrentMap<Pair<TimeWindow, Threshold>, List<Future<MetricOutputMapByMetric<PairedOutput<Instant,Duration>>>>> pairedInternal =
+        private final ConcurrentMap<Pair<TimeWindow, Threshold>, List<Future<MetricOutputMapByMetric<PairedOutput<Instant, Duration>>>>> pairedInternal =
                 new ConcurrentHashMap<>();
 
         @Override
-        public MetricOutputForProjectByTimeAndThresholdBuilder addScoreOutput( TimeWindow timeWindow,
-                                                                               Threshold threshold,
-                                                                               Future<MetricOutputMapByMetric<DoubleScoreOutput>> result )
+        public MetricOutputForProjectByTimeAndThresholdBuilder addDoubleScoreOutput( TimeWindow timeWindow,
+                                                                                     Threshold threshold,
+                                                                                     Future<MetricOutputMapByMetric<DoubleScoreOutput>> result )
         {
             List<Future<MetricOutputMapByMetric<DoubleScoreOutput>>> existing =
-                    scoreInternal.putIfAbsent( Pair.of( timeWindow, threshold ),
-                                                new ArrayList<>( Arrays.asList( result ) ) );
+                    doubleScoreInternal.putIfAbsent( Pair.of( timeWindow, threshold ),
+                                                     new ArrayList<>( Arrays.asList( result ) ) );
+            if ( Objects.nonNull( existing ) )
+            {
+                existing.add( result );
+            }
+            return this;
+        }
+
+        @Override
+        public MetricOutputForProjectByTimeAndThresholdBuilder addDurationScoreOutput( TimeWindow timeWindow,
+                                                                                       Threshold threshold,
+                                                                                       Future<MetricOutputMapByMetric<DurationScoreOutput>> result )
+        {
+            List<Future<MetricOutputMapByMetric<DurationScoreOutput>>> existing =
+                    durationScoreInternal.putIfAbsent( Pair.of( timeWindow, threshold ),
+                                                       new ArrayList<>( Arrays.asList( result ) ) );
             if ( Objects.nonNull( existing ) )
             {
                 existing.add( result );
@@ -313,7 +359,7 @@ class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForPro
             }
             return this;
         }
-        
+
         @Override
         public MetricOutputForProjectByTimeAndThreshold build()
         {
@@ -330,7 +376,8 @@ class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForPro
 
     private SafeMetricOutputForProjectByTimeAndThreshold( SafeMetricOutputForProjectByTimeAndThresholdBuilder builder )
     {
-        score.putAll( builder.scoreInternal );
+        doubleScore.putAll( builder.doubleScoreInternal );
+        durationScore.putAll( builder.durationScoreInternal );
         multiVector.putAll( builder.multiVectorInternal );
         matrix.putAll( builder.matrixInternal );
         boxplot.putAll( builder.boxplotInternal );

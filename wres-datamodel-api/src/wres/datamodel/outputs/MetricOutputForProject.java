@@ -8,8 +8,8 @@ import wres.datamodel.MetricConstants.MetricOutputGroup;
  * <p>
  * A high-level store of {@link MetricOutput} associated with a verification project. The outputs are stored in a
  * {@link MetricOutputMultiMap}. The {@link MetricOutputMultiMap} are further grouped by {@link MetricOutputGroup},
- * which denotes the atomic type of output stored by the container. For example, the {@link MetricOutputGroup#SCORE}
- * maps to {@link ScoreOutput}.
+ * which denotes the atomic type of output stored by the container. For example, the 
+ * {@link MetricOutputGroup#DOUBLE_SCORE} maps to {@link DoubleScoreOutput}.
  * </p>
  * <p>
  * Retrieve the outputs using the instance methods for particular {@link MetricOutputGroup}. If no outputs exist, the
