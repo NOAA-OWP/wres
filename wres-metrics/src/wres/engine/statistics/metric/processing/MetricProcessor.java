@@ -34,6 +34,7 @@ import wres.datamodel.inputs.pairs.PairedInput;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MetricOutput;
+import wres.datamodel.outputs.MetricOutputAccessException;
 import wres.datamodel.outputs.MetricOutputForProject;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.ScoreOutput;
@@ -187,9 +188,10 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
      * {@link #hasCachedMetricOutput()} returns false.
      * 
      * @return a {@link MetricOutputForProject} or null
+     * @throws MetricOutputAccessException if the cached output cannot be completed
      */
 
-    public T getCachedMetricOutput()
+    public T getCachedMetricOutput() throws MetricOutputAccessException
     {
         //Complete any end-of-pipeline processing
         completeCachedOutput();
@@ -294,9 +296,12 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
     /**
      * Completes any processing of cached output at the end of a processing pipeline. This may be required when 
      * computing results that rely on other cached results (e.g. summary statistics). 
+     * 
+     * @throws MetricOutputAccessException if the cached output cannot be completed because the cached outputs on 
+     *            which completion depends cannot be accessed
      */
     
-    abstract void completeCachedOutput();
+    abstract void completeCachedOutput() throws MetricOutputAccessException;
     
     /**
      * Returns a {@link MetricOutputForProject} for the last available results or null if

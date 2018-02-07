@@ -150,7 +150,7 @@ public class CommaSeparatedTest
                                                         Double.NEGATIVE_INFINITY,
                                                         Threshold.Operator.GREATER );
 
-        outputBuilder.addScoreOutput( mapKeyByLeadThreshold,
+        outputBuilder.addDoubleScoreOutput( mapKeyByLeadThreshold,
                                        outputMapByMetricFuture );
 
         MetricOutputForProjectByTimeAndThreshold output = outputBuilder.build();

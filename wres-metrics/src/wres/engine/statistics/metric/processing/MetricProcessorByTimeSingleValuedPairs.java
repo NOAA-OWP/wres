@@ -2,6 +2,7 @@ package wres.engine.statistics.metric.processing;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -11,6 +12,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -32,10 +34,13 @@ import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.DoubleScoreOutput;
+import wres.datamodel.outputs.DurationScoreOutput;
 import wres.datamodel.outputs.MatrixOutput;
 import wres.datamodel.outputs.MetricOutput;
+import wres.datamodel.outputs.MetricOutputAccessException;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMapByMetric;
+import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.PairedOutput;
 import wres.datamodel.outputs.ScoreOutput;
 import wres.engine.statistics.metric.Metric;
@@ -134,7 +139,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
         //Process and return the result       
         MetricFuturesByTime futureResults = futures.build();
         //Add for merge with existing futures, if required
-        addToMergeMap( timeWindow, futureResults );
+        addToMergeList( futureResults );
         return futureResults.getMetricOutput();
     }
 
@@ -222,10 +227,36 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
     }
 
     @Override
-    void completeCachedOutput()
+    void completeCachedOutput() throws MetricOutputAccessException
     {
-        //Add the summary statistics for the cached output if they do not already exist
-
+        //Add the summary statistics for the cached time-to-peak errors if these statistics do not already exist
+        if ( hasCachedMetricOutput() && getCachedMetricOutputInternal().hasOutput( MetricOutputGroup.PAIRED )
+             && !getCachedMetricOutputInternal().hasOutput( MetricOutputGroup.DURATION_SCORE )
+             && getCachedMetricOutputInternal().getPairedOutput()
+                                               .containsKey( dataFactory.getMapKey( MetricConstants.TIME_TO_PEAK_ERROR ) ) )
+        {
+            MetricOutputMapByTimeAndThreshold<PairedOutput<Instant, Duration>> output =
+                    getCachedMetricOutputInternal().getPairedOutput().get( MetricConstants.TIME_TO_PEAK_ERROR );
+            PairedOutput<Instant, Duration> union = dataFactory.unionOf( output.values() );
+            TimeWindow unionWindow = union.getMetadata().getTimeWindow();
+            Pair<TimeWindow, Threshold> key =
+                    Pair.of( unionWindow, dataFactory.getThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER ) );
+            //Build the future result
+            Supplier<MetricOutputMapByMetric<DurationScoreOutput>> supplier = () -> {
+                DurationScoreOutput result = timeToPeakErrorStats.aggregate( union );
+                List<DurationScoreOutput> in = new ArrayList<>();
+                in.add( result );
+                return dataFactory.ofMap( in );
+            };
+            Future<MetricOutputMapByMetric<DurationScoreOutput>> addMe =
+                    CompletableFuture.supplyAsync( supplier, thresholdExecutor );
+            //Add the future result to the store
+            //Metric futures 
+            MetricFuturesByTimeBuilder addFutures = new MetricFuturesByTimeBuilder();
+            addFutures.addDataFactory( dataFactory );
+            addFutures.addDurationScoreOutput( key, addMe );
+            futures.add( addFutures.build() );
+        }
     }
 
     /**
@@ -327,10 +358,10 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
         MetricCalculationException returnMe = null;
         try
         {
-            futures.addScoreOutput( Pair.of( timeWindow, threshold ),
-                                    processDichotomousThreshold( threshold,
-                                                                 input,
-                                                                 dichotomousScalar ) );
+            futures.addDoubleScoreOutput( Pair.of( timeWindow, threshold ),
+                                          processDichotomousThreshold( threshold,
+                                                                       input,
+                                                                       dichotomousScalar ) );
         }
         //Insufficient data for one threshold: log, but allow
         catch ( MetricInputSliceException e )
