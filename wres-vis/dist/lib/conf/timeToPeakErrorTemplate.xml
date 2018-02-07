@@ -54,6 +54,5 @@ at @locationName@@baselineLabelSuffix@</text>
 		</threshold>
 	</thresholdList>
 
-	<!-- Put the legend on the bottom with an appropriate title. -->
 	<legend visible="false"/>
 </chartDrawingParameters>

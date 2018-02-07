@@ -141,5 +141,5 @@ public abstract class WRESXYChartDataSource<T> extends DefaultXYChartDataSource
             }
         }
         return dataSet;
-    }
+    }    
 }

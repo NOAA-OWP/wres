@@ -25,7 +25,7 @@ import wres.datamodel.outputs.ScoreOutput;
  * @version 0.1
  * @since 0.1
  */
-public class DurationScoreOutputByBasisTimeXYChartDataSource
+public class DurationOutputByBasisTimeXYChartDataSource
         extends WRESXYChartDataSource<MetricOutputMapByTimeAndThreshold<PairedOutput<Instant, Duration>>>
 {
 
@@ -34,7 +34,7 @@ public class DurationScoreOutputByBasisTimeXYChartDataSource
      *            such as the rendering order, legend order, and so forth.
      * @param input The data for which to display a chart.
      */
-    public DurationScoreOutputByBasisTimeXYChartDataSource( final int orderIndex,
+    public DurationOutputByBasisTimeXYChartDataSource( final int orderIndex,
                                                             final MetricOutputMapByTimeAndThreshold<PairedOutput<Instant, Duration>> input )
     {
         super( orderIndex, input, input.keySetByThreshold().size() * input.keySetByLeadTimeInHours().size() );
@@ -46,9 +46,9 @@ public class DurationScoreOutputByBasisTimeXYChartDataSource
     }
 
     @Override
-    protected DurationScoreOutputByBasisTimeXYChartDataSource instantiateCopyOfDataSource()
+    protected DurationOutputByBasisTimeXYChartDataSource instantiateCopyOfDataSource()
     {
-        return new DurationScoreOutputByBasisTimeXYChartDataSource( getDataSourceOrderIndex(), getInput() );
+        return new DurationOutputByBasisTimeXYChartDataSource( getDataSourceOrderIndex(), getInput() );
     }
 
     @Override

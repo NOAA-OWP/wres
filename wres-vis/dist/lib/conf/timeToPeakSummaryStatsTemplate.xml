@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Template for generic ScalarOutput results by time window. -->
+<chartDrawingParameters>
+
+	<plotTitle>
+        <font family="Dialog" size="12" style="1"/>
+		<text>@metricName@@metricComponentNameSuffix@ for @primaryScenario@ predictions of @variableName@
+at @locationName@@baselineLabelSuffix@</text>
+	</plotTitle>
+
+	<!-- Range axis must always include zero because it is a bar plot. -->
+	<subPlot subPlotIndex="0">
+		<leftRangeAxis>
+			<numericAxis>
+				<rangeIncludesZero>true</rangeIncludesZero>
+			</numericAxis>
+		</leftRangeAxis>
+	</subPlot>
+	
+	<legend visible="false"/>
+
+</chartDrawingParameters>
