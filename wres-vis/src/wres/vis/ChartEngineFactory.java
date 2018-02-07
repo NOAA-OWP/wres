@@ -43,6 +43,7 @@ import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.DoubleScoreOutput;
+import wres.datamodel.outputs.DurationScoreOutput;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.PairedOutput;
@@ -78,7 +79,7 @@ public abstract class ChartEngineFactory
                                                                   ScoreOutput.class,
                                                                   "scalarOutputPoolingWindowTemplate.xml" ) );
     }
-    
+
     /**
      * Maintains information about the different {@link ScoreOutput} plot types, including defaults and expected
      * classes.
@@ -88,9 +89,23 @@ public abstract class ChartEngineFactory
     static
     {
         pairedInstantDurationOutputPlotTypeInfoMap.put( PlotTypeSelection.POOLING_WINDOW,
-                                         new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
-                                                                  PairedOutput.class,
-                                                                  "timeToPeakErrorTemplate.xml" ) );
+                                                        new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
+                                                                                 PairedOutput.class,
+                                                                                 "timeToPeakErrorTemplate.xml" ) );
+    }
+
+    /**
+     * Maintains information about the different {@link ScoreOutput} plot types, including defaults and expected
+     * classes.
+     */
+    private static EnumMap<PlotTypeSelection, PlotTypeInformation> categoricalDurationScorePlotTypeInfoMap =
+            new EnumMap<>( PlotTypeSelection.class );
+    static
+    {
+        categoricalDurationScorePlotTypeInfoMap.put( PlotTypeSelection.POOLING_WINDOW,
+                                                     new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
+                                                                              DurationScoreOutput.class,
+                                                                              "timeToPeakSummaryStatsTemplate.xml" ) );
     }
 
     /**
@@ -891,15 +906,64 @@ public abstract class ChartEngineFactory
         //Build the source.  Note that the POOLING_WINDOW is used below as filler.  Once we have a real plot type
         //we can update the map at the top and use the appropriate plot type here.
         XYChartDataSource source = null;
-        String templateName = pairedInstantDurationOutputPlotTypeInfoMap.get(  PlotTypeSelection.POOLING_WINDOW ).getDefaultTemplateName();
+        String templateName = pairedInstantDurationOutputPlotTypeInfoMap.get( PlotTypeSelection.POOLING_WINDOW )
+                                                                        .getDefaultTemplateName();
         if ( userSpecifiedTemplateResourceName != null )
         {
             templateName = userSpecifiedTemplateResourceName;
         }
 
         //Setup the assumed source and arguments.
-        source = new DurationScoreOutputByBasisTimeXYChartDataSource( 0, input );
+        source = new DurationOutputByBasisTimeXYChartDataSource( 0, input );
         arguments.addPoolingWindowArguments( input );
+
+        //Build the ChartEngine instance.
+        return generateChartEngine( Lists.newArrayList( source ),
+                                    arguments,
+                                    templateName,
+                                    overrideParametersStr,
+                                    null,
+                                    null );
+    }
+
+
+    /**
+     * 
+     * @param input The input for which to build the categorical plot.
+     * @param userSpecifiedTemplateResourceName User specified template resource name providing instructions for display.  
+     * If null, then the default template is used.
+     * @param overrideParametersStr XML to parse that can then override the template settings.  If null, then parameters
+     * are not overridden.
+     * @return A {@link ChartEngine} ready to be used to build a chart.
+     * @throws ChartEngineException A problem was encountered building the {@link ChartEngine}.
+     * @throws XYChartDataSourceException A problem was encountered preparing the categorical source.
+     */
+    public static ChartEngine
+            buildCategoricalDurationScoreChartEngine( MetricOutputMapByTimeAndThreshold<DurationScoreOutput> input,
+                                                      final String userSpecifiedTemplateResourceName,
+                                                      final String overrideParametersStr )
+                    throws ChartEngineException, XYChartDataSourceException
+    {
+        //Setup the default arguments.
+        final MetricOutputMetadata meta = input.getMetadata();
+        final WRESArgumentProcessor arguments = new WRESArgumentProcessor( input, null );
+
+        //Setup plot specific arguments.
+        arguments.addBaselineArguments( meta );
+        arguments.addDurationMetricArguments();
+
+        //Build the source.  Note that the POOLING_WINDOW is used below as filler.  Once we have a real plot type
+        //we can update the map at the top and use the appropriate plot type here.
+        String templateName = categoricalDurationScorePlotTypeInfoMap.get( PlotTypeSelection.POOLING_WINDOW )
+                                                                     .getDefaultTemplateName();
+        if ( userSpecifiedTemplateResourceName != null )
+        {
+            templateName = userSpecifiedTemplateResourceName;
+        }
+
+        //Setup the assumed source and arguments.
+        WRESCategoricalChartDataSource<MetricOutputMapByTimeAndThreshold<DurationScoreOutput>> source =
+                WRESCategoricalChartDataSource.of( 0, input );
 
         //Build the ChartEngine instance.
         return generateChartEngine( Lists.newArrayList( source ),

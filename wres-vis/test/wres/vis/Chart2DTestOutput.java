@@ -24,6 +24,7 @@ import wres.datamodel.Threshold;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.DoubleScoreOutput;
+import wres.datamodel.outputs.DurationScoreOutput;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.PairedOutput;
@@ -815,6 +816,47 @@ public class Chart2DTestOutput
         }
     }
 
+    /**
+     * Generates a ROC diagram by threshold.
+     */
+    @Test
+    public void test17TimeToPeakSummaryStats()
+    {
+        final String scenarioName = "test17";
+        final String outputImageFileSuffix = scenarioName + "_output.png";
+
+        try
+        {
+            FileTools.deleteFiles( new File( "testoutput/chart2DTest/" ), outputImageFileSuffix );
+        }
+        catch ( final IOException e )
+        {
+            fail( "Unexpected exception occurred trying to remove files: " + e.getMessage() );
+        }
+
+        final MetricOutputMapByTimeAndThreshold<DurationScoreOutput> input =
+                Chart2DTestDataGenerator.getTimeToPeakErrorStatistics();
+
+        try
+        {
+            //Call the factory.
+            final ChartEngine engine = ChartEngineFactory.buildCategoricalDurationScoreChartEngine( input,
+                                                                                                 null,
+                                                                                                 null );
+
+            //Generate the output file.
+            ChartTools.generateOutputImageFile( new File( "testoutput/chart2DTest/" +
+                                                          outputImageFileSuffix ),
+                                                engine.buildChart(),
+                                                800,
+                                                600 );
+        }
+        catch ( final Throwable t )
+        {
+            t.printStackTrace();
+            fail( "Unexpected exception: " + t.getMessage() );
+        }
+    }
 
     /**
      * The comparison sensitivity.
