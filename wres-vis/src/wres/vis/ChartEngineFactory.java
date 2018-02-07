@@ -2,6 +2,8 @@ package wres.vis;
 
 import java.awt.geom.Point2D;
 import java.io.File;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
@@ -43,6 +45,7 @@ import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.MultiVectorOutput;
+import wres.datamodel.outputs.PairedOutput;
 import wres.datamodel.outputs.ScoreOutput;
 
 /**
@@ -74,6 +77,20 @@ public abstract class ChartEngineFactory
                                          new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
                                                                   ScoreOutput.class,
                                                                   "scalarOutputPoolingWindowTemplate.xml" ) );
+    }
+    
+    /**
+     * Maintains information about the different {@link ScoreOutput} plot types, including defaults and expected
+     * classes.
+     */
+    private static EnumMap<PlotTypeSelection, PlotTypeInformation> pairedInstantDurationOutputPlotTypeInfoMap =
+            new EnumMap<>( PlotTypeSelection.class );
+    static
+    {
+        pairedInstantDurationOutputPlotTypeInfoMap.put( PlotTypeSelection.POOLING_WINDOW,
+                                         new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
+                                                                  PairedOutput.class,
+                                                                  "timeToPeakErrorTemplate.xml" ) );
     }
 
     /**
@@ -381,7 +398,7 @@ public abstract class ChartEngineFactory
         int[] diagonalDataSourceIndices = null;
         String axisToSquareAgainstDomain = null;
         final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> inputSlice;
-        
+
         //-----------------------------------------------------------------
         //QQ diagram for each lead time, thresholds in the legend.
         //-----------------------------------------------------------------
@@ -758,10 +775,10 @@ public abstract class ChartEngineFactory
      */
     public static ConcurrentMap<MetricConstants, ChartEngine>
             buildScoreOutputChartEngine( final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> input,
-                                          final DataFactory factory,
-                                          final PlotTypeSelection userSpecifiedPlotType,
-                                          final String userSpecifiedTemplateResourceName,
-                                          final String overrideParametersStr )
+                                         final DataFactory factory,
+                                         final PlotTypeSelection userSpecifiedPlotType,
+                                         final String userSpecifiedTemplateResourceName,
+                                         final String overrideParametersStr )
                     throws ChartEngineException
     {
         final ConcurrentMap<MetricConstants, ChartEngine> results = new ConcurrentSkipListMap<>();
@@ -772,9 +789,9 @@ public abstract class ChartEngineFactory
         for ( final Map.Entry<MetricConstants, MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>> entry : slicedInput.entrySet() )
         {
             final ChartEngine engine = buildScoreOutputChartEngine( entry.getValue(),
-                                                                            userSpecifiedPlotType,
-                                                                            userSpecifiedTemplateResourceName,
-                                                                            overrideParametersStr );
+                                                                    userSpecifiedPlotType,
+                                                                    userSpecifiedTemplateResourceName,
+                                                                    overrideParametersStr );
             results.put( entry.getKey(), engine );
         }
         return results;
@@ -796,9 +813,9 @@ public abstract class ChartEngineFactory
      */
     private static ChartEngine
             buildScoreOutputChartEngine( final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> input,
-                                                 final PlotTypeSelection userSpecifiedPlotType,
-                                                 final String userSpecifiedTemplateResourceName,
-                                                 final String overrideParametersStr )
+                                         final PlotTypeSelection userSpecifiedPlotType,
+                                         final String userSpecifiedTemplateResourceName,
+                                         final String overrideParametersStr )
                     throws ChartEngineException
     {
         //Define the used plot type.
@@ -856,6 +873,44 @@ public abstract class ChartEngineFactory
                                     null );
     }
 
+
+    public static ChartEngine
+            buildPairedInstantDurationChartEngine( MetricOutputMapByTimeAndThreshold<PairedOutput<Instant, Duration>> input,
+                                                   final String userSpecifiedTemplateResourceName,
+                                                   final String overrideParametersStr )
+                    throws ChartEngineException
+    {
+        //Setup the default arguments.
+        final MetricOutputMetadata meta = input.getMetadata();
+        final WRESArgumentProcessor arguments = new WRESArgumentProcessor( input, null );
+
+        //Setup plot specific arguments.
+        arguments.addBaselineArguments( meta );
+        arguments.addDurationMetricArguments();
+
+        //Build the source.  Note that the POOLING_WINDOW is used below as filler.  Once we have a real plot type
+        //we can update the map at the top and use the appropriate plot type here.
+        XYChartDataSource source = null;
+        String templateName = pairedInstantDurationOutputPlotTypeInfoMap.get(  PlotTypeSelection.POOLING_WINDOW ).getDefaultTemplateName();
+        if ( userSpecifiedTemplateResourceName != null )
+        {
+            templateName = userSpecifiedTemplateResourceName;
+        }
+
+        //Setup the assumed source and arguments.
+        source = new DurationScoreOutputByBasisTimeXYChartDataSource( 0, input );
+        arguments.addPoolingWindowArguments( input );
+
+        //Build the ChartEngine instance.
+        return generateChartEngine( Lists.newArrayList( source ),
+                                    arguments,
+                                    templateName,
+                                    overrideParametersStr,
+                                    null,
+                                    null );
+    }
+
+
     /**
      * @param input The pairs to plot.
      * @param userSpecifiedTemplateResourceName Name of the resource to load which provides the default template for
@@ -883,7 +938,7 @@ public abstract class ChartEngineFactory
         final SingleValuedPairsXYChartDataSource source = new SingleValuedPairsXYChartDataSource( 0, input );
 
         //Setup the arguments.
-        final WRESArgumentProcessor arguments = new WRESArgumentProcessor(input.getMetadata());
+        final WRESArgumentProcessor arguments = new WRESArgumentProcessor( input.getMetadata() );
 
         //Process override parameters.
         ChartDrawingParameters override = null;
@@ -1016,7 +1071,7 @@ public abstract class ChartEngineFactory
                 }
             }
         }
-        
+
         return new WRESChartEngine( dataSources,
                                     arguments,
                                     parameters,

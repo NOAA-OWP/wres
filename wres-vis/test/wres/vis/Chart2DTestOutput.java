@@ -4,6 +4,8 @@ import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 
@@ -24,6 +26,7 @@ import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.MultiVectorOutput;
+import wres.datamodel.outputs.PairedOutput;
 
 /**
  * Tests the construction of a 3D chart of metric outputs. The building of the charts and images is tested via the unit
@@ -52,7 +55,8 @@ public class Chart2DTestOutput
         outputImageFile.delete();
 
         //Construct some single-valued pairs
-        final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> input = Chart2DTestDataGenerator.getMetricOutputMapByLeadThresholdOne();
+        final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> input =
+                Chart2DTestDataGenerator.getMetricOutputMapByLeadThresholdOne();
 
         try
         {
@@ -88,7 +92,8 @@ public class Chart2DTestOutput
         outputImageFile.delete();
 
         //Construct some single-valued pairs
-        final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> input = Chart2DTestDataGenerator.getMetricOutputMapByLeadThresholdTwo();
+        final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> input =
+                Chart2DTestDataGenerator.getMetricOutputMapByLeadThresholdTwo();
 
         try
         {
@@ -131,7 +136,8 @@ public class Chart2DTestOutput
             fail( "Unexpected exception occurred trying to remove files: " + e.getMessage() );
         }
 
-        final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> results = Chart2DTestDataGenerator.getReliabilityDiagramByLeadThreshold();
+        final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> results =
+                Chart2DTestDataGenerator.getReliabilityDiagramByLeadThreshold();
 
 //DEBUG OUTPUT:
 //        results42.forEach((key,result)-> {
@@ -190,7 +196,8 @@ public class Chart2DTestOutput
             fail( "Unexpected exception occurred trying to remove files: " + e.getMessage() );
         }
 
-        final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> results = Chart2DTestDataGenerator.getReliabilityDiagramByLeadThreshold();
+        final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> results =
+                Chart2DTestDataGenerator.getReliabilityDiagramByLeadThreshold();
 
         try
         {
@@ -242,7 +249,8 @@ public class Chart2DTestOutput
         }
 
         //Construct some single-valued pairs
-        final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> input = Chart2DTestDataGenerator.getScoreMetricOutputMapByLeadThreshold();
+        final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> input =
+                Chart2DTestDataGenerator.getScoreMetricOutputMapByLeadThreshold();
 
         try
         {
@@ -250,11 +258,12 @@ public class Chart2DTestOutput
             final DataFactory factory = DefaultDataFactory.getInstance();
 
             //Call the factory.
-            final ConcurrentMap<MetricConstants, ChartEngine> engineMap = ChartEngineFactory.buildScoreOutputChartEngine( input,
-                                                                                                                  factory,
-                                                                                                                  PlotTypeSelection.LEAD_THRESHOLD,
-                                                                                                                  null,
-                                                                                                                  null );
+            final ConcurrentMap<MetricConstants, ChartEngine> engineMap =
+                    ChartEngineFactory.buildScoreOutputChartEngine( input,
+                                                                    factory,
+                                                                    PlotTypeSelection.LEAD_THRESHOLD,
+                                                                    null,
+                                                                    null );
             //Generate the output file.
             for ( final Object key : engineMap.keySet() )
             {
@@ -277,7 +286,7 @@ public class Chart2DTestOutput
     /**
      * Generates a ROC diagram by lead time.
      */
-    
+
     @Test
     public void test7ROCDiagramByLeadTime()
     {
@@ -293,7 +302,8 @@ public class Chart2DTestOutput
             fail( "Unexpected exception occurred trying to remove files: " + e.getMessage() );
         }
 
-        final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> results = Chart2DTestDataGenerator.getROCDiagramByLeadThreshold();
+        final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> results =
+                Chart2DTestDataGenerator.getROCDiagramByLeadThreshold();
 
         try
         {
@@ -345,7 +355,8 @@ public class Chart2DTestOutput
             fail( "Unexpected exception occurred trying to remove files: " + e.getMessage() );
         }
 
-        final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> results = Chart2DTestDataGenerator.getROCDiagramByLeadThreshold();
+        final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> results =
+                Chart2DTestDataGenerator.getROCDiagramByLeadThreshold();
 
         try
         {
@@ -397,7 +408,8 @@ public class Chart2DTestOutput
             fail( "Unexpected exception occurred trying to remove files: " + e.getMessage() );
         }
 
-        final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> results = Chart2DTestDataGenerator.getQQDiagramByLeadThreshold();
+        final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> results =
+                Chart2DTestDataGenerator.getQQDiagramByLeadThreshold();
 
         try
         {
@@ -449,7 +461,8 @@ public class Chart2DTestOutput
             fail( "Unexpected exception occurred trying to remove files: " + e.getMessage() );
         }
 
-        final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> results = Chart2DTestDataGenerator.getQQDiagramByLeadThreshold();
+        final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> results =
+                Chart2DTestDataGenerator.getQQDiagramByLeadThreshold();
 
         try
         {
@@ -500,7 +513,8 @@ public class Chart2DTestOutput
             fail( "Unexpected exception occurred trying to remove files: " + e.getMessage() );
         }
 
-        final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> results = Chart2DTestDataGenerator.getRankHistogramByLeadThreshold();
+        final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> results =
+                Chart2DTestDataGenerator.getRankHistogramByLeadThreshold();
 
         try
         {
@@ -537,7 +551,7 @@ public class Chart2DTestOutput
     /**
      * Generates a rank histogram by threshold.
      */
-    
+
     @Test
     public void test12RankHistogramByThreshold()
     {
@@ -553,7 +567,8 @@ public class Chart2DTestOutput
             fail( "Unexpected exception occurred trying to remove files: " + e.getMessage() );
         }
 
-        final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> results = Chart2DTestDataGenerator.getRankHistogramByLeadThreshold();
+        final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> results =
+                Chart2DTestDataGenerator.getRankHistogramByLeadThreshold();
 
         try
         {
@@ -595,7 +610,7 @@ public class Chart2DTestOutput
     /**
      * Generates a box plot against observed values by lead time.
      */
-    
+
     @Test
     public void test13BoxPlotObsByLeadtime()
     {
@@ -611,7 +626,8 @@ public class Chart2DTestOutput
             fail( "Unexpected exception occurred trying to remove files: " + e.getMessage() );
         }
 
-        final MetricOutputMapByTimeAndThreshold<BoxPlotOutput> results = Chart2DTestDataGenerator.getBoxPlotErrorsByObservedAndLeadThreshold();
+        final MetricOutputMapByTimeAndThreshold<BoxPlotOutput> results =
+                Chart2DTestDataGenerator.getBoxPlotErrorsByObservedAndLeadThreshold();
 
         try
         {
@@ -619,14 +635,15 @@ public class Chart2DTestOutput
 //            final DataFactory factory = DefaultDataFactory.getInstance();
 
             //Call the factory.
-            final Map<Pair<TimeWindow, Threshold>, ChartEngine> engineMap = ChartEngineFactory.buildBoxPlotChartEngine( results,
-                                                                                                                        null,
-                                                                                                                        null );
+            final Map<Pair<TimeWindow, Threshold>, ChartEngine> engineMap =
+                    ChartEngineFactory.buildBoxPlotChartEngine( results,
+                                                                null,
+                                                                null );
 
             //Generate the output file.
             for ( final Pair<TimeWindow, Threshold> key : engineMap.keySet() )
             {
-                
+
                 long lead = key.getLeft().getEarliestLeadTimeInHours();
                 Threshold thresh = key.getRight();
 
@@ -639,8 +656,9 @@ public class Chart2DTestOutput
 
                 ChartTools.generateOutputImageFile( new File( "testoutput/chart2DTest/" + lead
                                                               + "h."
-                                                              + thresholdString + "."
-                                                              +outputImageFileSuffix ),
+                                                              + thresholdString
+                                                              + "."
+                                                              + outputImageFileSuffix ),
                                                     engineMap.get( key ).buildChart(),
                                                     800,
                                                     600 );
@@ -657,7 +675,7 @@ public class Chart2DTestOutput
     /**
      * Generates a box plot against forecast values by lead time.
      */
-    
+
     @Test
     public void test14BoxPlotForecastByLeadtime()
     {
@@ -673,7 +691,8 @@ public class Chart2DTestOutput
             fail( "Unexpected exception occurred trying to remove files: " + e.getMessage() );
         }
 
-        final MetricOutputMapByTimeAndThreshold<BoxPlotOutput> results = Chart2DTestDataGenerator.getBoxPlotErrorsByForecastAndLeadThreshold();
+        final MetricOutputMapByTimeAndThreshold<BoxPlotOutput> results =
+                Chart2DTestDataGenerator.getBoxPlotErrorsByForecastAndLeadThreshold();
 
         try
         {
@@ -681,9 +700,10 @@ public class Chart2DTestOutput
 //            final DataFactory factory = DefaultDataFactory.getInstance();
 
             //Call the factory.
-            final Map<Pair<TimeWindow, Threshold>, ChartEngine> engineMap = ChartEngineFactory.buildBoxPlotChartEngine( results,
-                                                                                                   null,
-                                                                                                   null );
+            final Map<Pair<TimeWindow, Threshold>, ChartEngine> engineMap =
+                    ChartEngineFactory.buildBoxPlotChartEngine( results,
+                                                                null,
+                                                                null );
 
             //Generate the output file.
             for ( final Pair<TimeWindow, Threshold> key : engineMap.keySet() )
@@ -699,8 +719,9 @@ public class Chart2DTestOutput
 
                 ChartTools.generateOutputImageFile( new File( "testoutput/chart2DTest/" + lead
                                                               + "h."
-                                                              + thresholdString + "."
-                                                              +outputImageFileSuffix ),
+                                                              + thresholdString
+                                                              + "."
+                                                              + outputImageFileSuffix ),
                                                     engineMap.get( key ).buildChart(),
                                                     800,
                                                     600 );
@@ -718,14 +739,15 @@ public class Chart2DTestOutput
      * Generate a plot by time window on the domain axis.
      */
     @Test
-    public void test15ScalarOutput()
+    public void test15ScalarOutputForPoolingWindow()
     {
         final String scenarioName = "test15";
         final File outputImageFile = new File( "testoutput/chart2DTest/" + scenarioName + "_output.png" );
         outputImageFile.delete();
 
         //Construct some single-valued pairs
-        final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> input = Chart2DTestDataGenerator.getScalarMetricOutputMapForRollingWindows();
+        final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> input =
+                Chart2DTestDataGenerator.getScalarMetricOutputMapForRollingWindows();
 
         try
         {
@@ -749,7 +771,51 @@ public class Chart2DTestOutput
             fail( "Unexpected exception: " + t.getMessage() );
         }
     }
-        
+
+    /**
+     * Generates a ROC diagram by threshold.
+     */
+    @Test
+    public void test16TimeToPeakErrors()
+    {
+        final String scenarioName = "test16";
+        final String outputImageFileSuffix = scenarioName + "_output.png";
+
+        try
+        {
+            FileTools.deleteFiles( new File( "testoutput/chart2DTest/" ), outputImageFileSuffix );
+        }
+        catch ( final IOException e )
+        {
+            fail( "Unexpected exception occurred trying to remove files: " + e.getMessage() );
+        }
+
+        final MetricOutputMapByTimeAndThreshold<PairedOutput<Instant, Duration>> input =
+                Chart2DTestDataGenerator.getTimeToPeakErrors();
+
+        try
+        {
+
+            //Call the factory.
+            final ChartEngine engine = ChartEngineFactory.buildPairedInstantDurationChartEngine( input,
+                                                                                                 null,
+                                                                                                 null );
+
+            //Generate the output file.
+            ChartTools.generateOutputImageFile( new File( "testoutput/chart2DTest/" +
+                                                          outputImageFileSuffix ),
+                                                engine.buildChart(),
+                                                800,
+                                                600 );
+        }
+        catch ( final Throwable t )
+        {
+            t.printStackTrace();
+            fail( "Unexpected exception: " + t.getMessage() );
+        }
+    }
+
+
     /**
      * The comparison sensitivity.
      */

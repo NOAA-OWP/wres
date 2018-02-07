@@ -100,7 +100,8 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * An arguments processor intended for use in displaying metric output FOR POOLING WINDOWS, whether scalar or vector.
      * 
      * @param displayedPlotInput the plot input
-     * @param plotType the plot type
+     * @param plotType the plot type; null is allowed, which will trigger recording arguments as if this were anything but
+     *     a pooling window plot.
      */
     public WRESArgumentProcessor( MetricOutputMapByTimeAndThreshold<?> displayedPlotInput, PlotTypeSelection plotType )
     {
@@ -109,7 +110,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         MetricOutputMetadata meta = displayedPlotInput.getMetadata();
         extractStandardArgumentsFromMetadata( meta );
 
-        if ( plotType.equals( PlotTypeSelection.POOLING_WINDOW ) )
+        if ( plotType != null && plotType.equals( PlotTypeSelection.POOLING_WINDOW ) )
         {
             recordWindowingArguments( displayedPlotInput.firstKey().getLeft().getEarliestTime(),
                                       displayedPlotInput.lastKey().getLeft().getLatestTime(),
@@ -278,6 +279,11 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
 
         addArgument( "legendTitle", "Lead time [HOUR], Threshold " );
         addArgument( "legendUnitsText", "[" + meta.getInputDimension() + "]" );
+    }
+    
+    public void addDurationMetricArguments()
+    {
+        addArgument( "outputUnitsLabelSuffix", " [HOURS]" );
     }
 
     /**
