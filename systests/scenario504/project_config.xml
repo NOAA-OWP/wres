@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project name="scenario503">
+<project name="scenario504">
 
     <inputs>
         <left>
@@ -19,6 +19,9 @@
             <type>observations</type>
             <source>../smalldata/25510317T00_FAKE2_observations.xml</source>
             <variable>DISCHARGE</variable>
+            <!-- Special transformation "persistence" tells system to generate
+                 a persistence forecast from the data source that will create
+                 its pairs with identical pool parameters as the forecasts. -->
             <transformation>persistence</transformation>
         </baseline>
     </inputs>
