@@ -464,12 +464,6 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                 //
                 // See Bug #41816
 
-                if ( ConfigHelper.hasPersistenceBaseline( projectDetails.getProjectConfig() ) )
-                {
-                    long basisEpochTime = resultSet.getLong( "basis_epoch_time" );
-                    basisTime = Instant.ofEpochSecond( basisEpochTime );
-                }
-
                 // If we have a preexisting scale member and the new one is
                 // either less than the old or the new is more than one than
                 // the previous...
@@ -488,6 +482,12 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                     }
 
                     rightValues = new TreeMap<>(  );
+                }
+
+                if ( ConfigHelper.hasPersistenceBaseline( projectDetails.getProjectConfig() ) )
+                {
+                    long basisEpochTime = resultSet.getLong( "basis_epoch_time" );
+                    basisTime = Instant.ofEpochSecond( basisEpochTime );
                 }
 
                 scaleMember = resultSet.getInt( "scale_member" );
