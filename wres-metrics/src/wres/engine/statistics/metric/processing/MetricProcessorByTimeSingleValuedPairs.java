@@ -276,41 +276,21 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                                           SingleValuedPairs input,
                                           MetricFuturesByTimeBuilder futures )
     {
-
-        //Metric-specific overrides are currently unsupported
-        String unsupportedException = "Metric-specific threshold overrides are currently unsupported.";
-        //Check and obtain the global thresholds by metric group for iteration
-        if ( hasMetrics( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCORE ) )
-        {
-            //Deal with global thresholds
-            if ( hasGlobalThresholds( MetricInputGroup.DICHOTOMOUS ) )
+        //Process thresholds
+        List<Threshold> global = getThresholds( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCORE );
+        double[] sorted = getSortedClimatology( input, global );
+        Map<Threshold, MetricCalculationException> failures = new HashMap<>();
+        global.forEach( threshold -> {
+            Threshold useMe = getThreshold( threshold, sorted );
+            MetricCalculationException result =
+                    processDichotomousThreshold( timeWindow, input, futures, useMe );
+            if ( !Objects.isNull( result ) )
             {
-                List<Threshold> global = globalThresholds.get( MetricInputGroup.DICHOTOMOUS );
-                double[] sorted = getSortedClimatology( input, global );
-                Map<Threshold, MetricCalculationException> failures = new HashMap<>();
-                global.forEach( threshold -> {
-                    //Only process discrete thresholds
-                    if ( threshold.isFinite() )
-                    {
-                        Threshold useMe = getThreshold( threshold, sorted );
-                        MetricCalculationException result =
-                                processDichotomousThreshold( timeWindow, input, futures, useMe );
-                        if ( !Objects.isNull( result ) )
-                        {
-                            failures.put( useMe, result );
-                        }
-                    }
-                } );
-                //Handle any failures
-                handleThresholdFailures( failures, global.size(), input.getMetadata(), MetricInputGroup.DICHOTOMOUS );
+                failures.put( useMe, result );
             }
-            //Deal with metric-local thresholds
-            else
-            {
-                //Hook for future logic
-                throw new MetricCalculationException( unsupportedException );
-            }
-        }
+        } );
+        //Handle any failures
+        handleThresholdFailures( failures, global.size(), input.getMetadata(), MetricInputGroup.DICHOTOMOUS );
     }
 
     /**
@@ -327,17 +307,13 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                                          TimeSeriesOfSingleValuedPairs input,
                                          MetricFuturesByTimeBuilder futures )
     {
-        //Check and obtain the global thresholds by metric group for iteration
-        if ( hasMetrics( MetricInputGroup.SINGLE_VALUED_TIME_SERIES, MetricOutputGroup.PAIRED ) )
-        {
-            //Build the future result
-            Future<MetricOutputMapByMetric<PairedOutput<Instant, Duration>>> output =
-                    CompletableFuture.supplyAsync( () -> timeSeries.apply( input ), thresholdExecutor );
-            //Add the future result to the store
-            futures.addPairedOutput( Pair.of( timeWindow,
-                                              dataFactory.getThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER ) ),
-                                     output );
-        }
+        //Build the future result
+        Future<MetricOutputMapByMetric<PairedOutput<Instant, Duration>>> output =
+                CompletableFuture.supplyAsync( () -> timeSeries.apply( input ), thresholdExecutor );
+        //Add the future result to the store
+        futures.addPairedOutput( Pair.of( timeWindow,
+                                          dataFactory.getThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER ) ),
+                                 output );
     }
 
     /**
