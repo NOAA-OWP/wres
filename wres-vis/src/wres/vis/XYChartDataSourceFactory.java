@@ -35,7 +35,13 @@ import wres.datamodel.outputs.PairedOutput;
 
 public abstract class XYChartDataSourceFactory
 {
-    
+
+    /**
+     * Factory method for box-plot output for a box-plot of errors.
+     * @param orderIndex
+     * @param input
+     * @return A data source to be used to draw the plot.
+     */
     public static DefaultXYChartDataSource ofBoxPlotOutput(int orderIndex, final BoxPlotOutput input, Integer subPlotIndex)
     {
         DefaultXYChartDataSource source = new DefaultXYChartDataSource()
@@ -72,6 +78,12 @@ public abstract class XYChartDataSourceFactory
         return source;
     }
 
+    /**
+     * Factory method for single-valued pairs.
+     * @param orderIndex
+     * @param input
+     * @return A data source to be used to draw the plot.
+     */
     public static DefaultXYChartDataSource ofSingleValuedPairs(int orderIndex, final SingleValuedPairs input)
     {
         DefaultXYChartDataSource source = new DefaultXYChartDataSource()
