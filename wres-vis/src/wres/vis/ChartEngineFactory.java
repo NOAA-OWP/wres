@@ -272,9 +272,6 @@ public abstract class ChartEngineFactory
                                                 + " is invalid for a reliability diagram." );
         }
 
-
-//        dataSources.add( new MultiVectorOutputDiagramXYChartDataSource( 0,
-
         dataSources.add( XYChartDataSourceFactory.ofMultiVectorOutputDiagram( 0,
                                                                               inputSlice,
                                                                               MetricDimension.FORECAST_PROBABILITY,
@@ -283,7 +280,6 @@ public abstract class ChartEngineFactory
                                                                               MetricDimension.OBSERVED_RELATIVE_FREQUENCY.toString(),
                                                                               0,
                                                                               null ) );
-//        dataSources.add( new MultiVectorOutputDiagramXYChartDataSource( 1,
         dataSources.add( XYChartDataSourceFactory.ofMultiVectorOutputDiagram( 1,
                                                                               inputSlice,
                                                                               MetricDimension.FORECAST_PROBABILITY,
@@ -371,7 +367,6 @@ public abstract class ChartEngineFactory
                                                 + " is invalid for a ROC diagram." );
         }
 
-//        dataSources.add( new MultiVectorOutputDiagramXYChartDataSource( 0,
         dataSources.add( XYChartDataSourceFactory.ofMultiVectorOutputDiagram( 0,
                                                                               inputSlice,
                                                                               MetricDimension.PROBABILITY_OF_FALSE_DETECTION,
@@ -380,7 +375,6 @@ public abstract class ChartEngineFactory
                                                                               MetricDimension.PROBABILITY_OF_DETECTION.toString(),
                                                                               0,
                                                                               null ) );
-        //Diagonal data source added so that it shows up in the legend.
         dataSources.add( constructConnectedPointsDataSource( 1,
                                                              0,
                                                              new Point2D.Double( 0.0, 0.0 ),
@@ -459,8 +453,6 @@ public abstract class ChartEngineFactory
                                                 + " is invalid for a QQ diagram." );
         }
 
-//        final MultiVectorOutputDiagramXYChartDataSource dataSource =
-//                new MultiVectorOutputDiagramXYChartDataSource( 0,
         DefaultXYChartDataSource dataSource = XYChartDataSourceFactory.ofMultiVectorOutputDiagram( 0,
                                                                                                    inputSlice,
                                                                                                    MetricDimension.OBSERVED_QUANTILES,
@@ -470,6 +462,7 @@ public abstract class ChartEngineFactory
                                                                                                    MetricConstants.MetricDimension.PREDICTED_QUANTILES.toString() + " @variableName@@inputUnitsLabelSuffix@",
                                                                                                    0,
                                                                                                    null );
+        
         //Diagonal data source added, but it won't show up in the legend since it uses features of WRESChartEngine.
         //Also squaring the axes.
         diagonalDataSourceIndices = new int[] { 1 };
@@ -548,8 +541,6 @@ public abstract class ChartEngineFactory
                                                 + " is invalid for a rank histogram." );
         }
 
-//        final MultiVectorOutputDiagramXYChartDataSource dataSource =
-//                new MultiVectorOutputDiagramXYChartDataSource( 0,
         dataSources.add( XYChartDataSourceFactory.ofMultiVectorOutputDiagram( 0,
                                                                               inputSlice,
                                                                               MetricDimension.RANK_ORDER,
@@ -873,21 +864,18 @@ public abstract class ChartEngineFactory
         //Lead-threshold is the default.  This is for plots with the lead time on the domain axis and threshold in the legend.
         if ( usedPlotType.equals( PlotTypeSelection.LEAD_THRESHOLD ) )
         {
-//            source = new ScoreOutputByLeadAndThresholdXYChartDataSource( 0, input );
             source = XYChartDataSourceFactory.ofDoubleScoreOutputByLeadAndThreshold( 0, input );
             arguments.addLeadThresholdArguments( input, null );
         }
         //This is for plots with the threshold on the domain axis and lead time in the legend.
         else if ( usedPlotType.equals( PlotTypeSelection.THRESHOLD_LEAD ) )
         {
-//            source = new ScoreOutputByThresholdAndLeadXYChartDataSource( 0, input );
             source = XYChartDataSourceFactory.ofDoubleScoreOutputByThresholdAndLead( 0, input );
             arguments.addThresholdLeadArguments( input, null );
         }
         //This is for plots that operate with sequences of time windows (e.g. rolling windows)
         else if ( usedPlotType.equals( PlotTypeSelection.POOLING_WINDOW ) )
         {
-//            source = new ScoreOutputByPoolingWindowXYChartDataSource( 0, input );
             source = XYChartDataSourceFactory.ofDoubleScoreOutputByPoolingWindow( 0, input );
             arguments.addPoolingWindowArguments( input );
         }
@@ -933,7 +921,6 @@ public abstract class ChartEngineFactory
 
         //Setup the assumed source and arguments.
         source = XYChartDataSourceFactory.ofPairedOutputInstantDuration( 0, input );
-//        source = new DurationOutputByBasisTimeXYChartDataSource( 0, input );
         arguments.addPoolingWindowArguments( input );
 
         //Build the ChartEngine instance.
