@@ -406,11 +406,11 @@ public abstract class XYChartDataSourceFactory
             {
                 if ( populateCategories )
                 {
-                    xCategories[index] = metric.name();
+                    xCategories[index] = metric.toString();
                 }
                 else
                 {
-                    if ( !xCategories[index].equals( metric.name() ) )
+                    if ( !xCategories[index].equals( metric.toString() ) )
                     {
                         throw new IllegalArgumentException( "The named categories are not consistent across all provided input." );
                     }
