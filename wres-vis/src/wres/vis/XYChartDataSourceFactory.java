@@ -13,6 +13,8 @@ import org.jfree.data.time.FixedMillisecond;
 import org.jfree.data.time.TimeSeries;
 import org.jfree.data.time.TimeSeriesCollection;
 import org.jfree.data.xy.XYDataset;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import ohd.hseb.charter.ChartConstants;
 import ohd.hseb.charter.datasource.DefaultXYChartDataSource;
@@ -35,14 +37,18 @@ import wres.datamodel.outputs.PairedOutput;
 
 public abstract class XYChartDataSourceFactory
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger( XYChartDataSourceFactory.class );
 
     /**
      * Factory method for box-plot output for a box-plot of errors.
-     * @param orderIndex
-     * @param input
+     * @param orderIndex Order index of the data source; lower index sources are drawn on top of higher index sources.
+     * @param input The data to plot.
+     * @param subPlotIndex 0 for bottom, 1 for the one above, etc.
      * @return A data source to be used to draw the plot.
      */
-    public static DefaultXYChartDataSource ofBoxPlotOutput(int orderIndex, final BoxPlotOutput input, Integer subPlotIndex)
+    public static DefaultXYChartDataSource ofBoxPlotOutput( int orderIndex,
+                                                            final BoxPlotOutput input,
+                                                            Integer subPlotIndex )
     {
         DefaultXYChartDataSource source = new DefaultXYChartDataSource()
         {
@@ -63,28 +69,32 @@ public abstract class XYChartDataSourceFactory
 
         buildInitialParameters( source,
                                 orderIndex,
-                                input.getProbabilities().size());
+                                input.getProbabilities().size() );
 
-        source.getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultDomainAxisTitle( input.getDomainAxisDimension()
-                                                                                              .toString() + "@inputUnitsLabelSuffix@" );
-        source.getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultRangeAxisTitle( input.getRangeAxisDimension()
-                                                                                             .toString()  + "@outputUnitsLabelSuffix@" );
+        source.getDefaultFullySpecifiedDataSourceDrawingParameters()
+              .setDefaultDomainAxisTitle( input.getDomainAxisDimension()
+                                               .toString()
+                                          + "@inputUnitsLabelSuffix@" );
+        source.getDefaultFullySpecifiedDataSourceDrawingParameters()
+              .setDefaultRangeAxisTitle( input.getRangeAxisDimension()
+                                              .toString()
+                                         + "@outputUnitsLabelSuffix@" );
 
         if ( ( subPlotIndex != null ) && ( subPlotIndex >= 0 ) )
         {
             source.getDefaultFullySpecifiedDataSourceDrawingParameters().setSubPlotIndex( subPlotIndex );
         }
-        
+
         return source;
     }
 
     /**
      * Factory method for single-valued pairs.
-     * @param orderIndex
-     * @param input
+     * @param orderIndex Order index of the data source; lower index sources are drawn on top of higher index sources.
+     * @param input The data to plot.
      * @return A data source to be used to draw the plot.
      */
-    public static DefaultXYChartDataSource ofSingleValuedPairs(int orderIndex, final SingleValuedPairs input)
+    public static DefaultXYChartDataSource ofSingleValuedPairs( int orderIndex, final SingleValuedPairs input )
     {
         DefaultXYChartDataSource source = new DefaultXYChartDataSource()
         {
@@ -99,23 +109,25 @@ public abstract class XYChartDataSourceFactory
             @Override
             protected XYDataset buildXYDataset( DataSourceDrawingParameters arg0 ) throws XYChartDataSourceException
             {
-                return new SingleValuedPairsXYDataset(input);
+                return new SingleValuedPairsXYDataset( input );
             }
         };
 
         buildInitialParameters( source,
                                 orderIndex,
-                                1);
-        source.getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultDomainAxisTitle("@domainAxisLabelPrefix@@inputUnitsLabelSuffix@");
-        source.getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultRangeAxisTitle("@rangeAxisLabelPrefix@@inputUnitsLabelSuffix@");
+                                1 );
+        source.getDefaultFullySpecifiedDataSourceDrawingParameters()
+              .setDefaultDomainAxisTitle( "@domainAxisLabelPrefix@@inputUnitsLabelSuffix@" );
+        source.getDefaultFullySpecifiedDataSourceDrawingParameters()
+              .setDefaultRangeAxisTitle( "@rangeAxisLabelPrefix@@inputUnitsLabelSuffix@" );
 
         return source;
     }
-    
+
     /**
      * Factory method for paired (instant, duration) output.
-     * @param orderIndex
-     * @param input
+     * @param orderIndex Order index of the data source; lower index sources are drawn on top of higher index sources.
+     * @param input The data to plot.
      * @return A data source to be used to draw the plot.
      */
     public static DefaultXYChartDataSource
@@ -159,8 +171,10 @@ public abstract class XYChartDataSourceFactory
                                 orderIndex,
                                 input.keySetByThreshold().size() * input.keySetByLeadTimeInHours().size() );
         source.setXAxisType( ChartConstants.AXIS_IS_TIME );
-        source.getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultDomainAxisTitle( "FORECAST ISSUE DATE/TIME [UTC]" );
-        source.getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultRangeAxisTitle( "@metricShortName@@metricComponentNameSuffix@@outputUnitsLabelSuffix@" );
+        source.getDefaultFullySpecifiedDataSourceDrawingParameters()
+              .setDefaultDomainAxisTitle( "FORECAST ISSUE DATE/TIME [UTC]" );
+        source.getDefaultFullySpecifiedDataSourceDrawingParameters()
+              .setDefaultRangeAxisTitle( "@metricShortName@@metricComponentNameSuffix@@outputUnitsLabelSuffix@" );
 
         return source;
     }
@@ -168,8 +182,8 @@ public abstract class XYChartDataSourceFactory
 
     /**
      * Factory method for diagrams.  Because of the flexible nature of diagrams, a larger number of arguments is required.
-     * @param orderIndex 
-     * @param input
+     * @param orderIndex Order index of the data source; lower index sources are drawn on top of higher index sources.
+     * @param input The data to plot.
      * @param xConstant The metric defining the x-values.
      * @param yConstant The metric defining the y-values.
      * @param domainTitle Title for the domain.
@@ -233,8 +247,8 @@ public abstract class XYChartDataSourceFactory
 
     /**
      * Factory method for scalar output plotted by pooling window.
-     * @param orderIndex
-     * @param input
+     * @param orderIndex Order index of the data source; lower index sources are drawn on top of higher index sources.
+     * @param input The data to plot.
      * @return A data source to be used to draw the plot.
      */
     public static DefaultXYChartDataSource
@@ -296,8 +310,8 @@ public abstract class XYChartDataSourceFactory
 
     /**
      * Factory method for scalar output plotted against threshold with lead time in the legend.
-     * @param orderIndex
-     * @param input
+     * @param orderIndex Order index of the data source; lower index sources are drawn on top of higher index sources.
+     * @param input The data to plot.
      * @return A data source to be used to draw the plot.
      */
     public static DefaultXYChartDataSource
@@ -334,8 +348,8 @@ public abstract class XYChartDataSourceFactory
 
     /**     
      * Factory method for scalar output plotted against lead time with threshold in the legend.
-     * @param orderIndex
-     * @param input
+     * @param orderIndex Order index of the data source; lower index sources are drawn on top of higher index sources.
+     * @param input The data to plot.
      * @return A data source to be used to draw the plot.
      */
     public static DefaultXYChartDataSource
@@ -375,17 +389,15 @@ public abstract class XYChartDataSourceFactory
      * @param orderIndex The data source order index.
      * @param input The input required for this of method.
      * @return An instance of {@link WRESCategoricalChartDataSource}.
-     * @throws XYChartDataSourceException
      */
     public static CategoricalXYChartDataSource
             ofDurationScoreCategoricalOutput( int orderIndex,
-                                   MetricOutputMapByTimeAndThreshold<DurationScoreOutput> input )
-                    throws XYChartDataSourceException
+                                              MetricOutputMapByTimeAndThreshold<DurationScoreOutput> input )
     {
         String[] xCategories = null;
         List<double[]> yAxisValuesBySeries = new ArrayList<>();
         boolean populateCategories = false;
-        
+
         //Build the categories and category values to be passed into the categorical source.
         for ( Entry<Pair<TimeWindow, Threshold>, DurationScoreOutput> entry : input.entrySet() )
         {
@@ -408,12 +420,9 @@ public abstract class XYChartDataSourceFactory
                 {
                     xCategories[index] = metric.toString();
                 }
-                else
+                else if ( !xCategories[index].equals( metric.toString() ) )
                 {
-                    if ( !xCategories[index].equals( metric.toString() ) )
-                    {
-                        throw new IllegalArgumentException( "The named categories are not consistent across all provided input." );
-                    }
+                    throw new IllegalArgumentException( "The named categories are not consistent across all provided input." );
                 }
 
                 Duration durationStat = output.getValue( metric );
@@ -426,20 +435,31 @@ public abstract class XYChartDataSourceFactory
         }
 
         //Creates the source.
-        CategoricalXYChartDataSource source = new CategoricalXYChartDataSource( null,
-                                                                                orderIndex,
-                                                                                xCategories,
-                                                                                yAxisValuesBySeries )
+        CategoricalXYChartDataSource source;
+        try
         {
-            @Override
-            public CategoricalXYChartDataSource returnNewInstanceWithCopyOfInitialParameters()
-                    throws XYChartDataSourceException
+            source = new CategoricalXYChartDataSource( null,
+                                                       orderIndex,
+                                                       xCategories,
+                                                       yAxisValuesBySeries )
             {
-                CategoricalXYChartDataSource newSource = ofDurationScoreCategoricalOutput( getDataSourceOrderIndex(), input );
-                this.copyTheseParametersIntoDataSource( newSource );
-                return newSource;
-            }
-        };
+                @Override
+                public CategoricalXYChartDataSource returnNewInstanceWithCopyOfInitialParameters()
+                        throws XYChartDataSourceException
+                {
+                    CategoricalXYChartDataSource newSource =
+                            ofDurationScoreCategoricalOutput( getDataSourceOrderIndex(), input );
+                    this.copyTheseParametersIntoDataSource( newSource );
+                    return newSource;
+                }
+            };
+        }
+        catch ( XYChartDataSourceException e )
+        {
+            LOGGER.error( "Well, how the hell did that happen?  Nothing within CategoricalXYChartDataSource even throws the exception, so this should have been impossible!",
+                          e );
+            throw new IllegalStateException( "Something very bad happened: CategoricalXYChartDataSource threw an XYChartDataSourceException when it should have been impossible." );
+        }
 
         //Some appearance options specific to the input provided.
         buildInitialParameters( source, orderIndex, yAxisValuesBySeries.size() );
