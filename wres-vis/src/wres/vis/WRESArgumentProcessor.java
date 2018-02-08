@@ -165,7 +165,14 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
             final DatasetIdentifier identifier = meta.getIdentifier();
             addArgument( "locationName", identifier.getGeospatialID() );
             addArgument( "variableName", identifier.getVariableID() );
-            addArgument( "primaryScenario", identifier.getScenarioID() );
+            if (identifier.getScenarioID() == null)
+            {
+                addArgument( "primaryScenario", "" );
+            }
+            else
+            {
+                addArgument( "primaryScenario", identifier.getScenarioID() );
+            }
         }
     }
 
