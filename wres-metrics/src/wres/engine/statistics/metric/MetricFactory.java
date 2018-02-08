@@ -816,7 +816,7 @@ public class MetricFactory
         final MetricCollectionBuilder<TimeSeriesOfSingleValuedPairs, PairedOutput<Instant, Duration>, PairedOutput<Instant, Duration>> builder =
                 MetricCollectionBuilder.of();
         // Build the store if required
-        buildSingleValuedScoreStore();
+        buildSingleValuedTimeSeriesStore();
         for ( MetricConstants next : metric )
         {
             if ( !singleValuedTimeSeries.containsKey( next ) )

@@ -432,8 +432,22 @@ public class DefaultDataFactory implements DataFactory
         Objects.requireNonNull( input, "Specify a non-null map of inputs to combine." );
         final SafeMetricOutputMapByTimeAndThreshold.Builder<T> builder =
                 new SafeMetricOutputMapByTimeAndThreshold.Builder<>();
-        input.forEach( a -> a.forEach( builder::put ) );
-        builder.setOverrideMetadata( input.get( 0 ).getMetadata() );
+        //If the input contains time windows, find the union of them
+        List<TimeWindow> windows = new ArrayList<>();
+        for ( MetricOutputMapByTimeAndThreshold<T> next : input )
+        {
+            next.forEach( builder::put );
+            if ( next.getMetadata().hasTimeWindow() )
+            {
+                windows.add( next.getMetadata().getTimeWindow() );
+            }
+        }
+        MetricOutputMetadata override = input.get( 0 ).getMetadata();
+        if ( !windows.isEmpty() )
+        {
+            override = getMetadataFactory().getOutputMetadata( override, TimeWindow.unionOf( windows ) );
+        }
+        builder.setOverrideMetadata( override );
         return builder.build();
     }
 

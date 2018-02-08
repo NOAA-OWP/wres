@@ -350,13 +350,49 @@ class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implement
 
     private SafeMetricOutputMapByTimeAndThreshold( final Builder<T> builder )
     {
+        //Set then check
+        store = new TreeMap<>();
+        store.putAll( builder.store );
+        internal = new ArrayList<>( store.keySet() );
+        
+        //Set the metadata, updating the time window to find the union of the inputs, if available
+        final MetricOutputMetadata checkAgainst = builder.referenceMetadata;
+        MetricOutputMetadata builderLocalMeta;
+        if ( !Objects.isNull( builder.overrideMeta ) )
+        {
+            builderLocalMeta = builder.overrideMeta;
+            if ( !builderLocalMeta.minimumEquals( checkAgainst ) )
+            {
+                throw new MetricOutputException( "Cannot construct the map. The override metadata is "
+                                                 + "inconsistent with the metadata of the stored outputs." );
+            }
+        }
+        else
+        {
+            builderLocalMeta = checkAgainst;
+        }
+        
+        //Update the metadata with the union of the time windows
+        if( builderLocalMeta.hasTimeWindow() )
+        {
+            List<TimeWindow> windows = new ArrayList<>();
+            store.keySet().forEach( a -> windows.add( a.getLeft() ) );
+            if ( !windows.isEmpty() )
+            {
+                builderLocalMeta =
+                        DefaultMetadataFactory.getInstance().getOutputMetadata( builderLocalMeta,
+                                                                                TimeWindow.unionOf( windows ) );
+            }
+        }
+        metadata = builderLocalMeta;
+        
         //Bounds checks
-        if ( builder.store.isEmpty() )
+        if ( store.isEmpty() )
         {
             throw new MetricOutputException( "Specify one or more <key,value> mappings to build the map." );
         }
-        final MetricOutputMetadata checkAgainst = builder.referenceMetadata;
-        builder.store.forEach( ( key, value ) -> {
+        
+        store.forEach( ( key, value ) -> {
             if ( Objects.isNull( key ) )
             {
                 throw new MetricOutputException( "Cannot prescribe a null key for the input map." );
@@ -372,23 +408,7 @@ class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implement
                                                  + "inconsistent metadata." );
             }
         } );
-        //Set the metadata
-        if ( !Objects.isNull( builder.overrideMeta ) )
-        {
-            if ( !builder.overrideMeta.minimumEquals( checkAgainst ) )
-            {
-                throw new MetricOutputException( "Cannot construct the map. The override metadata is "
-                                                 + "inconsistent with the metadata of the stored outputs." );
-            }
-            metadata = builder.overrideMeta;
-        }
-        else
-        {
-            metadata = checkAgainst;
-        }
-        store = new TreeMap<>();
-        store.putAll( builder.store );
-        internal = new ArrayList<>( store.keySet() );
+
     }
 
 }
