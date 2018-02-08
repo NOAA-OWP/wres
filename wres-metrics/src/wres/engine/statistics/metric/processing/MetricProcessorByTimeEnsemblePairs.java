@@ -193,9 +193,9 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         {
             discreteProbabilityScore =
                     metricFactory.ofDiscreteProbabilityScoreCollection( metricExecutor,
-                                                                         getSelectedMetrics( metrics,
-                                                                                             MetricInputGroup.DISCRETE_PROBABILITY,
-                                                                                             MetricOutputGroup.SCORE ) );
+                                                                        getSelectedMetrics( metrics,
+                                                                                            MetricInputGroup.DISCRETE_PROBABILITY,
+                                                                                            MetricOutputGroup.SCORE ) );
         }
         else
         {
@@ -218,9 +218,9 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.SCORE ) )
         {
             ensembleScore = metricFactory.ofEnsembleScoreCollection( metricExecutor,
-                                                                       getSelectedMetrics( metrics,
-                                                                                           MetricInputGroup.ENSEMBLE,
-                                                                                           MetricOutputGroup.SCORE ) );
+                                                                     getSelectedMetrics( metrics,
+                                                                                         MetricInputGroup.ENSEMBLE,
+                                                                                         MetricOutputGroup.SCORE ) );
         }
         else
         {
@@ -286,10 +286,10 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
 
     @Override
     void completeCachedOutput()
-    {        
+    {
         //Currently, no outputs that need to be completed
-    }    
-    
+    }
+
     /**
      * Processes a set of metric futures that consume {@link EnsemblePairs}, which are mapped from the input pairs,
      * {@link EnsemblePairs}, using a configured mapping function.
@@ -335,31 +335,21 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                                             MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
                                             MetricOutputGroup outGroup )
     {
-        String unsupportedException = "Metric-specific threshold overrides are currently unsupported.";
-        //Deal with global thresholds
-        if ( hasGlobalThresholds( MetricInputGroup.ENSEMBLE ) )
-        {
-            List<Threshold> global = globalThresholds.get( MetricInputGroup.ENSEMBLE );
-            double[] sorted = getSortedClimatology( input, global );
-            Map<Threshold, MetricCalculationException> failures = new HashMap<>();
-            global.forEach( threshold -> {
-                Threshold useMe = getThreshold( threshold, sorted );
-                MetricCalculationException result =
-                        processEnsembleThreshold( timeWindow, input, futures, outGroup, useMe );
-                if ( !Objects.isNull( result ) )
-                {
-                    failures.put( useMe, result );
-                }
-            } );
-            //Handle any failures
-            handleThresholdFailures( failures, global.size(), input.getMetadata(), MetricInputGroup.ENSEMBLE );
-        }
-        //Deal with metric-local thresholds
-        else
-        {
-            //Hook for future logic
-            throw new MetricCalculationException( unsupportedException );
-        }
+        //Process thresholds
+        List<Threshold> global = getThresholds( MetricInputGroup.ENSEMBLE, outGroup );
+        double[] sorted = getSortedClimatology( input, global );
+        Map<Threshold, MetricCalculationException> failures = new HashMap<>();
+        global.forEach( threshold -> {
+            Threshold useMe = getThreshold( threshold, sorted );
+            MetricCalculationException result =
+                    processEnsembleThreshold( timeWindow, input, futures, outGroup, useMe );
+            if ( !Objects.isNull( result ) )
+            {
+                failures.put( useMe, result );
+            }
+        } );
+        //Handle any failures
+        handleThresholdFailures( failures, global.size(), input.getMetadata(), MetricInputGroup.ENSEMBLE );
     }
 
     /**
@@ -386,9 +376,9 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
             if ( outGroup == MetricOutputGroup.SCORE )
             {
                 futures.addDoubleScoreOutput( Pair.of( timeWindow, threshold ),
-                                         processEnsembleThreshold( threshold,
-                                                                   input,
-                                                                   ensembleScore ) );
+                                              processEnsembleThreshold( threshold,
+                                                                        input,
+                                                                        ensembleScore ) );
             }
             else if ( outGroup == MetricOutputGroup.MULTIVECTOR )
             {
@@ -397,8 +387,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                                                                         input,
                                                                         ensembleMultiVector ) );
             }
-            //Only process box plots for "all data" threshold
-            else if ( outGroup == MetricOutputGroup.BOXPLOT && !threshold.isFinite() )
+            else if ( outGroup == MetricOutputGroup.BOXPLOT )
             {
                 futures.addBoxPlotOutput( Pair.of( timeWindow, threshold ),
                                           processEnsembleThreshold( threshold,
@@ -459,38 +448,24 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                                                        MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
                                                        MetricOutputGroup outGroup )
     {
-        String unsupportedException = "Metric-specific threshold overrides are currently unsupported.";
-        //Deal with global thresholds
-        if ( hasGlobalThresholds( MetricInputGroup.DISCRETE_PROBABILITY ) )
-        {
-            List<Threshold> global = globalThresholds.get( MetricInputGroup.DISCRETE_PROBABILITY );
-            double[] sorted = getSortedClimatology( input, global );
-            Map<Threshold, MetricCalculationException> failures = new HashMap<>();
-            global.forEach( threshold -> {
-                //Only process discrete thresholds
-                if ( threshold.isFinite() )
-                {
-                    Threshold useMe = getThreshold( threshold, sorted );
-                    MetricCalculationException result =
-                            processDiscreteProbabilityThreshold( timeWindow, input, futures, outGroup, useMe );
-                    if ( !Objects.isNull( result ) )
-                    {
-                        failures.put( useMe, result );
-                    }
-                }
-            } );
-            //Handle any failures
-            handleThresholdFailures( failures,
-                                     global.size(),
-                                     input.getMetadata(),
-                                     MetricInputGroup.DISCRETE_PROBABILITY );
-        }
-        //Deal with metric-local thresholds
-        else
-        {
-            //Hook for future logic
-            throw new MetricCalculationException( unsupportedException );
-        }
+        //Process thresholds
+        List<Threshold> global = getThresholds( MetricInputGroup.DISCRETE_PROBABILITY, outGroup );
+        double[] sorted = getSortedClimatology( input, global );
+        Map<Threshold, MetricCalculationException> failures = new HashMap<>();
+        global.forEach( threshold -> {
+            Threshold useMe = getThreshold( threshold, sorted );
+            MetricCalculationException result =
+                    processDiscreteProbabilityThreshold( timeWindow, input, futures, outGroup, useMe );
+            if ( !Objects.isNull( result ) )
+            {
+                failures.put( useMe, result );
+            }
+        } );
+        //Handle any failures
+        handleThresholdFailures( failures,
+                                 global.size(),
+                                 input.getMetadata(),
+                                 MetricInputGroup.DISCRETE_PROBABILITY );
     }
 
     /**
@@ -518,9 +493,9 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
             if ( outGroup == MetricOutputGroup.SCORE )
             {
                 futures.addDoubleScoreOutput( Pair.of( timeWindow, threshold ),
-                                         processDiscreteProbabilityThreshold( threshold,
-                                                                              input,
-                                                                              discreteProbabilityScore ) );
+                                              processDiscreteProbabilityThreshold( threshold,
+                                                                                   input,
+                                                                                   discreteProbabilityScore ) );
             }
             else if ( outGroup == MetricOutputGroup.MULTIVECTOR )
             {

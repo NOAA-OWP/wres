@@ -544,31 +544,21 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
                                                 MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
                                                 MetricOutputGroup outGroup )
     {
-        String unsupportedException = "Metric-specific threshold overrides are currently unsupported.";
-        //Deal with global thresholds
-        if ( hasGlobalThresholds( MetricInputGroup.SINGLE_VALUED ) )
-        {
-            List<Threshold> global = globalThresholds.get( MetricInputGroup.SINGLE_VALUED );
-            double[] sorted = getSortedClimatology( input, global );
-            Map<Threshold, MetricCalculationException> failures = new HashMap<>();
-            global.forEach( threshold -> {
-                Threshold useMe = getThreshold( threshold, sorted );
-                MetricCalculationException result =
-                        processSingleValuedThreshold( timeWindow, input, futures, outGroup, useMe );
-                if ( !Objects.isNull( result ) )
-                {
-                    failures.put( useMe, result );
-                }
-            } );
-            //Handle any failures
-            handleThresholdFailures( failures, global.size(), input.getMetadata(), MetricInputGroup.SINGLE_VALUED );
-        }
-        //Deal with metric-local thresholds
-        else
-        {
-            //Hook for future logic
-            throw new MetricCalculationException( unsupportedException );
-        }
+        //Process thresholds
+        List<Threshold> global = getThresholds( MetricInputGroup.SINGLE_VALUED, outGroup );
+        double[] sorted = getSortedClimatology( input, global );
+        Map<Threshold, MetricCalculationException> failures = new HashMap<>();
+        global.forEach( threshold -> {
+            Threshold useMe = getThreshold( threshold, sorted );
+            MetricCalculationException result =
+                    processSingleValuedThreshold( timeWindow, input, futures, outGroup, useMe );
+            if ( !Objects.isNull( result ) )
+            {
+                failures.put( useMe, result );
+            }
+        } );
+        //Handle any failures
+        handleThresholdFailures( failures, global.size(), input.getMetadata(), MetricInputGroup.SINGLE_VALUED );
     }
 
     /**
