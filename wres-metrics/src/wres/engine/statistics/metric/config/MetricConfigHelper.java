@@ -237,16 +237,29 @@ public final class MetricConfigHelper
                                                      .stream()
                                                      .map( MetricConfig::getName )
                                                      .collect( Collectors.toList() );
+        List<MetricConfigName> timeSeriesConfig = config.getMetrics()
+                                                        .getTimeSeriesMetric()
+                                                        .stream()
+                                                        .map( TimeSeriesMetricConfig::getName )
+                                                        .collect( Collectors.toList() );
+
         Set<MetricConstants> metrics = new TreeSet<>();
         //All valid metrics
-        if ( metricsConfig.contains( MetricConfigName.ALL_VALID ) )
+        if ( metricsConfig.contains( MetricConfigName.ALL_VALID )
+             || timeSeriesConfig.contains( MetricConfigName.ALL_VALID ) )
         {
             metrics = getAllValidMetricsFromConfig( config );
         }
         //Explicitly configured metrics
         else
         {
+            //Ordinary metrics
             for ( MetricConfigName metric : metricsConfig )
+            {
+                metrics.add( from( metric ) );
+            }
+            //Time-series metrics
+            for ( MetricConfigName metric : timeSeriesConfig )
             {
                 metrics.add( from( metric ) );
             }
@@ -363,10 +376,21 @@ public final class MetricConfigHelper
     private static Set<MetricConstants> getMetricsForSingleValuedInput( ProjectConfig config )
     {
         Set<MetricConstants> returnMe = new TreeSet<>();
-        returnMe.addAll( MetricInputGroup.SINGLE_VALUED.getMetrics() );
-        if ( hasThresholds( config.getMetrics() ) )
+        List<MetricConfig> metrics = config.getMetrics().getMetric();
+        List<TimeSeriesMetricConfig> tsMetrics = config.getMetrics().getTimeSeriesMetric();
+        //Add ordinary metrics
+        if ( !metrics.isEmpty() )
         {
-            returnMe.addAll( MetricInputGroup.DICHOTOMOUS.getMetrics() );
+            returnMe.addAll( MetricInputGroup.SINGLE_VALUED.getMetrics() );
+            if ( hasThresholds( config.getMetrics() ) )
+            {
+                returnMe.addAll( MetricInputGroup.DICHOTOMOUS.getMetrics() );
+            }
+        }
+        //Add time-series metrics
+        if( ! tsMetrics.isEmpty() )
+        {
+            returnMe.addAll( MetricInputGroup.SINGLE_VALUED_TIME_SERIES.getMetrics() );
         }
         return returnMe;
     }    

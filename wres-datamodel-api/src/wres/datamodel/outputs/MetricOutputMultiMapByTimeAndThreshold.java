@@ -3,6 +3,7 @@ package wres.datamodel.outputs;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
@@ -101,11 +102,13 @@ public interface MetricOutputMultiMapByTimeAndThreshold<S extends MetricOutput<?
          * @param key the result key
          * @param result the result
          * @return the builder
+         * @throws NullPointerException if the key is null
          */
 
         default MetricOutputMultiMapByTimeAndThresholdBuilder<S> put( Pair<TimeWindow, Threshold> key,
                                                                    MetricOutputMapByMetric<S> result )
         {
+            Objects.requireNonNull( key, "Specify a non null key." );
             put( key.getLeft(), key.getRight(), result );
             return this;
         }

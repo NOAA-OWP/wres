@@ -25,7 +25,7 @@ import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
  * types of input.  
  * @author Hank.Herr
  *
- * @param <T>
+ * @param <T> the input data type
  */
 public abstract class WRESCategoricalChartDataSource<T> extends CategoricalXYChartDataSource
 {
@@ -82,7 +82,7 @@ public abstract class WRESCategoricalChartDataSource<T> extends CategoricalXYCha
      * @param orderIndex The data source order index.
      * @param input The input required for this of method.
      * @return An instance of {@link WRESCategoricalChartDataSource}.
-     * @throws XYChartDataSourceException
+     * @throws XYChartDataSourceException if the data source could not be created
      */
     public static WRESCategoricalChartDataSource<MetricOutputMapByTimeAndThreshold<DurationScoreOutput>>
             of( int orderIndex,

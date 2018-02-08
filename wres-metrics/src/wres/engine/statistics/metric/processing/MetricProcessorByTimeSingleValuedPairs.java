@@ -214,6 +214,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
         for ( MetricConstants next : metrics )
         {
             if ( ! ( next.isInGroup( MetricInputGroup.SINGLE_VALUED )
+                     || next.isInGroup( MetricInputGroup.SINGLE_VALUED_TIME_SERIES )
                      || next.isInGroup( MetricInputGroup.DICHOTOMOUS ) ) )
             {
                 throw new MetricConfigurationException( "Cannot configure '" + next
