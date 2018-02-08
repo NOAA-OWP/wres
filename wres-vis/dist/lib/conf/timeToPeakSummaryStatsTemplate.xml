@@ -5,7 +5,8 @@
 	<plotTitle>
         <font family="Dialog" size="12" style="1"/>
 		<text>@metricName@@metricComponentNameSuffix@ for @primaryScenario@ predictions of @variableName@
-at @locationName@@baselineLabelSuffix@</text>
+at @locationName@@baselineLabelSuffix@
+@referenceTime@ Evaluation Period: @dataPoolingWindow(yyyy-MM-dd;GMT)@</text>
 	</plotTitle>
 
 	<!-- Range axis must always include zero because it is a bar plot. -->
@@ -16,6 +17,28 @@ at @locationName@@baselineLabelSuffix@</text>
 			</numericAxis>
 		</leftRangeAxis>
 	</subPlot>
+	
+	<!-- Horizontal line at zero, black with a stroke width of two. Because 
+		there is no default, all parameters must be specified. I should change that 
+		requirement in the future, because only the location, color, and thickness 
+		matter in this case. -->
+	<thresholdList>
+		<threshold id="rangeZeroLine"
+			includeInAxisLimitsComputation="true" isZone="false" visible="true">
+			<axis>LEFT</axis>
+			<subPlot>0</subPlot>
+			<numericalStartValue>0.0</numericalStartValue>
+			<numbericalEndValue>unbounded</numbericalEndValue>
+			<label>
+				<font family="Dialog" size="12" style="0" />
+				<color alpha="255" blue="0" green="0" red="0" />
+				<text></text>
+			</label>
+			<color alpha="255" blue="128" green="128" red="128" />
+			<lineWidth>2.0</lineWidth>
+			<labelAnchor>auto</labelAnchor>
+		</threshold>
+	</thresholdList>
 	
 	<legend visible="false"/>
 

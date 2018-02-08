@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.function.Supplier;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.jfree.chart.JFreeChart;
@@ -26,8 +27,10 @@ import ohd.hseb.charter.ChartConstants;
 import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
 import ohd.hseb.charter.ChartTools;
+import ohd.hseb.charter.datasource.DefaultXYChartDataSource;
 import ohd.hseb.charter.datasource.XYChartDataSource;
 import ohd.hseb.charter.datasource.XYChartDataSourceException;
+import ohd.hseb.charter.datasource.instances.CategoricalXYChartDataSource;
 import ohd.hseb.charter.datasource.instances.DataSetXYChartDataSource;
 import ohd.hseb.charter.datasource.instances.NumericalXYChartDataSource;
 import ohd.hseb.charter.parameters.ChartDrawingParameters;
@@ -270,19 +273,25 @@ public abstract class ChartEngineFactory
         }
 
 
-        dataSources.add( new MultiVectorOutputDiagramXYChartDataSource( 0,
-                                                                        inputSlice,
-                                                                        MetricDimension.FORECAST_PROBABILITY,
-                                                                        MetricDimension.OBSERVED_RELATIVE_FREQUENCY,
-                                                                        MetricDimension.FORECAST_PROBABILITY.toString(),
-                                                                        MetricDimension.OBSERVED_RELATIVE_FREQUENCY.toString() ) );
-        dataSources.add( new MultiVectorOutputDiagramXYChartDataSource( 1,
-                                                                        inputSlice,
-                                                                        MetricDimension.FORECAST_PROBABILITY,
-                                                                        MetricDimension.SAMPLE_SIZE,
-                                                                        MetricDimension.FORECAST_PROBABILITY.toString(),
-                                                                        MetricDimension.SAMPLE_SIZE.toString(),
-                                                                        1 ) );
+//        dataSources.add( new MultiVectorOutputDiagramXYChartDataSource( 0,
+
+        dataSources.add( XYChartDataSourceFactory.ofMultiVectorOutputDiagram( 0,
+                                                                              inputSlice,
+                                                                              MetricDimension.FORECAST_PROBABILITY,
+                                                                              MetricDimension.OBSERVED_RELATIVE_FREQUENCY,
+                                                                              MetricDimension.FORECAST_PROBABILITY.toString(),
+                                                                              MetricDimension.OBSERVED_RELATIVE_FREQUENCY.toString(),
+                                                                              0,
+                                                                              null ) );
+//        dataSources.add( new MultiVectorOutputDiagramXYChartDataSource( 1,
+        dataSources.add( XYChartDataSourceFactory.ofMultiVectorOutputDiagram( 1,
+                                                                              inputSlice,
+                                                                              MetricDimension.FORECAST_PROBABILITY,
+                                                                              MetricDimension.SAMPLE_SIZE,
+                                                                              MetricDimension.FORECAST_PROBABILITY.toString(),
+                                                                              MetricDimension.SAMPLE_SIZE.toString(),
+                                                                              1,
+                                                                              null ) );
         //Diagonal data source added so that it shows up in the legend.
         dataSources.add( constructConnectedPointsDataSource( 2,
                                                              0,
@@ -362,12 +371,15 @@ public abstract class ChartEngineFactory
                                                 + " is invalid for a ROC diagram." );
         }
 
-        dataSources.add( new MultiVectorOutputDiagramXYChartDataSource( 0,
-                                                                        inputSlice,
-                                                                        MetricDimension.PROBABILITY_OF_FALSE_DETECTION,
-                                                                        MetricDimension.PROBABILITY_OF_DETECTION,
-                                                                        MetricDimension.PROBABILITY_OF_FALSE_DETECTION.toString(),
-                                                                        MetricDimension.PROBABILITY_OF_DETECTION.toString() ) );
+//        dataSources.add( new MultiVectorOutputDiagramXYChartDataSource( 0,
+        dataSources.add( XYChartDataSourceFactory.ofMultiVectorOutputDiagram( 0,
+                                                                              inputSlice,
+                                                                              MetricDimension.PROBABILITY_OF_FALSE_DETECTION,
+                                                                              MetricDimension.PROBABILITY_OF_DETECTION,
+                                                                              MetricDimension.PROBABILITY_OF_FALSE_DETECTION.toString(),
+                                                                              MetricDimension.PROBABILITY_OF_DETECTION.toString(),
+                                                                              0,
+                                                                              null ) );
         //Diagonal data source added so that it shows up in the legend.
         dataSources.add( constructConnectedPointsDataSource( 1,
                                                              0,
@@ -447,14 +459,17 @@ public abstract class ChartEngineFactory
                                                 + " is invalid for a QQ diagram." );
         }
 
-        final MultiVectorOutputDiagramXYChartDataSource dataSource =
-                new MultiVectorOutputDiagramXYChartDataSource( 0,
-                                                               inputSlice,
-                                                               MetricDimension.OBSERVED_QUANTILES,
-                                                               MetricDimension.PREDICTED_QUANTILES,
-                                                               MetricConstants.MetricDimension.OBSERVED_QUANTILES.toString()
-                                                                                                    + " @variableName@@inputUnitsLabelSuffix@",
-                                                               MetricConstants.MetricDimension.PREDICTED_QUANTILES.toString() + " @variableName@@inputUnitsLabelSuffix@" );
+//        final MultiVectorOutputDiagramXYChartDataSource dataSource =
+//                new MultiVectorOutputDiagramXYChartDataSource( 0,
+        DefaultXYChartDataSource dataSource = XYChartDataSourceFactory.ofMultiVectorOutputDiagram( 0,
+                                                                                                   inputSlice,
+                                                                                                   MetricDimension.OBSERVED_QUANTILES,
+                                                                                                   MetricDimension.PREDICTED_QUANTILES,
+                                                                                                   MetricConstants.MetricDimension.OBSERVED_QUANTILES.toString()
+                                                                                                                                        + " @variableName@@inputUnitsLabelSuffix@",
+                                                                                                   MetricConstants.MetricDimension.PREDICTED_QUANTILES.toString() + " @variableName@@inputUnitsLabelSuffix@",
+                                                                                                   0,
+                                                                                                   null );
         //Diagonal data source added, but it won't show up in the legend since it uses features of WRESChartEngine.
         //Also squaring the axes.
         diagonalDataSourceIndices = new int[] { 1 };
@@ -533,25 +548,25 @@ public abstract class ChartEngineFactory
                                                 + " is invalid for a rank histogram." );
         }
 
-        final MultiVectorOutputDiagramXYChartDataSource dataSource =
-                new MultiVectorOutputDiagramXYChartDataSource( 0,
-                                                               inputSlice,
-                                                               MetricDimension.RANK_ORDER,
-                                                               MetricDimension.OBSERVED_RELATIVE_FREQUENCY,
-                                                               "Bin Separating Ranked Eensemble Members",
-                                                               MetricDimension.OBSERVED_RELATIVE_FREQUENCY.toString() )
-                {
-                    @Override
-                    protected
-                            MultiVectorOutputDiagramXYDataset
-                            instantiateXYDataset()
-                    {
-                        return new RankHistogramXYDataset( getInput(),
-                                                           getXConstant(),
-                                                           getYConstant() );
-                    }
-                };
-        dataSources.add( dataSource );
+//        final MultiVectorOutputDiagramXYChartDataSource dataSource =
+//                new MultiVectorOutputDiagramXYChartDataSource( 0,
+        dataSources.add( XYChartDataSourceFactory.ofMultiVectorOutputDiagram( 0,
+                                                                              inputSlice,
+                                                                              MetricDimension.RANK_ORDER,
+                                                                              MetricDimension.OBSERVED_RELATIVE_FREQUENCY,
+                                                                              "Bin Separating Ranked Eensemble Members",
+                                                                              MetricDimension.OBSERVED_RELATIVE_FREQUENCY.toString(),
+                                                                              0,
+                                                                              new Supplier<XYDataset>()
+                                                                              {
+                                                                                  @Override
+                                                                                  public XYDataset get()
+                                                                                  {
+                                                                                      return new RankHistogramXYDataset( inputSlice,
+                                                                                                                         MetricDimension.RANK_ORDER,
+                                                                                                                         MetricDimension.OBSERVED_RELATIVE_FREQUENCY );
+                                                                                  }
+                                                                              } ) );
 
         //Build the ChartEngine instance.
         return generateChartEngine( dataSources,
@@ -706,7 +721,7 @@ public abstract class ChartEngineFactory
         arguments = new WRESArgumentProcessor( inputKeyInstance, boxPlotData );
 
         //Add the data source
-        dataSources.add( new BoxPlotDiagramXYChartDataSource( 0, boxPlotData ) );
+        dataSources.add( XYChartDataSourceFactory.ofBoxPlotOutput( 0, boxPlotData, null ) );
 
         //Build the ChartEngine instance.
         return generateChartEngine( dataSources,
@@ -858,19 +873,22 @@ public abstract class ChartEngineFactory
         //Lead-threshold is the default.  This is for plots with the lead time on the domain axis and threshold in the legend.
         if ( usedPlotType.equals( PlotTypeSelection.LEAD_THRESHOLD ) )
         {
-            source = new ScoreOutputByLeadAndThresholdXYChartDataSource( 0, input );
+//            source = new ScoreOutputByLeadAndThresholdXYChartDataSource( 0, input );
+            source = XYChartDataSourceFactory.ofDoubleScoreOutputByLeadAndThreshold( 0, input );
             arguments.addLeadThresholdArguments( input, null );
         }
         //This is for plots with the threshold on the domain axis and lead time in the legend.
         else if ( usedPlotType.equals( PlotTypeSelection.THRESHOLD_LEAD ) )
         {
-            source = new ScoreOutputByThresholdAndLeadXYChartDataSource( 0, input );
+//            source = new ScoreOutputByThresholdAndLeadXYChartDataSource( 0, input );
+            source = XYChartDataSourceFactory.ofDoubleScoreOutputByThresholdAndLead( 0, input );
             arguments.addThresholdLeadArguments( input, null );
         }
         //This is for plots that operate with sequences of time windows (e.g. rolling windows)
         else if ( usedPlotType.equals( PlotTypeSelection.POOLING_WINDOW ) )
         {
-            source = new ScoreOutputByPoolingWindowXYChartDataSource( 0, input );
+//            source = new ScoreOutputByPoolingWindowXYChartDataSource( 0, input );
+            source = XYChartDataSourceFactory.ofDoubleScoreOutputByPoolingWindow( 0, input );
             arguments.addPoolingWindowArguments( input );
         }
         else
@@ -914,7 +932,8 @@ public abstract class ChartEngineFactory
         }
 
         //Setup the assumed source and arguments.
-        source = new DurationOutputByBasisTimeXYChartDataSource( 0, input );
+        source = XYChartDataSourceFactory.ofPairedOutputInstantDuration( 0, input );
+//        source = new DurationOutputByBasisTimeXYChartDataSource( 0, input );
         arguments.addPoolingWindowArguments( input );
 
         //Build the ChartEngine instance.
@@ -962,8 +981,8 @@ public abstract class ChartEngineFactory
         }
 
         //Setup the assumed source and arguments.
-        WRESCategoricalChartDataSource<MetricOutputMapByTimeAndThreshold<DurationScoreOutput>> source =
-                WRESCategoricalChartDataSource.of( 0, input );
+        CategoricalXYChartDataSource source =
+                XYChartDataSourceFactory.ofDurationScoreCategoricalOutput( 0, input );
 
         //Build the ChartEngine instance.
         return generateChartEngine( Lists.newArrayList( source ),
@@ -999,7 +1018,7 @@ public abstract class ChartEngineFactory
         }
 
         //Build the source.
-        final SingleValuedPairsXYChartDataSource source = new SingleValuedPairsXYChartDataSource( 0, input );
+        final DefaultXYChartDataSource source = XYChartDataSourceFactory.ofSingleValuedPairs( 0, input );
 
         //Setup the arguments.
         final WRESArgumentProcessor arguments = new WRESArgumentProcessor( input.getMetadata() );

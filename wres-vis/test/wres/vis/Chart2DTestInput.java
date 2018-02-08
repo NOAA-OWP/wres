@@ -8,8 +8,6 @@ import java.util.Random;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 
-import com.google.common.collect.Lists;
-
 import junit.framework.TestCase;
 import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartPanelTools;
@@ -91,20 +89,9 @@ public class Chart2DTestInput extends TestCase
                                                  metFac.getDatasetIdentifier("DRRC2", "SQIN", "HEFS"));
         final SingleValuedPairs pairs = metIn.ofSingleValuedPairs(values, meta);
 
-        //Create the data source for charting.
-        final SingleValuedPairsXYChartDataSource source = new SingleValuedPairsXYChartDataSource(0, pairs);
-
         try
         {
-            //The arguments processor for example purposes.
-            final WRESArgumentProcessor arguments = new WRESArgumentProcessor(pairs.getMetadata());
-            arguments.addArgument("locationId", "AAAAA");
-
-            //Build the ChartEngine instance.
-            final ChartEngine engine = ChartTools.buildChartEngine(Lists.newArrayList(source),
-                                                                   arguments,
-                                                                   "testinput/chart2DTest/test1_template.xml",
-                                                                   null);
+            ChartEngine engine = ChartEngineFactory.buildSingleValuedPairsChartEngine( pairs, null, null );
 
             //Put chart in a frame.
             final JPanel panel = ChartPanelTools.buildPanelFromChartEngine(engine, false);
