@@ -14,18 +14,22 @@ class PersistenceForecastScripter extends Scripter
 {
     private static final String NEWLINE = System.lineSeparator();
 
+    // To call super, we need an integer
+    // I doubt that "progress" or "sequenceStep" have any meaning for the
+    // persistence forecast (other than following contract of Scripter), so
+    // use a placeholder for those values.
+    private static final int DUMMY = -9;
+
     private final Instant zeroDate;
     private final String variablePositionClause;
     private List<Instant> instantsToGetValuesFor;
 
     PersistenceForecastScripter( ProjectDetails projectDetails,
                                  DataSourceConfig dataSourceConfig,
-                                 Feature feature,
-                                 int progress,
-                                 int sequenceStep )
+                                 Feature feature )
             throws SQLException
     {
-        super( projectDetails, dataSourceConfig, feature, progress, sequenceStep );
+        super( projectDetails, dataSourceConfig, feature, DUMMY, DUMMY );
 
         String zeroDate = this.getProjectDetails().getZeroDate(
                 this.getDataSourceConfig(),
