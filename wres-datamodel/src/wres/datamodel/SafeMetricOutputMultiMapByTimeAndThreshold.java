@@ -105,6 +105,22 @@ class SafeMetricOutputMultiMapByTimeAndThreshold<S extends MetricOutput<?>>
         } );
         return b.toString();
     }
+    
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( ! ( o instanceof SafeMetricOutputMultiMapByTimeAndThreshold ) )
+        {
+            return false;
+        }
+        return ( (SafeMetricOutputMultiMapByTimeAndThreshold<?>) o ).store.equals( store );
+    }
+    
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( store );
+    }
 
     protected static class SafeMetricOutputMultiMapByTimeAndThresholdBuilder<S extends MetricOutput<?>>
             implements MetricOutputMultiMapByTimeAndThresholdBuilder<S>
@@ -160,6 +176,7 @@ class SafeMetricOutputMultiMapByTimeAndThreshold<S extends MetricOutput<?>>
             //Safe put
             final SafeMetricOutputMapByTimeAndThreshold.Builder<S> addMe =
                     new SafeMetricOutputMapByTimeAndThreshold.Builder<>();
+            result.forEach( addMe::put );
             final SafeMetricOutputMapByTimeAndThreshold.Builder<S> checkMe = internal.putIfAbsent( key, addMe );
             //Add if already exists 
             if ( !Objects.isNull( checkMe ) )
@@ -178,13 +195,17 @@ class SafeMetricOutputMultiMapByTimeAndThreshold<S extends MetricOutput<?>>
      */
     private SafeMetricOutputMultiMapByTimeAndThreshold( final SafeMetricOutputMultiMapByTimeAndThresholdBuilder<S> builder )
     {
+        //Initialize
+        store = new TreeMap<>();
+        //Build
+        builder.internal.forEach( ( key, value ) -> store.put( key, value.build() ) );
         //Bounds checks
-        if ( builder.internal.isEmpty() )
+        if ( store.isEmpty() )
         {
             throw new MetricOutputException( "Specify one or more <key,value> mappings to build the map." );
         }
         //Bounds checks
-        builder.internal.forEach( ( key, value ) -> {
+        store.forEach( ( key, value ) -> {
             if ( Objects.isNull( key ) )
             {
                 throw new MetricOutputException( "Cannot prescribe a null key for the input map." );
@@ -194,10 +215,6 @@ class SafeMetricOutputMultiMapByTimeAndThreshold<S extends MetricOutput<?>>
                 throw new MetricOutputException( "Cannot prescribe a null value for the input map." );
             }
         } );
-        //Initialize
-        store = new TreeMap<>();
-        //Build
-        builder.internal.forEach( ( key, value ) -> store.put( key, value.build() ) );
     }
 
 }

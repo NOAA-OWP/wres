@@ -108,7 +108,7 @@ public abstract class Scripter extends ScriptBuilder
                                                    DataSourceConfig dataSourceConfig,
                                                    Feature feature,
                                                    List<Instant> basisTimes )
-            throws SQLException, NoDataException
+            throws SQLException
     {
         Objects.requireNonNull( projectDetails );
         Objects.requireNonNull( dataSourceConfig );
@@ -121,15 +121,9 @@ public abstract class Scripter extends ScriptBuilder
             throw new IllegalArgumentException( "Must pass a persistence dataSourceConfig" );
         }
 
-        // I doubt that "progress" or "sequenceStep" have any meaning for the
-        // persistence forecast (other than following contract of Scripter), so
-        // use a placeholder for those values.
-        final int DUMMY_PLACE_HOLDER = -9;
         PersistenceForecastScripter s = new PersistenceForecastScripter( projectDetails,
                                                                          dataSourceConfig,
-                                                                         feature,
-                                                                         DUMMY_PLACE_HOLDER,
-                                                                         DUMMY_PLACE_HOLDER );
+                                                                         feature );
         s.setInstantsToGetValueFor( basisTimes );
         return s.formScript();
     }

@@ -3,6 +3,7 @@ package wres.datamodel;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -504,18 +505,18 @@ public interface DataFactory
      * 
      * @param <S> the left side of the paired output
      * @param <T> the right side of the paired output
-     * @param input the list of inputs
+     * @param collection the list of inputs
      * @return a combined {@link PairedOutput}
      * @throws NullPointerException if the input is null
      */
 
-    default <S,T> PairedOutput<S,T> unionOf( List<PairedOutput<S,T>> input )
+    default <S,T> PairedOutput<S,T> unionOf( Collection<PairedOutput<S,T>> collection )
     {
-        Objects.requireNonNull( input );
+        Objects.requireNonNull( collection );
         List<Pair<S,T>> combined = new ArrayList<>();
         List<TimeWindow> combinedWindows = new ArrayList<>();
         MetricOutputMetadata sourceMeta = null;
-        for( PairedOutput<S,T> next : input )
+        for( PairedOutput<S,T> next : collection )
         {
             combined.addAll( next.getData() );
             if( Objects.isNull( sourceMeta ) )

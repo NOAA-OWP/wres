@@ -15,8 +15,8 @@ import wres.datamodel.metadata.TimeWindow;
  * A high-level store of {@link MetricOutput} associated with a verification project. The outputs are stored by 
  * {@link TimeWindow} and {@link Threshold} in a {@link MetricOutputMultiMapByTimeAndThreshold}. The 
  * {@link MetricOutputMultiMapByTimeAndThreshold} are further grouped by {@link MetricOutputGroup}, which denotes the 
- * atomic type of output stored by the container. For example, the {@link MetricOutputGroup#SCORE} maps to 
- * {@link ScoreOutput}.
+ * atomic type of output stored by the container. For example, the {@link MetricOutputGroup#DOUBLE_SCORE} maps to 
+ * {@link DoubleScoreOutput}.
  * </p>
  * <p>
  * Retrieve the outputs using the instance methods for particular {@link MetricOutputGroup}. If no outputs exist, the
@@ -37,16 +37,26 @@ public interface MetricOutputForProjectByTimeAndThreshold
      * Returns a {@link MetricOutputMultiMap} of {@link DoubleScoreOutput} or null if no output exists.
      * 
      * @return the scalar output or null
-     * @throws MetricOutputAccessException if the retrieval of {@link MetricOutput} fails for any reason
+     * @throws MetricOutputAccessException if the retrieval fails for any reason
      */
 
     MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> getDoubleScoreOutput() throws MetricOutputAccessException;
 
     /**
+     * Returns a {@link MetricOutputMultiMap} of {@link DurationScoreOutput} or null if no output exists.
+     * 
+     * @return the scalar output or null
+     * @throws MetricOutputAccessException if the retrieval fails for any reason
+     */
+
+    MetricOutputMultiMapByTimeAndThreshold<DurationScoreOutput> getDurationScoreOutput()
+            throws MetricOutputAccessException;
+
+    /**
      * Returns a {@link MetricOutputMultiMap} of {@link MultiVectorOutput} or null if no output exists.
      * 
      * @return the multi-vector output or null
-     * @throws MetricOutputAccessException if the retrieval of {@link MetricOutput} fails for any reason
+     * @throws MetricOutputAccessException if the retrieval fails for any reason
      */
 
     MetricOutputMultiMapByTimeAndThreshold<MultiVectorOutput> getMultiVectorOutput()
@@ -56,7 +66,7 @@ public interface MetricOutputForProjectByTimeAndThreshold
      * Returns a {@link MetricOutputMultiMap} of {@link MatrixOutput} or null if no output exists.
      * 
      * @return the matrix output or null
-     * @throws MetricOutputAccessException if the retrieval of {@link MetricOutput} fails for any reason
+     * @throws MetricOutputAccessException if the retrieval fails for any reason
      */
 
     MetricOutputMultiMapByTimeAndThreshold<MatrixOutput> getMatrixOutput() throws MetricOutputAccessException;
@@ -65,7 +75,7 @@ public interface MetricOutputForProjectByTimeAndThreshold
      * Returns a {@link MetricOutputMultiMap} of {@link BoxPlotOutput} or null if no output exists.
      * 
      * @return the matrix output or null
-     * @throws MetricOutputAccessException if the retrieval of {@link MetricOutput} fails for any reason
+     * @throws MetricOutputAccessException if the retrieval fails for any reason
      */
 
     MetricOutputMultiMapByTimeAndThreshold<BoxPlotOutput> getBoxPlotOutput() throws MetricOutputAccessException;
@@ -74,7 +84,7 @@ public interface MetricOutputForProjectByTimeAndThreshold
      * Returns a {@link MetricOutputMultiMap} of {@link PairedOutput} or null if no output exists.
      * 
      * @return the matrix output or null
-     * @throws MetricOutputAccessException if the retrieval of {@link MetricOutput} fails for any reason
+     * @throws MetricOutputAccessException if the retrieval fails for any reason
      */
 
     MetricOutputMultiMapByTimeAndThreshold<PairedOutput<Instant, Duration>> getPairedOutput()
@@ -96,10 +106,26 @@ public interface MetricOutputForProjectByTimeAndThreshold
          * @return the builder
          */
 
-        default MetricOutputForProjectByTimeAndThresholdBuilder addScoreOutput( Pair<TimeWindow, Threshold> key,
-                                                                                Future<MetricOutputMapByMetric<DoubleScoreOutput>> result )
+        default MetricOutputForProjectByTimeAndThresholdBuilder addDoubleScoreOutput( Pair<TimeWindow, Threshold> key,
+                                                                                      Future<MetricOutputMapByMetric<DoubleScoreOutput>> result )
         {
-            addScoreOutput( key.getLeft(), key.getRight(), result );
+            addDoubleScoreOutput( key.getLeft(), key.getRight(), result );
+            return this;
+        }
+
+        /**
+         * Adds a new {@link DurationScoreOutput} for a collection of metrics to the internal store, merging with 
+         * existing items that share the same key, as required.
+         * 
+         * @param key the key
+         * @param result the result
+         * @return the builder
+         */
+
+        default MetricOutputForProjectByTimeAndThresholdBuilder addDurationScoreOutput( Pair<TimeWindow, Threshold> key,
+                                                                                        Future<MetricOutputMapByMetric<DurationScoreOutput>> result )
+        {
+            addDurationScoreOutput( key.getLeft(), key.getRight(), result );
             return this;
         }
 
@@ -178,9 +204,23 @@ public interface MetricOutputForProjectByTimeAndThreshold
          * @return the builder
          */
 
-        MetricOutputForProjectByTimeAndThresholdBuilder addScoreOutput( TimeWindow timeWindow,
-                                                                        Threshold threshold,
-                                                                        Future<MetricOutputMapByMetric<DoubleScoreOutput>> result );
+        MetricOutputForProjectByTimeAndThresholdBuilder addDoubleScoreOutput( TimeWindow timeWindow,
+                                                                              Threshold threshold,
+                                                                              Future<MetricOutputMapByMetric<DoubleScoreOutput>> result );
+
+        /**
+         * Adds a new {@link DurationScoreOutput} for a collection of metrics to the internal store, merging with 
+         * existing items that share the same key, as required.
+         * 
+         * @param timeWindow the time window
+         * @param threshold the threshold
+         * @param result the result
+         * @return the builder
+         */
+
+        MetricOutputForProjectByTimeAndThresholdBuilder addDurationScoreOutput( TimeWindow timeWindow,
+                                                                                Threshold threshold,
+                                                                                Future<MetricOutputMapByMetric<DurationScoreOutput>> result );
 
         /**
          * Adds a new {@link MultiVectorOutput} for a collection of metrics to the internal store, merging with existing 

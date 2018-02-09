@@ -949,14 +949,9 @@ public class ConfigHelper
         Objects.requireNonNull( projectConfig );
         Objects.requireNonNull( projectConfig.getInputs() );
 
-        if ( projectConfig.getInputs().getBaseline() != null
-             && ConfigHelper.isPersistence( projectConfig,
-                                            projectConfig.getInputs().getBaseline() ) )
-        {
-            return true;
-        }
-
-        return false;
+        return projectConfig.getInputs().getBaseline() != null
+               && ConfigHelper.isPersistence( projectConfig,
+                                              projectConfig.getInputs().getBaseline() );
     }
 
 
