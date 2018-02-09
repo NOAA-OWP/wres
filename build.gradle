@@ -196,7 +196,6 @@ project(':wres-io')
         compile project(':wres-datamodel-api')
         compile project(':wres-config')
 	    compile project(':wres-vis')
-        compile project(':wres-thredds-facade')
 
         compile 'org.slf4j:slf4j-api:1.7.25'
         compile group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
@@ -383,30 +382,38 @@ project(':wres-config')
     }
 }
 
+// Intentionally disconnected from the rest of WRES for now because it
+// would include a lot of cruft in our release that we're not using.
 project(':wres-thredds-facade')
 {
     dependencies
     {
-        compile project(':wres-datamodel-api')
-
         compile 'org.slf4j:slf4j-api:1.7.25'
 
-        compile('edu.ucar:cdm:4.6.8')
-        {
-            // because we are getting a later version from diff group:
-            exclude group: 'c3p0', module: 'c3p0'
+        // Server library to run THREDDS:
+        compile 'org.eclipse.jetty:jetty-server:9.4.8.v20171121'
 
-            // because these shouldn't be on compile classpath:
-            exclude group: 'ch.qos.logback', module: 'logback-classic'
-            exclude group: 'ch.qos.logback', module: 'logback-core'
+        // Servlet container library to run a web application with:
+        compile 'org.eclipse.jetty:jetty-webapp:9.4.8.v20171121'
+        // THREDDS uses Java Server Pages, additional libraries for that:
+        compile 'org.eclipse.jetty:apache-jsp:9.4.8.v20171121'
+        compile 'org.eclipse.jetty:apache-jstl:9.4.8.v20171121'
 
-            // because we probably don't need these extras and they pull a lot:
-            exclude group: 'edu.ucar', module: 'httpservices'
-            exclude group: 'com.amazonaws', module: 'aws-java-sdk-s3'
-        }
+        // THREDDS war itself:
+        runtime 'edu.ucar:tds:4.6.11'
+
+        // Just to get our own messages before THREDDS launch. This
+        // will cause duplicate slf4j bindings after THREDDS is
+        // exploded, though, so not ideal:
+        runtime 'ch.qos.logback:logback-classic:1.2.3'
 
         testCompile 'junit:junit:4.12'
     }
+
+    apply plugin: 'application'
+
+    mainClassName = 'wres.io.thredds.ThreddsFacade'
+
 }
 
 /* Single report for test coverage, thanks to
