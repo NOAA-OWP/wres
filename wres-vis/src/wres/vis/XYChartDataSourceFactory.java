@@ -35,6 +35,11 @@ import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.PairedOutput;
 
+/**
+ * Used to produce {@link XYChartDataSource} instances for use in constructing charts.  
+ * @author Hank.Herr
+ *
+ */
 public abstract class XYChartDataSourceFactory
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( XYChartDataSourceFactory.class );
@@ -304,6 +309,7 @@ public abstract class XYChartDataSourceFactory
               .setDefaultDomainAxisTitle( "TIME AT CENTER OF WINDOW [UTC]" );
         source.getDefaultFullySpecifiedDataSourceDrawingParameters()
               .setDefaultRangeAxisTitle( "@metricShortName@@metricComponentNameSuffix@@outputUnitsLabelSuffix@" );
+        source.setXAxisType( ChartConstants.AXIS_IS_TIME );
 
         return source;
     }
