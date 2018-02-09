@@ -917,7 +917,8 @@ public abstract class Chart2DTestDataGenerator
                                                                MetricConstants.TIME_TO_PEAK_ERROR,
                                                                MetricConstants.MAIN,
                                                                metaFac.getDatasetIdentifier( "DRRC2",
-                                                                                             "Streamflow" ),
+                                                                                             "Streamflow",
+                                                                                             "HEFS" ),
                                                                window );
         // Build and return
         Map<Pair<TimeWindow, Threshold>, PairedOutput<Instant, Duration>> rawData = new TreeMap<>();
@@ -966,7 +967,8 @@ public abstract class Chart2DTestDataGenerator
                                                                MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
                                                                MetricConstants.MAIN,
                                                                metaFac.getDatasetIdentifier( "DRRC2",
-                                                                                             "Streamflow" ),
+                                                                                             "Streamflow",
+                                                                                             "HEFS" ),
                                                                window );
         Map<Pair<TimeWindow, Threshold>, DurationScoreOutput> rawData = new TreeMap<>();
         rawData.put( Pair.of( window, outF.getThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER ) ),

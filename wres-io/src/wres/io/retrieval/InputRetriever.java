@@ -20,7 +20,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.DestinationConfig;
@@ -351,7 +350,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
     // TODO: REFACTOR
     private List<Pair<Instant,PairOfDoubleAndVectorOfDoubles>>
     createPairs(DataSourceConfig dataSourceConfig)
-            throws SQLException, ProjectConfigException, IOException
+            throws SQLException, IOException
     {
         List<Pair<Instant,PairOfDoubleAndVectorOfDoubles>> pairs = new ArrayList<>();
         String loadScript = getLoadScript( dataSourceConfig );
@@ -464,12 +463,6 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                 //
                 // See Bug #41816
 
-                if ( ConfigHelper.hasPersistenceBaseline( projectDetails.getProjectConfig() ) )
-                {
-                    long basisEpochTime = resultSet.getLong( "basis_epoch_time" );
-                    basisTime = Instant.ofEpochSecond( basisEpochTime );
-                }
-
                 // If we have a preexisting scale member and the new one is
                 // either less than the old or the new is more than one than
                 // the previous...
@@ -488,6 +481,12 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                     }
 
                     rightValues = new TreeMap<>(  );
+                }
+
+                if ( ConfigHelper.hasPersistenceBaseline( projectDetails.getProjectConfig() ) )
+                {
+                    long basisEpochTime = resultSet.getLong( "basis_epoch_time" );
+                    basisTime = Instant.ofEpochSecond( basisEpochTime );
                 }
 
                 scaleMember = resultSet.getInt( "scale_member" );
@@ -555,7 +554,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
     private List<Pair<Instant,PairOfDoubleAndVectorOfDoubles>>
     createPersistencePairs( DataSourceConfig dataSourceConfig,
                             List<Pair<Instant,PairOfDoubleAndVectorOfDoubles>> primaryPairs )
-            throws SQLException, IOException, ProjectConfigException
+            throws SQLException, IOException
     {
         List<Pair<Instant,PairOfDoubleAndVectorOfDoubles>> pairs = new ArrayList<>();
 
@@ -640,7 +639,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
              DataSourceConfig dataSourceConfig,
              int lead,
              Instant basisTime )
-            throws ProjectConfigException, NoDataException
+            throws NoDataException
     {
         if ( !rightValues.isEmpty() )
         {

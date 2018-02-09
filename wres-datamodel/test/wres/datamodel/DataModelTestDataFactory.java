@@ -230,7 +230,7 @@ public final class DataModelTestDataFactory
                                                      ReferenceTime.VALID_TIME,
                                                      Duration.ofHours( 1 ) );
         //Fake lead time and threshold
-        builder.addScoreOutput( factory.getMapKeyByTimeThreshold( timeWindow, 23.0, Operator.GREATER ),
+        builder.addDoubleScoreOutput( factory.getMapKeyByTimeThreshold( timeWindow, 23.0, Operator.GREATER ),
                                 CompletableFuture.completedFuture( in ) );
 
         //Return data

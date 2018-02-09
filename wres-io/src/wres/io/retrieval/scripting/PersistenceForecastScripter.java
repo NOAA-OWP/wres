@@ -1,7 +1,6 @@
 package wres.io.retrieval.scripting;
 
 import java.sql.SQLException;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
@@ -9,27 +8,28 @@ import java.util.StringJoiner;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
-import wres.io.config.ConfigHelper;
 import wres.io.data.details.ProjectDetails;
-import wres.io.utilities.NoDataException;
 
 class PersistenceForecastScripter extends Scripter
 {
     private static final String NEWLINE = System.lineSeparator();
 
+    // To call super, we need an integer
+    // I doubt that "progress" or "sequenceStep" have any meaning for the
+    // persistence forecast (other than following contract of Scripter), so
+    // use a placeholder for those values.
+    private static final int DUMMY = -9;
+
     private final Instant zeroDate;
-    private final Duration timeScaleWidth;
     private final String variablePositionClause;
     private List<Instant> instantsToGetValuesFor;
 
     PersistenceForecastScripter( ProjectDetails projectDetails,
                                  DataSourceConfig dataSourceConfig,
-                                 Feature feature,
-                                 int progress,
-                                 int sequenceStep )
-            throws SQLException, NoDataException
+                                 Feature feature )
+            throws SQLException
     {
-        super( projectDetails, dataSourceConfig, feature, progress, sequenceStep );
+        super( projectDetails, dataSourceConfig, feature, DUMMY, DUMMY );
 
         String zeroDate = this.getProjectDetails().getZeroDate(
                 this.getDataSourceConfig(),
@@ -37,9 +37,7 @@ class PersistenceForecastScripter extends Scripter
         String isoZeroDate = zeroDate.replace(" ", "T" )
                                      .replace( "'", "" )
                              + "Z";
-        Instant usualZeroDate = Instant.parse( isoZeroDate );
-        this.timeScaleWidth = ConfigHelper.getDurationFromTimeScale( projectDetails.getScale() );
-        this.zeroDate = usualZeroDate.minus( this.timeScaleWidth );
+        this.zeroDate = Instant.parse( isoZeroDate );
         this.variablePositionClause = super.getVariablePositionClause();
     }
 
@@ -61,45 +59,33 @@ class PersistenceForecastScripter extends Scripter
 
         for ( Instant basisTime : this.instantsToGetValuesFor )
         {
-            StringBuilder result = new StringBuilder();
+            String result =
+                    "(" + NEWLINE
+                    + "    SELECT "
+                    + basisTime.getEpochSecond() + " AS basis_time," + NEWLINE
+                    + "        EXTRACT( epoch from o.observation_time ) AS persistence_time,"
+                    + NEWLINE
+                    + "        o.observed_value AS observed_value" +NEWLINE
+                    + "    FROM wres.observation AS o" + NEWLINE
+                    + "    INNER JOIN wres.projectsource AS ps" + NEWLINE
+                    + "        ON ps.source_id = o.source_id" + NEWLINE
+                    + "    WHERE o.observed_value IS NOT NULL" + NEWLINE
+                    + "        AND ps.project_id = "
+                    + getProjectDetails().getId() + NEWLINE
+                    + "        AND ps.member = 'baseline'" + NEWLINE
+                    + "        AND o." + this.variablePositionClause + NEWLINE
+                    + "        AND o.observation_time >= '"
+                    + this.getZeroDate() + "'" + NEWLINE
 
-            result.append( "(" ).append( NEWLINE );
-            result.append( "    SELECT " );
-            result.append( basisTime.getEpochSecond() );
-            result.append( " AS basis_time,").append( NEWLINE );
-            result.append("        EXTRACT( epoch from o.observation_time ) AS persistence_time," )
-                  .append( NEWLINE );
-            result.append( "        o.observed_value AS observed_value" )
-                  .append( NEWLINE );
-            result.append( "    FROM wres.observation AS o" ).append( NEWLINE );
-            result.append( "    INNER JOIN wres.projectsource AS ps" )
-                  .append( NEWLINE );
-            result.append( "        ON ps.source_id = o.source_id" )
-                  .append( NEWLINE );
-            result.append( "    WHERE o.observed_value IS NOT NULL" )
-                  .append( NEWLINE );
-            result.append( "        AND ps.project_id = " );
-            result.append( getProjectDetails().getId() ).append( NEWLINE );
-            result.append( "        AND ps.member = 'baseline'" ).append( NEWLINE );
+                    // The next line is intentionally exclusive to avoid picking
+                    // t0's value.
+                    + "        AND o.observation_time < '"
+                    + basisTime.toString() + "'" + NEWLINE
+                    + "    ORDER BY o.observation_time DESC" + NEWLINE
+                    + "    LIMIT 1" + NEWLINE
+                    + ")";
 
-            result.append( "        AND o.");
-            result.append( this.variablePositionClause ).append( NEWLINE );
-            result.append( "        AND o.observation_time >= '" );
-
-            result.append( this.getZeroDate() );
-            result.append( "'" ).append( NEWLINE );
-
-            // The next line is intentionally exclusive to avoid picking t0's value.
-            result.append( "        AND o.observation_time < '" );
-
-            result.append( basisTime.toString() );
-            result.append( "'" ).append( NEWLINE );
-            result.append( "    ORDER BY o.observation_time DESC" )
-                  .append( NEWLINE );
-            result.append( "    LIMIT 1" ).append( NEWLINE );
-            result.append( ")" );
-
-            outerResult.add( result.toString() );
+            outerResult.add( result );
         }
 
         return outerResult.toString();

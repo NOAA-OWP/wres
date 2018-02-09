@@ -291,7 +291,7 @@ getMetric <- function( metric )
 	# Find metric
 	if( lower == "mean error" )
 	{
-		me
+		function( left, right) me( right, left )
 	}
 	else if( lower  == "mean absolute error" )
 	{

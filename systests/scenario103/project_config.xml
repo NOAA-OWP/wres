@@ -26,7 +26,7 @@
     <pair label="Pairs by location and lead time"> 
         <unit>CMS</unit>
         <feature locationId="LGNN5" />
-        <leadHours minimum="1" maximum="240" />
+        <leadHours minimum="1" maximum="48" />
 
         <desiredTimeScale>
             <function>avg</function>

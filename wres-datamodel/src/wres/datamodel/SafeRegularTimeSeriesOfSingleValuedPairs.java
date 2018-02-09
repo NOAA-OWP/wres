@@ -18,6 +18,7 @@ import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.inputs.pairs.builders.RegularTimeSeriesOfSingleValuedPairsBuilder;
+import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.time.TimeSeries;
 
 /**
@@ -84,6 +85,9 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
         RegularTimeSeriesOfSingleValuedPairsBuilder builder = new SafeRegularTimeSeriesOfSingleValuedPairsBuilder();
         Integer step = null;
         int sinceLast = 0;
+        //Time windows of the atomic time-series from which a union will be formed
+        List<TimeWindow> windows = new ArrayList<>();
+        List<TimeWindow> baselineWindows = new ArrayList<>();
         for ( TimeSeries<PairOfDoubles> a : durationIterator() )
         {
             sinceLast++;
@@ -99,6 +103,15 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
                     throw new UnsupportedOperationException( "The filtered view of durations attempted to build "
                                                              + "an irregular time-series, which is not supported." );
                 }
+                //Add the windows
+                if ( getMetadata().hasTimeWindow() )
+                {
+                    windows.add( next.getMetadata().getTimeWindow() );
+                }
+                if ( hasBaseline() && getMetadataForBaseline().hasTimeWindow() )
+                {
+                    baselineWindows.add( next.getMetadataForBaseline().getTimeWindow() );
+                }
                 builder.addTimeSeries( next );
                 sinceLast = 0;
             }
@@ -111,6 +124,10 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
         }
         //Set regular time-step of filtered data
         builder.setTimeStep( getRegularDuration().multipliedBy( step ) );
+        //Set the new metadata with the union of the time windows if required
+        builder.setMetadata( SafeRegularTimeSeriesOfPairs.getMetadataWithUnionOfTimeWindows( getMetadata(), windows ) );
+        builder.setMetadataForBaseline( SafeRegularTimeSeriesOfPairs.getMetadataWithUnionOfTimeWindows( getMetadataForBaseline(),
+                                                                                                        baselineWindows ) );
 
         //Build if something to build
         return builder.build();
@@ -305,14 +322,14 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
     SafeRegularTimeSeriesOfSingleValuedPairs( final SafeRegularTimeSeriesOfSingleValuedPairsBuilder b )
     {
         super( b );
-        bP =  new SafeRegularTimeSeriesOfPairs<>( getData(),
-                                                    b.timeStep,
-                                                    b.basisTimes,
-                                                    b.basisTimesBaseline,
-                                                    b.timeStepCount,
-                                                    b.timeStepCountBaseline,
-                                                    getBasisTimeIterator(),
-                                                    getDurationIterator() );
+        bP = new SafeRegularTimeSeriesOfPairs<>( getData(),
+                                                 b.timeStep,
+                                                 b.basisTimes,
+                                                 b.basisTimesBaseline,
+                                                 b.timeStepCount,
+                                                 b.timeStepCountBaseline,
+                                                 getBasisTimeIterator(),
+                                                 getDurationIterator() );
     }
 
     /**
@@ -355,14 +372,21 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
                         int start = returned * bP.getTimeStepCount();
                         builder.setTimeStep( getRegularDuration() );
                         builder.addData( nextTime, data.subList( start, start + bP.getTimeStepCount() ) );
-                        builder.setMetadata( getMetadata() );
+                        //Adjust the time window for the metadata
+                        builder.setMetadata( SafeRegularTimeSeriesOfPairs.getBasisTimeAdjustedMetadata( getMetadata(),
+                                                                                                        nextTime,
+                                                                                                        nextTime ) );
+                        //Add the baseline, if available for this time
                         if ( hasBaseline() && bP.getBasisTimesBaseline().contains( nextTime ) )
                         {
                             int startBase = bP.getBasisTimesBaseline().indexOf( nextTime ) * bP.getTimeStepCount();
                             builder.addDataForBaseline( nextTime,
                                                         baselineData.subList( startBase,
                                                                               startBase + bP.getTimeStepCount() ) );
-                            builder.setMetadataForBaseline( getMetadataForBaseline() );
+                            //Adjust the time window for the metadata
+                            builder.setMetadataForBaseline( SafeRegularTimeSeriesOfPairs.getBasisTimeAdjustedMetadata( getMetadataForBaseline(),
+                                                                                                                       nextTime,
+                                                                                                                       nextTime ) );
                         }
                         returned++;
                         return builder.build();
@@ -414,8 +438,12 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
                         }
                         SafeRegularTimeSeriesOfSingleValuedPairsBuilder builder =
                                 new SafeRegularTimeSeriesOfSingleValuedPairsBuilder();
-                        builder.setTimeStep( getRegularDuration().multipliedBy( (long) returned + 1 ) );
-                        builder.setMetadata( getMetadata() );
+                        Duration nextDuration = getRegularDuration().multipliedBy( (long) returned + 1 );
+                        builder.setTimeStep( nextDuration );
+                        //Adjust the time window for the metadata
+                        builder.setMetadata( SafeRegularTimeSeriesOfPairs.getDurationAdjustedMetadata( getMetadata(),
+                                                                                                       nextDuration,
+                                                                                                       nextDuration ) );
                         int start = 0;
                         for ( Instant next : bP.getBasisTimes() )
                         {
@@ -435,7 +463,10 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
                                 builder.addDataForBaseline( next, subset );
                                 start += bP.getTimeStepCount();
                             }
-                            builder.setMetadataForBaseline( getMetadataForBaseline() );
+                            //Adjust the time window for the metadata
+                            builder.setMetadataForBaseline( SafeRegularTimeSeriesOfPairs.getDurationAdjustedMetadata( getMetadataForBaseline(),
+                                                                                                                      nextDuration,
+                                                                                                                      nextDuration ) );
                         }
                         returned++;
                         return builder.build();

@@ -21,21 +21,28 @@ then
 	cd $test_dir
 fi
 
-if [ -f benchmarks/sorted_pairs.csv -a -f output/pairs.csv ] # if both files exist
-then 
-    echo "$echoPrefix Sorting and comparing pairs file with benchmark..."
-    # do sorting here
+# For all files with "pairs.csv" in their name (could include pairs.csv or baseline_pairs.csv), but 
+# without sorted in their names (in case an old sorted_pairs.csv is floating around), do...
+for pairsFileName in $(ls output | grep pairs\.csv | grep -v sorted); do
+    
+  if [ -f benchmarks/sorted_$pairsFileName -a -f output/$pairsFileName ] # if both files exist
+  then 
+      echo "$echoPrefix Sorting and comparing file $pairsFileName with benchmark..."
+      # do sorting here
 #echo "Ready to sort out the output/pairs.csv and compare the sorted output with benchmarks/sorted_pairs.csv"
 #    sort output/pairs.csv > output/sorted_pairs.csv
 # sort the output/pairs.csv file with options -t, use a comman as delimiter; -k1s,1 column1 as directionary order 1st;
 # -k4n,4 column 4 as numeric order 2nd; and -k2n,2 column 2 as numeric order 3rd
-    sort -t, -k1d,1 -k4n,4 -k2n,2 output/pairs.csv > output/sorted_pairs.csv
-    #diff --brief output/sorted_pairs.csv benchmarks/sorted_pairs.csv 2>&1 | tee diff_sorted_pairs.txt # output the diffs with benchmarks
-    diff --brief output/sorted_pairs.csv benchmarks/sorted_pairs.csv  | tee /dev/stderr
-elif [ ! -f output/pairs.csv ]
-then
-	echo "$echoPrefix Not comparing pairs file with benchmark: File output/pairs.csv not found."
-elif [ ! -f benchmarks/sorted_pairs.csv ]
-then
-	echo "$echoPrefix Not comparing pairs File with benchmark: benchmarks/sorted_pairs.csv not found."
-fi
+      sort -t, -k1d,1 -k4n,4 -k2n,2 output/$pairsFileName > output/sorted_$pairsFileName
+      
+      #diff --brief output/sorted_pairs.csv benchmarks/sorted_pairs.csv 2>&1 | tee diff_sorted_pairs.txt # output the diffs with benchmarks
+      diff --brief output/sorted_$pairsFileName benchmarks/sorted_$pairsFileName  | tee /dev/stderr
+  elif [ ! -f output/$pairsFileName ]
+  then
+	echo "$echoPrefix Not comparing pairs file with benchmark: File output/$pairsFileName not found."
+  elif [ ! -f benchmarks/sorted_$pairsFileName ]
+  then
+	echo "$echoPrefix Not comparing pairs File with benchmark: benchmarks/sorted_$pairsFileName not found."
+  fi
+
+done

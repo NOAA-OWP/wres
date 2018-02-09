@@ -313,7 +313,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
                 MetricFactory.getInstance( metIn )
                              .ofMetricProcessorByTimeEnsemblePairs( config,
-                                                                    MetricOutputGroup.SCORE );
+                                                                    MetricOutputGroup.DOUBLE_SCORE );
         processor.apply( MetricTestDataFactory.getEnsemblePairsOne() );
         //Obtain the results
         MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> results = processor.getCachedMetricOutput()
