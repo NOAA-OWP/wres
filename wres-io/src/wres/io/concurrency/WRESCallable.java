@@ -8,7 +8,8 @@ import java.util.concurrent.Callable;
 public abstract class WRESCallable<V> extends WRESTask implements Callable<V>
 {
     @Override
-    public final V call () throws Exception {
+    public final V call () throws Exception
+    {
         this.executeOnRun();
         V result = this.execute();
         this.executeOnComplete();

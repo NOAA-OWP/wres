@@ -599,7 +599,7 @@ public final class PIXMLReader extends XMLReader
 						}
 					}
 					
-					timeStep = TimeHelper.unitsToLeadUnits( unit, multiplier).intValue();
+					timeStep = TimeHelper.unitsToLeadUnits( unit, multiplier);
 				}
 				else if (localName.equalsIgnoreCase("parameterId"))
 				{
@@ -996,7 +996,7 @@ public final class PIXMLReader extends XMLReader
 	/**
 	 * Indicates the amount of time in hours between measurements
 	 */
-	private Integer timeStep = null;
+	private Long timeStep = null;
 	
 	/**
 	 * The current state of a script that will be sent to the database

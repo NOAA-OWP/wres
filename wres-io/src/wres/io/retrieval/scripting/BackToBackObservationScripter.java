@@ -92,7 +92,7 @@ class BackToBackObservationScripter extends Scripter
         return this.zeroDate;
     }
 
-    private Integer getWindowPeriod()
+    private Long getWindowPeriod()
             throws InvalidPropertiesFormatException, NoDataException
     {
         if (this.windowPeriod == null)
@@ -100,7 +100,7 @@ class BackToBackObservationScripter extends Scripter
             this.windowPeriod = TimeHelper.unitsToLeadUnits(
                     this.getProjectDetails().getLeadUnit(),
                     this.getProjectDetails().getLeadPeriod()
-            ).intValue();
+            );
         }
         return this.windowPeriod;
     }
@@ -118,5 +118,5 @@ class BackToBackObservationScripter extends Scripter
     }
 
     private String zeroDate;
-    private Integer windowPeriod;
+    private Long windowPeriod;
 }

@@ -1,6 +1,7 @@
 package wres.engine.statistics.metric.config;
 
 import java.util.EnumMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -15,7 +16,9 @@ import wres.config.generated.MetricsConfig;
 import wres.config.generated.PoolingWindowConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Outputs;
+import wres.config.generated.SummaryStatisticsName;
 import wres.config.generated.ThresholdOperator;
+import wres.config.generated.TimeSeriesMetricConfig;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
@@ -37,6 +40,13 @@ public final class MetricConfigHelper
      */
 
     private static final EnumMap<MetricConfigName, MetricConstants> NAME_MAP = new EnumMap<>( MetricConfigName.class );
+    
+    /**
+     * Map between summary statistic names
+     */
+
+    private static final EnumMap<SummaryStatisticsName, MetricConstants> STATISTICS_NAME_MAP =
+            new EnumMap<>( SummaryStatisticsName.class );
 
     /**
      * Returns the {@link MetricConstants} that corresponds to the {@link MetricConfigName} or null if the input is
@@ -66,6 +76,35 @@ public final class MetricConfigHelper
         }
         return NAME_MAP.get( configName );
     }
+    
+    /**
+     * Returns the {@link MetricConstants} that corresponds to the {@link SummaryStatisticsName} or null if the input is
+     * {@link SummaryStatisticsName#ALL_VALID}. Throws an exception if no such mapping is available. 
+     * 
+     * @param statsName the name in the {@link SummaryStatisticsName}
+     * @return the corresponding name in the {@link MetricConstants}
+     * @throws MetricConfigurationException if the statsName is not mapped or the input is null
+     */
+
+    public static MetricConstants from( SummaryStatisticsName statsName ) throws MetricConfigurationException
+    {
+        if ( Objects.isNull( statsName ) )
+        {
+            throw new MetricConfigurationException( "Unable to map a null input identifier to a named statistic." );
+        }
+        buildStatisticsMap();
+        //All valid metrics
+        if ( statsName.equals( SummaryStatisticsName.ALL_VALID ) )
+        {
+            return null;
+        }
+        if ( !STATISTICS_NAME_MAP.containsKey( statsName ) )
+        {
+            throw new MetricConfigurationException( " Unable to find a summary statistic with a configured identifier "
+                                                    + "of '" + statsName + "'." );
+        }
+        return STATISTICS_NAME_MAP.get( statsName );
+    }    
 
     /**
      * Maps between threshold operators in {@link ThresholdOperator} and those in {@link Operator}.
@@ -241,6 +280,59 @@ public final class MetricConfigHelper
         }
         return false;
     }
+    
+    /**
+     * Returns true if the specified project configuration contains a metric of the specified type for which summary
+     * statistics are defined, false otherwise.
+     * 
+     * @param config the project configuration
+     * @param metric the metric to check
+     * @return true if the configuration contains the specified type of metric, false otherwise
+     */
+    
+    public static boolean hasSummaryStatisticsFor( ProjectConfig config, MetricConfigName metric )
+    {
+        Objects.requireNonNull( config, "Specify a non-null project configuration to check for summary statistics" );
+        Objects.requireNonNull( metric, "Specify a non null metric name to check for summary statistics.");
+        List<TimeSeriesMetricConfig> tsMetrics = config.getMetrics().getTimeSeriesMetric();
+        for( TimeSeriesMetricConfig next : tsMetrics )
+        {
+            if( next.getName() == metric && Objects.nonNull( next.getSummaryStatistics() ) )
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    /**
+     * Returns a list of summary statistics associated with the named metric.
+     * 
+     * @param config the project configuration
+     * @param metric the metric whose summary statistics are required
+     * @return the summary statistics associated with the named metric
+     * @throws MetricConfigurationException if the project contains an unmapped summary statistic
+     */
+
+    public static MetricConstants[] getSummaryStatisticsFor( ProjectConfig config, MetricConfigName metric )
+            throws MetricConfigurationException
+    {
+        Objects.requireNonNull( config, "Specify a non-null project configuration to check for summary statistics" );
+        Objects.requireNonNull( metric, "Specify a non null metric name to check for summary statistics." );
+        List<TimeSeriesMetricConfig> tsMetrics = config.getMetrics().getTimeSeriesMetric();
+        Set<MetricConstants> allStats = new HashSet<>();
+        for ( TimeSeriesMetricConfig next : tsMetrics )
+        {
+            if ( next.getName() == metric && Objects.nonNull( next.getSummaryStatistics() ) )
+            {
+                for ( SummaryStatisticsName nextStat : next.getSummaryStatistics().getName() )
+                {
+                    allStats.add( from( nextStat ) );
+                }
+            }
+        }
+        return allStats.toArray( new MetricConstants[allStats.size()] );
+    }    
 
     /**
      * Returns valid metrics for {@link MetricInputGroup#ENSEMBLE}
@@ -302,6 +394,31 @@ public final class MetricConfigHelper
             }
         }
     }
+    
+    /**
+     * Builds the mapping between the {@link MetricConstants} and the {@link SummaryStatisticsName} 
+     */
+
+    private static void buildStatisticsMap()
+    {
+        //Lazy population
+        if ( STATISTICS_NAME_MAP.isEmpty() )
+        {
+            //Match on name
+            for ( SummaryStatisticsName nextStat : SummaryStatisticsName.values() )
+            {                
+                // Use one of type ScoreOutputGroup.UNIVARIATE_STATISTIC to find the others
+                for ( MetricConstants nextSystemStat : MetricConstants.MEAN.getAllComponents() )
+                {
+                    if ( nextSystemStat.name().equals( nextStat.name() ) )
+                    {
+                        STATISTICS_NAME_MAP.put( nextStat, nextSystemStat );
+                        break;
+                    }
+                }
+            }
+        }
+    }    
 
     /**
      * Hidden constructor.

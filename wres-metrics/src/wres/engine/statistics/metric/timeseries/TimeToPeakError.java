@@ -15,9 +15,7 @@ import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.metadata.Metadata;
-import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.PairedOutput;
 import wres.datamodel.time.TimeSeries;
@@ -133,22 +131,10 @@ public class TimeToPeakError implements Metric<TimeSeriesOfSingleValuedPairs, Pa
             throw new MetricInputException( "Specify non-null output to combine with '" + this + "'." );
         }
         // Add the earlier output to a new list
-        List<Pair<Instant, Duration>> combined = new ArrayList<>( output.getData() );
-        // Compute the new output
-        PairedOutput<Instant, Duration> next = apply( input );
-        // Add the new output
-        combined.addAll( next.getData() );
-        // Get the combined metadata
-        DataFactory dF = getDataFactory();
-        MetadataFactory mDF = dF.getMetadataFactory();
-        TimeWindow unionWindow = null;
-        if ( next.getMetadata().hasTimeWindow() && output.getMetadata().hasTimeWindow() )
-        {
-            unionWindow = next.getMetadata().getTimeWindow().unionWith( output.getMetadata().getTimeWindow() );
-        }
-        MetricOutputMetadata combinedMeta =
-                mDF.getOutputMetadata( mDF.getOutputMetadata( output.getMetadata(), combined.size() ), unionWindow );
-        return dF.ofPairedOutput( combined, combinedMeta );
+        List<PairedOutput<Instant, Duration>> combined = new ArrayList<>();
+        combined.add( output );
+        combined.add( apply( input ) );
+        return getDataFactory().unionOf( combined );
     }
 
     @Override

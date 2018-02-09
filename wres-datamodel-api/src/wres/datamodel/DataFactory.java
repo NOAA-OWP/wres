@@ -2,8 +2,10 @@ package wres.datamodel;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -494,6 +496,43 @@ public interface DataFactory
                                                 Duration timeStep )
     {
         return ofRegularTimeSeriesOfEnsemblePairs( timeSeries, meta, null, null, timeStep );
+    }
+    
+    /**
+     * Forms the union of the {@link PairedOutput}, returning a {@link PairedOutput} that contains all of the pairs in 
+     * the inputs.
+     * 
+     * @param <S> the left side of the paired output
+     * @param <T> the right side of the paired output
+     * @param input the list of inputs
+     * @return a combined {@link PairedOutput}
+     * @throws NullPointerException if the input is null
+     */
+
+    default <S,T> PairedOutput<S,T> unionOf( List<PairedOutput<S,T>> input )
+    {
+        Objects.requireNonNull( input );
+        List<Pair<S,T>> combined = new ArrayList<>();
+        List<TimeWindow> combinedWindows = new ArrayList<>();
+        MetricOutputMetadata sourceMeta = null;
+        for( PairedOutput<S,T> next : input )
+        {
+            combined.addAll( next.getData() );
+            if( Objects.isNull( sourceMeta ) )
+            {
+                sourceMeta = next.getMetadata();
+            }
+            combinedWindows.add( next.getMetadata().getTimeWindow() );
+        }
+        TimeWindow unionWindow = null;
+        if ( ! combinedWindows.isEmpty() )
+        {
+            unionWindow = TimeWindow.unionOf( combinedWindows );
+        }
+        MetadataFactory mDF = getMetadataFactory();
+        MetricOutputMetadata combinedMeta =
+                mDF.getOutputMetadata( mDF.getOutputMetadata( sourceMeta, combined.size() ), unionWindow );
+        return ofPairedOutput( combined, combinedMeta );
     }
 
     /**

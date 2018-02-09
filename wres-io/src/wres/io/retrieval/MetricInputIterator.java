@@ -11,6 +11,7 @@ import java.util.NoSuchElementException;
 import java.util.TreeMap;
 import java.util.concurrent.Future;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 
 import wres.config.generated.DataSourceConfig;
@@ -284,7 +285,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
     @Override
     public boolean hasNext()
     {
-        boolean next = false;
+        boolean next;
 
         try
         {
@@ -295,21 +296,14 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
                 if (!next)
                 {
                     int nextWindowNumber = this.getWindowNumber() + 1;
-                    int offset = this.getProjectDetails().getLeadOffset( this.getFeature() );
-
-                    // Creates a range of (beginning, end], or
-                    // (next Window Number * lead frequency + Lead Offset, next Window Number * lead frequency + lead offset + lead period]
-                    Integer end = this.getProjectDetails().getLeadPeriod() +
-                                  nextWindowNumber * this.getProjectDetails().getLeadFrequency() +
-                                  offset;
-                    Integer beginning = nextWindowNumber * this.getProjectDetails().getLeadFrequency() + offset;
+                    Pair<Integer, Integer> range = this.getProjectDetails().getLeadRange( this.getFeature(), nextWindowNumber );
 
                     int lastLead = this.getProjectDetails().getLastLead( this.getFeature() );
 
-                    next = beginning < lastLead &&
-                           end >= this.getProjectDetails().getMinimumLeadHour()
+                    next = range.getLeft() < lastLead &&
+                           range.getRight() >= this.getProjectDetails().getMinimumLeadHour()
                            &&
-                           end <= lastLead;
+                           range.getRight() <= lastLead;
 
                     if (!next)
                     {
@@ -407,7 +401,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
         return this.getProjectDetails().getBaseline();
     }
 
-    protected int getFirstLeadInWindow()
+    protected long getFirstLeadInWindow()
             throws SQLException, IOException
     {
         Integer offset = this.getProjectDetails().getLeadOffset( feature );

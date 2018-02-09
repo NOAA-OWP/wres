@@ -69,20 +69,20 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                         (MetricOutputGroup[]) null );
         SingleValuedPairs pairs = MetricTestDataFactory.getSingleValuedPairsFour();
         MetricOutputForProjectByTimeAndThreshold results = processor.apply( pairs );
-        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> bias = results.getScoreOutput()
+        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> bias = results.getDoubleScoreOutput()
                                                                            .get( MetricConstants.BIAS_FRACTION );
         MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> cod =
-                results.getScoreOutput()
+                results.getDoubleScoreOutput()
                        .get( MetricConstants.COEFFICIENT_OF_DETERMINATION );
-        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> rho = results.getScoreOutput()
+        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> rho = results.getDoubleScoreOutput()
                                                                           .get( MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
-        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> mae = results.getScoreOutput()
+        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> mae = results.getDoubleScoreOutput()
                                                                           .get( MetricConstants.MEAN_ABSOLUTE_ERROR );
         MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> me =
-                results.getScoreOutput().get( MetricConstants.MEAN_ERROR );
-        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> rmse = results.getScoreOutput()
+                results.getDoubleScoreOutput().get( MetricConstants.MEAN_ERROR );
+        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> rmse = results.getDoubleScoreOutput()
                                                                            .get( MetricConstants.ROOT_MEAN_SQUARE_ERROR );
-        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> ve = results.getScoreOutput()
+        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> ve = results.getDoubleScoreOutput()
                                                                          .get( MetricConstants.VOLUMETRIC_EFFICIENCY );
 
         //Test contents
@@ -141,7 +141,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         }
 
         //Validate a subset of the data            
-        processor.getCachedMetricOutput().getScoreOutput().forEach( ( key, value ) -> {
+        processor.getCachedMetricOutput().getDoubleScoreOutput().forEach( ( key, value ) -> {
             if ( key.getKey() == MetricConstants.CRITICAL_SUCCESS_INDEX )
             {
                 assertTrue( "Expected ten results for the " + key.getKey()
