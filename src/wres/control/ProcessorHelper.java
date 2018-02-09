@@ -483,7 +483,7 @@ public class ProcessorHelper
                 processScoreCharts( feature,
                                      projectConfigPlus,
                                      processor.getCachedMetricOutput()
-                                              .getScoreOutput() );
+                                              .getDoubleScoreOutput() );
             }
             // Process multivector charts
             if ( processor.willCacheMetricOutput( MetricOutputGroup.MULTIVECTOR )

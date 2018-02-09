@@ -29,9 +29,10 @@ class BackToBackForecastScripter extends Scripter
         this.add("SELECT ");
         this.applyValueDate();
         this.applyScaleMember();
-        this.addLine( "    FV.lead,");
-        this.addLine( "    ARRAY_AGG(FV.forecasted_value ORDER BY TS.ensemble_id) AS measurements," );
-        this.addLine( "    TS.measurementunit_id" );
+        this.addTab().addLine( "FV.lead,");
+        this.addTab().addLine( "ARRAY_AGG(FV.forecasted_value ORDER BY TS.ensemble_id) AS measurements," );
+        this.addTab().add( "TS.measurementunit_id" );
+        this.applyPersistenceRelatedFieldLines();
         this.addLine( "FROM wres.TimeSeries TS" );
         this.addLine( "INNER JOIN wres.ForecastValue FV");
         this.addLine( "    ON FV.timeseries_id = TS.timeseries_id" );
@@ -74,6 +75,18 @@ class BackToBackForecastScripter extends Scripter
         return "TS.initialization_date";
     }
 
+    private void applyPersistenceRelatedFieldLines()
+    {
+        if ( ConfigHelper.hasPersistenceBaseline( this.getProjectDetails().getProjectConfig() ) )
+
+        {
+            this.addLine(",");
+            this.addTab().add("EXTRACT( epoch from " + this.getBaseDateName() + " ) as basis_epoch_time");
+        }
+
+        this.addLine();
+    }
+
     private int getLeadOffset() throws SQLException, IOException
     {
         if (this.leadOffset == null)
@@ -85,13 +98,13 @@ class BackToBackForecastScripter extends Scripter
 
     private void applyLeadQualifier() throws SQLException, IOException
     {
-        this.addLine(
-                "    AND ",
-                ConfigHelper.getLeadQualifier(
-                        this.getProjectDetails(),
-                        this.getProgress(),
-                        this.getLeadOffset()
-                )
+        this.addTab().addLine("AND ",
+                              this.getProjectDetails()
+                                  .getLeadQualifier(
+                                          this.getFeature(),
+                                          this.getProgress(),
+                                          "FV"
+                                  )
         );
     }
 

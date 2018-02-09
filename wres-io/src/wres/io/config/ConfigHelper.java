@@ -1,5 +1,7 @@
 package wres.io.config;
 
+import static wres.config.generated.SourceTransformationType.PERSISTENCE;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -25,8 +27,6 @@ import java.util.concurrent.ConcurrentSkipListSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static wres.config.generated.SourceTransformationType.PERSISTENCE;
-
 import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
@@ -39,6 +39,7 @@ import wres.config.generated.Format;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
+import wres.config.generated.PoolingWindowConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.TimeScaleConfig;
 import wres.config.generated.TimeWindowMode;
@@ -154,64 +155,21 @@ public class ConfigHelper
                                        dataSourceConfig.getVariable().getUnit());
     }
 
-    /**
-     *
-     * TODO: Move to ProjectDetails
-     *
-     * @param projectDetails The configuration that controls how windows are calculated
-     * @param windowNumber The indicator of the window whose lead description needs.  In the simplest case, the first
-     *                     window could represent 'lead = 1' while the third 'lead = 3'. In more complicated cases,
-     *                     the first window could be '40 &gt; lead AND lead &ge; 1' and the second '80 &gt; lead AND lead &ge; 40'
-     * @param offset The offset                    
-     * @return A description of what a window number means in terms of lead times
-     */
-    public static String getLeadQualifier(ProjectDetails projectDetails,
-                                          int windowNumber,
-                                          int offset)
-            throws NoDataException
-    {
-        String qualifier;
-        int beginning = windowNumber * TimeHelper.unitsToLeadUnits(projectDetails.getLeadUnit(), projectDetails.getLeadFrequency()).intValue();
-        beginning += offset;
-        int end = beginning + TimeHelper.unitsToLeadUnits( projectDetails.getLeadUnit(), projectDetails.getLeadPeriod()).intValue();
-
-        // TODO: Change HOURS to the correct unit once the lead standard unit changes
-        if (projectDetails.useStrictLeads())
-        {
-            qualifier = "FV.lead = " + end;
-        }
-        else
-        {
-
-            qualifier = String.valueOf(end);
-            qualifier += " >= FV.lead AND FV.lead > ";
-            qualifier += String.valueOf(beginning);
-        }
-
-        return qualifier;
-    }
-
     public static String getVariablePositionClause( Feature feature, int variableId, String alias)
+            throws SQLException
     {
         StringBuilder clause = new StringBuilder();
 
-        try
-        {
-            Integer variablePositionId = Features.getVariablePositionID( feature, variableId );
+        Integer variablePositionId = Features.getVariablePositionID( feature, variableId );
 
-            if (variablePositionId != null)
+        if (variablePositionId != null)
+        {
+            if (Strings.hasValue( alias ))
             {
-                if (Strings.hasValue( alias ))
-                {
-                    clause.append(alias).append(".");
-                }
-
-                clause.append("variableposition_id = ").append(variablePositionId);
+                clause.append(alias).append(".");
             }
-        }
-        catch (Exception e)
-        {
-            LOGGER.error(Strings.getStackTrace(e));
+
+            clause.append("variableposition_id = ").append(variablePositionId);
         }
 
         return clause.toString();
@@ -232,7 +190,7 @@ public class ConfigHelper
                 }
                 else
                 {
-                    LOGGER.info("Either {} and {} have the same location ids or "
+                    LOGGER.trace("Either {} and {} have the same location ids or "
                                 + "one or both of them don't have one.",
                                 featureDescription,
                                 t1Description);
@@ -256,7 +214,7 @@ public class ConfigHelper
                 }
                 else
                 {
-                    LOGGER.info("Either {} and {} have the same huc or "
+                    LOGGER.trace("Either {} and {} have the same huc or "
                                 + "one or both of them don't have one.",
                                 featureDescription,
                                 t1Description);
@@ -280,7 +238,7 @@ public class ConfigHelper
                 }
                 else
                 {
-                    LOGGER.info("Either {} and {} have the same gage ids or "
+                    LOGGER.trace("Either {} and {} have the same gage ids or "
                                 + "one or both of them don't have one.",
                                 featureDescription,
                                 t1Description);
@@ -304,7 +262,7 @@ public class ConfigHelper
                 }
                 else
                 {
-                    LOGGER.info("Either {} and {} have the same com ids or "
+                    LOGGER.trace("Either {} and {} have the same com ids or "
                                 + "one or both of them don't have one.",
                                 featureDescription,
                                 t1Description);
@@ -434,6 +392,9 @@ public class ConfigHelper
 
     /**
      * Returns the "earliest" datetime from given ProjectConfig Conditions
+     *
+     * TODO: Move to ProjectDetails
+     *
      * @param config the project configuration
      * @return the most narrow "earliest" date, null otherwise
      */
@@ -503,6 +464,9 @@ public class ConfigHelper
      * Returns the earlier of any "latest" date specified in left or right datasource.
      * If only one date is specified, that one is returned.
      * If no dates for "latest" are specified, null is returned.
+     *
+     * TODO: Move to ProjectDetails
+     *
      * @param config the project configuration
      * @return the most narrow "latest" date, null otherwise.
      */
@@ -605,6 +569,7 @@ public class ConfigHelper
         return theSet.add(message);
     }
 
+    // TODO: Should this move to wres.io.data.caching.Features?
     public static String getFeatureDescription(Feature feature)
     {
         String description = null;
@@ -641,6 +606,9 @@ public class ConfigHelper
 
     /**
      * Get a comma separated description of a list of features.
+     *
+     * TODO: Should this move to wres.io.data.caching.Features?
+     *
      * @param features the list of features to describe, nonnull
      * @return a description of all features
      * @throws NullPointerException when list of features is null
@@ -757,6 +725,8 @@ public class ConfigHelper
     /**
      * Get all the pair destinations from a configuration.
      *
+     * TODO: Move to ProjectDetails
+     *
      * @param config the config to search through
      * @return a list of pair destinations
      * @throws NullPointerException when config is null
@@ -800,14 +770,33 @@ public class ConfigHelper
         Objects.requireNonNull( projectDetails );
         TimeWindow windowMetadata;
 
+        Duration beginningLead;
+        Duration endingLead = Duration.ofHours( lead );
+
+        if (projectDetails.getProjectConfig().getPair().getLeadTimesPoolingWindow() != null)
+        {
+            PoolingWindowConfig leadPoolingWindow = projectDetails.getProjectConfig().getPair().getLeadTimesPoolingWindow();
+            /*long leadPoolPeriod = TimeHelper.unitsToLeadUnits(
+                    leadPoolingWindow.getUnit().value(),
+                    leadPoolingWindow.getPeriod()
+            );*/
+
+            beginningLead = endingLead.minus( leadPoolingWindow.getPeriod(), ChronoUnit.valueOf( leadPoolingWindow.getUnit().toString().toUpperCase() ) );
+            //beginningLead = Duration.of( lead - leadPoolPeriod, ChronoUnit.HOURS );
+        }
+        else
+        {
+            beginningLead = endingLead;
+        }
+
         if ( projectDetails.getPoolingMode() == TimeWindowMode.ROLLING )
         {
-            Double frequencyOffset = TimeHelper.unitsToLeadUnits( projectDetails.getIssuePoolingWindowUnit(),
+            long frequencyOffset = TimeHelper.unitsToLeadUnits( projectDetails.getIssuePoolingWindowUnit(),
                                                                   projectDetails.getIssuePoolingWindowFrequency() )
                                      * sequenceStep;
 
             Instant first = Instant.parse( projectDetails.getEarliestIssueDate() );
-            first = first.plus( frequencyOffset.longValue(), ChronoUnit.HOURS );
+            first = first.plus( frequencyOffset, ChronoUnit.HOURS );
             Instant second;
 
             if (projectDetails.getIssuePoolingWindowPeriod() > 0)
@@ -823,8 +812,11 @@ public class ConfigHelper
             windowMetadata = TimeWindow.of( first,
                                             second,
                                             ReferenceTime.ISSUE_TIME,
-                                            Duration.ofHours( lead ),
-                                            Duration.ofHours( lead ) );
+                                            beginningLead,
+                                            endingLead
+                                            //Duration.ofHours( lead ),
+                                            //Duration.ofHours( lead )
+                                            );
         }
         //Valid dates available
         else if ( projectDetails.getEarliestDate() != null && projectDetails.getLatestDate() != null)
@@ -832,8 +824,11 @@ public class ConfigHelper
             windowMetadata = TimeWindow.of( Instant.parse( projectDetails.getEarliestDate() ),
                                   Instant.parse( projectDetails.getLatestDate() ),
                                   ReferenceTime.VALID_TIME,
-                                  Duration.ofHours( lead ),
-                                  Duration.ofHours( lead ) );
+                                            beginningLead,
+                                            endingLead
+                                            //Duration.ofHours( lead ),
+                                            //Duration.ofHours( lead )
+            );
         }
         //Issue dates available
         else if ( projectDetails.getEarliestIssueDate() != null && projectDetails.getLatestIssueDate() != null )
@@ -841,14 +836,24 @@ public class ConfigHelper
             return TimeWindow.of( Instant.parse( projectDetails.getEarliestIssueDate() ),
                                   Instant.parse( projectDetails.getLatestIssueDate() ),
                                   ReferenceTime.ISSUE_TIME,
-                                  Duration.ofHours( lead ),
-                                  Duration.ofHours( lead ) );
+                                  beginningLead,
+                                  endingLead
+                                  //Duration.ofHours( lead ),
+                                  //Duration.ofHours( lead )
+            );
         }
         //No dates available
         else
         {
-            Duration leadTime = Duration.ofHours( lead );
-            return TimeWindow.of( Instant.MIN, Instant.MAX, ReferenceTime.VALID_TIME, leadTime, leadTime );
+            //Duration leadTime = Duration.ofHours( lead );
+            return TimeWindow.of( Instant.MIN,
+                                  Instant.MAX,
+                                  ReferenceTime.VALID_TIME,
+                                  beginningLead,
+                                  endingLead
+                                  //Duration.ofHours( lead ),
+                                  //Duration.ofHours( lead )
+            );
         }
 
         return windowMetadata;
@@ -905,14 +910,18 @@ public class ConfigHelper
     /**
      * Returns true if the sourceConfig from projectConfig is a persistence
      * baseline element.
-     * @param projectConfig the project config
-     * @param sourceConfig the source config
+     * @param projectConfig the project config, not null
+     * @param sourceConfig the source config, not null
      * @return true when sourceConfig indicates persistence baseline.
+     * @throws NullPointerException when projectConfig or sourceConfig are null
      */
 
     public static boolean isPersistence( ProjectConfig projectConfig,
                                          DataSourceConfig sourceConfig )
     {
+        Objects.requireNonNull( projectConfig );
+        Objects.requireNonNull( sourceConfig );
+
         return projectConfig.getInputs()
                             .getBaseline() != null
                && ConfigHelper.getLeftOrRightOrBaseline( projectConfig,
@@ -926,6 +935,30 @@ public class ConfigHelper
                                .getTransformation()
                                .equals( PERSISTENCE );
     }
+
+
+    /**
+     * Report if the projectConfig has a persistence baseline
+     * @param projectConfig the project config to look at
+     * @return true if the projectConfig has persistence baseline, false otherwise
+     * @throws NullPointerException when projectConfig or its inputs are null
+     */
+
+    public static boolean hasPersistenceBaseline( ProjectConfig projectConfig )
+    {
+        Objects.requireNonNull( projectConfig );
+        Objects.requireNonNull( projectConfig.getInputs() );
+
+        if ( projectConfig.getInputs().getBaseline() != null
+             && ConfigHelper.isPersistence( projectConfig,
+                                            projectConfig.getInputs().getBaseline() ) )
+        {
+            return true;
+        }
+
+        return false;
+    }
+
 
     private enum ConusZoneId
     {

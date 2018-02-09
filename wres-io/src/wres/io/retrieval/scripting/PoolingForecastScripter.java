@@ -56,8 +56,8 @@ class PoolingForecastScripter extends Scripter
         this.addLine("    FROM wres.Forecasts F");
         this.addLine("    WHERE F.variable_id = ", this.getVariableID());
 
-        Double frequency = TimeHelper.unitsToLeadUnits( this.getProjectDetails().getIssuePoolingWindowUnit(), this.getProjectDetails().getIssuePoolingWindowFrequency() );
-        Double span = TimeHelper.unitsToLeadUnits( this.getProjectDetails().getIssuePoolingWindowUnit(), this.getProjectDetails().getIssuePoolingWindowPeriod());
+        long frequency = TimeHelper.unitsToLeadUnits( this.getProjectDetails().getIssuePoolingWindowUnit(), this.getProjectDetails().getIssuePoolingWindowFrequency() );
+        long span = TimeHelper.unitsToLeadUnits( this.getProjectDetails().getIssuePoolingWindowUnit(), this.getProjectDetails().getIssuePoolingWindowPeriod());
 
         this.addLine( "        AND F.feature_id = ", Features.getFeatureID(this.getFeature()));
         this.addLine( "        AND F.lead > ", this.getProgress() );
@@ -184,7 +184,18 @@ class PoolingForecastScripter extends Scripter
 
     private int getLeadOffset() throws IOException
     {
-        Integer offset  = this.getProjectDetails().getLeadOffset( this.getFeature() );
+        Integer offset  = null;
+        try
+        {
+            offset =
+                    this.getProjectDetails().getLeadOffset( this.getFeature() );
+        }
+        catch ( SQLException e )
+        {
+            throw new IOException("The offset for '" +
+                                  ConfigHelper.getFeatureDescription( this.getFeature() ) +
+                                  "' could not be evaluated.");
+        }
 
         if (offset == null)
         {

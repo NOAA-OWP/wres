@@ -284,6 +284,12 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         }
     }
 
+    @Override
+    void completeCachedOutput()
+    {        
+        //Currently, no outputs that need to be completed
+    }    
+    
     /**
      * Processes a set of metric futures that consume {@link EnsemblePairs}, which are mapped from the input pairs,
      * {@link EnsemblePairs}, using a configured mapping function.

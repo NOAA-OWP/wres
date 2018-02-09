@@ -1071,6 +1071,34 @@ public final class Database {
 		return map;
 	}
 
+	public static DataSet getDataSet(String query) throws SQLException
+	{
+		Connection connection = null;
+		ResultSet resultSet = null;
+		DataSet dataSet = null;
+
+		try
+		{
+			connection = Database.getConnection();
+			resultSet = Database.getResults( connection, query );
+			dataSet = new DataSet( resultSet );
+		}
+		finally
+		{
+			if (resultSet != null)
+			{
+				resultSet.close();
+			}
+
+			if (connection != null)
+			{
+				Database.returnConnection( connection );
+			}
+		}
+
+		return dataSet;
+	}
+
     /**
      * Refreshes statistics that the database uses to optimize queries.
      * Performance suffers if the operation is told to vacuum missing values,

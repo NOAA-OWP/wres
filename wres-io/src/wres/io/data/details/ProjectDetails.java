@@ -1,7 +1,6 @@
 package wres.io.data.details;
 
 import java.io.IOException;
-import java.math.BigInteger;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -9,25 +8,24 @@ import java.time.MonthDay;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashSet;
-import java.util.InvalidPropertiesFormatException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.BiFunction;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DurationUnit;
@@ -39,10 +37,12 @@ import wres.config.generated.PoolingWindowConfig;
 import wres.config.generated.TimeScaleConfig;
 import wres.config.generated.TimeScaleFunction;
 import wres.config.generated.TimeWindowMode;
+import wres.io.concurrency.DataSetRetriever;
 import wres.io.concurrency.ValueRetriever;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.Variables;
+import wres.io.utilities.DataSet;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
 import wres.io.utilities.ScriptBuilder;
@@ -66,21 +66,10 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     private Integer projectID = null;
     private final ProjectConfig projectConfig;
 
-    private final List<Integer> leftForecastIDs = new ArrayList<>(  );
-    private final List<Integer> rightForecastIDs = new ArrayList<>(  );
-    private final List<Integer> baselineForecastIDs = new ArrayList<>(  );
-
-    private final Map<Integer, String> leftHashes = new ConcurrentHashMap<>(  );
-    private final Map<Integer, String> rightHashes = new ConcurrentHashMap<>(  );
-    private final Map<Integer, String> baselineHashes = new ConcurrentHashMap<>(  );
     private final Map<Feature, Integer> lastLeads = new ConcurrentHashMap<>(  );
     private final Map<Feature, Integer> leadOffsets = new ConcurrentSkipListMap<>( ConfigHelper.getFeatureComparator() );
     private final Map<Feature, String> zeroDates = new ConcurrentHashMap<>(  );
     private final Map<Feature, Integer> poolCounts = new ConcurrentHashMap<>(  );
-
-    private final List<Integer> leftSources = new ArrayList<>(  );
-    private final List<Integer> rightSources = new ArrayList<>(  );
-    private final List<Integer> baselineSources = new ArrayList<>(  );
 
     private Set<FeatureDetails> features;
 
@@ -92,10 +81,14 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
 
     private final int inputCode;
 
-    private Integer leftScale = -1;
-    private Integer rightScale = -1;
-    private Integer baselineScale = -1;
+    private long leftScale = -1;
+    private long rightScale = -1;
+    private long baselineScale = -1;
     private TimeScaleConfig desiredTimeScale;
+
+    private Boolean calculateLeads = null;
+    private Map<Feature, Boolean> calculateFeatureLeads = null;
+    private Map<Feature, Integer[]> discreteLeads;
 
     private static final Object POOL_LOCK = new Object();
 
@@ -324,25 +317,33 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return unit;
     }
 
-    public int getLeftTimeShift()
+    public long getLeftTimeShift()
     {
-        int shift = 0;
+        long shift = 0;
 
         if (this.getLeft().getTimeShift() != null)
         {
-            shift = this.getLeft().getTimeShift().getWidth();
+            shift = TimeHelper.unitsToLeadUnits( this.getLeft().getTimeShift()
+                                                     .getUnit()
+                                                     .value(),
+                                                 this.getLeft().getTimeShift().getWidth()
+            );
         }
 
         return shift;
     }
 
-    public int getRightTimeShift()
+    public long getRightTimeShift()
     {
-        int shift = 0;
+        long shift = 0;
 
         if (this.getRight().getTimeShift() != null)
         {
-            shift = this.getRight().getTimeShift().getWidth();
+            shift = TimeHelper.unitsToLeadUnits( this.getRight().getTimeShift()
+                                                     .getUnit()
+                                                     .value(),
+                                                 this.getRight().getTimeShift().getWidth()
+            );
         }
 
         return shift;
@@ -538,18 +539,12 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return frequency;
     }
 
-    /**
-     * Determines if strict leads should be used instead of a range of leads
-     * @return True if the period is our finest unit (1 hour for now) or there
-     * is neither a lead time pooling window nor a desired time scale specified.
-     * @throws NoDataException
-     */
-    public boolean useStrictLeads() throws NoDataException
+    private boolean shouldDynamicallyPoolByLeads()
     {
-        return (this.getLeadPeriod() == 1 &&
-                this.getLeadUnit().equalsIgnoreCase( DurationUnit.HOURS.value() )) ||
-               (this.projectConfig.getPair().getLeadTimesPoolingWindow() == null &&
-                this.projectConfig.getPair().getDesiredTimeScale() == null);
+        return this.projectConfig.getPair().getDesiredTimeScale() == null &&
+               this.projectConfig.getPair().getLeadTimesPoolingWindow() == null &&
+                     (this.projectConfig.getInputs().getLeft().getExistingTimeScale() == null ||
+                      this.projectConfig.getInputs().getRight().getExistingTimeScale() == null);
     }
 
     public boolean shouldScale() throws NoDataException
@@ -557,6 +552,81 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return this.getScale() != null &&
                !TimeScaleFunction.NONE
                        .value().equalsIgnoreCase(this.getScale().getFunction().value());
+    }
+
+    private int getCommonScale()
+            throws NoDataException, ProjectConfigException
+    {
+        Long commonScale;
+
+        try
+        {
+            long left = this.getLeftScale();
+            long right = this.getRightScale();
+
+            if (left != right)
+            {
+                throw new ProjectConfigException( this.getProjectConfig().getPair(),
+                                                  "The left and right data sets"
+                                                  + " are not of the same scale."
+                                                  + "  Please reconfigure the "
+                                                  + "project to ensure that both"
+                                                  + " have the information "
+                                                  + "needed to scale, either "
+                                                  + "with the 'existngTimeScale'"
+                                                  + " or the 'desiredTimeScale'"
+                                                  + " specification. The scale "
+                                                  + "for the left inputs was "
+                                                  + left
+                                                  + " "
+                                                  + TimeHelper.LEAD_RESOLUTION
+                                                  + " and the scale for the "
+                                                  + "right inputs was "
+                                                  + right
+                                                  + " "
+                                                  + TimeHelper.LEAD_RESOLUTION
+                                                  + "." );
+            }
+            else
+            {
+                commonScale = left;
+            }
+
+            // This logic will attempt to reconcile the two to find a possible
+            // desired scale; i.e. if the left is in a scale of 4 hours and the
+            // right in 3, the needed scale would be 12 hours.
+
+            /*if (Math.max(left, right) % Math.min(leftScale, right) == 0)
+            {
+                commonScale = Math.max(left, right);
+            }
+            else
+            {
+
+                BigInteger bigLeft = BigInteger.valueOf( left );
+
+                Integer greatestCommonFactor =
+                        bigLeft.gcd( BigInteger.valueOf( right ) )
+                               .intValue();
+
+                commonScale =
+                        left * right / greatestCommonFactor;
+            }*/
+        }
+        catch ( NoDataException e )
+        {
+            throw new NoDataException( "The common scale between left and"
+                                       + "right inputs could not be evaluated.",
+                                       e );
+        }
+        catch ( SQLException e )
+        {
+            throw new NoDataException( "The database could not determine "
+                                       + "the scale of the left and right hand data.",
+                                       e );
+        }
+
+        return commonScale.intValue();
     }
 
     public TimeScaleConfig getScale() throws NoDataException
@@ -568,49 +638,29 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
 
         if (this.desiredTimeScale == null)
         {
+            Integer leastCommonMultiplier;
+
             try
             {
-                Integer leastCommonMultiplier;
-                Integer left = this.getLeftScale();
-                Integer right = this.getRightScale();
-
-                if (Math.max(left, right) % Math.min(leftScale, right) == 0)
-                {
-                    leastCommonMultiplier = Math.max(left, right);
-                }
-                else
-                {
-
-                    BigInteger bigLeft = BigInteger.valueOf( left );
-
-                    Integer greatestCommonFactor =
-                            bigLeft.gcd( BigInteger.valueOf( right ) )
-                                   .intValue();
-
-                    leastCommonMultiplier =
-                            left * right / greatestCommonFactor;
-                }
-
-                // TODO: When the lead scale is changed from hours,
-                // this duration unit needs to change as well
-                this.desiredTimeScale = new TimeScaleConfig(
-                        TimeScaleFunction.NONE,
-                        leastCommonMultiplier,
-                        leastCommonMultiplier,
-                        DurationUnit.HOURS,
-                        "Dynamic Scale" );
+                leastCommonMultiplier = this.getCommonScale();
             }
-            catch ( NoDataException e )
+            catch ( ProjectConfigException e )
             {
-                throw new NoDataException( "The common scale between left and"
-                                           + "right inputs could not be evaluated.",
-                                           e );
+                throw new NoDataException(
+                        "There was not enough information on hand to determine "
+                        + "to determine the scope.",
+                        e
+                );
             }
-            catch ( SQLException e )
-            {
-                throw new NoDataException( "The database could not determine "
-                                           + "what the desired scale is.", e );
-            }
+
+            // TODO: When the lead scale is changed from hours,
+            // this duration unit needs to change as well
+            this.desiredTimeScale = new TimeScaleConfig(
+                    TimeScaleFunction.NONE,
+                    leastCommonMultiplier,
+                    leastCommonMultiplier,
+                    DurationUnit.HOURS,
+                    "Dynamic Scale" );
         }
 
         return this.desiredTimeScale;
@@ -625,7 +675,6 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     {
         TimeWindowMode mode = TimeWindowMode.BACK_TO_BACK;
 
-        // Can't use "this.getScalingFrequency because it uses this
         if ( this.getIssuePoolingWindow() != null )
         {
             mode = TimeWindowMode.ROLLING;
@@ -667,6 +716,53 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return frequency;
     }
 
+    private boolean shouldCalculateLeads() throws SQLException
+    {
+        if (this.calculateLeads == null)
+        {
+            this.calculateLeads = !this.shouldDynamicallyPoolByLeads();
+
+            if (!this.calculateLeads)
+            {
+                ScriptBuilder script = new ScriptBuilder(  );
+
+                script.addLine("WITH unique_leads AS" );
+                script.addLine("(");
+                script.addTab().addLine("SELECT FV.lead, lag(FV.lead) OVER ( ORDER BY FV.lead)");
+                script.addTab().addLine("FROM wres.ForecastValue FV");
+                script.addTab().addLine("WHERE FV.lead > 0");
+
+                if (this.getMaximumLeadHour() != Integer.MAX_VALUE)
+                {
+                    script.addTab(2).addLine("AND FV.lead <= ", this.getMaximumLeadHour());
+                }
+
+                script.addTab(2).addLine("AND EXISTS (");
+                script.addTab(3).addLine("SELECT 1");
+                script.addTab(3).addLine("FROM wres.ForecastSource FS");
+                script.addTab(3).addLine("INNER JOIN wres.ProjectSource PS");
+                script.addTab(4).addLine("ON PS.source_id = FS.source_id");
+                script.addTab(3).addLine("WHERE FS.forecast_id = FV.timeseries_id");
+                script.addTab(4).addLine("AND PS.project_id = ", this.getId());
+                script.addTab(4).addLine("AND PS.member = 'right'");
+                script.addTab(2).addLine(")");
+                script.addTab().addLine("GROUP BY FV.lead");
+                script.addLine(")");
+                script.addLine("SELECT MAX(row_number) = 1 AS is_regular");
+                script.addLine("FROM (");
+                script.addTab().addLine( "SELECT lead - lag, row_number() OVER (ORDER BY lead - lag)" );
+                script.addTab().addLine( "FROM unique_leads");
+                script.addTab().addLine( "WHERE lag IS NOT NULL");
+                script.addTab().addLine( "GROUP BY lead - lag");
+                script.addLine(") AS differences;");
+
+                this.calculateLeads = script.retrieve( "is_regular" );
+            }
+        }
+
+        return this.calculateLeads;
+    }
+
     public String getDesiredMeasurementUnit()
     {
         return String.valueOf(this.projectConfig.getPair().getUnit());
@@ -677,7 +773,233 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return ConfigHelper.getPairDestinations( this.projectConfig );
     }
 
-    public Integer getLeadOffset(Feature feature) throws IOException
+    public Pair<Integer, Integer> getLeadRange(final Feature feature, final int windowNumber)
+            throws SQLException, IOException
+    {
+        Integer beginning;
+        Integer end;
+
+        if (this.shouldCalculateLeads())
+        {
+            Integer offset = this.getLeadOffset( feature );
+            beginning = windowNumber * this.getLeadFrequency() + offset;
+            end = beginning + this.getLeadPeriod();
+        }
+        else
+        {
+            if (this.discreteLeads == null)
+            {
+                populateDiscreteLeads();
+            }
+
+            beginning = this.discreteLeads.get( feature )[windowNumber];
+            end = beginning;
+        }
+
+        return Pair.of( beginning, end );
+    }
+
+    public String getLeadQualifier(Feature feature, Integer windowNumber, String alias)
+            throws IOException, SQLException
+    {
+        Pair<Integer, Integer> range = this.getLeadRange( feature, windowNumber );
+        String qualifier = "";
+
+        if (Strings.hasValue( alias ) && !alias.endsWith( "." ))
+        {
+            alias += ".";
+        }
+        else
+        {
+            alias = "";
+        }
+
+        if (Math.abs(range.getLeft() - range.getRight()) <= 1)
+        {
+            qualifier += alias;
+            qualifier += "lead = ";
+            qualifier += range.getRight();
+        }
+        else
+        {
+            qualifier += range.getLeft();
+            qualifier += " < ";
+            qualifier += alias;
+            qualifier += "lead AND ";
+            qualifier += alias;
+            qualifier += "lead <= ";
+            qualifier += range.getRight();
+        }
+
+        return qualifier;
+    }
+
+    private void populateDiscreteLeads() throws IOException
+    {
+        Connection connection = null;
+        ResultSet resultSet = null;
+        Map<FeatureDetails, Future<DataSet>> futureLeads = new LinkedHashMap<>(  );
+
+        long width = Math.max(1, this.getMinimumLeadHour());
+
+        ScriptBuilder script = new ScriptBuilder(  );
+
+        script.addLine("SELECT FV.lead");
+        script.addLine("FROM wres.ForecastValue FV");
+        script.addLine("WHERE FV.lead >= ", width);
+
+        if (this.getMaximumLeadHour() != Integer.MAX_VALUE)
+        {
+            script.addTab().addLine("AND FV.lead <= ", this.getMaximumLeadHour());
+        }
+
+        if (this.getMaximumValue() != Double.MAX_VALUE)
+        {
+            script.addTab().addLine("AND FV.forecasted_value <= ", this.getMaximumValue());
+        }
+
+        if (this.getMinimumValue() != -Double.MAX_VALUE)
+        {
+            script.addTab().addLine("AND FV.forecasted_value >= ", this.getMinimumValue());
+        }
+
+        script.addTab().addLine("AND EXISTS (");
+        script.addTab( 2 ).addLine( "SELECT 1");
+        script.addTab( 2 ).addLine( "FROM wres.TimeSeries TS");
+        script.addTab( 2 ).addLine( "INNER JOIN wres.ForecastSource FS");
+        script.addTab(  3  ).addLine(  "ON FS.forecast_id = TS.timeseries_id");
+        script.addTab( 2 ).addLine( "INNER JOIN wres.ProjectSource PS");
+        script.addTab(  3  ).addLine(  "ON PS.source_id = FS.source_id");
+        script.addTab( 2 ).addLine( "WHERE TS.timeseries_id = FV.timeseries_id");
+        script.addTab(  3  ).addLine(  "AND PS.project_id = ", this.getId());
+        script.addTab(  3  ).addLine(  "AND PS.member = 'right'");
+
+        if (Strings.hasValue( this.getEarliestIssueDate() ))
+        {
+            script.addTab(3).addLine("AND TS.initialization_date >= '", this.getEarliestIssueDate(), "'");
+        }
+
+        if (Strings.hasValue( this.getLatestIssueDate() ))
+        {
+            script.addTab(3).addLine("AND TS.initialization_date <= '", this.getLatestIssueDate(), "'");
+        }
+
+        if (Strings.hasValue(this.getEarliestDate()))
+        {
+            script.addTab(3).addLine("AND TS.initialization_date + INTERVAL '1 HOUR' * FV.lead' >= '", this.getEarliestDate(), "'");
+        }
+
+        if (Strings.hasValue( this.getLatestDate() ))
+        {
+            script.addTab(3).addLine("AND TS.initialization_date + INTERVAL '1 HOUR' * FV.lead <= '", this.getLatestDate(), "'");
+        }
+
+        String beginning = script.toString();
+
+        try
+        {
+            connection = Database.getConnection();
+            resultSet = Database.getResults( connection,
+                                             ScriptGenerator.formVariablePositionLoadScript( this, false ) );
+
+            while (resultSet.next())
+            {
+                script = new ScriptBuilder( beginning );
+
+                script.addTab(  3  ).addLine(  "AND TS.variableposition_id = ", resultSet.getInt( "forecast_position" ));
+                script.addTab().addLine(")");
+                script.addLine("GROUP BY FV.lead");
+                script.addLine("ORDER BY FV.lead;");
+
+                futureLeads.put( new FeatureDetails( resultSet ),
+                                 Database.submit( new DataSetRetriever( script.toString() ) ) );
+            }
+        }
+        catch (SQLException e)
+        {
+            throw new IOException( "Tasks used to determine discrete lead hours "
+                                   + "could not be created.", e );
+        }
+        finally
+        {
+            if (resultSet != null)
+            {
+                try
+                {
+                    resultSet.close();
+                }
+                catch (SQLException e)
+                {
+                    LOGGER.debug("A database result set could not be closed.", e);
+                }
+            }
+
+            if (connection != null)
+            {
+                Database.returnConnection( connection );
+            }
+        }
+
+        while (!futureLeads.isEmpty())
+        {
+            FeatureDetails key = (FeatureDetails)futureLeads.keySet().toArray()[0];
+            Feature feature = key.toFeature();
+            Future<DataSet> futureDataSet = futureLeads.remove( key );
+            List<Integer> leadList = new ArrayList<>();
+            DataSet dataSet;
+            try
+            {
+                // If we're on the last/only task, there's no reason to try and
+                // cycle through it
+                if (futureLeads.isEmpty())
+                {
+                    dataSet = futureDataSet.get();
+                }
+                else
+                {
+                    dataSet = futureDataSet.get( 500, TimeUnit.MILLISECONDS );
+                }
+
+                if (dataSet == null)
+                {
+                    continue;
+                }
+
+                while (dataSet.next())
+                {
+                    leadList.add(dataSet.getInt( "lead" ));
+                }
+
+                if (this.discreteLeads == null)
+                {
+                    this.discreteLeads = new TreeMap<>(ConfigHelper.getFeatureComparator());
+                }
+
+                this.discreteLeads.put( feature,
+                                        leadList.toArray( new Integer[leadList.size()] ) );
+            }
+            catch ( InterruptedException e )
+            {
+                throw new IOException( "Population of discrete leads has been interrupted.", e );
+            }
+            catch ( ExecutionException e )
+            {
+                throw new IOException( "An error occurred while populating discrete leads", e );
+            }
+            catch ( TimeoutException e )
+            {
+                LOGGER.trace("It took too long to get the set of discrete leads "
+                             + "for '{}'; moving on to another location while "
+                             + "we wait for the output for this location.",
+                             ConfigHelper.getFeatureDescription( feature ));
+                futureLeads.put( key, futureDataSet );
+            }
+
+        }
+    }
+
+    public Integer getLeadOffset(Feature feature)
+            throws IOException, SQLException
     {
         if (ConfigHelper.isSimulation( this.getRight() ))
         {
@@ -693,10 +1015,15 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     }
 
     private void populateLeadOffsets()
-            throws IOException
+            throws IOException, SQLException
     {
-        FormattedStopwatch timer = new FormattedStopwatch();
-        timer.start();
+        FormattedStopwatch timer = null;
+
+        if (LOGGER.isDebugEnabled())
+        {
+            timer = new FormattedStopwatch();
+            timer.start();
+        }
 
         // TODO: Implement dynamic scaling to determine the offset
         // This will end up grabbing the offset based off of the lead pool or
@@ -709,145 +1036,10 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         // 403 and 405. There needs to be a function that will find the least
         // common multiple of either the defined existing scales or the data in
         // the database.
-        Integer width = TimeHelper.unitsToLeadUnits( this.getScale().getUnit().value(),
-                                                     this.getScale().getPeriod()).intValue();
+        long width = TimeHelper.unitsToLeadUnits( this.getScale().getUnit().value(),
+                                                     this.getScale().getPeriod());
 
-        String script = "";
-
-        script += "WITH forecast_positions AS" + NEWLINE;
-        script += "(" + NEWLINE;
-        script += "    SELECT TS.variableposition_id, feature_id" + NEWLINE;
-        script += "    FROM wres.TimeSeries TS" + NEWLINE;
-        script += "    INNER JOIN wres.VariableByFeature VBF" + NEWLINE;
-        script += "        ON VBF.variableposition_id = TS.variableposition_id" + NEWLINE;
-        script += "    WHERE VBF.variable_name = '" + this.getRightVariableName() + "'" + NEWLINE;
-
-        Set<String> hucs = new HashSet<>(  );
-        Set<String> lids = new HashSet<>(  );
-        Set<String> rfcs = new HashSet<>(  );
-        Set<Long> comids = new HashSet<>(  );
-        Set<String> gageIds = new HashSet<>(  );
-
-        for (Feature feature : this.getProjectConfig().getPair().getFeature())
-        {
-            if (feature.getComid() != null)
-            {
-                comids.add( feature.getComid() );
-            }
-
-            if (Strings.hasValue( feature.getLocationId()))
-            {
-                lids.add( feature.getLocationId().toUpperCase() );
-            }
-
-            if (Strings.hasValue( feature.getHuc() ))
-            {
-                hucs.add( feature.getHuc() + "%" );
-            }
-
-            if (Strings.hasValue( feature.getRfc() ))
-            {
-                rfcs.add( feature.getRfc().toUpperCase() );
-            }
-
-            if (Strings.hasValue( feature.getGageId() ))
-            {
-                gageIds.add(feature.getGageId());
-            }
-        }
-
-        String lidStatement = "";
-        String comidStatement = "";
-        String hucStatement = "";
-        String gageStatement = "";
-        String rfcStatement = "";
-
-        if (lids.size() > 0)
-        {
-            lidStatement += "        AND VBF.lid = ";
-            lidStatement += wres.util.Collections.formAnyStatement( lids, "text" );
-            lidStatement += NEWLINE;
-        }
-
-        if (comids.size() > 0)
-        {
-            comidStatement += "        AND VBF.comid = ";
-            comidStatement += wres.util.Collections.formAnyStatement( comids, "int" );
-            comidStatement += NEWLINE;
-        }
-
-        if (hucs.size() > 0)
-        {
-            hucStatement += "        AND VBF.huc LIKE ";
-            hucStatement += wres.util.Collections.formAnyStatement( hucs, "text" );
-            hucStatement += NEWLINE;
-        }
-
-        if (gageIds.size() > 0)
-        {
-            gageStatement += "        AND VBF.gage_id = ";
-            gageStatement += wres.util.Collections.formAnyStatement( gageIds, "text" );
-            gageStatement += NEWLINE;
-        }
-
-        if (rfcs.size() > 0)
-        {
-            rfcStatement += "        AND VBF.rfc = ";
-            rfcStatement += wres.util.Collections.formAnyStatement( rfcs, "text" );
-            rfcStatement += NEWLINE;
-        }
-
-        script += lidStatement;
-        script += comidStatement;
-        script += hucStatement;
-        script += gageStatement;
-        script += rfcStatement;
-
-        script += "        AND EXISTS (" + NEWLINE;
-        script += "            SELECT 1" + NEWLINE;
-        script += "            FROM wres.ProjectSource PS" + NEWLINE;
-        script += "            INNER JOIN wres.ForecastSource FS" + NEWLINE;
-        script += "                ON FS.source_id = PS.source_id" + NEWLINE;
-        script += "            WHERE PS.project_id = " + this.getId() + NEWLINE;
-        script += "                AND PS.member = 'right'" + NEWLINE;
-        script += "                AND FS.forecast_id = TS.timeseries_id" + NEWLINE;
-        script += "         )" + NEWLINE;
-        script += "    GROUP BY TS.variableposition_id, VBF.feature_id" + NEWLINE;
-        script += ")," + NEWLINE;
-        script += "observation_positions AS " + NEWLINE;
-        script += "(" + NEWLINE;
-        script += "    SELECT VBF.variableposition_id, feature_id" + NEWLINE;
-        script += "    FROM wres.Observation O" + NEWLINE;
-        script += "    INNER JOIN wres.VariableByFeature VBF" + NEWLINE;
-        script += "        ON VBF.variableposition_id = O.variableposition_id" + NEWLINE;
-        script += "    WHERE VBF.variable_name = '" + this.getLeftVariableName() + "'" + NEWLINE;
-
-        script += lidStatement;
-        script += comidStatement;
-        script += hucStatement;
-        script += gageStatement;
-        script += rfcStatement;
-
-        script += "        AND EXISTS (" + NEWLINE;
-        script += "            SELECT 1" + NEWLINE;
-        script += "            FROM wres.ProjectSource PS" + NEWLINE;
-        script += "            WHERE PS.project_id = " + this.getId() + NEWLINE;
-        script += "                AND PS.member = 'left'" + NEWLINE;
-        script += "                AND PS.source_id = O.source_id" + NEWLINE;
-        script += "         )" + NEWLINE;
-        script += "    GROUP BY VBF.variableposition_id, feature_id" + NEWLINE;
-        script += ")" + NEWLINE;
-        script += "SELECT FP.variableposition_id AS forecast_position," + NEWLINE;
-        script += "    O.variableposition_id AS observation_position," + NEWLINE;
-        script += "    comid," + NEWLINE;
-        script += "    gage_id," + NEWLINE;
-        script += "    huc," + NEWLINE;
-        script += "    lid" + NEWLINE;
-        script += "FROM forecast_positions FP" + NEWLINE;
-        script += "INNER JOIN observation_positions O" + NEWLINE;
-        script += "    ON O.feature_id = FP.feature_id" + NEWLINE;
-        script += "INNER JOIN wres.Feature F" + NEWLINE;
-        script += "    ON O.feature_id = F.feature_id;";
+        String script = ScriptGenerator.formVariablePositionLoadScript( this, true );
 
         String beginning = "";
 
@@ -1034,11 +1226,20 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
             FeatureDetails.FeatureKey key = ( FeatureDetails.FeatureKey)futureOffsets.keySet().toArray()[0];
             Future<Integer> futureOffset = futureOffsets.remove( key );
             Feature feature = new FeatureDetails( key ).toFeature();
-            Integer offset = null;
+            Integer offset;
             try
             {
                 LOGGER.trace( "Loading the offset for '{}'", ConfigHelper.getFeatureDescription( feature ));
-                offset = futureOffset.get( 500, TimeUnit.MILLISECONDS);
+
+                if (futureOffsets.isEmpty())
+                {
+                    offset = futureOffset.get();
+                }
+                else
+                {
+                    offset = futureOffset.get( 500, TimeUnit.MILLISECONDS );
+                }
+
                 if (offset == null)
                 {
                     continue;
@@ -1058,11 +1259,11 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
             catch ( ExecutionException e )
             {
                 throw new IOException("An error occured while populating the future"
-                             + "offsets. Trying again...", e);
+                             + "offsets.", e);
             }
             catch ( TimeoutException e )
             {
-                LOGGER.trace("It took took too long to get the offset for '{}'; "
+                LOGGER.trace("It took too long to get the offset for '{}'; "
                              + "moving on to another location while we wait "
                              + "for the output on this location",
                              ConfigHelper.getFeatureDescription( feature ));
@@ -1070,8 +1271,12 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
             }
         }
 
-        timer.stop();
-        LOGGER.debug( "It took {} to get the offsets for all locations.", timer.getFormattedDuration() );
+        if (LOGGER.isDebugEnabled())
+        {
+            timer.stop();
+            LOGGER.debug( "It took {} to get the offsets for all locations.",
+                          timer.getFormattedDuration() );
+        }
     }
 
     public Integer getPoolCount( Feature feature) throws SQLException
@@ -1139,7 +1344,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return this.inputCode;
     }
 
-    public Integer getLeftScale() throws NoDataException, SQLException
+    public long getLeftScale() throws NoDataException, SQLException
     {
         if (this.leftScale == -1)
         {
@@ -1156,14 +1361,14 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
                                                          .value(),
                                                      this.getLeft()
                                                          .getExistingTimeScale()
-                                                         .getPeriod() ).intValue();
+                                                         .getPeriod() );
             }
         }
 
         return leftScale;
     }
 
-    public Integer getRightScale() throws NoDataException, SQLException
+    public long getRightScale() throws NoDataException, SQLException
     {
         if (this.rightScale == -1)
         {
@@ -1177,14 +1382,14 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
                         TimeHelper.unitsToLeadUnits(
                                 this.getRight().getExistingTimeScale().getUnit().value(),
                                 this.getRight().getExistingTimeScale().getPeriod()
-                        ).intValue();
+                        );
             }
         }
 
         return this.rightScale;
     }
 
-    public Integer getBaselineScale() throws NoDataException, SQLException
+    public long getBaselineScale() throws NoDataException, SQLException
     {
         if ( this.getBaseline() != null && this.baselineScale == -1)
         {
@@ -1195,7 +1400,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
             else
             {
                 this.baselineScale = TimeHelper.unitsToLeadUnits( this.getBaseline().getExistingTimeScale().getUnit().value(),
-                                                                  this.getBaseline().getExistingTimeScale().getPeriod() ).intValue();
+                                                                  this.getBaseline().getExistingTimeScale().getPeriod() );
             }
         }
 
@@ -1497,9 +1702,9 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return result;
     }
 
-    public int getWindowWidth() throws NoDataException
+    public long getWindowWidth() throws NoDataException
     {
-        return TimeHelper.unitsToLeadUnits( this.getLeadUnit(), this.getLeadPeriod() ).intValue();
+        return TimeHelper.unitsToLeadUnits( this.getLeadUnit(), this.getLeadPeriod() );
     }
 
     public String getZeroDate(DataSourceConfig sourceConfig, Feature feature) throws SQLException

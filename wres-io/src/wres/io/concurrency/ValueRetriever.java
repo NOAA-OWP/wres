@@ -45,7 +45,7 @@ public class ValueRetriever<V> extends WRESCallable<V>
 	}
 
 	@Override
-    public V execute()
+    public V execute() throws SQLException
 	{
 		V value = null;
 		try
@@ -58,7 +58,7 @@ public class ValueRetriever<V> extends WRESCallable<V>
 			// occasion where failing in the database is acceptable
 			if (this.displayErrors)
 			{
-				this.getLogger().error( Strings.getStackTrace( e ) );
+				throw e;
 			}
 			else
 			{

@@ -33,23 +33,39 @@ public class ScriptBuilder
         this.script = new StringBuilder( beginning );
     }
 
-    public void add(Object... details)
+    public ScriptBuilder add(Object... details)
     {
         for (Object detail : details)
         {
             this.script.append(detail);
         }
+
+        return this;
     }
 
-    public void addLine()
+    public ScriptBuilder addLine()
     {
-        this.add(NEWLINE);
+        return this.add(NEWLINE);
     }
 
-    public void addLine(Object... details)
+    public ScriptBuilder addLine(Object... details)
     {
-        this.add(details);
-        this.addLine();
+        return this.add(details).addLine();
+    }
+
+    public ScriptBuilder addTab(int numberOfTabs)
+    {
+        for ( int i = 0; i < numberOfTabs; i++ )
+        {
+            this.add("    ");
+        }
+
+        return this;
+    }
+
+    public ScriptBuilder addTab()
+    {
+        return addTab(1);
     }
 
     @Override

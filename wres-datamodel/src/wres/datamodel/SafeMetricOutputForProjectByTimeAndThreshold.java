@@ -1,5 +1,7 @@
 package wres.datamodel;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -27,6 +29,7 @@ import wres.datamodel.outputs.MetricOutputMapByMetric;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold.MetricOutputMultiMapByTimeAndThresholdBuilder;
 import wres.datamodel.outputs.MultiVectorOutput;
+import wres.datamodel.outputs.PairedOutput;
 import wres.datamodel.outputs.ScoreOutput;
 
 /**
@@ -69,7 +72,13 @@ class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForPro
 
     private final ConcurrentMap<Pair<TimeWindow, Threshold>, List<Future<MetricOutputMapByMetric<BoxPlotOutput>>>> boxplot =
             new ConcurrentHashMap<>();
+    
+    /**
+     * Thread safe map for {@link PairedOutput}.
+     */
 
+    private final ConcurrentMap<Pair<TimeWindow, Threshold>, List<Future<MetricOutputMapByMetric<PairedOutput<Instant, Duration>>>>> paired =
+            new ConcurrentHashMap<>();
 
     @Override
     public boolean hasOutput( MetricOutputGroup outGroup )
@@ -84,6 +93,8 @@ class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForPro
                 return !matrix.isEmpty();
             case BOXPLOT:
                 return !boxplot.isEmpty();
+            case PAIRED:
+                return !paired.isEmpty();
             default:
                 return false;
         }
@@ -104,7 +115,7 @@ class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForPro
                 switch ( next )
                 {
                     case SCORE:
-                        addToBuilder( builder, getScoreOutput() );
+                        addToBuilder( builder, getDoubleScoreOutput() );
                         break;
                     case MULTIVECTOR:
                         addToBuilder( builder, getMultiVectorOutput() );
@@ -114,6 +125,9 @@ class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForPro
                         break;
                     case BOXPLOT:
                         addToBuilder( builder, getBoxPlotOutput() );
+                        break;
+                    case PAIRED:
+                        addToBuilder( builder, getPairedOutput() );
                         break;
                     default:
                         break;
@@ -143,11 +157,15 @@ class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForPro
         {
             returnMe.add( MetricOutputGroup.BOXPLOT );
         }
+        if ( hasOutput( MetricOutputGroup.PAIRED ) )
+        {
+            returnMe.add( MetricOutputGroup.PAIRED );
+        }
         return returnMe.toArray( new MetricOutputGroup[returnMe.size()] );
     }
 
     @Override
-    public MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> getScoreOutput() throws MetricOutputAccessException
+    public MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> getDoubleScoreOutput() throws MetricOutputAccessException
     {
         return unwrap( MetricOutputGroup.SCORE, score );
     }
@@ -169,6 +187,13 @@ class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForPro
     public MetricOutputMultiMapByTimeAndThreshold<BoxPlotOutput> getBoxPlotOutput() throws MetricOutputAccessException
     {
         return unwrap( MetricOutputGroup.BOXPLOT, boxplot );
+    }
+    
+    @Override
+    public MetricOutputMultiMapByTimeAndThreshold<PairedOutput<Instant, Duration>> getPairedOutput()
+            throws MetricOutputAccessException
+    {
+        return unwrap( MetricOutputGroup.PAIRED, paired );
     }
 
     /**
@@ -205,6 +230,13 @@ class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForPro
          */
 
         private final ConcurrentMap<Pair<TimeWindow, Threshold>, List<Future<MetricOutputMapByMetric<BoxPlotOutput>>>> boxplotInternal =
+                new ConcurrentHashMap<>();
+        
+        /**
+         * Thread safe map for {@link PairedOutput}.
+         */
+
+        private final ConcurrentMap<Pair<TimeWindow, Threshold>, List<Future<MetricOutputMapByMetric<PairedOutput<Instant,Duration>>>>> pairedInternal =
                 new ConcurrentHashMap<>();
 
         @Override
@@ -268,6 +300,21 @@ class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForPro
         }
 
         @Override
+        public MetricOutputForProjectByTimeAndThresholdBuilder addPairedOutput( TimeWindow timeWindow,
+                                                                                Threshold threshold,
+                                                                                Future<MetricOutputMapByMetric<PairedOutput<Instant, Duration>>> result )
+        {
+            List<Future<MetricOutputMapByMetric<PairedOutput<Instant, Duration>>>> existing =
+                    pairedInternal.putIfAbsent( Pair.of( timeWindow, threshold ),
+                                                new ArrayList<>( Arrays.asList( result ) ) );
+            if ( Objects.nonNull( existing ) )
+            {
+                existing.add( result );
+            }
+            return this;
+        }
+        
+        @Override
         public MetricOutputForProjectByTimeAndThreshold build()
         {
             return new SafeMetricOutputForProjectByTimeAndThreshold( this );
@@ -287,6 +334,7 @@ class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForPro
         multiVector.putAll( builder.multiVectorInternal );
         matrix.putAll( builder.matrixInternal );
         boxplot.putAll( builder.boxplotInternal );
+        paired.putAll( builder.pairedInternal );
     }
 
     /**

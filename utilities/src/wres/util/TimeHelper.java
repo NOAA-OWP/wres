@@ -1,15 +1,15 @@
 package wres.util;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAccessor;
 import java.time.temporal.TemporalQuery;
-import java.util.InvalidPropertiesFormatException;
-import java.util.Map;
+import java.time.temporal.TemporalUnit;
 import java.util.Objects;
-import java.util.TreeMap;
 import java.util.regex.Pattern;
 
 /**
@@ -22,6 +22,7 @@ public final class TimeHelper
      * The global format for dates is {@value}
      */
     public static final String DATE_FORMAT = "yyyy-MM-dd[ [HH][:mm][:ss]";
+    public static final TemporalUnit LEAD_RESOLUTION = ChronoUnit.HOURS;
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern( DATE_FORMAT );
     private static final Pattern TIMESTAMP_PATTERN =
@@ -29,33 +30,6 @@ public final class TimeHelper
     private static final Pattern DATE_PATTERN = Pattern.compile( "\\d\\d\\d\\d(-|/)?\\d\\d(-|/)?\\d\\d" );
     private static final Pattern IMPROPER_OFFSET_PATTERN = Pattern.compile( ".+(-|\\+)\\d\\d\\d\\d$" );
     private static final Pattern PROPER_OFFSET_PATTERN = Pattern.compile( ".+(-|\\+)\\d\\d(:\\d\\d)?$" );
-    /**
-     * Mapping between common date indicators to their conversion multipliers
-     * from hours
-     *
-     * i.e. The mapping of "second" holds the value to multiply a number of
-     * hours to get the total number of seconds contained.
-     */
-    private static final Map<String, Double> HOUR_CONVERSION = mapTimeToHours();
-    
-    private static Map<String, Double> mapTimeToHours()
-    {
-        Map<String, Double> mapping = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-        
-        mapping.put("second", 1/3600.0);
-        mapping.put("seconds", 1/3600.0);
-        mapping.put("hour", 1.0);
-        mapping.put("hours", 1.0);
-        mapping.put("day", 24.0);
-        mapping.put("days", 24.0);
-        mapping.put("minute", 1/60.0);
-        mapping.put("minutes", 1/60.0);
-        mapping.put("s", 1/3600.0);
-        mapping.put("hr", 1.0);
-        mapping.put("min", 1/60.0);
-        
-        return mapping;
-    }
     
     /**
      * Determines if the passed in string represents a date combined with a time
@@ -218,24 +192,91 @@ public final class TimeHelper
     }
 
     /**
-     * Converts the unit and count to the standard unit for lead times
-     *
-     * The current lead unit is hours. If we seek to change the standard to
-     * minutes or seconds, we do it here.
-     *
-     * TODO: Change the standard to either minutes or seconds
+     * Converts the unit and count to the standard resolution of lead times
      *
      * @param unit The current unit of time of the count
      * @param count The number of units
      * @return The count converted into the standard unit for lead times
      */
-    public static Double unitsToLeadUnits( String unit, double count)
+    public static long unitsToLeadUnits( String unit, Integer count)
     {
-        if (!HOUR_CONVERSION.containsKey(unit))
+        // The units we're expecting should end in an S (HOURS, MINUTES, SECONDS, et)
+        // ChronoUnit supports other units, but we shouldn't be using units like "millenia"
+        unit = unit.toUpperCase();
+
+        if (!unit.endsWith( "S" ))
         {
-            throw new IllegalArgumentException(unit + " is not an acceptable unit of time.");
+            unit += "S";
         }
 
-        return HOUR_CONVERSION.get(unit) * count;
+        return TimeHelper.durationToLeadUnits( Duration.of(count.longValue(),
+                                                           ChronoUnit.valueOf( unit)));
+    }
+
+    /**
+     * Converts the unit and count to the standard resolution of lead times
+     *
+     * @param unit The current unit of time of the count
+     * @param count The number of units
+     * @return The count converted into the standard unit for lead times
+     */
+    public static long unitsToLeadUnits(String unit, Double count)
+    {
+        // The units we're expecting should end in an S (HOURS, MINUTES, SECONDS, et)
+        // ChronoUnit supports other units, but we shouldn't be using units like "millenia"
+        unit = unit.toUpperCase();
+
+        if (!unit.endsWith( "S" ))
+        {
+            unit += "S";
+        }
+        return TimeHelper.durationToLeadUnits( Duration.of(count.longValue(),
+                                                           ChronoUnit.valueOf( unit)));
+    }
+
+    /**
+     * Converts the unit and count to the standard resolution of lead times
+     *
+     * @param unit The current unit of time of the count
+     * @param count The number of units
+     * @return The count converted into the standard unit for lead times
+     */
+    public static long unitsToLeadUnits(String unit, Long count)
+    {
+        // The units we're expecting should end in an S (HOURS, MINUTES, SECONDS, et)
+        // ChronoUnit supports other units, but we shouldn't be using units like "millenia"
+        unit = unit.toUpperCase();
+
+        if (!unit.endsWith( "S" ))
+        {
+            unit += "S";
+        }
+
+        return TimeHelper.durationToLeadUnits( Duration.of(count,
+                                                           ChronoUnit.valueOf( unit)));
+    }
+
+    /**
+     * @param duration Retrieves the duration
+     * @return The length of the duration in terms of the project's lead resolution
+     */
+    private static long durationToLeadUnits(Duration duration)
+    {
+        long amount = 0;
+
+        if (TimeHelper.LEAD_RESOLUTION == ChronoUnit.HOURS)
+        {
+            amount = duration.toHours();
+        }
+        else if (TimeHelper.LEAD_RESOLUTION == ChronoUnit.MINUTES)
+        {
+            amount = duration.toMinutes();
+        }
+        else if (TimeHelper.LEAD_RESOLUTION == ChronoUnit.SECONDS)
+        {
+            amount = duration.getSeconds();
+        }
+
+        return amount;
     }
 }
