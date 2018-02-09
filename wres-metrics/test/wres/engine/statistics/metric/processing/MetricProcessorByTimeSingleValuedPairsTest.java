@@ -175,10 +175,12 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
     /**
      * Tests for exceptions associated with a {@link MetricProcessorByTimeSingleValuedPairs}.
+     * @throws MetricProcessorException if the metric processor could not be constructed
+     * @throws IOException if a project could not be read
      */
 
     @Test
-    public void test3Exceptions()
+    public void test3Exceptions() throws MetricProcessorException, IOException
     {
 
         //Check for null input
@@ -197,12 +199,6 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         catch ( NullPointerException e )
         {
         }
-        catch ( Exception e )
-        {
-            fail( "Unexpected exception on processing the project configuration '" + testOne
-                  + "' "
-                  + "with null input." );
-        }
         //Check for fail on insufficient data for a single-valued metric
         String testTwo = "testinput/metricProcessorSingleValuedPairsByTimeTest/test3ExceptionsTwo.xml";
         try
@@ -219,12 +215,6 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         }
         catch ( InsufficientDataException e )
         {
-        }
-        catch ( Exception e )
-        {
-            fail( "Unexpected exception on processing the project configuration '" + testTwo
-                  + "' "
-                  + "with insufficient data for a single-valued metric." );
         }
         //Check for fail on insufficient data for a dichotomous metric
         String testThree = "testinput/metricProcessorSingleValuedPairsByTimeTest/test3ExceptionsThree.xml";
@@ -243,12 +233,6 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         catch ( InsufficientDataException e )
         {
         }
-        catch ( Exception e )
-        {
-            fail( "Unexpected exception on processing the project configuration '" + testThree
-                  + "' "
-                  + "with insufficient data for a dichotomous metric." );
-        }
         //Check for absence of thresholds on metrics that require them
         String testFour = "testinput/metricProcessorSingleValuedPairsByTimeTest/test3ExceptionsFour.xml";
         try
@@ -265,12 +249,6 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         }
         catch ( MetricProcessorException e )
         {
-        }
-        catch ( Exception e )
-        {
-            fail( "Unexpected exception on processing the project configuration '" + testFour
-                  + "' "
-                  + "with no thresholds for metrics that require them." );
         }
         //Checked for value thresholds that do not apply to left
         String testFive = "testinput/metricProcessorSingleValuedPairsByTimeTest/test3ExceptionsFive.xml";
@@ -289,12 +267,6 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         catch ( MetricProcessorException e )
         {
         }
-        catch ( Exception e )
-        {
-            fail( "Unexpected exception on processing the project configuration '" + testFive
-                  + "' "
-                  + "with value thresholds that do not apply to left." );
-        }
         //Checked for probability thresholds that do not apply to left
         String testSix = "testinput/metricProcessorSingleValuedPairsByTimeTest/test3ExceptionsSix.xml";
         try
@@ -311,35 +283,6 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         }
         catch ( MetricProcessorException e )
         {
-        }
-        catch ( Exception e )
-        {
-            fail( "Unexpected exception on processing the project configuration '" + testSix
-                  + "' "
-                  + "with probability thresholds that do not apply to left." );
-        }
-        //Checked for metric-local thresholds, which are not supported
-        String testSeven = "testinput/metricProcessorSingleValuedPairsByTimeTest/test3ExceptionsSeven.xml";
-        try
-        {
-            ProjectConfig config = ProjectConfigPlus.from( Paths.get( testSeven ) ).getProjectConfig();
-            MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
-                    MetricFactory.getInstance( metIn )
-                                 .ofMetricProcessorByTimeSingleValuedPairs( config,
-                                                                            MetricOutputGroup.SCORE );
-            processor.apply( MetricTestDataFactory.getSingleValuedPairsSix() );
-            fail( "Expected a checked exception on processing the project configuration '" + testSeven
-                  + "' "
-                  + "with metric-local thresholds that are not supported." );
-        }
-        catch ( MetricProcessorException e )
-        {
-        }
-        catch ( Exception e )
-        {
-            fail( "Unexpected exception on processing the project configuration '" + testSeven
-                  + "' "
-                  + "with metric-local thresholds that are not supported." );
         }
         //Check for insufficient data to compute climatological probability thresholds
         String testEight = "testinput/metricProcessorSingleValuedPairsByTimeTest/test3ExceptionsEight.xml";
@@ -358,12 +301,6 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         catch ( MetricCalculationException e )
         {
         }
-        catch ( Exception e )
-        {
-            fail( "Unexpected exception on processing the project configuration '" + testEight
-                  + "' "
-                  + "with metric-local thresholds that are not supported." );
-        }
         //Check for insufficient data to compute a dichotomous metric
         String testNine = "testinput/metricProcessorSingleValuedPairsByTimeTest/test3ExceptionsNine.xml";
         try
@@ -379,11 +316,6 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         }
         catch ( InsufficientDataException e )
         {
-        }
-        catch ( Exception e )
-        {
-            fail( "Unexpected exception on processing the project configuration '" + testNine
-                  + "' with insufficient data." );
         }
     }
 
