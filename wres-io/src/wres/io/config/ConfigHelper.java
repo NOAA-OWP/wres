@@ -762,7 +762,6 @@ public class ConfigHelper
      * @return a time window 
      * @throws NullPointerException if the config is null
      * @throws DateTimeParseException if the configuration contains dates that cannot be parsed
-     * @throws InvalidPropertiesFormatException if dates could not be established
      */
 
     public static TimeWindow getTimeWindow( ProjectDetails projectDetails, long lead, int sequenceStep)
