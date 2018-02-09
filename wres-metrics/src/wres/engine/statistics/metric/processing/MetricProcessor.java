@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -479,7 +480,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         }
         return useMe;
     }
-    
+
     /**
      * Returns the thresholds to process for a specific combination of {@link MetricInputGroup} and 
      * {@link MetricOutputGroup}.
@@ -493,14 +494,68 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
     List<Threshold> getThresholds( MetricInputGroup inGroup, MetricOutputGroup outGroup )
     {
         List<Threshold> returnMe = thresholds.get( Pair.of( inGroup, outGroup ) );
-        if( Objects.isNull( returnMe ) )
+        if ( Objects.isNull( returnMe ) )
         {
-            throw new MetricCalculationException( "Could not identify thresholds for '"+inGroup+"' and "
-                    + "'"+outGroup+"'." );
+            throw new MetricCalculationException( "Could not identify thresholds for '" + inGroup
+                                                  + "' and "
+                                                  + "'"
+                                                  + outGroup
+                                                  + "'." );
         }
         return returnMe;
     }
-    
+
+    /**
+     * Returns a list of metrics for the prescribed {@link MetricInputGroup} and {@link MetricOutputGroup} that 
+     * should not be computed for the specified threshold. 
+     * 
+     * @param inGroup the input group
+     * @param outGroup the output group
+     * @return the list of metrics within the specified inGroup and outGroup that should not be computed
+     */
+
+    Set<MetricConstants> doNotComputeTheseMetricsForThisThreshold( MetricInputGroup inGroup,
+                                                                   MetricOutputGroup outGroup,
+                                                                   Threshold threshold )
+    {
+        //Begin by assuming that all metrics within this group will be computed
+        Set<MetricConstants> returnMe = new HashSet<>();
+        //Find the global thresholds for this group
+        List<Threshold> byGroup = getThresholds( inGroup, outGroup );
+        //Are there threshold overrides for this group?
+        //Yes: add all metrics within this group to the ignore list unless a metric does not have overrides or 
+        //this threshold is defined as an override
+        if ( hasThresholdOverrides( inGroup, outGroup ) )
+        {
+            //Obtain the unconditional set of metrics for this group
+            Set<MetricConstants> fullSet =
+                    new HashSet<>( Arrays.asList( getSelectedMetrics( metrics, inGroup, outGroup ) ) );
+            //Ignore all metrics in this group unless proven otherwise
+            Set<MetricConstants> ignoreMe = new HashSet<>( fullSet );
+            //If the current threshold is within the list of global thresholds for this group, any metrics within this 
+            //group that do not have overrides may be computed. Eliminate them from the ignore list.
+            if ( byGroup.contains( threshold ) )
+            {
+                ignoreMe.removeIf( a -> !thresholdOverrides.containsKey( a ) );
+            }
+            //Next, handle cases where overrides are defined and this threshold is within the override list
+            Set<MetricConstants> overriden = getMetricsWithOverridesForThisThreshold( fullSet, threshold );
+            //Remove them from the ignore list if they are overriden
+            ignoreMe.removeIf( a -> overriden.contains( a ) );
+            //Add the rest
+            returnMe.addAll( ignoreMe );
+        }
+        //No: ignore all metrics within the group if the current threshold is not within the global thresholds
+        else
+        {
+            if ( !byGroup.contains( threshold ) )
+            {
+                returnMe.addAll( Arrays.asList( getSelectedMetrics( metrics, inGroup, outGroup ) ) );
+            }
+        }
+        return returnMe;
+    }
+
     /**
      * Validates the inputs and throws a {@link MetricInputSliceException} if the input contains fewer samples than
      * {@link #minimumSampleSize}.
@@ -537,25 +592,73 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         MetricsConfig metrics = config.getMetrics();
         validateOutputsConfig( metrics );
         //Check for metric-local thresholds and throw an exception if they are defined, as they are currently not supported
-//        EnumMap<MetricConstants, List<Threshold>> thresholdOverrides = new EnumMap<>( MetricConstants.class );
-//      TODO: store metric-local threshold conditions when they are available in the configuration
         for ( MetricConfig metric : metrics.getMetric() )
         {
             if ( metric.getName() != MetricConfigName.ALL_VALID )
             {
-//                //Obtain metric-local thresholds here
-//                List<Threshold> thresholds = new ArrayList<>();
-//                if ( !thresholds.isEmpty() )
-//                {
-//                    thresholdOverrides.put( name, thresholds );
-//                }
+                List<Threshold> thresholds = new ArrayList<>();
+                //Add probability thresholds
+                if ( Objects.nonNull( metric.getProbabilityThresholds() ) )
+                {
+                    Operator oper = MetricConfigHelper.from( metric.getProbabilityThresholds().getOperator() );
+                    String values = metric.getProbabilityThresholds().getCommaSeparatedValues();
+                    thresholds.addAll( getThresholdsFromCommaSeparatedValues( values, oper, true ) );
+
+                }
+                //Add real-valued thresholds
+                if ( Objects.nonNull( metric.getValueThresholds() ) )
+                {
+                    Operator oper = MetricConfigHelper.from( metric.getValueThresholds().getOperator() );
+                    String values = metric.getValueThresholds().getCommaSeparatedValues();
+                    thresholds.addAll( getThresholdsFromCommaSeparatedValues( values, oper, false ) );                   
+                }
+                if ( !thresholds.isEmpty() )
+                {
+                    thresholdOverrides.put( MetricConfigHelper.from( metric.getName() ), thresholds );
+                }
             }
         }
-//        if ( !localThresholds.isEmpty() )
-//        {
-//            this.thresholdOverrides.putAll( thresholdOverrides );
-//        }
         setThresholdsForAllGroups( metrics );
+    }
+
+    /**
+     * Returns <code>true</code> if one or more metrics in the specified input and output groups have override 
+     * thresholds defined, <code>false</code> otherwise.
+     * 
+     * @param inGroup the input group 
+     * @param outGroup the output group
+     * @return true if metric-local thresholds are defined for some metrics in the specified groups, false otherwise
+     */
+
+    private boolean hasThresholdOverrides( MetricInputGroup inGroup, MetricOutputGroup outGroup )
+    {
+        return thresholdOverrides.keySet().stream().anyMatch( a -> a.isInGroup( inGroup ) && a.isInGroup( outGroup ) );
+    }
+
+    /**
+     * Returns the subset of metrics within the specified group for which the input threshold is an override 
+     * threshold.
+     * 
+     * @param group the group of metrics to search
+     * @param the override threshold
+     * @return the subset of metrics from the input group for which the input threshold is an override threshold
+     * @throws NullPointerException if either input is null
+     */
+
+    private Set<MetricConstants> getMetricsWithOverridesForThisThreshold( Set<MetricConstants> group,
+                                                                          Threshold override )
+    {
+        Objects.requireNonNull( group, "Specify a non-null input group to search for threshold overrides." );
+        Objects.requireNonNull( override,
+                                "Specify a non-null input threshold to search the list of override thresholds." );
+        Set<MetricConstants> returnMe = new HashSet<>();
+        thresholdOverrides.forEach( ( key, value ) -> {
+            if ( group.contains( key ) && value.contains( override ) )
+            {
+                returnMe.add( key );
+            }
+        } );
+        return returnMe;
     }
 
     /**
@@ -693,22 +796,6 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
                                                     + "': this is not currently supported. Use '"
                                                     + LeftOrRightOrBaseline.LEFT
                                                     + "' instead." );
-        }
-        //Check for metric-local thresholds and throw an exception if they are defined, as they are currently 
-        //not supported
-        for ( MetricConfig metric : metrics.getMetric() )
-        {
-            if ( metric.getName() != MetricConfigName.ALL_VALID )
-            {
-                MetricConstants name = MetricConfigHelper.from( metric.getName() );
-                if ( Objects.nonNull( metric.getProbabilityThresholds() )
-                     || Objects.nonNull( metric.getValueThresholds() ) )
-                {
-                    throw new MetricConfigurationException( "Found metric-local thresholds for '" + name
-                                                            + "', which are not "
-                                                            + "currently supported." );
-                }
-            }
         }
     }
 
