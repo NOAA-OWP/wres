@@ -105,7 +105,7 @@ class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implement
     }
 
     @Override
-    public Set<TimeWindow> keySetByFirstKey()
+    public Set<TimeWindow> setOfFirstKey()
     {
         final Set<TimeWindow> returnMe = new TreeSet<>();
         store.keySet().forEach( a -> returnMe.add( a.getLeft() ) );
@@ -113,7 +113,7 @@ class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implement
     }
 
     @Override
-    public Set<Threshold> keySetBySecondKey()
+    public Set<Threshold> setOfSecondKey()
     {
         final Set<Threshold> returnMe = new TreeSet<>();
         store.keySet().forEach( a -> returnMe.add( a.getRight() ) );
@@ -121,10 +121,10 @@ class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implement
     }
     
     @Override
-    public Set<Long> keySetByLeadTimeInHours()
+    public Set<Long> unionOfLeadTimesInHours()
     {
         final Set<Long> returnMe = new TreeSet<>();
-        for ( TimeWindow next : keySetByTime() )
+        for ( TimeWindow next : setOfTimeWindowKey() )
         {
             returnMe.add( next.getEarliestLeadTimeInHours() );
             returnMe.add( next.getLatestLeadTimeInHours() );
@@ -188,7 +188,7 @@ class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implement
     }
 
     @Override
-    public MetricOutputMapWithBiKey<TimeWindow, Threshold, T> filterByFirst( final TimeWindow first )
+    public MetricOutputMapWithBiKey<TimeWindow, Threshold, T> filterByFirstKey( final TimeWindow first )
     {
         if ( Objects.isNull( first ) )
         {
@@ -209,7 +209,7 @@ class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implement
     }
 
     @Override
-    public MetricOutputMapWithBiKey<TimeWindow, Threshold, T> filterBySecond( final Threshold second )
+    public MetricOutputMapWithBiKey<TimeWindow, Threshold, T> filterBySecondKey( final Threshold second )
     {
         if ( Objects.isNull( second ) )
         {

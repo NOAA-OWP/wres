@@ -28,7 +28,7 @@ public class MultiVectorOutputDiagramXYDataset extends WRESAbstractXYDataset<Met
     protected void preparePlotData(final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> rawData)
     {
         //This check should not be necessary, since the conditions should be impossible.  I'll do it anyway just to be sure.
-        if((rawData.keySetByFirstKey().isEmpty()) || (rawData.keySetBySecondKey().isEmpty()))
+        if((rawData.setOfFirstKey().isEmpty()) || (rawData.setOfSecondKey().isEmpty()))
         {
             throw new IllegalStateException("Somehow, one of the key sets, either first or second, is empty.  How did that happen?");
         }
@@ -77,11 +77,11 @@ public class MultiVectorOutputDiagramXYDataset extends WRESAbstractXYDataset<Met
             return getOverrideLegendName(series);
         }
         
-        if((getPlotData().keySetByFirstKey().size() == 1) && (getPlotData().keySetBySecondKey().size() == 1))
+        if((getPlotData().setOfFirstKey().size() == 1) && (getPlotData().setOfSecondKey().size() == 1))
         {
             return "All Data"; //All of the data is in a single series.
         }
-        else if((!getPlotData().keySetByFirstKey().isEmpty()) && (getPlotData().keySetBySecondKey().size() == 1))
+        else if((!getPlotData().setOfFirstKey().isEmpty()) && (getPlotData().setOfSecondKey().size() == 1))
         {
             return Long.toString( getPlotData().getKey(series).getLeft().getLatestLeadTimeInHours() );
         } 

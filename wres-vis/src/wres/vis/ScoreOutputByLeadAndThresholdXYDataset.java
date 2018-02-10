@@ -32,7 +32,7 @@ public class ScoreOutputByLeadAndThresholdXYDataset extends
         //Handling the legend name in here because otherwise the key will be lost (I don't keep the raw data).
         //The data is processed into a list based on the key that must appear in the legend.
         int seriesIndex = 0;
-        for(final Threshold key: input.keySetByThreshold())
+        for(final Threshold key: input.setOfThresholdKey())
         {
             setOverrideLegendName(seriesIndex, key.toString());
             seriesIndex++;
@@ -50,7 +50,7 @@ public class ScoreOutputByLeadAndThresholdXYDataset extends
     protected void preparePlotData(final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> rawData)
     {
         final List<MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>> data = new ArrayList<>();
-        for(final Threshold key: rawData.keySetByThreshold())
+        for(final Threshold key: rawData.setOfThresholdKey())
         {
             data.add(rawData.filterByThreshold(key));
         }

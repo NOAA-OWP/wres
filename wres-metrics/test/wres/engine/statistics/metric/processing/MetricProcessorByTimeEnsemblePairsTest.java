@@ -315,6 +315,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                              .ofMetricProcessorByTimeEnsemblePairs( config,
                                                                     MetricOutputGroup.DOUBLE_SCORE );
         processor.apply( MetricTestDataFactory.getEnsemblePairsOne() );
+        
         //Obtain the results
         MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> results = processor.getCachedMetricOutput()
                                                                                      .getDoubleScoreOutput();

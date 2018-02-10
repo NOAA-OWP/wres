@@ -235,7 +235,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
 
         final String legendTitle = "Threshold";
         String legendUnitsText = "";
-        if ( ( displayedPlotInput.hasQuantileThresholds() ) || ( displayedPlotInput.keySetByThreshold().size() > 1 ) )
+        if ( ( displayedPlotInput.hasQuantileThresholds() ) || ( displayedPlotInput.setOfThresholdKey().size() > 1 ) )
         {
             legendUnitsText += " [" + meta.getInputDimension() + "]";
         }

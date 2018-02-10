@@ -174,7 +174,7 @@ public abstract class XYChartDataSourceFactory
 
         buildInitialParameters( source,
                                 orderIndex,
-                                input.keySetByThreshold().size() * input.keySetByLeadTimeInHours().size() );
+                                input.setOfThresholdKey().size() * input.unionOfLeadTimesInHours().size() );
         source.setXAxisType( ChartConstants.AXIS_IS_TIME );
         source.getDefaultFullySpecifiedDataSourceDrawingParameters()
               .setDefaultDomainAxisTitle( "FORECAST ISSUE DATE/TIME [UTC]" );
@@ -277,13 +277,13 @@ public abstract class XYChartDataSourceFactory
                 TimeSeriesCollection returnMe = new TimeSeriesCollection();
 
                 // Filter by lead time and then by threshold
-                Set<Long> leadTimes = input.keySetByLeadTimeInHours();
+                Set<Long> leadTimes = input.unionOfLeadTimesInHours();
                 for ( Long nextTime : leadTimes )
                 {
                     MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> slice =
                             input.filterByLeadTimeInHours( nextTime );
                     // Filter by threshold
-                    Set<Threshold> thresholds = input.keySetByThreshold();
+                    Set<Threshold> thresholds = input.setOfThresholdKey();
                     for ( Threshold nextThreshold : thresholds )
                     {
                         MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> finalSlice =
@@ -304,7 +304,7 @@ public abstract class XYChartDataSourceFactory
 
         buildInitialParameters( source,
                                 orderIndex,
-                                input.keySetByThreshold().size() * input.keySetByLeadTimeInHours().size() );
+                                input.setOfThresholdKey().size() * input.unionOfLeadTimesInHours().size() );
         source.getDefaultFullySpecifiedDataSourceDrawingParameters()
               .setDefaultDomainAxisTitle( "TIME AT CENTER OF WINDOW [UTC]" );
         source.getDefaultFullySpecifiedDataSourceDrawingParameters()
@@ -342,7 +342,7 @@ public abstract class XYChartDataSourceFactory
             }
         };
 
-        buildInitialParameters( source, orderIndex, input.keySetByLeadTimeInHours().size() );
+        buildInitialParameters( source, orderIndex, input.unionOfLeadTimesInHours().size() );
         source.getDefaultFullySpecifiedDataSourceDrawingParameters()
               .setDefaultDomainAxisTitle( "THRESHOLD VALUE@inputUnitsLabelSuffix@" );
         source.getDefaultFullySpecifiedDataSourceDrawingParameters()
@@ -380,7 +380,7 @@ public abstract class XYChartDataSourceFactory
             }
         };
 
-        buildInitialParameters( source, orderIndex, input.keySetByThreshold().size() );
+        buildInitialParameters( source, orderIndex, input.setOfThresholdKey().size() );
         source.getDefaultFullySpecifiedDataSourceDrawingParameters()
               .setDefaultDomainAxisTitle( "FORECAST LEAD TIME [HOUR]" );
         source.getDefaultFullySpecifiedDataSourceDrawingParameters()

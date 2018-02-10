@@ -31,7 +31,7 @@ public class ScoreOutputByThresholdAndLeadXYDataset extends
 
         //Handling the legend name in here because otherwise the key will be lost (I don't keep the raw data).
         int seriesIndex = 0;
-        for(final TimeWindow lead: input.keySetByTime())
+        for(final TimeWindow lead: input.setOfTimeWindowKey())
         {
             setOverrideLegendName( seriesIndex, Long.toString( lead.getLatestLeadTimeInHours() ) );
             seriesIndex++;
@@ -50,7 +50,7 @@ public class ScoreOutputByThresholdAndLeadXYDataset extends
     {
         //Cast the raw data input and check the size.
         final List<MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>> data = new ArrayList<>();
-        for(final TimeWindow lead: rawData.keySetByTime())
+        for(final TimeWindow lead: rawData.setOfTimeWindowKey())
         {
             data.add(rawData.filterByTime(lead));
         }
