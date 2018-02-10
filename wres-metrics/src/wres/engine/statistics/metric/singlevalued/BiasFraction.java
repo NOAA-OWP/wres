@@ -26,19 +26,25 @@ public class BiasFraction extends DoubleErrorScore<SingleValuedPairs>
     @Override
     public DoubleScoreOutput apply(SingleValuedPairs s)
     {
-        if(Objects.isNull(s))
+        if ( Objects.isNull( s ) )
         {
-            throw new MetricInputException("Specify non-null input to the '"+this+"'.");
+            throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
         }
-        final MetricOutputMetadata metOut = getMetadata(s, s.getData().size(), MetricConstants.MAIN, null);
+        final MetricOutputMetadata metOut = getMetadata( s, s.getData().size(), MetricConstants.MAIN, null );
         DoubleAdder left = new DoubleAdder();
         DoubleAdder right = new DoubleAdder();
         DoubleErrorFunction error = FunctionFactory.error();
-        s.getData().forEach(pair -> {
-            left.add(error.applyAsDouble( pair ));
-            right.add(pair.getItemOne());
-        });
-        return getDataFactory().ofDoubleScoreOutput(left.sum()/right.sum(), metOut);        
+        s.getData().forEach( pair -> {
+            left.add( error.applyAsDouble( pair ) );
+            right.add( pair.getItemOne() );
+        } );
+        double result = left.sum() / right.sum();
+        //Set NaN if not finite
+        if ( !Double.isFinite( result ) )
+        {
+            result = Double.NaN;
+        }
+        return getDataFactory().ofDoubleScoreOutput( result, metOut );
     }
 
     @Override
