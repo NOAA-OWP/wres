@@ -748,7 +748,7 @@ public class Chart2DTestOutput
 
         //Construct some single-valued pairs
         final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> input =
-                Chart2DTestDataGenerator.getScalarMetricOutputMapForRollingWindows();
+                Chart2DTestDataGenerator.getScoreOutputForPoolingWindowsFirst();
 
         try
         {
