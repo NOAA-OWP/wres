@@ -1,5 +1,6 @@
 package wres.datamodel;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -12,6 +13,8 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -119,18 +122,19 @@ class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implement
         store.keySet().forEach( a -> returnMe.add( a.getRight() ) );
         return Collections.unmodifiableSet( returnMe );
     }
-    
+
     @Override
-    public Set<Long> unionOfLeadTimesInHours()
+    public Set<TimeWindow> setOfTimeWindowKeyByLeadTime()
     {
-        final Set<Long> returnMe = new TreeSet<>();
-        for ( TimeWindow next : setOfTimeWindowKey() )
-        {
-            returnMe.add( next.getEarliestLeadTimeInHours() );
-            returnMe.add( next.getLatestLeadTimeInHours() );
-        }
-        return Collections.unmodifiableSet( returnMe );
-    }    
+        //Group by matching durations
+        Function<Pair<TimeWindow, Threshold>, Pair<Duration, Duration>> groupBy =
+                ( a ) -> Pair.of( a.getLeft().getEarliestLeadTime(), a.getLeft().getLatestLeadTime() );
+        Set<TimeWindow> returnMe = new TreeSet<>();
+        store.keySet().stream().collect( Collectors.groupingBy( groupBy ) ).forEach( ( key, value ) -> {
+            returnMe.add( value.get( 0 ).getLeft() );
+        } );
+        return returnMe;
+    }
 
     @Override
     public int size()
@@ -229,14 +233,17 @@ class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implement
         return b.build();
     }
 
-
     @Override
-    public MetricOutputMapByTimeAndThreshold<T> filterByLeadTimeInHours( long leadHours )
+    public MetricOutputMapByTimeAndThreshold<T> filterByLeadTime( TimeWindow window )
     {
+        if ( Objects.isNull( window ) )
+        {
+            throw new MetricOutputException( "Specify a non-null time window by which to slice the map." );
+        }
         final Builder<T> b = new Builder<>();
         store.forEach( ( key, value ) -> {
-            if ( key.getLeft().getEarliestLeadTimeInHours() == leadHours
-                 || key.getLeft().getLatestLeadTimeInHours() == leadHours )
+            if ( key.getKey().getEarliestLeadTime().equals( window.getEarliestLeadTime() )
+                 && key.getKey().getLatestLeadTime().equals( window.getLatestLeadTime() ) )
             {
                 b.put( key, value );
             }
@@ -247,7 +254,7 @@ class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implement
         }
         return b.build();
     }
-    
+
     @Override
     public MetricOutputMetadata getMetadata()
     {
@@ -354,7 +361,7 @@ class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implement
         store = new TreeMap<>();
         store.putAll( builder.store );
         internal = new ArrayList<>( store.keySet() );
-        
+
         //Set the metadata, updating the time window to find the union of the inputs, if available
         final MetricOutputMetadata checkAgainst = builder.referenceMetadata;
         MetricOutputMetadata builderLocalMeta;
@@ -371,9 +378,9 @@ class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implement
         {
             builderLocalMeta = checkAgainst;
         }
-        
+
         //Update the metadata with the union of the time windows
-        if( builderLocalMeta.hasTimeWindow() )
+        if ( builderLocalMeta.hasTimeWindow() )
         {
             List<TimeWindow> windows = new ArrayList<>();
             store.keySet().forEach( a -> windows.add( a.getLeft() ) );
@@ -385,13 +392,13 @@ class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implement
             }
         }
         metadata = builderLocalMeta;
-        
+
         //Bounds checks
         if ( store.isEmpty() )
         {
             throw new MetricOutputException( "Specify one or more <key,value> mappings to build the map." );
         }
-        
+
         store.forEach( ( key, value ) -> {
             if ( Objects.isNull( key ) )
             {

@@ -4,6 +4,8 @@ import static org.junit.Assert.assertTrue;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -11,6 +13,8 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
 import wres.datamodel.Threshold.Operator;
+import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.DoubleScoreOutput;
@@ -93,7 +97,7 @@ public final class SafeMetricOutputMapByTimeAndThresholdTest
 
         //Filter by lead times directly        
         final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> subMap4 =
-                results.filterByLeadTimeInHours( 42 ).filterByThreshold( q );
+                results.filterByLeadTime( timeWindow ).filterByThreshold( q );
         final double actualThree = subMap4.get( testKeyOne ).getData();
         final double expectedThree = expectedOne;
         assertTrue( "Unexpected output from data slice [" + actualThree
@@ -114,6 +118,61 @@ public final class SafeMetricOutputMapByTimeAndThresholdTest
         assertTrue( "Unexpected lead times in dataset.",
                     results.setOfTimeWindowKey().equals( benchmarkTimes ) );
 
+    }
+
+    /**
+     * Tests {@link SafeMetricOutputMapByTimeAndThreshold#setOfTimeWindowKeyByLeadTime()}.
+     */
+
+    @Test
+    public void test2ConstructAndFilter()
+    {
+        DataFactory outputFactory = DefaultDataFactory.getInstance();
+        MetadataFactory metaFac = outputFactory.getMetadataFactory();
+        final MetricOutputMetadata meta = metaFac.getOutputMetadata( 1,
+                                                                     metaFac.getDimension(),
+                                                                     metaFac.getDimension(),
+                                                                     MetricConstants.COEFFICIENT_OF_DETERMINATION,
+                                                                     MetricConstants.MAIN );
+        Map<Pair<TimeWindow, Threshold>, DoubleScoreOutput> testMap = new HashMap<>();
+        Threshold threshold = outputFactory.getThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER );
+        testMap.put( Pair.of( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                             Instant.parse( "1985-01-02T00:00:00Z" ),
+                                             ReferenceTime.ISSUE_TIME,
+                                             Duration.ofHours( 1 ),
+                                             Duration.ofHours( 2 ) ),
+                              threshold ),
+                     outputFactory.ofDoubleScoreOutput( 1.0, meta ) );
+        testMap.put( Pair.of( TimeWindow.of( Instant.parse( "1985-01-03T00:00:00Z" ),
+                                             Instant.parse( "1985-01-04T00:00:00Z" ),
+                                             ReferenceTime.ISSUE_TIME,
+                                             Duration.ofHours( 1 ),
+                                             Duration.ofHours( 2 ) ),
+                              threshold ),
+                     outputFactory.ofDoubleScoreOutput( 2.0, meta ) );
+        testMap.put( Pair.of( TimeWindow.of( Instant.parse( "1985-01-05T00:00:00Z" ),
+                                             Instant.parse( "1985-01-06T00:00:00Z" ),
+                                             ReferenceTime.ISSUE_TIME,
+                                             Duration.ofHours( 1 ),
+                                             Duration.ofHours( 2 ) ),
+                              threshold ),
+                     outputFactory.ofDoubleScoreOutput( 3.0, meta ) );
+        testMap.put( Pair.of( TimeWindow.of( Instant.parse( "1985-01-07T00:00:00Z" ),
+                                             Instant.parse( "1985-01-08T00:00:00Z" ),
+                                             ReferenceTime.ISSUE_TIME,
+                                             Duration.ofHours( 1 ),
+                                             Duration.ofHours( 2 ) ),
+                              threshold ),
+                     outputFactory.ofDoubleScoreOutput( 4.0, meta ) );
+        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> test = outputFactory.ofMap( testMap );
+        Set<TimeWindow> benchmarkTimes = new TreeSet<>();
+        benchmarkTimes.add( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                           Instant.parse( "1985-01-02T00:00:00Z" ),
+                                           ReferenceTime.ISSUE_TIME,
+                                           Duration.ofHours( 1 ),
+                                           Duration.ofHours( 2 ) ) );
+        assertTrue( "Unexpected windows in filtered dataset.",
+                    test.setOfTimeWindowKeyByLeadTime().equals( benchmarkTimes ) );
     }
 
 }

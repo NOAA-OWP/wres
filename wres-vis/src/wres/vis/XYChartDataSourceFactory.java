@@ -5,7 +5,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.function.Supplier;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -174,7 +173,7 @@ public abstract class XYChartDataSourceFactory
 
         buildInitialParameters( source,
                                 orderIndex,
-                                input.setOfThresholdKey().size() * input.unionOfLeadTimesInHours().size() );
+                                input.size() );
         source.setXAxisType( ChartConstants.AXIS_IS_TIME );
         source.getDefaultFullySpecifiedDataSourceDrawingParameters()
               .setDefaultDomainAxisTitle( "FORECAST ISSUE DATE/TIME [UTC]" );
@@ -237,7 +236,7 @@ public abstract class XYChartDataSourceFactory
             }
         };
 
-        buildInitialParameters( source, orderIndex, input.keySet().size() );
+        buildInitialParameters( source, orderIndex, input.size() );
         source.getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultDomainAxisTitle( domainTitle );
         source.getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultRangeAxisTitle( rangeTitle );
 
@@ -277,19 +276,25 @@ public abstract class XYChartDataSourceFactory
                 TimeSeriesCollection returnMe = new TimeSeriesCollection();
 
                 // Filter by lead time and then by threshold
-                Set<Long> leadTimes = input.unionOfLeadTimesInHours();
-                for ( Long nextTime : leadTimes )
+                for ( TimeWindow nextTime : input.setOfTimeWindowKeyByLeadTime() )
                 {
                     MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> slice =
-                            input.filterByLeadTimeInHours( nextTime );
+                            input.filterByLeadTime( nextTime );
                     // Filter by threshold
-                    Set<Threshold> thresholds = input.setOfThresholdKey();
-                    for ( Threshold nextThreshold : thresholds )
+                    for ( Threshold nextThreshold : input.setOfThresholdKey() )
                     {
                         MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> finalSlice =
                                 slice.filterByThreshold( nextThreshold );
                         // Add the time-series
-                        TimeSeries next = new TimeSeries( nextTime + ", " + nextThreshold, FixedMillisecond.class );
+                        String leadKey = Long.toString( nextTime.getLatestLeadTime().toHours() );
+                        if ( !nextTime.getEarliestLeadTime().equals( nextTime.getLatestLeadTime() ) )
+                        {
+                            leadKey = "(" + nextTime.getEarliestLeadTime().toHours()
+                                      + ","
+                                      + nextTime.getLatestLeadTime().toHours()
+                                      + "]";
+                        }
+                        TimeSeries next = new TimeSeries( leadKey + ", " + nextThreshold, FixedMillisecond.class );
                         for ( Pair<TimeWindow, Threshold> key : finalSlice.keySet() )
                         {
                             next.add( new FixedMillisecond( key.getLeft().getMidPointTime().toEpochMilli() ),
@@ -304,7 +309,7 @@ public abstract class XYChartDataSourceFactory
 
         buildInitialParameters( source,
                                 orderIndex,
-                                input.setOfThresholdKey().size() * input.unionOfLeadTimesInHours().size() );
+                                input.size() );
         source.getDefaultFullySpecifiedDataSourceDrawingParameters()
               .setDefaultDomainAxisTitle( "TIME AT CENTER OF WINDOW [UTC]" );
         source.getDefaultFullySpecifiedDataSourceDrawingParameters()
@@ -342,7 +347,7 @@ public abstract class XYChartDataSourceFactory
             }
         };
 
-        buildInitialParameters( source, orderIndex, input.unionOfLeadTimesInHours().size() );
+        buildInitialParameters( source, orderIndex, input.setOfTimeWindowKey().size() );
         source.getDefaultFullySpecifiedDataSourceDrawingParameters()
               .setDefaultDomainAxisTitle( "THRESHOLD VALUE@inputUnitsLabelSuffix@" );
         source.getDefaultFullySpecifiedDataSourceDrawingParameters()
