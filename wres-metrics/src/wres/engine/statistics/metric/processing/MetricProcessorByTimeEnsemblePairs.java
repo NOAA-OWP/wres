@@ -2,9 +2,9 @@ package wres.engine.statistics.metric.processing;
 
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
@@ -336,13 +336,20 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                                             MetricOutputGroup outGroup )
     {
         //Process thresholds
-        List<Threshold> global = getThresholds( MetricInputGroup.ENSEMBLE, outGroup );
+        Set<Threshold> global = getThresholds( MetricInputGroup.ENSEMBLE, outGroup );
         double[] sorted = getSortedClimatology( input, global );
         Map<Threshold, MetricCalculationException> failures = new HashMap<>();
         global.forEach( threshold -> {
             Threshold useMe = getThreshold( threshold, sorted );
+            Set<MetricConstants> ignoreTheseMetricsForThisThreshold =
+                    doNotComputeTheseMetricsForThisThreshold( MetricInputGroup.ENSEMBLE, outGroup, threshold );
             MetricCalculationException result =
-                    processEnsembleThreshold( timeWindow, input, futures, outGroup, useMe );
+                    processEnsembleThreshold( timeWindow,
+                                              input,
+                                              futures,
+                                              outGroup,
+                                              useMe,
+                                              ignoreTheseMetricsForThisThreshold );
             if ( !Objects.isNull( result ) )
             {
                 failures.put( useMe, result );
@@ -361,6 +368,8 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
      * @param futures the metric futures
      * @param outGroup the metric output type
      * @param threshold the threshold
+     * @param ignoreTheseMetricsForThisThreshold a set of metrics within the prescribed group that should be 
+     *            ignored for this threshold
      * @return a MetricCalculationException for information if the threshold failed
      */
 
@@ -368,7 +377,8 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                                                                  EnsemblePairs input,
                                                                  MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
                                                                  MetricOutputGroup outGroup,
-                                                                 Threshold threshold )
+                                                                 Threshold threshold,
+                                                                 Set<MetricConstants> ignoreTheseMetricsForThisThreshold )
     {
         MetricCalculationException returnMe = null;
         try
@@ -378,21 +388,24 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                 futures.addDoubleScoreOutput( Pair.of( timeWindow, threshold ),
                                               processEnsembleThreshold( threshold,
                                                                         input,
-                                                                        ensembleScore ) );
+                                                                        ensembleScore,
+                                                                        ignoreTheseMetricsForThisThreshold ) );
             }
             else if ( outGroup == MetricOutputGroup.MULTIVECTOR )
             {
                 futures.addMultiVectorOutput( Pair.of( timeWindow, threshold ),
                                               processEnsembleThreshold( threshold,
                                                                         input,
-                                                                        ensembleMultiVector ) );
+                                                                        ensembleMultiVector,
+                                                                        ignoreTheseMetricsForThisThreshold ) );
             }
             else if ( outGroup == MetricOutputGroup.BOXPLOT )
             {
                 futures.addBoxPlotOutput( Pair.of( timeWindow, threshold ),
                                           processEnsembleThreshold( threshold,
                                                                     input,
-                                                                    ensembleBoxPlot ) );
+                                                                    ensembleBoxPlot,
+                                                                    ignoreTheseMetricsForThisThreshold ) );
             }
 
         }
@@ -449,13 +462,22 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                                                        MetricOutputGroup outGroup )
     {
         //Process thresholds
-        List<Threshold> global = getThresholds( MetricInputGroup.DISCRETE_PROBABILITY, outGroup );
+        Set<Threshold> global = getThresholds( MetricInputGroup.DISCRETE_PROBABILITY, outGroup );
         double[] sorted = getSortedClimatology( input, global );
         Map<Threshold, MetricCalculationException> failures = new HashMap<>();
         global.forEach( threshold -> {
             Threshold useMe = getThreshold( threshold, sorted );
+            Set<MetricConstants> ignoreTheseMetricsForThisThreshold =
+                    doNotComputeTheseMetricsForThisThreshold( MetricInputGroup.DISCRETE_PROBABILITY,
+                                                              outGroup,
+                                                              threshold );
             MetricCalculationException result =
-                    processDiscreteProbabilityThreshold( timeWindow, input, futures, outGroup, useMe );
+                    processDiscreteProbabilityThreshold( timeWindow,
+                                                         input,
+                                                         futures,
+                                                         outGroup,
+                                                         useMe,
+                                                         ignoreTheseMetricsForThisThreshold );
             if ( !Objects.isNull( result ) )
             {
                 failures.put( useMe, result );
@@ -478,6 +500,8 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
      * @param futures the metric futures
      * @param outGroup the metric output type
      * @param threshold the threshold
+     * @param ignoreTheseMetricsForThisThreshold a set of metrics within the prescribed group that should be 
+     *            ignored for this threshold
      * @return an exception for information if the calculation failed
      */
 
@@ -485,7 +509,8 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                                                                             EnsemblePairs input,
                                                                             MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
                                                                             MetricOutputGroup outGroup,
-                                                                            Threshold threshold )
+                                                                            Threshold threshold,
+                                                                            Set<MetricConstants> ignoreTheseMetricsForThisThreshold )
     {
         MetricCalculationException returnMe = null;
         try
@@ -495,14 +520,16 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                 futures.addDoubleScoreOutput( Pair.of( timeWindow, threshold ),
                                               processDiscreteProbabilityThreshold( threshold,
                                                                                    input,
-                                                                                   discreteProbabilityScore ) );
+                                                                                   discreteProbabilityScore,
+                                                                                   ignoreTheseMetricsForThisThreshold ) );
             }
             else if ( outGroup == MetricOutputGroup.MULTIVECTOR )
             {
                 futures.addMultiVectorOutput( Pair.of( timeWindow, threshold ),
                                               processDiscreteProbabilityThreshold( threshold,
                                                                                    input,
-                                                                                   discreteProbabilityMultiVector ) );
+                                                                                   discreteProbabilityMultiVector,
+                                                                                   ignoreTheseMetricsForThisThreshold ) );
             }
         }
         //Insufficient data for one threshold: log, but allow
@@ -522,6 +549,8 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
      * @param threshold the threshold
      * @param pairs the pairs
      * @param collection the metric collection
+     * @param ignoreTheseMetricsForThisThreshold a set of metrics within the prescribed group that should be 
+     *            ignored for this threshold
      * @return the future result
      * @throws MetricInputSliceException if the pairs contain insufficient data to compute the metrics
      * @throws InsufficientDataException if the pairs contain only missing values after slicing
@@ -530,7 +559,8 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
     private <T extends MetricOutput<?>> Future<MetricOutputMapByMetric<T>>
             processDiscreteProbabilityThreshold( Threshold threshold,
                                                  EnsemblePairs pairs,
-                                                 MetricCollection<DiscreteProbabilityPairs, T, T> collection )
+                                                 MetricCollection<DiscreteProbabilityPairs, T, T> collection,
+                                                 Set<MetricConstants> ignoreTheseMetricsForThisThreshold )
                     throws MetricInputSliceException
     {
         //Check the slice before transformation
@@ -539,7 +569,8 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                                                           .transformPairs( pairs, threshold, toDiscreteProbabilities );
         //Check the slice after transformation
         checkDiscreteProbabilitySlice( transformed, threshold );
-        return CompletableFuture.supplyAsync( () -> collection.apply( transformed ), thresholdExecutor );
+        return CompletableFuture.supplyAsync( () -> collection.apply( transformed, ignoreTheseMetricsForThisThreshold ),
+                                              thresholdExecutor );
     }
 
     /**
@@ -550,6 +581,8 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
      * @param threshold the threshold
      * @param pairs the pairs
      * @param collection the metric collection
+     * @param ignoreTheseMetricsForThisThreshold a set of metrics within the prescribed group that should be 
+     *            ignored for this threshold
      * @return the future result
      * @throws MetricInputSliceException if the threshold fails to slice sufficient data to compute the metrics
      * @throws InsufficientDataException if the pairs contain only missing values after slicing
@@ -558,7 +591,8 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
     private <T extends MetricOutput<?>> Future<MetricOutputMapByMetric<T>>
             processEnsembleThreshold( Threshold threshold,
                                       EnsemblePairs pairs,
-                                      MetricCollection<EnsemblePairs, T, T> collection )
+                                      MetricCollection<EnsemblePairs, T, T> collection,
+                                      Set<MetricConstants> ignoreTheseMetricsForThisThreshold )
                     throws MetricInputSliceException
     {
         //Slice the pairs
@@ -569,7 +603,8 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         }
         checkSlice( subset, threshold );
         EnsemblePairs finalPairs = subset;
-        return CompletableFuture.supplyAsync( () -> collection.apply( finalPairs ), thresholdExecutor );
+        return CompletableFuture.supplyAsync( () -> collection.apply( finalPairs, ignoreTheseMetricsForThisThreshold ),
+                                              thresholdExecutor );
     }
 
     /**

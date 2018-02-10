@@ -124,16 +124,16 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
     final DataFactory dataFactory;
 
     /**
-     * List of thresholds associated with specific metrics that override {@link #thresholds}
+     * Set of thresholds associated with specific metrics that override {@link #thresholds}
      */
 
-    final EnumMap<MetricConstants, List<Threshold>> thresholdOverrides;
+    final EnumMap<MetricConstants, Set<Threshold>> thresholdOverrides;
 
     /**
-     * List of thresholds that apply each group of metrics.
+     * Set of thresholds that apply each group of metrics.
      */
 
-    final Map<Pair<MetricInputGroup, MetricOutputGroup>, List<Threshold>> thresholds;
+    final Map<Pair<MetricInputGroup, MetricOutputGroup>, Set<Threshold>> thresholds;
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume {@link SingleValuedPairs} and produce
@@ -399,7 +399,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
      * @return true if the input list contains one or more probability thresholds, false otherwise
      */
 
-    boolean hasProbabilityThreshold( List<Threshold> check )
+    boolean hasProbabilityThreshold( Set<Threshold> check )
     {
         return check.stream().anyMatch( Threshold::hasProbabilityValues );
     }
@@ -442,7 +442,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
      * @return a sorted array of values or null
      */
 
-    double[] getSortedClimatology( PairedInput<?> input, List<Threshold> thresholds )
+    double[] getSortedClimatology( PairedInput<?> input, Set<Threshold> thresholds )
     {
         double[] sorted = null;
         if ( hasProbabilityThreshold( thresholds ) && input.hasClimatology() )
@@ -483,7 +483,9 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
 
     /**
      * Returns the thresholds to process for a specific combination of {@link MetricInputGroup} and 
-     * {@link MetricOutputGroup}.
+     * {@link MetricOutputGroup}. Returns the union of the global thresholds and any metric-local thresholds 
+     * for metrics that belong to the specified group. Also see: 
+     * {@link #doNotComputeTheseMetricsForThisThreshold(MetricInputGroup, MetricOutputGroup, Threshold)}
      * 
      * @param inGroup the input group
      * @param outGroup the output group
@@ -491,9 +493,9 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
      * @throws MetricCalculationException if no thresholds exist
      */
 
-    List<Threshold> getThresholds( MetricInputGroup inGroup, MetricOutputGroup outGroup )
+    Set<Threshold> getThresholds( MetricInputGroup inGroup, MetricOutputGroup outGroup )
     {
-        List<Threshold> returnMe = thresholds.get( Pair.of( inGroup, outGroup ) );
+        Set<Threshold> returnMe = new HashSet<>( thresholds.get( Pair.of( inGroup, outGroup ) ) );
         if ( Objects.isNull( returnMe ) )
         {
             throw new MetricCalculationException( "Could not identify thresholds for '" + inGroup
@@ -502,6 +504,8 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
                                                   + outGroup
                                                   + "'." );
         }
+        //Add any metric-local thresholds for this group
+        returnMe.addAll( getThresholdOverrides( inGroup, outGroup ) );
         return returnMe;
     }
 
@@ -521,7 +525,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         //Begin by assuming that all metrics within this group will be computed
         Set<MetricConstants> returnMe = new HashSet<>();
         //Find the global thresholds for this group
-        List<Threshold> byGroup = getThresholds( inGroup, outGroup );
+        Set<Threshold> byGroup = thresholds.get( Pair.of( inGroup, outGroup ) );
         //Are there threshold overrides for this group?
         //Yes: add all metrics within this group to the ignore list unless a metric does not have overrides or 
         //this threshold is defined as an override
@@ -541,7 +545,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
             //Next, handle cases where overrides are defined and this threshold is within the override list
             Set<MetricConstants> overriden = getMetricsWithOverridesForThisThreshold( fullSet, threshold );
             //Remove them from the ignore list if they are overriden
-            ignoreMe.removeIf( a -> overriden.contains( a ) );
+            ignoreMe.removeIf( overriden::contains );
             //Add the rest
             returnMe.addAll( ignoreMe );
         }
@@ -596,7 +600,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         {
             if ( metric.getName() != MetricConfigName.ALL_VALID )
             {
-                List<Threshold> thresholds = new ArrayList<>();
+                Set<Threshold> thresholds = new HashSet<>();
                 //Add probability thresholds
                 if ( Objects.nonNull( metric.getProbabilityThresholds() ) )
                 {
@@ -610,7 +614,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
                 {
                     Operator oper = MetricConfigHelper.from( metric.getValueThresholds().getOperator() );
                     String values = metric.getValueThresholds().getCommaSeparatedValues();
-                    thresholds.addAll( getThresholdsFromCommaSeparatedValues( values, oper, false ) );                   
+                    thresholds.addAll( getThresholdsFromCommaSeparatedValues( values, oper, false ) );
                 }
                 if ( !thresholds.isEmpty() )
                 {
@@ -633,6 +637,26 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
     private boolean hasThresholdOverrides( MetricInputGroup inGroup, MetricOutputGroup outGroup )
     {
         return thresholdOverrides.keySet().stream().anyMatch( a -> a.isInGroup( inGroup ) && a.isInGroup( outGroup ) );
+    }
+
+    /**
+     * Returns the union of thresholds across metrics within the specified group that have override thresholds defined.
+     * 
+     * @param inGroup the input group 
+     * @param outGroup the output group
+     * @return the union of override thresholds for the input group
+     */
+
+    private Set<Threshold> getThresholdOverrides( MetricInputGroup inGroup, MetricOutputGroup outGroup )
+    {
+        Set<Threshold> returnMe = new HashSet<>();
+        thresholdOverrides.forEach( ( key, value ) -> {
+            if ( key.isInGroup( inGroup ) && key.isInGroup( outGroup ) )
+            {
+                returnMe.addAll( value );
+            }
+        } );
+        return returnMe;
     }
 
     /**
@@ -672,9 +696,9 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
     private void setThresholdsForAllGroups( MetricsConfig metrics ) throws MetricConfigurationException
     {
 
-        List<Threshold> thresholdsWithAllData = new ArrayList<>();
-        List<Threshold> thresholdsWithoutAllData = new ArrayList<>();
-        List<Threshold> thresholdsWithAllDataOnly = new ArrayList<>();
+        Set<Threshold> thresholdsWithAllData = new HashSet<>();
+        Set<Threshold> thresholdsWithoutAllData = new HashSet<>();
+        Set<Threshold> thresholdsWithAllDataOnly = new HashSet<>();
 
         //Add a threshold for "all data" by default
         Threshold allData = dataFactory.getThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER );
@@ -726,9 +750,9 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
 
     private void setThresholdsForOneGroup( MetricInputGroup inGroup,
                                            MetricOutputGroup outGroup,
-                                           List<Threshold> thresholdsWithAllData,
-                                           List<Threshold> thresholdsWithoutAllData,
-                                           List<Threshold> thresholdsWithAllDataOnly )
+                                           Set<Threshold> thresholdsWithAllData,
+                                           Set<Threshold> thresholdsWithoutAllData,
+                                           Set<Threshold> thresholdsWithAllDataOnly )
     {
         if ( inGroup == MetricInputGroup.ENSEMBLE )
         {

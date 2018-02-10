@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
@@ -277,13 +278,21 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                                           MetricFuturesByTimeBuilder futures )
     {
         //Process thresholds
-        List<Threshold> global = getThresholds( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCORE );
+        Set<Threshold> global = getThresholds( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCORE );
         double[] sorted = getSortedClimatology( input, global );
         Map<Threshold, MetricCalculationException> failures = new HashMap<>();
         global.forEach( threshold -> {
             Threshold useMe = getThreshold( threshold, sorted );
+            Set<MetricConstants> ignoreTheseMetricsForThisThreshold =
+                    doNotComputeTheseMetricsForThisThreshold( MetricInputGroup.DICHOTOMOUS,
+                                                              MetricOutputGroup.SCORE,
+                                                              threshold );
             MetricCalculationException result =
-                    processDichotomousThreshold( timeWindow, input, futures, useMe );
+                    processDichotomousThreshold( timeWindow,
+                                                 input,
+                                                 futures,
+                                                 useMe,
+                                                 ignoreTheseMetricsForThisThreshold );
             if ( !Objects.isNull( result ) )
             {
                 failures.put( useMe, result );
@@ -309,7 +318,8 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
     {
         //Build the future result
         Future<MetricOutputMapByMetric<PairedOutput<Instant, Duration>>> output =
-                CompletableFuture.supplyAsync( () -> timeSeries.apply( input ), thresholdExecutor );
+                CompletableFuture.supplyAsync( () -> timeSeries.apply( input ),
+                                               thresholdExecutor );
         //Add the future result to the store
         futures.addPairedOutput( Pair.of( timeWindow,
                                           dataFactory.getThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER ) ),
@@ -324,13 +334,16 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
      * @param input the input pairs
      * @param futures the metric futures
      * @param threshold the threshold
+     * @param ignoreTheseMetricsForThisThreshold a set of metrics within the prescribed group that should be 
+     *            ignored for this threshold
      * @return a MetricCalculationException for information if the threshold cannot be computed
      */
 
     private MetricCalculationException processDichotomousThreshold( TimeWindow timeWindow,
                                                                     SingleValuedPairs input,
                                                                     MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
-                                                                    Threshold threshold )
+                                                                    Threshold threshold,
+                                                                    Set<MetricConstants> ignoreTheseMetricsForThisThreshold )
     {
         MetricCalculationException returnMe = null;
         try
@@ -338,7 +351,8 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
             futures.addDoubleScoreOutput( Pair.of( timeWindow, threshold ),
                                           processDichotomousThreshold( threshold,
                                                                        input,
-                                                                       dichotomousScalar ) );
+                                                                       dichotomousScalar,
+                                                                       ignoreTheseMetricsForThisThreshold ) );
         }
         //Insufficient data for one threshold: log, but allow
         catch ( MetricInputSliceException e )
@@ -356,6 +370,8 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
      * @param threshold the threshold
      * @param pairs the pairs
      * @param collection the metric collection
+     * @param ignoreTheseMetricsForThisThreshold a set of metrics within the prescribed group that should be 
+     *            ignored for this threshold
      * @return true if the future was added successfully
      * @throws MetricInputSliceException if the pairs contain insufficient data to compute the metrics
      */
@@ -363,7 +379,8 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
     private <T extends MetricOutput<?>> Future<MetricOutputMapByMetric<T>>
             processDichotomousThreshold( Threshold threshold,
                                          SingleValuedPairs pairs,
-                                         MetricCollection<DichotomousPairs, MatrixOutput, T> collection )
+                                         MetricCollection<DichotomousPairs, MatrixOutput, T> collection,
+                                         Set<MetricConstants> ignoreTheseMetricsForThisThreshold )
                     throws MetricInputSliceException
     {
         //Check the data before transformation
@@ -376,7 +393,8 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
         DichotomousPairs transformed = dataFactory.getSlicer().transformPairs( pairs, mapper );
         //Check the data after transformation
         checkDichotomousSlice( transformed, threshold );
-        return CompletableFuture.supplyAsync( () -> collection.apply( transformed ), thresholdExecutor );
+        return CompletableFuture.supplyAsync( () -> collection.apply( transformed, ignoreTheseMetricsForThisThreshold ),
+                                              thresholdExecutor );
     }
 
     /**

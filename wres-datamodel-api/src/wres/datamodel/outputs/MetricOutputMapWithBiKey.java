@@ -5,7 +5,7 @@ import java.util.Set;
 import org.apache.commons.lang3.tuple.Pair;
 
 /**
- * A sorted map of {@link MetricOutput} stored by a {@link Pair}.
+ * A sorted map of {@link MetricOutput} stored against a {@link Pair} key.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
@@ -24,7 +24,7 @@ extends MetricOutputMap<Pair<S, T>, U>
      * @throws MetricOutputException if no mappings match the input logic
      */
     
-    MetricOutputMapWithBiKey<S,T,U> filterByFirst(S key);
+    MetricOutputMapWithBiKey<S,T,U> filterByFirstKey(S key);
     
     /**
      * Returns a submap whose entries correspond to the second key in the {@link Pair}.
@@ -34,7 +34,7 @@ extends MetricOutputMap<Pair<S, T>, U>
      * @throws MetricOutputException if no mappings match the input logic
      */
     
-    MetricOutputMapWithBiKey<S,T,U> filterBySecond(T key);    
+    MetricOutputMapWithBiKey<S,T,U> filterBySecondKey(T key);    
     
     /**
      * Returns a set view of the first key in the {@link Pair}.
@@ -42,7 +42,7 @@ extends MetricOutputMap<Pair<S, T>, U>
      * @return a view of first key
      */
     
-    Set<S> keySetByFirstKey();
+    Set<S> setOfFirstKey();
     
     /**
      * Returns a set view of the second key in the {@link Pair}.
@@ -50,7 +50,7 @@ extends MetricOutputMap<Pair<S, T>, U>
      * @return a view of the second key
      */
     
-    Set<T> keySetBySecondKey();    
+    Set<T> setOfSecondKey();    
     
 
 }

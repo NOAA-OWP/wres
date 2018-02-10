@@ -28,7 +28,7 @@ public interface MetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>>
 
     default MetricOutputMapByTimeAndThreshold<T> filterByTime( final TimeWindow timeWindow )
     {
-        return (MetricOutputMapByTimeAndThreshold<T>) filterByFirst( timeWindow );
+        return (MetricOutputMapByTimeAndThreshold<T>) filterByFirstKey( timeWindow );
     }
 
     /**
@@ -40,7 +40,7 @@ public interface MetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>>
 
     default MetricOutputMapByTimeAndThreshold<T> filterByThreshold( final Threshold threshold )
     {
-        return (MetricOutputMapByTimeAndThreshold<T>) filterBySecond( threshold );
+        return (MetricOutputMapByTimeAndThreshold<T>) filterBySecondKey( threshold );
     }
 
     /**
@@ -49,9 +49,9 @@ public interface MetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>>
      * @return a view of the time window keys
      */
 
-    default Set<TimeWindow> keySetByTime()
+    default Set<TimeWindow> setOfTimeWindowKey()
     {
-        return keySetByFirstKey();
+        return setOfFirstKey();
     }
 
     /**
@@ -60,9 +60,9 @@ public interface MetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>>
      * @return a view of the threshold keys
      */
 
-    default Set<Threshold> keySetByThreshold()
+    default Set<Threshold> setOfThresholdKey()
     {
-        return keySetBySecondKey();
+        return setOfSecondKey();
     }
 
     /**
@@ -73,7 +73,7 @@ public interface MetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>>
 
     default boolean hasQuantileThresholds()
     {
-        return keySetByThreshold().stream().anyMatch( Threshold::isQuantile );
+        return setOfThresholdKey().stream().anyMatch( Threshold::isQuantile );
     }
     
     /**
@@ -93,7 +93,7 @@ public interface MetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>>
      * @return a view of the lead times in hours
      */
 
-    Set<Long> keySetByLeadTimeInHours();
+    Set<Long> unionOfLeadTimesInHours();
     
     /**
      * Returns the {@link MetricOutputMetadata} associated with all {@link MetricOutput} in the store. This may contain

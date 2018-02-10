@@ -135,7 +135,8 @@ class SafeThreshold implements Threshold
     @Override
     public String toString()
     {
-        if ( threshold.equals( Double.NEGATIVE_INFINITY ) )
+        Double testInfinite = Double.valueOf( Double.NEGATIVE_INFINITY );
+        if ( testInfinite.equals( threshold ) || testInfinite.equals( probability ) )
         {
             return "All data";
         }
@@ -161,6 +162,10 @@ class SafeThreshold implements Threshold
             if ( hasBetweenCondition() )
             {
                 return ">= " + threshold + " && < " + thresholdUpper;
+            }
+            if( Objects.isNull( threshold ) )
+            {
+                return c + probability;
             }
             return c + threshold;
         }

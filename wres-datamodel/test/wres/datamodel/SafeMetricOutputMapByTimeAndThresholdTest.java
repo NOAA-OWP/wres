@@ -101,14 +101,18 @@ public final class SafeMetricOutputMapByTimeAndThresholdTest
                     + expectedThree
                     + "].",
                     Double.compare( actualThree, expectedThree ) == 0 );
-        //Check number of lead times
-        Set<Long> benchmarkTimes = new TreeSet<>();
+        //Check lead times
+        Set<TimeWindow> benchmarkTimes = new TreeSet<>();
         for ( int i = 0; i < 29; i++ )
         {
-            benchmarkTimes.add( 42L + i * 24 );
+            benchmarkTimes.add( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                               Instant.parse( "2010-12-31T11:59:59Z" ),
+                                               ReferenceTime.VALID_TIME,
+                                               Duration.ofHours( 42L + i * 24 ),
+                                               Duration.ofHours( 42L + i * 24 ) ) );
         }
         assertTrue( "Unexpected lead times in dataset.",
-                    results.keySetByLeadTimeInHours().equals( benchmarkTimes ) );
+                    results.setOfTimeWindowKey().equals( benchmarkTimes ) );
 
     }
 
