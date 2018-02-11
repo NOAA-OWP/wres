@@ -165,7 +165,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
             final DatasetIdentifier identifier = meta.getIdentifier();
             addArgument( "locationName", identifier.getGeospatialID() );
             addArgument( "variableName", identifier.getVariableID() );
-            if (identifier.getScenarioID() == null)
+            if ( identifier.getScenarioID() == null )
             {
                 addArgument( "primaryScenario", "" );
             }
@@ -279,15 +279,25 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * and the legend includes both lead time and threshold.
      * @param displayedPlotInput the plot input
      */
-    public void addPoolingWindowArguments( //MetricOutputMapByTimeAndThreshold<?> input,
-                                           MetricOutputMapByTimeAndThreshold<?> displayedPlotInput )
+    public void addPoolingWindowArguments(MetricOutputMapByTimeAndThreshold<?> displayedPlotInput )
     {
         final MetricOutputMetadata meta = displayedPlotInput.getMetadata();
+        if ( !displayedPlotInput.firstKey()
+                                .getLeft()
+                                .getEarliestLeadTime()
+                                .equals( displayedPlotInput.firstKey().getLeft().getLatestLeadTime() ) )
+        {
 
-        addArgument( "legendTitle", "Lead time [HOUR], Threshold " );
+            addArgument( "legendTitle", "Lead time window [HOUR], Threshold " );
+        }
+        else
+        {
+
+            addArgument( "legendTitle", "Lead time [HOUR], Threshold " );
+        }
         addArgument( "legendUnitsText", "[" + meta.getInputDimension() + "]" );
     }
-    
+
     public void addDurationMetricArguments()
     {
         addArgument( "outputUnitsLabelSuffix", " [HOURS]" );
