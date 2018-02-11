@@ -859,6 +859,43 @@ public class Chart2DTestOutput
     }
 
     /**
+     * Generate a plot by time window on the domain axis.
+     */
+    @Test
+    public void test18ScalarOutputForPoolingWindow()
+    {
+        final String scenarioName = "test18";
+        final File outputImageFile = new File( "testoutput/chart2DTest/" + scenarioName + "_output.png" );
+        outputImageFile.delete();
+
+        //Construct some single-valued pairs
+        final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> input =
+                Chart2DTestDataGenerator.getScoreOutputForPoolingWindowsSecond();
+
+        try
+        {
+
+            //Call the factory.
+            final Map<MetricConstants, ChartEngine> engine = ChartEngineFactory.buildScoreOutputChartEngine( input,
+                                                                                                             DefaultDataFactory.getInstance(),
+                                                                                                             PlotTypeSelection.POOLING_WINDOW,
+                                                                                                             null,
+                                                                                                             null );
+
+            //Generate the output file.
+            ChartTools.generateOutputImageFile( outputImageFile,
+                                                engine.values().iterator().next().buildChart(),
+                                                800,
+                                                600 );
+        }
+        catch ( final Throwable t )
+        {
+            t.printStackTrace();
+            fail( "Unexpected exception: " + t.getMessage() );
+        }
+    }
+
+    /**
      * The comparison sensitivity.
      */
     private static int IMAGE_COMPARISON_SENSITIVITY = 2;
