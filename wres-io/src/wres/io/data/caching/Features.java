@@ -200,8 +200,8 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         else if ((usesNetCDF && feature.getNwmIndex() != null) &&
                  (usesUSGS && Strings.hasValue( feature.getGageID() )))
         {
-            // gage ids must have 8 characters exactly
-            return feature.getGageID().length() == 8;
+            // gage ids must have 8 or more characters
+            return feature.getGageID().length() >= 8;
         }
         // If we are using NetCDF data, we need indexes to determine what
         // data to retrieve
@@ -213,8 +213,8 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         // able to retrieve data
         else if (usesUSGS && Strings.hasValue( feature.getGageID() ))
         {
-            // gage ids must have 8 characters exactly
-            return feature.getGageID().length() == 8;
+            // gage ids must have 8 or more characters
+            return feature.getGageID().length() >= 8;
         }
 
         return false;
