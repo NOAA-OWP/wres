@@ -16,7 +16,6 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.BiFunction;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,8 +61,8 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
     private Feature feature;
     private final BiFunction<LocalDateTime, LocalDateTime, List<Double>> getLeftValues;
     private VectorOfDoubles climatology;
-    private List<Pair<Instant,PairOfDoubleAndVectorOfDoubles>> primaryPairs;
-    private List<Pair<Instant,PairOfDoubleAndVectorOfDoubles>> baselinePairs;
+    private List<ForecastedPair> primaryPairs;
+    private List<ForecastedPair> baselinePairs;
     private Map<Integer, UnitConversions.Conversion> conversionMap;
 
     public InputRetriever ( ProjectDetails projectDetails,
@@ -212,13 +211,13 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             if ( dataType == DatasourceType.ENSEMBLE_FORECASTS )
             {
                 List<PairOfDoubleAndVectorOfDoubles> primary =
-                        InputRetriever.stripBasisTime( this.primaryPairs );
+                        InputRetriever.extractRawPairs( this.primaryPairs );
 
                 List<PairOfDoubleAndVectorOfDoubles> baseline = null;
 
                 if ( this.baselinePairs != null )
                 {
-                    baseline = InputRetriever.stripBasisTime( this.baselinePairs );
+                    baseline = InputRetriever.extractRawPairs( this.baselinePairs );
                 }
 
                 input = factory.ofEnsemblePairs( primary,
@@ -260,43 +259,45 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
     }
 
     private static List<PairOfDoubleAndVectorOfDoubles>
-    stripBasisTime( List<Pair<Instant, PairOfDoubleAndVectorOfDoubles>> pairPairs )
+    extractRawPairs( List<ForecastedPair> pairPairs )
     {
         List<PairOfDoubleAndVectorOfDoubles> result = new ArrayList<>();
 
-        for ( Pair<Instant,PairOfDoubleAndVectorOfDoubles> pair : pairPairs )
+        for ( ForecastedPair pair : pairPairs )
         {
-            result.add( pair.getRight() );
+            result.add( pair.getValues() );
         }
 
         return Collections.unmodifiableList( result );
     }
 
     private static List<Instant>
-    stripPairs( List<Pair<Instant,PairOfDoubleAndVectorOfDoubles>> pairPairs )
+    extractBasisTimes( List<ForecastedPair> pairs )
     {
         List<Instant> result = new ArrayList<>();
 
-        for ( Pair<Instant,PairOfDoubleAndVectorOfDoubles> pair: pairPairs )
+        for ( ForecastedPair pair : pairs )
         {
-            result.add( pair.getLeft() );
+            result.add( pair.getBasisTime() );
         }
 
         return Collections.unmodifiableList( result );
     }
 
     private List<PairOfDoubles>
-    convertToPairOfDoubles(List<Pair<Instant,PairOfDoubleAndVectorOfDoubles>> multiValuedPairs)
+    convertToPairOfDoubles( List<ForecastedPair> multiValuedPairs )
     {
         List<PairOfDoubles> pairs = new ArrayList<>(  );
 
         DataFactory factory = DefaultDataFactory.getInstance();
 
-        for ( Pair<Instant,PairOfDoubleAndVectorOfDoubles> pair : multiValuedPairs)
+        for ( ForecastedPair pair : multiValuedPairs)
         {
-            for (double pairedValue : pair.getRight().getItemTwo())
+            for ( double pairedValue : pair.getValues().getItemTwo() )
             {
-                pairs.add(factory.pairOf( pair.getRight().getItemOne(), pairedValue ));
+                pairs.add( factory.pairOf( pair.getValues()
+                                               .getItemOne(),
+                                           pairedValue ) );
             }
         }
 
@@ -325,7 +326,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                 {
                     // Find the data we need to form a persistence forecast: the
                     // basis times from the right side.
-                    List<Instant> basisTimes = InputRetriever.stripPairs( this.primaryPairs );
+                    List<Instant> basisTimes = InputRetriever.extractBasisTimes( this.primaryPairs );
                     this.baselineLoadScript =
                             Scripter.getPersistenceLoadScript( projectDetails,
                                                                dataSourceConfig,
@@ -348,11 +349,10 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
     }
 
     // TODO: REFACTOR
-    private List<Pair<Instant,PairOfDoubleAndVectorOfDoubles>>
-    createPairs(DataSourceConfig dataSourceConfig)
+    private List<ForecastedPair> createPairs( DataSourceConfig dataSourceConfig )
             throws SQLException, IOException
     {
-        List<Pair<Instant,PairOfDoubleAndVectorOfDoubles>> pairs = new ArrayList<>();
+        List<ForecastedPair> pairs = new ArrayList<>();
         String loadScript = getLoadScript( dataSourceConfig );
 
         Connection connection = null;
@@ -433,8 +433,6 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             connection = Database.getConnection();
             resultSet = Database.getResults(connection, loadScript);
 
-            Instant basisTime = null;
-
             while(resultSet.next())
             {
                 /**
@@ -471,7 +469,11 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                 {
                     if (this.shouldAddPair( scaleMember ))
                     {
-                        pairs = this.addPair( pairs, valueDate, rightValues, dataSourceConfig, lead, basisTime );
+                        pairs = this.addPair( pairs,
+                                              valueDate,
+                                              rightValues,
+                                              dataSourceConfig,
+                                              lead );
                     }
                     else
                     {
@@ -481,12 +483,6 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                     }
 
                     rightValues = new TreeMap<>(  );
-                }
-
-                if ( ConfigHelper.hasPersistenceBaseline( projectDetails.getProjectConfig() ) )
-                {
-                    long basisEpochTime = resultSet.getLong( "basis_epoch_time" );
-                    basisTime = Instant.ofEpochSecond( basisEpochTime );
                 }
 
                 scaleMember = resultSet.getInt( "scale_member" );
@@ -522,8 +518,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                                       valueDate,
                                       rightValues,
                                       dataSourceConfig,
-                                      lead,
-                                      basisTime );
+                                      lead );
             }
         }
         finally
@@ -551,21 +546,18 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
     }
 
 
-    private List<Pair<Instant,PairOfDoubleAndVectorOfDoubles>>
-    createPersistencePairs( DataSourceConfig dataSourceConfig,
-                            List<Pair<Instant,PairOfDoubleAndVectorOfDoubles>> primaryPairs )
+    private List<ForecastedPair> createPersistencePairs( DataSourceConfig dataSourceConfig,
+                                                         List<ForecastedPair> primaryPairs )
             throws SQLException, IOException
     {
-        List<Pair<Instant,PairOfDoubleAndVectorOfDoubles>> pairs = new ArrayList<>();
+        List<ForecastedPair> pairs = new ArrayList<>();
 
         String loadScript = getLoadScript( dataSourceConfig );
 
         final String BASIS_DATETIME_COLUMN = "basis_time";
-        final String RESULT_DATETIME_COLUMN = "persistence_time";
         final String RESULT_VALUE_COLUMN = "observed_value";
 
-        long basisEpochTime = 0;
-        long resultEpochTime = 0;
+        long basisEpochTime;
 
         Connection connection = null;
         ResultSet resultSet = null;
@@ -581,28 +573,29 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             {
                 basisEpochTime = resultSet.getLong( BASIS_DATETIME_COLUMN );
                 Instant basisDateTime = Instant.ofEpochSecond( basisEpochTime );
-                resultEpochTime = resultSet.getLong( RESULT_DATETIME_COLUMN );
-                Instant pairDateTime = Instant.ofEpochSecond( resultEpochTime );
                 double value = resultSet.getDouble( RESULT_VALUE_COLUMN );
                 double[] values = { value };
 
-                for ( Pair<Instant,PairOfDoubleAndVectorOfDoubles> rightPair : primaryPairs )
+                for ( ForecastedPair rightPair : primaryPairs )
                 {
-                    if ( basisDateTime.equals( rightPair.getLeft() ) )
+                    if ( basisDateTime.equals( rightPair.getBasisTime() ) )
                     {
-                        for ( double d : rightPair.getRight().getItemTwo() )
+                        for ( double d : rightPair.getValues().getItemTwo() )
                         {
                             // We avoid using d on purpose. The only reason for
                             // iterating is to match the count of persistence
                             // pairs with the count of left/right pairs.
-                            Pair<Instant,PairOfDoubleAndVectorOfDoubles> pairPair =
-                                    Pair.of( rightPair.getLeft(),
-                                             df.pairOf( rightPair.getRight()
+                            ForecastedPair pairPair =
+                                    new ForecastedPair( rightPair.getBasisTime(),
+                                                        rightPair.getValidTime(),
+                                             df.pairOf( rightPair.getValues()
                                                                  .getItemOne(),
                                                         values ) );
-                            long leadMillis = pairDateTime.toEpochMilli() - basisDateTime.toEpochMilli();
-                            long leadHours = Duration.ofMillis( leadMillis ).toHours();
-                            writePair( pairDateTime, pairPair, dataSourceConfig, (int) leadHours );
+
+                            // Piggy-back off of the forecast's basis time and
+                            // valid times:
+                            writePair( rightPair.getValidTime(),
+                                       pairPair, dataSourceConfig );
                             pairs.add( pairPair );
                         }
                     }
@@ -610,7 +603,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                     {
                         LOGGER.trace( "{} does not equal {}",
                                       basisDateTime,
-                                      rightPair.getLeft() );
+                                      rightPair.getBasisTime() );
                     }
                 }
             }
@@ -632,22 +625,23 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         return Collections.unmodifiableList( pairs );
     }
 
-    private List<Pair<Instant,PairOfDoubleAndVectorOfDoubles>>
-    addPair( List<Pair<Instant,PairOfDoubleAndVectorOfDoubles>> pairs,
-             Instant valueDate,
-             Map<Integer, List<Double>> rightValues,
-             DataSourceConfig dataSourceConfig,
-             int lead,
-             Instant basisTime )
+    private List<ForecastedPair> addPair( List<ForecastedPair> pairs,
+                                          Instant valueDate,
+                                          Map<Integer, List<Double>> rightValues,
+                                          DataSourceConfig dataSourceConfig,
+                                          int lead )
             throws NoDataException
     {
         if ( !rightValues.isEmpty() )
         {
             PairOfDoubleAndVectorOfDoubles pair = this.getPair( valueDate, rightValues );
+
             if (pair != null)
             {
-                Pair<Instant,PairOfDoubleAndVectorOfDoubles> pairPair = Pair.of( basisTime, pair );
-                writePair( valueDate, pairPair, dataSourceConfig, lead );
+                ForecastedPair pairPair = new ForecastedPair( lead,
+                                                              valueDate,
+                                                              pair );
+                writePair( valueDate, pairPair, dataSourceConfig );
                 pairs.add( pairPair );
             }
         }
@@ -787,9 +781,8 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
     }
 
     private void writePair( Instant date,
-                            Pair<Instant,PairOfDoubleAndVectorOfDoubles> pair,
-                            DataSourceConfig dataSourceConfig,
-                            int lead)
+                            ForecastedPair pair,
+                            DataSourceConfig dataSourceConfig )
     {
         boolean isBaseline = dataSourceConfig.equals( this.projectDetails.getBaseline() );
         List<DestinationConfig> destinationConfigs = this.projectDetails.getPairDestinations();
@@ -800,11 +793,11 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                                                date,
                                                this.feature,
                                                this.progress,
-                                               pair,
+                                               pair.getValues(),
                                                isBaseline,
                                                this.poolingStep,
                                                this.projectDetails,
-                                               lead);
+                                               (int) pair.getLeadHours() );
             Executor.submitHighPriorityTask( saver);
         }
     }
@@ -813,5 +806,74 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
     protected Logger getLogger()
     {
         return InputRetriever.LOGGER;
+    }
+
+
+    private static final class ForecastedPair
+    {
+        private final Instant basisTime;
+        private final Instant validTime;
+        private final PairOfDoubleAndVectorOfDoubles values;
+
+        ForecastedPair( Instant basisTime,
+                        Instant validTime,
+                        PairOfDoubleAndVectorOfDoubles values )
+        {
+            this.basisTime = basisTime;
+            this.validTime = validTime;
+            this.values = values;
+        }
+
+        ForecastedPair( Instant basisTime,
+                        int leadHours,
+                        PairOfDoubleAndVectorOfDoubles values )
+        {
+            this.basisTime = basisTime;
+            Duration leadTime = Duration.ofHours( leadHours );
+            this.validTime = basisTime.plus( leadTime );
+            this.values = values;
+        }
+
+        ForecastedPair( int leadHours,
+                        Instant validTime,
+                        PairOfDoubleAndVectorOfDoubles values )
+        {
+            Duration leadTime = Duration.ofHours( leadHours );
+            this.basisTime = validTime.minus( leadTime );
+            this.validTime = validTime;
+            this.values = values;
+        }
+
+        public Instant getBasisTime()
+        {
+            return this.basisTime;
+        }
+
+        public Instant getValidTime()
+        {
+            return this.validTime;
+        }
+
+        public PairOfDoubleAndVectorOfDoubles getValues()
+        {
+            return this.values;
+        }
+
+        public Duration getLeadDuration()
+        {
+            long millis = this.getValidTime().toEpochMilli()
+                          - this.getBasisTime().toEpochMilli();
+            return Duration.of( millis, ChronoUnit.MILLIS );
+        }
+
+        public long getLeadHours()
+        {
+            return getLeadDuration().toHours();
+        }
+
+        public long getLeadSeconds()
+        {
+            return getLeadDuration().getSeconds();
+        }
     }
 }
