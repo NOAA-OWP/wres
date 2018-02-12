@@ -1313,7 +1313,21 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
             {
                 resultSet.next();
 
-                this.poolCounts.put( feature, Database.getValue( resultSet, "window_count" ));
+                Integer windowCount = Database.getValue( resultSet, "window_count" );
+
+                if (windowCount != null)
+                {
+                    this.poolCounts.put( feature,
+                                         Database.getValue( resultSet,
+                                                            "window_count" ) );
+                }
+                else
+                {
+                    throw new SQLException( "There was no intersection between "
+                                            + "observation and forecast data for '"
+                                            + ConfigHelper.getFeatureDescription( feature )
+                                            + "'." );
+                }
             }
         }
         finally
