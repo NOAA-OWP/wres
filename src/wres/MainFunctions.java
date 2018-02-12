@@ -122,7 +122,6 @@ final class MainFunctions
 		prototypes.put("ingest", ingest());
 		prototypes.put("loadfeatures", loadFeatures());
 		prototypes.put("killconnections", killWRESConnections());
-		prototypes.put("testchecksum", testChecksum());
 		prototypes.put( "loadusgsparameters", loadUSGSParameters());
 
 		return prototypes;
@@ -176,35 +175,6 @@ final class MainFunctions
             catch (SQLException e) {
                 LOGGER.error("Orphaned WRES connections to the WRES database could not be canceled.");
                 LOGGER.error(Strings.getStackTrace(e));
-            }
-
-            return result;
-        };
-    }
-
-    private static Function<String[], Integer> testChecksum()
-    {
-        return (final String[] args) -> {
-            int result = FAILURE;
-
-            if (args.length >= 1)
-            {
-                try
-                {
-                    LOGGER.info( Strings.getMD5Checksum( args[0] ) );
-                }
-                catch ( IOException e )
-                {
-                    LOGGER.error(Strings.getStackTrace( e ));
-                }
-            }
-            else
-            {
-                LOGGER.info("Performing checksum on random data...");
-                byte[] raw = new byte[4096];
-                Random random = new Random(  );
-                random.nextBytes( raw );
-                LOGGER.info(Strings.getMD5Checksum( raw ));
             }
 
             return result;
