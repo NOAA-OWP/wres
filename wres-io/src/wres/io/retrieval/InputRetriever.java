@@ -713,8 +713,8 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         if (this.projectDetails.shouldScale())
         {
             // This works for both rolling and back-to-back because of how the grouping of scale_member works
-            firstDate = lastDate.minus( this.projectDetails.getLeadPeriod().longValue(),
-                                        ChronoUnit.valueOf( this.projectDetails.getLeadUnit().toUpperCase() ));
+            firstDate = lastDate.minus( this.projectDetails.getScale().getPeriod(),
+                                        ChronoUnit.valueOf( this.projectDetails.getScale().getUnit().value().toUpperCase() ));
         }
         else
         {
