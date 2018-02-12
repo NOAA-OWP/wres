@@ -38,9 +38,8 @@ class ClimatologyBuilder
             LOGGER = LoggerFactory.getLogger( ClimatologyBuilder.class );
     private static final String NEWLINE = System.lineSeparator();
     /**
-     * Serves as a fuzzy key for date values. The idea is that, given a date
-     * of either an offsetdatetime or in a string, the value should
-     * match if it is contained within the range
+     * Serves as a fuzzy key for date values. The idea is that, given a date,
+     * the value should match if it is contained within the range
      */
     private static class DateRange implements Comparable<DateRange>
     {
@@ -262,21 +261,21 @@ class ClimatologyBuilder
 
 
                     script.append(" + ( member_number || ' ")
-                          .append(projectDetails.getLeadUnit())
+                          .append(projectDetails.getScale().getUnit())
                           .append("')::INTERVAL)::TEXT AS start_date,").append(NEWLINE);
                     script.append("    (")
                           .append(earliestDate).append("::timestamp without time zone")
-                          .append(" + ( ( member_number + ").append(projectDetails.getLeadPeriod())
-                          .append(" ) || ' ").append(projectDetails.getLeadUnit()).append("')::INTERVAL)::TEXT AS end_date")
+                          .append(" + ( ( member_number + ").append(projectDetails.getScale().getPeriod())
+                          .append(" ) || ' ").append(projectDetails.getScale().getUnit()).append("')::INTERVAL)::TEXT AS end_date")
                           .append(NEWLINE);
                     script.append("FROM generate_series(0, ")
                           .append( ConfigHelper.getValueCount(projectDetails,
                                                               dataSourceConfig,
                                                               feature))
                           .append(" * ")
-                          .append(projectDetails.getLeadPeriod())
+                          .append(projectDetails.getScale().getPeriod())
                           .append(", ")
-                          .append(projectDetails.getLeadPeriod())
+                          .append(projectDetails.getScale().getPeriod())
                           .append(") AS member_number;");
                     connection = Database.getConnection();
                     results = Database.getResults( connection, script.toString() );
