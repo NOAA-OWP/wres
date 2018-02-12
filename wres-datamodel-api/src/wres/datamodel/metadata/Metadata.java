@@ -36,6 +36,27 @@ public interface Metadata
     }      
     
     /**
+     * Returns <code>true</code> if the input is equal to the current {@link Metadata} without considering the 
+     * {@link TimeWindow}.
+     * 
+     * @param input the input metadata
+     * @return true if the input is equal to the current metadata, without considering the time window
+     */
+    default boolean equalsWithoutTimeWindow( final Metadata input )
+    {
+        if ( Objects.isNull( input ) )
+        {
+            return false;
+        }
+        boolean returnMe = input.getDimension().equals( getDimension() ) && hasIdentifier() == input.hasIdentifier();
+        if ( hasIdentifier() )
+        {
+            returnMe = returnMe && getIdentifier().equals( input.getIdentifier() );
+        }
+        return returnMe;
+    }
+    
+    /**
      * Returns the dimension associated with the metric.
      * 
      * @return the dimension

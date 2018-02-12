@@ -139,30 +139,6 @@ class SafeRegularTimeSeriesOfPairs<T>
     }
 
     /**
-     * Helper method that adjusts the {@link TimeWindow} associated with the input metadata to the union of the 
-     * {@link TimeWindow} associated with the atomic time-series. This is necessary when filtering data.
-     * 
-     * @param input the input metadata
-     * @param atomicWindows the time windows associated with the atomic time-series
-     * @return the adjusted metadata or null if the input metadata is null
-     */
-
-    static Metadata getMetadataWithUnionOfTimeWindows( Metadata input, List<TimeWindow> atomicWindows )
-    {
-        if ( Objects.isNull( input ) )
-        {
-            return null;
-        }
-        Metadata returnMe = input;
-        if ( !atomicWindows.isEmpty() )
-        {
-            returnMe = DefaultMetadataFactory.getInstance().getMetadata( input,
-                                                                         TimeWindow.unionOf( atomicWindows ) );
-        }
-        return returnMe;
-    }
-
-    /**
      * Returns an iterator over each pair.
      * 
      * @return an iterator over each pair
@@ -396,45 +372,13 @@ class SafeRegularTimeSeriesOfPairs<T>
                         {
                             throw new NoSuchElementException( "No more pairs to iterate." );
                         }
-                        Pair<Instant, T> returnMe =
-                                new Pair<Instant, T>()
-                                {
-
-                                    private static final long serialVersionUID = 3779139422667947788L;
-
-                                    int returnedSoFar = returned; //Current step, before incremented
-
-                                    @Override
-                                    public T
-                                            setValue( T PairOfDoubleAndVectorOfDoubles )
-                                    {
-                                        throw new UnsupportedOperationException( "Cannot mutate this pair." );
-                                    }
-
-                                    @Override
-                                    public Instant getLeft()
-                                    {
-                                        int basisIndex =
-                                                (int) Math.floor( ( (double) returnedSoFar ) / getTimeStepCount() );
-                                        int residual = returnedSoFar - ( basisIndex * getTimeStepCount() );
-                                        return getBasisTimes().get( basisIndex )
-                                                              .plus( getRegularDuration().multipliedBy( (long) residual
-                                                                                                        + 1 ) );
-                                    }
-
-                                    @Override
-                                    public T getRight()
-                                    {
-                                        return data.get( returnedSoFar );
-                                    }
-
-                                    @Override
-                                    public String toString()
-                                    {
-                                        return getLeft() + "," + getRight();
-                                    }
-
-                                };
+                        int basisIndex =
+                                (int) Math.floor( ( (double) returned ) / getTimeStepCount() );
+                        int residual = returned - ( basisIndex * getTimeStepCount() );
+                        Instant left = getBasisTimes().get( basisIndex )
+                                                      .plus( getRegularDuration().multipliedBy( (long) residual
+                                                                                                + 1 ) );
+                        Pair<Instant, T> returnMe = Pair.of( left, data.get( returned ) );
                         returned++;
                         return returnMe;
                     }

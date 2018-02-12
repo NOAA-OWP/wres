@@ -1,14 +1,14 @@
 package wres.datamodel;
 
 /**
- * A base class for a runtime exception associated with a metric.
+ * A base class for a runtime exception associated with a dataset.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
+ * @version 0.2
  * @since 0.1
  */
 
-public class MetricException extends RuntimeException
+public class DataException extends RuntimeException
 {
 
     /**
@@ -18,33 +18,33 @@ public class MetricException extends RuntimeException
     private static final long serialVersionUID = -9205464442064407973L;
 
     /**
-     * Constructs an {@link MetricException} with no message.
+     * Constructs an {@link DataException} with no message.
      */
 
-    public MetricException()
+    public DataException()
     {
         super();
     }
 
     /**
-     * Constructs a {@link MetricException} with the specified message.
+     * Constructs a {@link DataException} with the specified message.
      * 
      * @param message the message.
      */
 
-    public MetricException(final String message)
+    public DataException(final String message)
     {
         super(message);
     }
 
     /**
-     * Constructs a {@link MetricException} with the specified message.
+     * Constructs a {@link DataException} with the specified message.
      * 
      * @param message the message.
      * @param cause the cause of the exception
      */
 
-    public MetricException(final String message, final Throwable cause)
+    public DataException(final String message, final Throwable cause)
     {
         super(message, cause);
     }

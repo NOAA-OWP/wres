@@ -463,17 +463,16 @@ public interface DataFactory
 
     /**
      * Returns a {@link TimeSeriesOfSingleValuedPairs} with a regular timestep. The input contains one or more time-
-     * series, each one indexed by its basis time and stored in a map. The values must be time-ordered, moving away 
-     * from the basis time.
+     * series, each one indexed by its basis time. The values must be time-ordered, moving away from the basis time.
      * 
-     * @param timeSeries the map of time-series, each one indexed by basis time
+     * @param timeSeries the list of time-series, each one indexed by basis time
      * @param meta the metadata for the time-series
      * @param timeStep the regular time-step
      * @return a {@link TimeSeriesOfSingleValuedPairs}
      */
 
     default TimeSeriesOfSingleValuedPairs
-            ofRegularTimeSeriesOfSingleValuedPairs( Map<Instant, List<PairOfDoubles>> timeSeries,
+            ofRegularTimeSeriesOfSingleValuedPairs( List<Pair<Instant, List<PairOfDoubles>>> timeSeries,
                                                     Metadata meta,
                                                     Duration timeStep )
     {
@@ -482,23 +481,22 @@ public interface DataFactory
 
     /**
      * Returns a {@link TimeSeriesOfEnsemblePairs} with a regular timestep. The input contains one or more time-series, 
-     * each one indexed by its basis time and stored in a map. The values must be time-ordered, moving away from the 
-     * basis time.
+     * each one indexed by its basis time. The values must be time-ordered, moving away from the basis time.
      * 
-     * @param timeSeries the map of time-series, each one indexed by basis time
+     * @param timeSeries the list of time-series, each one indexed by basis time
      * @param meta the metadata for the time-series
      * @param timeStep the regular time-step
      * @return a {@link TimeSeriesOfEnsemblePairs}
      */
 
     default TimeSeriesOfEnsemblePairs
-            ofRegularTimeSeriesOfEnsemblePairs( Map<Instant, List<PairOfDoubleAndVectorOfDoubles>> timeSeries,
+            ofRegularTimeSeriesOfEnsemblePairs( List<Pair<Instant, List<PairOfDoubleAndVectorOfDoubles>>> timeSeries,
                                                 Metadata meta,
                                                 Duration timeStep )
     {
         return ofRegularTimeSeriesOfEnsemblePairs( timeSeries, meta, null, null, timeStep );
     }
-    
+
     /**
      * Forms the union of the {@link PairedOutput}, returning a {@link PairedOutput} that contains all of the pairs in 
      * the inputs.
@@ -510,23 +508,23 @@ public interface DataFactory
      * @throws NullPointerException if the input is null
      */
 
-    default <S,T> PairedOutput<S,T> unionOf( Collection<PairedOutput<S,T>> collection )
+    default <S, T> PairedOutput<S, T> unionOf( Collection<PairedOutput<S, T>> collection )
     {
         Objects.requireNonNull( collection );
-        List<Pair<S,T>> combined = new ArrayList<>();
+        List<Pair<S, T>> combined = new ArrayList<>();
         List<TimeWindow> combinedWindows = new ArrayList<>();
         MetricOutputMetadata sourceMeta = null;
-        for( PairedOutput<S,T> next : collection )
+        for ( PairedOutput<S, T> next : collection )
         {
             combined.addAll( next.getData() );
-            if( Objects.isNull( sourceMeta ) )
+            if ( Objects.isNull( sourceMeta ) )
             {
                 sourceMeta = next.getMetadata();
             }
             combinedWindows.add( next.getMetadata().getTimeWindow() );
         }
         TimeWindow unionWindow = null;
-        if ( ! combinedWindows.isEmpty() )
+        if ( !combinedWindows.isEmpty() )
         {
             unionWindow = TimeWindow.unionOf( combinedWindows );
         }
@@ -953,40 +951,39 @@ public interface DataFactory
 
     /**
      * Returns a {@link TimeSeriesOfSingleValuedPairs} with a regular timestep. The input contains one or more time-
-     * series, each one indexed by its basis time and stored in a map. The values must be time-ordered, moving away 
-     * from the basis time.
+     * series, each one indexed by its basis time. The values must be time-ordered, moving away from the basis time.
      * 
-     * @param timeSeries the map of time-series, each one indexed by basis time
+     * @param timeSeries the list of time-series, each one indexed by basis time
      * @param mainMeta the metadata for the time-series
-     * @param timeSeriesBaseline an optional map of time-series for a baseline (may be null)
+     * @param timeSeriesBaseline an optional list of time-series for a baseline (may be null)
      * @param baselineMeta the metadata for the baseline time-series (may be null)
      * @param timeStep the regular time-step
      * @return a {@link TimeSeriesOfSingleValuedPairs}
      */
 
-    TimeSeriesOfSingleValuedPairs ofRegularTimeSeriesOfSingleValuedPairs( Map<Instant, List<PairOfDoubles>> timeSeries,
-                                                                          Metadata mainMeta,
-                                                                          Map<Instant, List<PairOfDoubles>> timeSeriesBaseline,
-                                                                          Metadata baselineMeta,
-                                                                          Duration timeStep );
+    TimeSeriesOfSingleValuedPairs
+            ofRegularTimeSeriesOfSingleValuedPairs( List<Pair<Instant, List<PairOfDoubles>>> timeSeries,
+                                                    Metadata mainMeta,
+                                                    List<Pair<Instant, List<PairOfDoubles>>> timeSeriesBaseline,
+                                                    Metadata baselineMeta,
+                                                    Duration timeStep );
 
     /**
      * Returns a {@link TimeSeriesOfEnsemblePairs} with a regular timestep. The input contains one or more time-series, 
-     * each one indexed by its basis time and stored in a map. The values must be time-ordered, moving away from the 
-     * basis time.
+     * each one indexed by its basis time. The values must be time-ordered, moving away from the basis time.
      * 
-     * @param timeSeries the map of time-series, each one indexed by basis time
+     * @param timeSeries the list of time-series, each one indexed by basis time
      * @param mainMeta the metadata for the time-series
-     * @param timeSeriesBaseline an optional map of time-series for a baseline (may be null)
+     * @param timeSeriesBaseline an optional list of time-series for a baseline (may be null)
      * @param baselineMeta the metadata for the baseline time-series (may be null)
      * @param timeStep the regular time-step
      * @return a {@link TimeSeriesOfEnsemblePairs}
      */
 
     TimeSeriesOfEnsemblePairs
-            ofRegularTimeSeriesOfEnsemblePairs( Map<Instant, List<PairOfDoubleAndVectorOfDoubles>> timeSeries,
+            ofRegularTimeSeriesOfEnsemblePairs( List<Pair<Instant, List<PairOfDoubleAndVectorOfDoubles>>> timeSeries,
                                                 Metadata mainMeta,
-                                                Map<Instant, List<PairOfDoubleAndVectorOfDoubles>> timeSeriesBaseline,
+                                                List<Pair<Instant, List<PairOfDoubleAndVectorOfDoubles>>> timeSeriesBaseline,
                                                 Metadata baselineMeta,
                                                 Duration timeStep );
 

@@ -4,20 +4,38 @@ import java.util.Objects;
 
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 
+/**
+ * Immutable implementation of a pair of doubles.
+ * 
+ * @author jesse
+ * @author james.brown@hydrosolved.com
+ */
+
 class SafePairOfDoubles implements PairOfDoubles
 {
+    /**
+     * The first item.
+     */
+    
     private final double itemOne;
+    
+    /**
+     * The second item.
+     */
+    
     private final double itemTwo;
 
-    private SafePairOfDoubles(double itemOne, double itemTwo)
+    /**
+     * Construct a pair of doubles
+     * 
+     * @param itemOne the first item
+     * @param itemTwo the second item
+     */
+    
+    SafePairOfDoubles(double itemOne, double itemTwo)
     {
         this.itemOne = itemOne;
         this.itemTwo = itemTwo;
-    }
-
-    public static SafePairOfDoubles of(double itemOne, double itemTwo)
-    {
-        return new SafePairOfDoubles(itemOne, itemTwo);
     }
 
     @Override

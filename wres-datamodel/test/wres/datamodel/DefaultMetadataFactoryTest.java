@@ -2,12 +2,15 @@ package wres.datamodel;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.time.Instant;
+import java.util.Arrays;
 
 import org.junit.Test;
 
 import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.MetadataException;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
@@ -253,7 +256,7 @@ public final class DefaultMetadataFactoryTest
         // Other type check
         assertFalse( "Unexpected equality between two metadata instances.", first.equals( Double.valueOf( 2 ) ) );
     }
-    
+
     /**
      * Test {@link MetricOutputMetadata#minimumEquals(MetricOutputMetadata)}.
      */
@@ -274,7 +277,7 @@ public final class DefaultMetadataFactoryTest
                                                                  MetricConstants.BIAS_FRACTION,
                                                                  null );
         // Not equal according to stricter equals
-        assertFalse( "Unexpected inequality between two metadata instances.", first.equals( second ) );       
+        assertFalse( "Unexpected inequality between two metadata instances.", first.equals( second ) );
         // Reflexive
         assertTrue( "Unexpected inequality between two metadata instances.", first.minimumEquals( first ) );
         // Symmetric
@@ -286,41 +289,41 @@ public final class DefaultMetadataFactoryTest
                                                                   base,
                                                                   MetricConstants.BIAS_FRACTION,
                                                                   null );
-        
+
         assertTrue( "Unexpected inequality between two metadata instances.", second.minimumEquals( secondT ) );
-        assertTrue( "Unexpected inequality between two metadata instances.", first.minimumEquals( secondT ) );        
+        assertTrue( "Unexpected inequality between two metadata instances.", first.minimumEquals( secondT ) );
         // Unequal
         MetricOutputMetadata third = metaFac.getOutputMetadata( 2,
-                                                                 metaFac.getDimension( "CMS" ),
-                                                                 base,
-                                                                 MetricConstants.COEFFICIENT_OF_DETERMINATION,
-                                                                 null );
-        assertFalse( "Unexpected equality between two metadata instances.", first.minimumEquals( third ) );
-        MetricOutputMetadata fourth = metaFac.getOutputMetadata( 2,
                                                                 metaFac.getDimension( "CMS" ),
                                                                 base,
                                                                 MetricConstants.COEFFICIENT_OF_DETERMINATION,
-                                                                MetricConstants.NONE );       
-        assertFalse( "Unexpected equality between two metadata instances.", third.minimumEquals( fourth ) );
-        MetricOutputMetadata fifth = metaFac.getOutputMetadata( 2,
-                                                                 metaFac.getDimension( "CFS" ),
+                                                                null );
+        assertFalse( "Unexpected equality between two metadata instances.", first.minimumEquals( third ) );
+        MetricOutputMetadata fourth = metaFac.getOutputMetadata( 2,
+                                                                 metaFac.getDimension( "CMS" ),
                                                                  base,
                                                                  MetricConstants.COEFFICIENT_OF_DETERMINATION,
-                                                                 MetricConstants.NONE );   
+                                                                 MetricConstants.NONE );
+        assertFalse( "Unexpected equality between two metadata instances.", third.minimumEquals( fourth ) );
+        MetricOutputMetadata fifth = metaFac.getOutputMetadata( 2,
+                                                                metaFac.getDimension( "CFS" ),
+                                                                base,
+                                                                MetricConstants.COEFFICIENT_OF_DETERMINATION,
+                                                                MetricConstants.NONE );
         assertFalse( "Unexpected equality between two metadata instances.", fourth.minimumEquals( fifth ) );
         Metadata baseSecond = metaFac.getMetadata( metaFac.getDimension( "OTHER_DIM" ),
-                                             metaFac.getDatasetIdentifier( "DRRC3", "SQIN", "HEFS" ) );
-        
+                                                   metaFac.getDatasetIdentifier( "DRRC3", "SQIN", "HEFS" ) );
+
         MetricOutputMetadata sixth = metaFac.getOutputMetadata( 1,
                                                                 metaFac.getDimension( "CMS" ),
                                                                 baseSecond,
                                                                 MetricConstants.BIAS_FRACTION,
                                                                 null );
         assertFalse( "Unexpected equality between two metadata instances.", first.minimumEquals( sixth ) );
-        
 
-    }    
-    
+
+    }
+
     /**
      * Test {@link MetricOutputMetadata#hashCode()}.
      */
@@ -498,11 +501,11 @@ public final class DefaultMetadataFactoryTest
         assertTrue( "Unexpected inequality between two dataset identifier instances.", p3.equals( p4 ) );
         DatasetIdentifier p5 = metaFac.getDatasetIdentifier( null, "SQIN", null );
         DatasetIdentifier p6 = metaFac.getDatasetIdentifier( null, "SQIN", null );
-        assertTrue( "Unexpected inequality between two dataset identifier instances.", p5.equals( p6 ) );      
+        assertTrue( "Unexpected inequality between two dataset identifier instances.", p5.equals( p6 ) );
         // Equal with scenario identifier for baseline
         DatasetIdentifier b1 = metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS", "ESP" );
         DatasetIdentifier b2 = metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS", "ESP" );
-        assertTrue( "Unexpected inequality between two dataset identifier instances.", b1.equals( b2 ) );       
+        assertTrue( "Unexpected inequality between two dataset identifier instances.", b1.equals( b2 ) );
         // Unequal
         DatasetIdentifier m4 = metaFac.getDatasetIdentifier( "DRRC3", "SQIN", "HEFS" );
         DatasetIdentifier m5 = metaFac.getDatasetIdentifier( "DRRC2", "SQIN2", "HEFS" );
@@ -525,11 +528,11 @@ public final class DefaultMetadataFactoryTest
         DatasetIdentifier b3 = metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS", "ESP" );
         DatasetIdentifier b4 = metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS", "ESP2" );
         DatasetIdentifier b5 = metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS", null );
-        assertFalse( "Unexpected inequality between two dataset identifier instances.", b3.equals( b4 ) );        
-        assertFalse( "Unexpected inequality between two dataset identifier instances.", p1.equals( b3 ) );  
-        assertFalse( "Unexpected inequality between two dataset identifier instances.", b5.equals( b3 ) ); 
+        assertFalse( "Unexpected inequality between two dataset identifier instances.", b3.equals( b4 ) );
+        assertFalse( "Unexpected inequality between two dataset identifier instances.", p1.equals( b3 ) );
+        assertFalse( "Unexpected inequality between two dataset identifier instances.", b5.equals( b3 ) );
         assertFalse( "Unexpected inequality between two dataset identifier instances.", b3.equals( b5 ) );
-        
+
         // Null check
         assertFalse( "Unexpected equality between two dataset identifier instances.", m1.equals( null ) );
         // Other type check
@@ -565,7 +568,7 @@ public final class DefaultMetadataFactoryTest
         assertFalse( "Unexpected equality between two dataset identifier hashcodes.", m1.hashCode() == m4.hashCode() );
         assertFalse( "Unexpected equality between two dataset identifier hashcodes.", m1.hashCode() == m5.hashCode() );
         assertFalse( "Unexpected equality between two dataset identifier hashcodes.", m1.hashCode() == m6.hashCode() );
-               
+
         // Equal with some identifiers missing
         DatasetIdentifier p1 = metaFac.getDatasetIdentifier( "DRRC2", "SQIN", null );
         DatasetIdentifier p2 = metaFac.getDatasetIdentifier( "DRRC2", "SQIN", null );
@@ -575,11 +578,11 @@ public final class DefaultMetadataFactoryTest
         assertTrue( "Unexpected inequality between two dataset identifier hashcodes.", p3.hashCode() == p4.hashCode() );
         DatasetIdentifier p5 = metaFac.getDatasetIdentifier( null, "SQIN", null );
         DatasetIdentifier p6 = metaFac.getDatasetIdentifier( null, "SQIN", null );
-        assertTrue( "Unexpected inequality between two dataset identifier hashcodes.", p5.hashCode() == p6.hashCode() );      
+        assertTrue( "Unexpected inequality between two dataset identifier hashcodes.", p5.hashCode() == p6.hashCode() );
         // Equal with scenario identifier for baseline
         DatasetIdentifier b1 = metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS", "ESP" );
         DatasetIdentifier b2 = metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS", "ESP" );
-        assertTrue( "Unexpected inequality between two dataset identifier hashcodes.", b1.hashCode() == b2.hashCode() );       
+        assertTrue( "Unexpected inequality between two dataset identifier hashcodes.", b1.hashCode() == b2.hashCode() );
         // Unequal with some identifiers missing
         DatasetIdentifier p7 = metaFac.getDatasetIdentifier( "DRRC2", "SQIN", null );
         DatasetIdentifier p8 = metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" );
@@ -589,19 +592,63 @@ public final class DefaultMetadataFactoryTest
         assertFalse( "Unexpected equality between two dataset identifier hashcodes.", p9.hashCode() == p10.hashCode() );
         DatasetIdentifier p11 = metaFac.getDatasetIdentifier( null, "SQIN", null );
         DatasetIdentifier p12 = metaFac.getDatasetIdentifier( null, null, null );
-        assertFalse( "Unexpected equality between two dataset identifier hashcodes.", p11.hashCode() == p12.hashCode() );
+        assertFalse( "Unexpected equality between two dataset identifier hashcodes.",
+                     p11.hashCode() == p12.hashCode() );
         // Unequal scenario identifiers for baseline
         DatasetIdentifier b3 = metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS", "ESP" );
         DatasetIdentifier b4 = metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS", "ESP2" );
         DatasetIdentifier b5 = metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS", null );
-        assertFalse( "Unexpected inequality between two dataset identifier hashcodes.", b3.hashCode() == b4.hashCode() );        
-        assertFalse( "Unexpected inequality between two dataset identifier hashcodes.", p1.hashCode() == b3.hashCode() );  
-        assertFalse( "Unexpected inequality between two dataset identifier hashcodes.", b3.hashCode() == b5.hashCode() );        
+        assertFalse( "Unexpected inequality between two dataset identifier hashcodes.",
+                     b3.hashCode() == b4.hashCode() );
+        assertFalse( "Unexpected inequality between two dataset identifier hashcodes.",
+                     p1.hashCode() == b3.hashCode() );
+        assertFalse( "Unexpected inequality between two dataset identifier hashcodes.",
+                     b3.hashCode() == b5.hashCode() );
 
         // Other type check
         assertFalse( "Unexpected equality between two dataset identifier hashcodes.",
                      m1.hashCode() == Double.valueOf( 2 ).hashCode() );
     }
 
+    /**
+     * Tests the {@link MetadataFactory#unionOf(java.util.List)} against a benchmark.
+     */
+    @Test
+    public void unionOf()
+    {
+        Metadata m1 = metaFac.getMetadata( metaFac.getDimension(),
+                                           metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ),
+                                           dataFac.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                                 Instant.parse( "1985-12-31T23:59:59Z" ),
+                                                                 ReferenceTime.ISSUE_TIME ) );
+        Metadata m2 = metaFac.getMetadata( metaFac.getDimension(),
+                                           metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ),
+                                           dataFac.ofTimeWindow( Instant.parse( "1986-01-01T00:00:00Z" ),
+                                                                 Instant.parse( "1986-12-31T23:59:59Z" ),
+                                                                 ReferenceTime.ISSUE_TIME ) );
+        Metadata m3 = metaFac.getMetadata( metaFac.getDimension(),
+                                           metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ),
+                                           dataFac.ofTimeWindow( Instant.parse( "1987-01-01T00:00:00Z" ),
+                                                                 Instant.parse( "1988-01-01T00:00:00Z" ),
+                                                                 ReferenceTime.ISSUE_TIME ) );
+        Metadata benchmark = metaFac.getMetadata( metaFac.getDimension(),
+                                                  metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ),
+                                                  dataFac.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                                        Instant.parse( "1988-01-01T00:00:00Z" ),
+                                                                        ReferenceTime.ISSUE_TIME ) );
+        assertTrue( "Unexpected difference between union of metadata and benchmark.",
+                    benchmark.equals( metaFac.unionOf( Arrays.asList( m1, m2, m3 ) ) ) );
+        //Checked exception
+        try
+        {
+            Metadata fail = metaFac.getMetadata( metaFac.getDimension(),
+                                                 metaFac.getDatasetIdentifier( "DRRC3", "SQIN", "HEFS" ) );
+            metaFac.unionOf( Arrays.asList( m1, m2, m3, fail ) );
+            fail( "Expected a checked exception on building the union of metadata for unequal inputs." );
+        }
+        catch ( MetadataException e )
+        {
+        }
+    }
 
 }

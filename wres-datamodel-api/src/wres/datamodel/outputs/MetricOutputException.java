@@ -1,16 +1,16 @@
 package wres.datamodel.outputs;
 
-import wres.datamodel.MetricException;
+import wres.datamodel.DataException;
 
 /**
- * A runtime exception associated with an incorrect metric output.
+ * A runtime exception associated with an incorrect {@link MetricOutput}.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
  * @since 0.1
  */
 
-public final class MetricOutputException extends MetricException
+public final class MetricOutputException extends DataException
 {
 
     /**
