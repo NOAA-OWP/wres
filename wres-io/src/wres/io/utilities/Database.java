@@ -1233,52 +1233,12 @@ public final class Database {
      * @throws SQLException Thrown if successful communication with the
      * database could not be established
      */
-    public static void clean() throws SQLException {
+    public static void clean() throws SQLException
+    {
 		StringBuilder builder = new StringBuilder();
 
-		Connection connection = null;
-		ResultSet results = null;
-
-		builder.append("SELECT 'DROP TABLE IF EXISTS '||n.nspname||'.'||c.relname||' CASCADE;'").append(NEWLINE);
-		builder.append("FROM pg_catalog.pg_class c").append(NEWLINE);
-		builder.append("INNER JOIN pg_catalog.pg_namespace n").append(NEWLINE);
-		builder.append("    ON N.oid = C.relnamespace").append(NEWLINE);
-		builder.append("WHERE relchecks > 0").append(NEWLINE);
-		builder.append("    AND nspname = 'wres' OR nspname = 'partitions'").append(NEWLINE);
-		builder.append("    AND relkind = 'r';");
-
-		try {
-			connection = Database.getConnection();
-			results = Database.getResults(connection, builder.toString());
-
-			builder = new StringBuilder();
-
-			while (results.next()) {
-				builder.append(results.getString(1)).append(NEWLINE);
-			}
-		}
-		catch (final SQLException e) {
-			LOGGER.error(Strings.getStackTrace(e));
-			throw e;
-		}
-		finally
-		{
-			if (results != null)
-			{
-				try {
-					results.close();
-				}
-				catch (SQLException e) {
-					LOGGER.error(Strings.getStackTrace(e));
-				}
-			}
-
-			if (connection != null)
-			{
-				Database.returnConnection(connection);
-			}
-		}
-
+		builder.append("DROP SCHEMA partitions CASCADE;").append(NEWLINE);
+		builder.append("CREATE SCHEMA partitions;").append(NEWLINE);
 		builder.append("TRUNCATE wres.ForecastSource;").append(NEWLINE);
 		builder.append("TRUNCATE wres.ForecastValue;").append(NEWLINE);
 		builder.append("TRUNCATE wres.Observation;").append(NEWLINE);

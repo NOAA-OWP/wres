@@ -4,6 +4,7 @@ import com.mchange.v2.c3p0.ComboPooledDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.io.utilities.ScriptBuilder;
 import wres.util.Strings;
 import wres.util.XML;
 
@@ -23,10 +24,12 @@ import java.util.TreeMap;
  */
 final class DatabaseSettings
 {
-	private static final Logger LOGGER = LoggerFactory.getLogger(DatabaseSettings.class);
+	private static final Logger LOGGER =
+			LoggerFactory.getLogger( DatabaseSettings.class );
 
 	// A mapping of database names to the name of the class for the 
-	private static final Map<String, String> DRIVER_MAPPING = createDriverMapping();
+	private static final Map<String, String> DRIVER_MAPPING =
+			createDriverMapping();
 
 	private String url = "localhost";
 	private String username = "wres";
@@ -34,8 +37,8 @@ final class DatabaseSettings
 	private String port = "5432";
 	private String databaseName = "wres";
 	private String databaseType = "postgresql";
-    private int maxPoolSize = 10;
-    private int maxIdleTime = 30;
+	private int maxPoolSize = 10;
+	private int maxIdleTime = 30;
 
 	/**
 	 * Creates the mapping between the names of databases to the name of the classes that may connect to them
@@ -44,8 +47,8 @@ final class DatabaseSettings
 	private static Map<String, String> createDriverMapping()
 	{
 		TreeMap<String, String> mapping = new TreeMap<>();
-		mapping.put("mysql", "com.mysql.jdbc.Driver");
-		mapping.put("postgresql", "org.postgresql.Driver");
+		mapping.put( "mysql", "com.mysql.jdbc.Driver" );
+		mapping.put( "postgresql", "org.postgresql.Driver" );
 		return mapping;
 	}
 
@@ -53,35 +56,87 @@ final class DatabaseSettings
 	 * Parses the settings for the database from an XMLReader
 	 * @param reader The reader containing XML data
 	 */
-    DatabaseSettings( XMLStreamReader reader )
+	DatabaseSettings( XMLStreamReader reader )
 	{
-		try {
-			while (reader.hasNext())
+		try
+		{
+			while ( reader.hasNext() )
 			{
-				if (reader.isStartElement() && reader.getLocalName().equalsIgnoreCase("database"))
+				if ( reader.isStartElement() && reader.getLocalName()
+													  .equalsIgnoreCase(
+															  "database" ) )
 				{
 					reader.next();
 				}
-				else if (reader.isEndElement() && reader.getLocalName().equalsIgnoreCase("database"))
+				else if ( reader.isEndElement() && reader.getLocalName()
+														 .equalsIgnoreCase(
+																 "database" ) )
 				{
 					break;
 				}
 				else
 				{
-					parseElement(reader);
+					parseElement( reader );
 					reader.next();
 				}
 			}
 			this.applySystemPropertyOverrides();
 			testConnection();
-        }
-        catch ( XMLStreamException | SQLException e )
-        {
-            throw new ExceptionInInitializerError( e );
-        }
+			cleanPriorRuns();
+		}
+		catch ( XMLStreamException | SQLException e )
+		{
+			throw new ExceptionInInitializerError( e );
+		}
 	}
 
-	/**
+	private void cleanPriorRuns() throws SQLException
+	{
+		Connection connection = null;
+		Statement clean = null;
+
+		ScriptBuilder script = new ScriptBuilder();
+
+		script.addLine( "SELECT pg_cancel_backend(PT.pid)" );
+		script.addLine( "FROM pg_locks L" );
+		script.addLine( "INNER JOIN pg_stat_all_tables T" );
+		script.addTab().addLine( "ON l.relation = t.relid" );
+		script.addLine( "INNER JOIN pg_stat_activity PT" );
+		script.addTab().addLine( "ON l.pid = PT.pid" );
+		script.addLine( "WHERE T.schemaname <> 'pg_toast'::name" );
+		script.addTab().addLine( "AND t.schemaname < 'pg_catalog'::name" );
+		script.addTab().addLine( "AND usename = '", this.getUsername(), "'" );
+		script.addTab()
+			  .addLine( "AND datname = '", this.getDatabaseName(), "'" );
+		script.addLine( "GROUP BY PT.pid;" );
+
+		try
+		{
+			Class.forName( DRIVER_MAPPING.get( getDatabaseType() ) );
+			connection =
+					DriverManager.getConnection( this.getConnectionString(),
+												 this.username,
+												 this.password );
+			clean = connection.createStatement();
+			clean.execute( script.toString() );
+			if (clean.getResultSet().isBeforeFirst())
+            {
+                LOGGER.debug( "Lock(s) from previous runs of this applications "
+                              + "have been released." );
+            }
+		}
+		catch ( ClassNotFoundException e )
+		{
+			throw new SQLException( "The database driver could not be found.", e );
+		}
+		finally
+		{
+			clean.close();
+			connection.close();
+		}
+	}
+
+		/**
 	 * For when there is something wrong with the file with database settings.
 	 */
 	DatabaseSettings()
