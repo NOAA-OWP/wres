@@ -3,7 +3,7 @@ package wres.engine.statistics.metric;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -34,7 +34,8 @@ public class FunctionFactory
      * Map of summary statistics.
      */
 
-    private static final Map<MetricConstants, ToDoubleFunction<VectorOfDoubles>> STATISTICS = new HashMap<>();
+    private static final Map<MetricConstants, ToDoubleFunction<VectorOfDoubles>> STATISTICS =
+            new EnumMap<>( MetricConstants.class );
 
     /**
      * Median.

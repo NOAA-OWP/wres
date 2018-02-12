@@ -542,10 +542,10 @@ public abstract class ChartEngineFactory
         }
 
         //Determine the key set for the loop below based on if this is a lead time first and threshold first plot type.
-        Set<?> keySetValues = input.keySetByTime();
+        Set<?> keySetValues = input.setOfTimeWindowKey();
         if ( usedPlotType.equals( PlotTypeSelection.THRESHOLD_LEAD ) )
         {
-            keySetValues = input.keySetByThreshold();
+            keySetValues = input.setOfThresholdKey();
         }
 
         //For each key instance, do the following....

@@ -24,11 +24,12 @@ public interface MetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>>
      * 
      * @param timeWindow the forecast lead time
      * @return the submap
+     * @throws MetricOutputException if the map could not be filtered
      */
 
     default MetricOutputMapByTimeAndThreshold<T> filterByTime( final TimeWindow timeWindow )
     {
-        return (MetricOutputMapByTimeAndThreshold<T>) filterByFirst( timeWindow );
+        return (MetricOutputMapByTimeAndThreshold<T>) filterByFirstKey( timeWindow );
     }
 
     /**
@@ -36,11 +37,12 @@ public interface MetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>>
      * 
      * @param threshold the threshold
      * @return the submap
+     * @throws MetricOutputException if the map could not be filtered
      */
 
     default MetricOutputMapByTimeAndThreshold<T> filterByThreshold( final Threshold threshold )
     {
-        return (MetricOutputMapByTimeAndThreshold<T>) filterBySecond( threshold );
+        return (MetricOutputMapByTimeAndThreshold<T>) filterBySecondKey( threshold );
     }
 
     /**
@@ -49,9 +51,9 @@ public interface MetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>>
      * @return a view of the time window keys
      */
 
-    default Set<TimeWindow> keySetByTime()
+    default Set<TimeWindow> setOfTimeWindowKey()
     {
-        return keySetByFirstKey();
+        return setOfFirstKey();
     }
 
     /**
@@ -60,9 +62,9 @@ public interface MetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>>
      * @return a view of the threshold keys
      */
 
-    default Set<Threshold> keySetByThreshold()
+    default Set<Threshold> setOfThresholdKey()
     {
-        return keySetBySecondKey();
+        return setOfSecondKey();
     }
 
     /**
@@ -73,28 +75,28 @@ public interface MetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>>
 
     default boolean hasQuantileThresholds()
     {
-        return keySetByThreshold().stream().anyMatch( Threshold::isQuantile );
+        return setOfThresholdKey().stream().anyMatch( Threshold::isQuantile );
     }
     
     /**
-     * Filters by lead time in hours. Returns all outputs whose {@link TimeWindow#getEarliestLeadTimeInHours()} or
-     * {@link TimeWindow#getLatestLeadTimeInHours()} matches the specified lead time in hours.
+     * Return only those {@link TimeWindow} keys whose pairs of lead times are unique.
      * 
-     * @param leadHours the lead time in hours
-     * @return the submap
+     * @return a view of the time window keys
      */
-    
-    MetricOutputMapByTimeAndThreshold<T> filterByLeadTimeInHours( long leadHours );
 
+    Set<TimeWindow> setOfTimeWindowKeyByLeadTime();  
+    
     /**
-     * Returns the unique lead times associated with the {@link TimeWindow} for which the outputs are defined. Checks
-     * both the {@link TimeWindow#getEarliestLeadTimeInHours()} and the {@link TimeWindow#getLatestLeadTimeInHours()}.
+     * Filters the map by the {@link TimeWindow#getEarliestLeadTime()} and {@link TimeWindow#getLatestLeadTime()} in
+     * the input {@link TimeWindow}, returning a new sub-map of elements with matching times.
      * 
-     * @return a view of the lead times in hours
+     * @param window the time window on which to match lead times
+     * @return the submap
+     * @throws MetricOutputException if the map could not be filtered
      */
-
-    Set<Long> keySetByLeadTimeInHours();
     
+    MetricOutputMapByTimeAndThreshold<T> filterByLeadTime( TimeWindow window );   
+
     /**
      * Returns the {@link MetricOutputMetadata} associated with all {@link MetricOutput} in the store. This may contain
      * more (optional) information than the (required) metadata associated with the individual outputs. However, all

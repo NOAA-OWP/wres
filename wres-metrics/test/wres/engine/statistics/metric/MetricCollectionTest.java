@@ -3,6 +3,9 @@ package wres.engine.statistics.metric;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -20,6 +23,8 @@ import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.inputs.pairs.MulticategoryPairs;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.MetricOutputMapByMetric;
@@ -55,9 +60,9 @@ public class MetricCollectionTest
         //Finalize
         final MetricCollection<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput> collection =
                 metF.ofSingleValuedScoreCollection( ForkJoinPool.commonPool(),
-                                                     MetricConstants.MEAN_ERROR,
-                                                     MetricConstants.MEAN_ABSOLUTE_ERROR,
-                                                     MetricConstants.ROOT_MEAN_SQUARE_ERROR );
+                                                    MetricConstants.MEAN_ERROR,
+                                                    MetricConstants.MEAN_ABSOLUTE_ERROR,
+                                                    MetricConstants.ROOT_MEAN_SQUARE_ERROR );
 
         //Compute them
         final MetricOutputMapByMetric<DoubleScoreOutput> d = collection.apply( input );
@@ -249,7 +254,7 @@ public class MetricCollectionTest
         //Add some appropriate metrics to the collection
         n.add( metF.ofMeanSquareError() ); //Should be 400003.929
         n.add( metF.ofMeanSquareErrorSkillScore() ); //Should be 0.8007025335093799
-        
+
         //Finalize
         final MetricCollection<SingleValuedPairs, MetricOutput<?>, DoubleScoreOutput> collection = n.build();
 
@@ -453,8 +458,8 @@ public class MetricCollectionTest
         //Add some appropriate metrics to the collection
         final MetricCollection<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput> n =
                 metF.ofSingleValuedScoreCollection( ForkJoinPool.commonPool(),
-                                                     MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
-                                                     MetricConstants.COEFFICIENT_OF_DETERMINATION );
+                                                    MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
+                                                    MetricConstants.COEFFICIENT_OF_DETERMINATION );
         //Compute them
         final MetricOutputMapByMetric<DoubleScoreOutput> d = n.apply( input );
 
@@ -479,6 +484,46 @@ public class MetricCollectionTest
                     + actualSecond
                     + ".",
                     testMe.test( actualSecond, expectedSecond ) );
+    }
+
+    /**
+     * Construct a collection of metrics that consume single-valued pairs and produce scalar outputs. Computes and 
+     * benchmarks the output when specifying a non-empty set of metrics to ignore for
+     * {@link MetricCollection#apply(wres.datamodel.inputs.MetricInput, Set)}.
+     * @throws MetricParameterException if the metric construction fails 
+     */
+
+    @Test
+    public void test10OfSingleValuedScalarWithIgnore() throws MetricParameterException
+    {
+        //Generate some data
+        final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
+
+        //Create a collection of metrics that consume single-valued pairs and produce a scalar output
+        final DataFactory outF = DefaultDataFactory.getInstance();
+        final MetricFactory metF = MetricFactory.getInstance( outF );
+        final MetadataFactory metaFac = outF.getMetadataFactory();
+
+        //Add some appropriate metrics to the collection
+        final MetricCollection<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput> collection =
+                metF.ofSingleValuedScoreCollection( ForkJoinPool.commonPool(),
+                                                    MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
+                                                    MetricConstants.MEAN_SQUARE_ERROR,
+                                                    MetricConstants.COEFFICIENT_OF_DETERMINATION );
+        //Compute them, ignoring two metrics
+        Set<MetricConstants> ignore = new HashSet<>( Arrays.asList( MetricConstants.COEFFICIENT_OF_DETERMINATION,
+                                                                    MetricConstants.MEAN_SQUARE_ERROR ) );
+        final MetricOutputMapByMetric<DoubleScoreOutput> actual = collection.apply( input, ignore );
+        MetricOutputMetadata outM =
+                metaFac.getOutputMetadata( 10,
+                                           metaFac.getDimension(),
+                                           metaFac.getDimension(),
+                                           MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
+        MetricOutputMapByMetric<DoubleScoreOutput> expected =
+                outF.ofMap( Arrays.asList( outF.ofDoubleScoreOutput( 0.9999999910148981, outM ) ) );
+        //Check them   
+        assertTrue( "Difference between the actual and expected output when ignoring some metrics in the "
+                    + "collection.", actual.equals( expected ) );
     }
 
     /**

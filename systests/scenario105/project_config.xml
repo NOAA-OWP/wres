@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- This is a test of real, baseline validation streamflows verified through WRES where the obs is 24-h
+     and the forecasts are 6-h.  Time aggregation is needed. -->
+<project label="ExampleProject" name="scenario103">
+
+    <inputs>
+        <left label="">
+            <type>observations</type>
+            <source format="PI-XML">../data/abrfcExample/LGNN5_QME.xml</source>
+            <variable>QME</variable>
+        </left>
+        <right label="HEFS" >
+            <type>ensemble forecasts</type>
+            <source format="PI-XML">../data/abrfcExample/LGNN5_hefs_flow_1yr.tgz</source>
+            <variable>QINE</variable>
+        </right>
+        <baseline label="ESP" >
+            <type>ensemble forecasts</type>
+            <source format="PI-XML"
+>../data/abrfcExample/LGNN5_hefs-mefp_flow_1yr.tgz</source>
+            <variable>QINE</variable>
+        </baseline>
+
+    </inputs>
+
+    <pair label="Pairs by location and lead time"> 
+        <unit>CMS</unit>
+        <feature locationId="LGNN5" />
+        <leadHours minimum="1" maximum="48" />
+
+        <desiredTimeScale>
+            <function>avg</function>
+            <period>24</period>
+            <unit>hours</unit>
+        </desiredTimeScale>
+    </pair>
+
+    <metrics>
+        <probabilityThresholds>
+            <applyTo>left</applyTo>
+            <commaSeparatedValues>0.1,0.25,0.5,0.75,0.9,0.95</commaSeparatedValues>
+            <operator>greater than or equal to</operator>
+        </probabilityThresholds>
+        <metric>
+            <name>mean error</name>
+            <probabilityThresholds>
+                <applyTo>left</applyTo>
+                <commaSeparatedValues>0.5,0.8,0.925</commaSeparatedValues>
+                <operator>greater than or equal to</operator>
+            </probabilityThresholds>            
+        </metric>
+        <metric> 
+            <name>brier score</name>
+            <probabilityThresholds>
+                <applyTo>left</applyTo>
+                <commaSeparatedValues>0.2,0.3,0.7</commaSeparatedValues>
+                <operator>greater than</operator>
+            </probabilityThresholds> 
+        </metric>
+        <metric><name>mean square error skill score</name></metric>
+        <metric><name>brier skill score</name></metric>
+        <metric><name>relative operating characteristic score</name></metric>
+        <metric><name>continuous ranked probability skill score</name></metric>
+        <metric><name>sample size</name></metric>        
+    </metrics>
+    <outputs>
+        <destination type="numeric" decimalFormat="0.000000">
+            <path>output/</path>
+        </destination>
+        <destination type="pairs" decimalFormat="0.000000">
+            <path>output</path>
+        </destination>
+        <destination type="graphic">
+            <path>output/</path>
+            <graphical width="800" height="600">
+                <plotType>lead threshold</plotType>
+            </graphical>
+        </destination>
+    </outputs>
+
+</project>

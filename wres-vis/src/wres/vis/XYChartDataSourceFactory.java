@@ -5,7 +5,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.function.Supplier;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -174,7 +173,7 @@ public abstract class XYChartDataSourceFactory
 
         buildInitialParameters( source,
                                 orderIndex,
-                                input.keySetByThreshold().size() * input.keySetByLeadTimeInHours().size() );
+                                input.size() ); //# of series = number of entries in input.
         source.setXAxisType( ChartConstants.AXIS_IS_TIME );
         source.getDefaultFullySpecifiedDataSourceDrawingParameters()
               .setDefaultDomainAxisTitle( "FORECAST ISSUE DATE/TIME [UTC]" );
@@ -237,7 +236,7 @@ public abstract class XYChartDataSourceFactory
             }
         };
 
-        buildInitialParameters( source, orderIndex, input.keySet().size() );
+        buildInitialParameters( source, orderIndex, input.size() );
         source.getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultDomainAxisTitle( domainTitle );
         source.getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultRangeAxisTitle( rangeTitle );
 
@@ -276,20 +275,36 @@ public abstract class XYChartDataSourceFactory
                 // Build the TimeSeriesCollection
                 TimeSeriesCollection returnMe = new TimeSeriesCollection();
 
-                // Filter by lead time and then by threshold
-                Set<Long> leadTimes = input.keySetByLeadTimeInHours();
-                for ( Long nextTime : leadTimes )
+                // Filter by the lead time window, as contained within the TimeWindow portion of the key.
+                for ( TimeWindow nextTime : input.setOfTimeWindowKeyByLeadTime() )
                 {
+                    // Slice the data by the lead time in the window.  The resulting output will span
+                    // multiple issued time windows and thresholds.
                     MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> slice =
-                            input.filterByLeadTimeInHours( nextTime );
+                            input.filterByLeadTime( nextTime );
+                    
                     // Filter by threshold
-                    Set<Threshold> thresholds = input.keySetByThreshold();
-                    for ( Threshold nextThreshold : thresholds )
+                    for ( Threshold nextThreshold : input.setOfThresholdKey() )
                     {
+                        // Slice the data by threshold.  The resulting data will still contain potentiall
+                        // multiple issued time pooling windows.
                         MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> finalSlice =
                                 slice.filterByThreshold( nextThreshold );
-                        // Add the time-series
-                        TimeSeries next = new TimeSeries( nextTime + ", " + nextThreshold, FixedMillisecond.class );
+                        
+                        // Create the time series with a label determiend by whether the lead time is a 
+                        // single value or window.
+                        String leadKey = Long.toString( nextTime.getLatestLeadTime().toHours() );
+                        if ( !nextTime.getEarliestLeadTime().equals( nextTime.getLatestLeadTime() ) )
+                        {
+                            leadKey = "(" + nextTime.getEarliestLeadTime().toHours()
+                                      + ","
+                                      + nextTime.getLatestLeadTime().toHours()
+                                      + "]";
+                        }
+                        TimeSeries next = new TimeSeries( leadKey + ", " + nextThreshold, FixedMillisecond.class );
+                        
+                        // Loop through the slice, forming a time series from the issued time pooling windows
+                        // and corresponding values.
                         for ( Pair<TimeWindow, Threshold> key : finalSlice.keySet() )
                         {
                             next.add( new FixedMillisecond( key.getLeft().getMidPointTime().toEpochMilli() ),
@@ -304,7 +319,7 @@ public abstract class XYChartDataSourceFactory
 
         buildInitialParameters( source,
                                 orderIndex,
-                                input.keySetByThreshold().size() * input.keySetByLeadTimeInHours().size() );
+                                input.setOfTimeWindowKeyByLeadTime().size() * input.setOfThresholdKey().size() ); //one series per lead and threshold
         source.getDefaultFullySpecifiedDataSourceDrawingParameters()
               .setDefaultDomainAxisTitle( "TIME AT CENTER OF WINDOW [UTC]" );
         source.getDefaultFullySpecifiedDataSourceDrawingParameters()
@@ -342,7 +357,7 @@ public abstract class XYChartDataSourceFactory
             }
         };
 
-        buildInitialParameters( source, orderIndex, input.keySetByLeadTimeInHours().size() );
+        buildInitialParameters( source, orderIndex, input.setOfTimeWindowKey().size() );
         source.getDefaultFullySpecifiedDataSourceDrawingParameters()
               .setDefaultDomainAxisTitle( "THRESHOLD VALUE@inputUnitsLabelSuffix@" );
         source.getDefaultFullySpecifiedDataSourceDrawingParameters()
@@ -380,7 +395,7 @@ public abstract class XYChartDataSourceFactory
             }
         };
 
-        buildInitialParameters( source, orderIndex, input.keySetByThreshold().size() );
+        buildInitialParameters( source, orderIndex, input.setOfThresholdKey().size() );
         source.getDefaultFullySpecifiedDataSourceDrawingParameters()
               .setDefaultDomainAxisTitle( "FORECAST LEAD TIME [HOUR]" );
         source.getDefaultFullySpecifiedDataSourceDrawingParameters()

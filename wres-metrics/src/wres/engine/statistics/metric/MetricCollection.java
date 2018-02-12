@@ -1,16 +1,18 @@
 package wres.engine.statistics.metric;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
@@ -36,17 +38,22 @@ import wres.engine.statistics.metric.categorical.ContingencyTable;
  * Build a collection with a {@link MetricCollectionBuilder#of()}.
  * </p>
  * 
+ * <p>
+ * When a group contains a collection of metrics that do not need to be computed for all inputs, a non-empty set of
+ * {@link MetricConstants} may be defined. These metrics are ignored during calculation.
+ * </p>
+ * 
  * @param <S> the input type
  * @param <T> the intermediate output type for {@link Collectable} metrics in this collection
  * @param <U> the output type
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
+ * @version 0.2
  * @since 0.1
  */
 
 public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?>, U extends MetricOutput<?>>
-        implements Function<S, MetricOutputMapByMetric<U>>
+        implements BiFunction<S, Set<MetricConstants>, MetricOutputMapByMetric<U>>
 {
 
     /**
@@ -75,15 +82,27 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
     private final Future<S> input;
 
     /**
+     * Applies the input to the collection for all metrics in the collection.
+     * 
+     * @param input the input
+     * @return the collection output
+     */
+
+    public MetricOutputMapByMetric<U> apply( final S input )
+    {
+        return applyParallel( input, Collections.emptySet() );
+    }
+
+    /**
      * Executor service. By default, the {@link ForkJoinPool#commonPool()}
      */
 
     private final ExecutorService metricPool;
 
     @Override
-    public MetricOutputMapByMetric<U> apply( final S input )
+    public MetricOutputMapByMetric<U> apply( final S input, Set<MetricConstants> ignoreTheseMetrics )
     {
-        return applyParallel( input );
+        return applyParallel( input, ignoreTheseMetrics );
     }
 
     /**
@@ -228,15 +247,17 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
      * (intermediate) input once. Computes the metrics in parallel using the supplied {@link #metricPool} or, where not
      * supplied, the {@link ForkJoinPool#commonPool()}.
      * 
-     * @param s the metric input
+     * @param input the metric input
+     * @param ignoreTheseMetrics a set of metrics that should be ignored when computing this collection
      * @return the output for each metric, contained in a collection
      * @throws MetricCalculationException if the calculation fails for any reason, with the cause set
      */
 
-    private MetricOutputMapByMetric<U> applyParallel( final S s ) throws MetricCalculationException
+    private MetricOutputMapByMetric<U> applyParallel( final S input, Set<MetricConstants> ignoreTheseMetrics )
+            throws MetricCalculationException
     {
         //Bounds checks
-        if ( Objects.isNull( s ) )
+        if ( Objects.isNull( input ) )
         {
             throw new MetricCalculationException( "Specify non-null input to the metric collection." );
         }
@@ -245,16 +266,30 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
             throw new MetricCalculationException( "The collection has already been constructed with a fixed input: "
                                                   + "use call instead of apply to generate the metric results." );
         }
+        if ( Objects.isNull( ignoreTheseMetrics ) )
+        {
+            throw new MetricCalculationException( "Specify a non-null set of metrics to ignore, such as the empty "
+                                                  + "set." );
+        }
+
+        //Compute only the required metrics
+        Map<MetricConstants, Metric<S, U>> localMetrics = new EnumMap<>( metrics );
+        Map<MetricConstants, Map<MetricConstants, Collectable<S, T, U>>> localCollectableMetrics =
+                new EnumMap<>( collectableMetrics );
+        localMetrics.keySet().removeAll( ignoreTheseMetrics );
+        localCollectableMetrics.keySet().removeAll( ignoreTheseMetrics );
+        //Remove from each map in the collection
+        localCollectableMetrics.forEach( ( key, value ) -> value.keySet().removeAll( ignoreTheseMetrics ) );
 
         //Collection of future metric results
         final Map<MetricConstants, CompletableFuture<U>> metricFutures = new EnumMap<>( MetricConstants.class );
 
         //Create the futures for the collectable metrics
-        for ( Map<MetricConstants, Collectable<S, T, U>> next : collectableMetrics.values() )
+        for ( Map<MetricConstants, Collectable<S, T, U>> next : localCollectableMetrics.values() )
         {
             Collectable<S, T, U> baseMetric = next.values().iterator().next();
             final CompletableFuture<T> baseFuture = CompletableFuture.supplyAsync(
-                                                                                   () -> baseMetric.getCollectionInput( s ),
+                                                                                   () -> baseMetric.getCollectionInput( input ),
                                                                                    metricPool );
             //Using the future dependent result, compute a future of each of the independent results
             next.forEach( ( id, metric ) -> metricFutures.put( id,
@@ -262,9 +297,9 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
                                                                                           metricPool ) ) );
         }
         //Create the futures for the ordinary metrics
-        metrics.forEach( ( key, value ) -> metricFutures.put( key,
-                                                              CompletableFuture.supplyAsync( () -> value.apply( s ),
-                                                                                             metricPool ) ) );
+        localMetrics.forEach( ( key, value ) -> metricFutures.put( key,
+                                                                   CompletableFuture.supplyAsync( () -> value.apply( input ),
+                                                                                                  metricPool ) ) );
         //Compute the results
         List<U> returnMe = new ArrayList<>();
         MetricConstants nextMetric = null;
