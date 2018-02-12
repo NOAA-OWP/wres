@@ -56,7 +56,7 @@ public class TimeSeriesDemo
         Metadata metaData = dataFactory.getMetadataFactory().getMetadata();
         //Build the atomic time-series
         TimeSeriesOfSingleValuedPairs timeSeries =
-                (TimeSeriesOfSingleValuedPairs) builder.addData( firstId, firstValues )
+                (TimeSeriesOfSingleValuedPairs) builder.addTimeSeriesData( firstId, firstValues )
                                                        .setTimeStep( timeStep )
                                                        .setMetadata( metaData )
                                                        .build();
@@ -111,7 +111,7 @@ public class TimeSeriesDemo
         secondValues.add( dataFactory.pairOf( 9, 10 ) );
         secondValues.add( dataFactory.pairOf( 11, 12 ) );
         //Build the atomic time-series
-        timeSeries = builder.addData( secondId, secondValues ).build();
+        timeSeries = builder.addTimeSeriesData( secondId, secondValues ).build();
 
         //Print the values by valid time
         if ( printOutput )
@@ -268,9 +268,9 @@ public class TimeSeriesDemo
         Metadata meta = metaFac.getMetadata();
         //Build the time-series
         TimeSeriesOfEnsemblePairs ts =
-                (TimeSeriesOfEnsemblePairs) b.addData( firstBasisTime, first )
-                                             .addData( secondBasisTime, second )
-                                             .addData( thirdBasisTime, third )
+                (TimeSeriesOfEnsemblePairs) b.addTimeSeriesData( firstBasisTime, first )
+                                             .addTimeSeriesData( secondBasisTime, second )
+                                             .addTimeSeriesData( thirdBasisTime, third )
                                              .setTimeStep( Duration.ofDays( 1 ) )
                                              .setMetadata( meta )
                                              .build();

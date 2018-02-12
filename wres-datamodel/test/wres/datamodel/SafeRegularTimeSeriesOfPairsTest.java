@@ -47,7 +47,7 @@ public final class SafeRegularTimeSeriesOfPairsTest
         first.add( metIn.pairOf( 1, 1 ) );
         final Metadata meta = metaFac.getMetadata();
         TimeSeriesOfSingleValuedPairs ts =
-                (TimeSeriesOfSingleValuedPairs) b.addData( firstBasisTime, first )
+                (TimeSeriesOfSingleValuedPairs) b.addTimeSeriesData( firstBasisTime, first )
                                                  .setTimeStep( Duration.ofDays( 1 ) )
                                                  .setMetadata( meta )
                                                  .build();
@@ -70,7 +70,7 @@ public final class SafeRegularTimeSeriesOfPairsTest
         first.add( metIn.pairOf( 1, 1 ) );
         final Metadata meta = metaFac.getMetadata();
         TimeSeriesOfSingleValuedPairs ts =
-                (TimeSeriesOfSingleValuedPairs) b.addData( firstBasisTime, first )
+                (TimeSeriesOfSingleValuedPairs) b.addTimeSeriesData( firstBasisTime, first )
                                                  .setTimeStep( Duration.ofDays( 1 ) )
                                                  .setMetadata( meta )
                                                  .build();
@@ -95,14 +95,14 @@ public final class SafeRegularTimeSeriesOfPairsTest
         Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );
         values.add( metIn.pairOf( 1, 1 ) );
         Metadata meta = metaFac.getMetadata();
-        b.addData( basisTime, values ).setTimeStep( Duration.ofDays( 1 ) ).setMetadata( meta );
+        b.addTimeSeriesData( basisTime, values ).setTimeStep( Duration.ofDays( 1 ) ).setMetadata( meta );
 
         //Check dataset count
         assertTrue( "Expected a time-series with one basis time.", !b.build().hasMultipleTimeSeries() );
 
         //Add another time-series
         Instant nextBasisTime = Instant.parse( "1985-01-02T00:00:00Z" );
-        b.addData( nextBasisTime, values );
+        b.addTimeSeriesData( nextBasisTime, values );
         assertTrue( "Expected a time-series with multiple basis times.", b.build().hasMultipleTimeSeries() );
     }
 
@@ -121,13 +121,13 @@ public final class SafeRegularTimeSeriesOfPairsTest
         Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );
         values.add( metIn.pairOf( 1, 1 ) );
         Metadata meta = metaFac.getMetadata();
-        b.addData( basisTime, values ).setTimeStep( Duration.ofDays( 1 ) ).setMetadata( meta );
+        b.addTimeSeriesData( basisTime, values ).setTimeStep( Duration.ofDays( 1 ) ).setMetadata( meta );
         Instant benchmark = Instant.parse( "1985-01-01T00:00:00Z" );
         assertTrue( "The earliest basis time does not match the benchmark.",
                     b.build().getEarliestBasisTime().equals( benchmark ) );
         //Add another time-series
         Instant nextBasisTime = Instant.parse( "1985-01-02T00:00:00Z" );
-        b.addData( nextBasisTime, values );
+        b.addTimeSeriesData( nextBasisTime, values );
         assertTrue( "The earliest basis time does not match the benchmark.",
                     b.build().getEarliestBasisTime().equals( benchmark ) );
     }
@@ -147,11 +147,11 @@ public final class SafeRegularTimeSeriesOfPairsTest
         Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );
         values.add( metIn.pairOf( 1, 1 ) );
         Metadata meta = metaFac.getMetadata();
-        b.addData( basisTime, values )
+        b.addTimeSeriesData( basisTime, values )
          .setTimeStep( Duration.ofDays( 1 ) )
          .setMetadata( meta );
         Instant nextBasisTime = Instant.parse( "1985-01-02T00:00:00Z" );
-        b.addData( nextBasisTime, values );
+        b.addTimeSeriesData( nextBasisTime, values );
         SafeRegularTimeSeriesOfSingleValuedPairs pairs = b.build();
         //Check dataset count
         assertTrue( "Expected a time-series with two basis times.", pairs.getBasisTimes().size() == 2 );
@@ -180,9 +180,9 @@ public final class SafeRegularTimeSeriesOfPairsTest
         values.add( metIn.pairOf( 2, 2 ) );
         values.add( metIn.pairOf( 3, 3 ) );
         Metadata meta = metaFac.getMetadata();
-        b.addData( basisTime, values ).setTimeStep( Duration.ofDays( 1 ) ).setMetadata( meta );
+        b.addTimeSeriesData( basisTime, values ).setTimeStep( Duration.ofDays( 1 ) ).setMetadata( meta );
         Instant nextBasisTime = Instant.parse( "1985-01-02T00:00:00Z" );
-        b.addData( nextBasisTime, values );
+        b.addTimeSeriesData( nextBasisTime, values );
         //Check dataset count
         assertTrue( "Expected a time-series with three lead times.", b.build().getDurations().size() == 3 );
         //Check the lead times
@@ -220,11 +220,11 @@ public final class SafeRegularTimeSeriesOfPairsTest
         third.add( metIn.pairOf( 7, 7 ) );
 
         final Metadata meta = metaFac.getMetadata();
-        c.addData( firstBasisTime, first ).setTimeStep( Duration.ofDays( 2 ) ).setMetadata( meta );
+        c.addTimeSeriesData( firstBasisTime, first ).setTimeStep( Duration.ofDays( 2 ) ).setMetadata( meta );
         try
         {
-            b.addData( firstBasisTime, first )
-             .addData( secondBasisTime, second )
+            b.addTimeSeriesData( firstBasisTime, first )
+             .addTimeSeriesData( secondBasisTime, second )
              .setTimeStep( Duration.ofDays( 1 ) )
              .addTimeSeries( c.build() )
              .setMetadata( meta )
@@ -247,7 +247,7 @@ public final class SafeRegularTimeSeriesOfPairsTest
         //Check for inconsistent forecast horizons
         try
         {
-            b.addData( thirdBasisTime, third ).setMetadata( meta ).build();
+            b.addTimeSeriesData( thirdBasisTime, third ).setMetadata( meta ).build();
             fail( "Expected a checked exception on building a regular time-series with an inconsistent time horizon." );
         }
         catch ( MetricInputException e )
@@ -256,8 +256,8 @@ public final class SafeRegularTimeSeriesOfPairsTest
         //Check for inconsistent forecast horizons in the baseline
         try
         {
-            c.addDataForBaseline( firstBasisTime, first )
-             .addDataForBaseline( thirdBasisTime, third )
+            c.addTimeSeriesDataForBaseline( firstBasisTime, first )
+             .addTimeSeriesDataForBaseline( thirdBasisTime, third )
              .setTimeStep( Duration.ofDays( 1 ) )
              .setMetadata( meta )
              .setMetadataForBaseline( meta )
@@ -271,8 +271,8 @@ public final class SafeRegularTimeSeriesOfPairsTest
         //Check for a baseline that is inconsistent with the main forecast
         try
         {
-            new SafeRegularTimeSeriesOfSingleValuedPairsBuilder().addData( firstBasisTime, first )
-                                                                 .addDataForBaseline( thirdBasisTime, third )
+            new SafeRegularTimeSeriesOfSingleValuedPairsBuilder().addTimeSeriesData( firstBasisTime, first )
+                                                                 .addTimeSeriesDataForBaseline( thirdBasisTime, third )
                                                                  .setTimeStep( Duration.ofDays( 1 ) )
                                                                  .setMetadata( meta )
                                                                  .setMetadataForBaseline( meta )
@@ -286,7 +286,7 @@ public final class SafeRegularTimeSeriesOfPairsTest
         //Check for exceptions on the iterators
         SafeRegularTimeSeriesOfSingleValuedPairsBuilder d = new SafeRegularTimeSeriesOfSingleValuedPairsBuilder();
         TimeSeriesOfSingleValuedPairs ts =
-                (TimeSeriesOfSingleValuedPairs) d.addData( firstBasisTime, first )
+                (TimeSeriesOfSingleValuedPairs) d.addTimeSeriesData( firstBasisTime, first )
                                                  .setTimeStep( Duration.ofDays( 1 ) )
                                                  .setMetadata( meta )
                                                  .build();
@@ -340,11 +340,11 @@ public final class SafeRegularTimeSeriesOfPairsTest
             values.add( metIn.pairOf( 1, 1 ) );
         }
         Metadata meta = metaFac.getMetadata();
-        b.addData( basisTime, values ).setTimeStep( Duration.ofDays( 1 ) ).setMetadata( meta );
+        b.addTimeSeriesData( basisTime, values ).setTimeStep( Duration.ofDays( 1 ) ).setMetadata( meta );
         StringJoiner joiner = new StringJoiner( System.lineSeparator() );
         for ( int i = 0; i < 5; i++ )
         {
-            joiner.add( "1985-01-0" + ( i + 2 ) + "T00:00:00Z" + "," + "1.0,1.0" );
+            joiner.add( "(1985-01-0" + ( i + 2 ) + "T00:00:00Z" + "," + "1.0,1.0)" );
         }
 
         //Check dataset count
@@ -352,10 +352,10 @@ public final class SafeRegularTimeSeriesOfPairsTest
                     joiner.toString().equals( b.build().toString() ) );
         //Add another time-series
         Instant nextBasisTime = Instant.parse( "1985-01-02T00:00:00Z" );
-        b.addData( nextBasisTime, values );
+        b.addTimeSeriesData( nextBasisTime, values );
         for ( int i = 0; i < 5; i++ )
         {
-            joiner.add( "1985-01-0" + ( i + 3 ) + "T00:00:00Z" + "," + "1.0,1.0" );
+            joiner.add( "(1985-01-0" + ( i + 3 ) + "T00:00:00Z" + "," + "1.0,1.0)" );
         }
         assertTrue( "Unexpected string representation of compound time-series.",
                     joiner.toString().equals( b.build().toString() ) );

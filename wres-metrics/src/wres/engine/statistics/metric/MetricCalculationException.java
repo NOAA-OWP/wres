@@ -1,6 +1,6 @@
 package wres.engine.statistics.metric;
 
-import wres.datamodel.MetricException;
+import wres.datamodel.DataException;
 
 /**
  * A runtime exception associated with a metric calculation.
@@ -10,7 +10,7 @@ import wres.datamodel.MetricException;
  * @since 0.1
  */
 
-public class MetricCalculationException extends MetricException
+public class MetricCalculationException extends DataException
 {
 
     /**
