@@ -924,8 +924,8 @@ public final class MetricTestDataFactory
                                                                                      "Streamflow" ),
                                                        window );
         // Build the time-series
-        return (TimeSeriesOfSingleValuedPairs) builder.addData( firstId, firstValues )
-                                                      .addData( secondId, secondValues )
+        return (TimeSeriesOfSingleValuedPairs) builder.addTimeSeriesData( firstId, firstValues )
+                                                      .addTimeSeriesData( secondId, secondValues )
                                                       .setTimeStep( timeStep )
                                                       .setMetadata( metaData )
                                                       .build();

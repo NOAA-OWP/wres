@@ -2,9 +2,10 @@ package wres.datamodel.inputs.pairs.builders;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+
+import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
@@ -24,23 +25,23 @@ public interface RegularTimeSeriesOfSingleValuedPairsBuilder extends PairedInput
 {
 
     /**
-     * Adds an atomic time-series to the builder.  The values must be time-ordered, moving away from the basis time.
+     * Adds an atomic time-series to the builder. The values must be time-ordered, moving away from the basis time.
      * 
      * @param basisTime the basis time for the time-series
      * @param values the time-series values, ordered from earliest to latest
      * @return the builder
      */
 
-    default RegularTimeSeriesOfSingleValuedPairsBuilder addData( Instant basisTime,
-                                                                 List<PairOfDoubles> values )
+    default RegularTimeSeriesOfSingleValuedPairsBuilder addTimeSeriesData( Instant basisTime,
+                                                                           List<PairOfDoubles> values )
     {
-        Map<Instant, List<PairOfDoubles>> input = new HashMap<>();
-        input.put( basisTime, values );
-        return addData( input );
+        List<Pair<Instant, List<PairOfDoubles>>> input = new ArrayList<>();
+        input.add( Pair.of( basisTime, values ) );
+        return addTimeSeriesData( input );
     }
 
     /**
-     * Adds an atomic time-series to the builder for a baseline.  The values must be time-ordered, moving away from 
+     * Adds an atomic time-series to the builder for a baseline. The values must be time-ordered, moving away from 
      * the basis time.
      * 
      * @param basisTime the basis time for the time-series
@@ -48,23 +49,24 @@ public interface RegularTimeSeriesOfSingleValuedPairsBuilder extends PairedInput
      * @return the builder
      */
 
-    default RegularTimeSeriesOfSingleValuedPairsBuilder addDataForBaseline( Instant basisTime,
-                                                                            List<PairOfDoubles> values )
+    default RegularTimeSeriesOfSingleValuedPairsBuilder addTimeSeriesDataForBaseline( Instant basisTime,
+                                                                                      List<PairOfDoubles> values )
     {
-        Map<Instant, List<PairOfDoubles>> input = new HashMap<>();
-        input.put( basisTime, values );
-        return addDataForBaseline( input );
+        List<Pair<Instant, List<PairOfDoubles>>> input = new ArrayList<>();
+        input.add( Pair.of( basisTime, values ) );
+        return addTimeSeriesDataForBaseline( input );
     }
 
     /**
-     * Adds several time-series to the builder, each one stored against its basis time.  The values must be time-
+     * Adds several time-series to the builder, each one stored against its basis time. The values must be time-
      * ordered, moving away from the basis time.
      * 
      * @param timeSeries the time-series, stored against their basis times
      * @return the builder
      */
 
-    RegularTimeSeriesOfSingleValuedPairsBuilder addData( Map<Instant, List<PairOfDoubles>> timeSeries );
+    RegularTimeSeriesOfSingleValuedPairsBuilder
+            addTimeSeriesData( List<Pair<Instant, List<PairOfDoubles>>> timeSeries );
 
     /**
      * Adds several time-series to the builder for a baseline, each one stored against its basis time. The values must
@@ -74,7 +76,8 @@ public interface RegularTimeSeriesOfSingleValuedPairsBuilder extends PairedInput
      * @return the builder
      */
 
-    RegularTimeSeriesOfSingleValuedPairsBuilder addDataForBaseline( Map<Instant, List<PairOfDoubles>> timeSeries );
+    RegularTimeSeriesOfSingleValuedPairsBuilder
+            addTimeSeriesDataForBaseline( List<Pair<Instant, List<PairOfDoubles>>> timeSeries );
 
     /**
      * Adds a time-series to the builder.
