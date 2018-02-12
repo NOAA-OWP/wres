@@ -2,9 +2,10 @@ package wres.datamodel.inputs.pairs.builders;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+
+import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
@@ -26,23 +27,23 @@ public interface RegularTimeSeriesOfEnsemblePairsBuilder extends PairedInputBuil
 {
 
     /**
-     * Adds an atomic time-series to the builder.  The values must be time-ordered, moving away from the basis time.
+     * Adds an atomic time-series to the builder. The values must be time-ordered, moving away from the basis time.
      * 
      * @param basisTime the basis time for the time-series
      * @param values the time-series values, ordered from earliest to latest
      * @return the builder
      */
 
-    default RegularTimeSeriesOfEnsemblePairsBuilder addData( Instant basisTime,
-                                                             List<PairOfDoubleAndVectorOfDoubles> values )
+    default RegularTimeSeriesOfEnsemblePairsBuilder addTimeSeriesData( Instant basisTime,
+                                                                       List<PairOfDoubleAndVectorOfDoubles> values )
     {
-        Map<Instant, List<PairOfDoubleAndVectorOfDoubles>> input = new HashMap<>();
-        input.put( basisTime, values );
-        return addData( input );
+        List<Pair<Instant, List<PairOfDoubleAndVectorOfDoubles>>> input = new ArrayList<>();
+        input.add( Pair.of( basisTime, values ) );
+        return addTimeSeriesData( input );
     }
 
     /**
-     * Adds an atomic time-series to the builder for a baseline.  The values must be time-ordered, moving away from 
+     * Adds an atomic time-series to the builder for a baseline. The values must be time-ordered, moving away from 
      * the basis time.
      * 
      * @param basisTime the basis time for the time-series
@@ -50,16 +51,16 @@ public interface RegularTimeSeriesOfEnsemblePairsBuilder extends PairedInputBuil
      * @return the builder
      */
 
-    default RegularTimeSeriesOfEnsemblePairsBuilder addDataForBaseline( Instant basisTime,
-                                                                        List<PairOfDoubleAndVectorOfDoubles> values )
+    default RegularTimeSeriesOfEnsemblePairsBuilder addTimeSeriesDataForBaseline( Instant basisTime,
+                                                                                  List<PairOfDoubleAndVectorOfDoubles> values )
     {
-        Map<Instant, List<PairOfDoubleAndVectorOfDoubles>> input = new HashMap<>();
-        input.put( basisTime, values );
-        return addDataForBaseline( input );
+        List<Pair<Instant, List<PairOfDoubleAndVectorOfDoubles>>> input = new ArrayList<>();
+        input.add( Pair.of( basisTime, values ) );
+        return addTimeSeriesDataForBaseline( input );
     }
 
     /**
-     * Adds several time-series to the builder, each one stored against its basis time.  The values must be time-
+     * Adds several time-series to the builder, each one stored against its basis time. The values must be time-
      * ordered, moving away from the basis time.
      * 
      * @param timeSeries the time-series, stored against their basis times
@@ -67,7 +68,7 @@ public interface RegularTimeSeriesOfEnsemblePairsBuilder extends PairedInputBuil
      */
 
     RegularTimeSeriesOfEnsemblePairsBuilder
-            addData( Map<Instant, List<PairOfDoubleAndVectorOfDoubles>> timeSeries );
+            addTimeSeriesData( List<Pair<Instant, List<PairOfDoubleAndVectorOfDoubles>>> timeSeries );
 
     /**
      * Adds several time-series to the builder for a baseline, each one stored against its basis time. The values must
@@ -78,7 +79,7 @@ public interface RegularTimeSeriesOfEnsemblePairsBuilder extends PairedInputBuil
      */
 
     RegularTimeSeriesOfEnsemblePairsBuilder
-            addDataForBaseline( Map<Instant, List<PairOfDoubleAndVectorOfDoubles>> timeSeries );
+            addTimeSeriesDataForBaseline( List<Pair<Instant, List<PairOfDoubleAndVectorOfDoubles>>> timeSeries );
 
     /**
      * Adds a time-series to the builder.

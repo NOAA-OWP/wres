@@ -1,10 +1,13 @@
 package wres.datamodel;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Objects;
 import java.util.StringJoiner;
 
 import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.MetadataException;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
@@ -171,6 +174,43 @@ public class DefaultMetadataFactory implements MetadataFactory
         outputMetaCache.put(testMe.hashCode(), testMe);
         return testMe;
     }
+    
+    @Override
+    public Metadata unionOf( List<Metadata> input )
+    {
+        String nulLString = "Cannot find the union of null metadata.";
+        if( Objects.isNull( input ) )
+        {
+            throw new MetadataException( nulLString );
+        }
+        if( input.isEmpty() )
+        {
+            throw new MetadataException( "Cannot find the union of empty input." );
+        }
+        List<TimeWindow> unionWindow = new ArrayList<>();
+        Metadata test = input.get( 0 );
+        for( Metadata next: input )
+        {
+            if( Objects.isNull( next ) )
+            {
+                throw new MetadataException( nulLString );
+            }
+            if( ! next.equalsWithoutTimeWindow( test ) )
+            {
+                throw new MetadataException( "Only the time window can differ when finding the union of metadata." );
+            }
+            if( next.hasTimeWindow() )
+            {
+                unionWindow.add( next.getTimeWindow() );
+            }
+        }
+        if( !unionWindow.isEmpty() )
+        {
+            test = getMetadata( test, TimeWindow.unionOf( unionWindow ) );
+        }
+        return test;
+    }
+    
 
     @Override
     public DatasetIdentifier getDatasetIdentifier(final String geospatialID,
@@ -199,7 +239,10 @@ public class DefaultMetadataFactory implements MetadataFactory
 
             public DimensionImpl(final String dimension)
             {
-                Objects.requireNonNull("Specify a non-null dimension string.", dimension);
+                if( Objects.isNull( dimension ) )
+                {
+                    throw new MetadataException( "Specify a non-null dimension string." );
+                }
                 this.dimension = dimension;
             }
 
@@ -246,11 +289,13 @@ public class DefaultMetadataFactory implements MetadataFactory
         private final Dimension dim;
         private final DatasetIdentifier identifier;
         private final TimeWindow timeWindow;
-        private static final String DIMNULL = "Specify a non-null dimension from which to construct the metadata.";
-
+        
         private MetadataImpl(final Dimension dim, final DatasetIdentifier identifier, final TimeWindow timeWindow)
         {
-            Objects.requireNonNull(dim,DIMNULL);
+            if( Objects.isNull( dim ) )
+            {
+                throw new MetadataException( "Specify a non-null dimension from which to construct the metadata." );
+            }
             this.dim = dim;
             this.identifier = identifier;
             this.timeWindow = timeWindow;
@@ -282,15 +327,10 @@ public class DefaultMetadataFactory implements MetadataFactory
                 return false;
             }
             final Metadata p = (Metadata)o;
-            boolean returnMe = p.getDimension().equals(getDimension()) && hasIdentifier() == p.hasIdentifier()
-                && hasTimeWindow() == p.hasTimeWindow();
-            if(hasIdentifier())
-            {
-                returnMe = returnMe && identifier.equals(p.getIdentifier());
-            }
+            boolean returnMe = equalsWithoutTimeWindow( p ) && hasTimeWindow() == p.hasTimeWindow();
             if(hasTimeWindow())
             {
-                returnMe = returnMe && timeWindow.equals(p.getTimeWindow());
+                returnMe = returnMe && getTimeWindow().equals(p.getTimeWindow());
             }
             return returnMe;
         }
@@ -298,7 +338,7 @@ public class DefaultMetadataFactory implements MetadataFactory
         @Override
         public int hashCode()
         {
-            return Objects.hash( getDimension(), hasIdentifier(), hasTimeWindow(), identifier, timeWindow );
+            return Objects.hash( getDimension(), hasIdentifier(), hasTimeWindow(), getIdentifier(), getTimeWindow() );
         }
 
         @Override
@@ -321,8 +361,8 @@ public class DefaultMetadataFactory implements MetadataFactory
             }
             b.append(dim).append("]");
             return b.toString();
-        }
-
+        }                
+        
     }
 
     /**
@@ -441,5 +481,5 @@ public class DefaultMetadataFactory implements MetadataFactory
     {
         outputMetaCache = new HashMap<>();
     }
-
+    
 }

@@ -1,5 +1,6 @@
 package wres.datamodel.metadata;
 
+import java.util.List;
 import java.util.Objects;
 
 import wres.datamodel.DatasetIdentifier;
@@ -341,8 +342,20 @@ public interface MetadataFactory
      * 
      * @param dimension the dimension string
      * @return a {@link Dimension}
+     * @throws MetadataException if the input string is null
      */
 
     Dimension getDimension( final String dimension );
+    
+    /**
+     * Finds the union of the input, based on the {@link TimeWindow}. All components of the input must be equal, 
+     * except the {@link TimeWindow}, otherwise an exception is thrown. See also {@link TimeWindow#unionOf(List)}.
+     * 
+     * @param input the input metadata
+     * @return the union of the input
+     * @throws MetadataException if the input is invalid
+     */
+    
+    Metadata unionOf( List<Metadata> input );
 
 }

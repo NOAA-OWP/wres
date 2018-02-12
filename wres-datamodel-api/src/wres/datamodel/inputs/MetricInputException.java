@@ -1,16 +1,16 @@
 package wres.datamodel.inputs;
 
-import wres.datamodel.MetricException;
+import wres.datamodel.DataException;
 
 /**
- * A runtime exception associated with an incorrect metric input.
+ * A runtime exception associated with an incorrect {@link MetricInput}.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
  * @since 0.1
  */
 
-public class MetricInputException extends MetricException
+public class MetricInputException extends DataException
 {
 
     /**

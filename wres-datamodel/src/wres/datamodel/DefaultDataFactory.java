@@ -191,7 +191,7 @@ public class DefaultDataFactory implements DataFactory
     @Override
     public PairOfDoubles pairOf( final double left, final double right )
     {
-        return SafePairOfDoubles.of( left, right );
+        return new SafePairOfDoubles( left, right );
     }
 
     @Override
@@ -378,17 +378,17 @@ public class DefaultDataFactory implements DataFactory
 
     @Override
     public TimeSeriesOfSingleValuedPairs
-            ofRegularTimeSeriesOfSingleValuedPairs( Map<Instant, List<PairOfDoubles>> timeSeries,
+            ofRegularTimeSeriesOfSingleValuedPairs( List<Pair<Instant, List<PairOfDoubles>>> timeSeries,
                                                     Metadata mainMeta,
-                                                    Map<Instant, List<PairOfDoubles>> timeSeriesBaseline,
+                                                    List<Pair<Instant, List<PairOfDoubles>>> timeSeriesBaseline,
                                                     Metadata baselineMeta,
                                                     Duration timeStep )
     {
         SafeRegularTimeSeriesOfSingleValuedPairsBuilder builder = new SafeRegularTimeSeriesOfSingleValuedPairsBuilder();
-        builder.addData( timeSeries ).setTimeStep( timeStep ).setMetadata( mainMeta );
+        builder.addTimeSeriesData( timeSeries ).setTimeStep( timeStep ).setMetadata( mainMeta );
         if ( Objects.nonNull( timeSeriesBaseline ) )
         {
-            builder.addDataForBaseline( timeSeriesBaseline );
+            builder.addTimeSeriesDataForBaseline( timeSeriesBaseline );
             builder.setMetadataForBaseline( baselineMeta );
         }
         return builder.build();
@@ -396,17 +396,17 @@ public class DefaultDataFactory implements DataFactory
 
     @Override
     public TimeSeriesOfEnsemblePairs
-            ofRegularTimeSeriesOfEnsemblePairs( Map<Instant, List<PairOfDoubleAndVectorOfDoubles>> timeSeries,
+            ofRegularTimeSeriesOfEnsemblePairs( List<Pair<Instant, List<PairOfDoubleAndVectorOfDoubles>>> timeSeries,
                                                 Metadata mainMeta,
-                                                Map<Instant, List<PairOfDoubleAndVectorOfDoubles>> timeSeriesBaseline,
+                                                List<Pair<Instant, List<PairOfDoubleAndVectorOfDoubles>>> timeSeriesBaseline,
                                                 Metadata baselineMeta,
                                                 Duration timeStep )
     {
         SafeRegularTimeSeriesOfEnsemblePairsBuilder builder = new SafeRegularTimeSeriesOfEnsemblePairsBuilder();
-        builder.addData( timeSeries ).setTimeStep( timeStep ).setMetadata( mainMeta );
+        builder.addTimeSeriesData( timeSeries ).setTimeStep( timeStep ).setMetadata( mainMeta );
         if ( Objects.nonNull( timeSeriesBaseline ) )
         {
-            builder.addDataForBaseline( timeSeriesBaseline );
+            builder.addTimeSeriesDataForBaseline( timeSeriesBaseline );
             builder.setMetadataForBaseline( baselineMeta );
         }
         return builder.build();
@@ -523,7 +523,7 @@ public class DefaultDataFactory implements DataFactory
             }
             else
             {
-                returnMe.add( SafePairOfDoubles.of( value.getItemOne(), value.getItemTwo() ) );
+                returnMe.add( new SafePairOfDoubles( value.getItemOne(), value.getItemTwo() ) );
             }
         } );
         return Collections.unmodifiableList( returnMe );

@@ -6,10 +6,8 @@ import static org.junit.Assert.fail;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.StringJoiner;
@@ -64,9 +62,9 @@ public final class SafeRegularTimeSeriesOfSingleValuedPairsTest
         third.add( metIn.pairOf( 9, 9 ) );
         final Metadata meta = metaFac.getMetadata();
         TimeSeriesOfSingleValuedPairs ts =
-                (TimeSeriesOfSingleValuedPairs) b.addData( firstBasisTime, first )
-                                                 .addData( secondBasisTime, second )
-                                                 .addData( thirdBasisTime, third )
+                (TimeSeriesOfSingleValuedPairs) b.addTimeSeriesData( firstBasisTime, first )
+                                                 .addTimeSeriesData( secondBasisTime, second )
+                                                 .addTimeSeriesData( thirdBasisTime, third )
                                                  .setTimeStep( Duration.ofDays( 1 ) )
                                                  .setMetadata( meta )
                                                  .build();
@@ -115,10 +113,10 @@ public final class SafeRegularTimeSeriesOfSingleValuedPairsTest
         Metadata meta = metaFac.getMetadata();
         //Add the time-series, with only one for baseline
         TimeSeriesOfSingleValuedPairs ts =
-                (TimeSeriesOfSingleValuedPairs) b.addData( firstBasisTime, first )
-                                                 .addData( secondBasisTime, second )
-                                                 .addData( thirdBasisTime, third )
-                                                 .addDataForBaseline( firstBasisTime, first )
+                (TimeSeriesOfSingleValuedPairs) b.addTimeSeriesData( firstBasisTime, first )
+                                                 .addTimeSeriesData( secondBasisTime, second )
+                                                 .addTimeSeriesData( thirdBasisTime, third )
+                                                 .addTimeSeriesDataForBaseline( firstBasisTime, first )
                                                  .setTimeStep( Duration.ofDays( 1 ) )
                                                  .setMetadata( meta )
                                                  .setMetadataForBaseline( meta )
@@ -161,12 +159,12 @@ public final class SafeRegularTimeSeriesOfSingleValuedPairsTest
         values.add( metIn.pairOf( 2, 2 ) );
         values.add( metIn.pairOf( 3, 3 ) );
         Metadata meta = metaFac.getMetadata();
-        b.addData( basisTime, values ).setTimeStep( Duration.ofDays( 1 ) ).setMetadata( meta );
+        b.addTimeSeriesData( basisTime, values ).setTimeStep( Duration.ofDays( 1 ) ).setMetadata( meta );
         //Check dataset dimensions
         assertTrue( "Unexpected baseline associated with time-series.",
                     Objects.isNull( b.build().getBaselineData() ) );
 
-        b.addDataForBaseline( basisTime, values );
+        b.addTimeSeriesDataForBaseline( basisTime, values );
         b.setMetadataForBaseline( meta );
 
         TimeSeriesOfSingleValuedPairs baseline = b.build().getBaselineData();
@@ -209,8 +207,8 @@ public final class SafeRegularTimeSeriesOfSingleValuedPairsTest
         first.add( metIn.pairOf( 2, 2 ) );
         first.add( metIn.pairOf( 3, 3 ) );
         Metadata meta = metaFac.getMetadata();
-        b.addData( basisTime, first )
-         .addDataForBaseline( basisTime, first )
+        b.addTimeSeriesData( basisTime, first )
+         .addTimeSeriesDataForBaseline( basisTime, first )
          .setTimeStep( Duration.ofDays( 1 ) )
          .setMetadata( meta )
          .setMetadataForBaseline( meta );
@@ -226,10 +224,10 @@ public final class SafeRegularTimeSeriesOfSingleValuedPairsTest
         third.add( metIn.pairOf( 7, 7 ) );
         third.add( metIn.pairOf( 8, 8 ) );
         third.add( metIn.pairOf( 9, 9 ) );
-        c.addData( basisTime, second )
-         .addData( basisTime, third )
-         .addDataForBaseline( basisTime, second )
-         .addDataForBaseline( basisTime, third );
+        c.addTimeSeriesData( basisTime, second )
+         .addTimeSeriesData( basisTime, third )
+         .addTimeSeriesDataForBaseline( basisTime, second )
+         .addTimeSeriesDataForBaseline( basisTime, third );
 
         TimeSeriesOfSingleValuedPairs tsAppend = c.build();
         //Check dataset dimensions
@@ -276,9 +274,9 @@ public final class SafeRegularTimeSeriesOfSingleValuedPairsTest
         Metadata meta = metaFac.getMetadata();
         //Add the time-series
         TimeSeriesOfSingleValuedPairs ts =
-                (TimeSeriesOfSingleValuedPairs) b.addData( firstBasisTime, first )
-                                                 .addData( secondBasisTime, second )
-                                                 .addData( thirdBasisTime, third )
+                (TimeSeriesOfSingleValuedPairs) b.addTimeSeriesData( firstBasisTime, first )
+                                                 .addTimeSeriesData( secondBasisTime, second )
+                                                 .addTimeSeriesData( thirdBasisTime, third )
                                                  .setTimeStep( Duration.ofDays( 1 ) )
                                                  .setMetadata( meta )
                                                  .build();
@@ -326,9 +324,9 @@ public final class SafeRegularTimeSeriesOfSingleValuedPairsTest
         Metadata meta = metaFac.getMetadata();
         //Add the time-series
         TimeSeriesOfSingleValuedPairs ts =
-                (TimeSeriesOfSingleValuedPairs) b.addData( firstBasisTime, first )
-                                                 .addData( secondBasisTime, second )
-                                                 .addData( thirdBasisTime, third )
+                (TimeSeriesOfSingleValuedPairs) b.addTimeSeriesData( firstBasisTime, first )
+                                                 .addTimeSeriesData( secondBasisTime, second )
+                                                 .addTimeSeriesData( thirdBasisTime, third )
                                                  .setTimeStep( Duration.ofDays( 1 ) )
                                                  .setMetadata( meta )
                                                  .build();
@@ -369,19 +367,19 @@ public final class SafeRegularTimeSeriesOfSingleValuedPairsTest
         second.add( metIn.pairOf( 5, 5 ) );
         second.add( metIn.pairOf( 6, 6 ) );
         final Metadata meta = metaFac.getMetadata();
-        c.addData( firstBasisTime, first ).setTimeStep( Duration.ofDays( 2 ) ).setMetadata( meta );
+        c.addTimeSeriesData( firstBasisTime, first ).setTimeStep( Duration.ofDays( 2 ) ).setMetadata( meta );
 
         //Check for exceptions on the iterators
         SafeRegularTimeSeriesOfSingleValuedPairsBuilder d = new SafeRegularTimeSeriesOfSingleValuedPairsBuilder();
         TimeSeriesOfSingleValuedPairs ts =
-                (TimeSeriesOfSingleValuedPairs) d.addData( firstBasisTime, first )
+                (TimeSeriesOfSingleValuedPairs) d.addTimeSeriesData( firstBasisTime, first )
                                                  .setTimeStep( Duration.ofDays( 1 ) )
                                                  .setMetadata( meta )
                                                  .build();
         try
         {
-            b.addData( firstBasisTime, first )
-             .addData( secondBasisTime, second )
+            b.addTimeSeriesData( firstBasisTime, first )
+             .addTimeSeriesData( secondBasisTime, second )
              .setTimeStep( Duration.ofDays( 1 ) )
              .addTimeSeries( c.build() )
              .setMetadata( meta )
@@ -469,7 +467,7 @@ public final class SafeRegularTimeSeriesOfSingleValuedPairsTest
             values.add( metIn.pairOf( 3, 3 ) );
             values.add( metIn.pairOf( 4, 4 ) );
             values.add( metIn.pairOf( 5, 5 ) );
-            e.addData( basisTime, values ).setTimeStep( Duration.ofDays( 1 ) ).setMetadata( meta );
+            e.addTimeSeriesData( basisTime, values ).setTimeStep( Duration.ofDays( 1 ) ).setMetadata( meta );
             e.build().filterByDuration( a -> a.equals( Duration.ofDays( 2 ) ) || a.equals( Duration.ofDays( 5 ) ) );
             fail( "Expected a checked exception on attempting to build an irregular time-series via a filter." );
         }
@@ -496,11 +494,11 @@ public final class SafeRegularTimeSeriesOfSingleValuedPairsTest
         }
         Metadata meta = metaFac.getMetadata();
         Duration timeStep = Duration.ofDays( 1 );
-        b.addData( basisTime, values ).setTimeStep( timeStep ).setMetadata( meta );
+        b.addTimeSeriesData( basisTime, values ).setTimeStep( timeStep ).setMetadata( meta );
         StringJoiner joiner = new StringJoiner( System.lineSeparator() );
         for ( int i = 0; i < 5; i++ )
         {
-            joiner.add( "1985-01-0" + ( i + 2 ) + "T00:00:00Z" + "," + "1.0,1.0" );
+            joiner.add( "(1985-01-0" + ( i + 2 ) + "T00:00:00Z" + "," + "1.0,1.0)" );
         }
 
         //Check dataset count
@@ -508,18 +506,18 @@ public final class SafeRegularTimeSeriesOfSingleValuedPairsTest
                     joiner.toString().equals( b.build().toString() ) );
         //Add another time-series
         Instant nextBasisTime = Instant.parse( "1985-01-02T00:00:00Z" );
-        b.addData( nextBasisTime, values );
+        b.addTimeSeriesData( nextBasisTime, values );
         for ( int i = 0; i < 5; i++ )
         {
-            joiner.add( "1985-01-0" + ( i + 3 ) + "T00:00:00Z" + "," + "1.0,1.0" );
+            joiner.add( "(1985-01-0" + ( i + 3 ) + "T00:00:00Z" + "," + "1.0,1.0)" );
         }
         assertTrue( "Unexpected string representation of compound time-series.",
                     joiner.toString().equals( b.build().toString() ) );
 
         //Check for equality of string representations when building in two different ways
-        Map<Instant, List<PairOfDoubles>> input = new HashMap<>();
-        input.put( basisTime, values );
-        input.put( nextBasisTime, values );
+        List<Pair<Instant, List<PairOfDoubles>>> input = new ArrayList<>();
+        input.add( Pair.of( basisTime, values ) );
+        input.add( Pair.of( nextBasisTime, values ) );
         TimeSeriesOfSingleValuedPairs pairs = metIn.ofRegularTimeSeriesOfSingleValuedPairs( input, meta, timeStep );
         assertTrue( "Unequal string representation of two time-series that should have an equal representation.",
                     joiner.toString().equals( pairs.toString() ) );
