@@ -793,7 +793,7 @@ public abstract class Chart2DTestDataGenerator
      * 
      * @return an output map of verification scores
      */
-    static MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> getScalarMetricOutputMapForRollingWindows()
+    static MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> getScoreOutputForPoolingWindowsFirst()
     {
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
         final MetadataFactory metaFactory = outputFactory.getMetadataFactory();
@@ -879,6 +879,69 @@ public abstract class Chart2DTestDataGenerator
         return outputFactory.ofMap( rawData );
     }
     
+    /**
+     * Returns a {@link MetricOutputMapByTimeAndThreshold} of {@link DoubleScoreOutput} comprising the bias fraction 
+     * for various pooling windows at one threshold (all data). Corresponds to the use case in Redmine ticket #46461.
+     * 
+     * @return an output map of verification scores
+     */
+    static MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> getScoreOutputForPoolingWindowsSecond()
+    {
+        final DataFactory outputFactory = DefaultDataFactory.getInstance();
+        final MetadataFactory metaFactory = outputFactory.getMetadataFactory();
+        final Map<Pair<TimeWindow, Threshold>, DoubleScoreOutput> rawData = new TreeMap<>();
+
+        // Create the metric output metadata: add fake sample sizes as these are not available in the test input file
+        final MetricOutputMetadata meta = metaFactory.getOutputMetadata( 18,
+                                                                         metaFactory.getDimension(),
+                                                                         metaFactory.getDimension( "CMS" ),
+                                                                         MetricConstants.BIAS_FRACTION,
+                                                                         MetricConstants.MAIN,
+                                                                         metaFactory.getDatasetIdentifier( "ABEC2",
+                                                                                                           "STREAMFLOW",
+                                                                                                           "NWM" ) );
+        double[] scores = new double[] {
+                                         -0.39228763627058233,
+                                         -0.38540392640098137,
+                                         -0.37290595138891640,
+                                         -0.29294118442636000,
+                                         -0.21904815321579500,
+                                         -0.15832253472025700,
+                                         -0.29244152171401800,
+                                         -0.28854939865963400,
+                                         -0.32666816357502900,
+                                         -0.29652842873636000,
+                                         -0.28174289655134900,
+                                         -0.26014386674719100,
+                                         -0.20220839431888500,
+                                         -0.26801048204027200,
+                                         -0.28350781433349200,
+                                         -0.27907401971041900,
+                                         -0.25723312071583900,
+                                         -0.28349542374488600,
+                                         -0.27544986528110100,
+                                         -0.25307837568226800,
+                                         -0.24993043930250200,
+                                         -0.27070337571167200,
+                                         -0.25422214821455900,
+                                         -0.28105802405674500
+        };
+        // Build the map
+        Threshold threshold = outputFactory.getThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER );
+        for ( int i = 0; i < scores.length; i++ )
+        {
+            String nextDate = "2017-08-08T" + String.format( "%02d", i ) + ":00:00Z";
+            rawData.put( Pair.of( TimeWindow.of( Instant.parse( nextDate ),
+                                                 Instant.parse( nextDate ),
+                                                 ReferenceTime.ISSUE_TIME,
+                                                 Duration.ofHours( 0 ),
+                                                 Duration.ofHours( 18 ) ),
+                                  threshold ),
+                         outputFactory.ofDoubleScoreOutput( scores[i], meta ) );
+        }
+        return outputFactory.ofMap( rawData );
+    }    
+
     /**
      * Returns a {@link PairedOutput} that comprises a {@link Duration} that represents a time-to-peak error against an 
      * {@link Instant} that represents the origin (basis time) of the time-series from which the timing error 

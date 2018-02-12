@@ -261,12 +261,12 @@ public class CommaSeparated
                                                      DecimalFormat formatter )
     {
         // Loop across the thresholds
-        for ( Threshold t : component.keySetByThreshold() )
+        for ( Threshold t : component.setOfThresholdKey() )
         {
             String column = name + HEADER_DELIMITER + t;
             headerRow.add( column );
             // Loop across time windows
-            for ( TimeWindow timeWindow : component.keySetByTime() )
+            for ( TimeWindow timeWindow : component.setOfTimeWindowKey() )
             {
                 if ( !rows.containsKey( timeWindow ) )
                 {

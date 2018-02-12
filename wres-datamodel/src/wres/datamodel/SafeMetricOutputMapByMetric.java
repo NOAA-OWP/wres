@@ -130,6 +130,22 @@ class SafeMetricOutputMapByMetric<T extends MetricOutput<?>> implements MetricOu
         return store.lastKey();
     }
 
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( ! ( o instanceof SafeMetricOutputMapByMetric ) )
+        {
+            return false;
+        }
+        return store.equals( ( (SafeMetricOutputMapByMetric<?>) o ).store );
+    }
+    
+    @Override
+    public int hashCode( )
+    {
+        return Objects.hashCode( store );
+    }    
+
     /**
      * Builds the immutable mapping.
      *
@@ -198,12 +214,15 @@ class SafeMetricOutputMapByMetric<T extends MetricOutput<?>> implements MetricOu
 
     private SafeMetricOutputMapByMetric( final SafeMetricOutputMapByMetricBuilder<T> builder )
     {
+        store = new TreeMap<>();
+        store.putAll( builder.store );
+        internal = new ArrayList<>( store.keySet() );
         //Bounds checks
-        if ( builder.store.isEmpty() )
+        if ( store.isEmpty() )
         {
             throw new MetricOutputException( "Specify one or more <key,value> mappings to build the map." );
         }
-        builder.store.forEach( ( key, value ) -> {
+        store.forEach( ( key, value ) -> {
             if ( Objects.isNull( key ) )
             {
                 throw new MetricOutputException( "Cannot prescribe a null key for the input map." );
@@ -213,9 +232,6 @@ class SafeMetricOutputMapByMetric<T extends MetricOutput<?>> implements MetricOu
                 throw new MetricOutputException( "Cannot prescribe a null value for the input map." );
             }
         } );
-        store = new TreeMap<>();
-        store.putAll( builder.store );
-        internal = new ArrayList<>( store.keySet() );
     }
 
     /**
