@@ -1,6 +1,5 @@
 package wres.io;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -18,6 +17,7 @@ import java.util.TreeSet;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+
 import javax.xml.stream.XMLStreamException;
 import javax.xml.transform.TransformerException;
 
@@ -36,8 +36,8 @@ import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
 import wres.io.reading.SourceLoader;
 import wres.io.reading.fews.PIXMLReader;
-import wres.io.utilities.Database;
 import wres.io.retrieval.InputGenerator;
+import wres.io.utilities.Database;
 import wres.io.writing.PairWriter;
 import wres.util.Strings;
 
@@ -257,7 +257,7 @@ public final class Operations {
 
             Database.execute( script );
         }
-        catch (FileNotFoundException | XMLStreamException | TransformerException e)
+        catch (XMLStreamException | TransformerException | IOException e)
         {
             LOGGER.warn("The system configuration could not be loaded. Execution information was not logged to the database.", e);
         }
