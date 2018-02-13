@@ -1,6 +1,7 @@
 package wres.io.data.details;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -8,6 +9,7 @@ import java.time.MonthDay;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -224,7 +226,145 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     {
         if (this.features == null)
         {
-            this.features = Features.getAllDetails(this.projectConfig);
+            if (this.getProjectConfig().getPair().getFeature() == null || this.projectConfig.getPair().getFeature().size() == 0)
+            {
+                this.features = new HashSet<>(  );
+
+                ScriptBuilder script = new ScriptBuilder();
+
+                script.addLine( "SELECT *" );
+                script.addLine( "FROM wres.Feature F" );
+                script.addLine( "WHERE EXISTS (" );
+
+                if ( ConfigHelper.isForecast( this.getLeft() ) )
+                {
+                    script.addTab().addLine( "SELECT 1" );
+                    script.addTab().addLine( "FROM wres.TimeSeries TS" );
+                    script.addTab()
+                          .addLine( "INNER JOIN wres.VariablePosition VP" );
+                    script.addTab( 2 )
+                          .addLine(
+                                  "ON VP.variableposition_id = TS.variableposition_id" );
+                    script.addTab()
+                          .addLine( "INNER JOIN wres.ForecastSource FS" );
+                    script.addTab( 2 )
+                          .addLine( "ON FS.forecast_id = TS.timeseries_id" );
+                    script.addTab()
+                          .addLine( "INNER JOIN wres.ProjectSource PS" );
+                    script.addTab( 2 )
+                          .addLine( "ON PS.source_id = FS.source_id" );
+                    script.addTab()
+                          .addLine( "WHERE PS.project_id = ", this.getId() );
+                    script.addTab( 2 ).addLine( "AND PS.member = 'left'" );
+                    script.addTab( 2 )
+                          .addLine( "AND VP.x_position = F.feature_id" );
+                }
+                else
+                {
+                    script.addTab().addLine( "SELECT 1" );
+                    script.addTab().addLine( "FROM wres.Observation O" );
+                    script.addTab()
+                          .addLine( "INNER JOIN wres.VariablePosition VP" );
+                    script.addTab( 2 )
+                          .addLine(
+                                  "ON VP.variableposition_id = O.variableposition_id" );
+                    script.addTab()
+                          .addLine( "INNER JOIN wres.ProjectSource PS" );
+                    script.addTab( 2 )
+                          .addLine( "ON PS.source_id = O.source_id" );
+                    script.addTab()
+                          .addLine( "WHERE PS.project_id = ", this.getId() );
+                    script.addTab( 2 ).addLine( "AND PS.member = 'left'" );
+                    script.addTab( 2 )
+                          .addLine( "AND VP.x_position = F.feature_id" );
+                }
+
+                script.addTab().addLine( ")" );
+                script.addTab().addLine( "AND EXISTS (" );
+
+                if ( ConfigHelper.isForecast( this.getRight() ) )
+                {
+                    script.addTab().addLine( "SELECT 1" );
+                    script.addTab().addLine( "FROM wres.TimeSeries TS" );
+                    script.addTab()
+                          .addLine( "INNER JOIN wres.VariablePosition VP" );
+                    script.addTab( 2 )
+                          .addLine(
+                                  "ON VP.variableposition_id = TS.variableposition_id" );
+                    script.addTab()
+                          .addLine( "INNER JOIN wres.ForecastSource FS" );
+                    script.addTab( 2 )
+                          .addLine( "ON FS.forecast_id = TS.timeseries_id" );
+                    script.addTab()
+                          .addLine( "INNER JOIN wres.ProjectSource PS" );
+                    script.addTab( 2 )
+                          .addLine( "ON PS.source_id = FS.source_id" );
+                    script.addTab()
+                          .addLine( "WHERE PS.project_id = ", this.getId() );
+                    script.addTab( 2 ).addLine( "AND PS.member = 'right'" );
+                    script.addTab( 2 )
+                          .addLine( "AND VP.x_position = F.feature_id" );
+                }
+                else
+                {
+                    script.addTab().addLine( "SELECT 1" );
+                    script.addTab().addLine( "FROM wres.Observation O" );
+                    script.addTab()
+                          .addLine( "INNER JOIN wres.VariablePosition VP" );
+                    script.addTab( 2 )
+                          .addLine(
+                                  "ON VP.variableposition_id = O.variableposition_id" );
+                    script.addTab()
+                          .addLine( "INNER JOIN wres.ProjectSource PS" );
+                    script.addTab( 2 )
+                          .addLine( "ON PS.source_id = O.source_id" );
+                    script.addTab()
+                          .addLine( "WHERE PS.project_id = ", this.getId() );
+                    script.addTab( 2 ).addLine( "AND PS.member = 'right'" );
+                    script.addTab( 2 )
+                          .addLine( "AND VP.x_position = F.feature_id" );
+                }
+
+                script.addLine( ");" );
+
+                Connection connection = null;
+                ResultSet resultSet = null;
+
+                try
+                {
+                    connection = Database.getConnection();
+                    resultSet = Database.getResults( connection,
+                                                     script.toString() );
+
+                    while ( resultSet.next() )
+                    {
+                        this.features.add( new FeatureDetails( resultSet ) );
+                    }
+                }
+                catch ( SQLException e )
+                {
+                    throw new SQLException(
+                            "The features for this project could "
+                            + "not be retrieved from the database.",
+                            e );
+                }
+                finally
+                {
+                    if ( resultSet != null )
+                    {
+                        resultSet.close();
+                    }
+
+                    if ( connection != null )
+                    {
+                        Database.returnConnection( connection );
+                    }
+                }
+            }
+            else
+            {
+                this.features = Features.getAllDetails( this.getProjectConfig() );
+            }
         }
         return this.features;
     }
@@ -554,49 +694,33 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
                        .value().equalsIgnoreCase(this.getScale().getFunction().value());
     }
 
-    private int getCommonScale()
+    private TimeScaleConfig getCommonScale()
             throws NoDataException, ProjectConfigException
     {
         Long commonScale;
+
+        // We're assuming we'll be scaling, so we'll need a default function
+        // used to aggregate our values. For the time being, we're going to
+        // roll with the average
+        TimeScaleFunction scaleFunction = TimeScaleFunction.AVG;
 
         try
         {
             long left = this.getLeftScale();
             long right = this.getRightScale();
 
-            if (left != right)
-            {
-                throw new ProjectConfigException( this.getProjectConfig().getPair(),
-                                                  "The left and right data sets"
-                                                  + " are not of the same scale."
-                                                  + "  Please reconfigure the "
-                                                  + "project to ensure that both"
-                                                  + " have the information "
-                                                  + "needed to scale, either "
-                                                  + "with the 'existngTimeScale'"
-                                                  + " or the 'desiredTimeScale'"
-                                                  + " specification. The scale "
-                                                  + "for the left inputs was "
-                                                  + left
-                                                  + " "
-                                                  + TimeHelper.LEAD_RESOLUTION
-                                                  + " and the scale for the "
-                                                  + "right inputs was "
-                                                  + right
-                                                  + " "
-                                                  + TimeHelper.LEAD_RESOLUTION
-                                                  + "." );
-            }
-            else
+            if (left == right)
             {
                 commonScale = left;
-            }
 
+                // Since the scales are actually the same, we're not going to
+                // do any aggregation at all
+                scaleFunction = TimeScaleFunction.NONE;
+            }
             // This logic will attempt to reconcile the two to find a possible
             // desired scale; i.e. if the left is in a scale of 4 hours and the
             // right in 3, the needed scale would be 12 hours.
-
-            /*if (Math.max(left, right) % Math.min(leftScale, right) == 0)
+            else if (Math.max(left, right) % Math.min(left, right) == 0)
             {
                 commonScale = Math.max(left, right);
             }
@@ -611,7 +735,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
 
                 commonScale =
                         left * right / greatestCommonFactor;
-            }*/
+            }
         }
         catch ( NoDataException e )
         {
@@ -626,7 +750,12 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
                                        e );
         }
 
-        return commonScale.intValue();
+        return new TimeScaleConfig(
+                scaleFunction,
+                commonScale.intValue(),
+                commonScale.intValue(),
+                DurationUnit.HOURS,
+                "Dynamic Scale" );
     }
 
     public TimeScaleConfig getScale() throws NoDataException
@@ -638,11 +767,9 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
 
         if (this.desiredTimeScale == null)
         {
-            Integer leastCommonMultiplier;
-
             try
             {
-                leastCommonMultiplier = this.getCommonScale();
+                this.desiredTimeScale = this.getCommonScale();
             }
             catch ( ProjectConfigException e )
             {
@@ -652,15 +779,6 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
                         e
                 );
             }
-
-            // TODO: When the lead scale is changed from hours,
-            // this duration unit needs to change as well
-            this.desiredTimeScale = new TimeScaleConfig(
-                    TimeScaleFunction.NONE,
-                    leastCommonMultiplier,
-                    leastCommonMultiplier,
-                    DurationUnit.HOURS,
-                    "Dynamic Scale" );
         }
 
         return this.desiredTimeScale;
@@ -1498,7 +1616,10 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         script.addLine(")");
 
         // TODO: When we change the scale of the lead column, we need to change this as well
-        script.addLine("SELECT EXTRACT( hours FROM MIN(age))::integer AS scale");
+        // We want the number of hours in the scale. It was previously "Extract ( hours ... ",
+        // but, for 1 day, was returning 0 hours (considering there were 0 hours into the day
+        // of the interval
+        script.addLine("SELECT ( EXTRACT( epoch FROM MIN(age))/3600 )::integer AS scale");
         script.addLine("FROM differences");
         script.addLine("WHERE age IS NOT NULL");
         script.addLine("GROUP BY age;");

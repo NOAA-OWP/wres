@@ -117,7 +117,11 @@ public final class ScriptGenerator
             script.addLine(" )");
         }
 
-        script.addTab(2).addLine(")");
+        if (addedFeature)
+        {
+            script.addTab( 2 ).addLine( ")" );
+        }
+
         script.addTab(2).addLine("AND EXISTS (");
         script.addTab( 3 ).addLine( "SELECT 1");
         script.addTab( 3 ).addLine( "FROM wres.ProjectSource PS");
@@ -229,7 +233,11 @@ public final class ScriptGenerator
                 script.addLine( " )" );
             }
 
-            script.addTab(2).addLine(")");
+            if (addedFeature)
+            {
+                script.addTab( 2 ).addLine( ")" );
+            }
+
             script.addTab(2).addLine("AND EXISTS (");
             script.addTab( 3 ).addLine( "SELECT 1" );
             script.addTab( 3 ).addLine( "FROM wres.ProjectSource PS" );

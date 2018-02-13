@@ -579,6 +579,7 @@ public final class Database {
 	{
 		Connection connection = null;
 		Statement statement = null;
+		Timer timer = null;
 
         if (LOGGER.isTraceEnabled())
         {
@@ -589,9 +590,17 @@ public final class Database {
 		
 		try
 		{
+		    if (LOGGER.isDebugEnabled())
+            {
+                timer = createScriptTimer( query );
+            }
 			connection = getConnection();
 			statement = connection.createStatement();
 			statement.execute(query);
+			if (LOGGER.isDebugEnabled())
+            {
+                timer.cancel();
+            }
 		}
 		catch (SQLException error)
 		{
@@ -1076,11 +1085,23 @@ public final class Database {
 		Connection connection = null;
 		ResultSet resultSet = null;
 		DataSet dataSet = null;
+		Timer scriptTimer = null;
 
 		try
 		{
+		    if (LOGGER.isDebugEnabled())
+            {
+                scriptTimer = Database.createScriptTimer( query );
+            }
+
 			connection = Database.getConnection();
 			resultSet = Database.getResults( connection, query );
+
+			if (LOGGER.isDebugEnabled())
+            {
+                scriptTimer.cancel();
+            }
+
 			dataSet = new DataSet( resultSet );
 		}
 		finally
@@ -1223,8 +1244,8 @@ public final class Database {
 
 		Timer timer = new Timer( "Script Timer" );
 
-		// Sets the delay for 3 seconds; if a script takes this long, it will be written
-		timer.schedule( task, 3000L );
+		// Sets the delay for 2 seconds; if a script takes this long, it will be written
+		timer.schedule( task, 2000L );
 		return timer;
 	}
 
