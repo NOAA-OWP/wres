@@ -54,12 +54,14 @@ public final class Operations {
     /**
      * Ingests and returns the hashes of source files involved in this project.
      * @param projectConfig the projectConfig to ingest
-     * @return the list of results from ingesting this project
+     * @return the projectdetails object from ingesting this project
      * @throws IOException when anything goes wrong
      */
-    public static List<IngestResult> ingest( ProjectConfig projectConfig )
+    public static ProjectDetails ingest( ProjectConfig projectConfig )
             throws IOException
     {
+        ProjectDetails result;
+
         List<IngestResult> projectSources = new ArrayList<>();
 
         SourceLoader loader = new SourceLoader(projectConfig);
@@ -99,25 +101,32 @@ public final class Operations {
 
         LOGGER.debug( "Here are the files ingested: {}", projectSources );
 
-        return Collections.unmodifiableList( projectSources );
-    }
+        List<IngestResult> safeToShareResults =
+                Collections.unmodifiableList( projectSources );
 
-    public static InputGenerator getInputs(ProjectConfig projectConfig,
-                                           Feature feature,
-                                           List<IngestResult> projectSources )
-            throws IngestException
-    {
         try
         {
-            ProjectDetails projectDetails =
-                    Projects.getProjectFromIngest( projectConfig,
-                                                   projectSources );
-            return new InputGenerator( feature, projectDetails );
+            result = Projects.getProjectFromIngest( projectConfig,
+                                                    safeToShareResults );
+
+            if ( Operations.shouldAnalyze( safeToShareResults ) )
+            {
+                Database.addNewIndexes();
+                Database.refreshStatistics( false );
+            }
         }
         catch ( SQLException se )
         {
-            throw new IngestException( "While creating project details:", se );
+            throw new IngestException( "Failed to finalize ingest.", se );
         }
+
+        return result;
+    }
+
+    public static InputGenerator getInputs( ProjectDetails projectDetails,
+                                            Feature feature )
+    {
+            return new InputGenerator( feature, projectDetails );
     }
 
     public static void install()
@@ -293,16 +302,12 @@ public final class Operations {
         return project.toString();
     }
 
-    public static Set<Feature> decomposeFeatures(ProjectConfig projectConfig,
-                                                 List<IngestResult> availableSources)
+    public static Set<Feature> decomposeFeatures( ProjectDetails projectDetails )
+
             throws SQLException, IOException
     {
         Set<Feature> atomicFeatures = new TreeSet<>( Comparator.comparing(
                 ConfigHelper::getFeatureDescription ));
-
-        ProjectDetails projectDetails =
-                Projects.getProjectFromIngest( projectConfig,
-                                               availableSources );
 
         for (FeatureDetails details : projectDetails.getFeatures())
         {
@@ -322,6 +327,20 @@ public final class Operations {
         }
 
         return Collections.unmodifiableSet( atomicFeatures );
+    }
+
+
+    /**
+     * Given a set of ingest results, answer the question "should we analyze?"
+     * @param ingestResults the results of ingest
+     * @return true if we should run an analyze
+     */
+
+    private static boolean shouldAnalyze( List<IngestResult> ingestResults )
+    {
+        boolean shouldAnalyze = false;
+
+        return shouldAnalyze;
     }
 
 }

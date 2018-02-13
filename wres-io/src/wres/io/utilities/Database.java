@@ -344,10 +344,7 @@ public final class Database {
      */
     public static List<IngestResult> completeAllIngestTasks() throws IngestException
     {
-	    if (LOGGER.isTraceEnabled())
-        {
-            LOGGER.trace( "Now completing all issued ingest tasks..." );
-        }
+        LOGGER.trace( "Now completing all issued ingest tasks..." );
 
         List<IngestResult> result = new ArrayList<>();
 
@@ -357,15 +354,12 @@ public final class Database {
 
 		Future<List<IngestResult>> task;
 
-	    boolean shouldAnalyze = false;
-
 		try
 		{
             task = getStoredIngestTask();
 
             while ( task != null )
             {
-                shouldAnalyze = true;
 				ProgressMonitor.increment();
 
 				if (!task.isDone())
@@ -402,11 +396,6 @@ public final class Database {
                                        "the operation was interupted." );
 		}
 
-		if (shouldAnalyze)
-        {
-            Database.addNewIndexes();
-            Database.refreshStatistics( false );
-        }
 
         if ( LOGGER.isDebugEnabled() )
         {
@@ -581,13 +570,8 @@ public final class Database {
 		Statement statement = null;
 		Timer timer = null;
 
-        if (LOGGER.isTraceEnabled())
-        {
-            LOGGER.trace( "" );
-            LOGGER.trace(query);
-            LOGGER.trace("");
-        }
-		
+        LOGGER.trace( "{}{}{}", NEWLINE, query, NEWLINE );
+
 		try
 		{
 		    if (LOGGER.isDebugEnabled())
@@ -603,10 +587,11 @@ public final class Database {
             }
 		}
 		catch (SQLException error)
-		{
-		    LOGGER.error("The following SQL call failed:");
-		    LOGGER.error(query);
-			LOGGER.error(Strings.getStackTrace(error));
+        {
+            LOGGER.error( "The following SQL call failed:{}{}",
+                          NEWLINE,
+                          query,
+                          error );
 			throw error;
 		}
 		finally
