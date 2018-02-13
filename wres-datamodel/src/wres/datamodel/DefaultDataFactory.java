@@ -1,7 +1,6 @@
 package wres.datamodel;
 
 import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -46,6 +45,7 @@ import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.PairedOutput;
+import wres.datamodel.time.Event;
 
 /**
  * A default factory class for producing metric inputs.
@@ -378,9 +378,9 @@ public class DefaultDataFactory implements DataFactory
 
     @Override
     public TimeSeriesOfSingleValuedPairs
-            ofRegularTimeSeriesOfSingleValuedPairs( List<Pair<Instant, List<PairOfDoubles>>> timeSeries,
+            ofRegularTimeSeriesOfSingleValuedPairs( List<Event<List<PairOfDoubles>>> timeSeries,
                                                     Metadata mainMeta,
-                                                    List<Pair<Instant, List<PairOfDoubles>>> timeSeriesBaseline,
+                                                    List<Event<List<PairOfDoubles>>> timeSeriesBaseline,
                                                     Metadata baselineMeta,
                                                     Duration timeStep )
     {
@@ -396,9 +396,9 @@ public class DefaultDataFactory implements DataFactory
 
     @Override
     public TimeSeriesOfEnsemblePairs
-            ofRegularTimeSeriesOfEnsemblePairs( List<Pair<Instant, List<PairOfDoubleAndVectorOfDoubles>>> timeSeries,
+            ofRegularTimeSeriesOfEnsemblePairs( List<Event<List<PairOfDoubleAndVectorOfDoubles>>> timeSeries,
                                                 Metadata mainMeta,
-                                                List<Pair<Instant, List<PairOfDoubleAndVectorOfDoubles>>> timeSeriesBaseline,
+                                                List<Event<List<PairOfDoubleAndVectorOfDoubles>>> timeSeriesBaseline,
                                                 Metadata baselineMeta,
                                                 Duration timeStep )
     {

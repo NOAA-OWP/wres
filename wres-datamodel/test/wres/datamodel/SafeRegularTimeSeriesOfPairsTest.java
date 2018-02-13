@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.StringJoiner;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
 import wres.datamodel.SafeRegularTimeSeriesOfSingleValuedPairs.SafeRegularTimeSeriesOfSingleValuedPairsBuilder;
@@ -20,6 +19,7 @@ import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.time.Event;
 
 /**
  * Tests the {@link SafeRegularTimeSeriesOfPairs}.
@@ -292,7 +292,7 @@ public final class SafeRegularTimeSeriesOfPairsTest
                                                  .build();
         try
         {
-            Iterator<Pair<Instant, PairOfDoubles>> it = ts.timeIterator().iterator();
+            Iterator<Event<PairOfDoubles>> it = ts.timeIterator().iterator();
             it.forEachRemaining( a -> a.equals( null ) );
             it.next();
             fail( "Expected a checked exception on iterating a time-series with no more elements left." );
@@ -302,21 +302,10 @@ public final class SafeRegularTimeSeriesOfPairsTest
         }
         try
         {
-            Iterator<Pair<Instant, PairOfDoubles>> it = ts.timeIterator().iterator();
+            Iterator<Event<PairOfDoubles>> it = ts.timeIterator().iterator();
             it.next();
             it.remove();
             fail( "Expected a checked exception on attempting to remove an element from an immutable time-series." );
-        }
-        catch ( UnsupportedOperationException e )
-        {
-        }
-        //Try to mutate pair
-        try
-        {
-            Iterator<Pair<Instant, PairOfDoubles>> it = ts.timeIterator().iterator();
-            it.next().setValue( metIn.pairOf( 0, 1 ) );
-            it.remove();
-            fail( "Expected a checked exception on attempting to modify a pair in an immutable time-series." );
         }
         catch ( UnsupportedOperationException e )
         {

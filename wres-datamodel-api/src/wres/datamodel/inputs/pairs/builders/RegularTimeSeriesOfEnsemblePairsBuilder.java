@@ -5,12 +5,11 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.lang3.tuple.Pair;
-
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairs;
+import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 
 /**
@@ -37,8 +36,8 @@ public interface RegularTimeSeriesOfEnsemblePairsBuilder extends PairedInputBuil
     default RegularTimeSeriesOfEnsemblePairsBuilder addTimeSeriesData( Instant basisTime,
                                                                        List<PairOfDoubleAndVectorOfDoubles> values )
     {
-        List<Pair<Instant, List<PairOfDoubleAndVectorOfDoubles>>> input = new ArrayList<>();
-        input.add( Pair.of( basisTime, values ) );
+        List<Event<List<PairOfDoubleAndVectorOfDoubles>>> input = new ArrayList<>();
+        input.add( Event.of( basisTime, values ) );
         return addTimeSeriesData( input );
     }
 
@@ -54,32 +53,32 @@ public interface RegularTimeSeriesOfEnsemblePairsBuilder extends PairedInputBuil
     default RegularTimeSeriesOfEnsemblePairsBuilder addTimeSeriesDataForBaseline( Instant basisTime,
                                                                                   List<PairOfDoubleAndVectorOfDoubles> values )
     {
-        List<Pair<Instant, List<PairOfDoubleAndVectorOfDoubles>>> input = new ArrayList<>();
-        input.add( Pair.of( basisTime, values ) );
+        List<Event<List<PairOfDoubleAndVectorOfDoubles>>> input = new ArrayList<>();
+        input.add( Event.of( basisTime, values ) );
         return addTimeSeriesDataForBaseline( input );
     }
 
     /**
-     * Adds several time-series to the builder, each one stored against its basis time. The values must be time-
-     * ordered, moving away from the basis time.
+     * Adds a list of atomic time-series to the builder, each one stored against its basis time. The values must be 
+     * time-ordered, moving away from the basis time.
      * 
      * @param timeSeries the time-series, stored against their basis times
      * @return the builder
      */
 
     RegularTimeSeriesOfEnsemblePairsBuilder
-            addTimeSeriesData( List<Pair<Instant, List<PairOfDoubleAndVectorOfDoubles>>> timeSeries );
+            addTimeSeriesData( List<Event<List<PairOfDoubleAndVectorOfDoubles>>> timeSeries );
 
     /**
-     * Adds several time-series to the builder for a baseline, each one stored against its basis time. The values must
-     * be time-ordered, moving away from the basis time.
+     * Adds a list of atomic time-series to the builder for a baseline, each one stored against its basis time. The 
+     * values must be time-ordered, moving away from the basis time.
      * 
      * @param timeSeries the time-series, stored against their basis times
      * @return the builder
      */
 
     RegularTimeSeriesOfEnsemblePairsBuilder
-            addTimeSeriesDataForBaseline( List<Pair<Instant, List<PairOfDoubleAndVectorOfDoubles>>> timeSeries );
+            addTimeSeriesDataForBaseline( List<Event<List<PairOfDoubleAndVectorOfDoubles>>> timeSeries );
 
     /**
      * Adds a time-series to the builder.

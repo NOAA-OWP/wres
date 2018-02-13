@@ -12,7 +12,6 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.StringJoiner;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
 import wres.datamodel.SafeRegularTimeSeriesOfEnsemblePairs.SafeRegularTimeSeriesOfEnsemblePairsBuilder;
@@ -22,6 +21,7 @@ import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairs;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 
 /**
@@ -76,10 +76,10 @@ public final class SafeRegularTimeSeriesOfEnsemblePairsTest
         int nextValue = 1;
         for ( TimeSeries<PairOfDoubleAndVectorOfDoubles> next : ts.basisTimeIterator() )
         {
-            for ( Pair<Instant, PairOfDoubleAndVectorOfDoubles> nextPair : next.timeIterator() )
+            for ( Event<PairOfDoubleAndVectorOfDoubles> nextPair : next.timeIterator() )
             {
                 assertTrue( "Unexpected pair in basis-time iteration of time-series.",
-                            nextPair.getRight()
+                            nextPair.getValue()
                                     .equals( metIn.pairOf( nextValue,
                                                            new double[] { nextValue, nextValue + 1,
                                                                           nextValue + 2 } ) ) );
@@ -132,10 +132,10 @@ public final class SafeRegularTimeSeriesOfEnsemblePairsTest
         int nextValue = 1;
         for ( TimeSeries<PairOfDoubleAndVectorOfDoubles> next : ts.durationIterator() )
         {
-            for ( Pair<Instant, PairOfDoubleAndVectorOfDoubles> nextPair : next.timeIterator() )
+            for ( Event<PairOfDoubleAndVectorOfDoubles> nextPair : next.timeIterator() )
             {
                 assertTrue( "Unexpected pair in lead-time iteration of time-series.",
-                            nextPair.getRight()
+                            nextPair.getValue()
                                     .equals( metIn.pairOf( nextValue,
                                                            new double[] { nextValue, nextValue + 1,
                                                                           nextValue + 2 } ) ) );
@@ -193,10 +193,10 @@ public final class SafeRegularTimeSeriesOfEnsemblePairsTest
         int nextValue = 1;
         for ( TimeSeries<PairOfDoubles> next : ts.ensembleTraceIterator() )
         {
-            for ( Pair<Instant, PairOfDoubles> nextPair : next.timeIterator() )
+            for ( Event<PairOfDoubles> nextPair : next.timeIterator() )
             {
                 assertTrue( "Unexpected pair in ensemble trace iteration of time-series.",
-                            nextPair.getRight()
+                            nextPair.getValue()
                                     .equals( metIn.pairOf( 1, nextValue ) ) );
             }
             //Three time-series for main, one for baseline.
@@ -242,10 +242,10 @@ public final class SafeRegularTimeSeriesOfEnsemblePairsTest
         int nextValue = 1;
         for ( TimeSeries<PairOfDoubleAndVectorOfDoubles> next : baseline.durationIterator() )
         {
-            for ( Pair<Instant, PairOfDoubleAndVectorOfDoubles> nextPair : next.timeIterator() )
+            for ( Event<PairOfDoubleAndVectorOfDoubles> nextPair : next.timeIterator() )
             {
                 assertTrue( "Unexpected pair in lead-time iteration of baseline time-series.",
-                            nextPair.getRight()
+                            nextPair.getValue()
                                     .equals( metIn.pairOf( nextValue,
                                                            new double[] { nextValue, nextValue + 1,
                                                                           nextValue + 2 } ) ) );
@@ -304,10 +304,10 @@ public final class SafeRegularTimeSeriesOfEnsemblePairsTest
         //Check dataset
         //Iterate and test
         int nextValue = 1;
-        for ( Pair<Instant, PairOfDoubleAndVectorOfDoubles> nextPair : tsCombined.timeIterator() )
+        for ( Event<PairOfDoubleAndVectorOfDoubles> nextPair : tsCombined.timeIterator() )
         {
             assertTrue( "Unexpected pair in lead-time iteration of baseline time-series.",
-                        nextPair.getRight()
+                        nextPair.getValue()
                                 .equals( metIn.pairOf( nextValue,
                                                        new double[] { nextValue, nextValue + 1, nextValue + 2 } ) ) );
             nextValue++;
@@ -360,7 +360,7 @@ public final class SafeRegularTimeSeriesOfEnsemblePairsTest
                     filtered.timeIterator()
                             .iterator()
                             .next()
-                            .getRight()
+                            .getValue()
                             .equals( metIn.pairOf( 4, new double[] { 4, 5, 6 } ) ) );
         //Check for nullity on none filter
         assertTrue( "Expected nullity on filtering basis times.",
@@ -420,7 +420,7 @@ public final class SafeRegularTimeSeriesOfEnsemblePairsTest
                     regular.timeIterator()
                            .iterator()
                            .next()
-                           .getRight()
+                           .getValue()
                            .equals( metIn.pairOf( 6, new double[] { 6, 9 } ) ) );
         //Check for nullity on none filter
         assertTrue( "Expected nullity on filtering durations.",
@@ -474,7 +474,7 @@ public final class SafeRegularTimeSeriesOfEnsemblePairsTest
                     filtered.timeIterator()
                             .iterator()
                             .next()
-                            .getRight()
+                            .getValue()
                             .equals( metIn.pairOf( 6, new double[] { 6, 7, 8 } ) ) );
         //Check for nullity on none filter
         assertTrue( "Expected nullity on filtering lead times.",
@@ -725,9 +725,9 @@ public final class SafeRegularTimeSeriesOfEnsemblePairsTest
                     joiner.toString().equals( b.build().toString() ) );
 
         //Check for equality of string representations when building in two different ways
-        List<Pair<Instant, List<PairOfDoubleAndVectorOfDoubles>>> input = new ArrayList<>();
-        input.add( Pair.of( basisTime, values ) );
-        input.add( Pair.of( nextBasisTime, values ) );
+        List<Event<List<PairOfDoubleAndVectorOfDoubles>>> input = new ArrayList<>();
+        input.add( Event.of( basisTime, values ) );
+        input.add( Event.of( nextBasisTime, values ) );
         TimeSeriesOfEnsemblePairs pairs = metIn.ofRegularTimeSeriesOfEnsemblePairs( input, meta, timeStep );
         assertTrue( "Unequal string representation of two time-series that should have an equal representation.",
                     joiner.toString().equals( pairs.toString() ) );
