@@ -128,11 +128,12 @@ class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implement
     {
         //Group by matching durations
         Function<Pair<TimeWindow, Threshold>, Pair<Duration, Duration>> groupBy =
-                ( a ) -> Pair.of( a.getLeft().getEarliestLeadTime(), a.getLeft().getLatestLeadTime() );
+                a -> Pair.of( a.getLeft().getEarliestLeadTime(), a.getLeft().getLatestLeadTime() );
         Set<TimeWindow> returnMe = new TreeSet<>();
-        store.keySet().stream().collect( Collectors.groupingBy( groupBy ) ).forEach( ( key, value ) -> {
-            returnMe.add( value.get( 0 ).getLeft() );
-        } );
+        store.keySet()
+             .stream()
+             .collect( Collectors.groupingBy( groupBy ) )
+             .forEach( ( key, value ) -> returnMe.add( value.get( 0 ).getLeft() ) );
         return returnMe;
     }
 

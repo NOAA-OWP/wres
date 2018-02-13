@@ -12,7 +12,6 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.StringJoiner;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
 import wres.datamodel.SafeRegularTimeSeriesOfSingleValuedPairs.SafeRegularTimeSeriesOfSingleValuedPairsBuilder;
@@ -21,6 +20,7 @@ import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 
 /**
@@ -75,10 +75,10 @@ public final class SafeRegularTimeSeriesOfSingleValuedPairsTest
         int nextValue = 1;
         for ( TimeSeries<PairOfDoubles> next : ts.basisTimeIterator() )
         {
-            for ( Pair<Instant, PairOfDoubles> nextPair : next.timeIterator() )
+            for ( Event<PairOfDoubles> nextPair : next.timeIterator() )
             {
                 assertTrue( "Unexpected pair in basis-time iteration of time-series.",
-                            nextPair.getRight().equals( metIn.pairOf( nextValue, nextValue ) ) );
+                            nextPair.getValue().equals( metIn.pairOf( nextValue, nextValue ) ) );
                 nextValue++;
             }
         }
@@ -128,10 +128,10 @@ public final class SafeRegularTimeSeriesOfSingleValuedPairsTest
         int nextValue = 1;
         for ( TimeSeries<PairOfDoubles> next : ts.durationIterator() )
         {
-            for ( Pair<Instant, PairOfDoubles> nextPair : next.timeIterator() )
+            for ( Event<PairOfDoubles> nextPair : next.timeIterator() )
             {
                 assertTrue( "Unexpected pair in lead-time iteration of time-series.",
-                            nextPair.getRight().equals( metIn.pairOf( nextValue, nextValue ) ) );
+                            nextPair.getValue().equals( metIn.pairOf( nextValue, nextValue ) ) );
             }
             //Three time-series for main, one for baseline.
             assertTrue( "Unexpected number of time-series in dataset.",
@@ -178,10 +178,10 @@ public final class SafeRegularTimeSeriesOfSingleValuedPairsTest
         int nextValue = 1;
         for ( TimeSeries<PairOfDoubles> next : baseline.durationIterator() )
         {
-            for ( Pair<Instant, PairOfDoubles> nextPair : next.timeIterator() )
+            for ( Event<PairOfDoubles> nextPair : next.timeIterator() )
             {
                 assertTrue( "Unexpected pair in lead-time iteration of baseline time-series.",
-                            nextPair.getRight().equals( metIn.pairOf( nextValue, nextValue ) ) );
+                            nextPair.getValue().equals( metIn.pairOf( nextValue, nextValue ) ) );
                 nextValue++;
             }
         }
@@ -236,10 +236,10 @@ public final class SafeRegularTimeSeriesOfSingleValuedPairsTest
         //Check dataset
         //Iterate and test
         int nextValue = 1;
-        for ( Pair<Instant, PairOfDoubles> nextPair : tsAppend.timeIterator() )
+        for ( Event<PairOfDoubles> nextPair : tsAppend.timeIterator() )
         {
             assertTrue( "Unexpected pair in lead-time iteration of baseline time-series.",
-                        nextPair.getRight().equals( metIn.pairOf( nextValue, nextValue ) ) );
+                        nextPair.getValue().equals( metIn.pairOf( nextValue, nextValue ) ) );
             nextValue++;
         }
     }
@@ -287,7 +287,7 @@ public final class SafeRegularTimeSeriesOfSingleValuedPairsTest
         assertTrue( "Unexpected issue time in the filtered time-series.",
                     filtered.getBasisTimes().get( 0 ).equals( secondBasisTime ) );
         assertTrue( "Unexpected value in the filtered time-series.",
-                    filtered.timeIterator().iterator().next().getRight().equals( metIn.pairOf( 4, 4 ) ) );
+                    filtered.timeIterator().iterator().next().getValue().equals( metIn.pairOf( 4, 4 ) ) );
         //Check for nullity on none filter
         assertTrue( "Expected nullity on filtering basis times.",
                     Objects.isNull( ts.filterByBasisTime( a -> a.equals( Instant.parse( "1985-01-04T00:00:00Z" ) ) ) ) );
@@ -338,7 +338,7 @@ public final class SafeRegularTimeSeriesOfSingleValuedPairsTest
         assertTrue( "Unexpected duration in the filtered time-series.",
                     filtered.getDurations().first().equals( Duration.ofDays( 3 ) ) );
         assertTrue( "Unexpected value in the filtered time-series.",
-                    filtered.timeIterator().iterator().next().getRight().equals( metIn.pairOf( 6, 6 ) ) );
+                    filtered.timeIterator().iterator().next().getValue().equals( metIn.pairOf( 6, 6 ) ) );
         //Check for nullity on none filter
         assertTrue( "Expected nullity on filtering durations.",
                     Objects.isNull( ts.filterByDuration( p -> p.equals( Duration.ofDays( 4 ) ) ) ) );
@@ -411,7 +411,7 @@ public final class SafeRegularTimeSeriesOfSingleValuedPairsTest
         }
         try
         {
-            Iterator<Pair<Instant, PairOfDoubles>> it = ts.timeIterator().iterator();
+            Iterator<Event<PairOfDoubles>> it = ts.timeIterator().iterator();
             it.forEachRemaining( a -> a.equals( null ) );
             it.next();
             fail( "Expected a checked exception on iterating a time-series with no more elements left." );
@@ -515,9 +515,9 @@ public final class SafeRegularTimeSeriesOfSingleValuedPairsTest
                     joiner.toString().equals( b.build().toString() ) );
 
         //Check for equality of string representations when building in two different ways
-        List<Pair<Instant, List<PairOfDoubles>>> input = new ArrayList<>();
-        input.add( Pair.of( basisTime, values ) );
-        input.add( Pair.of( nextBasisTime, values ) );
+        List<Event<List<PairOfDoubles>>> input = new ArrayList<>();
+        input.add( Event.of( basisTime, values ) );
+        input.add( Event.of( nextBasisTime, values ) );
         TimeSeriesOfSingleValuedPairs pairs = metIn.ofRegularTimeSeriesOfSingleValuedPairs( input, meta, timeStep );
         assertTrue( "Unequal string representation of two time-series that should have an equal representation.",
                     joiner.toString().equals( pairs.toString() ) );

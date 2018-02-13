@@ -13,11 +13,10 @@ import java.util.SortedSet;
 import java.util.StringJoiner;
 import java.util.TreeSet;
 
-import org.apache.commons.lang3.tuple.Pair;
-
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.TimeWindow;
+import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 
 /**
@@ -70,7 +69,7 @@ class SafeRegularTimeSeriesOfPairs<T>
      * Iterable view of the pairs of times and values. 
      */
 
-    private final Iterable<Pair<Instant, T>> timeIterator;
+    private final Iterable<Event<T>> timeIterator;
 
     /**
      * Error message denoting attempt to modify an immutable time-series via an iterator.
@@ -144,7 +143,7 @@ class SafeRegularTimeSeriesOfPairs<T>
      * @return an iterator over each pair
      */
 
-    Iterable<Pair<Instant, T>> timeIterator()
+    Iterable<Event<T>> timeIterator()
     {
         return timeIterator;
     }
@@ -270,7 +269,7 @@ class SafeRegularTimeSeriesOfPairs<T>
         }
         else
         {
-            for ( Pair<Instant, T> next : timeIterator() )
+            for ( Event<T> next : timeIterator() )
             {
                 joiner.add( next.toString() );
             }
@@ -347,15 +346,15 @@ class SafeRegularTimeSeriesOfPairs<T>
      * @return an iterable view of the times and values
      */
 
-    private Iterable<Pair<Instant, T>> getTimeIterator( final List<T> data )
+    private Iterable<Event<T>> getTimeIterator( final List<T> data )
     {
         //Construct an iterable view of the times and values
-        class IterableTimeSeries implements Iterable<Pair<Instant, T>>
+        class IterableTimeSeries implements Iterable<Event<T>>
         {
             @Override
-            public Iterator<Pair<Instant, T>> iterator()
+            public Iterator<Event<T>> iterator()
             {
-                return new Iterator<Pair<Instant, T>>()
+                return new Iterator<Event<T>>()
                 {
                     int returned = 0;
 
@@ -366,7 +365,7 @@ class SafeRegularTimeSeriesOfPairs<T>
                     }
 
                     @Override
-                    public Pair<Instant, T> next()
+                    public Event<T> next()
                     {
                         if ( returned >= data.size() )
                         {
@@ -378,7 +377,7 @@ class SafeRegularTimeSeriesOfPairs<T>
                         Instant left = getBasisTimes().get( basisIndex )
                                                       .plus( getRegularDuration().multipliedBy( (long) residual
                                                                                                 + 1 ) );
-                        Pair<Instant, T> returnMe = Pair.of( left, data.get( returned ) );
+                        Event<T> returnMe = Event.of( left, data.get( returned ) );
                         returned++;
                         return returnMe;
                     }

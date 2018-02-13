@@ -5,10 +5,10 @@ import java.nio.file.Paths;
 
 import wres.config.generated.Format;
 import wres.config.generated.ProjectConfig;
+import wres.io.reading.datacard.DatacardSource;
 import wres.io.reading.fews.FEWSSource;
 import wres.io.reading.nwm.NWMSource;
 import wres.io.reading.usgs.USGSReader;
-import wres.io.reading.datacard.DatacardSource;
 import wres.util.NetCDF;
 import wres.util.Strings;
 
@@ -68,7 +68,7 @@ public class ReaderFactory {
 		{
             type = Format.ARCHIVE;
 		}
-		else if ( filename.endsWith(".xml") || Strings.contains(filename, ".+\\.\\d+$"))
+		else if ( filename.endsWith(".xml") || (filename.endsWith(".xml.gz")) || Strings.contains(filename, ".+\\.\\d+$"))
 		{
             type = Format.PI_XML;
 		}

@@ -2,25 +2,18 @@ package wres.io.reading.datacard;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.powermock.api.mockito.PowerMockito.doAnswer;
 import static org.powermock.api.mockito.PowerMockito.doNothing;
 import static org.powermock.api.mockito.PowerMockito.when;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-import org.objenesis.instantiator.android.AndroidSerializationInstantiator;
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.core.classloader.annotations.PrepareForTest;
@@ -28,9 +21,9 @@ import org.powermock.modules.junit4.PowerMockRunner;
 import org.powermock.reflect.Whitebox;
 
 import wres.config.generated.DataSourceConfig;
-import wres.config.generated.DatasourceType;
 import wres.config.generated.DataSourceConfig.Source;
 import wres.config.generated.DataSourceConfig.Variable;
+import wres.config.generated.DatasourceType;
 import wres.config.generated.Feature;
 import wres.config.generated.Format;
 import wres.config.generated.PairConfig;
@@ -123,7 +116,8 @@ public class DataCardSourceTest
                                                         "IN",
                                                         "DRRC2",
                                                         "EST",
-                                                        "-999.0" );
+                                                        "-999.0",
+                                                        "");
 
         sourceList.add(confSource);
 
@@ -207,7 +201,8 @@ public class DataCardSourceTest
                                                         "IN",
                                                         "DRRC2",
                                                         "EST",
-                                                        "-997" );
+                                                        "-997",
+                                                        "");
 
         sourceList.add(confSource);
 

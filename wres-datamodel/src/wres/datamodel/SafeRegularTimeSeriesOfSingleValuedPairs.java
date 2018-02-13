@@ -10,14 +10,13 @@ import java.util.Objects;
 import java.util.SortedSet;
 import java.util.function.Predicate;
 
-import org.apache.commons.lang3.tuple.Pair;
-
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.inputs.pairs.builders.RegularTimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 
 /**
@@ -58,7 +57,7 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
     }
 
     @Override
-    public Iterable<Pair<Instant, PairOfDoubles>> timeIterator()
+    public Iterable<Event<PairOfDoubles>> timeIterator()
     {
         return bP.timeIterator();
     }
@@ -222,28 +221,28 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
 
         @Override
         public SafeRegularTimeSeriesOfSingleValuedPairsBuilder
-                addTimeSeriesData( List<Pair<Instant, List<PairOfDoubles>>> values )
+                addTimeSeriesData( List<Event<List<PairOfDoubles>>> values )
         {
             Objects.requireNonNull( values, "Enter non-null data for the time-series." );
-            for ( Pair<Instant, List<PairOfDoubles>> next : values )
+            for ( Event<List<PairOfDoubles>> next : values )
             {
                 addData( next.getValue() );
                 timeStepCount.add( next.getValue().size() );
-                basisTimes.add( next.getKey() );
+                basisTimes.add( next.getTime() );
             }
             return this;
         }
 
         @Override
         public SafeRegularTimeSeriesOfSingleValuedPairsBuilder
-                addTimeSeriesDataForBaseline( List<Pair<Instant, List<PairOfDoubles>>> values )
+                addTimeSeriesDataForBaseline( List<Event<List<PairOfDoubles>>> values )
         {
             Objects.requireNonNull( values, "Enter non-null data for the time-series." );
-            for ( Pair<Instant, List<PairOfDoubles>> next : values )
+            for ( Event<List<PairOfDoubles>> next : values )
             {
                 addDataForBaseline( next.getValue() );
                 timeStepCountBaseline.add( next.getValue().size() );
-                basisTimesBaseline.add( next.getKey() );
+                basisTimesBaseline.add( next.getTime() );
             }
             return this;
         }
