@@ -18,6 +18,7 @@ import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.PairedOutput;
+import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.engine.statistics.metric.Incremental;
 import wres.engine.statistics.metric.Metric;
@@ -72,19 +73,19 @@ public class TimeToPeakError implements Metric<TimeSeriesOfSingleValuedPairs, Pa
             double peakLeftValue = Double.NEGATIVE_INFINITY;
             double peakRightValue = Double.NEGATIVE_INFINITY;
             // Iterate through the pairs to find the peak on each side
-            for ( Pair<Instant, PairOfDoubles> nextPair : next.timeIterator() )
+            for ( Event<PairOfDoubles> nextPair : next.timeIterator() )
             {
                 // New peak left
-                if ( Double.compare( nextPair.getRight().getItemOne(), peakLeftValue ) > 0 )
+                if ( Double.compare( nextPair.getValue().getItemOne(), peakLeftValue ) > 0 )
                 {
-                    peakLeftValue = nextPair.getRight().getItemOne();
-                    peakLeftTime = nextPair.getLeft();
+                    peakLeftValue = nextPair.getValue().getItemOne();
+                    peakLeftTime = nextPair.getTime();
                 }
                 // New peak right
-                if ( Double.compare( nextPair.getRight().getItemTwo(), peakRightValue ) > 0 )
+                if ( Double.compare( nextPair.getValue().getItemTwo(), peakRightValue ) > 0 )
                 {
-                    peakRightValue = nextPair.getRight().getItemTwo();
-                    peakRightTime = nextPair.getLeft();
+                    peakRightValue = nextPair.getValue().getItemTwo();
+                    peakRightTime = nextPair.getTime();
                 }
             }
             // Add the time-to-peak error against the basis time

@@ -46,6 +46,7 @@ import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold.MetricOutputMultiMapByTimeAndThresholdBuilder;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.PairedOutput;
+import wres.datamodel.time.Event;
 
 /**
  * A factory class for producing datasets associated with verification metrics.
@@ -472,7 +473,7 @@ public interface DataFactory
      */
 
     default TimeSeriesOfSingleValuedPairs
-            ofRegularTimeSeriesOfSingleValuedPairs( List<Pair<Instant, List<PairOfDoubles>>> timeSeries,
+            ofRegularTimeSeriesOfSingleValuedPairs( List<Event<List<PairOfDoubles>>> timeSeries,
                                                     Metadata meta,
                                                     Duration timeStep )
     {
@@ -490,7 +491,7 @@ public interface DataFactory
      */
 
     default TimeSeriesOfEnsemblePairs
-            ofRegularTimeSeriesOfEnsemblePairs( List<Pair<Instant, List<PairOfDoubleAndVectorOfDoubles>>> timeSeries,
+            ofRegularTimeSeriesOfEnsemblePairs( List<Event<List<PairOfDoubleAndVectorOfDoubles>>> timeSeries,
                                                 Metadata meta,
                                                 Duration timeStep )
     {
@@ -962,9 +963,9 @@ public interface DataFactory
      */
 
     TimeSeriesOfSingleValuedPairs
-            ofRegularTimeSeriesOfSingleValuedPairs( List<Pair<Instant, List<PairOfDoubles>>> timeSeries,
+            ofRegularTimeSeriesOfSingleValuedPairs( List<Event<List<PairOfDoubles>>> timeSeries,
                                                     Metadata mainMeta,
-                                                    List<Pair<Instant, List<PairOfDoubles>>> timeSeriesBaseline,
+                                                    List<Event<List<PairOfDoubles>>> timeSeriesBaseline,
                                                     Metadata baselineMeta,
                                                     Duration timeStep );
 
@@ -981,9 +982,9 @@ public interface DataFactory
      */
 
     TimeSeriesOfEnsemblePairs
-            ofRegularTimeSeriesOfEnsemblePairs( List<Pair<Instant, List<PairOfDoubleAndVectorOfDoubles>>> timeSeries,
+            ofRegularTimeSeriesOfEnsemblePairs( List<Event<List<PairOfDoubleAndVectorOfDoubles>>> timeSeries,
                                                 Metadata mainMeta,
-                                                List<Pair<Instant, List<PairOfDoubleAndVectorOfDoubles>>> timeSeriesBaseline,
+                                                List<Event<List<PairOfDoubleAndVectorOfDoubles>>> timeSeriesBaseline,
                                                 Metadata baselineMeta,
                                                 Duration timeStep );
 

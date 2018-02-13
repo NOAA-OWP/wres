@@ -10,8 +10,6 @@ import java.util.Objects;
 import java.util.SortedSet;
 import java.util.function.Predicate;
 
-import org.apache.commons.lang3.tuple.Pair;
-
 import wres.datamodel.SafeRegularTimeSeriesOfSingleValuedPairs.SafeRegularTimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
@@ -21,6 +19,7 @@ import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.inputs.pairs.builders.RegularTimeSeriesOfEnsemblePairsBuilder;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 
 /**
@@ -61,7 +60,7 @@ class SafeRegularTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
     }
 
     @Override
-    public Iterable<Pair<Instant, PairOfDoubleAndVectorOfDoubles>> timeIterator()
+    public Iterable<Event<PairOfDoubleAndVectorOfDoubles>> timeIterator()
     {
         return bP.timeIterator();
     }
@@ -264,28 +263,28 @@ class SafeRegularTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
 
         @Override
         public SafeRegularTimeSeriesOfEnsemblePairsBuilder
-                addTimeSeriesData( List<Pair<Instant, List<PairOfDoubleAndVectorOfDoubles>>> values )
+                addTimeSeriesData( List<Event<List<PairOfDoubleAndVectorOfDoubles>>> values )
         {
             Objects.requireNonNull( values, "Enter non-null data for the time-series." );
-            for ( Pair<Instant, List<PairOfDoubleAndVectorOfDoubles>> next : values )
+            for ( Event<List<PairOfDoubleAndVectorOfDoubles>> next : values )
             {
                 addData( next.getValue() );
                 timeStepCount.add( next.getValue().size() );
-                basisTimes.add( next.getKey() );
+                basisTimes.add( next.getTime() );
             }
             return this;
         }
 
         @Override
         public SafeRegularTimeSeriesOfEnsemblePairsBuilder
-                addTimeSeriesDataForBaseline( List<Pair<Instant, List<PairOfDoubleAndVectorOfDoubles>>> values )
+                addTimeSeriesDataForBaseline( List<Event<List<PairOfDoubleAndVectorOfDoubles>>> values )
         {
             Objects.requireNonNull( values, "Enter non-null data for the baseline time-series." );
-            for ( Pair<Instant, List<PairOfDoubleAndVectorOfDoubles>> next : values )
+            for ( Event<List<PairOfDoubleAndVectorOfDoubles>> next : values )
             {
                 addDataForBaseline( next.getValue() );
                 timeStepCountBaseline.add( next.getValue().size() );
-                basisTimesBaseline.add( next.getKey() );
+                basisTimesBaseline.add( next.getTime() );
             }
             return this;
         }
@@ -325,7 +324,7 @@ class SafeRegularTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
                     baselineMeta.add( next.getMetadataForBaseline() );
                 }
                 //Add climatology if available
-                if( next.hasClimatology() )
+                if ( next.hasClimatology() )
                 {
                     climatology = next.getClimatology();
                 }
@@ -333,7 +332,7 @@ class SafeRegularTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
             setClimatology( climatology );
             MetadataFactory metaFac = DefaultMetadataFactory.getInstance();
             setMetadata( metaFac.unionOf( mainMeta ) );
-            if( !baselineMeta.isEmpty() )
+            if ( !baselineMeta.isEmpty() )
             {
                 setMetadataForBaseline( metaFac.unionOf( baselineMeta ) );
             }
@@ -457,8 +456,8 @@ class SafeRegularTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
                         {
                             int startBase = bP.getBasisTimesBaseline().indexOf( nextTime ) * bP.getTimeStepCount();
                             builder.addTimeSeriesDataForBaseline( nextTime,
-                                                        baselineData.subList( startBase,
-                                                                              startBase + bP.getTimeStepCount() ) );
+                                                                  baselineData.subList( startBase,
+                                                                                        startBase + bP.getTimeStepCount() ) );
                             //Adjust the time window for the metadata
                             builder.setMetadataForBaseline( SafeRegularTimeSeriesOfPairs.getBasisTimeAdjustedMetadata( getMetadataForBaseline(),
                                                                                                                        nextTime,

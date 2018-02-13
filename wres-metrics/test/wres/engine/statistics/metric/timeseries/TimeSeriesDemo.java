@@ -5,7 +5,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
 import wres.datamodel.DataFactory;
@@ -19,6 +18,7 @@ import wres.datamodel.inputs.pairs.builders.RegularTimeSeriesOfEnsemblePairsBuil
 import wres.datamodel.inputs.pairs.builders.RegularTimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
@@ -126,7 +126,7 @@ public class TimeSeriesDemo
 //1985-01-02T18:00:00Z,11.0,12.0     
 
         //Iterate the atomic time-series unconditionally
-        for ( Pair<Instant, PairOfDoubles> next : timeSeries.timeIterator() )
+        for ( Event<PairOfDoubles> next : timeSeries.timeIterator() )
         {
             if ( printOutput )
             {

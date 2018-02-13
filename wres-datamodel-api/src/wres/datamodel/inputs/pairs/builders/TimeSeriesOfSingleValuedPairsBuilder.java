@@ -4,12 +4,11 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.lang3.tuple.Pair;
-
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
+import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 
 /**
@@ -32,10 +31,10 @@ public interface TimeSeriesOfSingleValuedPairsBuilder extends PairedInputBuilder
      */
 
     default TimeSeriesOfSingleValuedPairsBuilder addTimeSeriesData( Instant basisTime,
-                                                                    List<Pair<Instant, PairOfDoubles>> values )
+                                                                    List<Event<PairOfDoubles>> values )
     {
-        List<Pair<Instant, List<Pair<Instant, PairOfDoubles>>>> input = new ArrayList<>();
-        input.add( Pair.of( basisTime, values ) );
+        List<Event<List<Event<PairOfDoubles>>>> input = new ArrayList<>();
+        input.add( Event.of( basisTime, values ) );
         return addTimeSeriesData( input );
     }
 
@@ -48,32 +47,32 @@ public interface TimeSeriesOfSingleValuedPairsBuilder extends PairedInputBuilder
      */
 
     default TimeSeriesOfSingleValuedPairsBuilder addTimeSeriesDataForBaseline( Instant basisTime,
-                                                                               List<Pair<Instant, PairOfDoubles>> values )
+                                                                               List<Event<PairOfDoubles>> values )
     {
-        List<Pair<Instant, List<Pair<Instant, PairOfDoubles>>>> input = new ArrayList<>();
-        input.add( Pair.of( basisTime, values ) );
+        List<Event<List<Event<PairOfDoubles>>>> input = new ArrayList<>();
+        input.add( Event.of( basisTime, values ) );
         return addTimeSeriesDataForBaseline( input );
     }
 
     /**
-     * Adds several time-series to the builder, each one stored against its basis time.
+     * Adds a list of atomic time-series to the builder, each one stored against its basis time.
      * 
      * @param timeSeries the time-series, stored against their basis times
      * @return the builder
      */
 
     TimeSeriesOfSingleValuedPairsBuilder
-            addTimeSeriesData( List<Pair<Instant, List<Pair<Instant, PairOfDoubles>>>> timeSeries );
+            addTimeSeriesData( List<Event<List<Event<PairOfDoubles>>>> timeSeries );
 
     /**
-     * Adds several time-series to the builder for a baseline, each one stored against its basis time.
+     * Adds a list of atomic time-series to the builder for a baseline, each one stored against its basis time.
      * 
      * @param timeSeries the time-series, stored against their basis times
      * @return the builder
      */
 
     TimeSeriesOfSingleValuedPairsBuilder
-            addTimeSeriesDataForBaseline( List<Pair<Instant, List<Pair<Instant, PairOfDoubles>>>> timeSeries );
+            addTimeSeriesDataForBaseline( List<Event<List<Event<PairOfDoubles>>>> timeSeries );
 
     /**
      * Adds a time-series to the builder.
