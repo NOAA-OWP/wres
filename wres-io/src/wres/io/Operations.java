@@ -137,16 +137,15 @@ public final class Operations {
     public static void shutdown()
     {
         LOGGER.info("Shutting down the IO layer...");
-        PairWriter.flushAndCloseAllWriters();
         Database.addNewIndexes();
         Executor.complete();
         Database.shutdown();
+        PairWriter.flushAndCloseAllWriters();
     }
 
     public static void shutdownWithAbandon( long timeOut, TimeUnit timeUnit )
     {
         LOGGER.info( "Forcefully shutting down the IO module..." );
-        PairWriter.flushAndCloseAllWriters();
         Database.addNewIndexes();
         List<Runnable> executorTasks =
                 Executor.shutdownWithAbandon( timeOut / 2, timeUnit );
@@ -161,6 +160,7 @@ public final class Operations {
                          executorTasks.size(),
                          databaseTasks.size() );
         }
+        PairWriter.flushAndCloseAllWriters();
     }
 
     public static boolean testConnection()
