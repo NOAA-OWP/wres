@@ -43,7 +43,7 @@ do
 		row=2 # start at row 2
 		while [ $row -le $numberOfRows ]
 		do
-			echo -n "row $row ------------ " 2>&1 | tee -a testMetricsResults.txt
+			echo -n "Cell $row,$column ------------ " 2>&1 | tee -a testMetricsResults.txt
 			# print the field value at row,column in CSV_FILE
 			sed -n "$row"p $CSV_FILE | gawk -F, -v column=$column '{print $column}' 2>&1 | tee -a testMetricsResults.txt
 			row=`expr $row + 1` # next row

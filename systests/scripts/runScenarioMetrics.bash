@@ -26,7 +26,7 @@ else # run all scenarios
 	scenario_dirs=$(ls -d scenario*)
 fi
 
-MetricsScriptDir=/wres_share/releases
+MetricsScriptDir=/wres_share/releases/systests
 
 for scenario_dir in $scenario_dirs
 do
@@ -38,7 +38,7 @@ do
 		then # remove the old results file
 			rm -v testMetricsResults.txt
 		fi
-		$MetricsScriptDir/createMetricsTest.bash
+		$MetricsScriptDir/scripts/createMetricsTest.bash
 		cd ../..
 	fi
 done
