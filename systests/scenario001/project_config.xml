@@ -11,7 +11,7 @@
         </left>
         <right label="HEFS">
             <type>ensemble forecasts</type>
-            <source format="PI-XML">../data/drrc2ForecastsOneMonth/</source>
+            <source format="PI-XML" pattern="**/*.xml">../data/drrc2ForecastsOneMonth/</source>
             <variable>SQIN</variable>
 
         </right>

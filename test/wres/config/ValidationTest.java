@@ -1,15 +1,15 @@
 package wres.config;
 
+import static junit.framework.TestCase.assertFalse;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import org.junit.Test;
 import org.xml.sax.Locator;
-
-import static junit.framework.TestCase.assertFalse;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Format;
@@ -60,6 +60,7 @@ public class ValidationTest
                         null,
                         null,
                         "-0500",
+                        null,
                         null
                 );
 

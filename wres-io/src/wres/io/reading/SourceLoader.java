@@ -3,8 +3,10 @@ package wres.io.reading;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -171,10 +173,22 @@ public class SourceLoader
         List<Future<List<IngestResult>>> results = new ArrayList<>();
         Stream<Path> files;
 
-        ProgressMonitor.increment();
+        //Define path matcher based on the source's pattern, if provided.
+        final PathMatcher matcher;
+        if (!com.google.common.base.Strings.isNullOrEmpty( source.getPattern() ))
+        {
+            matcher = FileSystems.getDefault().getPathMatcher("glob:" + source.getPattern());
+        }
+        else
+        {
+            matcher = null;
+        }
 
+        ProgressMonitor.increment();
+        
         try
         {
+            
             files = Files.walk(directory);
 
             files.forEach((Path path) -> {
@@ -183,6 +197,7 @@ public class SourceLoader
 
                 if ( !file.exists() )
                 {
+                    files.close();
                     throw new IllegalArgumentException( "The source path of" +
                                                         path.toAbsolutePath().toString() +
                                                         " does not exist and is therefore not a valid source.");
@@ -193,12 +208,12 @@ public class SourceLoader
                     return;
                 }
 
-                if ( file.isFile() )
+                //File must be a file and match the pattern, if the pattern is defined.
+                if ( file.isFile() && ((matcher == null) || matcher.matches( file.toPath())))
                 {
                     Future<List<IngestResult>> task = saveFile( path,
                                                                 source,
                                                                 dataSourceConfig );
-
                     if (task != null)
                     {
                         results.add(task);
