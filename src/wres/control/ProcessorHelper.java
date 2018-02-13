@@ -58,8 +58,8 @@ import wres.engine.statistics.metric.processing.MetricProcessorException;
 import wres.io.Operations;
 import wres.io.config.ConfigHelper;
 import wres.io.config.ProjectConfigPlus;
+import wres.io.data.details.ProjectDetails;
 import wres.io.reading.IngestException;
-import wres.io.reading.IngestResult;
 import wres.io.retrieval.InputGenerator;
 import wres.io.retrieval.IterationFailedException;
 import wres.io.utilities.NoDataException;
@@ -118,7 +118,7 @@ public class ProcessorHelper
         LOGGER.debug( "Beginning ingest for project {}...", projectConfigPlus );
 
         // Need to ingest first
-        List<IngestResult> availableSources = Operations.ingest( projectConfig);
+        ProjectDetails projectDetails = Operations.ingest( projectConfig);
 
         LOGGER.debug( "Finished ingest for project {}...", projectConfigPlus );
 
@@ -128,7 +128,7 @@ public class ProcessorHelper
 
         try
         {
-            decomposedFeatures = Operations.decomposeFeatures( projectConfig, availableSources );
+            decomposedFeatures = Operations.decomposeFeatures( projectDetails );
             featureCount = decomposedFeatures.size();
         }
         catch ( SQLException e )
@@ -145,7 +145,7 @@ public class ProcessorHelper
             FeatureProcessingResult result =
                     processFeature( feature,
                                     projectConfigPlus,
-                                    availableSources,
+                                    projectDetails,
                                     pairExecutor,
                                     thresholdExecutor,
                                     metricExecutor );
@@ -236,7 +236,7 @@ public class ProcessorHelper
      * 
      * @param feature the feature to process
      * @param projectConfigPlus the project configuration
-     * @param projectSources the project sources
+     * @param projectDetails the project details to use
      * @param pairExecutor the {@link ExecutorService} for processing pairs
      * @param thresholdExecutor the {@link ExecutorService} for processing thresholds
      * @param metricExecutor the {@link ExecutorService} for processing metrics
@@ -246,7 +246,7 @@ public class ProcessorHelper
 
     static FeatureProcessingResult processFeature( final Feature feature,
                                                    final ProjectConfigPlus projectConfigPlus,
-                                                   final List<IngestResult> projectSources,
+                                                   final ProjectDetails projectDetails,
                                                    final ExecutorService pairExecutor,
                                                    final ExecutorService thresholdExecutor,
                                                    final ExecutorService metricExecutor )
@@ -305,18 +305,8 @@ public class ProcessorHelper
         }
 
         // Build an InputGenerator for the next feature
-        InputGenerator metricInputs = null;
-        try
-        {
-            metricInputs = Operations.getInputs( projectConfig,
-                                                 feature,
-                                                 projectSources );
-        }
-        catch ( IngestException e )
-        {
-            throw new WresProcessingException( "While attempting to get metric inputs for feature "
-                                               + featureDescription, e );
-        }
+        InputGenerator metricInputs = Operations.getInputs( projectDetails,
+                                                            feature );
 
         // Queue the various tasks by time window (time window is the pooling dimension for metric calculation here)
         final List<CompletableFuture<?>> listOfFutures = new ArrayList<>(); //List of futures to test for completion
