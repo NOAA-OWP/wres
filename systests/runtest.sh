@@ -185,7 +185,7 @@ for scenarioName in $*; do
 
     #Compare files by calling the script.
     cd $executeDir
-    ../determinePairsDiff.sh
+    ../scripts/determinePairsDiff.sh
 
     endsec=$(date +%s)
     echo "$echoPrefix Test completed in $(($endsec - $startsec)) seconds" | tee /dev/stderr

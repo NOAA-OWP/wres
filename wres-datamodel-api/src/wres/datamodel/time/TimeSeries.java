@@ -7,16 +7,13 @@ import java.util.List;
 import java.util.SortedSet;
 import java.util.function.Predicate;
 
-import org.apache.commons.lang3.tuple.Pair;
-
 /**
- * <p>A representation of one or more atomic time-series, each of which contains one or more {@link Pair} of times and 
- * values. Each value has a designated type, which may comprise a tuple or some other type. For example, a 
- * {@link TimeSeries} may store a single time-series of scalar observations or multiple time-series of paired forecasts 
- * and observations.</p> 
+ * <p>A representation of one or more atomic time-series, each of which contains one or more {@link Event}, which 
+ * comprises an {@link Instant} and value. Each value has a designated type, which may comprise a tuple or some other 
+ * type. For example, a {@link TimeSeries} may store a single time-series of scalar observations or multiple 
+ * time-series of paired forecasts and observations.</p> 
  * 
- * <p>In this context, a time is an instant on the UTC timeline, which is represented by an {@link Instant}. 
- * Each atomic time-series in the {@link TimeSeries} container is anchored to a specific basis time, which is also 
+ * <p>Each atomic time-series in the {@link TimeSeries} container is anchored to a specific basis time, which is 
  * represented by an {@link Instant}. 
  * 
  * <p>A {@link TimeSeries} may be regular or irregular. A {@link TimeSeries} is regular if and only if each value is 
@@ -43,13 +40,13 @@ public interface TimeSeries<T>
 {
 
     /**
-     * Returns an {@link Iterator} over all the {@link Pair} of times and values in the {@link TimeSeries}. The times
-     * are returned in a guaranteed order from the earliest time to the latest time.
+     * Returns an {@link Iterator} over all the {@link Event} in the {@link TimeSeries}. The times are returned in a 
+     * guaranteed order from the earliest time to the latest time.
      * 
      * @return iterable pairs of times and values
      */
 
-    Iterable<Pair<Instant, T>> timeIterator();
+    Iterable<Event<T>> timeIterator();
 
     /**
      * Returns a basis-time view of the {@link TimeSeries} whereby each atomic time-series originates from one basis 

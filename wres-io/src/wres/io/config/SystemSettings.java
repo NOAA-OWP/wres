@@ -1,15 +1,16 @@
 package wres.io.config;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
+
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import javax.xml.transform.TransformerException;
 
-import com.mchange.v2.c3p0.ComboPooledDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.mchange.v2.c3p0.ComboPooledDataSource;
 
 import wres.io.reading.XMLReader;
 import wres.util.ProgressMonitor;
@@ -333,7 +334,7 @@ public final class SystemSettings extends XMLReader
     }
 
     public static String getRawConfiguration()
-            throws FileNotFoundException, XMLStreamException, TransformerException
+            throws IOException, XMLStreamException, TransformerException
     {
         return instance.getRawXML();
     }

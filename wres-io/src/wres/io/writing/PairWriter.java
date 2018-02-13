@@ -14,7 +14,6 @@ import java.util.HashMap;
 import java.util.Map.Entry;
 import java.util.StringJoiner;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,7 +48,7 @@ public class PairWriter extends WRESCallable<Boolean>
     private final Instant date;
     private final Feature feature;
     private final int windowNum;
-    private final Pair<Instant,PairOfDoubleAndVectorOfDoubles> pair;
+    private final PairOfDoubleAndVectorOfDoubles pair;
     private final boolean isBaseline;
     private final int poolingStep;
     private final ProjectDetails projectDetails;
@@ -63,7 +62,7 @@ public class PairWriter extends WRESCallable<Boolean>
                        Instant date,
                        Feature feature,
                        int windowNum,
-                       Pair<Instant,PairOfDoubleAndVectorOfDoubles> pair,
+                       PairOfDoubleAndVectorOfDoubles pair,
                        boolean isBaseline,
                        int poolingStep,
                        ProjectDetails projectDetails,
@@ -247,7 +246,7 @@ public class PairWriter extends WRESCallable<Boolean>
     private String getLeftValue()
     {
 
-        double leftValue = pair.getRight().getItemOne();
+        double leftValue = pair.getItemOne();
         String left;
 
         if ( Double.compare( leftValue, Double.NaN ) == 0 )
@@ -268,7 +267,7 @@ public class PairWriter extends WRESCallable<Boolean>
 
     private String getRightValues()
     {
-        double[] rightValues = pair.getRight().getItemTwo();
+        double[] rightValues = pair.getItemTwo();
         StringJoiner arrayJoiner = new StringJoiner( DELIMITER );
 
         Arrays.sort( rightValues );

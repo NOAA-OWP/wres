@@ -35,6 +35,7 @@ distributions
                 include 'scenario*/FAILS'
                 include 'scenario*/benchmarks/**'
                 include 'smalldata/**'
+		include 'scripts/*'
 		exclude 'scenario*/output'
             }
         }
