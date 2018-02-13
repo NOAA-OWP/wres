@@ -22,6 +22,7 @@ import wres.config.generated.ProjectConfig;
 import wres.io.config.ConfigHelper;
 import wres.io.data.details.FeatureDetails;
 import wres.io.utilities.Database;
+import wres.io.utilities.ScriptBuilder;
 import wres.util.Strings;
 
 /**
@@ -135,7 +136,80 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         return Features.getCache().get( id );
     }
 
-    public static Set<FeatureDetails> getAllDetails( ProjectConfig projectConfig ) throws SQLException
+    public static Set<FeatureDetails> getUnspecifiedDetails( ProjectConfig projectConfig )
+            throws SQLException
+    {
+        Set<FeatureDetails> features = new HashSet<>(  );
+        boolean hasNetCDF = ConfigHelper.usesNetCDFData( projectConfig );
+        boolean hasUSGS = ConfigHelper.usesUSGSData( projectConfig );
+
+        ScriptBuilder script = new ScriptBuilder(  );
+        script.addLine("SELECT *");
+        script.addLine("FROM wres.Feature");
+        script.addLine("WHERE lid != ''");
+        script.addTab().addLine("AND lid IS NOT NULL");
+
+        if (hasNetCDF)
+        {
+            script.addTab().addLine("AND nwm_index IS NOT NULL");
+        }
+
+        if (hasUSGS)
+        {
+            script.addTab(  ).addLine("AND character_length(gage_id) >= 0");
+        }
+
+        Connection connection = null;
+        ResultSet resultSet = null;
+
+        try
+        {
+            connection = Database.getConnection();
+            resultSet = Database.getResults( connection, script.toString() );
+
+            while (resultSet.next())
+            {
+                features.add( new FeatureDetails( resultSet ));
+            }
+        }
+        catch (SQLException e)
+        {
+            throw new SQLException( "Avaliable Features could not be determined "
+                                    + "when none were specified.", e );
+        }
+        finally
+        {
+            if (resultSet != null)
+            {
+                resultSet.close();
+            }
+
+            if (connection != null)
+            {
+                Database.returnConnection( connection );
+            }
+        }
+
+        return features;
+    }
+
+    public static Set<FeatureDetails> getAllDetails(ProjectConfig projectConfig) throws SQLException
+    {
+        Set<FeatureDetails> features = null;
+
+        if (projectConfig.getPair().getFeature() == null || projectConfig.getPair().getFeature().size() == 0)
+        {
+            features = Features.getUnspecifiedDetails( projectConfig );
+        }
+        else
+        {
+            features = Features.getSpecifiedDetails(projectConfig);
+        }
+
+        return features;
+    }
+
+    public static Set<FeatureDetails> getSpecifiedDetails( ProjectConfig projectConfig ) throws SQLException
     {
         Set<FeatureDetails> features = new HashSet<>();
         boolean hasNetCDF = ConfigHelper.usesNetCDFData( projectConfig );

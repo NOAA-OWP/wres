@@ -304,7 +304,7 @@ public final class Operations {
                 Projects.getProjectFromIngest( projectConfig,
                                                availableSources );
 
-        for (FeatureDetails details : Features.getAllDetails( projectConfig ))
+        for (FeatureDetails details : projectDetails.getFeatures())
         {
             // Check if the feature has any intersecting values
             Feature feature = details.toFeature();
