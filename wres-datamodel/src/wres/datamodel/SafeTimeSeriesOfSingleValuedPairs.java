@@ -313,10 +313,7 @@ class SafeTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
                                                                                             nextTime,
                                                                                             nextTime ) );
                         // Set the climatology
-                        if ( hasClimatology() )
-                        {
-                            builder.setClimatology( getClimatology() );
-                        }
+                        builder.setClimatology( getClimatology() );
                         returned++;
                         return builder.build();
                     }
@@ -374,10 +371,7 @@ class SafeTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
                         // Data for the current duration by basis time
                         builder.addTimeSeriesData( bP.filterByDuration( nextDuration, bP.getData() ) );
                         // Set the climatology
-                        if ( hasClimatology() )
-                        {
-                            builder.setClimatology( getClimatology() );
-                        }
+                        builder.setClimatology( getClimatology() );
                         return builder.build();
                     }
 

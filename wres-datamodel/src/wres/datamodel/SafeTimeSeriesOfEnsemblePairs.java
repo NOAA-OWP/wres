@@ -3,6 +3,7 @@ package wres.datamodel;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -11,35 +12,35 @@ import java.util.Objects;
 import java.util.SortedSet;
 import java.util.function.Predicate;
 
-import wres.datamodel.SafeRegularTimeSeriesOfSingleValuedPairs.SafeRegularTimeSeriesOfSingleValuedPairsBuilder;
+import wres.datamodel.SafeTimeSeriesOfSingleValuedPairs.SafeTimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
-import wres.datamodel.inputs.pairs.builders.RegularTimeSeriesOfEnsemblePairsBuilder;
+import wres.datamodel.inputs.pairs.builders.TimeSeriesOfEnsemblePairsBuilder;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 
 /**
- * Immutable implementation of a regular time-series of verification pairs in which the right value comprises an 
- * ensemble.
+ * Immutable implementation of a possibly irregular time-series of verification pairs in which the right value 
+ * comprises an ensemble.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
- * @since 0.3
+ * @since 0.4
  */
-class SafeRegularTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
+class SafeTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
         implements TimeSeriesOfEnsemblePairs
 {
 
     /**
-     * Instance of base class for a regular time-series of pairs.
+     * Instance of base class for a time-series of pairs.
      */
 
-    private final SafeRegularTimeSeriesOfPairs<PairOfDoubleAndVectorOfDoubles> bP;
+    private final SafeTimeSeriesOfPairs<PairOfDoubleAndVectorOfDoubles> bP;
 
     @Override
     public TimeSeriesOfEnsemblePairs getBaselineData()
@@ -48,15 +49,8 @@ class SafeRegularTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
         {
             return null;
         }
-        SafeRegularTimeSeriesOfEnsemblePairsBuilder builder = new SafeRegularTimeSeriesOfEnsemblePairsBuilder();
-        builder.setTimeStep( getRegularDuration() ).setMetadata( getMetadataForBaseline() );
-        List<PairOfDoubleAndVectorOfDoubles> baselineData = getDataForBaseline();
-        int start = 0;
-        for ( Instant next : bP.getBasisTimesBaseline() )
-        {
-            builder.addTimeSeriesData( next, baselineData.subList( start, start + bP.getTimeStepCount() ) );
-            start += bP.getTimeStepCount();
-        }
+        SafeTimeSeriesOfEnsemblePairsBuilder builder = new SafeTimeSeriesOfEnsemblePairsBuilder();
+        builder.addTimeSeriesData( bP.getDataForBaseline() ).setMetadata( getMetadataForBaseline() );
         return builder.build();
     }
 
@@ -84,47 +78,28 @@ class SafeRegularTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
         Objects.requireNonNull( duration, "Provide a non-null predicate on which to filter by duration." );
         //Iterate through the durations and append to the builder
         //Throw an exception if attempting to construct an irregular time-series
-        RegularTimeSeriesOfEnsemblePairsBuilder builder = new SafeRegularTimeSeriesOfEnsemblePairsBuilder();
-        Integer step = null;
-        int sinceLast = 0;
+        SafeTimeSeriesOfEnsemblePairsBuilder builder = new SafeTimeSeriesOfEnsemblePairsBuilder();
         for ( TimeSeries<PairOfDoubleAndVectorOfDoubles> a : durationIterator() )
         {
-            sinceLast++;
             TimeSeriesOfEnsemblePairs next = (TimeSeriesOfEnsemblePairs) a;
             if ( duration.test( a.getDurations().first() ) )
             {
-                if ( Objects.isNull( step ) )
-                {
-                    step = sinceLast;
-                }
-                else if ( step != sinceLast )
-                {
-                    throw new UnsupportedOperationException( "The filtered view of durations attempted to build "
-                                                             + "an irregular time-series, which is not supported." );
-                }
                 builder.addTimeSeries( next );
-                sinceLast = 0;
             }
         }
-
-        //Nothing to build
-        if ( Objects.isNull( step ) )
-        {
-            return null;
-        }
-        //Set regular time-step of filtered data
-        builder.setTimeStep( getRegularDuration().multipliedBy( step ) );
-
         //Build if something to build
-        return builder.build();
+        if ( !builder.data.isEmpty() )
+        {
+            return builder.build();
+        }
+        return null;
     }
 
     @Override
     public TimeSeries<PairOfDoubleAndVectorOfDoubles> filterByBasisTime( Predicate<Instant> basisTime )
     {
         Objects.requireNonNull( basisTime, "Provide a non-null predicate on which to filter by basis time." );
-        SafeRegularTimeSeriesOfEnsemblePairsBuilder builder = new SafeRegularTimeSeriesOfEnsemblePairsBuilder();
-        builder.setTimeStep( getRegularDuration() );
+        SafeTimeSeriesOfEnsemblePairsBuilder builder = new SafeTimeSeriesOfEnsemblePairsBuilder();
         //Add the filtered data
         for ( TimeSeries<PairOfDoubleAndVectorOfDoubles> a : basisTimeIterator() )
         {
@@ -134,7 +109,7 @@ class SafeRegularTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
             }
         }
         //Build if something to build
-        if ( !builder.mainInput.isEmpty() )
+        if ( !builder.data.isEmpty() )
         {
             return builder.build();
         }
@@ -145,20 +120,19 @@ class SafeRegularTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
     public TimeSeriesOfEnsemblePairs filterByTraceIndex( Predicate<Integer> traceFilter )
     {
         //Build a single-valued time-series with the trace at index currentTrace
-        SafeRegularTimeSeriesOfEnsemblePairsBuilder builder =
-                new SafeRegularTimeSeriesOfEnsemblePairsBuilder();
-        builder.setTimeStep( getRegularDuration() );
+        SafeTimeSeriesOfEnsemblePairsBuilder builder =
+                new SafeTimeSeriesOfEnsemblePairsBuilder();
         builder.setMetadata( getMetadata() );
         DataFactory dFac = DefaultDataFactory.getInstance();
         //Iterate through the basis times
         for ( TimeSeries<PairOfDoubleAndVectorOfDoubles> nextSeries : basisTimeIterator() )
         {
-            List<PairOfDoubleAndVectorOfDoubles> input = new ArrayList<>();
+            List<Event<PairOfDoubleAndVectorOfDoubles>> input = new ArrayList<>();
             //Iterate through the pairs
-            for ( PairOfDoubleAndVectorOfDoubles next : (TimeSeriesOfEnsemblePairs) nextSeries )
+            for ( Event<PairOfDoubleAndVectorOfDoubles> next : nextSeries.timeIterator() )
             {
                 //Reform the pairs with a subset of ensemble members
-                double[] allTraces = next.getItemTwo();
+                double[] allTraces = next.getValue().getItemTwo();
                 List<Double> subTraces = new ArrayList<>();
                 for ( int i = 0; i < allTraces.length; i++ )
                 {
@@ -173,7 +147,9 @@ class SafeRegularTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
                 {
                     return null;
                 }
-                input.add( dFac.pairOf( next.getItemOne(), subTraces.toArray( new Double[subTraces.size()] ) ) );
+                input.add( Event.of( next.getTime(),
+                                     dFac.pairOf( next.getValue().getItemOne(),
+                                                  subTraces.toArray( new Double[subTraces.size()] ) ) ) );
             }
             builder.addTimeSeriesData( nextSeries.getEarliestBasisTime(), input );
         }
@@ -185,12 +161,12 @@ class SafeRegularTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
     public List<Instant> getBasisTimes()
     {
         return Collections.unmodifiableList( bP.getBasisTimes() );
-    }   
+    }
 
     @Override
     public SortedSet<Duration> getDurations()
     {
-        return bP.getDurations();
+        return Collections.unmodifiableSortedSet( bP.getDurations() );
     }
 
     @Override
@@ -202,7 +178,7 @@ class SafeRegularTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
     @Override
     public boolean isRegular()
     {
-        return true;
+        return bP.isRegular();
     }
 
     @Override
@@ -227,133 +203,98 @@ class SafeRegularTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
      * A {@link DefaultPairedInputBuilder} to build the metric input.
      */
 
-    static class SafeRegularTimeSeriesOfEnsemblePairsBuilder extends EnsemblePairsBuilder
-            implements RegularTimeSeriesOfEnsemblePairsBuilder
+    static class SafeTimeSeriesOfEnsemblePairsBuilder extends EnsemblePairsBuilder
+            implements TimeSeriesOfEnsemblePairsBuilder
     {
 
         /**
-         * A list of basis times. There are as many basis times as atomic time-series.
+         * The raw data.
          */
 
-        private final List<Instant> basisTimes = new ArrayList<>();
+        private List<Event<List<Event<PairOfDoubleAndVectorOfDoubles>>>> data = new ArrayList<>();
 
         /**
-         * A list of basis times associated with a baseline dataset. There are as many basis times as atomic 
-         * time-series.
+         * The raw data for the baseline
          */
 
-        private final List<Instant> basisTimesBaseline = new ArrayList<>();
-
-        /**
-         * The time-step associated with the regular time-series.
-         */
-
-        private Duration timeStep;
-
-        /**
-         * The number of elements in each time-series added. This is used for validation.
-         */
-
-        private List<Integer> timeStepCount = new ArrayList<>();
-
-        /**
-         * The number of elements in each baseline time-series added. This is used for validation.
-         */
-
-        private List<Integer> timeStepCountBaseline = new ArrayList<>();
+        private List<Event<List<Event<PairOfDoubleAndVectorOfDoubles>>>> baselineData = new ArrayList<>();
 
         @Override
-        public SafeRegularTimeSeriesOfEnsemblePairsBuilder
-                addTimeSeriesData( List<Event<List<PairOfDoubleAndVectorOfDoubles>>> values )
+        public SafeTimeSeriesOfEnsemblePairsBuilder
+                addTimeSeriesData( List<Event<List<Event<PairOfDoubleAndVectorOfDoubles>>>> values )
         {
-            Objects.requireNonNull( values, "Enter non-null data for the time-series." );
-            for ( Event<List<PairOfDoubleAndVectorOfDoubles>> next : values )
-            {
-                addData( next.getValue() );
-                timeStepCount.add( next.getValue().size() );
-                basisTimes.add( next.getTime() );
-            }
+            data.addAll( values );
+            addData( TimeSeriesHelper.unwrap( values ) );
             return this;
         }
 
         @Override
-        public SafeRegularTimeSeriesOfEnsemblePairsBuilder
-                addTimeSeriesDataForBaseline( List<Event<List<PairOfDoubleAndVectorOfDoubles>>> values )
+        public SafeTimeSeriesOfEnsemblePairsBuilder
+                addTimeSeriesDataForBaseline( List<Event<List<Event<PairOfDoubleAndVectorOfDoubles>>>> values )
         {
-            Objects.requireNonNull( values, "Enter non-null data for the baseline time-series." );
-            for ( Event<List<PairOfDoubleAndVectorOfDoubles>> next : values )
-            {
-                addDataForBaseline( next.getValue() );
-                timeStepCountBaseline.add( next.getValue().size() );
-                basisTimesBaseline.add( next.getTime() );
-            }
+            baselineData.addAll( values );
+            addDataForBaseline( TimeSeriesHelper.unwrap( values ) );
             return this;
         }
 
         @Override
-        public SafeRegularTimeSeriesOfEnsemblePairsBuilder
+        public SafeTimeSeriesOfEnsemblePairsBuilder
                 addTimeSeries( TimeSeriesOfEnsemblePairs timeSeries )
         {
-            //Validate where possible
-            if ( !timeSeries.isRegular() )
-            {
-                throw new MetricInputException( "Cannot add an irregular time-series to a container of regular "
-                                                + "time-series." );
-            }
-            if ( Objects.nonNull( timeStep ) && !timeSeries.getRegularDuration().equals( timeStep ) )
-            {
-                throw new MetricInputException( "The input time-series has a time-step of '"
-                                                + timeSeries.getRegularDuration()
-                                                + "', which is inconsistent with the time-step of the existing data, '"
-                                                + timeStep
-                                                + "'." );
-            }
-            setTimeStep( timeSeries.getRegularDuration() );
             List<Metadata> mainMeta = new ArrayList<>();
             List<Metadata> baselineMeta = new ArrayList<>();
             VectorOfDoubles climatology = null;
             MetadataFactory metaFac = DefaultMetadataFactory.getInstance();
-            //Add the main data
             for ( TimeSeries<PairOfDoubleAndVectorOfDoubles> a : timeSeries.basisTimeIterator() )
             {
+                //Add the main data
                 TimeSeriesOfEnsemblePairs next = (TimeSeriesOfEnsemblePairs) a;
-                addTimeSeriesData( next.getEarliestBasisTime(), next.getData() );
+
+                List<Event<PairOfDoubleAndVectorOfDoubles>> nextSource = new ArrayList<>();
+                List<PairOfDoubleAndVectorOfDoubles> nextRawSource = new ArrayList<>();
+                for ( Event<PairOfDoubleAndVectorOfDoubles> nextEvent : next.timeIterator() )
+                {
+                    nextSource.add( nextEvent );
+                    nextRawSource.add( nextEvent.getValue() );
+                }
+                addTimeSeriesData( Arrays.asList( Event.of( next.getEarliestBasisTime(), nextSource ) ) );
                 mainMeta.add( next.getMetadata() );
                 //Add climatology if available
-                if( next.hasClimatology() )
+                if ( next.hasClimatology() )
                 {
                     climatology = next.getClimatology();
                 }
             }
             setMetadata( metaFac.unionOf( mainMeta ) );
-            
-            //Add any baseline data
-            if( timeSeries.hasBaseline() )
+
+            //Add the baseline data if required
+            if ( timeSeries.hasBaseline() )
             {
                 for ( TimeSeries<PairOfDoubleAndVectorOfDoubles> a : timeSeries.getBaselineData().basisTimeIterator() )
                 {
-                    //Add the main data
-                    TimeSeriesOfEnsemblePairs next = (TimeSeriesOfEnsemblePairs) a;
-                    addTimeSeriesDataForBaseline( next.getEarliestBasisTime(), next.getData() );
-                    baselineMeta.add( next.getMetadata() );
+                    TimeSeriesOfEnsemblePairs nextBaseline = (TimeSeriesOfEnsemblePairs) a;
+                    List<Event<PairOfDoubleAndVectorOfDoubles>> nextBaselineSource = new ArrayList<>();
+                    List<PairOfDoubleAndVectorOfDoubles> nextRawBaselineSource = new ArrayList<>();
+                    for ( Event<PairOfDoubleAndVectorOfDoubles> nextEvent : nextBaseline.timeIterator() )
+                    {
+                        nextBaselineSource.add( nextEvent );
+                        nextRawBaselineSource.add( nextEvent.getValue() );
+                    }
+                    addTimeSeriesDataForBaseline( Arrays.asList( Event.of( nextBaseline.getEarliestBasisTime(),
+                                                                           nextBaselineSource ) ) );
+                    baselineMeta.add( nextBaseline.getMetadata() );
                 }
                 setMetadataForBaseline( metaFac.unionOf( baselineMeta ) );
-            }   
+            }
+
             setClimatology( climatology );
             return this;
         }
 
         @Override
-        public SafeRegularTimeSeriesOfEnsemblePairsBuilder setTimeStep( Duration timeStep )
+        public SafeTimeSeriesOfEnsemblePairs build()
         {
-            this.timeStep = timeStep;
-            return this;
-        }
-
-        @Override
-        public SafeRegularTimeSeriesOfEnsemblePairs build()
-        {
-            return new SafeRegularTimeSeriesOfEnsemblePairs( this );
+            return new SafeTimeSeriesOfEnsemblePairs( this );
         }
 
     }
@@ -365,51 +306,13 @@ class SafeRegularTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
      * @throws MetricInputException if the pairs are invalid
      */
 
-    SafeRegularTimeSeriesOfEnsemblePairs( final SafeRegularTimeSeriesOfEnsemblePairsBuilder b )
+    SafeTimeSeriesOfEnsemblePairs( final SafeTimeSeriesOfEnsemblePairsBuilder b )
     {
         super( b );
-        //Check that all pairs have the same number of ensemble members
-        int count = 0;
-        for ( PairOfDoubleAndVectorOfDoubles next : getData() )
-        {
-            if ( count == 0 )
-            {
-                count = next.getItemTwo().length;
-            }
-            else if ( next.getItemTwo().length != count )
-            {
-                throw new MetricInputException( "While building a regular time-series of ensemble pairs: each pair "
-                                                + "must contain the same number of ensemble members." );
-            }
-        }
-        //Baseline can differ from main, but must have a constant number of ensemble members
-        if ( hasBaseline() )
-        {
-            int baselineCount = 0;
-
-            for ( PairOfDoubleAndVectorOfDoubles next : getDataForBaseline() )
-            {
-                if ( baselineCount == 0 )
-                {
-                    baselineCount = next.getItemTwo().length;
-                }
-                else if ( next.getItemTwo().length != baselineCount )
-                {
-                    throw new MetricInputException( "While building a regular time-series of ensemble pairs: each pair "
-                                                    + "in the baseline must contain the same number of ensemble "
-                                                    + "members." );
-                }
-            }
-        }
-        bP = new SafeRegularTimeSeriesOfPairs<>( getData(),
-                                                 b.timeStep,
-                                                 b.basisTimes,
-                                                 b.basisTimesBaseline,
-                                                 b.timeStepCount,
-                                                 b.timeStepCountBaseline,
-                                                 getBasisTimeIterator(),
-                                                 getDurationIterator() );
-
+        bP = new SafeTimeSeriesOfPairs<>( b.data,
+                                          b.baselineData,
+                                          getBasisTimeIterator(),
+                                          getDurationIterator() );
     }
 
     /**
@@ -430,31 +333,29 @@ class SafeRegularTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
                 {
                     int returned = 0;
                     Iterator<Instant> iterator = getBasisTimes().iterator();
-                    List<PairOfDoubleAndVectorOfDoubles> data = getData();
 
                     @Override
                     public boolean hasNext()
                     {
-                        return returned < getBasisTimes().size();
+                        return iterator.hasNext();
                     }
 
                     @Override
                     public TimeSeries<PairOfDoubleAndVectorOfDoubles> next()
                     {
-                        if ( returned >= getBasisTimes().size() )
+                        if ( !hasNext() )
                         {
                             throw new NoSuchElementException( "No more basis times to iterate." );
                         }
-                        SafeRegularTimeSeriesOfEnsemblePairsBuilder builder =
-                                new SafeRegularTimeSeriesOfEnsemblePairsBuilder();
+                        SafeTimeSeriesOfEnsemblePairsBuilder builder =
+                                new SafeTimeSeriesOfEnsemblePairsBuilder();
                         Instant nextTime = iterator.next();
-                        int start = returned * bP.getTimeStepCount();
-                        builder.setTimeStep( getRegularDuration() );
-                        builder.addTimeSeriesData( nextTime, data.subList( start, start + bP.getTimeStepCount() ) );
+                        builder.addTimeSeriesData( Arrays.asList( bP.getData().get( returned ) ) );
+
                         //Adjust the time window for the metadata
                         builder.setMetadata( TimeSeriesHelper.getBasisTimeAdjustedMetadata( getMetadata(),
-                                                                                                        nextTime,
-                                                                                                        nextTime ) );
+                                                                                            nextTime,
+                                                                                            nextTime ) );
                         // Set the climatology
                         builder.setClimatology( getClimatology() );
                         returned++;
@@ -488,41 +389,33 @@ class SafeRegularTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
             {
                 return new Iterator<TimeSeries<PairOfDoubleAndVectorOfDoubles>>()
                 {
-                    int returned = 0;
-                    List<PairOfDoubleAndVectorOfDoubles> data = getData();
+                    Iterator<Duration> iterator = bP.getDurations().iterator();
 
                     @Override
                     public boolean hasNext()
                     {
-                        return returned < bP.getTimeStepCount();
+                        return iterator.hasNext();
                     }
 
                     @Override
                     public TimeSeries<PairOfDoubleAndVectorOfDoubles> next()
                     {
-                        if ( returned >= bP.getTimeStepCount() )
+                        if ( !hasNext() )
                         {
                             throw new NoSuchElementException( "No more durations to iterate." );
                         }
-                        SafeRegularTimeSeriesOfEnsemblePairsBuilder builder =
-                                new SafeRegularTimeSeriesOfEnsemblePairsBuilder();
-                        Duration nextDuration = getRegularDuration().multipliedBy( (long) returned + 1 );
-                        builder.setTimeStep( nextDuration );
+                        SafeTimeSeriesOfEnsemblePairsBuilder builder =
+                                new SafeTimeSeriesOfEnsemblePairsBuilder();
+                        Duration nextDuration = iterator.next();
+
                         //Adjust the time window for the metadata
                         builder.setMetadata( TimeSeriesHelper.getDurationAdjustedMetadata( getMetadata(),
-                                                                                                       nextDuration,
-                                                                                                       nextDuration ) );
-                        int start = 0;
-                        for ( Instant next : bP.getBasisTimes() )
-                        {
-                            List<PairOfDoubleAndVectorOfDoubles> subset = new ArrayList<>();
-                            subset.add( data.get( start + returned ) );
-                            builder.addTimeSeriesData( next, subset );
-                            start += bP.getTimeStepCount();
-                        }
+                                                                                           nextDuration,
+                                                                                           nextDuration ) );
+                        // Data for the current duration by basis time
+                        builder.addTimeSeriesData( bP.filterByDuration( nextDuration, bP.getData() ) );
                         // Set the climatology
                         builder.setClimatology( getClimatology() );
-                        returned++;
                         return builder.build();
                     }
 
@@ -561,7 +454,7 @@ class SafeRegularTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
                     @Override
                     public boolean hasNext()
                     {
-                        return currentBasisTime < totalBasisTimes ? true: currentTrace < totalTraces;
+                        return currentBasisTime < totalBasisTimes ? true : currentTrace < totalTraces;
                     }
 
                     @Override
@@ -578,16 +471,16 @@ class SafeRegularTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
                             currentSeries = (TimeSeriesOfEnsemblePairs) iterator.next();
                         }
                         //Build a single-valued time-series with the trace at index currentTrace
-                        SafeRegularTimeSeriesOfSingleValuedPairsBuilder builder =
-                                new SafeRegularTimeSeriesOfSingleValuedPairsBuilder();
-                        builder.setTimeStep( getRegularDuration() );
+                        SafeTimeSeriesOfSingleValuedPairsBuilder builder =
+                                new SafeTimeSeriesOfSingleValuedPairsBuilder();
                         builder.setMetadata( getMetadata() );
 
-                        List<PairOfDoubles> input = new ArrayList<>();
-                        for ( PairOfDoubleAndVectorOfDoubles next : currentSeries )
+                        List<Event<PairOfDoubles>> input = new ArrayList<>();
+                        for ( Event<PairOfDoubleAndVectorOfDoubles> next : currentSeries.timeIterator() )
                         {
-                            input.add( dFac.pairOf( next.getItemOne(),
-                                                    next.getItemTwo()[currentTrace] ) );
+                            input.add( Event.of( next.getTime(), dFac.pairOf( next.getValue().getItemOne(),
+                                                                              next.getValue()
+                                                                                  .getItemTwo()[currentTrace] ) ) );
                         }
                         builder.addTimeSeriesData( currentSeries.getEarliestBasisTime(), input );
                         currentTrace++;
