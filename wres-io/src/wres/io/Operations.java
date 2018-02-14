@@ -338,9 +338,15 @@ public final class Operations {
 
     private static boolean shouldAnalyze( List<IngestResult> ingestResults )
     {
-        boolean shouldAnalyze = false;
+        for ( IngestResult ingestResult : ingestResults )
+        {
+            if ( !ingestResult.wasFoundAlready() )
+            {
+                return true;
+            }
+        }
 
-        return shouldAnalyze;
+        return false;
     }
 
 }
