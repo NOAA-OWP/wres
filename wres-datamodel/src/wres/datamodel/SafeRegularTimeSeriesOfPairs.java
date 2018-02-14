@@ -10,17 +10,14 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
-import java.util.StringJoiner;
 import java.util.TreeSet;
 
 import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.metadata.Metadata;
-import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 
 /**
- * Base class for an immutable implementation of a time-series of pairs.
+ * Base class for an immutable implementation of a regular time-series of pairs.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
@@ -70,72 +67,6 @@ class SafeRegularTimeSeriesOfPairs<T>
      */
 
     private final Iterable<Event<T>> timeIterator;
-
-    /**
-     * Error message denoting attempt to modify an immutable time-series via an iterator.
-     */
-
-    static final String UNSUPPORTED_MODIFICATION = "While attempting to modify an immutable time-series.";
-
-    /**
-     * Helper method that adjusts the earliest and latest basis times of the {@link TimeWindow} associated with the 
-     * input {@link Metadata} when iterating over the atomic time-series by basis time.
-     * 
-     * @param input the input metadata
-     * @param earliestTime the earliest basis time for the new metadata
-     * @param latestTime the latest basis time for the new metadata
-     * @return the adjusted metadata
-     * @throws NullPointerException if any of the inputs are null
-     */
-
-    static Metadata getBasisTimeAdjustedMetadata( Metadata input, Instant earliestTime, Instant latestTime )
-    {
-        //Test the input only, as the others are tested on construction
-        Objects.requireNonNull( "Specify non-null input for the current metadata." );
-        Metadata returnMe = input;
-        if ( input.hasTimeWindow() )
-        {
-            TimeWindow current = input.getTimeWindow();
-            returnMe = DefaultMetadataFactory.getInstance()
-                                             .getMetadata( returnMe,
-                                                           TimeWindow.of( earliestTime,
-                                                                          latestTime,
-                                                                          current.getReferenceTime(),
-                                                                          current.getEarliestLeadTime(),
-                                                                          current.getLatestLeadTime() ) );
-        }
-        return returnMe;
-    }
-
-    /**
-     * Helper method that adjusts the earliest and latest durations of the {@link TimeWindow} associated with the input
-     * {@link Metadata} when iterating over the atomic time-series by duration.
-     * 
-     * @param input the input metadata
-     * @param earliestDuration the earliest duration for the new metadata
-     * @param latestDuration the latest duration for the new metadata
-     * @return the adjusted metadata
-     * @throws NullPointerException if any of the inputs are null
-     */
-
-    static Metadata getDurationAdjustedMetadata( Metadata input, Duration earliestDuration, Duration latestDuration )
-    {
-        //Test the input only, as the others are tested on construction
-        Objects.requireNonNull( "Specify non-null input for the current metadata." );
-        Metadata returnMe = input;
-        if ( input.hasTimeWindow() )
-        {
-            TimeWindow current = input.getTimeWindow();
-            returnMe = DefaultMetadataFactory.getInstance()
-                                             .getMetadata( returnMe,
-                                                           TimeWindow.of( current.getEarliestTime(),
-                                                                          current.getLatestTime(),
-                                                                          current.getReferenceTime(),
-                                                                          earliestDuration,
-                                                                          latestDuration ) );
-        }
-        return returnMe;
-    }
 
     /**
      * Returns an iterator over each pair.
@@ -239,42 +170,6 @@ class SafeRegularTimeSeriesOfPairs<T>
     int getTimeStepCount()
     {
         return timeStepCount;
-    }
-
-    /**
-     * Returns the earliest basis time.
-     * 
-     * @return the earliest basis time
-     */
-
-    Instant getEarliestBasisTime()
-    {
-        if ( basisTimes.size() == 1 )
-        {
-            return ( basisTimes ).iterator().next();
-        }
-        return new TreeSet<>( basisTimes ).first();
-    }
-
-    @Override
-    public String toString()
-    {
-        StringJoiner joiner = new StringJoiner( System.lineSeparator() );
-        if ( basisTimes.size() > 1 )
-        {
-            for ( TimeSeries<T> next : basisTimeIterator() )
-            {
-                joiner.add( next.toString() );
-            }
-        }
-        else
-        {
-            for ( Event<T> next : timeIterator() )
-            {
-                joiner.add( next.toString() );
-            }
-        }
-        return joiner.toString();
     }
 
     /**
@@ -385,7 +280,7 @@ class SafeRegularTimeSeriesOfPairs<T>
                     @Override
                     public void remove()
                     {
-                        throw new UnsupportedOperationException( SafeRegularTimeSeriesOfPairs.UNSUPPORTED_MODIFICATION );
+                        throw new UnsupportedOperationException( TimeSeriesHelper.UNSUPPORTED_MODIFICATION );
                     }
                 };
             }
