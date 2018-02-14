@@ -11,7 +11,7 @@ import wres.datamodel.time.TimeSeries;
  */
 public interface TimeSeriesOfSingleValuedPairs extends SingleValuedPairs, TimeSeries<PairOfDoubles>
 {
-
+    
     @Override
     TimeSeriesOfSingleValuedPairs getBaselineData();
 

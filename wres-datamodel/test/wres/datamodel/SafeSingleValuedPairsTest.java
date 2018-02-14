@@ -1,5 +1,6 @@
 package wres.datamodel;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -45,7 +46,7 @@ public final class SafeSingleValuedPairsTest
         SingleValuedPairs p = (SingleValuedPairs)b.addData(values).setMetadata(meta).build();
 
         //Check dataset count
-        assertTrue("Expected a dataset without a baseline [false," + p.hasBaseline() + "].", !p.hasBaseline());
+        assertFalse("Expected a dataset without a baseline [false," + p.hasBaseline() + "].", p.hasBaseline());
         p = (SingleValuedPairs)b.addDataForBaseline(values).setMetadataForBaseline(meta).build(); //Add another
         //Check that a returned dataset contains the expected number of pairs
         assertTrue("Expected a main dataset with ten pairs [10," + p.getData().size() + "].",

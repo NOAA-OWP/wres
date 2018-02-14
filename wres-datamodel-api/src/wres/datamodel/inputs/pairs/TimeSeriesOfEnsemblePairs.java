@@ -15,7 +15,7 @@ import wres.datamodel.time.TimeSeriesOfEnsemble;
 public interface TimeSeriesOfEnsemblePairs
         extends EnsemblePairs, TimeSeriesOfEnsemble<PairOfDoubles, PairOfDoubleAndVectorOfDoubles>
 {
-
+    
     @Override
     TimeSeriesOfEnsemblePairs getBaselineData();
 
