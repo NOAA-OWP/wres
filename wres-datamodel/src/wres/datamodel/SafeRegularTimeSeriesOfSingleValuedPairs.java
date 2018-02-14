@@ -379,10 +379,7 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
                                                                                                         nextTime,
                                                                                                         nextTime ) );
                         // Set the climatology
-                        if( hasClimatology() )
-                        {
-                            builder.setClimatology( getClimatology() );
-                        }
+                        builder.setClimatology( getClimatology() );
                         returned++;
                         return builder.build();
                     }
@@ -447,10 +444,7 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
                             start += bP.getTimeStepCount();
                         }
                         // Set the climatology
-                        if( hasClimatology() )
-                        {
-                            builder.setClimatology( getClimatology() );
-                        }
+                        builder.setClimatology( getClimatology() );
                         returned++;
                         return builder.build();
                     }
