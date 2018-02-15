@@ -16,6 +16,8 @@ import wres.datamodel.SafeMetricOutputMapByMetric.SafeMetricOutputMapByMetricBui
 import wres.datamodel.SafeMetricOutputMultiMapByTimeAndThreshold.SafeMetricOutputMultiMapByTimeAndThresholdBuilder;
 import wres.datamodel.SafeRegularTimeSeriesOfEnsemblePairs.SafeRegularTimeSeriesOfEnsemblePairsBuilder;
 import wres.datamodel.SafeRegularTimeSeriesOfSingleValuedPairs.SafeRegularTimeSeriesOfSingleValuedPairsBuilder;
+import wres.datamodel.SafeTimeSeriesOfEnsemblePairs.SafeTimeSeriesOfEnsemblePairsBuilder;
+import wres.datamodel.SafeTimeSeriesOfSingleValuedPairs.SafeTimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.Threshold.Operator;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
@@ -29,6 +31,8 @@ import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.inputs.pairs.builders.RegularTimeSeriesOfEnsemblePairsBuilder;
 import wres.datamodel.inputs.pairs.builders.RegularTimeSeriesOfSingleValuedPairsBuilder;
+import wres.datamodel.inputs.pairs.builders.TimeSeriesOfEnsemblePairsBuilder;
+import wres.datamodel.inputs.pairs.builders.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
@@ -423,6 +427,53 @@ public class DefaultDataFactory implements DataFactory
     public RegularTimeSeriesOfEnsemblePairsBuilder ofRegularTimeSeriesOfEnsemblePairsBuilder()
     {
         return new SafeRegularTimeSeriesOfEnsemblePairsBuilder();
+    }
+
+
+    @Override
+    public TimeSeriesOfSingleValuedPairs ofTimeSeriesOfSingleValuedPairs(
+                                                                          List<Event<List<Event<PairOfDoubles>>>> timeSeries,
+                                                                          Metadata mainMeta,
+                                                                          List<Event<List<Event<PairOfDoubles>>>> timeSeriesBaseline,
+                                                                          Metadata baselineMeta )
+    {
+        SafeTimeSeriesOfSingleValuedPairsBuilder builder = new SafeTimeSeriesOfSingleValuedPairsBuilder();
+        builder.addTimeSeriesData( timeSeries ).setMetadata( mainMeta );
+        if ( Objects.nonNull( timeSeriesBaseline ) )
+        {
+            builder.addTimeSeriesDataForBaseline( timeSeriesBaseline );
+            builder.setMetadataForBaseline( baselineMeta );
+        }
+        return builder.build();
+    }
+
+    @Override
+    public TimeSeriesOfEnsemblePairs ofTimeSeriesOfEnsemblePairs(
+                                                                  List<Event<List<Event<PairOfDoubleAndVectorOfDoubles>>>> timeSeries,
+                                                                  Metadata mainMeta,
+                                                                  List<Event<List<Event<PairOfDoubleAndVectorOfDoubles>>>> timeSeriesBaseline,
+                                                                  Metadata baselineMeta )
+    {
+        SafeTimeSeriesOfEnsemblePairsBuilder builder = new SafeTimeSeriesOfEnsemblePairsBuilder();
+        builder.addTimeSeriesData( timeSeries ).setMetadata( mainMeta );
+        if ( Objects.nonNull( timeSeriesBaseline ) )
+        {
+            builder.addTimeSeriesDataForBaseline( timeSeriesBaseline );
+            builder.setMetadataForBaseline( baselineMeta );
+        }
+        return builder.build();
+    }
+
+    @Override
+    public TimeSeriesOfSingleValuedPairsBuilder ofTimeSeriesOfSingleValuedPairsBuilder()
+    {
+        return new SafeTimeSeriesOfSingleValuedPairsBuilder();
+    }
+
+    @Override
+    public TimeSeriesOfEnsemblePairsBuilder ofTimeSeriesOfEnsemblePairsBuilder()
+    {
+        return new SafeTimeSeriesOfEnsemblePairsBuilder();
     }
 
     @Override

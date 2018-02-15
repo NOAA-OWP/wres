@@ -26,6 +26,8 @@ import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.inputs.pairs.builders.RegularTimeSeriesOfEnsemblePairsBuilder;
 import wres.datamodel.inputs.pairs.builders.RegularTimeSeriesOfSingleValuedPairsBuilder;
+import wres.datamodel.inputs.pairs.builders.TimeSeriesOfEnsemblePairsBuilder;
+import wres.datamodel.inputs.pairs.builders.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
@@ -499,6 +501,42 @@ public interface DataFactory
     }
 
     /**
+     * Returns a {@link TimeSeriesOfSingleValuedPairs} whose timestep may vary. The input contains one or more time-
+     * series, each one indexed by its basis time. The values must be time-ordered, moving away from the basis time.
+     * The outer list of {@link Event} contains the atomic time-series by basis time. The inner list of {@link Event} 
+     * contains the valid times and a {@link PairOfDoubles} of each element in one atomic time-series.
+     * 
+     * @param timeSeries the list of time-series, each one indexed by basis time
+     * @param meta the metadata for the time-series
+     * @return a {@link TimeSeriesOfSingleValuedPairs}
+     */
+
+    default TimeSeriesOfSingleValuedPairs
+            ofTimeSeriesOfSingleValuedPairs( List<Event<List<Event<PairOfDoubles>>>> timeSeries,
+                                             Metadata meta )
+    {
+        return ofTimeSeriesOfSingleValuedPairs( timeSeries, meta, null, null );
+    }
+
+    /**
+     * Returns a {@link TimeSeriesOfEnsemblePairs} whose timestep may vary. The input contains one or more time-series, 
+     * each one indexed by its basis time. The values must be time-ordered, moving away from the basis time. The outer 
+     * list of {@link Event} contains the atomic time-series by basis time. The inner list of {@link Event} contains 
+     * the valid times and a {@link PairOfDoubleAndVectorOfDoubles} of each element in one atomic time-series.
+     * 
+     * @param timeSeries the list of time-series, each one indexed by basis time
+     * @param meta the metadata for the time-series
+     * @return a {@link TimeSeriesOfEnsemblePairs}
+     */
+
+    default TimeSeriesOfEnsemblePairs
+            ofTimeSeriesOfEnsemblePairs( List<Event<List<Event<PairOfDoubleAndVectorOfDoubles>>>> timeSeries,
+                                         Metadata meta )
+    {
+        return ofTimeSeriesOfEnsemblePairs( timeSeries, meta, null, null );
+    } 
+
+    /**
      * Forms the union of the {@link PairedOutput}, returning a {@link PairedOutput} that contains all of the pairs in 
      * the inputs.
      * 
@@ -953,6 +991,8 @@ public interface DataFactory
     /**
      * Returns a {@link TimeSeriesOfSingleValuedPairs} with a regular timestep. The input contains one or more time-
      * series, each one indexed by its basis time. The values must be time-ordered, moving away from the basis time.
+     * The outer list of {@link Event} contains the atomic time-series by basis time. The inner list of {@link Event} 
+     * contains the valid times and a {@link PairOfDoubles} of each element in one atomic time-series.
      * 
      * @param timeSeries the list of time-series, each one indexed by basis time
      * @param mainMeta the metadata for the time-series
@@ -971,7 +1011,9 @@ public interface DataFactory
 
     /**
      * Returns a {@link TimeSeriesOfEnsemblePairs} with a regular timestep. The input contains one or more time-series, 
-     * each one indexed by its basis time. The values must be time-ordered, moving away from the basis time.
+     * each one indexed by its basis time. The values must be time-ordered, moving away from the basis time. The outer 
+     * list of {@link Event} contains the atomic time-series by basis time. The inner list of {@link Event} contains 
+     * the valid times and a {@link PairOfDoubleAndVectorOfDoubles} of each element in one atomic time-series.
      * 
      * @param timeSeries the list of time-series, each one indexed by basis time
      * @param mainMeta the metadata for the time-series
@@ -1003,6 +1045,57 @@ public interface DataFactory
      */
 
     RegularTimeSeriesOfEnsemblePairsBuilder ofRegularTimeSeriesOfEnsemblePairsBuilder();
+
+    /**
+     * Returns a {@link TimeSeriesOfSingleValuedPairs} whose timestep may vary. The input contains one or more 
+     * time-series, each one indexed by its basis time. The values must be time-ordered, moving away from the basis 
+     * time.
+     * 
+     * @param timeSeries the list of time-series, each one indexed by basis time
+     * @param mainMeta the metadata for the time-series
+     * @param timeSeriesBaseline an optional list of time-series for a baseline (may be null)
+     * @param baselineMeta the metadata for the baseline time-series (may be null)
+     * @return a {@link TimeSeriesOfSingleValuedPairs}
+     */
+
+    TimeSeriesOfSingleValuedPairs
+            ofTimeSeriesOfSingleValuedPairs( List<Event<List<Event<PairOfDoubles>>>> timeSeries,
+                                             Metadata mainMeta,
+                                             List<Event<List<Event<PairOfDoubles>>>> timeSeriesBaseline,
+                                             Metadata baselineMeta );
+
+    /**
+     * Returns a {@link TimeSeriesOfEnsemblePairs} whose timestep may vary. The input contains one or more time-series, 
+     * each one indexed by its basis time. The values must be time-ordered, moving away from the basis time.
+     * 
+     * @param timeSeries the list of time-series, each one indexed by basis time
+     * @param mainMeta the metadata for the time-series
+     * @param timeSeriesBaseline an optional list of time-series for a baseline (may be null)
+     * @param baselineMeta the metadata for the baseline time-series (may be null)
+     * @return a {@link TimeSeriesOfEnsemblePairs}
+     */
+
+    TimeSeriesOfEnsemblePairs
+            ofTimeSeriesOfEnsemblePairs( List<Event<List<Event<PairOfDoubleAndVectorOfDoubles>>>> timeSeries,
+                                         Metadata mainMeta,
+                                         List<Event<List<Event<PairOfDoubleAndVectorOfDoubles>>>> timeSeriesBaseline,
+                                         Metadata baselineMeta );
+
+    /**
+     * Returns a builder for a {@link TimeSeriesOfSingleValuedPairs} whose timestep may vary.
+     * 
+     * @return a {@link TimeSeriesOfSingleValuedPairsBuilder}
+     */
+
+    TimeSeriesOfSingleValuedPairsBuilder ofTimeSeriesOfSingleValuedPairsBuilder();
+
+    /**
+     * Returns a builder for a {@link TimeSeriesOfEnsemblePairs} whose timestep may vary.
+     * 
+     * @return a {@link TimeSeriesOfEnsemblePairsBuilder}
+     */
+
+    TimeSeriesOfEnsemblePairsBuilder ofTimeSeriesOfEnsemblePairsBuilder();
 
     /**
      * Returns a {@link MetricOutputMapByMetric} from the raw list of inputs.

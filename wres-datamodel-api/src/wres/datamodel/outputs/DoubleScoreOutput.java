@@ -8,6 +8,6 @@ package wres.datamodel.outputs;
  * @since 0.1
  */
 
-public interface DoubleScoreOutput extends ScoreOutput<Double>
+public interface DoubleScoreOutput extends ScoreOutput<Double, DoubleScoreOutput>
 {
 }

@@ -3,6 +3,7 @@ package wres.datamodel;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -32,7 +33,7 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
 {
 
     /**
-     * Base class for a regular time-series of pairs.
+     * Instance of base class for a regular time-series of pairs.
      */
 
     private final SafeRegularTimeSeriesOfPairs<PairOfDoubles> bP;
@@ -131,7 +132,7 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
             }
         }
         //Build if something to build
-        if ( Objects.nonNull( builder.mainInput ) )
+        if ( !builder.mainInput.isEmpty() )
         {
             return builder.build();
         }
@@ -141,9 +142,9 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
     @Override
     public List<Instant> getBasisTimes()
     {
-        return new ArrayList<>( bP.getBasisTimes() );
+        return Collections.unmodifiableList( bP.getBasisTimes() );
     }
-
+    
     @Override
     public SortedSet<Duration> getDurations()
     {
@@ -171,13 +172,13 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
     @Override
     public Instant getEarliestBasisTime()
     {
-        return bP.getEarliestBasisTime();
+        return TimeSeriesHelper.getEarliestBasisTime( getBasisTimes() );
     }
 
     @Override
     public String toString()
     {
-        return bP.toString();
+        return TimeSeriesHelper.toString( this );
     }
 
     /**
@@ -269,31 +270,34 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
             List<Metadata> mainMeta = new ArrayList<>();
             List<Metadata> baselineMeta = new ArrayList<>();
             VectorOfDoubles climatology = null;
+            MetadataFactory metaFac = DefaultMetadataFactory.getInstance();
+            //Add the main data
             for ( TimeSeries<PairOfDoubles> a : timeSeries.basisTimeIterator() )
             {
-                //Add the main data
                 TimeSeriesOfSingleValuedPairs next = (TimeSeriesOfSingleValuedPairs) a;
                 addTimeSeriesData( next.getEarliestBasisTime(), next.getData() );
                 mainMeta.add( next.getMetadata() );
-                //Add the baseline data if required
-                if ( next.hasBaseline() )
-                {
-                    addTimeSeriesDataForBaseline( next.getEarliestBasisTime(), next.getDataForBaseline() );
-                    baselineMeta.add( next.getMetadataForBaseline() );
-                }
                 //Add climatology if available
                 if( next.hasClimatology() )
                 {
                     climatology = next.getClimatology();
                 }
             }
-            setClimatology( climatology );
-            MetadataFactory metaFac = DefaultMetadataFactory.getInstance();
             setMetadata( metaFac.unionOf( mainMeta ) );
-            if( !baselineMeta.isEmpty() )
+            
+            //Add any baseline data
+            if( timeSeries.hasBaseline() )
             {
+                for ( TimeSeries<PairOfDoubles> a : timeSeries.getBaselineData().basisTimeIterator() )
+                {
+                    //Add the main data
+                    TimeSeriesOfSingleValuedPairs next = (TimeSeriesOfSingleValuedPairs) a;
+                    addTimeSeriesDataForBaseline( next.getEarliestBasisTime(), next.getData() );
+                    baselineMeta.add( next.getMetadata() );
+                }
                 setMetadataForBaseline( metaFac.unionOf( baselineMeta ) );
-            }
+            }   
+            setClimatology( climatology );
             return this;
         }
 
@@ -350,7 +354,6 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
                     int returned = 0;
                     Iterator<Instant> iterator = getBasisTimes().iterator();
                     List<PairOfDoubles> data = getData();
-                    List<PairOfDoubles> baselineData = getDataForBaseline();
 
                     @Override
                     public boolean hasNext()
@@ -372,21 +375,11 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
                         builder.setTimeStep( getRegularDuration() );
                         builder.addTimeSeriesData( nextTime, data.subList( start, start + bP.getTimeStepCount() ) );
                         //Adjust the time window for the metadata
-                        builder.setMetadata( SafeRegularTimeSeriesOfPairs.getBasisTimeAdjustedMetadata( getMetadata(),
+                        builder.setMetadata( TimeSeriesHelper.getBasisTimeAdjustedMetadata( getMetadata(),
                                                                                                         nextTime,
                                                                                                         nextTime ) );
-                        //Add the baseline, if available for this time
-                        if ( hasBaseline() && bP.getBasisTimesBaseline().contains( nextTime ) )
-                        {
-                            int startBase = bP.getBasisTimesBaseline().indexOf( nextTime ) * bP.getTimeStepCount();
-                            builder.addTimeSeriesDataForBaseline( nextTime,
-                                                                  baselineData.subList( startBase,
-                                                                                        startBase + bP.getTimeStepCount() ) );
-                            //Adjust the time window for the metadata
-                            builder.setMetadataForBaseline( SafeRegularTimeSeriesOfPairs.getBasisTimeAdjustedMetadata( getMetadataForBaseline(),
-                                                                                                                       nextTime,
-                                                                                                                       nextTime ) );
-                        }
+                        // Set the climatology
+                        builder.setClimatology( getClimatology() );
                         returned++;
                         return builder.build();
                     }
@@ -394,7 +387,7 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
                     @Override
                     public void remove()
                     {
-                        throw new UnsupportedOperationException( SafeRegularTimeSeriesOfPairs.UNSUPPORTED_MODIFICATION );
+                        throw new UnsupportedOperationException( TimeSeriesHelper.UNSUPPORTED_MODIFICATION );
                     }
                 };
             }
@@ -420,7 +413,6 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
                 {
                     int returned = 0;
                     List<PairOfDoubles> data = getData();
-                    List<PairOfDoubles> baselineData = getDataForBaseline();
 
                     @Override
                     public boolean hasNext()
@@ -440,7 +432,7 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
                         Duration nextDuration = getRegularDuration().multipliedBy( (long) returned + 1 );
                         builder.setTimeStep( nextDuration );
                         //Adjust the time window for the metadata
-                        builder.setMetadata( SafeRegularTimeSeriesOfPairs.getDurationAdjustedMetadata( getMetadata(),
+                        builder.setMetadata( TimeSeriesHelper.getDurationAdjustedMetadata( getMetadata(),
                                                                                                        nextDuration,
                                                                                                        nextDuration ) );
                         int start = 0;
@@ -451,22 +443,8 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
                             builder.addTimeSeriesData( next, subset );
                             start += bP.getTimeStepCount();
                         }
-                        //Add filtered baseline data
-                        if ( hasBaseline() )
-                        {
-                            start = 0; //Reset counter
-                            for ( Instant next : bP.getBasisTimesBaseline() )
-                            {
-                                List<PairOfDoubles> subset = new ArrayList<>();
-                                subset.add( baselineData.get( start + returned ) );
-                                builder.addTimeSeriesDataForBaseline( next, subset );
-                                start += bP.getTimeStepCount();
-                            }
-                            //Adjust the time window for the metadata
-                            builder.setMetadataForBaseline( SafeRegularTimeSeriesOfPairs.getDurationAdjustedMetadata( getMetadataForBaseline(),
-                                                                                                                      nextDuration,
-                                                                                                                      nextDuration ) );
-                        }
+                        // Set the climatology
+                        builder.setClimatology( getClimatology() );
                         returned++;
                         return builder.build();
                     }
@@ -474,7 +452,7 @@ class SafeRegularTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
                     @Override
                     public void remove()
                     {
-                        throw new UnsupportedOperationException( SafeRegularTimeSeriesOfPairs.UNSUPPORTED_MODIFICATION );
+                        throw new UnsupportedOperationException( TimeSeriesHelper.UNSUPPORTED_MODIFICATION );
                     }
                 };
             }

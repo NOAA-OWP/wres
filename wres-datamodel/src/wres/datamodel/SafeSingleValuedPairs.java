@@ -109,23 +109,19 @@ class SafeSingleValuedPairs implements SingleValuedPairs
         /**
          * Pairs.
          */
-        List<PairOfDoubles> mainInput;
+        List<PairOfDoubles> mainInput = new ArrayList<>();
 
         /**
          * Pairs for baseline.
          */
-        List<PairOfDoubles> baselineInput;
+        List<PairOfDoubles> baselineInput = new ArrayList<>();
 
         @Override
         public SingleValuedPairsBuilder addData( final List<PairOfDoubles> mainInput )
         {
-            if ( Objects.nonNull( this.mainInput ) && Objects.nonNull( mainInput ) )
+            if ( Objects.nonNull( mainInput ) )
             {
                 this.mainInput.addAll( mainInput );
-            }
-            else if ( Objects.nonNull( mainInput ) )
-            {
-                this.mainInput = new ArrayList<>( mainInput );
             }
             return this;
         }
@@ -133,13 +129,9 @@ class SafeSingleValuedPairs implements SingleValuedPairs
         @Override
         public SingleValuedPairsBuilder addDataForBaseline( final List<PairOfDoubles> baselineInput )
         {
-            if ( Objects.nonNull( this.baselineInput ) && Objects.nonNull( baselineInput ) )
+            if ( Objects.nonNull( baselineInput ) )
             {
                 this.baselineInput.addAll( baselineInput );
-            }
-            else if ( Objects.nonNull( baselineInput ) )
-            {
-                this.baselineInput = new ArrayList<>( baselineInput );
             }
             return this;
         }
@@ -164,7 +156,7 @@ class SafeSingleValuedPairs implements SingleValuedPairs
         //Ensure safe types
         DefaultDataFactory factory = (DefaultDataFactory) DefaultDataFactory.getInstance();
         mainInput = factory.safePairOfDoublesList( b.mainInput );
-        baselineInput = Objects.nonNull( b.baselineInput ) ? factory.safePairOfDoublesList( b.baselineInput ) : null;
+        baselineInput = b.baselineInput.isEmpty() ? null : factory.safePairOfDoublesList( b.baselineInput );
         mainMeta = b.mainMeta;
         baselineMeta = b.baselineMeta;
         climatology = b.climatology;

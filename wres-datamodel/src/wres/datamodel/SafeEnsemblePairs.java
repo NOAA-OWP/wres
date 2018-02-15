@@ -131,23 +131,19 @@ class SafeEnsemblePairs implements EnsemblePairs
         /**
          * Pairs.
          */
-        List<PairOfDoubleAndVectorOfDoubles> mainInput;
+        List<PairOfDoubleAndVectorOfDoubles> mainInput = new ArrayList<>();
 
         /**
          * Pairs for baseline.
          */
-        List<PairOfDoubleAndVectorOfDoubles> baselineInput;
+        List<PairOfDoubleAndVectorOfDoubles> baselineInput = new ArrayList<>();
 
         @Override
         public EnsemblePairsBuilder addData( final List<PairOfDoubleAndVectorOfDoubles> mainInput )
         {
-            if ( Objects.nonNull( this.mainInput ) && Objects.nonNull( mainInput ) )
+            if ( Objects.nonNull( mainInput ) )
             {
                 this.mainInput.addAll( mainInput );
-            }
-            else if ( Objects.nonNull( mainInput ) )
-            {
-                this.mainInput = new ArrayList<>( mainInput );
             }
             return this;
         }
@@ -155,13 +151,9 @@ class SafeEnsemblePairs implements EnsemblePairs
         @Override
         public EnsemblePairsBuilder addDataForBaseline( final List<PairOfDoubleAndVectorOfDoubles> baselineInput )
         {
-            if ( Objects.nonNull( this.baselineInput ) && Objects.nonNull( baselineInput ) )
+            if ( Objects.nonNull( baselineInput ) )
             {
                 this.baselineInput.addAll( baselineInput );
-            }
-            else if ( Objects.nonNull( baselineInput ) )
-            {
-                this.baselineInput = new ArrayList<>( baselineInput );
             }
             return this;
         }
@@ -188,8 +180,7 @@ class SafeEnsemblePairs implements EnsemblePairs
         DefaultDataFactory factory = (DefaultDataFactory) DefaultDataFactory.getInstance();
         mainInput = factory.safePairOfDoubleAndVectorOfDoublesList( b.mainInput );
         baselineInput =
-                Objects.nonNull( b.baselineInput ) ? factory.safePairOfDoubleAndVectorOfDoublesList( b.baselineInput )
-                                                   : null;
+                b.baselineInput.isEmpty() ? null : factory.safePairOfDoubleAndVectorOfDoublesList( b.baselineInput );
         mainMeta = b.mainMeta;
         baselineMeta = b.baselineMeta;
         climatology = b.climatology;
@@ -209,12 +200,12 @@ class SafeEnsemblePairs implements EnsemblePairs
 
     private void validateMainInput()
     {
-        
+
         if ( Objects.isNull( mainMeta ) )
         {
             throw new MetricInputException( "Specify non-null metadata for the metric input." );
         }
-        
+
         if ( Objects.isNull( mainInput ) )
         {
             throw new MetricInputException( "Specify a non-null dataset for the metric input." );
@@ -294,7 +285,7 @@ class SafeEnsemblePairs implements EnsemblePairs
                                                      + "input" );
             }
         }
-    }    
-    
-    
+    }
+
+
 }

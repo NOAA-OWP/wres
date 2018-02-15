@@ -174,7 +174,8 @@ public final class MetricProcessorTest
     }
 
     /**
-     * Tests the {@link MetricProcessor#doNotComputeTheseMetricsForThisThreshold(MetricInputGroup, MetricOutputGroup, Threshold)}. 
+     * Tests the {@link MetricProcessor#doNotComputeTheseMetricsForThisThreshold(wres.datamodel.MetricConstants.MetricInputGroup, 
+     * wres.datamodel.MetricConstants.MetricOutputGroup, wres.datamodel.Threshold)}. 
      * Uses the configuration in testinput/metricProcessorTest/test4SingleValued.xml.
      * 
      * @throws IOException if the input data could not be read
@@ -237,7 +238,8 @@ public final class MetricProcessorTest
     }
 
     /**
-     * Tests the {@link MetricProcessor#doNotComputeTheseMetricsForThisThreshold(MetricInputGroup, MetricOutputGroup, Threshold)}. 
+     * Tests the {@link MetricProcessor#doNotComputeTheseMetricsForThisThreshold(wres.datamodel.MetricConstants.MetricInputGroup, 
+     * wres.datamodel.MetricConstants.MetricOutputGroup, wres.datamodel.Threshold)}. 
      * Uses the configuration in testinput/metricProcessorTest/test5Ensemble.xml.
      * 
      * @throws IOException if the input data could not be read

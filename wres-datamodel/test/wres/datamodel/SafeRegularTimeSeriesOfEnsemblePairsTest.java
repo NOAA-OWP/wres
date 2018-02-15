@@ -19,6 +19,7 @@ import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairs;
+import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.time.Event;
@@ -140,11 +141,9 @@ public final class SafeRegularTimeSeriesOfEnsemblePairsTest
                                                            new double[] { nextValue, nextValue + 1,
                                                                           nextValue + 2 } ) ) );
             }
-            //Three time-series for main, one for baseline.
+            //Three time-series for main
             assertTrue( "Unexpected number of time-series in dataset.",
                         next.getBasisTimes().size() == 3 );
-            assertTrue( "Unexpected number of time-series in baseline dataset.",
-                        ( (TimeSeriesOfEnsemblePairs) next ).getDataForBaseline().size() == 1 );
             nextValue++;
         }
     }
@@ -528,7 +527,10 @@ public final class SafeRegularTimeSeriesOfEnsemblePairsTest
         third.add( metIn.pairOf( 6, new double[] { 7 } ) );
         try
         {
-            ca.addTimeSeriesData( firstBasisTime, third ).setTimeStep( Duration.ofHours( 1 ) ).setMetadata( meta ).build();
+            ca.addTimeSeriesData( firstBasisTime, third )
+              .setTimeStep( Duration.ofHours( 1 ) )
+              .setMetadata( meta )
+              .build();
             fail( "Expected a checked exception on building a time-series with a varying number of ensemble members." );
         }
         catch ( MetricInputException e )
@@ -731,6 +733,57 @@ public final class SafeRegularTimeSeriesOfEnsemblePairsTest
         TimeSeriesOfEnsemblePairs pairs = metIn.ofRegularTimeSeriesOfEnsemblePairs( input, meta, timeStep );
         assertTrue( "Unequal string representation of two time-series that should have an equal representation.",
                     joiner.toString().equals( pairs.toString() ) );
+    }
+
+    /**
+     * Checks that the climatology is preserved when building new time-series from existing time-series.
+     */
+
+    @Test
+    public void test11ClimatologyIsPreserved()
+    {
+        //Build a time-series with one basis times and three separate sets of data to append
+        List<PairOfDoubleAndVectorOfDoubles> first = new ArrayList<>();
+
+        SafeRegularTimeSeriesOfEnsemblePairsBuilder b = new SafeRegularTimeSeriesOfEnsemblePairsBuilder();
+        DataFactory metIn = DefaultDataFactory.getInstance();
+        MetadataFactory metaFac = metIn.getMetadataFactory();
+        Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );
+        first.add( metIn.pairOf( 1, new double[] { 1 } ) );
+        first.add( metIn.pairOf( 2, new double[] { 2 } ) );
+        first.add( metIn.pairOf( 3, new double[] { 3 } ) );
+        Metadata meta = metaFac.getMetadata();
+        VectorOfDoubles climatology = metIn.vectorOf( new double[] { 1, 2, 3 } );
+        b.addTimeSeriesData( basisTime, first )
+         .setTimeStep( Duration.ofHours( 1 ) )
+         .setMetadata( meta )
+         .setClimatology( climatology );
+
+        //Build the first ts
+        TimeSeriesOfEnsemblePairs ts = b.build();
+
+        //Add the first time-series and then append a second and third
+        SafeRegularTimeSeriesOfEnsemblePairsBuilder c = new SafeRegularTimeSeriesOfEnsemblePairsBuilder();
+        c.addTimeSeries( ts );
+
+        //Check that climatology has been preserved
+        assertTrue( "Failed to perserve climatology when building new time-series.",
+                    climatology.equals( c.build().getClimatology() ) );
+        assertTrue( "Failed to perserve climatology when iterating new time-series by basis time.",
+                    climatology.equals( ( (TimeSeriesOfEnsemblePairs) c.build()
+                                                                       .durationIterator()
+                                                                       .iterator()
+                                                                       .next() ).getClimatology() ) );
+        assertTrue( "Failed to perserve climatology when iterating new time-series by duration.",
+                    climatology.equals( ( (TimeSeriesOfEnsemblePairs) c.build()
+                                                                       .durationIterator()
+                                                                       .iterator()
+                                                                       .next() ).getClimatology() ) );
+        assertTrue( "Failed to perserve climatology when iterating new time-series by duration.",
+                    climatology.equals( ( (TimeSeriesOfSingleValuedPairs) c.build()
+                                                                           .ensembleTraceIterator()
+                                                                           .iterator()
+                                                                           .next() ).getClimatology() ) );
     }
 
 }

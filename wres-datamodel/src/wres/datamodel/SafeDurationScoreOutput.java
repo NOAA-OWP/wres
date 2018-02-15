@@ -16,7 +16,7 @@ import wres.datamodel.outputs.MetricOutputException;
  * @since 0.4
  */
 
-class SafeDurationScoreOutput extends SafeScoreOutput<Duration> implements DurationScoreOutput
+class SafeDurationScoreOutput extends SafeScoreOutput<Duration,DurationScoreOutput> implements DurationScoreOutput
 {
 
     /**
@@ -57,6 +57,12 @@ class SafeDurationScoreOutput extends SafeScoreOutput<Duration> implements Durat
     SafeDurationScoreOutput( final Duration[] output, final ScoreOutputGroup template, final MetricOutputMetadata meta )
     {
         super( output, template, meta );
+    }
+
+    @Override
+    DurationScoreOutput getScoreOutput( Duration input, MetricOutputMetadata meta )
+    {
+        return new SafeDurationScoreOutput( input, meta );
     }
 
 }

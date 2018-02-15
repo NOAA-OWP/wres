@@ -65,7 +65,7 @@ public interface Event<T>
             public DefaultEvent( Instant time, T value )
             {
                 Objects.requireNonNull( time, "Specify a non-null time for the event." );
-                Objects.requireNonNull( time, "Specify a non-null value for the event." );
+                Objects.requireNonNull( value, "Specify a non-null value for the event." );
                 pair = Pair.of( time, value );
             }
 

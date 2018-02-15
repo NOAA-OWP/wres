@@ -15,7 +15,7 @@ import wres.datamodel.outputs.ScoreOutput;
  * @since 0.1
  */
 
-public interface Score<S extends MetricInput<?>, T extends ScoreOutput<?>> extends Metric<S,T>
+public interface Score<S extends MetricInput<?>, T extends ScoreOutput<?,T>> extends Metric<S,T>
 {
 
     /**

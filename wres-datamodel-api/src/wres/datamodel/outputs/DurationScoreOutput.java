@@ -10,6 +10,6 @@ import java.time.Duration;
  * @since 0.3
  */
 
-public interface DurationScoreOutput extends ScoreOutput<Duration>
+public interface DurationScoreOutput extends ScoreOutput<Duration, DurationScoreOutput>
 {
 }
