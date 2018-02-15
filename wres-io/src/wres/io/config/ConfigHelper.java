@@ -64,6 +64,7 @@ public class ConfigHelper
         // prevent construction
     }
 
+    // TODO: Move to Project Details
     public static boolean usesUSGSData(ProjectConfig projectConfig)
     {
         for ( DataSourceConfig.Source source : projectConfig.getInputs().getLeft().getSource())
@@ -98,6 +99,7 @@ public class ConfigHelper
         return false;
     }
 
+    // TODO: Move to Project Details
     public static boolean usesNetCDFData(ProjectConfig projectConfig)
     {
         for ( DataSourceConfig.Source source : projectConfig.getInputs().getLeft().getSource())
@@ -130,27 +132,6 @@ public class ConfigHelper
         }
 
         return false;
-    }
-
-    public static boolean usesProbabilityThresholds(final ProjectConfig projectConfig)
-    {
-        boolean hasProbabilityThreshold = projectConfig.getMetrics()
-                                                       .getProbabilityThresholds() != null;
-
-        if (!hasProbabilityThreshold)
-        {
-            hasProbabilityThreshold = Collections.exists(projectConfig.getMetrics().getMetric(), (MetricConfig config) -> {
-                return config.getProbabilityThresholds() != null;
-            });
-        }
-
-        return hasProbabilityThreshold;
-    }
-
-    public static Integer getVariableID(DataSourceConfig dataSourceConfig) throws SQLException
-    {
-        return Variables.getVariableID(dataSourceConfig.getVariable().getValue(),
-                                       dataSourceConfig.getVariable().getUnit());
     }
 
     public static String getVariablePositionClause( Feature feature, int variableId, String alias)
@@ -734,21 +715,6 @@ public class ConfigHelper
     }    
 
     /**
-     * Get all the pair destinations from a configuration.
-     *
-     * TODO: Move to ProjectDetails
-     *
-     * @param config the config to search through
-     * @return a list of pair destinations
-     * @throws NullPointerException when config is null
-     */
-
-    public static List<DestinationConfig> getPairDestinations( ProjectConfig config )
-    {
-        return getDestinationsOfType( config, DestinationType.PAIRS );
-    }
-
-    /**
      * <p>Returns a {@link TimeWindow} from the input configuration using the specified lead time to form the interval
      * on the forecast horizon. The earliest and latest times on the UTC timeline are determined by whichever of the
      * following is available (in this order):</p> 
@@ -764,9 +730,6 @@ public class ConfigHelper
      * the associated formatting requirement. Validation of dates should be conducted at the earliest 
      * opportunity, which may be well before this point.</p>
      * 
-     * TODO: update this method to handle an earliest lead time and a latest lead time. Currently assumes both are 
-     * the same.
-     * 
      * @param projectDetails the project configuration
      * @param lead the earliest and latest lead time
      * @param sequenceStep the position of the window within a sequence
@@ -774,7 +737,6 @@ public class ConfigHelper
      * @throws NullPointerException if the config is null
      * @throws DateTimeParseException if the configuration contains dates that cannot be parsed
      */
-
     public static TimeWindow getTimeWindow( ProjectDetails projectDetails, long lead, int sequenceStep)
     {
         Objects.requireNonNull( projectDetails );

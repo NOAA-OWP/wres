@@ -151,7 +151,11 @@ public abstract class XMLReader
         }
         catch ( XMLStreamException | IOException error )
         {
-//From Hank: WHY IS THIS HERE??? See else below.			reader = factory.createXMLStreamReader(new FileReader(getFilename()));
+            this.getLogger().debug( "An XMLStreamReader could not be created "
+                                    + "by looking for the source on the class "
+                                    + "path. A reader will need to be created "
+                                    + "by evaluating the file name or given "
+                                    + "input stream." );
         }
 
         //If its not a system resource, or the resource cannot be read, then find on the file system.

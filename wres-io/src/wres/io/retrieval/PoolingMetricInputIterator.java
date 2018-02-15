@@ -24,7 +24,7 @@ public class PoolingMetricInputIterator extends MetricInputIterator
     @Override
     int calculateWindowCount() throws SQLException
     {
-        return this.getProjectDetails().getPoolCount( this.getFeature() );
+        return this.getProjectDetails().getIssuePoolCount( this.getFeature() );
     }
 
     @Override

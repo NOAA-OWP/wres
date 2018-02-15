@@ -28,7 +28,6 @@ import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;
 import wres.io.config.SystemSettings;
-import wres.io.data.caching.Features;
 import wres.io.data.caching.Projects;
 import wres.io.data.details.FeatureDetails;
 import wres.io.data.details.ProjectDetails;
@@ -314,7 +313,7 @@ public final class Operations {
             // Check if the feature has any intersecting values
             Feature feature = details.toFeature();
 
-            if ( projectDetails == null || projectDetails.getLeadOffset( feature ) != null)
+            if ( projectDetails.getLeadOffset( feature ) != null)
             {
                 atomicFeatures.add(details.toFeature());
             }

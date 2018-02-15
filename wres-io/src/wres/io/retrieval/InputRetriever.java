@@ -53,16 +53,49 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(InputRetriever.class);
 
-    private String baselineLoadScript;
-    private String rightLoadScript;
-    private int progress;
-    private int poolingStep;
+    /**
+     * The iteration over lead times for this retriever
+     */
+    private int leadIteration;
+
+    /**
+     * The number of the issue dates pool
+     */
+    private int issueDatesPool;
+
+    /**
+     * The total specifications for what data to retrieve
+     */
     private final ProjectDetails projectDetails;
+
+    /**
+     * The feature whose input needs to be created
+     */
     private Feature feature;
+
+    /**
+     * Function used to find all left side data based on a range of dates
+     */
     private final BiFunction<LocalDateTime, LocalDateTime, List<Double>> getLeftValues;
+
+    /**
+     * The total set of climatology data to group with the pairs
+     */
     private VectorOfDoubles climatology;
+
+    /**
+     * The listing of all pairs between left and right data
+     */
     private List<ForecastedPair> primaryPairs;
+
+    /**
+     * The Listing of all pairs between left and baseline data
+     */
     private List<ForecastedPair> baselinePairs;
+
+    /**
+     * A cache for all measurement unit conversions
+     */
     private Map<Integer, UnitConversions.Conversion> conversionMap;
 
     public InputRetriever ( ProjectDetails projectDetails,
@@ -77,14 +110,14 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         this.feature = feature;
     }
 
-    public void setProgress(int progress)
+    public void setLeadIteration( int leadIteration )
     {
-        this.progress = progress;
+        this.leadIteration = leadIteration;
     }
 
-    public void setPoolingStep( int poolingStep )
+    public void setIssueDatesPool( int issueDatesPool )
     {
-        this.poolingStep = poolingStep;
+        this.issueDatesPool = issueDatesPool;
     }
 
     public void setClimatology(VectorOfDoubles climatology)
@@ -92,6 +125,13 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         this.climatology = climatology;
     }
 
+    /**
+     * Retrieves the unit conversion operation converting the given measurement
+     * unit ID to the desired unit from the configuration
+     * @param measurementUnitID The ID of the measurement unit from the database
+     * @return A conversion operation converting values in the units represented
+     * by the given ID to the desired unit for evaluation
+     */
     private UnitConversions.Conversion getConversion(int measurementUnitID)
     {
         if (this.conversionMap == null)
@@ -109,9 +149,21 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         return this.conversionMap.get( measurementUnitID );
     }
 
+    /**
+     * Converts a value to the desired unit and applies configured constraints
+     * to it
+     *
+     * <p>
+     *     If the value is non-existent, it is set to NaN. If the value is outside
+     *     of the configured minimum and maximum, it is set to NaN.
+     * </p>
+     * @param value The value to convert
+     * @param measurementUnitID The unit of measurement that the unit is in
+     * @return The measurement that fits the constraint of the measurement
+     */
     private Double convertMeasurement(Double value, int measurementUnitID)
     {
-        Double convertedMeasurement = null;
+        Double convertedMeasurement;
         UnitConversions.Conversion conversion = this.getConversion( measurementUnitID );
 
         if (value != null && !value.isNaN() && conversion != null)
@@ -166,12 +218,12 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             if ( this.projectDetails.getIssuePoolingWindow() != null )
             {
                 message += " sequence ";
-                message += String.valueOf( this.poolingStep );
+                message += String.valueOf( this.issueDatesPool );
                 message += " for";
             }
 
             message += " lead time ";
-            message += String.valueOf( this.progress );
+            message += String.valueOf( this.leadIteration );
 
             LOGGER.debug( message, error );
             throw error;
@@ -179,21 +231,26 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         return input;
     }
 
+    /**
+     * Creates a MetricInput object based on the previously retrieved pairs and
+     * generated metadata.
+     * @return A MetricInput object used to provide a point for evaluation
+     * @throws IOException
+     * @throws SQLException
+     */
     private MetricInput<?> createInput() throws IOException, SQLException
     {
         MetricInput<?> input;
 
         DatasourceType dataType = this.projectDetails.getRight().getType();
 
-        DataFactory factory = DefaultDataFactory.getInstance();
-
-        Metadata metadata = this.buildMetadata(factory, this.projectDetails.getRight());
+        Metadata metadata = this.buildMetadata(this.projectDetails.getRight());
         Metadata baselineMetadata = null;
 
         if (this.primaryPairs.size() == 0)
         {
             throw new NoDataException( "No data could be retrieved for Metric calculation for window " +
-                                       this.progress +
+                                       this.leadIteration +
                                        " for " +
                                        this.projectDetails.getRightVariableName() +
                                        " at " +
@@ -202,7 +259,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
 
         if (this.projectDetails.hasBaseline())
         {
-            baselineMetadata = this.buildMetadata(factory, this.projectDetails.getBaseline());
+            baselineMetadata = this.buildMetadata(this.projectDetails.getBaseline());
         }
 
         try
@@ -220,11 +277,13 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                     baseline = InputRetriever.extractRawPairs( this.baselinePairs );
                 }
 
-                input = factory.ofEnsemblePairs( primary,
-                                                 baseline,
-                                                 metadata,
-                                                 baselineMetadata,
-                                                 this.climatology );
+                input = DefaultDataFactory.getInstance()
+                                          .ofEnsemblePairs(
+                                                  primary,
+                                                  baseline,
+                                                  metadata,
+                                                  baselineMetadata,
+                                                  this.climatology );
             }
             else
             {
@@ -236,7 +295,8 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                     baseline = convertToPairOfDoubles( this.baselinePairs );
                 }
 
-                input = factory.ofSingleValuedPairs( primary,
+                input = DefaultDataFactory.getInstance()
+                                          .ofSingleValuedPairs( primary,
                                                      baseline,
                                                      metadata,
                                                      baselineMetadata,
@@ -247,7 +307,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         {
             String message = "A collection of pairs could not be created at"
                              + " window "
-                             + ( this.progress + 1 )
+                             + ( this.leadIteration + 1 )
                              + " for feature '"
                              + ConfigHelper.getFeatureDescription( this.feature )
                              + "'.";
@@ -258,6 +318,10 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         return input;
     }
 
+    /**
+     * @param pairPairs A set of packaged pairs
+     * @return A list of raw pairs contained within the set of packaged pairs
+     */
     private static List<PairOfDoubleAndVectorOfDoubles>
     extractRawPairs( List<ForecastedPair> pairPairs )
     {
@@ -271,6 +335,10 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         return Collections.unmodifiableList( result );
     }
 
+    /**
+     * @param pairs A set of packaged pairs
+     * @return A list of basis times from a set of packaged pairs
+     */
     private static List<Instant>
     extractBasisTimes( List<ForecastedPair> pairs )
     {
@@ -284,6 +352,10 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         return Collections.unmodifiableList( result );
     }
 
+    /**
+     * @param multiValuedPairs A set of packaged pairs
+     * @return A list of all raw pairs converted into single valued pairs
+     */
     private List<PairOfDoubles>
     convertToPairOfDoubles( List<ForecastedPair> multiValuedPairs )
     {
@@ -304,6 +376,12 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         return pairs;
     }
 
+    /**
+     * @param dataSourceConfig The configuration for the side of data to retrieve
+     * @return A script used to load pair data
+     * @throws SQLException
+     * @throws IOException
+     */
     private String getLoadScript(DataSourceConfig dataSourceConfig)
             throws SQLException, IOException
     {
@@ -311,44 +389,44 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
 
         if ( this.projectDetails.getRight().equals(dataSourceConfig))
         {
-            if (this.rightLoadScript == null)
-            {
-                this.rightLoadScript = Scripter.getLoadScript( this.projectDetails, dataSourceConfig, feature, progress, this.poolingStep );
-            }
-            loadScript = this.rightLoadScript;
+            loadScript = Scripter.getLoadScript( this.projectDetails, dataSourceConfig, feature,
+                                                 leadIteration, this.issueDatesPool );
         }
         else
         {
-            if (this.baselineLoadScript == null)
+            if ( ConfigHelper.isPersistence( projectDetails.getProjectConfig(),
+                                             dataSourceConfig ) )
             {
-                if ( ConfigHelper.isPersistence( projectDetails.getProjectConfig(),
-                                                 dataSourceConfig ) )
-                {
-                    // Find the data we need to form a persistence forecast: the
-                    // basis times from the right side.
-                    List<Instant> basisTimes = InputRetriever.extractBasisTimes( this.primaryPairs );
-                    this.baselineLoadScript =
-                            Scripter.getPersistenceLoadScript( projectDetails,
-                                                               dataSourceConfig,
-                                                               this.feature,
-                                                               basisTimes );
-                }
-                else
-                {
-                    this.baselineLoadScript =
-                            Scripter.getLoadScript( this.projectDetails,
-                                                    dataSourceConfig,
-                                                    this.feature,
-                                                    this.progress,
-                                                    this.poolingStep );
-                }
+                // Find the data we need to form a persistence forecast: the
+                // basis times from the right side.
+                List<Instant> basisTimes = InputRetriever.extractBasisTimes( this.primaryPairs );
+                loadScript =
+                        Scripter.getPersistenceLoadScript( projectDetails,
+                                                           dataSourceConfig,
+                                                           this.feature,
+                                                           basisTimes );
             }
-            loadScript = this.baselineLoadScript;
+            else
+            {
+                loadScript =
+                        Scripter.getLoadScript( this.projectDetails,
+                                                dataSourceConfig,
+                                                this.feature,
+                                                this.leadIteration,
+                                                this.issueDatesPool );
+            }
         }
         return loadScript;
     }
 
     // TODO: REFACTOR
+    /**
+     * Loads pairs from the database and directs them to packaged
+     * @param dataSourceConfig The configuration whose pairs to retrieve
+     * @return A packaged set of pair data
+     * @throws SQLException
+     * @throws IOException
+     */
     private List<ForecastedPair> createPairs( DataSourceConfig dataSourceConfig )
             throws SQLException, IOException
     {
@@ -363,70 +441,36 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         // Use dummy value of MIN to avoid NPE
         Instant valueDate = Instant.MIN;
 
-        Map<Integer, List<Double>> rightValues = new TreeMap<>();
-
         /**
-         * Task #39440
+         * Maps returned values to their position in their returned array.
          *
-         * Alternate Solution (for forecasts):
-         * 1) Get ids for all time series
-         * 2) Instead of doing the full series of joins then the array
-         *    aggregation and sorting, group by time series and return a series
-         *    of pairs of (timeseries_id, aggregate for all leads)
-         *    To do so, the ranges for all timeseries_ids will need to be
-         *    determined and added to the where clause. Your query will look
-         *    like:
+         * Say we retrieve:
          *
-         *    SELECT FV.timeseries_id, AVG(FV.forecasted_value) AS measurement
-         *    FROM wres.ForecastValue FV
-         *    WHERE (
-         *          (FV.timeseries_id >= 1 AND FV.timeseries_id <= 4000)
-         *              OR (FV.timeseries_id >= 9000 AND FV.timeseries_id <= 25000)
-         *        )
-         *        AND FV.lead >= 24
-         *        AND FV.lead <= 48;
+         * row 1: [v1, v2, v3, v4, v5, v6]
+         * row 2: [v1, v2, v3, v4, v5, v6]
+         * row 3: [v1, v2, v3, v4, v5, v6]
+         * row 4: [v1, v2, v3, v4, v5, v6]
+         * row 5: [v1, v2, v3, v4, v5, v6]
          *
-         * 3) Perform the unit conversion on the aggregated values
-         * 4) Determine if the converted aggregation is a valid value for the pull
-         *    (is greater than or equal to min value or less than or equal to
-         *        the max value)
-         * 5) Group all aggregated values in ensemble order
-         *    in collections based on the timeseries initialization date +
-         *    the maximum number of lead hours for the window.
-         * 6) After finding the matching left hand value for each pair of
-         *    (date, [aggregated ensemble/single values...]), convert the
-         *    left and pair to PairOfDoubleAndVectorOfDouble
-         * 7) Add pair object to pair collection
+         * The mapping will become:
          *
-         * Pros:
-         *    -  This should provide a performance improvement on databases
-         *       with a large amount of data for many projects
-         *    -  For a single retrieval on such a system, the current process
-         *       takes ~25 seconds. By using the above query, it took 4.03
-         *       seconds. For a single lead, it took 1.359 seconds.
-         * Cons:
-         *    -  More intermediate steps are required
-         *    -  Even more complicated
-         *    -  Ensembles and their IDs will need to be associated with their
-         *       timeseries_ids
-         *    -  A listing of acceptable timeseries_ids will need to be sorted
-         *       and added to ranges of (min, max) and added to a collection,
-         *       then that collection will need to be used to form the
+         * {
+         *     v1 : [1, 2, 3, 4, 5],
+         *     v2 : [1, 2, 3, 4, 5],
+         *     v3 : [1, 2, 3, 4, 5],
+         *     v4 : [1, 2, 3, 4, 5],
+         *     v5 : [1, 2, 3, 4, 5],
+         *     v6 : [1, 2, 3, 4, 5]
+         * }
          *
-         *       (FV.timeseries_id >= min AND FV.timeseries_id <= max) || ...
+         * This ensures that we can aggregate all the v# values independently
+         * (i.e. the mean of the v1s, the mean of the v2s, etc).
          *
-         *       statements. The min/max statements will need to have
-         *       branching logic so that it is simply
+         * In the end, each created pair will be of the form:
          *
-         *       FV.timeseries_id >= min AND FV.timeseries_id <= max
-         *
-         *       in cases of a single range.
-         *
-         *    -  Most likely a larger memory footprint
-         *    -  Current logic for simulation data will still need to be intact
-         *    -  Refactoring for new logic would require a complete rewrite
-         *       and forking of several core functions
+         * left value : [ agg(v1), agg(v2), agg(v3), agg(v4), agg(v5), agg(v6) ]
          */
+        Map<Integer, List<Double>> rightValues = new TreeMap<>();
 
         try
         {
@@ -436,19 +480,9 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             while(resultSet.next())
             {
                 /**
-                 * aggHour: The hour into the aggregation
-                 * With the grouped aggregation, you might have several
-                 * blocks, each with values an hour in, or two hours in,
-                 * or three, etc. We don't want to mix those while
-                 * aggregating though; we still want to aggregate these
-                 * blocks, but we want to keep each chunk separate.
-                 *
-                 * I tried returning the time of the start of the block,
-                 * but the made calculations take ~3.5 minutes for six
-                 * months of data, but switching to the scale_member set up
-                 * reduced that to 1.25 minutes.  Due to that speed up,
-                 * we are using the scale_member method instead of the more
-                 * straight forward process.
+                 * scale_member : The member of the scale to group into an
+                 * aggregation. If the period of aggregation is six, you can
+                 * have six different scale members: 0, 1, 2, 3, 4, and 5.
                  */
 
                 // TODO: The scale_member doesn't always link basis times; see
@@ -461,9 +495,6 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                 //
                 // See Bug #41816
 
-                // If we have a preexisting scale member and the new one is
-                // either less than the old or the new is more than one than
-                // the previous...
                 if (scaleMember != null &&
                     (!this.projectDetails.shouldScale() || resultSet.getInt( "scale_member" ) <= scaleMember ))
                 {
@@ -486,9 +517,8 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                 }
 
                 scaleMember = resultSet.getInt( "scale_member" );
-                valueDate = Instant.parse( resultSet.getString( "value_date" )
-                                                    .replace( " ", "T" )
-                                                    .concat( "Z" ) );
+                valueDate = Database.getInstant( resultSet, "value_date" );
+
                 lead = Database.getValue( resultSet, "lead" );
 
                 Double[] measurements = (Double[])resultSet.getArray("measurements").getArray();
@@ -537,15 +567,38 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         return Collections.unmodifiableList( pairs );
     }
 
+    /**
+     * Determines whether or not a set of pairs should be added based off of the period
+     * <p>
+     *     A pair should be added if no scaling should occur, if the period is
+     *     empty, or the member is the last possible member for the scale
+     *     (i.e. member 5 of a 6 unit scale)
+     * </p>
+     * @param scaleMember
+     * @return
+     * @throws NoDataException
+     */
     private boolean shouldAddPair(Integer scaleMember) throws NoDataException
     {
+        long period = TimeHelper.unitsToLeadUnits(
+                this.projectDetails.getScale().getUnit().value(),
+                this.projectDetails.getScale().getPeriod()
+        );
+
         return !this.projectDetails.shouldScale() ||
-               scaleMember == TimeHelper.unitsToLeadUnits(
-                       this.projectDetails.getScale().getUnit().value(),
-                       this.projectDetails.getScale().getPeriod()) - 1;
+               period == 0 ||
+               scaleMember == period - 1;
     }
 
 
+    /**
+     * Packages pairs based on persistence forecasting logic
+     * @param dataSourceConfig The specification for the baseline
+     * @param primaryPairs The set of primary pairs that have already been packaged
+     * @return A packaged set of pairs following persistence forecast generation logic
+     * @throws SQLException
+     * @throws IOException
+     */
     private List<ForecastedPair> createPersistencePairs( DataSourceConfig dataSourceConfig,
                                                          List<ForecastedPair> primaryPairs )
             throws SQLException, IOException
@@ -625,6 +678,26 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         return Collections.unmodifiableList( pairs );
     }
 
+    /**
+     * Pairs retrieved values with their observed equivalent, aggregates them
+     * (if necessary), adds them to the overarching list of packaged pairs,
+     * and writes them to the pair output
+     *
+     * <p>
+     *     A pair will not be added if no values were retrieved in the first
+     *     place and values could not be paired.
+     * </p>
+     *
+     * @param pairs The overarching list of pairs
+     * @param valueDate The date of the most recent value added to rightValues
+     * @param rightValues A mapping of values mapped to their position in the
+     *                    set of retrieved data (such as ensemble position)
+     * @param dataSourceConfig The configuration that is driving this pair
+     *                         generation
+     * @param lead The lead time of the most recently added value
+     * @return The list of packaged pairs with a possible new pair added
+     * @throws NoDataException
+     */
     private List<ForecastedPair> addPair( List<ForecastedPair> pairs,
                                           Instant valueDate,
                                           Map<Integer, List<Double>> rightValues,
@@ -648,9 +721,20 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         return pairs;
     }
 
-    private Metadata buildMetadata (DataFactory dataFactory, DataSourceConfig sourceConfig)
+    /**
+     * Creates the metadata object containing information about the location,
+     * variable, unit of measurement, lead time, and time window for the
+     * eventual MetricInput object
+     * @param sourceConfig The configuration of the data source for this metadata
+     * @return A metadata object that may be used to create a MetricInput Object
+     * @throws SQLException
+     * @throws IOException
+     */
+    private Metadata buildMetadata (DataSourceConfig sourceConfig)
             throws SQLException, IOException
     {
+        DataFactory dataFactory = DefaultDataFactory.getInstance();
+
         MetadataFactory metadataFactory = dataFactory.getMetadataFactory();
         Dimension dim = metadataFactory.getDimension( this.projectDetails.getDesiredMeasurementUnit());
 
@@ -676,7 +760,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                                        + "the window could not be determined." );
             }
 
-            lastLead = this.progress *
+            lastLead = this.leadIteration *
                        this.projectDetails.getLeadFrequency() +
                        this.projectDetails.getWindowWidth() * 1.0 +
                        offset;
@@ -684,13 +768,22 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
 
         TimeWindow timeWindow = ConfigHelper.getTimeWindow( this.projectDetails,
                                                             lastLead.longValue(),
-                                                            this.poolingStep );
+                                                            this.issueDatesPool );
 
         return metadataFactory.getMetadata( dim,
                                             datasetIdentifier,
                                             timeWindow );
     }
 
+    /**
+     * Pairs a collection of values with their left hand counter part and performs
+     * any needed aggregation
+     * @param lastDate The last valid date for the data contained within rightValues
+     * @param rightValues A mapping of values to where they were retrieved in
+     *                    the data retrieved from the database
+     * @return A raw pair that may be used to build up a MetricInput
+     * @throws NoDataException
+     */
     private PairOfDoubleAndVectorOfDoubles getPair( Instant lastDate,
                                                     Map<Integer, List<Double>> rightValues)
             throws NoDataException
@@ -780,6 +873,12 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                                                                         .size()] ) );
     }
 
+    /**
+     * Creates a task to write pair data to a file
+     * @param date The date of when the pair exists
+     * @param pair Pair data that will be written
+     * @param dataSourceConfig The configuration that led to the creation of the pairs
+     */
     private void writePair( Instant date,
                             ForecastedPair pair,
                             DataSourceConfig dataSourceConfig )
@@ -789,13 +888,15 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
 
         for ( DestinationConfig dest : destinationConfigs )
         {
+            // TODO: Since we are passing the ForecastedPair object and the ProjectDetails,
+            // we can probably eliminate a lot of the arguments
             PairWriter saver = new PairWriter( dest,
                                                date,
                                                this.feature,
-                                               this.progress,
+                                               this.leadIteration,
                                                pair.getValues(),
                                                isBaseline,
-                                               this.poolingStep,
+                                               this.issueDatesPool,
                                                this.projectDetails,
                                                (int) pair.getLeadHours() );
             Executor.submitHighPriorityTask( saver);
@@ -809,6 +910,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
     }
 
 
+    // TODO: Should we use this as an argument structure to pass to the PairWriter?
     private static final class ForecastedPair
     {
         private final Instant basisTime;

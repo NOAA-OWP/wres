@@ -10,12 +10,15 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -45,9 +48,14 @@ import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
 import wres.io.reading.TimeSeriesValues;
 import wres.util.FormattedStopwatch;
+import wres.util.NotImplementedException;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
 
+/**
+ * An Interface structure used for organizing database operations and providing
+ * common database operations
+ */
 public final class Database {
     
     private Database(){}
@@ -92,7 +100,8 @@ public final class Database {
 	 * @throws NoSuchMethodException Thrown if the current implementation of
 	 * the JDBC PostgreSQL driver does not have the ability to copy values
 	 */
-    private static Method getCopyAPI() throws NoSuchMethodException {
+    private static Method getCopyAPI() throws NoSuchMethodException
+    {
 		if (copyAPI == null)
 		{
 			copyAPI = PGConnection.class.getMethod("getCopyAPI");
@@ -123,6 +132,12 @@ public final class Database {
 		Database.storedIngestTasks.add(task);
 	}
 
+    /**
+     * Stores a simple task that will ingest data. The stored task will later be
+     * evaluated for completion.
+     * @param ingestTask A task that will ingest source data into the database
+     * @return The future result of the task
+     */
 	public static Future<?> ingest(WRESRunnable ingestTask)
 	{
 		Future<?> result = Database.execute( ingestTask );
@@ -130,6 +145,13 @@ public final class Database {
 		return result;
 	}
 
+    /**
+     * Stores a simple task that will ingest data. The stored task will later be
+     * evaluated for completion.
+     * @param <U> The type of value that the ingestTask should return
+     * @param ingestTask A task that will ingest source data into the database
+     * @return The future result of the task
+     */
 	public static <U> Future<U> ingest(WRESCallable<U> ingestTask)
 	{
 		Future<U> result = Database.submit( ingestTask );
@@ -705,8 +727,7 @@ public final class Database {
      */
 	public static synchronized void buildInstance()
 	{
-
-		throw new RuntimeException("Database.buildInstance() is not ready for execution.");
+		throw new NotImplementedException("Database.buildInstance() is not ready for execution.");
 
         /*Connection connection = null;
 		try {
@@ -921,6 +942,72 @@ public final class Database {
 		return (U)resultSet.getObject( fieldName);
 	}
 
+    /**
+     * Converts either a database Timestamp, epoch seconds (represented by an
+     * Integer, Long, or Double), or text into an Instant
+     * @param resultSet The resultSet containing the data to convert
+     * @param fieldName The field that holds the value to convert
+     * @return An Instant in time
+     * @throws SQLException Thrown if the column for the field name doesn't exist
+     * @throws SQLException Thrown if the data type held in the field cannot
+     * be converted to an instant
+     */
+	public static Instant getInstant(ResultSet resultSet, String fieldName)
+            throws SQLException
+    {
+        Instant result = null;
+
+        if (!Database.hasColumn( resultSet, fieldName ))
+        {
+            throw new SQLException( "The field '" + fieldName + "' is not "
+                                    + "present in the result set. An instant "
+                                    + "cannot be created." );
+        }
+
+        if (resultSet.getObject( fieldName ) instanceof String)
+        {
+            result = Instant.parse( resultSet.getString( fieldName )
+                                             .replace( " ", "T" )
+                                             .concat( "Z" )
+            );
+        }
+        else if (resultSet.getObject( fieldName ) instanceof Integer)
+        {
+			result = Instant.ofEpochSecond( resultSet.getInt( fieldName ) );
+        }
+        else if (resultSet.getObject( fieldName ) instanceof Long)
+        {
+			result = Instant.ofEpochSecond( resultSet.getLong( fieldName ) );
+        }
+        else if (resultSet.getObject( fieldName ) instanceof Double)
+        {
+			Double epochSeconds = (Double)resultSet.getObject( fieldName );
+			result = Instant.ofEpochSecond( epochSeconds.longValue() );
+        }
+        else if (resultSet.getObject( fieldName ) instanceof java.sql.Timestamp)
+        {
+            // Attempting to convert directly from Timestamp to Instant will
+            // result in the wrong time zone
+			result = resultSet.getTimestamp( fieldName )
+                              .toLocalDateTime()
+                              .toInstant( ZoneOffset.UTC );
+        }
+        else
+        {
+            throw new SQLException( "The column type for '" +
+                                    fieldName +
+                                    "' cannot be converted into an Instance." );
+        }
+
+        return result;
+    }
+
+    /**
+     * Checks if the specified column is in the given result set
+     * @param resultSet The set of data retrieved from the database
+     * @param columnName The name of the column to check for
+     * @return Whether or not the column exists
+     */
 	public static boolean hasColumn(ResultSet resultSet, String columnName)
 	{
 		boolean columnExists = false;
@@ -1006,6 +1093,78 @@ public final class Database {
 		return collection;
 	}
 
+    /**
+     * Populates the given map with the key column and value column from the
+     * given query
+     *
+     * <p>
+     *     If a query returns:
+     *</p>
+     *     <table>
+     *         <caption>Query Results</caption>
+     *         <tr>
+     *             <th>key</th>
+     *             <th>value</th>
+     *         </tr>
+     *         <tr>
+     *             <td>1</td>
+     *             <td>"Alabama"</td>
+     *         </tr>
+     *         <tr>
+     *             <td>2</td>
+     *             <td>"Delaware"</td>
+     *         </tr>
+     *         <tr>
+     *             <td>3</td>
+     *             <td>"Kansas"</td>
+     *         </tr>
+     *         <tr>
+     *             <td>4</td>
+     *             <td>"Arkansas"</td>
+     *         </tr>
+     *     </table>
+     *<p>
+     *     and the caller dictates that the label for the key is "key" and the
+     *     label for the value is "value", it may populate the map such that it
+     *     looks like:
+     * </p>
+     *
+     *     <table>
+     *         <caption>Resulting Map</caption>
+     *         <tr>
+     *             <td>{</td>
+     *             <td></td>
+     *         </tr>
+     *         <tr>
+     *             <td></td>
+     *             <td>1 -&gt; "Alabama"</td>
+     *         </tr>
+     *         <tr>
+     *             <td></td>
+     *             <td>2 -&gt; "Delaware"</td>
+     *         </tr>
+     *         <tr>
+     *             <td></td>
+     *             <td>3 -&gt; "Kansas"</td>
+     *         </tr>
+     *         <tr>
+     *             <td></td>
+     *             <td>4 -&gt; "Arkansas"</td>
+     *         </tr>
+     *         <tr>
+     *             <td>}</td>
+     *             <td></td>
+     *         </tr>
+     *     </table>
+     *
+     * @param map The map to populate
+     * @param query The script that will retrieve the values
+     * @param keyLabel The label for the column that will serve as the key
+     * @param valueLabel The label for the column that will serve as the value
+     * @return The updated map
+     * @throws SQLException Thrown if the given query fails
+     * @throws SQLException Thrown if the expected columns don't exist
+     */
 	public static Map populateMap(final Map map,
 								  final String query,
 								  final String keyLabel,
@@ -1015,10 +1174,7 @@ public final class Database {
 		Connection connection = null;
 		ResultSet results = null;
 
-		if (map == null)
-		{
-			throw new NullPointerException( "The map passed into 'populateMap' was null." );
-		}
+        Objects.requireNonNull(map,"The map passed into 'populateMap' was null." );
 
 		if (LOGGER.isTraceEnabled())
 		{
@@ -1065,6 +1221,20 @@ public final class Database {
 		return map;
 	}
 
+    /**
+     * Stores all values from a query in a format divorced from any connections
+     * to the database
+     *
+     * <p>
+     *     A database result set is closed if the statement that creates it is
+     *     closed and that statement is closed if the connection is closed. If
+     *     a result set needs to exist outside the scope of its connection, it
+     *     needs to be stored in a different object
+     * </p>
+     * @param query The query which will create the resulting set of data
+     * @return All data resulting from the query
+     * @throws SQLException Thrown if the query fails
+     */
 	public static DataSet getDataSet(String query) throws SQLException
 	{
 		Connection connection = null;
@@ -1214,6 +1384,19 @@ public final class Database {
         return results; 
     }
 
+    /**
+     * Creates a timer object that will write a query to the log after a short
+     * amount of time
+     *
+     * <p>
+     *     If the caller calls "timer.cancel()" before the timer goes to store
+     *     the query, nothing is ever written. If this is used, only queries that
+     *     take longer than that short amount of time will be written to the log.
+     *     This can be used to spot long running queries.
+     * </p>
+     * @param query The query to log
+     * @return A timer that will log the given script after a short period of time
+     */
     public static Timer createScriptTimer(final String query)
 	{
 		TimerTask task = new TimerTask() {
