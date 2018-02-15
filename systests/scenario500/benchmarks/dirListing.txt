@@ -1,2 +1,3 @@
-FAKE1.csv
+FAKE1_MEAN_ERROR_SQIN.csv
+FAKE1_SAMPLE_SIZE_SQIN.csv
 pairs.csv
