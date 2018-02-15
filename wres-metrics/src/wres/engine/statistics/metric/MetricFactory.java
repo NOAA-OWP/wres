@@ -29,7 +29,7 @@ import wres.datamodel.outputs.PairedOutput;
 import wres.engine.statistics.metric.MetricCollection.MetricCollectionBuilder;
 import wres.engine.statistics.metric.SampleSize.SampleSizeBuilder;
 import wres.engine.statistics.metric.categorical.ContingencyTable;
-import wres.engine.statistics.metric.categorical.CriticalSuccessIndex;
+import wres.engine.statistics.metric.categorical.ThreatScore;
 import wres.engine.statistics.metric.categorical.EquitableThreatScore;
 import wres.engine.statistics.metric.categorical.FrequencyBias;
 import wres.engine.statistics.metric.categorical.PeirceSkillScore;
@@ -1118,16 +1118,16 @@ public class MetricFactory
     }
 
     /**
-     * Return a default {@link CriticalSuccessIndex} function.
+     * Return a default {@link ThreatScore} function.
      * 
-     * @return a default {@link CriticalSuccessIndex} function
+     * @return a default {@link ThreatScore} function
      * @throws MetricParameterException if one or more parameter values is incorrect 
      */
 
-    public CriticalSuccessIndex ofCriticalSuccessIndex() throws MetricParameterException
+    public ThreatScore ofCriticalSuccessIndex() throws MetricParameterException
     {
         buildDichotomousScalarStore();
-        return (CriticalSuccessIndex) dichotomousScoreCol.get( MetricConstants.CRITICAL_SUCCESS_INDEX );
+        return (ThreatScore) dichotomousScoreCol.get( MetricConstants.THREAT_SCORE );
     }
 
     /**
@@ -1547,8 +1547,8 @@ public class MetricFactory
         if ( Objects.isNull( dichotomousScoreCol ) )
         {
             dichotomousScoreCol = new EnumMap<>( MetricConstants.class );
-            dichotomousScoreCol.put( MetricConstants.CRITICAL_SUCCESS_INDEX,
-                                     (CriticalSuccessIndex) new CriticalSuccessIndex.CriticalSuccessIndexBuilder().setOutputFactory( outputFactory )
+            dichotomousScoreCol.put( MetricConstants.THREAT_SCORE,
+                                     (ThreatScore) new ThreatScore.CriticalSuccessIndexBuilder().setOutputFactory( outputFactory )
                                                                                                                   .build() );
             dichotomousScoreCol.put( MetricConstants.EQUITABLE_THREAT_SCORE,
                                      (EquitableThreatScore) new EquitableThreatScore.EquitableThreatScoreBuilder().setOutputFactory( outputFactory )

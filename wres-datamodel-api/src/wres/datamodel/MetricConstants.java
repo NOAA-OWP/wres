@@ -86,10 +86,10 @@ public enum MetricConstants
     PEARSON_CORRELATION_COEFFICIENT( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCORE ),
 
     /**
-     * Identifier for a Critical Success Index.
+     * Identifier for a Threat Score.
      */
 
-    CRITICAL_SUCCESS_INDEX( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCORE ),
+    THREAT_SCORE( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCORE ),
 
     /**
      * Identifier for an Equitable Threat Score.

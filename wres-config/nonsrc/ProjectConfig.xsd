@@ -211,7 +211,7 @@
             <xs:enumeration value="pearson correlation coefficient" />
             <xs:enumeration value="continuous ranked probability score" />
             <xs:enumeration value="continuous ranked probability skill score" />
-            <xs:enumeration value="critical success index" />
+            <xs:enumeration value="threat score" />
             <xs:enumeration value="equitable threat score" />
             <xs:enumeration value="frequency bias" />
             <xs:enumeration value="index of agreement" />
