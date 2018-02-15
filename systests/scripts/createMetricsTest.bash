@@ -36,18 +36,34 @@ do
 		#echo $value
 		if [ -f sorted_pairs.csv ] # just double check
 		then
-			Rscript ../../rsrc/CheckMetrics.R sorted_pairs.csv "$ename" $value 2>&1 | tee -a testMetricsResults.txt
+			#Rscript ../../rsrc/CheckMetrics.R sorted_pairs.csv "$ename" $value 2>&1 | tee -a testMetricsResults.txt
+			(Rscript ../../rsrc/CheckMetrics.R sorted_pairs.csv "$ename" $value > temp1.txt) 2> error.txt 
+			head -6 temp1.txt > header.txt
+			sed -n "7,$"p temp1.txt | gawk '{print($1 "          "  $3)}' > metricsValues.txt
 		fi
 
 		# compare the output of metrics values versus the *.csv file 
 		row=2 # start at row 2
+		cat /dev/null > fileValues.txt
 		while [ $row -le $numberOfRows ]
 		do
-			echo -n "Cell $row,$column ------------ " 2>&1 | tee -a testMetricsResults.txt
+			#echo -n "Cell $row,$column ------------ " 2>&1 | tee -a testMetricsResults.txt
 			# print the field value at row,column in CSV_FILE
-			sed -n "$row"p $CSV_FILE | gawk -F, -v column=$column '{print $column}' 2>&1 | tee -a testMetricsResults.txt
+			#sed -n "$row"p $CSV_FILE | gawk -F, -v column=$column '{print $column}' 2>&1 | tee -a testMetricsResults.txt
+			sed -n "$row"p $CSV_FILE | gawk -F, -v column=$column '{print $column}' >> fileValues.txt 
 			row=`expr $row + 1` # next row
 		done 
+		if [ -f joinFiles.txt ]
+		then
+			rm joinFiles.txt
+		fi
+		pwd > joinFiles.txt
+		echo "$CSV_FILE" >> joinFiles.txt
+		cat header.txt >> joinFiles.txt
+		../../scripts/joinFiles.py # join metricsValues.txt and fileValues.txt append to joinFiles.txt
+		#cat joinFiles.txt >> testMetricsResults.txt
+		cat joinFiles.txt | tee -a testMetricsResults.txt
+		echo "" | tee -a testMetricsResults.txt
 		# next column
 		column=`expr $column + 1`
 	done
