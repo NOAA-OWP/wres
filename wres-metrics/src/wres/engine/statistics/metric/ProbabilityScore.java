@@ -28,7 +28,7 @@ import wres.datamodel.outputs.ScoreOutput;
  * @version 0.1
  * @since 0.1
  */
-public interface ProbabilityScore<S extends MetricInput<?>, T extends ScoreOutput<?>> extends Score<S,T>
+public interface ProbabilityScore<S extends MetricInput<?>, T extends ScoreOutput<?,T>> extends Score<S,T>
 {
 
     /**

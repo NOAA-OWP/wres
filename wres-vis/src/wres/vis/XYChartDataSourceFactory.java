@@ -446,7 +446,7 @@ public abstract class XYChartDataSourceFactory
                     throw new IllegalArgumentException( "The named categories are not consistent across all provided input." );
                 }
 
-                Duration durationStat = output.getValue( metric );
+                Duration durationStat = output.getComponent( metric ).getData();
                 yValues[index] = durationStat.toHours();
                 index++;
             }

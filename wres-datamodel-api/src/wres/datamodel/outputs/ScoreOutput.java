@@ -10,22 +10,24 @@ import wres.datamodel.MetricConstants;
  * An output associated with a score. A score may contain one or more components, such as the components of a score
  * decomposition or the values associated with alternative methods of calculation. 
  * 
+ * @param <T> the raw type of the score
+ * @param <U> the score component type
  * @author james.brown@hydrosolved.com
  * @version 0.2
  * @since 0.1
  */
 
-public interface ScoreOutput<T> extends MetricOutput<T>, Iterable<Pair<MetricConstants, T>>
+public interface ScoreOutput<T, U extends ScoreOutput<T, ?>> extends MetricOutput<T>, Iterable<Pair<MetricConstants, T>>
 {
 
     /**
      * Returns the value associated with a prescribed {@link MetricConstants} in the input.
      * 
      * @param component the component required
-     * @return the scalar value associated with the component or null if the component does not exist
+     * @return the score associated with the component or null if the component does not exist
      */
 
-    T getValue( MetricConstants component );
+    U getComponent( MetricConstants component );
 
     /**
      * Returns <code>true</code> if the score has the component specified, <code>false</code> otherwise.
@@ -43,11 +45,11 @@ public interface ScoreOutput<T> extends MetricOutput<T>, Iterable<Pair<MetricCon
      */
 
     Set<MetricConstants> getComponents();
-    
+
     /**
      * Returns the score component that corresponds to {@link MetricConstants#MAIN}, or the first component in a store
-     * that contains only one component, otherwise null. Use {@link #getValue(MetricConstants)} to return a specific
-     * value.
+     * that contains only one component, otherwise null. Use {@link #getComponent(MetricConstants)} to return a specific
+     * component.
      * 
      * @return the component that corresponds to {@link MetricConstants#MAIN}, or the first component in a store of one
      *            component, otherwise null
