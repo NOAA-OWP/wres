@@ -1,2 +1,3 @@
-GLOO2.csv
+GLOO2_MEAN_ERROR_QINE.csv
+GLOO2_SAMPLE_SIZE_QINE.csv
 pairs.csv
