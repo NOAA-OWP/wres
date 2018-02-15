@@ -59,7 +59,6 @@ import wres.io.Operations;
 import wres.io.config.ConfigHelper;
 import wres.io.config.ProjectConfigPlus;
 import wres.io.data.details.ProjectDetails;
-import wres.io.reading.IngestException;
 import wres.io.retrieval.InputGenerator;
 import wres.io.retrieval.IterationFailedException;
 import wres.io.utilities.NoDataException;
@@ -422,15 +421,6 @@ public class ProcessorHelper
                                                  feature,
                                                  processor.getCachedMetricOutput() );
 
-            }
-            catch ( final ProjectConfigException pce )
-            {
-                throw new WresProcessingException(
-                                                   "Please include valid numeric output clause(s) in"
-                                                   + " project configuration. Example: <destination>"
-                                                   + "<path>c:/Users/myname/wres_output/</path>"
-                                                   + "</destination>",
-                                                   pce );
             }
             catch ( IOException | MetricOutputAccessException e )
             {

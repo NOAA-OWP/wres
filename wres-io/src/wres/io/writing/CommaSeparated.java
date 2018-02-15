@@ -12,6 +12,7 @@ import java.text.DecimalFormat;
 import java.text.Format;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -23,13 +24,14 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import wres.config.ProjectConfigException;
 import wres.config.generated.DestinationConfig;
-import wres.config.generated.DestinationType;
 import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
+import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.Threshold;
+import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.MapKey;
@@ -67,8 +69,7 @@ public class CommaSeparated
      * @param projectConfig the project configuration
      * @param feature the feature
      * @param storedMetricOutput the stored output
-     * @throws IOException when the writing itself fails
-     * @throws ProjectConfigException when no output files are specified
+     * @throws IOException when the writing fails
      * @throws NullPointerException when any of the arguments are null
      * @throws IllegalArgumentException when destination has bad decimalFormat
      */
@@ -76,7 +77,7 @@ public class CommaSeparated
     public static void writeOutputFiles( ProjectConfig projectConfig,
                                          Feature feature,
                                          MetricOutputForProjectByTimeAndThreshold storedMetricOutput )
-            throws IOException, ProjectConfigException
+            throws IOException
     {
         Objects.requireNonNull( storedMetricOutput,
                                 "Metric outputs must not be null." );
@@ -84,59 +85,48 @@ public class CommaSeparated
                                 "The feature must not be null." );
         Objects.requireNonNull( projectConfig,
                                 "The project config must not be null." );
-
-        if ( projectConfig.getOutputs() == null
-             || projectConfig.getOutputs().getDestination() == null
-             || projectConfig.getOutputs().getDestination().isEmpty() )
+        try
         {
-            String message = "No numeric output files specified for project.";
-            throw new ProjectConfigException( projectConfig.getOutputs(),
-                                              message );
-        }
-
-        for ( DestinationConfig d : projectConfig.getOutputs()
-                                                 .getDestination() )
-        {
-            if ( d.getType() == DestinationType.NUMERIC )
+            if ( projectConfig.getOutputs() == null
+                 || projectConfig.getOutputs().getDestination() == null
+                 || projectConfig.getOutputs().getDestination().isEmpty() )
             {
-                SortedMap<TimeWindow, StringJoiner> rows = new TreeMap<>();
-                
-                // Add rows for all score types
-                addRowsForAllScoreTypes( d, storedMetricOutput, rows );
-                
-                File outputDirectory = ConfigHelper.getDirectoryFromDestinationConfig( d );
+                String message = "No numeric output files specified for project.";
+                throw new ProjectConfigException( projectConfig.getOutputs(),
+                                                  message );
+            }
+            // In principle, each destination could have a different formatter, so 
+            // the output must be generated separately for each destination
+            List<DestinationConfig> numericalDestinations = ConfigHelper.getNumericalDestinations( projectConfig );
+            for ( DestinationConfig d : numericalDestinations )
+            {
+                writeAllScoreOutputTypes( d, storedMetricOutput );
 
-                Path outputPath = Paths.get( outputDirectory.toString(),
-                                             feature.getLocationId()
-                                             + ".csv" );
-
-                try ( BufferedWriter w = Files.newBufferedWriter( outputPath,
-                                                                  StandardCharsets.UTF_8,
-                                                                  StandardOpenOption.CREATE,
-                                                                  StandardOpenOption.TRUNCATE_EXISTING ) )
-                {
-                    for ( StringJoiner row : rows.values() )
-                    {
-                        w.write( row.toString() );
-                        w.write( System.lineSeparator() );
-                    }
-                }
             }
         }
+        catch ( final ProjectConfigException pce )
+        {
+            throw new IOException( "Please include valid numeric output clause(s) in"
+                                   + " the project configuration. Example: <destination>"
+                                   + "<path>c:/Users/myname/wres_output/</path>"
+                                   + "</destination>",
+                                   pce );
+        }
     }
-    
+
     /**
      * Mutates the input to append rows for all score outputs.
      *     
-     * @param d the destination configuration    
+     * @param destinationConfig the destination configuration    
      * @param storedMetricOutput the output to use to build rows
      * @param rows the store of rows to which additional rows should be appended
-     * @throws IOException if the rows could not be added
+     * @throws ProjectConfigException if the path for writing the output cannot be established
+     * @throws IOException if the output cannot be written
      */
 
-    private static void addRowsForAllScoreTypes( DestinationConfig d,
-                                                 MetricOutputForProjectByTimeAndThreshold storedMetricOutput,
-                                                 SortedMap<TimeWindow, StringJoiner> rows ) throws IOException
+    private static void writeAllScoreOutputTypes( DestinationConfig destinationConfig,
+                                                  MetricOutputForProjectByTimeAndThreshold storedMetricOutput )
+            throws IOException, ProjectConfigException
     {     
         try
         {
@@ -144,26 +134,24 @@ public class CommaSeparated
             if ( storedMetricOutput.hasOutput( MetricOutputGroup.DOUBLE_SCORE ) )
             {
                 DecimalFormat decimalFormatter = null;
-                if ( d.getDecimalFormat() != null
-                     && !d.getDecimalFormat().isEmpty() )
+                if ( destinationConfig.getDecimalFormat() != null
+                     && !destinationConfig.getDecimalFormat().isEmpty() )
                 {
                     decimalFormatter = new DecimalFormat();
-                    decimalFormatter.applyPattern( d.getDecimalFormat() );
+                    decimalFormatter.applyPattern( destinationConfig.getDecimalFormat() );
                 }
-                CommaSeparated.addRowsForOneScoreType( storedMetricOutput.getDoubleScoreOutput(),
-                                                       decimalFormatter,
-                                                       rows );
+                CommaSeparated.writeOneScoreOutputType( destinationConfig,
+                                                        storedMetricOutput.getDoubleScoreOutput(),
+                                                        decimalFormatter );
             }
             // Scores with duration output
             if ( storedMetricOutput.hasOutput( MetricOutputGroup.DURATION_SCORE ) )
             {
                 // TODO: Add an optional formatter here for the duration type
                 Format durationFormatter = null;
-                
-
-                CommaSeparated.addRowsForOneScoreType( storedMetricOutput.getDurationScoreOutput(),
-                                                       durationFormatter,
-                                                       rows );
+                CommaSeparated.writeOneScoreOutputType( destinationConfig,
+                                                        storedMetricOutput.getDurationScoreOutput(),
+                                                        durationFormatter );
             }
         }
         catch ( MetricOutputAccessException e )
@@ -176,19 +164,21 @@ public class CommaSeparated
      * Mutates the input, adding rows for one score type.
      *
      * @param <T> the score component type
+     * @param destinationConfig the destination configuration    
      * @param output the score output to iterate through
      * @param formatter optional formatter, can be null
-     * @param rows the store of output to which results should be appended
+     * @throws ProjectConfigException if the path for writing the output cannot be established
+     * @throws IOException if the output cannot be written
      */
 
-    private static <T extends ScoreOutput<?,T>> void addRowsForOneScoreType(
-            MetricOutputMultiMapByTimeAndThreshold<T> output,
-            Format formatter,
-            SortedMap<TimeWindow, StringJoiner> rows )
+    private static <T extends ScoreOutput<?, T>> void writeOneScoreOutputType( DestinationConfig destinationConfig,
+                                                                               MetricOutputMultiMapByTimeAndThreshold<T> output,
+                                                                               Format formatter )
+            throws ProjectConfigException, IOException
     {
-        StringJoiner headerRow = new StringJoiner( "," );
+        StringJoiner headerBase = new StringJoiner( "," );
 
-        headerRow.add( "EARLIEST" + HEADER_DELIMITER + "TIME" )
+        headerBase.add( "EARLIEST" + HEADER_DELIMITER + "TIME" )
                  .add( "LATEST" + HEADER_DELIMITER + "TIME" )
                  .add( "EARLIEST" + HEADER_DELIMITER + "LEAD" + HEADER_DELIMITER + "HOUR" )
                  .add( "LATEST" + HEADER_DELIMITER + "LEAD" + HEADER_DELIMITER + "HOUR" );
@@ -196,10 +186,16 @@ public class CommaSeparated
         // Loop across scores
         for ( Map.Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<T>> m : output.entrySet() )
         {
-            addRowsForOneScore( m.getKey().getKey(), m.getValue(), headerRow, rows, formatter );
+            StringJoiner headerRow = new  StringJoiner( "," );
+            headerRow.merge( headerBase );
+            SortedMap<TimeWindow, StringJoiner> rows =
+                    getRowsForOneScore( m.getKey().getKey(), m.getValue(), headerRow, formatter );
+            //Add the header row
+            rows.put( HEADER_INDEX, headerRow );
+            //Write the output
+            writeTabularOutputToFile( destinationConfig, rows, m.getValue().getMetadata() );
         }
 
-        rows.put( HEADER_INDEX, headerRow );
     }
 
     /**
@@ -209,15 +205,15 @@ public class CommaSeparated
      * @param scoreName the score name
      * @param score the score results
      * @param headerRow the header row
-     * @param rows the data rows
      * @param formatter optional formatter, can be null
+     * @return the rows to write
      */
 
-    private static <T extends ScoreOutput<?,T>> void addRowsForOneScore( MetricConstants scoreName,
-                                            MetricOutputMapByTimeAndThreshold<T> score,
-                                            StringJoiner headerRow,
-                                            SortedMap<TimeWindow, StringJoiner> rows,
-                                            Format formatter )
+    private static <T extends ScoreOutput<?, T>> SortedMap<TimeWindow, StringJoiner>
+            getRowsForOneScore( MetricConstants scoreName,
+                                MetricOutputMapByTimeAndThreshold<T> score,
+                                StringJoiner headerRow,
+                                Format formatter )
     {
         // Slice score by components
         Map<MetricConstants, MetricOutputMapByTimeAndThreshold<T>> helper =
@@ -226,6 +222,7 @@ public class CommaSeparated
                                   .filterByMetricComponent( score );
 
         String outerName = scoreName.toString();
+        SortedMap<TimeWindow, StringJoiner> returnMe = new TreeMap<>();
         // Loop across components
         for ( Entry<MetricConstants, MetricOutputMapByTimeAndThreshold<T>> e : helper.entrySet() )
         {
@@ -235,8 +232,9 @@ public class CommaSeparated
             {
                 name = name + HEADER_DELIMITER + e.getKey().toString();
             }
-            addRowsForOneScoreComponent( name, e.getValue(), headerRow, rows, formatter );
+            addRowsForOneScoreComponent( name, e.getValue(), headerRow, returnMe, formatter );
         }
+        return returnMe;
     }   
     
     /**
@@ -302,5 +300,44 @@ public class CommaSeparated
             }
         }
     }       
+    
+    /**
+     * Writes the raw tabular output to file. Uses the supplied metadata for file naming.
+     * 
+     * @param destinationConfig the destination configuration
+     * @param rows the tabular data to write
+     * @param meta the output metadata used for file naming
+     * @throws ProjectConfigException if the path for writing the output cannot be established
+     * @throws IOException if the output cannot be written
+     */
 
+    private static void writeTabularOutputToFile( DestinationConfig destination,
+                                                  SortedMap<TimeWindow, StringJoiner> rows,
+                                                  MetricOutputMetadata meta )
+            throws ProjectConfigException, IOException
+    {
+               
+        File outputDirectory = ConfigHelper.getDirectoryFromDestinationConfig( destination );
+        DatasetIdentifier identifier = meta.getIdentifier();
+        Path outputPath = Paths.get( outputDirectory.toString(),
+                                     identifier.getGeospatialID()
+                                     + "_"
+                                     +meta.getMetricID().name()
+                                     +"_"
+                                     +identifier.getVariableID()
+                                     + ".csv" );
+
+        try ( BufferedWriter w = Files.newBufferedWriter( outputPath,
+                                                          StandardCharsets.UTF_8,
+                                                          StandardOpenOption.CREATE,
+                                                          StandardOpenOption.TRUNCATE_EXISTING ) )
+        {
+            for ( StringJoiner row : rows.values() )
+            {
+                w.write( row.toString() );
+                w.write( System.lineSeparator() );
+            }
+        }
+    }
+    
 }

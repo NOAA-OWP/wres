@@ -85,12 +85,12 @@ public class CommaSeparatedTest
 //    }
 
     @Test
-    public void writeDoubleScoreFile()
+    public void writeDoubleScores()
             throws ProjectConfigException, IOException, InterruptedException,
             ExecutionException
     {
-
-        // location id will be filename:
+        
+        // location id
         final String LID = "DRRC2";
 
         // Create fake outputs
@@ -212,18 +212,38 @@ public class CommaSeparatedTest
         CommaSeparated.writeOutputFiles( projectConfig, feature, output );
 
         // read the file, verify it has what we wanted:
-        Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ),
-                                     LID + ".csv" );
-        List<String> result = Files.readAllLines( pathToFile );
+        Path pathToFirstFile = Paths.get( System.getProperty( "java.io.tmpdir" ),
+                                     "DRRC2_MEAN_SQUARE_ERROR_SQIN.csv" );
+        List<String> firstResult = Files.readAllLines( pathToFirstFile );
 
-        assertTrue( result.get(0).contains( "," ) );
-        assertTrue( result.get(0).contains( "ERROR" ) );
-        assertTrue( result.get( 1 )
+        assertTrue( firstResult.get(0).contains( "," ) );
+        assertTrue( firstResult.get(0).contains( "ERROR" ) );
+        assertTrue( firstResult.get( 1 )
                           .equals( "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,1,1,"
-                                  + "3.0,2.0,1.0" ) );
+                                  + "1.0" ) );
+        Path pathToSecondFile = Paths.get( System.getProperty( "java.io.tmpdir" ),
+                                          "DRRC2_MEAN_ERROR_SQIN.csv" );
+        List<String> secondResult = Files.readAllLines( pathToSecondFile );
+
+        assertTrue( secondResult.get( 0 ).contains( "," ) );
+        assertTrue( secondResult.get( 0 ).contains( "ERROR" ) );
+        assertTrue( secondResult.get( 1 )
+                          .equals( "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,1,1,"
+                                   + "2.0" ) );
+        Path pathToThirdFile = Paths.get( System.getProperty( "java.io.tmpdir" ),
+                                           "DRRC2_MEAN_ABSOLUTE_ERROR_SQIN.csv" );
+        List<String> thirdResult = Files.readAllLines( pathToThirdFile );
+
+        assertTrue( thirdResult.get( 0 ).contains( "," ) );
+        assertTrue( thirdResult.get( 0 ).contains( "ERROR" ) );
+        assertTrue( thirdResult.get( 1 )
+                                .equals( "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,1,1,"
+                                         + "3.0" ) );
 
         // If all succeeded, remove the file, otherwise leave to help debugging.
-        Files.deleteIfExists( pathToFile );
+        Files.deleteIfExists( pathToFirstFile );
+        Files.deleteIfExists( pathToSecondFile );
+        Files.deleteIfExists( pathToThirdFile );
     }
     
     /**
@@ -236,12 +256,12 @@ public class CommaSeparatedTest
      */
     
     @Test
-    public void writeDurationScoreFile()
+    public void writeDurationScores()
             throws ProjectConfigException, IOException, InterruptedException,
             ExecutionException
     {
 
-        // location id will be filename:
+        // location id
         final String LID = "DOLC2";
 
         // Create fake outputs
@@ -355,7 +375,7 @@ public class CommaSeparatedTest
 
         // read the file, verify it has what we wanted:
         Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ),
-                                     LID + ".csv" );
+                                     "DOLC2_TIME_TO_PEAK_ERROR_STATISTIC_SQIN.csv" );
         List<String> result = Files.readAllLines( pathToFile );
 
         assertTrue( result.get(0).contains( "," ) );
