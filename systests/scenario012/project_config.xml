@@ -9,7 +9,7 @@
             <variable>QINE</variable>
         </left>
         <right label="HEFS">
-            <type>single valued forecasts</type>
+            <type>ensemble forecasts</type>
             <source format="PI-XML">../data/drrc2ForecastsOneMonth/</source>
             <variable>SQIN</variable>
             <ensemble name="HEFSENSPOST" member_id="2009" qualifier="SIM1" />

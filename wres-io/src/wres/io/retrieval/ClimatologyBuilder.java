@@ -8,6 +8,7 @@ import wres.datamodel.VectorOfDoubles;
 import wres.io.concurrency.WRESRunnable;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.UnitConversions;
+import wres.io.data.caching.Variables;
 import wres.io.data.details.ProjectDetails;
 import wres.io.reading.usgs.USGSReader;
 import wres.io.utilities.Database;
@@ -216,7 +217,7 @@ class ClimatologyBuilder
         try
         {
             String earliestDate =
-                    this.projectDetails.getZeroDate( this.dataSourceConfig, this.feature );
+                    this.projectDetails.getInitialObservationDate( this.dataSourceConfig, this.feature );
             this.prepareDateLoad( earliestDate );
         }
         catch (SQLException e)
@@ -400,7 +401,7 @@ class ClimatologyBuilder
         {
             script.append("WHERE ")
                   .append(ConfigHelper.getVariablePositionClause( this.feature,
-                                                                  ConfigHelper.getVariableID( this.dataSourceConfig ),
+                                                                  Variables.getVariableID( this.dataSourceConfig ),
                                                                   "O"))
                   .append(NEWLINE);
         }
