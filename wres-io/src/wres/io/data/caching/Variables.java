@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.generated.DataSourceConfig;
 import wres.io.data.details.VariableDetails;
 import wres.io.utilities.Database;
 
@@ -59,6 +60,12 @@ public final class Variables extends Cache<VariableDetails, String>
 	 */
 	public static Integer getVariableID(String variableName, Integer measurementUnitID) throws SQLException {
 		return getCache().getID(variableName, measurementUnitID);
+	}
+
+	public static Integer getVariableID( DataSourceConfig dataSourceConfig) throws SQLException
+	{
+		return Variables.getVariableID(dataSourceConfig.getVariable().getValue(),
+									   dataSourceConfig.getVariable().getUnit());
 	}
 	
 	/**

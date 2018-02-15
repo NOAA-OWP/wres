@@ -84,7 +84,7 @@ class BackToBackObservationScripter extends Scripter
     {
         if (this.zeroDate == null)
         {
-            this.zeroDate = this.getProjectDetails().getZeroDate(
+            this.zeroDate = this.getProjectDetails().getInitialObservationDate(
                     this.getDataSourceConfig(),
                     this.getFeature()
             );

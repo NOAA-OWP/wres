@@ -197,7 +197,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
     {
         Set<FeatureDetails> features = null;
 
-        if (projectConfig.getPair().getFeature() == null || projectConfig.getPair().getFeature().size() == 0)
+        if (projectConfig.getPair().getFeature() == null || projectConfig.getPair().getFeature().isEmpty())
         {
             features = Features.getUnspecifiedDetails( projectConfig );
         }

@@ -223,7 +223,7 @@ project(':wres-io')
         compile group: 'org.liquibase', name: 'liquibase-core', version: '3.5.3'
 
         // to use native postgres copy, need this on compile, otherwise runtime
-        compile 'org.postgresql:postgresql:42.0.0'
+        compile 'org.postgresql:postgresql:42.2.1'
 
 		// connection pooling:
 		compile 'com.mchange:c3p0:0.9.5.2'

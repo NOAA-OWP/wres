@@ -21,6 +21,7 @@ import wres.datamodel.VectorOfDoubles;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.UnitConversions;
+import wres.io.data.caching.Variables;
 import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
@@ -147,7 +148,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
                                        "Please check your specifications." );
         }
 
-        this.finalPoolingStep = this.projectDetails.getPoolCount( feature );
+        this.finalPoolingStep = this.projectDetails.getIssuePoolCount( feature );
 
         // TODO: This needs a better home
         // x2; 1 step for retrieval, 1 step for calculation
@@ -163,7 +164,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
 
         DataSourceConfig left = this.getLeft();
         StringBuilder script = new StringBuilder();
-        Integer leftVariableID = ConfigHelper.getVariableID(left);
+        Integer leftVariableID = Variables.getVariableID( left);
 
         String earliestDate = this.getProjectDetails().getEarliestDate();
         String latestDate = this.getProjectDetails().getLatestDate();
@@ -366,8 +367,8 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
                                                                    .getValuesInRange( this.leftHandMap, firstDate, lastDate ) );
             retriever.setFeature(feature);
             retriever.setClimatology( this.getClimatology() );
-            retriever.setProgress( this.getWindowNumber() );
-            retriever.setPoolingStep( this.poolingStep );
+            retriever.setLeadIteration( this.getWindowNumber() );
+            retriever.setIssueDatesPool( this.poolingStep );
             retriever.setOnRun( ProgressMonitor.onThreadStartHandler() );
             retriever.setOnComplete( ProgressMonitor.onThreadCompleteHandler() );
 
