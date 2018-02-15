@@ -16,7 +16,6 @@ import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.InvalidPropertiesFormatException;
 import java.util.List;
 import java.util.Objects;
 import java.util.StringJoiner;
@@ -49,7 +48,6 @@ import wres.io.data.caching.Features;
 import wres.io.data.caching.Variables;
 import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.Database;
-import wres.io.utilities.NoDataException;
 import wres.util.Collections;
 import wres.util.Strings;
 import wres.util.TimeHelper;
@@ -721,6 +719,19 @@ public class ConfigHelper
     {
         return getDestinationsOfType( config, DestinationType.GRAPHIC );
     }
+    
+    /**
+     * Get all the numerical destinations from a configuration.
+     *
+     * @param config the config to search through
+     * @return a list of numerical destinations
+     * @throws NullPointerException when config is null
+     */
+
+    public static List<DestinationConfig> getNumericalDestinations( ProjectConfig config )
+    {
+        return getDestinationsOfType( config, DestinationType.NUMERIC );
+    }    
 
     /**
      * Get all the pair destinations from a configuration.
