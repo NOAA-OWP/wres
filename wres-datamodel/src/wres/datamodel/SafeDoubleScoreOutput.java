@@ -16,7 +16,7 @@ import wres.datamodel.outputs.MetricOutputException;
  * @since 0.4
  */
 
-class SafeDoubleScoreOutput extends SafeScoreOutput<Double> implements DoubleScoreOutput
+class SafeDoubleScoreOutput extends SafeScoreOutput<Double,DoubleScoreOutput> implements DoubleScoreOutput
 {
 
     /**
@@ -58,5 +58,12 @@ class SafeDoubleScoreOutput extends SafeScoreOutput<Double> implements DoubleSco
     {
         super( Arrays.stream( output ).boxed().toArray( Double[]::new ), template, meta );
     }
+
+    @Override
+    DoubleScoreOutput getScoreOutput( Double input, MetricOutputMetadata meta )
+    {
+        return new SafeDoubleScoreOutput( input, meta );
+    }
+
 
 }

@@ -15,7 +15,7 @@ import wres.datamodel.outputs.ScoreOutput;
  * @since 0.1
  */
 
-public abstract class OrdinaryScore<S extends MetricInput<?>, T extends ScoreOutput<?>> implements Score<S, T>
+public abstract class OrdinaryScore<S extends MetricInput<?>, T extends ScoreOutput<?,T>> implements Score<S, T>
 {
 
     /**
@@ -40,7 +40,7 @@ public abstract class OrdinaryScore<S extends MetricInput<?>, T extends ScoreOut
      * A {@link MetricBuilder} to build the metric.
      */
 
-    public static abstract class OrdinaryScoreBuilder<S extends MetricInput<?>, T extends ScoreOutput<?>>
+    public static abstract class OrdinaryScoreBuilder<S extends MetricInput<?>, T extends ScoreOutput<?,T>>
             implements
             MetricBuilder<S, T>
     {

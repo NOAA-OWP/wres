@@ -87,7 +87,7 @@ public final class TimeToPeakErrorStatisticsTest
         final Duration expectedSource = Duration.ofHours( 3 );
         // Expected, which uses identifier of MetricConstants.MAIN for convenience
         final DurationScoreOutput expected = outF.ofDurationScoreOutput( expectedSource, m1 );
-        assertTrue( "Actual: " + actual.getValue( MetricConstants.MEAN )
+        assertTrue( "Actual: " + actual.getComponent( MetricConstants.MEAN )
                     + ". Expected: "
                     + expected.getData()
                     + ".",
@@ -98,29 +98,29 @@ public final class TimeToPeakErrorStatisticsTest
         DurationScoreOutput max = b.setStatistic( MetricConstants.MAXIMUM )
                                    .build()
                                    .apply( input );
-        assertTrue( "Actual: " + max.getValue( MetricConstants.MAXIMUM )
+        assertTrue( "Actual: " + max.getComponent( MetricConstants.MAXIMUM ).getData()
                     + ". Expected: "
                     + Duration.ofHours( 12 )
                     + ".",
-                    max.getValue( MetricConstants.MAXIMUM ).equals( Duration.ofHours( 12 ) ) );
+                    max.getComponent( MetricConstants.MAXIMUM ).getData().equals( Duration.ofHours( 12 ) ) );
         // Minimum error = -6
         DurationScoreOutput min = b.setStatistic( MetricConstants.MINIMUM )
                                    .build()
                                    .apply( input );
-        assertTrue( "Actual: " + min.getValue( MetricConstants.MINIMUM )
+        assertTrue( "Actual: " + min.getComponent( MetricConstants.MINIMUM ).getData()
                     + ". Expected: "
                     + Duration.ofHours( -6 )
                     + ".",
-                    min.getValue( MetricConstants.MINIMUM ).equals( Duration.ofHours( -6 ) ) );
+                    min.getComponent( MetricConstants.MINIMUM ).getData().equals( Duration.ofHours( -6 ) ) );
         // Mean absolute error = 9
         DurationScoreOutput meanAbs = b.setStatistic( MetricConstants.MEAN_ABSOLUTE )
                                        .build()
                                        .apply( input );
-        assertTrue( "Actual: " + meanAbs.getValue( MetricConstants.MEAN_ABSOLUTE )
+        assertTrue( "Actual: " + meanAbs.getComponent( MetricConstants.MEAN_ABSOLUTE ).getData()
                     + ". Expected: "
                     + Duration.ofHours( 9 )
                     + ".",
-                    meanAbs.getValue( MetricConstants.MEAN_ABSOLUTE ).equals( Duration.ofHours( 9 ) ) );
+                    meanAbs.getComponent( MetricConstants.MEAN_ABSOLUTE ).getData().equals( Duration.ofHours( 9 ) ) );
     }
 
     /**
