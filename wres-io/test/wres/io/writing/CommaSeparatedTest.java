@@ -39,6 +39,7 @@ import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.DurationScoreOutput;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMapByMetric;
+import wres.datamodel.outputs.PairedOutput;
 
 // uncomment these if we figure out what was wrong with powermockito setup
 //@RunWith( PowerMockRunner.class )
@@ -386,6 +387,154 @@ public class CommaSeparatedTest
         // If all succeeded, remove the file, otherwise leave to help debugging.
         Files.deleteIfExists( pathToFile );
     }    
+    
+    /**
+     * Tests the writing of {@link PairedOutput} to file, where the left pair comprises an {@link Instant} and the
+     * right pair comprises an (@link Duration).
+     * 
+     * @throws ProjectConfigException if the project configuration is incorrect
+     * @throws IOException if the output could not be written
+     * @throws InterruptedException if the process is interrupted
+     * @throws ExecutionException if the execution fails
+     */
+    
+    @Test
+    public void writePairedOutputForTimeSeriesMetrics()
+            throws ProjectConfigException, IOException, InterruptedException,
+            ExecutionException
+    {
+
+        // location id
+        final String LID = "FTSC1";
+
+        // Create fake outputs
+
+        DataFactory outputFactory = DefaultDataFactory.getInstance();
+        MetadataFactory metaFac = outputFactory.getMetadataFactory();
+
+        MetricOutputForProjectByTimeAndThreshold.MetricOutputForProjectByTimeAndThresholdBuilder
+                outputBuilder =
+                outputFactory.ofMetricOutputForProjectByTimeAndThreshold();
+
+        TimeWindow timeOne =
+                TimeWindow.of( Instant.MIN,
+                               Instant.MAX,
+                               ReferenceTime.VALID_TIME,
+                               Duration.ofHours( 1 ),
+                               Duration.ofHours( 18 ) );
+
+        // Output requires a future... which requires a metadata...
+        // which requires a datasetidentifier..
+
+        DatasetIdentifier datasetIdentifier =
+                metaFac.getDatasetIdentifier( LID,
+                                              "SQIN",
+                                              "HEFS",
+                                              "ESP" );
+
+        MetricOutputMetadata fakeMetadata =
+                metaFac.getOutputMetadata( 1000,
+                                           metaFac.getDimension(),
+                                           metaFac.getDimension( "CMS" ),
+                                           MetricConstants.TIME_TO_PEAK_ERROR,
+                                           null,
+                                           datasetIdentifier );
+        
+        List<Pair<Instant,Duration>> fakeOutputs = new ArrayList<>();
+        fakeOutputs.add( Pair.of( Instant.parse( "1985-01-01T00:00:00Z" ), Duration.ofHours( 1 ) ) );
+        fakeOutputs.add( Pair.of( Instant.parse( "1985-01-02T00:00:00Z" ), Duration.ofHours( 2 ) ) );
+        fakeOutputs.add( Pair.of( Instant.parse( "1985-01-03T00:00:00Z" ), Duration.ofHours( 3 ) ) );
+
+        // Fake output wrapper.
+        MetricOutputMapByMetric<PairedOutput<Instant,Duration>> fakeOutputData =
+                outputFactory.ofMap( Arrays.asList( outputFactory.ofPairedOutput( fakeOutputs, fakeMetadata ) ) );
+
+        // wrap outputs in future
+        Future<MetricOutputMapByMetric<PairedOutput<Instant,Duration>>> outputMapByMetricFuture =
+                CompletableFuture.completedFuture( fakeOutputData );
+
+        // Fake lead time and threshold
+        Pair<TimeWindow, Threshold> mapKeyByLeadThreshold =
+                outputFactory.getMapKeyByTimeThreshold( timeOne,
+                                                        Double.NEGATIVE_INFINITY,
+                                                        Threshold.Operator.GREATER );
+
+        outputBuilder.addPairedOutput( mapKeyByLeadThreshold,
+                                       outputMapByMetricFuture );
+
+        MetricOutputForProjectByTimeAndThreshold output = outputBuilder.build();
+
+        // Construct a fake configuration file.
+
+        // Use the system temp directory so that checks for writeability pass.
+        DestinationConfig destinationConfig =
+                new DestinationConfig( System.getProperty( "java.io.tmpdir" ),
+                                       null,
+                                       DestinationType.NUMERIC,
+                                       null );
+
+        List<DestinationConfig> destinations = new ArrayList<>();
+        destinations.add( destinationConfig );
+
+        ProjectConfig.Outputs outputsConfig =
+                new ProjectConfig.Outputs( destinations );
+
+        Feature feature = new Feature( null,
+                                       null,
+                                       null,
+                                       LID,
+                                       null,
+                                       null,
+                                       null,
+                                       null,
+                                       null,
+                                       null);
+
+        List<Feature> features = new ArrayList<>();
+        features.add( feature );
+
+        PairConfig pairConfig = new PairConfig( null,
+                                                features,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null );
+
+        ProjectConfig projectConfig = new ProjectConfig( null,
+                                                         pairConfig,
+                                                         null,
+                                                         outputsConfig,
+                                                         null,
+                                                         "test" );
+
+        // Begin the actual test now that we have constructed dependencies.
+        CommaSeparated.writeOutputFiles( projectConfig, feature, output );
+
+        // read the file, verify it has what we wanted:
+        Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ),
+                                     "FTSC1_TIME_TO_PEAK_ERROR_SQIN.csv" );
+        List<String> result = Files.readAllLines( pathToFile );
+
+        assertTrue( result.get(0).contains( "," ) );
+        assertTrue( result.get(0).contains( "ERROR" ) );
+        assertTrue( result.get( 1 )
+                          .equals( "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,1,18,"
+                                  + "1985-01-01T00:00:00Z,PT1H" ) );
+        assertTrue( result.get( 2 )
+                    .equals( "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,1,18,"
+                            + "1985-01-02T00:00:00Z,PT2H" ) );
+        assertTrue( result.get( 3 )
+                    .equals( "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,1,18,"
+                            + "1985-01-03T00:00:00Z,PT3H" ) );
+        // If all succeeded, remove the file, otherwise leave to help debugging.
+        Files.deleteIfExists( pathToFile );
+    }     
     
     
 }
