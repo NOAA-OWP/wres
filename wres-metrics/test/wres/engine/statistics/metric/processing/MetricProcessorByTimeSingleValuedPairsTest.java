@@ -156,7 +156,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         //Validate a subset of the data            
         processor.getCachedMetricOutput().getDoubleScoreOutput().forEach( ( key, value ) -> {
-            if ( key.getKey() == MetricConstants.CRITICAL_SUCCESS_INDEX )
+            if ( key.getKey() == MetricConstants.THREAT_SCORE )
             {
                 assertTrue( "Expected ten results for the " + key.getKey()
                             + ": "

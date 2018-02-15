@@ -61,7 +61,9 @@ public final class MetricConfigHelper
     {
         if ( Objects.isNull( configName ) )
         {
-            throw new MetricConfigurationException( "Unable to map a null input identifier to a named metric." );
+            throw new MetricConfigurationException( "Unable to map a null input identifier to a named metric: "
+                    + "check that the input configuration has been facet-validated against the list of metrics "
+                    + "supported by the system configuration." );
         }
         buildMap();
         //All valid metrics

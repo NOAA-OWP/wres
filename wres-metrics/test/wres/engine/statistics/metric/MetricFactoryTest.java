@@ -134,7 +134,7 @@ public final class MetricFactoryTest
     @Test
     public void test4OfDichotomousScore() throws MetricParameterException
     {
-        metF.ofDichotomousScore( MetricConstants.CRITICAL_SUCCESS_INDEX );
+        metF.ofDichotomousScore( MetricConstants.THREAT_SCORE );
         metF.ofDichotomousScore( MetricConstants.EQUITABLE_THREAT_SCORE );
         metF.ofDichotomousScore( MetricConstants.PEIRCE_SKILL_SCORE );
         metF.ofDichotomousScore( MetricConstants.PROBABILITY_OF_DETECTION );
@@ -231,7 +231,7 @@ public final class MetricFactoryTest
     @Test
     public void test10OfDichotomousScoreCollection() throws MetricParameterException
     {
-        metF.ofDichotomousScoreCollection( MetricConstants.CRITICAL_SUCCESS_INDEX );
+        metF.ofDichotomousScoreCollection( MetricConstants.THREAT_SCORE );
         metF.ofDichotomousScoreCollection( MetricConstants.FREQUENCY_BIAS );
     }
     

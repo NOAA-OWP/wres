@@ -8,15 +8,17 @@ import wres.engine.statistics.metric.MetricParameterException;
 
 /**
  * <p>
- * The Critical Success Index (CSI) or "threat score" is a dichotomous measure of the fraction of all predicted outcomes
- * that occurred (i.e. were true positives).
+ * The Threat Score or Critical Success Index (CSI) measures the fraction of hits against observed occurrences 
+ * (hits + misses) and observed non-occurrences that were predicted incorrectly (false alarms). It measures the 
+ * accuracy of a set of predictions at detecting observed occurrences, removing the possibly large number of observed
+ * non-occurrences that were predicted correctly.
  * </p>
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
  * @since 0.1
  */
-public class CriticalSuccessIndex extends ContingencyTableScore<DichotomousPairs>
+public class ThreatScore extends ContingencyTableScore<DichotomousPairs>
 {
 
     @Override
@@ -37,7 +39,7 @@ public class CriticalSuccessIndex extends ContingencyTableScore<DichotomousPairs
     @Override
     public MetricConstants getID()
     {
-        return MetricConstants.CRITICAL_SUCCESS_INDEX;
+        return MetricConstants.THREAT_SCORE;
     }
 
     @Override
@@ -54,9 +56,9 @@ public class CriticalSuccessIndex extends ContingencyTableScore<DichotomousPairs
     {
 
         @Override
-        public CriticalSuccessIndex build() throws MetricParameterException
+        public ThreatScore build() throws MetricParameterException
         {
-            return new CriticalSuccessIndex(this);
+            return new ThreatScore(this);
         }
 
     }
@@ -68,7 +70,7 @@ public class CriticalSuccessIndex extends ContingencyTableScore<DichotomousPairs
      * @throws MetricParameterException if one or more parameters is invalid
      */
 
-    private CriticalSuccessIndex(final CriticalSuccessIndexBuilder builder) throws MetricParameterException
+    private ThreatScore(final CriticalSuccessIndexBuilder builder) throws MetricParameterException
     {
         super(builder);
     }
