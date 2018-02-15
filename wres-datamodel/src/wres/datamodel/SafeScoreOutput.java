@@ -23,7 +23,7 @@ import wres.datamodel.outputs.ScoreOutput;
  * @since 0.4
  */
 
-abstract class SafeScoreOutput<T> implements ScoreOutput<T>
+abstract class SafeScoreOutput<T,U extends ScoreOutput<T,?>> implements ScoreOutput<T,U>
 {
 
     /**
@@ -56,6 +56,16 @@ abstract class SafeScoreOutput<T> implements ScoreOutput<T>
 
     private final MetricOutputMetadata meta;
 
+    /**
+     * Returns a score from the specified input.
+     * 
+     * @param input the input
+     * @param meta the score metadata
+     * @return the score
+     */
+    
+    abstract U getScoreOutput( T input, MetricOutputMetadata meta );    
+    
     @Override
     public MetricOutputMetadata getMetadata()
     {
@@ -69,7 +79,7 @@ abstract class SafeScoreOutput<T> implements ScoreOutput<T>
         {
             return false;
         }
-        final SafeScoreOutput<?> v = (SafeScoreOutput<?>) o;
+        final SafeScoreOutput<?,?> v = (SafeScoreOutput<?,?>) o;
         boolean start = meta.equals( v.getMetadata() );
         if ( !start )
         {
@@ -96,12 +106,6 @@ abstract class SafeScoreOutput<T> implements ScoreOutput<T>
             return output.values().iterator().next();
         }
         return null;
-    }
-
-    @Override
-    public T getValue( MetricConstants component )
-    {
-        return output.get( component );
     }
 
     @Override
@@ -144,6 +148,13 @@ abstract class SafeScoreOutput<T> implements ScoreOutput<T>
     {
         return output.containsKey( component );
     }
+    
+    @Override
+    public U getComponent( MetricConstants component )
+    {
+        return getScoreOutput( output.get( component ),
+                               DefaultMetadataFactory.getInstance().getOutputMetadata( meta, component ) );
+    }        
 
     @Override
     public String toString()

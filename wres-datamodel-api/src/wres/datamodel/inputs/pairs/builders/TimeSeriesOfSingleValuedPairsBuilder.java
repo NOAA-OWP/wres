@@ -77,7 +77,7 @@ public interface TimeSeriesOfSingleValuedPairsBuilder extends PairedInputBuilder
     /**
      * Adds a time-series to the builder.
      * 
-     * @param timeSeries the regular time-series
+     * @param timeSeries the time-series
      * @return the builder
      * @throws MetricInputException if the specified input is inconsistent with any existing input
      */

@@ -485,7 +485,8 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
      * Returns the thresholds to process for a specific combination of {@link MetricInputGroup} and 
      * {@link MetricOutputGroup}. Returns the union of the global thresholds and any metric-local thresholds 
      * for metrics that belong to the specified group. Also see: 
-     * {@link #doNotComputeTheseMetricsForThisThreshold(MetricInputGroup, MetricOutputGroup, Threshold)}
+     * {@link #doNotComputeTheseMetricsForThisThreshold(wres.datamodel.MetricConstants.MetricInputGroup, 
+     * wres.datamodel.MetricConstants.MetricOutputGroup, wres.datamodel.Threshold)}
      * 
      * @param inGroup the input group
      * @param outGroup the output group
@@ -515,6 +516,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
      * 
      * @param inGroup the input group
      * @param outGroup the output group
+     * @param threshold the threshold
      * @return the list of metrics within the specified inGroup and outGroup that should not be computed
      */
 
@@ -664,7 +666,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
      * threshold.
      * 
      * @param group the group of metrics to search
-     * @param the override threshold
+     * @param override the override threshold
      * @return the subset of metrics from the input group for which the input threshold is an override threshold
      * @throws NullPointerException if either input is null
      */
@@ -745,7 +747,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
      * @param outGroup the output group
      * @param thresholdsWithAllData the thresholds that include the all data threshold
      * @param thresholdsWithoutAllData the thresholds that do not include the all data threshold
-     * @param thresholdWithAllDataOnly the thresholds that include only the all data threshold
+     * @param thresholdsWithAllDataOnly the thresholds that include only the all data threshold
      */
 
     private void setThresholdsForOneGroup( MetricInputGroup inGroup,

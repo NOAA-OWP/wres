@@ -700,6 +700,19 @@ public class ConfigHelper
     {
         return getDestinationsOfType( config, DestinationType.GRAPHIC );
     }
+    
+    /**
+     * Get all the numerical destinations from a configuration.
+     *
+     * @param config the config to search through
+     * @return a list of numerical destinations
+     * @throws NullPointerException when config is null
+     */
+
+    public static List<DestinationConfig> getNumericalDestinations( ProjectConfig config )
+    {
+        return getDestinationsOfType( config, DestinationType.NUMERIC );
+    }    
 
     /**
      * <p>Returns a {@link TimeWindow} from the input configuration using the specified lead time to form the interval

@@ -3,6 +3,7 @@ package wres.datamodel;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -23,8 +24,8 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 
 /**
- * Immutable implementation of a regular time-series of verification pairs that comprise two continuous numerical 
- * variables, each represented by an ensemble of values.
+ * Immutable implementation of a regular time-series of verification pairs in which the right value comprises an 
+ * ensemble.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
@@ -35,7 +36,7 @@ class SafeRegularTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
 {
 
     /**
-     * Base class for a regular time-series of pairs.
+     * Instance of base class for a regular time-series of pairs.
      */
 
     private final SafeRegularTimeSeriesOfPairs<PairOfDoubleAndVectorOfDoubles> bP;
@@ -133,7 +134,7 @@ class SafeRegularTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
             }
         }
         //Build if something to build
-        if ( Objects.nonNull( builder.mainInput ) )
+        if ( !builder.mainInput.isEmpty() )
         {
             return builder.build();
         }
@@ -183,8 +184,8 @@ class SafeRegularTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
     @Override
     public List<Instant> getBasisTimes()
     {
-        return new ArrayList<>( bP.getBasisTimes() );
-    }
+        return Collections.unmodifiableList( bP.getBasisTimes() );
+    }   
 
     @Override
     public SortedSet<Duration> getDurations()
@@ -213,13 +214,13 @@ class SafeRegularTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
     @Override
     public Instant getEarliestBasisTime()
     {
-        return bP.getEarliestBasisTime();
+        return TimeSeriesHelper.getEarliestBasisTime( getBasisTimes() );
     }
 
     @Override
     public String toString()
     {
-        return bP.toString();
+        return TimeSeriesHelper.toString( this );
     }
 
     /**
@@ -311,31 +312,34 @@ class SafeRegularTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
             List<Metadata> mainMeta = new ArrayList<>();
             List<Metadata> baselineMeta = new ArrayList<>();
             VectorOfDoubles climatology = null;
+            MetadataFactory metaFac = DefaultMetadataFactory.getInstance();
+            //Add the main data
             for ( TimeSeries<PairOfDoubleAndVectorOfDoubles> a : timeSeries.basisTimeIterator() )
             {
-                //Add the main data
                 TimeSeriesOfEnsemblePairs next = (TimeSeriesOfEnsemblePairs) a;
                 addTimeSeriesData( next.getEarliestBasisTime(), next.getData() );
                 mainMeta.add( next.getMetadata() );
-                //Add the baseline data if required
-                if ( next.hasBaseline() )
-                {
-                    addTimeSeriesDataForBaseline( next.getEarliestBasisTime(), next.getDataForBaseline() );
-                    baselineMeta.add( next.getMetadataForBaseline() );
-                }
                 //Add climatology if available
-                if ( next.hasClimatology() )
+                if( next.hasClimatology() )
                 {
                     climatology = next.getClimatology();
                 }
             }
-            setClimatology( climatology );
-            MetadataFactory metaFac = DefaultMetadataFactory.getInstance();
             setMetadata( metaFac.unionOf( mainMeta ) );
-            if ( !baselineMeta.isEmpty() )
+            
+            //Add any baseline data
+            if( timeSeries.hasBaseline() )
             {
+                for ( TimeSeries<PairOfDoubleAndVectorOfDoubles> a : timeSeries.getBaselineData().basisTimeIterator() )
+                {
+                    //Add the main data
+                    TimeSeriesOfEnsemblePairs next = (TimeSeriesOfEnsemblePairs) a;
+                    addTimeSeriesDataForBaseline( next.getEarliestBasisTime(), next.getData() );
+                    baselineMeta.add( next.getMetadata() );
+                }
                 setMetadataForBaseline( metaFac.unionOf( baselineMeta ) );
-            }
+            }   
+            setClimatology( climatology );
             return this;
         }
 
@@ -427,7 +431,6 @@ class SafeRegularTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
                     int returned = 0;
                     Iterator<Instant> iterator = getBasisTimes().iterator();
                     List<PairOfDoubleAndVectorOfDoubles> data = getData();
-                    List<PairOfDoubleAndVectorOfDoubles> baselineData = getDataForBaseline();
 
                     @Override
                     public boolean hasNext()
@@ -449,20 +452,11 @@ class SafeRegularTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
                         builder.setTimeStep( getRegularDuration() );
                         builder.addTimeSeriesData( nextTime, data.subList( start, start + bP.getTimeStepCount() ) );
                         //Adjust the time window for the metadata
-                        builder.setMetadata( SafeRegularTimeSeriesOfPairs.getBasisTimeAdjustedMetadata( getMetadata(),
+                        builder.setMetadata( TimeSeriesHelper.getBasisTimeAdjustedMetadata( getMetadata(),
                                                                                                         nextTime,
                                                                                                         nextTime ) );
-                        if ( hasBaseline() && bP.getBasisTimesBaseline().contains( nextTime ) )
-                        {
-                            int startBase = bP.getBasisTimesBaseline().indexOf( nextTime ) * bP.getTimeStepCount();
-                            builder.addTimeSeriesDataForBaseline( nextTime,
-                                                                  baselineData.subList( startBase,
-                                                                                        startBase + bP.getTimeStepCount() ) );
-                            //Adjust the time window for the metadata
-                            builder.setMetadataForBaseline( SafeRegularTimeSeriesOfPairs.getBasisTimeAdjustedMetadata( getMetadataForBaseline(),
-                                                                                                                       nextTime,
-                                                                                                                       nextTime ) );
-                        }
+                        // Set the climatology
+                        builder.setClimatology( getClimatology() );
                         returned++;
                         return builder.build();
                     }
@@ -470,7 +464,7 @@ class SafeRegularTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
                     @Override
                     public void remove()
                     {
-                        throw new UnsupportedOperationException( SafeRegularTimeSeriesOfPairs.UNSUPPORTED_MODIFICATION );
+                        throw new UnsupportedOperationException( TimeSeriesHelper.UNSUPPORTED_MODIFICATION );
                     }
                 };
             }
@@ -496,7 +490,6 @@ class SafeRegularTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
                 {
                     int returned = 0;
                     List<PairOfDoubleAndVectorOfDoubles> data = getData();
-                    List<PairOfDoubleAndVectorOfDoubles> baselineData = getDataForBaseline();
 
                     @Override
                     public boolean hasNext()
@@ -516,7 +509,7 @@ class SafeRegularTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
                         Duration nextDuration = getRegularDuration().multipliedBy( (long) returned + 1 );
                         builder.setTimeStep( nextDuration );
                         //Adjust the time window for the metadata
-                        builder.setMetadata( SafeRegularTimeSeriesOfPairs.getDurationAdjustedMetadata( getMetadata(),
+                        builder.setMetadata( TimeSeriesHelper.getDurationAdjustedMetadata( getMetadata(),
                                                                                                        nextDuration,
                                                                                                        nextDuration ) );
                         int start = 0;
@@ -527,22 +520,8 @@ class SafeRegularTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
                             builder.addTimeSeriesData( next, subset );
                             start += bP.getTimeStepCount();
                         }
-                        //Add filtered baseline data
-                        if ( hasBaseline() )
-                        {
-                            start = 0; //Reset counter
-                            for ( Instant next : bP.getBasisTimesBaseline() )
-                            {
-                                List<PairOfDoubleAndVectorOfDoubles> subset = new ArrayList<>();
-                                subset.add( baselineData.get( start + returned ) );
-                                builder.addTimeSeriesDataForBaseline( next, subset );
-                                start += bP.getTimeStepCount();
-                            }
-                            //Adjust the time window for the metadata
-                            builder.setMetadataForBaseline( SafeRegularTimeSeriesOfPairs.getDurationAdjustedMetadata( getMetadataForBaseline(),
-                                                                                                                      nextDuration,
-                                                                                                                      nextDuration ) );
-                        }
+                        // Set the climatology
+                        builder.setClimatology( getClimatology() );
                         returned++;
                         return builder.build();
                     }
@@ -550,7 +529,7 @@ class SafeRegularTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
                     @Override
                     public void remove()
                     {
-                        throw new UnsupportedOperationException( SafeRegularTimeSeriesOfPairs.UNSUPPORTED_MODIFICATION );
+                        throw new UnsupportedOperationException( TimeSeriesHelper.UNSUPPORTED_MODIFICATION );
                     }
                 };
             }
@@ -582,11 +561,7 @@ class SafeRegularTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
                     @Override
                     public boolean hasNext()
                     {
-                        if ( currentBasisTime < totalBasisTimes )
-                        {
-                            return true;
-                        }
-                        return currentTrace < totalTraces;
+                        return currentBasisTime < totalBasisTimes ? true: currentTrace < totalTraces;
                     }
 
                     @Override
@@ -616,6 +591,8 @@ class SafeRegularTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
                         }
                         builder.addTimeSeriesData( currentSeries.getEarliestBasisTime(), input );
                         currentTrace++;
+                        //Set the climatology
+                        builder.setClimatology( getClimatology() );
                         //Return the time-series
                         return builder.build();
                     }
@@ -623,7 +600,7 @@ class SafeRegularTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
                     @Override
                     public void remove()
                     {
-                        throw new UnsupportedOperationException( SafeRegularTimeSeriesOfPairs.UNSUPPORTED_MODIFICATION );
+                        throw new UnsupportedOperationException( TimeSeriesHelper.UNSUPPORTED_MODIFICATION );
                     }
                 };
             }

@@ -136,8 +136,6 @@ public final class SafeRegularTimeSeriesOfSingleValuedPairsTest
             //Three time-series for main, one for baseline.
             assertTrue( "Unexpected number of time-series in dataset.",
                         next.getBasisTimes().size() == 3 );
-            assertTrue( "Unexpected number of time-series in baseline dataset.",
-                        ( (TimeSeriesOfSingleValuedPairs) next ).getDataForBaseline().size() == 1 );
             nextValue++;
         }
     }
@@ -523,5 +521,52 @@ public final class SafeRegularTimeSeriesOfSingleValuedPairsTest
                     joiner.toString().equals( pairs.toString() ) );
 
     }
+    
+    /**
+     * Checks that the climatology is preserved when building new time-series from existing time-series.
+     */
+
+    @Test
+    public void test9ClimatologyIsPreserved()
+    {
+        //Build a time-series with one basis times and three separate sets of data to append
+        List<PairOfDoubles> first = new ArrayList<>();
+
+        SafeRegularTimeSeriesOfSingleValuedPairsBuilder b = new SafeRegularTimeSeriesOfSingleValuedPairsBuilder();
+        DataFactory metIn = DefaultDataFactory.getInstance();
+        MetadataFactory metaFac = metIn.getMetadataFactory();
+        Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );
+        first.add( metIn.pairOf( 1, 1 ) );
+        first.add( metIn.pairOf( 2, 2 ) );
+        first.add( metIn.pairOf( 3, 3 ) );
+        Metadata meta = metaFac.getMetadata();
+        VectorOfDoubles climatology = metIn.vectorOf( new double[] { 1, 2, 3 } );
+        b.addTimeSeriesData( basisTime, first )
+        .setTimeStep( Duration.ofHours( 1 ) )
+         .setMetadata( meta )
+         .setClimatology( climatology );
+
+        //Build the first ts
+        TimeSeriesOfSingleValuedPairs ts = b.build();
+
+        //Add the first time-series and then append a second and third
+        SafeRegularTimeSeriesOfSingleValuedPairsBuilder c = new SafeRegularTimeSeriesOfSingleValuedPairsBuilder();
+        c.addTimeSeries( ts );
+
+        //Check that climatology has been preserved
+        assertTrue( "Failed to perserve climatology when building new time-series.",
+                    climatology.equals( c.build().getClimatology() ) );
+        assertTrue( "Failed to perserve climatology when iterating new time-series by basis time.",
+                    climatology.equals( ( (TimeSeriesOfSingleValuedPairs) c.build()
+                                                                           .durationIterator()
+                                                                           .iterator()
+                                                                           .next() ).getClimatology() ) );
+        assertTrue( "Failed to perserve climatology when iterating new time-series by duration.",
+                    climatology.equals( ( (TimeSeriesOfSingleValuedPairs) c.build()
+                                                                           .durationIterator()
+                                                                           .iterator()
+                                                                           .next() ).getClimatology() ) );
+    }    
+    
 
 }

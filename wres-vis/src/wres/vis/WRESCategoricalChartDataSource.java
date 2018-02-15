@@ -121,7 +121,7 @@ public abstract class WRESCategoricalChartDataSource<T> extends CategoricalXYCha
                     }
                 }
 
-                Duration durationStat = output.getValue( metric );
+                Duration durationStat = output.getComponent( metric ).getData();
                 yValues[index] = durationStat.toHours();
                 index++;
             }

@@ -29,7 +29,7 @@ public interface PairedInput<S> extends MetricInput<List<S>>, Iterable<S>
 
     default boolean hasBaseline()
     {
-        return !Objects.isNull( getDataForBaseline() );
+        return Objects.nonNull( getDataForBaseline() );
     }
 
     /**
@@ -40,7 +40,7 @@ public interface PairedInput<S> extends MetricInput<List<S>>, Iterable<S>
 
     default boolean hasClimatology()
     {
-        return !Objects.isNull( getClimatology() );
+        return Objects.nonNull( getClimatology() );
     }
 
     /**
