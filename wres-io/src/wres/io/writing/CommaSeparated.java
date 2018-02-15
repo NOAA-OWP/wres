@@ -12,13 +12,14 @@ import java.text.DecimalFormat;
 import java.text.Format;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.SortedMap;
 import java.util.StringJoiner;
-import java.util.TreeMap;
 
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -39,6 +40,7 @@ import wres.datamodel.outputs.MetricOutputAccessException;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
+import wres.datamodel.outputs.PairedOutput;
 import wres.datamodel.outputs.ScoreOutput;
 import wres.io.config.ConfigHelper;
 
@@ -63,6 +65,21 @@ public class CommaSeparated
                                                                   ReferenceTime.VALID_TIME,
                                                                   Duration.ofSeconds( Long.MIN_VALUE ) );
     
+    /**
+     * Default information for the header.
+     */
+
+    private static final StringJoiner HEADER_DEFAULT = new StringJoiner( "," ).add( "EARLIEST" + HEADER_DELIMITER + "TIME" )
+                                                                          .add( "LATEST" + HEADER_DELIMITER + "TIME" )
+                                                                          .add( "EARLIEST" + HEADER_DELIMITER
+                                                                                + "LEAD"
+                                                                                + HEADER_DELIMITER
+                                                                                + "HOUR" )
+                                                                          .add( "LATEST" + HEADER_DELIMITER
+                                                                                + "LEAD"
+                                                                                + HEADER_DELIMITER
+                                                                                + "HOUR" );
+
     /**
      * Write numerical outputs to CSV files.
      *
@@ -101,7 +118,7 @@ public class CommaSeparated
             for ( DestinationConfig d : numericalDestinations )
             {
                 writeAllScoreOutputTypes( d, storedMetricOutput );
-
+                writeAllPairedOutputTypes( d, storedMetricOutput );
             }
         }
         catch ( final ProjectConfigException pce )
@@ -115,11 +132,10 @@ public class CommaSeparated
     }
 
     /**
-     * Mutates the input to append rows for all score outputs.
+     * Writes all score outputs.
      *     
      * @param destinationConfig the destination configuration    
      * @param storedMetricOutput the output to use to build rows
-     * @param rows the store of rows to which additional rows should be appended
      * @throws ProjectConfigException if the path for writing the output cannot be established
      * @throws IOException if the output cannot be written
      */
@@ -159,9 +175,40 @@ public class CommaSeparated
             throw new IOException( "While getting score output:", e );
         }       
     }
-
+    
     /**
-     * Mutates the input, adding rows for one score type.
+     * Writes all paired outputs.
+     *     
+     * @param destinationConfig the destination configuration    
+     * @param storedMetricOutput the output to use to build rows
+     * @throws ProjectConfigException if the path for writing the output cannot be established
+     * @throws IOException if the output cannot be written
+     */
+
+    private static void writeAllPairedOutputTypes( DestinationConfig destinationConfig,
+                                                  MetricOutputForProjectByTimeAndThreshold storedMetricOutput )
+            throws IOException, ProjectConfigException
+    {     
+        try
+        {
+            // Scores with PairedOutput<Instant,Duration>
+            if ( storedMetricOutput.hasOutput( MetricOutputGroup.PAIRED ) )
+            {
+                // TODO: Add an optional formatter here for the Instant/Duration types
+                Format durationFormatter = null;
+                CommaSeparated.writeOnePairedOutputType( destinationConfig,
+                                                        storedMetricOutput.getPairedOutput(),
+                                                        durationFormatter );
+            }
+        }
+        catch ( MetricOutputAccessException e )
+        {
+            throw new IOException( "While getting paired output:", e );
+        }       
+    }    
+    
+    /**
+     * Writes all output for one score type.
      *
      * @param <T> the score component type
      * @param destinationConfig the destination configuration    
@@ -175,31 +222,54 @@ public class CommaSeparated
                                                                                MetricOutputMultiMapByTimeAndThreshold<T> output,
                                                                                Format formatter )
             throws ProjectConfigException, IOException
-    {
-        StringJoiner headerBase = new StringJoiner( "," );
-
-        headerBase.add( "EARLIEST" + HEADER_DELIMITER + "TIME" )
-                 .add( "LATEST" + HEADER_DELIMITER + "TIME" )
-                 .add( "EARLIEST" + HEADER_DELIMITER + "LEAD" + HEADER_DELIMITER + "HOUR" )
-                 .add( "LATEST" + HEADER_DELIMITER + "LEAD" + HEADER_DELIMITER + "HOUR" );
-        
+    {        
         // Loop across scores
         for ( Map.Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<T>> m : output.entrySet() )
         {
             StringJoiner headerRow = new  StringJoiner( "," );
-            headerRow.merge( headerBase );
-            SortedMap<TimeWindow, StringJoiner> rows =
+            headerRow.merge( HEADER_DEFAULT );
+            List<RowCompareByLeft> rows =
                     getRowsForOneScore( m.getKey().getKey(), m.getValue(), headerRow, formatter );
-            //Add the header row
-            rows.put( HEADER_INDEX, headerRow );
-            //Write the output
+            // Add the header row
+            rows.add( RowCompareByLeft.of( HEADER_INDEX, headerRow ) );
+            // Write the output
             writeTabularOutputToFile( destinationConfig, rows, m.getValue().getMetadata() );
         }
-
     }
+    
+    /**
+     * Writes all output for one paired type.
+     *
+     * @param <S> the left side of the paired output type
+     * @param <T> the right side if the paired output type
+     * @param destinationConfig the destination configuration    
+     * @param output the score output to iterate through
+     * @param formatter optional formatter, can be null
+     * @throws ProjectConfigException if the path for writing the output cannot be established
+     * @throws IOException if the output cannot be written
+     */
+
+    private static <S, T> void writeOnePairedOutputType( DestinationConfig destinationConfig,
+                                                         MetricOutputMultiMapByTimeAndThreshold<PairedOutput<S, T>> output,
+                                                         Format formatter )
+            throws ProjectConfigException, IOException
+    {
+        // Loop across paired output
+        for ( Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<PairedOutput<S, T>>> m : output.entrySet() )
+        {
+            StringJoiner headerRow = new StringJoiner( "," );
+            headerRow.merge( HEADER_DEFAULT );
+            List<RowCompareByLeft> rows =
+                    getRowsForOnePairedOutput( m.getKey().getKey(), m.getValue(), headerRow, formatter );
+            // Add the header row
+            rows.add( RowCompareByLeft.of( HEADER_INDEX, headerRow ) );
+            // Write the output
+            writeTabularOutputToFile( destinationConfig, rows, m.getValue().getMetadata() );
+        }
+    }   
 
     /**
-     * Mutates the input header and rows, adding results for one score.
+     * Returns the results for one score.
      *
      * @param <T> the score component type
      * @param scoreName the score name
@@ -209,7 +279,7 @@ public class CommaSeparated
      * @return the rows to write
      */
 
-    private static <T extends ScoreOutput<?, T>> SortedMap<TimeWindow, StringJoiner>
+    private static <T extends ScoreOutput<?, T>> List<RowCompareByLeft>
             getRowsForOneScore( MetricConstants scoreName,
                                 MetricOutputMapByTimeAndThreshold<T> score,
                                 StringJoiner headerRow,
@@ -222,7 +292,7 @@ public class CommaSeparated
                                   .filterByMetricComponent( score );
 
         String outerName = scoreName.toString();
-        SortedMap<TimeWindow, StringJoiner> returnMe = new TreeMap<>();
+        List<RowCompareByLeft> returnMe = new ArrayList<>();
         // Loop across components
         for ( Entry<MetricConstants, MetricOutputMapByTimeAndThreshold<T>> e : helper.entrySet() )
         {
@@ -238,6 +308,53 @@ public class CommaSeparated
     }   
     
     /**
+     * Returns the results for one score.
+     *
+     * @param <S> the left side of the paired output type
+     * @param <T> the right side if the paired output type
+     * @param metricName the score name
+     * @param pairedOutput the score results
+     * @param headerRow the header row
+     * @param formatter optional formatter, can be null
+     * @return the rows to write
+     */
+
+    private static <S, T> List<RowCompareByLeft>
+            getRowsForOnePairedOutput( MetricConstants metricName,
+                                MetricOutputMapByTimeAndThreshold<PairedOutput<S,T>> pairedOutput,
+                                StringJoiner headerRow,
+                                Format formatter )
+    {
+        String outerName = metricName.toString();
+        List<RowCompareByLeft> returnMe = new ArrayList<>();
+
+        // Add the rows
+        // Loop across the thresholds
+        for ( Threshold t : pairedOutput.setOfThresholdKey() )
+        {
+            // Append to header
+            headerRow.add( HEADER_DELIMITER + outerName + HEADER_DELIMITER + "BASIS TIME" + HEADER_DELIMITER + t );
+            headerRow.add( HEADER_DELIMITER + outerName + HEADER_DELIMITER + "DURATION" + HEADER_DELIMITER + t );
+            // Loop across time windows
+            for ( TimeWindow timeWindow : pairedOutput.setOfTimeWindowKey() )
+            {
+                Pair<TimeWindow, Threshold> key = Pair.of( timeWindow, t );
+                List<Pair<S, T>> nextValues = pairedOutput.get( key ).getData();
+                for ( Pair<S, T> nextPair : nextValues )
+                {
+                    addRowToInput( returnMe,
+                                   timeWindow,
+                                   Arrays.asList( nextPair.getLeft(), nextPair.getRight() ),
+                                   formatter,
+                                   false );
+                }
+            }
+        }
+        
+        return returnMe;
+    }     
+
+    /**
      * Mutates the input header and rows, adding results for one score component.
      *
      * @param <T> the score component type
@@ -251,7 +368,7 @@ public class CommaSeparated
     private static <T extends ScoreOutput<?,T>> void addRowsForOneScoreComponent( String name,
                                                      MetricOutputMapByTimeAndThreshold<T> component,
                                                      StringJoiner headerRow,
-                                                     SortedMap<TimeWindow, StringJoiner> rows,
+                                                     List<RowCompareByLeft> rows,
                                                      Format formatter )
     {
         // Loop across the thresholds
@@ -262,41 +379,8 @@ public class CommaSeparated
             // Loop across time windows
             for ( TimeWindow timeWindow : component.setOfTimeWindowKey() )
             {
-                if ( !rows.containsKey( timeWindow ) )
-                {
-                    StringJoiner row = new StringJoiner( "," );
-                    row.add( timeWindow.getEarliestTime().toString() );
-                    row.add( timeWindow.getLatestTime().toString() );
-                    row.add( Long.toString( timeWindow.getEarliestLeadTimeInHours() ) );
-                    row.add( Long.toString( timeWindow.getLatestLeadTimeInHours() ) );
-                    rows.put( timeWindow, row );
-                }
-
-                StringJoiner row = rows.get( timeWindow );
-
-                // To maintain rectangular CSV output, construct keys using
-                // both dimensions. If we do not find a value, use NA.
                 Pair<TimeWindow, Threshold> key = Pair.of( timeWindow, t );
-
-                T value = component.get( key );
-
-                String toWrite = "NA";
-
-                // Write the current score component at the current window and threshold
-                if ( value != null && value.getData() != null
-                     && !Double.valueOf( Double.NaN ).equals( value.getData() ) )
-                {
-                    if ( formatter != null )
-                    {
-                        toWrite = formatter.format( value.getData() );
-                    }
-                    else
-                    {
-                        toWrite = value.getData().toString();
-                    }
-                }
-
-                row.add( toWrite );
+                addRowToInput( rows, timeWindow, Arrays.asList( component.get( key ).getData() ), formatter, true );
             }
         }
     }       
@@ -311,13 +395,13 @@ public class CommaSeparated
      * @throws IOException if the output cannot be written
      */
 
-    private static void writeTabularOutputToFile( DestinationConfig destination,
-                                                  SortedMap<TimeWindow, StringJoiner> rows,
+    private static void writeTabularOutputToFile( DestinationConfig destinationConfig,
+                                                  List<RowCompareByLeft> rows,
                                                   MetricOutputMetadata meta )
             throws ProjectConfigException, IOException
     {
                
-        File outputDirectory = ConfigHelper.getDirectoryFromDestinationConfig( destination );
+        File outputDirectory = ConfigHelper.getDirectoryFromDestinationConfig( destinationConfig );
         DatasetIdentifier identifier = meta.getIdentifier();
         Path outputPath = Paths.get( outputDirectory.toString(),
                                      identifier.getGeospatialID()
@@ -326,18 +410,172 @@ public class CommaSeparated
                                      +"_"
                                      +identifier.getVariableID()
                                      + ".csv" );
-
+        // Sort the rows before writing them
+        Collections.sort( rows );
+        
         try ( BufferedWriter w = Files.newBufferedWriter( outputPath,
                                                           StandardCharsets.UTF_8,
                                                           StandardOpenOption.CREATE,
                                                           StandardOpenOption.TRUNCATE_EXISTING ) )
         {
-            for ( StringJoiner row : rows.values() )
+            for ( RowCompareByLeft row : rows )
             {
-                w.write( row.toString() );
+                w.write( row.getRight().toString() );
                 w.write( System.lineSeparator() );
             }
         }
+    }
+
+    /**
+     * Mutates the input, adding a new row.
+     * 
+     * @param <T> the type of values to add
+     * @param rows the map of rows to mutate
+     * @param timeWindow the time window
+     * @param values the values to add, one for each column
+     * @param formatter an optional formatter
+     * @param append is true to add the values to an existing row with the same time window, false otherwise
+     */
+
+    private static <T> void addRowToInput( List<RowCompareByLeft> rows,
+                                           TimeWindow timeWindow,                                           
+                                           List<T> values,
+                                           Format formatter,
+                                           boolean append )
+    {
+        StringJoiner row = null;
+        int rowIndex = rows.indexOf( RowCompareByLeft.of( timeWindow, null) );
+        // Set the to to append if it exists and appending is required
+        if( rowIndex > -1 && append )
+        {
+            row = rows.get( rowIndex ).getRight();
+        }
+        // Otherwise, start a new row 
+        else 
+        {
+            row = new StringJoiner( "," );
+            row.add( timeWindow.getEarliestTime().toString() );
+            row.add( timeWindow.getLatestTime().toString() );
+            row.add( Long.toString( timeWindow.getEarliestLeadTimeInHours() ) );
+            row.add( Long.toString( timeWindow.getLatestLeadTimeInHours() ) );
+            rows.add( RowCompareByLeft.of( timeWindow, row ) );
+        }
+
+        for ( T nextColumn : values )
+        {
+
+            String toWrite = "NA";
+
+            // Write the current score component at the current window and threshold
+            if ( nextColumn != null && nextColumn != null
+                 && !Double.valueOf( Double.NaN ).equals( nextColumn ) )
+            {
+                if ( formatter != null )
+                {
+                    toWrite = formatter.format( nextColumn );
+                }
+                else
+                {
+                    toWrite = nextColumn.toString();
+                }
+            }
+            row.add( toWrite );
+        }
+    }
+    
+    /**
+     * A helper class that contains a single row whose natural order is based on the {@link TimeWindow} of the row
+     * and not the contents. All comparisons are based on the left value only.
+     * 
+     * @author james.brown@hydrosolved.com
+     * @version 0.1
+     * @since version 0.4
+     */
+    
+    private static class RowCompareByLeft implements Comparable<RowCompareByLeft>
+    {        
+        /**
+         * The row time window.
+         */
+        private final TimeWindow left;
+        
+        /**
+         * The row value.
+         */
+        
+        private final StringJoiner right;
+     
+        /**
+         * Returns an instance for the given input.
+         * 
+         * @param timeWindow the time window
+         * @param value the row value
+         * @return an instance 
+         */
+        
+        private static RowCompareByLeft of( TimeWindow timeWindow, StringJoiner value ) 
+        {
+            return new RowCompareByLeft( timeWindow, value );
+        }
+
+        /**
+         * Returns the left value.
+         * 
+         * @return the left value
+         */
+
+        public TimeWindow getLeft()
+        {
+            return left;
+        }
+
+        /**
+         * Returns the right value
+         * 
+         * @return the right value
+         */
+        
+        public StringJoiner getRight()
+        {
+            return right;
+        }
+        
+        @Override 
+        public int compareTo( RowCompareByLeft compareTo) 
+        {
+            Objects.requireNonNull( compareTo, "Specify a non-null input row for comparison." );
+            return getLeft().compareTo( compareTo.getLeft() );
+        }
+        
+        @Override
+        public boolean equals( Object o )
+        {
+            if(! (o instanceof RowCompareByLeft) )
+            {
+                return false;
+            }
+            return ( (RowCompareByLeft) o ).getLeft().equals( getLeft() );
+        }
+        
+        @Override 
+        public int hashCode()
+        {
+            return left.hashCode();
+        }
+        
+        /**
+         * Constructor.
+         * 
+         * @param timeWindow the time window
+         * @param value the row value
+         */
+        
+        private RowCompareByLeft( TimeWindow timeWindow, StringJoiner value )
+        {           
+            Objects.requireNonNull( timeWindow , "Specify a non-null time window for the row." );
+            left = timeWindow;
+            right = value;
+        }       
     }
     
 }
