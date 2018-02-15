@@ -148,6 +148,7 @@ public final class Database {
     /**
      * Stores a simple task that will ingest data. The stored task will later be
      * evaluated for completion.
+     * @param <U> The type of value that the ingestTask should return
      * @param ingestTask A task that will ingest source data into the database
      * @return The future result of the task
      */
@@ -1098,8 +1099,9 @@ public final class Database {
      *
      * <p>
      *     If a query returns:
-     *
+     *</p>
      *     <table>
+     *         <caption>Query Results</caption>
      *         <tr>
      *             <th>key</th>
      *             <th>value</th>
@@ -1113,7 +1115,6 @@ public final class Database {
      *             <td>"Delaware"</td>
      *         </tr>
      *         <tr>
-     *             <td>Row 3</td>
      *             <td>3</td>
      *             <td>"Kansas"</td>
      *         </tr>
@@ -1122,39 +1123,40 @@ public final class Database {
      *             <td>"Arkansas"</td>
      *         </tr>
      *     </table>
-     *
+     *<p>
      *     and the caller dictates that the label for the key is "key" and the
      *     label for the value is "value", it may populate the map such that it
      *     looks like:
+     * </p>
      *
      *     <table>
+     *         <caption>Resulting Map</caption>
      *         <tr>
      *             <td>{</td>
-     *             <td/>
+     *             <td></td>
      *         </tr>
      *         <tr>
-     *             <td/>
-     *             <td>1 -> "Alabama"</td>
+     *             <td></td>
+     *             <td>1 -&gt; "Alabama"</td>
      *         </tr>
      *         <tr>
-     *             <td/>
-     *             <td>2 -> "Delaware"</td>
+     *             <td></td>
+     *             <td>2 -&gt; "Delaware"</td>
      *         </tr>
      *         <tr>
-     *             <td/>
-     *             <td>3 -> "Kansas"</td>
+     *             <td></td>
+     *             <td>3 -&gt; "Kansas"</td>
      *         </tr>
      *         <tr>
-     *             <td/>
-     *             <td>4 -> "Arkansas"</td>
+     *             <td></td>
+     *             <td>4 -&gt; "Arkansas"</td>
      *         </tr>
      *         <tr>
      *             <td>}</td>
-     *             <td/>
+     *             <td></td>
      *         </tr>
      *     </table>
      *
-     * </p>
      * @param map The map to populate
      * @param query The script that will retrieve the values
      * @param keyLabel The label for the column that will serve as the key

@@ -98,7 +98,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     /**
      * Stores the earliest possible observation data for each feature
      */
-    private final Map<Feature, String> zeroDates = new ConcurrentHashMap<>(  );
+    private final Map<Feature, String> initialObservationDates = new ConcurrentHashMap<>(  );
 
     /**
      * Stores the number of basis times pools for each feature
@@ -898,7 +898,8 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
      * pooling window has been configured, the default is that of the expected
      * scale of the data
      * @return The unit of time that leads should be queried in
-     * @throws NoDataException
+     * @throws NoDataException Thrown if there wasn't enough data available to
+     * determine the scale
      */
     public String getLeadUnit() throws NoDataException
     {
@@ -1072,7 +1073,8 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
      *     If no desired scale has been configured, one is dynamically generated
      * </p>
      * @return The expected scale of the data
-     * @throws NoDataException
+     * @throws NoDataException Thrown if there wasn't enough data in the
+     * database to determine the scale of both the left and right inputs
      */
     public TimeScaleConfig getScale() throws NoDataException
     {
@@ -2341,24 +2343,29 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
      * Returns the first date of observation data for the feature, for the given input
      * @param sourceConfig The side of the data whose zero date we are interested in
      * @param feature The feature whose zero date we are interested in
-     * @return
-     * @throws SQLException
+     * @return The first date where a feature contains an observed value for a
+     * certain configuration
+     * @throws SQLException Thrown if the initial date could not be loaded
+     * from the database.
      */
     public String getInitialObservationDate( DataSourceConfig sourceConfig, Feature feature) throws SQLException
     {
-        synchronized ( this.zeroDates )
+        synchronized ( this.initialObservationDates )
         {
-            if (!this.zeroDates.containsKey( feature ))
+            if (!this.initialObservationDates.containsKey( feature ))
             {
                 String script =
                         ScriptGenerator.generateInitialObservationDateScript( this,
                                                                               sourceConfig,
                                                                               feature );
-                this.zeroDates.put(feature, "'" + Database.getResult( script, "zero_date" ) + "'");
+                this.initialObservationDates.put(
+                        feature,
+                        "'" + Database.getResult( script, "zero_date" ) + "'"
+                );
             }
         }
 
-        return this.zeroDates.get(feature);
+        return this.initialObservationDates.get( feature);
     }
 
     /**
