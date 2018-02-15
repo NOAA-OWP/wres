@@ -31,7 +31,7 @@ class PersistenceForecastScripter extends Scripter
     {
         super( projectDetails, dataSourceConfig, feature, DUMMY, DUMMY );
 
-        String zeroDate = this.getProjectDetails().getZeroDate(
+        String zeroDate = this.getProjectDetails().getInitialObservationDate(
                 this.getDataSourceConfig(),
                 this.getFeature() );
         String isoZeroDate = zeroDate.replace(" ", "T" )

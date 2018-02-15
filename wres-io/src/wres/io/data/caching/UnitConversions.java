@@ -143,6 +143,9 @@ public final class UnitConversions
         return getCache().conversionMap.get(new ConversionKey( desiredName, fromID ));
     }
 
+    /**
+     * Provides the operation that will convert a value to another unit
+     */
     public static class Conversion
     {
         private final double factor;
@@ -156,9 +159,21 @@ public final class UnitConversions
             this.finalOffset = row.getDouble("final_offset");
         }
 
+        /**
+         * Uses loaded conversion factors to convert a value to a desired unit
+         * @param value The value to convert
+         * @return The value in the new unit of measurement
+         */
         public double convert(double value)
         {
             return ((value + this.initialOffset) * this.factor) + this.finalOffset;
+        }
+
+        @Override
+        public String toString()
+        {
+            return "(({value} + " + this.initialOffset + ") * " +
+                   this.factor + ") + " + this.finalOffset;
         }
     }
 }

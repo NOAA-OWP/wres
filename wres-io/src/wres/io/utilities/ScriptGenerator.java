@@ -10,6 +10,7 @@ import java.util.Set;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
 import wres.io.config.ConfigHelper;
+import wres.io.data.caching.Variables;
 import wres.io.data.details.ProjectDetails;
 import wres.util.Collections;
 import wres.util.Strings;
@@ -278,7 +279,7 @@ public final class ScriptGenerator
         return script.toString();
     }
 
-    public static String formInitialRollingDataScript(
+    public static String formIssuePoolCountScript(
             ProjectDetails projectDetails,
             Feature feature)
             throws SQLException
@@ -288,7 +289,7 @@ public final class ScriptGenerator
         String timeSeriesVariablePosition =
                 ConfigHelper.getVariablePositionClause(
                         feature,
-                        ConfigHelper.getVariableID( projectDetails.getRight() ),
+                        Variables.getVariableID( projectDetails.getRight() ),
                         "TS"
                 );
 
@@ -333,7 +334,7 @@ public final class ScriptGenerator
         script.addLine(
                 ConfigHelper.getVariablePositionClause(
                         feature,
-                        ConfigHelper.getVariableID( projectDetails.getLeft() ),
+                        Variables.getVariableID( projectDetails.getLeft() ),
                         "O"
                 )
         );
@@ -380,9 +381,9 @@ public final class ScriptGenerator
         return script.toString();
     }
 
-    public static String generateZeroDateScript(ProjectDetails projectDetails,
-                                                DataSourceConfig simulation,
-                                                Feature feature)
+    public static String generateInitialObservationDateScript( ProjectDetails projectDetails,
+                                                               DataSourceConfig simulation,
+                                                               Feature feature)
             throws SQLException
     {
 
@@ -397,7 +398,7 @@ public final class ScriptGenerator
         script.append("FROM wres.Observation O").append(NEWLINE);
         script.append("WHERE ")
               .append(ConfigHelper.getVariablePositionClause( feature,
-                                                              ConfigHelper.getVariableID( simulation ),
+                                                              Variables.getVariableID( simulation ),
                                                               "O"))
               .append(NEWLINE);
         script.append("    AND EXISTS (").append(NEWLINE);

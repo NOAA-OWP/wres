@@ -7,8 +7,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.MonthDay;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -27,12 +25,13 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DestinationConfig;
+import wres.config.generated.DestinationType;
 import wres.config.generated.DurationUnit;
 import wres.config.generated.EnsembleCondition;
 import wres.config.generated.Feature;
+import wres.config.generated.MetricConfig;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.PoolingWindowConfig;
@@ -52,6 +51,7 @@ import wres.io.utilities.ScriptGenerator;
 import wres.util.FormattedStopwatch;
 import wres.util.Strings;
 import wres.util.TimeHelper;
+import wres.util.Collections;
 
 /**
  * Wrapper object linking a project configuration and the data needed to form
@@ -61,39 +61,163 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger( ProjectDetails.class );
 
+    /**
+     * The member identifier for left handed data in the database
+     */
     public static final String LEFT_MEMBER = "'left'";
+
+    /**
+     * The member identifier for right handed data in the database
+     */
     public static final String RIGHT_MEMBER = "'right'";
+
+    /**
+     * The member identifier for baseline data in the database
+     */
     public static final String BASELINE_MEMBER = "'baseline'";
 
     private Integer projectID = null;
     private final ProjectConfig projectConfig;
 
+    /**
+     *  Stores the last possible lead time for each feature
+     */
     private final Map<Feature, Integer> lastLeads = new ConcurrentHashMap<>(  );
+
+    /**
+     * Stores the lead hour offset for each person
+     *
+     * <p>
+     * If there is a 6 hour offset at feature x, it means that the lead times
+     * used to match with observation data need to be increased by 6 hours to
+     * provide a valid match
+     * </p>
+     */
     private final Map<Feature, Integer> leadOffsets = new ConcurrentSkipListMap<>( ConfigHelper.getFeatureComparator() );
+
+    /**
+     * Stores the earliest possible observation data for each feature
+     */
     private final Map<Feature, String> zeroDates = new ConcurrentHashMap<>(  );
+
+    /**
+     * Stores the number of basis times pools for each feature
+     *
+     * <p>
+     * Normally, there will be one pool per feature, but configuring an issue
+     * times pooling window will possibly create multiple windows. If a feature
+     * is deemed to have x pools, then each set of lead times will be evaluated
+     * on x different sets of issue times
+     * </p>
+     */
     private final Map<Feature, Integer> poolCounts = new ConcurrentHashMap<>(  );
 
+    /**
+     * The set of all features pertaining to the project
+     */
     private Set<FeatureDetails> features;
 
+    /**
+     * The ID for the variable on the left side of the input
+     */
     private Integer leftVariableID = null;
+
+    /**
+     * The ID for the variable on the right side of the input
+     */
     private Integer rightVariableID = null;
+
+    /**
+     * The ID for the variable for the baseline
+     */
     private Integer baselineVariableID = null;
 
+    /**
+     * Indicates whether or not this project was inserted on upon this
+     * execution of the project
+     */
     private boolean performedInsert;
 
+    /**
+     * The overall hash for the total specifications for the project
+     */
     private final int inputCode;
 
+    /**
+     * The number of application standard wres.config.generated.DurationUnit
+     * for the scale of the left side data
+     *
+     * <p>
+     * If the standard DurationUnit is 'HOURS' and the data is generated daily,
+     * the scale will be 24
+     * </p>
+     */
     private long leftScale = -1;
+
+    /**
+     * The number of application standard wres.config.generated.DurationUnit
+     * for the scale of the right side data
+     *
+     * <p>
+     * If the standard DurationUnit is 'HOURS' and the data is generated daily,
+     * the scale will be 24
+     * </p>
+     */
     private long rightScale = -1;
+
+    /**
+     * The number of application standard wres.config.generated.DurationUnit
+     * for the scale of the baseline data
+     *
+     * <p>
+     * If the standard DurationUnit is 'HOURS' and the data is generated daily,
+     * the scale will be 24
+     * </p>
+     */
     private long baselineScale = -1;
+
+    /**
+     * The desired scale for the project
+     *<p>
+     * If the configuration doesn't specify the desired scale, the system
+     * will determine that data itself
+     * </p>
+     */
     private TimeScaleConfig desiredTimeScale;
 
+    /**
+     * Indicates whether or not lead times should be calculated rather than
+     * using discrete numbers
+     */
     private Boolean calculateLeads = null;
-    private Map<Feature, Boolean> calculateFeatureLeads = null;
+
+    /**
+     * Stores sets of lead times per feature that need to be evaluated
+     * individually if it is deemed that lead times shouldn't be calculated
+     *<p>
+     * In primitive irregular time series, 'lead = x' statements will be created
+     * by pulling values from a feature's list of lead times
+     * </p>
+     */
     private Map<Feature, Integer[]> discreteLeads;
 
+    /**
+     * Guards access to the pool counts
+     */
     private static final Object POOL_LOCK = new Object();
 
+    /**
+     * Creates a hash for the indicated project configuration based on its
+     * specifications and the data it has ingested
+     * @param projectConfig The configuration for the project
+     * @param leftHashesIngested A collection of the hashes for the left sided
+     *                           source data
+     * @param rightHashesIngested A collection of the hashes for the right sided
+     *                            source data
+     * @param baselineHashesIngested A collection of hashes representing the baseline
+     *                               source data
+     * @return A unique hash code for the project's circumstances
+     */
     public static Integer hash( final ProjectConfig projectConfig,
                                 final List<String> leftHashesIngested,
                                 final List<String> rightHashesIngested,
@@ -116,7 +240,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
 
         // Sort for deterministic hash result for same list of ingested
         List<String> sortedLeftHashes =
-                ProjectDetails.copyAndSort( leftHashesIngested );
+                Collections.copyAndSort( leftHashesIngested );
 
         for ( String leftHash : sortedLeftHashes )
         {
@@ -137,7 +261,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
 
         // Sort for deterministic hash result for same list of ingested
         List<String> sortedRightHashes =
-                ProjectDetails.copyAndSort( rightHashesIngested );
+                Collections.copyAndSort( rightHashesIngested );
 
         for ( String rightHash : sortedRightHashes )
         {
@@ -162,7 +286,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
 
             // Sort for deterministic hash result for same list of ingested
             List<String> sortedBaselineHashes =
-                    ProjectDetails.copyAndSort( baselineHashesIngested );
+                    Collections.copyAndSort( baselineHashesIngested );
 
             for ( String baselineHash : sortedBaselineHashes )
             {
@@ -202,6 +326,16 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return this.projectConfig;
     }
 
+    /**
+     * Returns the name of the member that the DataSourceConfig belongs to
+     *
+     * <p>
+     * If the "this.getInputName(this.getRight())" is called, the result
+     * should be "ProjectDetails.RIGHT_MEMBER"
+     *</p>
+     * @param dataSourceConfig A DataSourceConfig from a project configuration
+     * @return The name for how the DataSourceConfig relates to the project
+     */
     public String getInputName(DataSourceConfig dataSourceConfig)
     {
         String name = null;
@@ -222,22 +356,41 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return name;
     }
 
+    /**
+     * Returns the set of FeaturesDetails for the project. If none have been
+     * created yet, then it is evaluated. If there is no specification within
+     * the configuration, all locations that have been ingested are retrieved
+     * @return A set of all FeatureDetails involved in the project
+     * @throws SQLException Thrown if details about the project's features
+     * cannot be retrieved from the database
+     */
     public Set<FeatureDetails> getFeatures() throws SQLException
     {
         if (this.features == null)
         {
-            if (this.getProjectConfig().getPair().getFeature() == null || this.projectConfig.getPair().getFeature().size() == 0)
+            // If there is no indication whatsoever of what to look for, we
+            // want to query the database specifically for all locations
+            // that have data ingested pertaining to the project.
+            //
+            // The similar function in wres.io.data.caching.Features cannot be
+            // used because it doesn't restrict data based on what lies in the
+            // database.
+            if (this.getProjectConfig().getPair().getFeature() == null ||
+                this.projectConfig.getPair().getFeature().isEmpty())
             {
                 this.features = new HashSet<>(  );
 
                 ScriptBuilder script = new ScriptBuilder();
 
+                // Select all features where...
                 script.addLine( "SELECT *" );
                 script.addLine( "FROM wres.Feature F" );
                 script.addLine( "WHERE EXISTS (" );
 
                 if ( ConfigHelper.isForecast( this.getLeft() ) )
                 {
+                    // There is at least one value pertaining to a forecasted value
+                    // indicated by the left hand configuration
                     script.addTab().addLine( "SELECT 1" );
                     script.addTab().addLine( "FROM wres.TimeSeries TS" );
                     script.addTab()
@@ -261,6 +414,8 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
                 }
                 else
                 {
+                    // There is at least one observed value pertaining to the
+                    // configuration for the left sided data
                     script.addTab().addLine( "SELECT 1" );
                     script.addTab().addLine( "FROM wres.Observation O" );
                     script.addTab()
@@ -280,10 +435,14 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
                 }
 
                 script.addTab().addLine( ")" );
+
+                // And...
                 script.addTab().addLine( "AND EXISTS (" );
 
                 if ( ConfigHelper.isForecast( this.getRight() ) )
                 {
+                    // There is at least one value pertaining to a forecasted value
+                    // indicated by the right hand configuration
                     script.addTab().addLine( "SELECT 1" );
                     script.addTab().addLine( "FROM wres.TimeSeries TS" );
                     script.addTab()
@@ -307,6 +466,8 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
                 }
                 else
                 {
+                    // There is at least one observed value pertaining to the
+                    // configuration for the right sided data
                     script.addTab().addLine( "SELECT 1" );
                     script.addTab().addLine( "FROM wres.Observation O" );
                     script.addTab()
@@ -336,6 +497,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
                     resultSet = Database.getResults( connection,
                                                      script.toString() );
 
+                    // Convert each row into a new Feature for the project
                     while ( resultSet.next() )
                     {
                         this.features.add( new FeatureDetails( resultSet ) );
@@ -363,27 +525,42 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
             }
             else
             {
+                // Get all features that correspond to the feature configuration
                 this.features = Features.getAllDetails( this.getProjectConfig() );
             }
         }
         return this.features;
     }
 
+    /**
+     * @return The left hand data source configuration
+     */
     public DataSourceConfig getLeft()
     {
         return this.projectConfig.getInputs().getLeft();
     }
 
+    /**
+     * @return The right hand data source configuration
+     */
     public DataSourceConfig getRight()
     {
         return this.projectConfig.getInputs().getRight();
     }
 
+    /**
+     * @return The baseline data source configuration
+     */
     public DataSourceConfig getBaseline()
     {
         return this.projectConfig.getInputs().getBaseline();
     }
 
+    /**
+     * Determines the ID of the left variable
+     * @return The ID of the left variable
+     * @throws SQLException Thrown if the ID cannot be retrieved from the database
+     */
     public Integer getLeftVariableID() throws SQLException
     {
         if (this.leftVariableID == null)
@@ -395,16 +572,27 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return this.leftVariableID;
     }
 
+    /**
+     * @return The name of the left variable
+     */
     public String getLeftVariableName()
     {
         return this.getLeft().getVariable().getValue();
     }
 
+    /**
+     * @return The unit that the left variable is measured in
+     */
     public String getLeftVariableUnit()
     {
         return this.getLeft().getVariable().getUnit();
     }
 
+    /**
+     * Determines the ID of the right variable
+     * @return The ID of the right variable
+     * @throws SQLException Thrown if the ID cannot be retrieved from the database
+     */
     public Integer getRightVariableID() throws SQLException
     {
         if (this.rightVariableID == null)
@@ -416,16 +604,27 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return this.rightVariableID;
     }
 
+    /**
+     * @return The name of the right variable
+     */
     public String getRightVariableName()
     {
         return this.getRight().getVariable().getValue();
     }
 
+    /**
+     * @return The unit that the right variable is measured in
+     */
     public String getRightVariableUnit()
     {
         return this.getRight().getVariable().getUnit();
     }
 
+    /**
+     * Determines the ID of the baseline variable
+     * @return The ID of the baseline variable
+     * @throws SQLException Thrown if the ID cannot be retrieved from the database
+     */
     public Integer getBaselineVariableID() throws SQLException
     {
         if (this.hasBaseline() && this.baselineVariableID == null)
@@ -437,6 +636,9 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return this.baselineVariableID;
     }
 
+    /**
+     * @return The name of the baseline variable
+     */
     public String getBaselineVariableName()
     {
         String name = null;
@@ -447,6 +649,9 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return name;
     }
 
+    /**
+     * @return The unit that the baseline variable is measured in
+     */
     public String getBaselineVariableUnit()
     {
         String unit = null;
@@ -457,6 +662,9 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return unit;
     }
 
+    /**
+     * @return The standardized lead time to offset the left handed data by
+     */
     public long getLeftTimeShift()
     {
         long shift = 0;
@@ -473,6 +681,9 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return shift;
     }
 
+    /**
+     * @return The standardized lead time to offset the right handed data by
+     */
     public long getRightTimeShift()
     {
         long shift = 0;
@@ -489,6 +700,9 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return shift;
     }
 
+    /**
+     * @return The largest possible value for the data. Double.MAX_VALUE by default.
+     */
     public Double getMaximumValue()
     {
         Double maximum = Double.MAX_VALUE;
@@ -502,6 +716,9 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return maximum;
     }
 
+    /**
+     * @return The smallest possible value for the data. -Double.MAX_VALUE by default
+     */
     public Double getMinimumValue()
     {
         Double minimum = -Double.MAX_VALUE;
@@ -515,6 +732,10 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return minimum;
     }
 
+    /**
+     * @return The earliest possible date for any value. NULL unless specified by
+     * the configuration
+     */
     public String getEarliestDate()
     {
         String earliestDate = null;
@@ -528,6 +749,10 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return earliestDate;
     }
 
+    /**
+     * @return The latest possible date for any value. NULL unless specified by
+     * the configuration
+     */
     public String getLatestDate()
     {
         String latestDate = null;
@@ -541,6 +766,10 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return latestDate;
     }
 
+    /**
+     * @return The earliest possible issue date for any forecast. NULL unless
+     * specified by the configuration
+     */
     public String getEarliestIssueDate()
     {
         String earliestDate = null;
@@ -554,6 +783,10 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return earliestDate;
     }
 
+    /**
+     * @return The latest possible issue date for any forecast. NULL unless
+     * specified by the configuration
+     */
     public String getLatestIssueDate()
     {
         String latestDate = null;
@@ -567,11 +800,18 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return latestDate;
     }
 
+    /**
+     * @return Whether or not the project specifies a specific season to evaluate
+     */
     public boolean specifiesSeason()
     {
         return this.projectConfig.getPair().getSeason() != null;
     }
 
+    /**
+     * @return The earliest possible day in a season. NULL unless specified in
+     * the configuration
+     */
     public MonthDay getEarliestDayInSeason()
     {
         MonthDay earliest = null;
@@ -586,6 +826,10 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return earliest;
     }
 
+    /**
+     * @return The latest possible day in a season. NULL unless specified in the
+     * configuration
+     */
     public MonthDay getLatestDayInSeason()
     {
         MonthDay latest = null;
@@ -600,6 +844,19 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return latest;
     }
 
+    /**
+     * Determines the expected period of lead values to retrieve from the
+     * database. If there is a definition provided by a lead times pooling window
+     * configuration, that period is used. Otherwise, the period from the scale
+     * is used.
+     *<p>
+     * The period from the scale is taken into account because a range of lead
+     * hours is required to scale
+     *</p>
+     * @return The length of a period of lead time to retrieve from the database
+     * @throws NoDataException Thrown if the period could not be determined
+     * from the scale
+     */
     public Integer getLeadPeriod() throws NoDataException
     {
         Integer period;
@@ -619,6 +876,10 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return period;
     }
 
+    /**
+     * @return The period of issue times to pull from the database at once. 0
+     * unless specified from the database
+     */
     public int getIssuePoolingWindowPeriod()
     {
         // Indicates one basis per period
@@ -632,6 +893,13 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return period;
     }
 
+    /**
+     * Determines the unit of time that leads should be queried in. If no lead time
+     * pooling window has been configured, the default is that of the expected
+     * scale of the data
+     * @return The unit of time that leads should be queried in
+     * @throws NoDataException
+     */
     public String getLeadUnit() throws NoDataException
     {
         String unit;
@@ -648,6 +916,25 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return unit;
     }
 
+    /**
+     * Determines the frequency with which to retrieve the period of leads.
+     *<p>
+     * If the period is 6 hours, but the frequency is 2 hours, it will evaluate
+     * 6 hours of data at a time offset by 2 hours at a time (so leads 1 through 6,
+     * 3 through 8, 5 through 10, etc)
+     *</p>
+     * <p>
+     * If a lead time pooling window has been specified, the specified frequency
+     * will be used. If no frequency has been specified, the period will be used.
+     *</p>
+     * <p>
+     * If no lead time pooling window has been specified, the specifications from
+     * the scale will be used instead
+     *</p>
+     * @return The frequency will which to retrieve a period of leads
+     * @throws NoDataException Thrown if there wasn't enough data available to
+     * infer a frequency from.
+     */
     public Integer getLeadFrequency() throws NoDataException
     {
         Integer frequency;
@@ -679,6 +966,10 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return frequency;
     }
 
+    /**
+     * @return Whether or not the system should group leads itself rather than
+     * relying on the configuration
+     */
     private boolean shouldDynamicallyPoolByLeads()
     {
         return this.projectConfig.getPair().getDesiredTimeScale() == null &&
@@ -687,6 +978,10 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
                       this.projectConfig.getInputs().getRight().getExistingTimeScale() == null);
     }
 
+    /**
+     * @return Whether or not data should be scaled
+     * @throws NoDataException Thrown if a dynamic scale could not be created
+     */
     public boolean shouldScale() throws NoDataException
     {
         return this.getScale() != null &&
@@ -694,8 +989,21 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
                        .value().equalsIgnoreCase(this.getScale().getFunction().value());
     }
 
-    private TimeScaleConfig getCommonScale()
-            throws NoDataException, ProjectConfigException
+    /**
+     * Generates a dynamic scale based on both left and right data in the database
+     *
+     * <p>
+     * The least common scale is used. If the left handed data is scaled to
+     * 6 hours, but the right is 9, the common scale is determined to be 18
+     * hours. If both sides are of the same scale, no scaling aggregation will
+     * be performed. Otherwise, the scale is achieved via the mean
+     * </p>
+     * @return A dynamically generated scale between the left and right handed
+     * data
+     * @throws NoDataException Thrown if the scales for either the left or
+     * right handed data could not be evaluated.
+     */
+    private TimeScaleConfig getCommonScale() throws NoDataException
     {
         Long commonScale;
 
@@ -758,6 +1066,14 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
                 "Dynamic Scale" );
     }
 
+    /**
+     * Determines the scale of the data
+     * <p>
+     *     If no desired scale has been configured, one is dynamically generated
+     * </p>
+     * @return The expected scale of the data
+     * @throws NoDataException
+     */
     public TimeScaleConfig getScale() throws NoDataException
     {
         if (this.desiredTimeScale == null)
@@ -767,28 +1083,26 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
 
         if (this.desiredTimeScale == null)
         {
-            try
-            {
-                this.desiredTimeScale = this.getCommonScale();
-            }
-            catch ( ProjectConfigException e )
-            {
-                throw new NoDataException(
-                        "There was not enough information on hand to determine "
-                        + "to determine the scope.",
-                        e
-                );
-            }
+            this.desiredTimeScale = this.getCommonScale();
         }
 
         return this.desiredTimeScale;
     }
-    
+
+    /**
+     * @return A possible issue dates pooling window configuration
+     */
     public PoolingWindowConfig getIssuePoolingWindow()
     {
         return this.projectConfig.getPair().getIssuedDatesPoolingWindow();
     }
 
+    /**
+     * Dictates the pooling mode for the project. If an issue times pooling
+     * window is established, the pooling mode is "TimeWindowMode.ROLLING",
+     * "TimeWindowMode.BACK_TO_BACK" otherwise.
+     * @return The pooling mode of the project. Defa
+     */
     public TimeWindowMode getPoolingMode()
     {
         TimeWindowMode mode = TimeWindowMode.BACK_TO_BACK;
@@ -800,7 +1114,10 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
 
         return mode;
     }
-    
+
+    /**
+     * @return The temporal unit used for pooling issue times
+     */
     public String getIssuePoolingWindowUnit()
     {
         String unit = null;
@@ -817,6 +1134,16 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return unit;
     }
 
+    /**
+     * Determines the frequency of issue times pooling windows.
+     *
+     * <p>
+     * The default is 1 in the configured temporal units. If the frequency is
+     * configured, the configured frequency is used. If that isn't configured
+     * but the the issue times period is greater than 0, that is used instead.
+     * </p>
+     * @return The frequency with which to pool periods of issue times.
+     */
     public int getIssuePoolingWindowFrequency()
     {
         // If there isn't a definition, we want to move a single unit at a time
@@ -834,6 +1161,20 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return frequency;
     }
 
+    /**
+     * Determines whether or not to calculate ranges of lead times for retrieval
+     * programmatically or to pull them from a discrete list.
+     *
+     * <p>
+     *     Leads will be calculated if there is some sort of lead time
+     *     specification in the configuration (existing scales, desired scale,
+     *     or lead time pooling windows) or if ingested data are determined to
+     *     be regular time series.
+     * </p>
+     *
+     * @return Whether or not ranges of lead times should be calculated
+     * @throws SQLException
+     */
     private boolean shouldCalculateLeads() throws SQLException
     {
         if (this.calculateLeads == null)
@@ -881,16 +1222,30 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return this.calculateLeads;
     }
 
+    /**
+     * @return The desired unit of measurement for all values
+     */
     public String getDesiredMeasurementUnit()
     {
         return String.valueOf(this.projectConfig.getPair().getUnit());
     }
 
+    /**
+     * @return A list of all configurations stating where to store pair output
+     */
     public List<DestinationConfig> getPairDestinations()
     {
-        return ConfigHelper.getPairDestinations( this.projectConfig );
+        return ConfigHelper.getDestinationsOfType( this.getProjectConfig(), DestinationType.PAIRS );
     }
 
+    /**
+     * Determines the overall range of leads to use in a given window
+     * @param feature The feature who the range belongs to
+     * @param windowNumber The iteration number over lead times
+     * @return A pair containing the earliest lead and latest lead
+     * @throws SQLException Thrown if the lead offset could not be determined
+     * @throws IOException Thrown if irregular lead times could not be determined
+     */
     public Pair<Integer, Integer> getLeadRange(final Feature feature, final int windowNumber)
             throws SQLException, IOException
     {
@@ -917,6 +1272,15 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return Pair.of( beginning, end );
     }
 
+    /**
+     * Creates a SQL where clause stating which leads to use for retrieval
+     * @param feature The feature whose leads to retrieve
+     * @param windowNumber The identifier for the current iteration over lead times
+     * @param alias The alias for a table to be used in the SQL statement
+     * @return A SQL where clause stating which leads to use for retrieval
+     * @throws IOException Thrown  if the range of leads cannot be determined
+     * @throws SQLException Thrown  if the range of leads cannot be determined
+     */
     public String getLeadQualifier(Feature feature, Integer windowNumber, String alias)
             throws IOException, SQLException
     {
@@ -952,6 +1316,19 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return qualifier;
     }
 
+    /**
+     * Retrieves and caches all discrete lead times for each feature for the project.
+     *
+     * <p>
+     *     Used for organizing lead times to evaluate for irregular time series
+     * </p>
+     * @throws IOException Thrown if the total list of locations and variables
+     * to evaluate could not be loaded
+     * @throws IOException Thrown if the process of populating lead times is
+     * interrupted
+     * @throws IOException Thrown if an error occurred while loading the data
+     * to populate the lead times
+     */
     private void populateDiscreteLeads() throws IOException
     {
         Connection connection = null;
@@ -1116,6 +1493,23 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         }
     }
 
+    /**
+     * Retrieves the offset for lead times to use to pull a valid window for a
+     * feature.
+     *
+     * <p>
+     *     All Offsets are cached at once to reduce load times for projects
+     *     with many locations
+     * </p>
+     * @param feature The feature to find the offset for
+     * @return The needed offset to match the first valid window with observations
+     * @throws IOException Thrown if tasks used to evaluate all lead offsets
+     * could not be executed
+     * @throws IOException Thrown if the population of all lead offsets is
+     * interrupted
+     * @throws SQLException Thrown if offsets cannot be populated due to the
+     * system being unable to determine what locations to retrieve offsets from.
+     */
     public Integer getLeadOffset(Feature feature)
             throws IOException, SQLException
     {
@@ -1132,8 +1526,23 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return this.leadOffsets.get( feature );
     }
 
-    private void populateLeadOffsets()
-            throws IOException, SQLException
+    /**
+     * Caches the lead time offsets for each location in the project
+     * <p>
+     *     When each offset is retrieved on demand, it adds several seconds to
+     *     the evaluation of each location. When there are many locations, this
+     *     adds up. When they are all pulled semi-simultaenously, execution
+     *     of the evaluation may occur almost immediately upon evaluating its
+     *     location.
+     * </p>
+     * @throws IOException Thrown if the locations with which to evaluate cannot
+     * be loaded
+     * @throws IOException Thrown if the loading of the actual offset values fails
+     * @throws IOException Thrown if the loading of the offset values is interrupted
+     * @throws SQLException Thrown if the script used to determine what
+     * locations to find offsets for cannot be formed
+     */
+    private void populateLeadOffsets() throws IOException, SQLException
     {
         FormattedStopwatch timer = null;
 
@@ -1143,17 +1552,6 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
             timer.start();
         }
 
-        // TODO: Implement dynamic scaling to determine the offset
-        // This will end up grabbing the offset based off of the lead pool or
-        // the scale, although we only ever need the offset in order to match
-        // the scale. If there's not a need to scale, theoretically, we wouldn't
-        // need to mess with a width. All seems to work out with the below
-        // method based on the scale, but it starts to fall apart when there
-        // isn't an "existing scale" tag; it defaults to an hour but won't
-        // match if that's not the current scale.  For reference, see scenarios
-        // 403 and 405. There needs to be a function that will find the least
-        // common multiple of either the defined existing scales or the data in
-        // the database.
         long width = TimeHelper.unitsToLeadUnits( this.getScale().getUnit().value(),
                                                      this.getScale().getPeriod());
 
@@ -1397,7 +1795,24 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         }
     }
 
-    public Integer getPoolCount( Feature feature) throws SQLException
+    /**
+     * Determines the number of pools for issue date pooling for a feature
+     *
+     * <p>
+     *     If we know that we want to pool data together two issue days at a time,
+     *     staggered by a single day, over data spanning four days, this will
+     *     tell us that we have three pools to iterate over
+     * </p>
+     * <p>
+     *     Aids in the process of iterating over windows/MetricInputs
+     * </p>
+     * @param feature The feature whose pool count to use
+     * @return The number of issue date pools for a feature
+     * @throws SQLException Thrown if the script used to find the count could
+     * not be created
+     * @throws SQLException Thrown if the count could not be retrieved
+     */
+    public Integer getIssuePoolCount( Feature feature) throws SQLException
     {
         if ( getPoolingMode() != TimeWindowMode.ROLLING)
         {
@@ -1408,16 +1823,23 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         {
             if (!this.poolCounts.containsKey( feature ))
             {
-                this.addPoolingFeature( feature );
+                this.addIssuePoolCount( feature );
             }
         }
 
         return this.poolCounts.get( feature );
     }
 
-    private void addPoolingFeature( Feature feature) throws SQLException
+    /**
+     * Adds the number of issue pools for a feature to the cache
+     * @param feature The feature whose count  we want to cache
+     * @throws SQLException Thrown if the script used to find the count could
+     * not be created
+     * @throws SQLException Thrown if the count could not be retrieved
+     */
+    private void addIssuePoolCount( Feature feature) throws SQLException
     {
-        String rollingScript = ScriptGenerator.formInitialRollingDataScript( this, feature );
+        String rollingScript = ScriptGenerator.formIssuePoolCountScript( this, feature );
 
         Connection connection = null;
         ResultSet resultSet = null;
@@ -1476,6 +1898,19 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return this.inputCode;
     }
 
+    /**
+     * Evaluates the scale of the left side of the data
+     * <p>
+     *     If no existing time scale has been dictated, it is evaluated from the
+     *     database
+     * </p>
+     * @return The number of standard temporal units between each value on the
+     * left side of the data
+     * @throws NoDataException Thrown if there wasn't enough data available to
+     * evaluate the scale
+     * @throws SQLException Thrown if an error was encountered while retrieving
+     * scale information from the database
+     */
     public long getLeftScale() throws NoDataException, SQLException
     {
         if (this.leftScale == -1)
@@ -1500,6 +1935,19 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return leftScale;
     }
 
+    /**
+     * Evaluates the scale of the right side of the data
+     * <p>
+     *     If no existing time scale has been dictated, it is evaluated from the
+     *     database
+     * </p>
+     * @return The number of standard temporal units between each value on the
+     * right side of the data
+     * @throws NoDataException Thrown if there wasn't enough data available to
+     * evaluate the scale
+     * @throws SQLException Thrown if an error was encountered while retrieving
+     * scale information from the database
+     */
     public long getRightScale() throws NoDataException, SQLException
     {
         if (this.rightScale == -1)
@@ -1521,6 +1969,19 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return this.rightScale;
     }
 
+    /**
+     * Evaluates the scale of the baseline
+     * <p>
+     *     If no existing time scale has been dictated, it is evaluated from the
+     *     database
+     * </p>
+     * @return The number of standard temporal units between each value in the
+     * baseline
+     * @throws NoDataException Thrown if there wasn't enough data available to
+     * evaluate the scale
+     * @throws SQLException Thrown if an error was encountered while retrieving
+     * scale information from the database
+     */
     public long getBaselineScale() throws NoDataException, SQLException
     {
         if ( this.getBaseline() != null && this.baselineScale == -1)
@@ -1539,6 +2000,14 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return this.baselineScale;
     }
 
+    /**
+     * Determines the number of standard lead units between values
+     * @param dataSourceConfig The specification for which values to investigate
+     * @return The number of standard lead units between values
+     * @throws NoDataException Thrown if the scale could not be determined
+     * @throws SQLException Thrown if an error occurred while retrieving the
+     * scale from the database
+     */
     private int getScale(DataSourceConfig dataSourceConfig)
             throws NoDataException, SQLException
     {
@@ -1566,6 +2035,13 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return leadScale;
     }
 
+    /**
+     * Retrieves the scale of forecast data from the database
+     * @param dataSourceConfig The specification for the data with which to investigate
+     * @return The number of standard lead units between values
+     * @throws SQLException Thrown if the number of lead units could not be retrieved
+     * from the database
+     */
     private Integer getForecastScale(DataSourceConfig dataSourceConfig)
             throws SQLException
     {
@@ -1596,6 +2072,13 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return script.retrieve( "scale" );
     }
 
+    /**
+     * Retrieves the scale of observation data from the database
+     * @param dataSourceConfig The specification for the data with which to investigate
+     * @return The number of standard lead units between values
+     * @throws SQLException Thrown if the number of lead units could not be retrieved
+     * from the database
+     */
     private int getObservationScale(DataSourceConfig dataSourceConfig)
             throws SQLException
     {
@@ -1627,6 +2110,9 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return script.retrieve( "scale" );
     }
 
+    /**
+     * @return Whether or not baseline data is involved in the project
+     */
     public boolean hasBaseline()
     {
         return this.getBaseline() != null;
@@ -1703,6 +2189,12 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return this.performedInsert;
     }
 
+    /**
+     * @param feature The feature to investigate
+     * @return The last lead time for the feature available for evaluation
+     * @throws SQLException Thrown if the value could not be retrieved from the
+     * database
+     */
     public Integer getLastLead(Feature feature) throws SQLException
     {
         boolean leadIsMissing = !this.lastLeads.containsKey( feature );
@@ -1792,7 +2284,6 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
 
 
     /**
-     * Get the minimum lead hours from a project config or a default.
      * @return the minimum value specified or a default of Integer.MIN_VALUE
      */
     public Integer getMinimumLeadHour()
@@ -1815,7 +2306,6 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     }
 
     /**
-     * Get the maximum lead hours from a project config or a default.
      * @return the maximum value specified or a default of Integer.MAX_VALUE
      */
     private int getMaximumLeadHour()
@@ -1837,21 +2327,33 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return result;
     }
 
+    /**
+     * @return The overall number of lead units within a single window
+     * @throws NoDataException Thrown if there wasn't enough data available to
+     * evaluate
+     */
     public long getWindowWidth() throws NoDataException
     {
         return TimeHelper.unitsToLeadUnits( this.getLeadUnit(), this.getLeadPeriod() );
     }
 
-    public String getZeroDate(DataSourceConfig sourceConfig, Feature feature) throws SQLException
+    /**
+     * Returns the first date of observation data for the feature, for the given input
+     * @param sourceConfig The side of the data whose zero date we are interested in
+     * @param feature The feature whose zero date we are interested in
+     * @return
+     * @throws SQLException
+     */
+    public String getInitialObservationDate( DataSourceConfig sourceConfig, Feature feature) throws SQLException
     {
         synchronized ( this.zeroDates )
         {
             if (!this.zeroDates.containsKey( feature ))
             {
                 String script =
-                        ScriptGenerator.generateZeroDateScript( this,
-                                                                sourceConfig,
-                                                                feature );
+                        ScriptGenerator.generateInitialObservationDateScript( this,
+                                                                              sourceConfig,
+                                                                              feature );
                 this.zeroDates.put(feature, "'" + Database.getResult( script, "zero_date" ) + "'");
             }
         }
@@ -1859,9 +2361,23 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return this.zeroDates.get(feature);
     }
 
+    /**
+     * @return Whether or not the project uses probability thresholds
+     */
     public boolean usesProbabilityThresholds()
     {
-        return ConfigHelper.usesProbabilityThresholds( this.projectConfig );
+        boolean hasProbabilityThreshold = this.projectConfig.getMetrics()
+                                                            .getProbabilityThresholds() != null;
+
+        if (!hasProbabilityThreshold)
+        {
+            hasProbabilityThreshold = wres.util.Collections.exists(
+                    this.projectConfig.getMetrics().getMetric(),
+                    ( MetricConfig config) -> config.getProbabilityThresholds() != null
+            );
+        }
+
+        return hasProbabilityThreshold;
     }
 
     @Override
@@ -1882,14 +2398,6 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     public int hashCode()
     {
         return this.getInputCode();
-    }
-
-    private static List<String> copyAndSort( List<String> someList )
-    {
-        List<String> result = new ArrayList<>( someList.size() );
-        result.addAll( someList );
-        result.sort( Comparator.naturalOrder() );
-        return Collections.unmodifiableList( result );
     }
 
 }

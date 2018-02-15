@@ -229,7 +229,7 @@ public class PairWriter extends WRESCallable<Boolean>
         if ( this.projectDetails.getPoolingMode() == TimeWindowMode.ROLLING )
         {
             window /= this.projectDetails.getLeadFrequency();
-            window *= (this.projectDetails.getPoolCount( this.feature ));
+            window *= (this.projectDetails.getIssuePoolCount( this.feature ));
             window += this.poolingStep;
         }
 

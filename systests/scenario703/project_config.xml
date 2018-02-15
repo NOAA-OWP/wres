@@ -42,22 +42,11 @@
         <metric> <name>sample size</name> </metric>
     </metrics>
     <outputs>
-        <!-- Commented out due to data size -->
-        <!--
         <destination type="pairs" decimalFormat="0.000000">
             <path>output/</path>
         </destination>
-        -->
         <destination type="numeric" decimalFormat="0.000000">
             <path>output/</path>
-        </destination>
-        
-        <destination type="graphic">
-            <path>output/</path>
-            <!--Optional: -->
-            <graphical width="800" height="600">
-                <plotType>pooling window</plotType>
-            </graphical>
         </destination>
     </outputs>
 </project>

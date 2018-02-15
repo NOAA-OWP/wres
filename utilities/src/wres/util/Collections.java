@@ -312,6 +312,20 @@ public final class Collections
         return anyJoiner.toString();
     }
 
+    public static <U extends Comparable<U>> List<U> copyAndSort(Collection<U> someCollection)
+    {
+        List<U> result = new ArrayList<>(someCollection);
+        result.sort(Comparator.naturalOrder());
+        return java.util.Collections.unmodifiableList( result );
+    }
+
+    public static <U> List<U> copyAndSort(Collection<U> someCollection, Comparator<U> comparator)
+    {
+        List<U> result = new ArrayList<>(someCollection);
+        result.sort(comparator);
+        return java.util.Collections.unmodifiableList( result );
+    }
+
     /**
      * Translates a listing of values and a specified function to an aggregated
      * value.
