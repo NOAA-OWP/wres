@@ -1,5 +1,6 @@
 package wres.control;
 
+import java.io.IOException;
 import java.util.Objects;
 import java.util.function.Consumer;
 
@@ -14,6 +15,7 @@ import wres.datamodel.outputs.MetricOutputAccessException;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.engine.statistics.metric.processing.MetricProcessorByTime;
 import wres.io.config.ProjectConfigPlus;
+import wres.io.writing.CommaSeparated;
 
 /**
  * A processor that generates outputs while a processing pipeline is ongoing (i.e. has more outputs to generate), rather 
@@ -75,56 +77,58 @@ public class IntermediateResultProcessor implements Consumer<MetricOutputForProj
         this.processor = processor;
     }
 
-        @Override
-        public void accept(final MetricOutputForProjectByTimeAndThreshold input)
+    @Override
+    public void accept( final MetricOutputForProjectByTimeAndThreshold input )
+    {
+        try
         {
-            try
+            if ( ProcessorHelper.configNeedsThisTypeOfOutput( projectConfigPlus.getProjectConfig(),
+                                                              DestinationType.GRAPHIC ) )
             {
-                if ( ProcessorHelper.configNeedsThisTypeOfOutput( projectConfigPlus.getProjectConfig(),
-                                                                  DestinationType.GRAPHIC ) )
-                {
-                    MetricOutputMetadata meta = null;
+                MetricOutputMetadata meta = null;
 
-                    //Multivector output available, not being cached to the end
-                    if ( input.hasOutput( MetricOutputGroup.MULTIVECTOR )
-                         && !processor.willCacheMetricOutput( MetricOutputGroup.MULTIVECTOR ) )
-                    {
-                        ProcessorHelper.processMultiVectorCharts( feature,
-                                                                  projectConfigPlus,
-                                                                  input.getMultiVectorOutput() );
-                        meta = input.getMultiVectorOutput().entrySet().iterator().next().getValue().getMetadata();
-                    }
-                    //Box-plot output available, not being cached to the end
-                    if ( input.hasOutput( MetricOutputGroup.BOXPLOT )
-                         && !processor.willCacheMetricOutput( MetricOutputGroup.BOXPLOT ) )
-                    {
-                        ProcessorHelper.processBoxPlotCharts( feature,
-                                                              projectConfigPlus,
-                                                              input.getBoxPlotOutput() );
-                        meta = input.getBoxPlotOutput().entrySet().iterator().next().getValue().getMetadata();
-                    }
-                    if ( Objects.nonNull( meta ) )
-                    {
-                        LOGGER.debug( "Completed processing of intermediate metrics results for feature '{}' "
-                                      + "and time window {}.",
-                                      meta.getIdentifier().getGeospatialID(),
-                                      meta.getTimeWindow() );
-                    }
-                    else
-                    {
-                        LOGGER.debug( "Completed processing of intermediate metrics results for feature '{}' with "
-                                      + "unknown time window.",
-                                      feature.getLocationId() );
-                    }
-                }
-            }
-            catch ( final MetricOutputAccessException e )
-            {
-                if ( Thread.currentThread().isInterrupted() )
+                //Multivector output available, not being cached to the end
+                if ( input.hasOutput( MetricOutputGroup.MULTIVECTOR )
+                     && !processor.willCacheMetricOutput( MetricOutputGroup.MULTIVECTOR ) )
                 {
-                    LOGGER.warn( "Interrupted while processing intermediate results:", e );
+                    ProcessorHelper.processMultiVectorCharts( feature,
+                                                              projectConfigPlus,
+                                                              input.getMultiVectorOutput() );
+                    meta = input.getMultiVectorOutput().entrySet().iterator().next().getValue().getMetadata();
+                    // Write the CSV output
+                    CommaSeparated.writeDiagrams( projectConfigPlus.getProjectConfig(), input.getMultiVectorOutput() );
                 }
-                throw new WresProcessingException( "Error while processing intermediate results:", e );
+                //Box-plot output available, not being cached to the end
+                if ( input.hasOutput( MetricOutputGroup.BOXPLOT )
+                     && !processor.willCacheMetricOutput( MetricOutputGroup.BOXPLOT ) )
+                {
+                    ProcessorHelper.processBoxPlotCharts( feature,
+                                                          projectConfigPlus,
+                                                          input.getBoxPlotOutput() );
+                    meta = input.getBoxPlotOutput().entrySet().iterator().next().getValue().getMetadata();
+                }
+                if ( Objects.nonNull( meta ) )
+                {
+                    LOGGER.debug( "Completed processing of intermediate metrics results for feature '{}' "
+                                  + "and time window {}.",
+                                  meta.getIdentifier().getGeospatialID(),
+                                  meta.getTimeWindow() );
+                }
+                else
+                {
+                    LOGGER.debug( "Completed processing of intermediate metrics results for feature '{}' with "
+                                  + "unknown time window.",
+                                  feature.getLocationId() );
+                }
             }
         }
+        catch ( final MetricOutputAccessException | IOException e )
+        {
+            if ( Thread.currentThread().isInterrupted() )
+            {
+                LOGGER.warn( "Interrupted while processing intermediate results:", e );
+            }
+            throw new WresProcessingException( "Error while processing intermediate results:", e );
+        }
+    }
 }

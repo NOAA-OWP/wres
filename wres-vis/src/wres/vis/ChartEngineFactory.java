@@ -36,7 +36,7 @@ import ohd.hseb.charter.datasource.instances.NumericalXYChartDataSource;
 import ohd.hseb.charter.parameters.ChartDrawingParameters;
 import ohd.hseb.hefs.utils.arguments.ArgumentsProcessor;
 import ohd.hseb.hefs.utils.xml.XMLTools;
-import wres.config.generated.PlotTypeSelection;
+import wres.config.generated.OutputTypeSelection;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
@@ -65,19 +65,19 @@ public abstract class ChartEngineFactory
      * Maintains information about the different {@link ScoreOutput} plot types, including defaults and expected
      * classes.
      */
-    private static EnumMap<PlotTypeSelection, PlotTypeInformation> scalarOutputPlotTypeInfoMap =
-            new EnumMap<>( PlotTypeSelection.class );
+    private static EnumMap<OutputTypeSelection, PlotTypeInformation> scalarOutputPlotTypeInfoMap =
+            new EnumMap<>( OutputTypeSelection.class );
     static
     {
-        scalarOutputPlotTypeInfoMap.put( PlotTypeSelection.LEAD_THRESHOLD,
+        scalarOutputPlotTypeInfoMap.put( OutputTypeSelection.LEAD_THRESHOLD,
                                          new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
                                                                   ScoreOutput.class,
                                                                   "scalarOutputLeadThresholdTemplate.xml" ) );
-        scalarOutputPlotTypeInfoMap.put( PlotTypeSelection.THRESHOLD_LEAD,
+        scalarOutputPlotTypeInfoMap.put( OutputTypeSelection.THRESHOLD_LEAD,
                                          new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
                                                                   ScoreOutput.class,
                                                                   "scalarOutputThresholdLeadTemplate.xml" ) );
-        scalarOutputPlotTypeInfoMap.put( PlotTypeSelection.POOLING_WINDOW,
+        scalarOutputPlotTypeInfoMap.put( OutputTypeSelection.POOLING_WINDOW,
                                          new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
                                                                   ScoreOutput.class,
                                                                   "scalarOutputPoolingWindowTemplate.xml" ) );
@@ -87,11 +87,11 @@ public abstract class ChartEngineFactory
      * Maintains information about the different {@link ScoreOutput} plot types, including defaults and expected
      * classes.
      */
-    private static EnumMap<PlotTypeSelection, PlotTypeInformation> pairedInstantDurationOutputPlotTypeInfoMap =
-            new EnumMap<>( PlotTypeSelection.class );
+    private static EnumMap<OutputTypeSelection, PlotTypeInformation> pairedInstantDurationOutputPlotTypeInfoMap =
+            new EnumMap<>( OutputTypeSelection.class );
     static
     {
-        pairedInstantDurationOutputPlotTypeInfoMap.put( PlotTypeSelection.POOLING_WINDOW,
+        pairedInstantDurationOutputPlotTypeInfoMap.put( OutputTypeSelection.POOLING_WINDOW,
                                                         new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
                                                                                  PairedOutput.class,
                                                                                  "timeToPeakErrorTemplate.xml" ) );
@@ -101,11 +101,11 @@ public abstract class ChartEngineFactory
      * Maintains information about the different {@link ScoreOutput} plot types, including defaults and expected
      * classes.
      */
-    private static EnumMap<PlotTypeSelection, PlotTypeInformation> categoricalDurationScorePlotTypeInfoMap =
-            new EnumMap<>( PlotTypeSelection.class );
+    private static EnumMap<OutputTypeSelection, PlotTypeInformation> categoricalDurationScorePlotTypeInfoMap =
+            new EnumMap<>( OutputTypeSelection.class );
     static
     {
-        categoricalDurationScorePlotTypeInfoMap.put( PlotTypeSelection.POOLING_WINDOW,
+        categoricalDurationScorePlotTypeInfoMap.put( OutputTypeSelection.POOLING_WINDOW,
                                                      new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
                                                                               DurationScoreOutput.class,
                                                                               "timeToPeakSummaryStatsTemplate.xml" ) );
@@ -114,59 +114,59 @@ public abstract class ChartEngineFactory
     /**
      * Maintains information about the different {@link MultiVectorOutput} plot types, including defaults and expected
      * classes.  For metrics where the plot type is not used, such as box plots, you must put the information using
-     * a {@link PlotTypeSelection#LEAD_THRESHOLD}!  You cannot "put" with a null plot type selection!
+     * a {@link OutputTypeSelection#LEAD_THRESHOLD}!  You cannot "put" with a null plot type selection!
      */
-    private static Table<MetricConstants, PlotTypeSelection, PlotTypeInformation> multiVectorOutputPlotTypeInfoTable =
+    private static Table<MetricConstants, OutputTypeSelection, PlotTypeInformation> multiVectorOutputPlotTypeInfoTable =
             HashBasedTable.create();
     static
     {
         multiVectorOutputPlotTypeInfoTable.put( MetricConstants.RELIABILITY_DIAGRAM,
-                                                PlotTypeSelection.LEAD_THRESHOLD,
+                                                OutputTypeSelection.LEAD_THRESHOLD,
                                                 new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
                                                                          MultiVectorOutput.class,
                                                                          "reliabilityDiagramTemplate.xml" ) );
         multiVectorOutputPlotTypeInfoTable.put( MetricConstants.RELIABILITY_DIAGRAM,
-                                                PlotTypeSelection.THRESHOLD_LEAD,
+                                                OutputTypeSelection.THRESHOLD_LEAD,
                                                 new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
                                                                          MultiVectorOutput.class,
                                                                          "reliabilityDiagramTemplate.xml" ) );
         multiVectorOutputPlotTypeInfoTable.put( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
-                                                PlotTypeSelection.LEAD_THRESHOLD,
+                                                OutputTypeSelection.LEAD_THRESHOLD,
                                                 new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
                                                                          MultiVectorOutput.class,
                                                                          "rocDiagramTemplate.xml" ) );
         multiVectorOutputPlotTypeInfoTable.put( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
-                                                PlotTypeSelection.THRESHOLD_LEAD,
+                                                OutputTypeSelection.THRESHOLD_LEAD,
                                                 new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
                                                                          MultiVectorOutput.class,
                                                                          "rocDiagramTemplate.xml" ) );
         multiVectorOutputPlotTypeInfoTable.put( MetricConstants.QUANTILE_QUANTILE_DIAGRAM,
-                                                PlotTypeSelection.LEAD_THRESHOLD,
+                                                OutputTypeSelection.LEAD_THRESHOLD,
                                                 new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
                                                                          MultiVectorOutput.class,
                                                                          "qqDiagramTemplate.xml" ) );
         multiVectorOutputPlotTypeInfoTable.put( MetricConstants.QUANTILE_QUANTILE_DIAGRAM,
-                                                PlotTypeSelection.THRESHOLD_LEAD,
+                                                OutputTypeSelection.THRESHOLD_LEAD,
                                                 new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
                                                                          MultiVectorOutput.class,
                                                                          "qqDiagramTemplate.xml" ) );
         multiVectorOutputPlotTypeInfoTable.put( MetricConstants.RANK_HISTOGRAM,
-                                                PlotTypeSelection.LEAD_THRESHOLD,
+                                                OutputTypeSelection.LEAD_THRESHOLD,
                                                 new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
                                                                          MultiVectorOutput.class,
                                                                          "rankHistogramTemplate.xml" ) );
         multiVectorOutputPlotTypeInfoTable.put( MetricConstants.RANK_HISTOGRAM,
-                                                PlotTypeSelection.THRESHOLD_LEAD,
+                                                OutputTypeSelection.THRESHOLD_LEAD,
                                                 new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
                                                                          MultiVectorOutput.class,
                                                                          "rankHistogramTemplate.xml" ) );
         multiVectorOutputPlotTypeInfoTable.put( MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE,
-                                                PlotTypeSelection.LEAD_THRESHOLD, //Unimportant
+                                                OutputTypeSelection.LEAD_THRESHOLD, //Unimportant
                                                 new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
                                                                          BoxPlotOutput.class,
                                                                          "boxPlotOfErrorsTemplate.xml" ) );
         multiVectorOutputPlotTypeInfoTable.put( MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
-                                                PlotTypeSelection.LEAD_THRESHOLD, //Unimportant
+                                                OutputTypeSelection.LEAD_THRESHOLD, //Unimportant
                                                 new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
                                                                          BoxPlotOutput.class,
                                                                          "boxPlotOfErrorsTemplate.xml" ) );
@@ -182,19 +182,19 @@ public abstract class ChartEngineFactory
 
     /**
      * @param metricId the metric identifier
-     * @param plotType the plot type.  May be null.  If it is null, {@link PlotTypeSelection#LEAD_THRESHOLD} is used to access
+     * @param plotType the plot type.  May be null.  If it is null, {@link OutputTypeSelection#LEAD_THRESHOLD} is used to access
      *        the map of information; see the map comment for more info.
      * @return {@link PlotTypeInformation} for the provided {@link MetricConstants} metric id and
-     *         {@link PlotTypeSelection}. This will throw an {@link IllegalArgumentException} if the combination is not
+     *         {@link OutputTypeSelection}. This will throw an {@link IllegalArgumentException} if the combination is not
      *         yet supported in the {@link #multiVectorOutputPlotTypeInfoTable}.
      */
     public static PlotTypeInformation getNonNullMultiVectorOutputPlotTypeInformation( final MetricConstants metricId,
-                                                                                      final PlotTypeSelection plotType )
+                                                                                      final OutputTypeSelection plotType )
     {
-        PlotTypeSelection usedPlotType = plotType;
+        OutputTypeSelection usedPlotType = plotType;
         if ( plotType == null )
         {
-            usedPlotType = PlotTypeSelection.LEAD_THRESHOLD;
+            usedPlotType = OutputTypeSelection.LEAD_THRESHOLD;
         }
 
         final PlotTypeInformation results = multiVectorOutputPlotTypeInfoTable.get( metricId, usedPlotType );
@@ -218,15 +218,15 @@ public abstract class ChartEngineFactory
     private static MetricOutputMapByTimeAndThreshold<MultiVectorOutput> sliceInputForDiagram(
                                                                                               Object inputKeyInstance,
                                                                                               final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> input,
-                                                                                              PlotTypeSelection usedPlotType )
+                                                                                              OutputTypeSelection usedPlotType )
     {
         MetricOutputMapByTimeAndThreshold<MultiVectorOutput> inputSlice;
-        if ( usedPlotType.equals( PlotTypeSelection.LEAD_THRESHOLD ) )
+        if ( usedPlotType.equals( OutputTypeSelection.LEAD_THRESHOLD ) )
         {
 
             inputSlice = input.filterByTime( (TimeWindow) inputKeyInstance );
         }
-        else if ( usedPlotType.equals( PlotTypeSelection.THRESHOLD_LEAD ) )
+        else if ( usedPlotType.equals( OutputTypeSelection.THRESHOLD_LEAD ) )
         {
             inputSlice =
                     input.filterByThreshold( (Threshold) inputKeyInstance );
@@ -248,14 +248,14 @@ public abstract class ChartEngineFactory
      */
     private static WRESArgumentProcessor constructDiagramArguments( Object inputKeyInstance,
                                                                     MetricOutputMapByTimeAndThreshold<MultiVectorOutput> inputSlice,
-                                                                    PlotTypeSelection usedPlotType )
+                                                                    OutputTypeSelection usedPlotType )
     {
         WRESArgumentProcessor args = new WRESArgumentProcessor( inputSlice, usedPlotType );
-        if ( usedPlotType.equals( PlotTypeSelection.LEAD_THRESHOLD ) )
+        if ( usedPlotType.equals( OutputTypeSelection.LEAD_THRESHOLD ) )
         {
             args.addLeadThresholdArguments( inputSlice, (TimeWindow) inputKeyInstance );
         }
-        else if ( usedPlotType.equals( PlotTypeSelection.THRESHOLD_LEAD ) )
+        else if ( usedPlotType.equals( OutputTypeSelection.THRESHOLD_LEAD ) )
         {
             args.addThresholdLeadArguments( inputSlice, (Threshold) inputKeyInstance );
         }
@@ -286,7 +286,7 @@ public abstract class ChartEngineFactory
                                        Object inputKeyInstance,
                                        final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> input,
                                        final DataFactory factory,
-                                       PlotTypeSelection usedPlotType,
+                                       OutputTypeSelection usedPlotType,
                                        String templateName,
                                        String overrideParametersStr )
                     throws ChartEngineException
@@ -350,7 +350,7 @@ public abstract class ChartEngineFactory
                                Object inputKeyInstance,
                                final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> input,
                                final DataFactory factory,
-                               PlotTypeSelection usedPlotType,
+                               OutputTypeSelection usedPlotType,
                                String templateName,
                                String overrideParametersStr )
                     throws ChartEngineException
@@ -405,7 +405,7 @@ public abstract class ChartEngineFactory
                               Object inputKeyInstance,
                               final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> input,
                               final DataFactory factory,
-                              PlotTypeSelection usedPlotType,
+                              OutputTypeSelection usedPlotType,
                               String templateName,
                               String overrideParametersStr )
                     throws ChartEngineException
@@ -462,7 +462,7 @@ public abstract class ChartEngineFactory
                                   Object inputKeyInstance,
                                   final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> input,
                                   final DataFactory factory,
-                                  PlotTypeSelection usedPlotType,
+                                  OutputTypeSelection usedPlotType,
                                   String templateName,
                                   String overrideParametersStr )
                     throws ChartEngineException
@@ -519,7 +519,7 @@ public abstract class ChartEngineFactory
     public static ConcurrentMap<Object, ChartEngine>
             buildMultiVectorOutputChartEngine( final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> input,
                                                final DataFactory factory,
-                                               final PlotTypeSelection userSpecifiedPlotType,
+                                               final OutputTypeSelection userSpecifiedPlotType,
                                                final String userSpecifiedTemplateResourceName,
                                                final String overrideParametersStr )
                     throws ChartEngineException
@@ -528,7 +528,7 @@ public abstract class ChartEngineFactory
 
         //Determine used plot type and template name.  Note that if no plot type information is provided for the metric id
         //and plot type, then an illegal argument exception will be thrown.
-        PlotTypeSelection usedPlotType = PlotTypeSelection.LEAD_THRESHOLD; //Lead time first plot type is the default!!!
+        OutputTypeSelection usedPlotType = OutputTypeSelection.LEAD_THRESHOLD; //Lead time first plot type is the default!!!
         if ( userSpecifiedPlotType != null )
         {
             usedPlotType = userSpecifiedPlotType;
@@ -543,7 +543,7 @@ public abstract class ChartEngineFactory
 
         //Determine the key set for the loop below based on if this is a lead time first and threshold first plot type.
         Set<?> keySetValues = input.setOfTimeWindowKey();
-        if ( usedPlotType.equals( PlotTypeSelection.THRESHOLD_LEAD ) )
+        if ( usedPlotType.equals( OutputTypeSelection.THRESHOLD_LEAD ) )
         {
             keySetValues = input.setOfThresholdKey();
         }
@@ -718,7 +718,7 @@ public abstract class ChartEngineFactory
     public static ConcurrentMap<MetricConstants, ChartEngine>
             buildScoreOutputChartEngine( final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> input,
                                          final DataFactory factory,
-                                         final PlotTypeSelection userSpecifiedPlotType,
+                                         final OutputTypeSelection userSpecifiedPlotType,
                                          final String userSpecifiedTemplateResourceName,
                                          final String overrideParametersStr )
                     throws ChartEngineException
@@ -755,13 +755,13 @@ public abstract class ChartEngineFactory
      */
     private static ChartEngine
             buildScoreOutputChartEngine( final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> input,
-                                         final PlotTypeSelection userSpecifiedPlotType,
+                                         final OutputTypeSelection userSpecifiedPlotType,
                                          final String userSpecifiedTemplateResourceName,
                                          final String overrideParametersStr )
                     throws ChartEngineException
     {
         //Define the used plot type.
-        PlotTypeSelection usedPlotType = PlotTypeSelection.LEAD_THRESHOLD;
+        OutputTypeSelection usedPlotType = OutputTypeSelection.LEAD_THRESHOLD;
         if ( userSpecifiedPlotType != null )
         {
             usedPlotType = userSpecifiedPlotType;
@@ -783,19 +783,19 @@ public abstract class ChartEngineFactory
         }
 
         //Lead-threshold is the default.  This is for plots with the lead time on the domain axis and threshold in the legend.
-        if ( usedPlotType.equals( PlotTypeSelection.LEAD_THRESHOLD ) )
+        if ( usedPlotType.equals( OutputTypeSelection.LEAD_THRESHOLD ) )
         {
             source = XYChartDataSourceFactory.ofDoubleScoreOutputByLeadAndThreshold( 0, input );
             arguments.addLeadThresholdArguments( input, null );
         }
         //This is for plots with the threshold on the domain axis and lead time in the legend.
-        else if ( usedPlotType.equals( PlotTypeSelection.THRESHOLD_LEAD ) )
+        else if ( usedPlotType.equals( OutputTypeSelection.THRESHOLD_LEAD ) )
         {
             source = XYChartDataSourceFactory.ofDoubleScoreOutputByThresholdAndLead( 0, input );
             arguments.addThresholdLeadArguments( input, null );
         }
         //This is for plots that operate with sequences of time windows (e.g. rolling windows)
-        else if ( usedPlotType.equals( PlotTypeSelection.POOLING_WINDOW ) )
+        else if ( usedPlotType.equals( OutputTypeSelection.POOLING_WINDOW ) )
         {
             source = XYChartDataSourceFactory.ofDoubleScoreOutputByPoolingWindow( 0, input );
             arguments.addPoolingWindowArguments( input );
@@ -804,11 +804,11 @@ public abstract class ChartEngineFactory
         {
             throw new IllegalArgumentException( "Plot type of " + userSpecifiedPlotType
                                                 + " is not valid for a generic scalar output plot; must be one of "
-                                                + PlotTypeSelection.LEAD_THRESHOLD
+                                                + OutputTypeSelection.LEAD_THRESHOLD
                                                 + ", "
-                                                + PlotTypeSelection.THRESHOLD_LEAD
+                                                + OutputTypeSelection.THRESHOLD_LEAD
                                                 + ", "
-                                                + PlotTypeSelection.POOLING_WINDOW
+                                                + OutputTypeSelection.POOLING_WINDOW
                                                 + "." );
         }
 
@@ -847,7 +847,7 @@ public abstract class ChartEngineFactory
         //Build the source.  Note that the POOLING_WINDOW is used below as filler.  Once we have a real plot type
         //we can update the map at the top and use the appropriate plot type here.
         XYChartDataSource source = null;
-        String templateName = pairedInstantDurationOutputPlotTypeInfoMap.get( PlotTypeSelection.POOLING_WINDOW )
+        String templateName = pairedInstantDurationOutputPlotTypeInfoMap.get( OutputTypeSelection.POOLING_WINDOW )
                                                                         .getDefaultTemplateName();
         if ( userSpecifiedTemplateResourceName != null )
         {
@@ -895,7 +895,7 @@ public abstract class ChartEngineFactory
 
         //Build the source.  Note that the POOLING_WINDOW is used below as filler.  Once we have a real plot type
         //we can update the map at the top and use the appropriate plot type here.
-        String templateName = categoricalDurationScorePlotTypeInfoMap.get( PlotTypeSelection.POOLING_WINDOW )
+        String templateName = categoricalDurationScorePlotTypeInfoMap.get( OutputTypeSelection.POOLING_WINDOW )
                                                                      .getDefaultTemplateName();
         if ( userSpecifiedTemplateResourceName != null )
         {

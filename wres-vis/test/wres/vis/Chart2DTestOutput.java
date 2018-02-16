@@ -16,7 +16,7 @@ import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartTools;
 import ohd.hseb.hefs.utils.junit.FileComparisonUtilities;
 import ohd.hseb.hefs.utils.tools.FileTools;
-import wres.config.generated.PlotTypeSelection;
+import wres.config.generated.OutputTypeSelection;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
@@ -65,7 +65,7 @@ public class Chart2DTestOutput
             //Call the factory.
             final Map<MetricConstants, ChartEngine> engine = ChartEngineFactory.buildScoreOutputChartEngine( input,
                                                                                                              DefaultDataFactory.getInstance(),
-                                                                                                             PlotTypeSelection.LEAD_THRESHOLD,
+                                                                                                             OutputTypeSelection.LEAD_THRESHOLD,
                                                                                                              null,
                                                                                                              null );
 
@@ -102,7 +102,7 @@ public class Chart2DTestOutput
             //Call the factory.
             final Map<MetricConstants, ChartEngine> engine = ChartEngineFactory.buildScoreOutputChartEngine( input,
                                                                                                              DefaultDataFactory.getInstance(),
-                                                                                                             PlotTypeSelection.THRESHOLD_LEAD,
+                                                                                                             OutputTypeSelection.THRESHOLD_LEAD,
                                                                                                              null,
                                                                                                              null );
 
@@ -156,7 +156,7 @@ public class Chart2DTestOutput
             //Call the factory.
             final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildMultiVectorOutputChartEngine( results,
                                                                                                              factory,
-                                                                                                             PlotTypeSelection.LEAD_THRESHOLD,
+                                                                                                             OutputTypeSelection.LEAD_THRESHOLD,
                                                                                                              null,
                                                                                                              null );
 
@@ -208,7 +208,7 @@ public class Chart2DTestOutput
             //Call the factory.
             final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildMultiVectorOutputChartEngine( results,
                                                                                                              factory,
-                                                                                                             PlotTypeSelection.THRESHOLD_LEAD,
+                                                                                                             OutputTypeSelection.THRESHOLD_LEAD,
                                                                                                              null,
                                                                                                              null );
 
@@ -262,7 +262,7 @@ public class Chart2DTestOutput
             final ConcurrentMap<MetricConstants, ChartEngine> engineMap =
                     ChartEngineFactory.buildScoreOutputChartEngine( input,
                                                                     factory,
-                                                                    PlotTypeSelection.LEAD_THRESHOLD,
+                                                                    OutputTypeSelection.LEAD_THRESHOLD,
                                                                     null,
                                                                     null );
             //Generate the output file.
@@ -314,7 +314,7 @@ public class Chart2DTestOutput
             //Call the factory.
             final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildMultiVectorOutputChartEngine( results,
                                                                                                              factory,
-                                                                                                             PlotTypeSelection.LEAD_THRESHOLD,
+                                                                                                             OutputTypeSelection.LEAD_THRESHOLD,
                                                                                                              null,
                                                                                                              null );
 
@@ -367,7 +367,7 @@ public class Chart2DTestOutput
             //Call the factory.
             final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildMultiVectorOutputChartEngine( results,
                                                                                                              factory,
-                                                                                                             PlotTypeSelection.THRESHOLD_LEAD,
+                                                                                                             OutputTypeSelection.THRESHOLD_LEAD,
                                                                                                              null,
                                                                                                              null );
 
@@ -420,7 +420,7 @@ public class Chart2DTestOutput
             //Call the factory.
             final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildMultiVectorOutputChartEngine( results,
                                                                                                              factory,
-                                                                                                             PlotTypeSelection.LEAD_THRESHOLD,
+                                                                                                             OutputTypeSelection.LEAD_THRESHOLD,
                                                                                                              null,
                                                                                                              null );
 
@@ -473,7 +473,7 @@ public class Chart2DTestOutput
             //Call the factory.
             final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildMultiVectorOutputChartEngine( results,
                                                                                                              factory,
-                                                                                                             PlotTypeSelection.THRESHOLD_LEAD,
+                                                                                                             OutputTypeSelection.THRESHOLD_LEAD,
                                                                                                              null,
                                                                                                              null );
 
@@ -525,7 +525,7 @@ public class Chart2DTestOutput
             //Call the factory.
             final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildMultiVectorOutputChartEngine( results,
                                                                                                              factory,
-                                                                                                             PlotTypeSelection.LEAD_THRESHOLD,
+                                                                                                             OutputTypeSelection.LEAD_THRESHOLD,
                                                                                                              null,
                                                                                                              null );
 
@@ -579,7 +579,7 @@ public class Chart2DTestOutput
             //Call the factory.
             final Map<Object, ChartEngine> engineMap = ChartEngineFactory.buildMultiVectorOutputChartEngine( results,
                                                                                                              factory,
-                                                                                                             PlotTypeSelection.THRESHOLD_LEAD,
+                                                                                                             OutputTypeSelection.THRESHOLD_LEAD,
                                                                                                              null,
                                                                                                              null );
 
@@ -756,7 +756,7 @@ public class Chart2DTestOutput
             //Call the factory.
             final Map<MetricConstants, ChartEngine> engine = ChartEngineFactory.buildScoreOutputChartEngine( input,
                                                                                                              DefaultDataFactory.getInstance(),
-                                                                                                             PlotTypeSelection.POOLING_WINDOW,
+                                                                                                             OutputTypeSelection.POOLING_WINDOW,
                                                                                                              null,
                                                                                                              null );
 
@@ -878,7 +878,7 @@ public class Chart2DTestOutput
             //Call the factory.
             final Map<MetricConstants, ChartEngine> engine = ChartEngineFactory.buildScoreOutputChartEngine( input,
                                                                                                              DefaultDataFactory.getInstance(),
-                                                                                                             PlotTypeSelection.POOLING_WINDOW,
+                                                                                                             OutputTypeSelection.POOLING_WINDOW,
                                                                                                              null,
                                                                                                              null );
 
