@@ -8,17 +8,18 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.text.DecimalFormat;
 import java.text.Format;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Set;
 import java.util.StringJoiner;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -26,12 +27,14 @@ import org.apache.commons.lang3.tuple.Pair;
 import wres.config.ProjectConfigException;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.Feature;
+import wres.config.generated.PlotTypeSelection;
 import wres.config.generated.ProjectConfig;
-import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.Threshold;
+import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
@@ -40,6 +43,7 @@ import wres.datamodel.outputs.MetricOutputAccessException;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
+import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.PairedOutput;
 import wres.datamodel.outputs.ScoreOutput;
 import wres.io.config.ConfigHelper;
@@ -117,8 +121,7 @@ public class CommaSeparated
             List<DestinationConfig> numericalDestinations = ConfigHelper.getNumericalDestinations( projectConfig );
             for ( DestinationConfig d : numericalDestinations )
             {
-                writeAllScoreOutputTypes( d, storedMetricOutput );
-                writeAllPairedOutputTypes( d, storedMetricOutput );
+                writeAllOutputsForOneDestination( d, storedMetricOutput );
             }
         }
         catch ( final ProjectConfigException pce )
@@ -132,7 +135,7 @@ public class CommaSeparated
     }
 
     /**
-     * Writes all score outputs.
+     * Writes all outputs for one destination,
      *     
      * @param destinationConfig the destination configuration    
      * @param storedMetricOutput the output to use to build rows
@@ -140,73 +143,47 @@ public class CommaSeparated
      * @throws IOException if the output cannot be written
      */
 
-    private static void writeAllScoreOutputTypes( DestinationConfig destinationConfig,
-                                                  MetricOutputForProjectByTimeAndThreshold storedMetricOutput )
+    private static void writeAllOutputsForOneDestination( DestinationConfig destinationConfig,
+                                                          MetricOutputForProjectByTimeAndThreshold storedMetricOutput )
             throws IOException, ProjectConfigException
-    {     
+    {
         try
         {
             // Scores with double output
             if ( storedMetricOutput.hasOutput( MetricOutputGroup.DOUBLE_SCORE ) )
             {
-                DecimalFormat decimalFormatter = null;
-                if ( destinationConfig.getDecimalFormat() != null
-                     && !destinationConfig.getDecimalFormat().isEmpty() )
-                {
-                    decimalFormatter = new DecimalFormat();
-                    decimalFormatter.applyPattern( destinationConfig.getDecimalFormat() );
-                }
                 CommaSeparated.writeOneScoreOutputType( destinationConfig,
                                                         storedMetricOutput.getDoubleScoreOutput(),
-                                                        decimalFormatter );
+                                                        ConfigHelper.getDecimalFormatter( destinationConfig ) );
             }
             // Scores with duration output
             if ( storedMetricOutput.hasOutput( MetricOutputGroup.DURATION_SCORE ) )
             {
-                // TODO: Add an optional formatter here for the duration type
-                Format durationFormatter = null;
                 CommaSeparated.writeOneScoreOutputType( destinationConfig,
                                                         storedMetricOutput.getDurationScoreOutput(),
-                                                        durationFormatter );
+                                                        null );
             }
-        }
-        catch ( MetricOutputAccessException e )
-        {
-            throw new IOException( "While getting score output:", e );
-        }       
-    }
-    
-    /**
-     * Writes all paired outputs.
-     *     
-     * @param destinationConfig the destination configuration    
-     * @param storedMetricOutput the output to use to build rows
-     * @throws ProjectConfigException if the path for writing the output cannot be established
-     * @throws IOException if the output cannot be written
-     */
-
-    private static void writeAllPairedOutputTypes( DestinationConfig destinationConfig,
-                                                  MetricOutputForProjectByTimeAndThreshold storedMetricOutput )
-            throws IOException, ProjectConfigException
-    {     
-        try
-        {
-            // Scores with PairedOutput<Instant,Duration>
+            // Metrics with PairedOutput
             if ( storedMetricOutput.hasOutput( MetricOutputGroup.PAIRED ) )
             {
-                // TODO: Add an optional formatter here for the Instant/Duration types
-                Format durationFormatter = null;
                 CommaSeparated.writeOnePairedOutputType( destinationConfig,
-                                                        storedMetricOutput.getPairedOutput(),
-                                                        durationFormatter );
+                                                         storedMetricOutput.getPairedOutput(),
+                                                         null );
+            }
+            // Diagrams
+            if ( storedMetricOutput.hasOutput( MetricOutputGroup.MULTIVECTOR ) )
+            {
+                CommaSeparated.writeOneDiagramOutputType( destinationConfig,
+                                                          storedMetricOutput.getMultiVectorOutput(),
+                                                          ConfigHelper.getDecimalFormatter( destinationConfig ) );
             }
         }
         catch ( MetricOutputAccessException e )
         {
-            throw new IOException( "While getting paired output:", e );
-        }       
-    }    
-    
+            throw new IOException( "While retrieving metric output:", e );
+        }
+    }
+
     /**
      * Writes all output for one score type.
      *
@@ -233,7 +210,11 @@ public class CommaSeparated
             // Add the header row
             rows.add( RowCompareByLeft.of( HEADER_INDEX, headerRow ) );
             // Write the output
-            writeTabularOutputToFile( destinationConfig, rows, m.getValue().getMetadata() );
+            MetricOutputMetadata meta = m.getValue().getMetadata();
+            List<String> nameList = Arrays.asList( meta.getIdentifier().getGeospatialID(),
+                                                   meta.getMetricID().name(),
+                                                   meta.getIdentifier().getVariableID() );
+            writeTabularOutputToFile( destinationConfig, rows, nameList );
         }
     }
     
@@ -264,10 +245,152 @@ public class CommaSeparated
             // Add the header row
             rows.add( RowCompareByLeft.of( HEADER_INDEX, headerRow ) );
             // Write the output
-            writeTabularOutputToFile( destinationConfig, rows, m.getValue().getMetadata() );
+            MetricOutputMetadata meta = m.getValue().getMetadata();
+            List<String> nameList = Arrays.asList( meta.getIdentifier().getGeospatialID(),
+                                                   meta.getMetricID().name(),
+                                                   meta.getIdentifier().getVariableID() );
+            writeTabularOutputToFile( destinationConfig, rows, nameList );
         }
-    }   
+    }  
+    
+    /**
+     * Writes all output for one diagram type.
+     *
+     * @param destinationConfig the destination configuration    
+     * @param diagramOutput the diagram output
+     * @param formatter optional formatter, can be null
+     * @throws ProjectConfigException if the path for writing the output cannot be established
+     * @throws IOException if the output cannot be written
+     */
 
+    private static void writeOneDiagramOutputType( DestinationConfig destinationConfig,
+                                                   MetricOutputMultiMapByTimeAndThreshold<MultiVectorOutput> diagramOutput,
+                                                   Format formatter )
+            throws ProjectConfigException, IOException
+    {
+        // Obtain the plot type configuration
+        PlotTypeSelection diagramType = ConfigHelper.getOutputTypeSelection( destinationConfig );
+
+        // Loop across diagrams
+        for ( Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<MultiVectorOutput>> m : diagramOutput.entrySet() )
+        {
+            StringJoiner headerRow = new StringJoiner( "," );
+            headerRow.merge( HEADER_DEFAULT );
+            // Both lead times and thresholds together
+            if ( Objects.isNull( diagramType ) )
+            {
+                writeOneDiagramOutputType( destinationConfig, m.getValue(), headerRow, formatter );
+            }
+            // Per time window
+            else if ( diagramType == PlotTypeSelection.LEAD_THRESHOLD )
+            {
+                writeOneDiagramOutputTypePerTimeWindow( destinationConfig, m.getValue(), headerRow, formatter );
+            }
+            // Per threshold
+            else if ( diagramType == PlotTypeSelection.THRESHOLD_LEAD )
+            {
+                writeOneDiagramOutputTypePerThreshold( destinationConfig, m.getValue(), headerRow, formatter );
+            }
+        }
+    }
+    
+    /**
+     * Writes one diagram for all thresholds and time windows in the input.
+     * 
+     * @param destinationConfig the destination configuration    
+     * @param diagramOutput the diagram output
+     * @param headerRow the header row
+     * @param formatter optional formatter, can be null
+     * @throws ProjectConfigException if the path for writing the output cannot be established
+     * @throws IOException if the output cannot be written
+     */
+
+    private static void writeOneDiagramOutputType( DestinationConfig destinationConfig,
+                                                   MetricOutputMapByTimeAndThreshold<MultiVectorOutput> diagramOutput,
+                                                   StringJoiner headerRow,
+                                                   Format formatter )
+            throws ProjectConfigException, IOException
+    {
+        MetricOutputMetadata meta = diagramOutput.getMetadata();
+        List<RowCompareByLeft> rows =
+                getRowsForOneDiagram( diagramOutput, formatter );
+        // Add the header row
+        rows.add( RowCompareByLeft.of( HEADER_INDEX, getDiagramHeader( diagramOutput, headerRow ) ) );
+        // Write the output
+        List<String> nameList = Arrays.asList( meta.getIdentifier().getGeospatialID(),
+                                               meta.getMetricID().name(),
+                                               meta.getIdentifier().getVariableID() );
+        writeTabularOutputToFile( destinationConfig, rows, nameList );
+    }
+    
+    /**
+     * Writes a one diagram for all thresholds at each time window in the input.
+     * 
+     * @param destinationConfig the destination configuration    
+     * @param diagramOutput the diagram output
+     * @param headerRow the header row
+     * @param formatter optional formatter, can be null
+     * @throws ProjectConfigException if the path for writing the output cannot be established
+     * @throws IOException if the output cannot be written
+     */
+
+    private static void writeOneDiagramOutputTypePerTimeWindow( DestinationConfig destinationConfig,
+                                                          MetricOutputMapByTimeAndThreshold<MultiVectorOutput> diagramOutput,
+                                                          StringJoiner headerRow,
+                                                          Format formatter ) throws ProjectConfigException, IOException
+    {
+        // Loop across time windows
+        for ( TimeWindow timeWindow : diagramOutput.setOfTimeWindowKey() )
+        {
+            MetricOutputMetadata meta = diagramOutput.getMetadata();
+            MetricOutputMapByTimeAndThreshold<MultiVectorOutput> next = diagramOutput.filterByTime( timeWindow );
+            List<RowCompareByLeft> rows =
+                    getRowsForOneDiagram( next, formatter );
+            // Add the header row
+            rows.add( RowCompareByLeft.of( HEADER_INDEX, getDiagramHeader( next, headerRow ) ) );
+            // Write the output
+            List<String> nameList = Arrays.asList( meta.getIdentifier().getGeospatialID(),
+                                                   meta.getMetricID().name(),
+                                                   meta.getIdentifier().getVariableID(),
+                                                   timeWindow.getLatestLeadTimeInHours() + "h" );
+            writeTabularOutputToFile( destinationConfig, rows, nameList );
+        }        
+    }
+    
+    /**
+     * Writes a one diagram for all time windows at each threshold in the input.
+     * 
+     * @param destinationConfig the destination configuration    
+     * @param diagramOutput the diagram output
+     * @param headerRow the header row
+     * @param formatter optional formatter, can be null
+     * @throws ProjectConfigException if the path for writing the output cannot be established
+     * @throws IOException if the output cannot be written
+     */
+
+    private static void writeOneDiagramOutputTypePerThreshold( DestinationConfig destinationConfig,
+                                                          MetricOutputMapByTimeAndThreshold<MultiVectorOutput> diagramOutput,
+                                                          StringJoiner headerRow,
+                                                          Format formatter ) throws ProjectConfigException, IOException
+    {
+        // Loop across thresholds
+        for ( Threshold threshold : diagramOutput.setOfThresholdKey() )
+        {
+            MetricOutputMetadata meta = diagramOutput.getMetadata();
+            MetricOutputMapByTimeAndThreshold<MultiVectorOutput> next = diagramOutput.filterByThreshold( threshold );
+            List<RowCompareByLeft> rows =
+                    getRowsForOneDiagram( next, formatter );
+            // Add the header row
+            rows.add( RowCompareByLeft.of( HEADER_INDEX, getDiagramHeader( next, headerRow ) ) );
+            // Write the output
+            List<String> nameList = Arrays.asList( meta.getIdentifier().getGeospatialID(),
+                                                   meta.getMetricID().name(),
+                                                   meta.getIdentifier().getVariableID(),
+                                                   threshold.toStringSafe() );
+            writeTabularOutputToFile( destinationConfig, rows, nameList );
+        }        
+    }    
+    
     /**
      * Returns the results for one score.
      *
@@ -353,6 +476,110 @@ public class CommaSeparated
         
         return returnMe;
     }     
+    
+    /**
+     * Returns the results for one diagram.
+     *
+     * @param diagramOutput the score results
+     * @param formatter optional formatter, can be null
+     * @return the rows to write
+     */
+
+    private static List<RowCompareByLeft> getRowsForOneDiagram( MetricOutputMapByTimeAndThreshold<MultiVectorOutput> diagramOutput,
+                                                                Format formatter )
+    {
+        List<RowCompareByLeft> returnMe = new ArrayList<>();
+
+        // Add the rows
+        // Loop across the thresholds
+        for ( Threshold threshold : diagramOutput.setOfThresholdKey() )
+        {
+            // Loop across time windows
+            for ( TimeWindow timeWindow : diagramOutput.setOfTimeWindowKey() )
+            {
+                MultiVectorOutput next = diagramOutput.get( Pair.of( timeWindow, threshold ) );
+                // For safety, find the largest vector and use Double.NaN in place for vectors of differing size
+                // In practice, all should be the same length
+                int maxRows = next.getData()
+                                  .values()
+                                  .stream()
+                                  .max( Comparator.comparingInt( VectorOfDoubles::size ) )
+                                  .get()
+                                  .size();
+                // Loop until the maximum row 
+                for ( int rowIndex = 0; rowIndex < maxRows; rowIndex++ )
+                {
+                    // Add the row
+                    List<Double> row = getOneRowForOneDiagram( next, rowIndex );
+                    addRowToInput( returnMe,
+                                   timeWindow,
+                                   row,
+                                   formatter,
+                                   false );
+                }
+            }
+        }
+
+        return returnMe;
+    }
+
+    /**
+     * Returns the row from the diagram from the input data at a specified threshold and row index.
+     * 
+     * @param next the data
+     * @param row the row index to generate
+     * @return the row data
+     */
+
+    private static List<Double> getOneRowForOneDiagram( MultiVectorOutput next,
+                                                        int row )
+    {
+        List<Double> valuesToAdd = new ArrayList<>();
+        for ( Entry<MetricDimension, VectorOfDoubles> nextColumn : next.getData().entrySet() )
+        {
+            // Populate the values
+            Double addMe = Double.NaN;
+            if ( row < nextColumn.getValue().size() )
+            {
+                addMe = nextColumn.getValue().getDoubles()[row];
+            }
+            valuesToAdd.add( addMe );
+        }
+        return valuesToAdd;
+    }
+    
+    /**
+     * Helper that mutates the header for diagrams based on the input.
+     * 
+     * @param diagramOutput the diagram output
+     * @param headerRow the header row
+     * @return the mutated header
+     */
+
+    private static StringJoiner getDiagramHeader( MetricOutputMapByTimeAndThreshold<MultiVectorOutput> diagramOutput,
+                                                  StringJoiner headerRow )
+    {
+        // Append to header
+        StringJoiner returnMe = new StringJoiner( "," );
+        returnMe.merge( headerRow );
+        String metricName = diagramOutput.getMetadata().getMetricID().toString();
+        Entry<Pair<TimeWindow, Threshold>, MultiVectorOutput> data = diagramOutput.entrySet().iterator().next();
+        Set<MetricDimension> dimensions = data.getValue().getData().keySet();
+        //Add the metric name, dimension, and threshold for each column-vector
+        for ( Threshold nextThreshold : diagramOutput.setOfThresholdKey() )
+        {
+            for ( MetricDimension nextDimension : dimensions )
+            {
+                returnMe.add( HEADER_DELIMITER + metricName
+                              + HEADER_DELIMITER
+                              + nextDimension.toString()
+                              + HEADER_DELIMITER
+                              + nextThreshold.toString() );
+            }
+        }
+
+        return returnMe;
+    }  
 
     /**
      * Mutates the input header and rows, adding results for one score component.
@@ -390,26 +617,20 @@ public class CommaSeparated
      * 
      * @param destinationConfig the destination configuration
      * @param rows the tabular data to write
-     * @param meta the output metadata used for file naming
+     * @param nameElements the elements to use when naming the file
      * @throws ProjectConfigException if the path for writing the output cannot be established
      * @throws IOException if the output cannot be written
      */
 
     private static void writeTabularOutputToFile( DestinationConfig destinationConfig,
                                                   List<RowCompareByLeft> rows,
-                                                  MetricOutputMetadata meta )
+                                                  List<String> nameElements )
             throws ProjectConfigException, IOException
-    {
-               
+    {              
         File outputDirectory = ConfigHelper.getDirectoryFromDestinationConfig( destinationConfig );
-        DatasetIdentifier identifier = meta.getIdentifier();
-        Path outputPath = Paths.get( outputDirectory.toString(),
-                                     identifier.getGeospatialID()
-                                     + "_"
-                                     +meta.getMetricID().name()
-                                     +"_"
-                                     +identifier.getVariableID()
-                                     + ".csv" );
+        StringJoiner joinElements = new StringJoiner("_");
+        nameElements.forEach( joinElements::add );
+        Path outputPath = Paths.get( outputDirectory.toString(),joinElements.toString()+".csv" );
         // Sort the rows before writing them
         Collections.sort( rows );
         
@@ -467,8 +688,7 @@ public class CommaSeparated
             String toWrite = "NA";
 
             // Write the current score component at the current window and threshold
-            if ( nextColumn != null && nextColumn != null
-                 && !Double.valueOf( Double.NaN ).equals( nextColumn ) )
+            if ( nextColumn != null && !Double.valueOf( Double.NaN ).equals( nextColumn ) )
             {
                 if ( formatter != null )
                 {
@@ -482,7 +702,7 @@ public class CommaSeparated
             row.add( toWrite );
         }
     }
-    
+
     /**
      * A helper class that contains a single row whose natural order is based on the {@link TimeWindow} of the row
      * and not the contents. All comparisons are based on the left value only.

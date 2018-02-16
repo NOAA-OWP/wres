@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
+import java.text.DecimalFormat;
 import java.time.DateTimeException;
 import java.time.Duration;
 import java.time.Instant;
@@ -38,6 +39,7 @@ import wres.config.generated.Format;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
+import wres.config.generated.PlotTypeSelection;
 import wres.config.generated.PoolingWindowConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.TimeScaleConfig;
@@ -45,10 +47,8 @@ import wres.config.generated.TimeWindowMode;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
 import wres.io.data.caching.Features;
-import wres.io.data.caching.Variables;
 import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.Database;
-import wres.util.Collections;
 import wres.util.Strings;
 import wres.util.TimeHelper;
 
@@ -1160,4 +1160,43 @@ public class ConfigHelper
                                                              .toUpperCase() );
         return Duration.of( timeScaleConfig.getPeriod(), unit );
     }
+    
+    
+    /**
+     * Returns a {@link DecimalFormat} from the input configuration or null if no formatter is required.
+     * 
+     * @param destinationConfig the destination configuration
+     * @return a decimal formatter or null.
+     */
+
+    public static DecimalFormat getDecimalFormatter( DestinationConfig destinationConfig )
+    {
+        DecimalFormat decimalFormatter = null;
+        if ( destinationConfig.getDecimalFormat() != null
+             && !destinationConfig.getDecimalFormat().isEmpty() )
+        {
+            decimalFormatter = new DecimalFormat();
+            decimalFormatter.applyPattern( destinationConfig.getDecimalFormat() );
+        }
+        return decimalFormatter;
+    }
+    
+    /**
+     * Returns a {@link PlotTypeSelection} from the input configuration or null if no selection is provided.
+     * 
+     * @param destinationConfig the destination configuration
+     * @return the required output type
+     */
+
+    public static PlotTypeSelection getOutputTypeSelection( DestinationConfig destinationConfig )
+    {
+        PlotTypeSelection returnMe = null;
+        if ( Objects.nonNull( destinationConfig ) && Objects.nonNull( destinationConfig.getGraphical() )
+             && Objects.nonNull( destinationConfig.getGraphical().getPlotType() ) )
+        {
+            returnMe = destinationConfig.getGraphical().getPlotType();
+        }
+        return returnMe;
+    }        
+    
 }
