@@ -54,8 +54,8 @@
         </destination>
         <destination type="graphic">
             <path>output</path>
+            <outputType>threshold lead</outputType>
             <graphical width="800" height="600">
-                <plotType>threshold lead</plotType>
             </graphical>
         </destination>
     </outputs>
