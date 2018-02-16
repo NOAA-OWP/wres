@@ -11,7 +11,8 @@ then
 	exit
 fi
 
-CSV_FILES=`ls *.csv | grep -v pairs`
+#CSV_FILES=`ls *.csv | grep -v pairs`
+CSV_FILES=`grep .csv dirListing.txt | grep -v pairs`
 for CSV_FILE in $CSV_FILES
 do
 	#echo $CSV_FILE
@@ -21,6 +22,9 @@ do
 	#echo $numberOfColumns
 	# start at column 5
 	column=5
+	errorFile="$CSV_FILE"_error.txt
+	touch $errorFile
+	#cat /dev/null > $errorFile
 
 	while [ $column -le $numberOfColumns ]
 	do
@@ -37,7 +41,7 @@ do
 		if [ -f sorted_pairs.csv ] # just double check
 		then
 			#Rscript ../../rsrc/CheckMetrics.R sorted_pairs.csv "$ename" $value 2>&1 | tee -a testMetricsResults.txt
-			(Rscript ../../rsrc/CheckMetrics.R sorted_pairs.csv "$ename" $value > temp1.txt) 2> error.txt 
+			(Rscript ../../rsrc/CheckMetrics.R sorted_pairs.csv "$ename" $value > temp1.txt) 2>> $errorFile
 			head -6 temp1.txt > header.txt
 			sed -n "7,$"p temp1.txt | gawk '{print($1 "          "  $3)}' > metricsValues.txt
 		fi
@@ -55,7 +59,7 @@ do
 		done 
 		if [ -f joinFiles.txt ]
 		then
-			rm joinFiles.txt
+			rm -v joinFiles.txt
 		fi
 		pwd > joinFiles.txt
 		echo "$CSV_FILE" >> joinFiles.txt
@@ -67,4 +71,8 @@ do
 		# next column
 		column=`expr $column + 1`
 	done
+	if [ ! -s $errorFile ]
+	then
+		rm -v $errorFile
+	fi
 done
