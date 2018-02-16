@@ -96,7 +96,8 @@ public class IntermediateResultProcessor implements Consumer<MetricOutputForProj
                                                               input.getMultiVectorOutput() );
                     meta = input.getMultiVectorOutput().entrySet().iterator().next().getValue().getMetadata();
                     // Write the CSV output
-                    CommaSeparated.writeDiagrams( projectConfigPlus.getProjectConfig(), input.getMultiVectorOutput() );
+                    CommaSeparated.writeDiagramFiles( projectConfigPlus.getProjectConfig(),
+                                                      input.getMultiVectorOutput() );
                 }
                 //Box-plot output available, not being cached to the end
                 if ( input.hasOutput( MetricOutputGroup.BOXPLOT )

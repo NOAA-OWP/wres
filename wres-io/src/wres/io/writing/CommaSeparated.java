@@ -136,7 +136,8 @@ public class CommaSeparated
     }
     
     /**
-     * Writes all diagram outputs to file.
+     * Writes all diagram outputs to file. This is part of the public API because diagrams can be written to file before
+     * a processing pipeline has been completed (which is not true for all output types).
      *
      * @param projectConfig the project configuration    
      * @param diagramOutput the diagram output
@@ -144,7 +145,7 @@ public class CommaSeparated
      * @throws NullPointerException when any of the arguments are null
      */
 
-    public static void writeDiagrams( ProjectConfig projectConfig,
+    public static void writeDiagramFiles( ProjectConfig projectConfig,
                                       MetricOutputMultiMapByTimeAndThreshold<MultiVectorOutput> diagramOutput )
             throws IOException
     {
@@ -198,6 +199,7 @@ public class CommaSeparated
                                                         storedMetricOutput.getDoubleScoreOutput(),
                                                         ConfigHelper.getDecimalFormatter( destinationConfig ) );
             }
+            
             // Scores with duration output
             if ( storedMetricOutput.hasOutput( MetricOutputGroup.DURATION_SCORE ) )
             {
@@ -205,6 +207,7 @@ public class CommaSeparated
                                                         storedMetricOutput.getDurationScoreOutput(),
                                                         null );
             }
+            
             // Metrics with PairedOutput
             if ( storedMetricOutput.hasOutput( MetricOutputGroup.PAIRED ) )
             {
@@ -402,7 +405,7 @@ public class CommaSeparated
     }
     
     /**
-     * Writes a one diagram for all time windows at each threshold in the input.
+     * Writes one diagram for all time windows at each threshold in the input.
      * 
      * @param destinationConfig the destination configuration    
      * @param diagramOutput the diagram output
@@ -435,7 +438,7 @@ public class CommaSeparated
     }    
     
     /**
-     * Returns the results for one score.
+     * Returns the results for one score output.
      *
      * @param <T> the score component type
      * @param scoreName the score name
@@ -474,7 +477,7 @@ public class CommaSeparated
     }   
     
     /**
-     * Returns the results for one score.
+     * Returns the results for one paired output.
      *
      * @param <S> the left side of the paired output type
      * @param <T> the right side if the paired output type
@@ -521,7 +524,7 @@ public class CommaSeparated
     }     
     
     /**
-     * Returns the results for one diagram.
+     * Returns the results for one diagram output.
      *
      * @param diagramOutput the score results
      * @param formatter optional formatter, can be null
@@ -722,7 +725,7 @@ public class CommaSeparated
     {
         StringJoiner row = null;
         int rowIndex = rows.indexOf( RowCompareByLeft.of( timeWindow, null) );
-        // Set the to to append if it exists and appending is required
+        // Set the row to append if it exists and appending is required
         if( rowIndex > -1 && append )
         {
             row = rows.get( rowIndex ).getRight();
@@ -800,7 +803,7 @@ public class CommaSeparated
          * @return the left value
          */
 
-        public TimeWindow getLeft()
+        private TimeWindow getLeft()
         {
             return left;
         }
@@ -811,7 +814,7 @@ public class CommaSeparated
          * @return the right value
          */
         
-        public StringJoiner getRight()
+        private StringJoiner getRight()
         {
             return right;
         }
