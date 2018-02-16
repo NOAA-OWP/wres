@@ -39,7 +39,7 @@ import wres.config.generated.Format;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
-import wres.config.generated.PlotTypeSelection;
+import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.PoolingWindowConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.TimeScaleConfig;
@@ -1182,19 +1182,18 @@ public class ConfigHelper
     }
     
     /**
-     * Returns a {@link PlotTypeSelection} from the input configuration or null if no selection is provided.
+     * Returns a {@link OutputTypeSelection} from the input configuration or null if no selection is provided.
      * 
      * @param destinationConfig the destination configuration
      * @return the required output type
      */
 
-    public static PlotTypeSelection getOutputTypeSelection( DestinationConfig destinationConfig )
+    public static OutputTypeSelection getOutputTypeSelection( DestinationConfig destinationConfig )
     {
-        PlotTypeSelection returnMe = null;
-        if ( Objects.nonNull( destinationConfig ) && Objects.nonNull( destinationConfig.getGraphical() )
-             && Objects.nonNull( destinationConfig.getGraphical().getPlotType() ) )
+        OutputTypeSelection returnMe = null;
+        if ( Objects.nonNull( destinationConfig ) && Objects.nonNull( destinationConfig.getOutputType() ) )
         {
-            returnMe = destinationConfig.getGraphical().getPlotType();
+            returnMe = destinationConfig.getOutputType();
         }
         return returnMe;
     }        

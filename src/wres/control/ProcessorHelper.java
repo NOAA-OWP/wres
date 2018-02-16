@@ -29,7 +29,7 @@ import wres.config.generated.DestinationType;
 import wres.config.generated.Feature;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
-import wres.config.generated.PlotTypeSelection;
+import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
@@ -556,14 +556,14 @@ public class ProcessorHelper
             MetricConfig nextConfig =
                     getNamedConfigOrAllValid( metricId, config );
             // Default to global type parameter
-            PlotTypeSelection plotType = destConfig.getGraphical().getPlotType();
+            OutputTypeSelection outputType = destConfig.getOutputType();
             String templateResourceName = destConfig.getGraphical().getTemplate();
             if ( Objects.nonNull( nextConfig ) )
             {
                 // Local type parameter
-                if ( nextConfig.getPlotType() != null )
+                if ( nextConfig.getOutputType() != null )
                 {
-                    plotType = nextConfig.getPlotType();
+                    outputType = nextConfig.getOutputType();
                 }
 
                 // Override template name with metric specific name.
@@ -575,7 +575,7 @@ public class ProcessorHelper
             Map<MetricConstants, ChartEngine> engines =
                     ChartEngineFactory.buildScoreOutputChartEngine( scoreResults,
                                                                      DATA_FACTORY,
-                                                                     plotType,
+                                                                     outputType,
                                                                      templateResourceName,
                                                                      graphicsString );
             // Build the outputs
@@ -673,14 +673,14 @@ public class ProcessorHelper
             // Build the chart engine
             MetricConfig nextConfig = getNamedConfigOrAllValid( metricId, config );
             // Default to global type parameter
-            PlotTypeSelection plotType = destConfig.getGraphical().getPlotType();
+            OutputTypeSelection outputType = destConfig.getOutputType();
             String templateResourceName = destConfig.getGraphical().getTemplate();
             if ( Objects.nonNull( nextConfig ) )
             {
                 // Local type parameter
-                if ( nextConfig.getPlotType() != null )
+                if ( nextConfig.getOutputType() != null )
                 {
-                    plotType = nextConfig.getPlotType();
+                    outputType = nextConfig.getOutputType();
                 }
 
                 // Override template name with metric specific name.
@@ -693,7 +693,7 @@ public class ProcessorHelper
             final Map<Object, ChartEngine> engines =
                     ChartEngineFactory.buildMultiVectorOutputChartEngine( multiVectorResults,
                                                                           DATA_FACTORY,
-                                                                          plotType,
+                                                                          outputType,
                                                                           templateResourceName,
                                                                           graphicsString );
             // Build the outputs
@@ -986,7 +986,7 @@ public class ProcessorHelper
         // Does it contain any metric-local threshold lead types?
         for ( MetricConfig next : projectConfig.getMetrics().getMetric() )
         {
-            if ( next.getPlotType() != null && next.getPlotType().equals( PlotTypeSelection.THRESHOLD_LEAD ) )
+            if ( next.getOutputType() != null && next.getOutputType() == OutputTypeSelection.THRESHOLD_LEAD )
             {
                 hasThresholdLeadType = true; //Yes
                 break;
@@ -1000,7 +1000,7 @@ public class ProcessorHelper
                     ConfigHelper.getGraphicalDestinations( projectConfig );
             for ( DestinationConfig next : destinations )
             {
-                if ( next.getGraphical().getPlotType().equals( PlotTypeSelection.THRESHOLD_LEAD ) )
+                if ( next.getOutputType() == OutputTypeSelection.THRESHOLD_LEAD )
                 {
                     hasThresholdLeadType = true;
                     break;

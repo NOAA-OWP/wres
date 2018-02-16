@@ -13,7 +13,7 @@ import ohd.hseb.hefs.utils.arguments.DefaultArgumentsProcessor;
 import ohd.hseb.hefs.utils.datetime.HEFSTimeZoneTools;
 import ohd.hseb.hefs.utils.plugins.UniqueGenericParameterList;
 import ohd.hseb.util.misc.HString;
-import wres.config.generated.PlotTypeSelection;
+import wres.config.generated.OutputTypeSelection;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Threshold;
@@ -103,14 +103,14 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * @param plotType the plot type; null is allowed, which will trigger recording arguments as if this were anything but
      *     a pooling window plot.
      */
-    public WRESArgumentProcessor( MetricOutputMapByTimeAndThreshold<?> displayedPlotInput, PlotTypeSelection plotType )
+    public WRESArgumentProcessor( MetricOutputMapByTimeAndThreshold<?> displayedPlotInput, OutputTypeSelection plotType )
     {
         super();
 
         MetricOutputMetadata meta = displayedPlotInput.getMetadata();
         extractStandardArgumentsFromMetadata( meta );
 
-        if ( plotType != null && plotType.equals( PlotTypeSelection.POOLING_WINDOW ) )
+        if ( plotType != null && plotType == OutputTypeSelection.POOLING_WINDOW )
         {
             recordWindowingArguments( displayedPlotInput.firstKey().getLeft().getEarliestTime(),
                                       displayedPlotInput.lastKey().getLeft().getLatestTime(),

@@ -21,13 +21,14 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
+import java.util.TreeMap;
 
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.config.ProjectConfigException;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.Feature;
-import wres.config.generated.PlotTypeSelection;
+import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
@@ -133,7 +134,48 @@ public class CommaSeparated
                                    pce );
         }
     }
+    
+    /**
+     * Writes all diagram outputs to file.
+     *
+     * @param projectConfig the project configuration    
+     * @param diagramOutput the diagram output
+     * @throws IOException if the output cannot be written
+     * @throws NullPointerException when any of the arguments are null
+     */
 
+    public static void writeDiagrams( ProjectConfig projectConfig,
+                                      MetricOutputMultiMapByTimeAndThreshold<MultiVectorOutput> diagramOutput )
+            throws IOException
+    {
+        Objects.requireNonNull( projectConfig, "Specify non-null project configuration when writing diagram outputs." );
+        Objects.requireNonNull( diagramOutput, "Specify non-null input data when writing diagram outputs." );
+        try
+        {
+            if ( projectConfig.getOutputs() == null
+                 || projectConfig.getOutputs().getDestination() == null
+                 || projectConfig.getOutputs().getDestination().isEmpty() )
+            {
+                String message = "No numeric output files specified for project.";
+                throw new ProjectConfigException( projectConfig.getOutputs(),
+                                                  message );
+            }
+            List<DestinationConfig> numericalDestinations = ConfigHelper.getNumericalDestinations( projectConfig );
+            for ( DestinationConfig d : numericalDestinations )
+            {
+                writeOneDiagramOutputType( d, diagramOutput, ConfigHelper.getDecimalFormatter( d ) );
+            }
+        }
+        catch ( final ProjectConfigException pce )
+        {
+            throw new IOException( "Please include valid numeric output clause(s) in"
+                                   + " the project configuration. Example: <destination>"
+                                   + "<path>c:/Users/myname/wres_output/</path>"
+                                   + "</destination>",
+                                   pce );
+        }
+    }
+    
     /**
      * Writes all outputs for one destination,
      *     
@@ -170,6 +212,7 @@ public class CommaSeparated
                                                          storedMetricOutput.getPairedOutput(),
                                                          null );
             }
+
             // Diagrams
             if ( storedMetricOutput.hasOutput( MetricOutputGroup.MULTIVECTOR ) )
             {
@@ -269,11 +312,14 @@ public class CommaSeparated
             throws ProjectConfigException, IOException
     {
         // Obtain the plot type configuration
-        PlotTypeSelection diagramType = ConfigHelper.getOutputTypeSelection( destinationConfig );
+        OutputTypeSelection diagramType = ConfigHelper.getOutputTypeSelection( destinationConfig );
 
         // Loop across diagrams
         for ( Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<MultiVectorOutput>> m : diagramOutput.entrySet() )
         {
+            // TODO: allow metric-specific overrides of the output type
+
+            
             StringJoiner headerRow = new StringJoiner( "," );
             headerRow.merge( HEADER_DEFAULT );
             // Both lead times and thresholds together
@@ -282,12 +328,12 @@ public class CommaSeparated
                 writeOneDiagramOutputType( destinationConfig, m.getValue(), headerRow, formatter );
             }
             // Per time window
-            else if ( diagramType == PlotTypeSelection.LEAD_THRESHOLD )
+            else if ( diagramType == OutputTypeSelection.LEAD_THRESHOLD )
             {
                 writeOneDiagramOutputTypePerTimeWindow( destinationConfig, m.getValue(), headerRow, formatter );
             }
             // Per threshold
-            else if ( diagramType == PlotTypeSelection.THRESHOLD_LEAD )
+            else if ( diagramType == OutputTypeSelection.THRESHOLD_LEAD )
             {
                 writeOneDiagramOutputTypePerThreshold( destinationConfig, m.getValue(), headerRow, formatter );
             }
@@ -312,8 +358,7 @@ public class CommaSeparated
             throws ProjectConfigException, IOException
     {
         MetricOutputMetadata meta = diagramOutput.getMetadata();
-        List<RowCompareByLeft> rows =
-                getRowsForOneDiagram( diagramOutput, formatter );
+        List<RowCompareByLeft> rows = getRowsForOneDiagram( diagramOutput, formatter );
         // Add the header row
         rows.add( RowCompareByLeft.of( HEADER_INDEX, getDiagramHeader( diagramOutput, headerRow ) ) );
         // Write the output
@@ -344,15 +389,14 @@ public class CommaSeparated
         {
             MetricOutputMetadata meta = diagramOutput.getMetadata();
             MetricOutputMapByTimeAndThreshold<MultiVectorOutput> next = diagramOutput.filterByTime( timeWindow );
-            List<RowCompareByLeft> rows =
-                    getRowsForOneDiagram( next, formatter );
+            List<RowCompareByLeft> rows = getRowsForOneDiagram( next, formatter );
             // Add the header row
             rows.add( RowCompareByLeft.of( HEADER_INDEX, getDiagramHeader( next, headerRow ) ) );
             // Write the output
             List<String> nameList = Arrays.asList( meta.getIdentifier().getGeospatialID(),
                                                    meta.getMetricID().name(),
                                                    meta.getIdentifier().getVariableID(),
-                                                   timeWindow.getLatestLeadTimeInHours() + "h" );
+                                                   Long.toString( timeWindow.getLatestLeadTimeInHours() ) );
             writeTabularOutputToFile( destinationConfig, rows, nameList );
         }        
     }
@@ -378,8 +422,7 @@ public class CommaSeparated
         {
             MetricOutputMetadata meta = diagramOutput.getMetadata();
             MetricOutputMapByTimeAndThreshold<MultiVectorOutput> next = diagramOutput.filterByThreshold( threshold );
-            List<RowCompareByLeft> rows =
-                    getRowsForOneDiagram( next, formatter );
+            List<RowCompareByLeft> rows = getRowsForOneDiagram( next, formatter );
             // Add the header row
             rows.add( RowCompareByLeft.of( HEADER_INDEX, getDiagramHeader( next, headerRow ) ) );
             // Write the output
@@ -491,11 +534,12 @@ public class CommaSeparated
         List<RowCompareByLeft> returnMe = new ArrayList<>();
 
         // Add the rows
-        // Loop across the thresholds
-        for ( Threshold threshold : diagramOutput.setOfThresholdKey() )
+        // Loop across time windows
+        for ( TimeWindow timeWindow : diagramOutput.setOfTimeWindowKey() )
         {
-            // Loop across time windows
-            for ( TimeWindow timeWindow : diagramOutput.setOfTimeWindowKey() )
+            // Loop across the thresholds, merging results when multiple thresholds occur
+            Map<Integer, List<Double>> merge = new TreeMap<>();
+            for ( Threshold threshold : diagramOutput.setOfThresholdKey() )
             {
                 MultiVectorOutput next = diagramOutput.get( Pair.of( timeWindow, threshold ) );
                 // For safety, find the largest vector and use Double.NaN in place for vectors of differing size
@@ -511,12 +555,24 @@ public class CommaSeparated
                 {
                     // Add the row
                     List<Double> row = getOneRowForOneDiagram( next, rowIndex );
-                    addRowToInput( returnMe,
-                                   timeWindow,
-                                   row,
-                                   formatter,
-                                   false );
+                    if ( merge.containsKey( rowIndex ) )
+                    {
+                        merge.get( rowIndex ).addAll( row );
+                    }
+                    else
+                    {
+                        merge.put( rowIndex, row );
+                    }
                 }
+            }
+            // Add the merged rows
+            for ( List<Double> next : merge.values() )
+            {
+                addRowToInput( returnMe,
+                               timeWindow,
+                               next,
+                               formatter,
+                               false );
             }
         }
 
@@ -736,7 +792,7 @@ public class CommaSeparated
         private static RowCompareByLeft of( TimeWindow timeWindow, StringJoiner value ) 
         {
             return new RowCompareByLeft( timeWindow, value );
-        }
+        }      
 
         /**
          * Returns the left value.
@@ -764,23 +820,24 @@ public class CommaSeparated
         public int compareTo( RowCompareByLeft compareTo) 
         {
             Objects.requireNonNull( compareTo, "Specify a non-null input row for comparison." );
-            return getLeft().compareTo( compareTo.getLeft() );
+            return getLeft().compareTo( compareTo.getLeft() );          
         }
-        
+
         @Override
         public boolean equals( Object o )
         {
-            if(! (o instanceof RowCompareByLeft) )
+            if ( ! ( o instanceof RowCompareByLeft ) )
             {
                 return false;
             }
-            return ( (RowCompareByLeft) o ).getLeft().equals( getLeft() );
+            RowCompareByLeft in = (RowCompareByLeft) o;
+            return Objects.equals( in.getLeft(), getLeft() );
         }
         
         @Override 
         public int hashCode()
         {
-            return left.hashCode();
+            return Objects.hashCode( left );
         }
         
         /**

@@ -528,6 +528,7 @@ public class CommaSeparatedTest
         DestinationConfig destinationConfig =
                 new DestinationConfig( System.getProperty( "java.io.tmpdir" ),
                                        null,
+                                       null,
                                        DestinationType.NUMERIC,
                                        null );
 
