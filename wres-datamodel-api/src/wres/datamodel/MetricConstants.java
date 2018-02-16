@@ -722,29 +722,32 @@ public enum MetricConstants
     }
     
     /**
-     * A dimension associated with a verification metric.
+     * A dimension associated with a verification metric. The natural order of an enum type is dictated by the order 
+     * of declaration. The general rule for diagram outputs is to specify the domain axis first and the range axis 
+     * second, i.e. the declaration order should reflect the desired order of the outputs for storage in a map, for 
+     * example.
      */    
     
     public enum MetricDimension
     {
-
-        /**
-         * Identifier for a sample size.
-         */
-        
-        SAMPLE_SIZE,
-        
-        /**
-         * Identifier for probability of detection.
-         */
-        
-        PROBABILITY_OF_DETECTION,
         
         /**
          * Identifier for probability of false detection.
          */
         
         PROBABILITY_OF_FALSE_DETECTION,
+        
+        /**
+         * Identifier for probability of detection.
+         */
+        
+        PROBABILITY_OF_DETECTION,
+
+        /**
+         * Identifier for a rank ordering.
+         */
+
+        RANK_ORDER,        
         
         /**
          * Identifier for a forecast probability.
@@ -759,22 +762,16 @@ public enum MetricConstants
         OBSERVED_RELATIVE_FREQUENCY,
 
         /**
-         * Identifier for a rank ordering.
+         * Identifier for observed quantiles.
          */
 
-        RANK_ORDER,
-
+        OBSERVED_QUANTILES,   
+        
         /**
          * Identifier for predicted quantiles.
          */
 
-        PREDICTED_QUANTILES,
-
-        /**
-         * Identifier for observed quantiles.
-         */
-
-        OBSERVED_QUANTILES,    
+        PREDICTED_QUANTILES, 
         
         /**
          * Identifier for forecast error.
@@ -804,7 +801,13 @@ public enum MetricConstants
          * Identifier for ensemble median. 
          */
         
-        ENSEMBLE_MEDIAN;   
+        ENSEMBLE_MEDIAN,
+        
+        /**
+         * Identifier for a sample size.
+         */
+        
+        SAMPLE_SIZE;
                 
         /**
          * Returns a string representation.
