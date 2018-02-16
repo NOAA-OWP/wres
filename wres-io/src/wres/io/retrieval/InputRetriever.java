@@ -11,11 +11,14 @@ import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.BiFunction;
+import java.util.function.BinaryOperator;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,6 +26,7 @@ import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.Feature;
+import wres.config.generated.TimeScaleConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.DefaultDataFactory;
@@ -599,23 +603,27 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
      * @throws SQLException
      * @throws IOException
      */
+
     private List<ForecastedPair> createPersistencePairs( DataSourceConfig dataSourceConfig,
                                                          List<ForecastedPair> primaryPairs )
             throws SQLException, IOException
     {
-        List<ForecastedPair> pairs = new ArrayList<>();
+        List<ForecastedPair> pairs = new ArrayList<>( primaryPairs.size() );
 
         String loadScript = getLoadScript( dataSourceConfig );
 
-        final String BASIS_DATETIME_COLUMN = "basis_time";
+        final String VALID_DATETIME_COLUMN = "valid_time";
         final String RESULT_VALUE_COLUMN = "observed_value";
 
-        long basisEpochTime;
+        long basisEpochTimeMillis;
 
         Connection connection = null;
         ResultSet resultSet = null;
 
         DataFactory df = DefaultDataFactory.getInstance();
+
+        // First, store the raw results
+        List<Pair<Long,Double>> rawRawPersistenceValues = new ArrayList<>();
 
         try
         {
@@ -624,41 +632,10 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
 
             while ( resultSet.next() )
             {
-                basisEpochTime = resultSet.getLong( BASIS_DATETIME_COLUMN );
-                Instant basisDateTime = Instant.ofEpochSecond( basisEpochTime );
+                basisEpochTimeMillis = resultSet.getLong( VALID_DATETIME_COLUMN );
                 double value = resultSet.getDouble( RESULT_VALUE_COLUMN );
-                double[] values = { value };
-
-                for ( ForecastedPair rightPair : primaryPairs )
-                {
-                    if ( basisDateTime.equals( rightPair.getBasisTime() ) )
-                    {
-                        for ( double d : rightPair.getValues().getItemTwo() )
-                        {
-                            // We avoid using d on purpose. The only reason for
-                            // iterating is to match the count of persistence
-                            // pairs with the count of left/right pairs.
-                            ForecastedPair pairPair =
-                                    new ForecastedPair( rightPair.getBasisTime(),
-                                                        rightPair.getValidTime(),
-                                             df.pairOf( rightPair.getValues()
-                                                                 .getItemOne(),
-                                                        values ) );
-
-                            // Piggy-back off of the forecast's basis time and
-                            // valid times:
-                            writePair( rightPair.getValidTime(),
-                                       pairPair, dataSourceConfig );
-                            pairs.add( pairPair );
-                        }
-                    }
-                    else if ( LOGGER.isTraceEnabled() )
-                    {
-                        LOGGER.trace( "{} does not equal {}",
-                                      basisDateTime,
-                                      rightPair.getBasisTime() );
-                    }
-                }
+                Pair<Long,Double> doubleEvent = Pair.of( basisEpochTimeMillis, value );
+                rawRawPersistenceValues.add( doubleEvent );
             }
         }
         finally
@@ -674,8 +651,164 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             }
         }
 
+        List<Pair<Long,Double>> rawPersistenceValues = Collections.unmodifiableList( rawRawPersistenceValues );
+        // Second, analyze the results for the majority count-per-agg-window
+
+        Duration aggDuration = ConfigHelper.getDurationFromTimeScale( projectDetails.getScale() );
+        long aggDurationMillis = aggDuration.toMillis();
+
+        LOGGER.trace( "Duration of aggregation: {}, in millis: {}",
+                      aggDuration, aggDurationMillis );
+
+        Map<Integer,Integer> countOfWindowsByCountInside = new HashMap<>();
+        int totalWindowsCounted = 0;
+        Adder adder = new Adder();
+
+        // 2a slide a window over the data and count the number of values
+        for ( int i = 0; i < rawPersistenceValues.size(); i++ )
+        {
+            Pair<Long,Double> currentEvent = rawPersistenceValues.get( i );
+            long earliestTime = currentEvent.getLeft() - aggDurationMillis;
+            Integer count = 0;
+
+            LOGGER.trace( "i: {}, count: {}, earliestTime: {}",
+                          i, count, earliestTime );
+
+            for ( int j = i + 1; j < rawPersistenceValues.size(); j++ )
+            {
+                Pair<Long,Double> possibleEndEvent = rawPersistenceValues.get( j );
+
+                if ( possibleEndEvent.getLeft() >= earliestTime )
+                {
+                    count++;
+                }
+                else
+                {
+                    // We are counting the number of windows with each count:
+                    countOfWindowsByCountInside.merge( count, 1, adder );
+                    totalWindowsCounted++;
+                    break;
+                }
+            }
+        }
+
+        LOGGER.trace( "Instances of count, by count: {}",
+                      countOfWindowsByCountInside );
+
+        int countOfValuesInAGoodWindow = Integer.MIN_VALUE;
+
+        for ( Map.Entry<Integer,Integer> entry : countOfWindowsByCountInside.entrySet() )
+        {
+            // Simple majority decision ("more than half")
+            if ( entry.getValue() > totalWindowsCounted / 2 )
+            {
+                countOfValuesInAGoodWindow = entry.getKey();
+                LOGGER.trace( "Found {} is the usual count of values in a window",
+                              countOfValuesInAGoodWindow );
+                break;
+            }
+        }
+
+        if ( countOfValuesInAGoodWindow <= 0 )
+        {
+            throw new IllegalStateException( "The regularity of data in baseline could not be guessed." );
+        }
+
+        // Third, for each basis time, find the latest valid agg-window and agg
+
+        for ( ForecastedPair primaryPair : primaryPairs )
+        {
+            ForecastedPair persistencePair =
+                    getAggregatedPairFromRawPairs( primaryPair,
+                                                   rawPersistenceValues,
+                                                   aggDurationMillis,
+                                                   countOfValuesInAGoodWindow,
+                                                   projectDetails.getScale() );
+            this.writePair( persistencePair.getValidTime(), persistencePair, dataSourceConfig );
+            pairs.add( persistencePair );
+        }
+
         LOGGER.trace( "Returning persistence pairs: {}", pairs );
         return Collections.unmodifiableList( pairs );
+    }
+
+
+    /**
+     * Create an aggregated persistence forecast pair from a set of raw pairs
+     * @param primaryPair the forecasted pair to create a persistence pair from
+     * @param rawPersistenceValues pairs of ( valid time in millis since epoch, value )
+     * @param aggDurationMillis the width of an aggregation window in millis
+     * @param countOfValuesInAGoodWindow the count of values in a valid window
+     * @return a persistence forecasted pair
+     */
+
+    private ForecastedPair getAggregatedPairFromRawPairs( ForecastedPair primaryPair,
+                                                          List<Pair<Long,Double>> rawPersistenceValues,
+                                                          long aggDurationMillis,
+                                                          int countOfValuesInAGoodWindow,
+                                                          TimeScaleConfig scaleConfig )
+    {
+        List<Double> valuesToAggregate = new ArrayList<>( 0 );
+
+        long basisTimeEpochMillis = primaryPair.getBasisTime().toEpochMilli();
+
+        for ( int i = 0; i < rawPersistenceValues.size(); i++ )
+        {
+            Pair<Long,Double> currentEvent = rawPersistenceValues.get( i );
+
+            // We found a possible starting value. Calculate window.
+            long earliestTime = currentEvent.getKey() - aggDurationMillis;
+            valuesToAggregate = new ArrayList<>( countOfValuesInAGoodWindow );
+
+            if ( basisTimeEpochMillis > currentEvent.getKey() )
+            {
+                for ( int j = i; j < rawPersistenceValues.size(); j++ )
+                {
+                    Pair<Long,Double> possibleEndEvent = rawPersistenceValues.get( j );
+                    Long epochMillisOfEvent = possibleEndEvent.getKey();
+                    Double valueOfEvent = possibleEndEvent.getValue();
+
+                    if ( epochMillisOfEvent > earliestTime )
+                    {
+                        LOGGER.trace( "Adding value {} from time {} because {} >= {}",
+                                      valueOfEvent,
+                                      epochMillisOfEvent,
+                                      epochMillisOfEvent,
+                                      earliestTime );
+                        valuesToAggregate.add( valueOfEvent );
+                    }
+                    else
+                    {
+                        LOGGER.trace( "Finished with this window" );
+                        break;
+                    }
+                }
+
+                if ( valuesToAggregate.size() == countOfValuesInAGoodWindow )
+                {
+                    LOGGER.trace( "Found a good window with values {}",
+                                  valuesToAggregate );
+                    break;
+                }
+            }
+        }
+
+        // aggregate!
+        double aggregated = wres.util.Collections.aggregate( valuesToAggregate,
+                                                             scaleConfig.getFunction()
+                                                                        .value() );
+
+        double[] aggregatedWrapped = { aggregated };
+
+        PairOfDoubleAndVectorOfDoubles pair =
+                DefaultDataFactory.getInstance()
+                                  .pairOf( primaryPair.getValues()
+                                                      .getItemOne(),
+                                           aggregatedWrapped );
+
+        return new ForecastedPair( primaryPair.getBasisTime(),
+                                   primaryPair.getValidTime(),
+                                   pair );
     }
 
     /**
@@ -976,6 +1109,15 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         public long getLeadSeconds()
         {
             return getLeadDuration().getSeconds();
+        }
+    }
+
+    private static class Adder implements BinaryOperator<Integer>
+    {
+        @Override
+        public Integer apply( Integer first, Integer second )
+        {
+            return first + second;
         }
     }
 }
