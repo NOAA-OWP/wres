@@ -491,7 +491,7 @@ public class CommaSeparatedTest
 
         // read the file, verify it has what we wanted:
         Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ),
-                                     "CREC1_RELIABILITY_DIAGRAM_SQIN.csv" );
+                                     "CREC1_RELIABILITY_DIAGRAM_SQIN_24.csv" );
         List<String> result = Files.readAllLines( pathToFile );
 
         assertTrue( result.get( 0 ).contains( "," ) );
