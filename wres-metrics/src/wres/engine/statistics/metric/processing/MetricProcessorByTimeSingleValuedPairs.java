@@ -103,6 +103,11 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
         {
             if ( ! ( input instanceof TimeSeriesOfSingleValuedPairs ) )
             {
+                if ( hasMetrics( MetricInputGroup.SINGLE_VALUED_TIME_SERIES ) )
+                {
+                    throw new MetricCalculationException( " The project configuration includes time-series metrics. "
+                                                          + "Expected a time-series of single-valued pairs as input." );
+                }
                 inputNoMissing = slicer.filter( input, ADMISSABLE_DATA, true );
             }
         }

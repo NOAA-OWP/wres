@@ -5,9 +5,13 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -15,6 +19,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.function.Supplier;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -22,6 +27,7 @@ import org.slf4j.LoggerFactory;
 
 import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
+import ohd.hseb.charter.datasource.XYChartDataSourceException;
 import wres.config.ProjectConfigException;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
@@ -40,6 +46,7 @@ import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.DoubleScoreOutput;
+import wres.datamodel.outputs.DurationScoreOutput;
 import wres.datamodel.outputs.MapKey;
 import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.MetricOutputAccessException;
@@ -47,6 +54,7 @@ import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
 import wres.datamodel.outputs.MultiVectorOutput;
+import wres.datamodel.outputs.PairedOutput;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.config.MetricConfigHelper;
 import wres.engine.statistics.metric.config.MetricConfigurationException;
@@ -67,7 +75,9 @@ import wres.util.ProgressMonitor;
 import wres.vis.ChartEngineFactory;
 
 /**
- * Helper with functions that Control and Processors use
+ * Class with functions to help in generating metrics and processing metric products.
+ * 
+ * TODO: abstract away the functions used for graphical processing to a separate helper, GraphicalProductsHelper.
  *
  * @author james.brown@hydrosolved.com
  * @author jesse.bickel@***REMOVED***
@@ -347,6 +357,7 @@ public class ProcessorHelper
         return new FeatureProcessingResult( feature, true, null );
     }
 
+    
     /**
      * Completes the processing of products, including graphical and numerical products, at the end of a processing 
      * pipeline using the cached {@link MetricOutput} stored in the {@link MetricProcessor}, and in keeping with 
@@ -410,6 +421,7 @@ public class ProcessorHelper
 
         LOGGER.info( "Completed processing of feature '{}'.", featureDescription );
     }
+    
 
     /**
      * Processes all charts for which metric outputs were cached across successive calls to a {@link MetricProcessor}.
@@ -426,12 +438,19 @@ public class ProcessorHelper
     {
         try
         {
-            // Process score charts
+            // Process charts for ordinary scores
             if ( cachedOutput.hasOutput( MetricOutputGroup.DOUBLE_SCORE ) )
             {
-                processScoreCharts( feature, 
+                processChartsForDoubleScoreOutput( feature, 
                                     projectConfigPlus, 
                                     cachedOutput.getDoubleScoreOutput() );
+            }
+            // Process charts for scores that comprise durations
+            if ( cachedOutput.hasOutput( MetricOutputGroup.DURATION_SCORE ) )
+            {
+                processChartsForDurationScoreOutput( feature, 
+                                    projectConfigPlus, 
+                                    cachedOutput.getDurationScoreOutput() );
             }
             // Process multivector charts
             if ( cachedOutput.hasOutput( MetricOutputGroup.MULTIVECTOR ) )
@@ -447,6 +466,13 @@ public class ProcessorHelper
                                       projectConfigPlus, 
                                       cachedOutput.getBoxPlotOutput() );
             }
+            // Process paired output
+            if ( cachedOutput.hasOutput( MetricOutputGroup.PAIRED ) )
+            {
+                processPairedOutputByInstantDurationCharts( feature,
+                                                            projectConfigPlus,
+                                                            cachedOutput.getPairedOutput() );
+            }
         }
         catch ( final MetricOutputAccessException e )
         {
@@ -457,6 +483,7 @@ public class ProcessorHelper
             throw new WresProcessingException( "Error while processing charts:", e );
         }
     }  
+    
 
     /**
      * Processes a set of charts associated with {@link DoubleScoreOutput} across multiple metrics, time windows, 
@@ -468,9 +495,9 @@ public class ProcessorHelper
      * @throws WresProcessingException when an error occurs during processing
      */
 
-    private static void processScoreCharts( final Feature feature,
-                                             final ProjectConfigPlus projectConfigPlus,
-                                             final MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> scoreResults )
+    private static void processChartsForDoubleScoreOutput( final Feature feature,
+                                                           final ProjectConfigPlus projectConfigPlus,
+                                                           final MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> scoreResults )
     {
         // Check for results
         if ( Objects.isNull( scoreResults ) )
@@ -481,17 +508,142 @@ public class ProcessorHelper
 
         ProjectConfig config = projectConfigPlus.getProjectConfig();
         // Iterate through each metric 
-        for ( final Map.Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>> e : scoreResults.entrySet() )
+        for ( final Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>> e : scoreResults.entrySet() )
         {
             List<DestinationConfig> destinations =
                     ConfigHelper.getGraphicalDestinations( config );
             // Iterate through each destination
             for ( DestinationConfig destConfig : destinations )
             {
-                writeScoreCharts( feature, projectConfigPlus, destConfig, e.getKey().getKey(), e.getValue() );
+                Supplier<Map<MetricConstants, ChartEngine>> supplier =
+                        getChartSupplierForDoubleScoreOutput( projectConfigPlus,
+                                                              destConfig,
+                                                              e.getKey().getKey(),
+                                                              e.getValue() );
+                writeScoreCharts( feature,
+                                  projectConfigPlus,
+                                  destConfig,
+                                  e.getKey().getKey(),
+                                  supplier );
             }
         }
     }
+
+    
+    /**
+     * Processes a set of charts associated with {@link DurationScoreOutput} across multiple metrics, time windows, 
+     * and thresholds, stored in a {@link MetricOutputMultiMapByTimeAndThreshold}.
+     * 
+     * @param feature the feature for which the chart is defined
+     * @param projectConfigPlus the project configuration
+     * @param scoreResults the metric results
+     * @throws WresProcessingException when an error occurs during processing
+     */
+
+    private static void processChartsForDurationScoreOutput( final Feature feature,
+                                                             final ProjectConfigPlus projectConfigPlus,
+                                                             final MetricOutputMultiMapByTimeAndThreshold<DurationScoreOutput> scoreResults )
+    {
+        // Check for results
+        if ( Objects.isNull( scoreResults ) )
+        {
+            LOGGER.warn( "No vector outputs from which to generate charts." );
+            return;
+        }
+
+        ProjectConfig config = projectConfigPlus.getProjectConfig();
+        // Iterate through each metric 
+        for ( final Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<DurationScoreOutput>> e : scoreResults.entrySet() )
+        {
+            List<DestinationConfig> destinations =
+                    ConfigHelper.getGraphicalDestinations( config );
+            // Iterate through each destination
+            for ( DestinationConfig destConfig : destinations )
+            {
+                Supplier<Map<MetricConstants, ChartEngine>> supplier =
+                        getChartSupplierForDurationScoreOutput( projectConfigPlus,
+                                                                destConfig,
+                                                                e.getKey().getKey(),
+                                                                e.getValue() );
+                writeScoreCharts( feature,
+                                  projectConfigPlus,
+                                  destConfig,
+                                  e.getKey().getKey(),
+                                  supplier );
+            }
+        }
+    }
+    
+    
+    /**
+     * Returns a chart engine supplier from the input.
+     * 
+     * @param projectConfigPlus the project configuration
+     * @param destConfig the destination configuration for the written output
+     * @param metricId the metric identifier
+     * @param scoreResults the metric results 
+     * @return a chart engine supplier
+     */
+
+    private static Supplier<Map<MetricConstants, ChartEngine>>
+            getChartSupplierForDoubleScoreOutput( ProjectConfigPlus projectConfigPlus,
+                                                  DestinationConfig destConfig,
+                                                  MetricConstants metricId,
+                                                  MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> scoreResults )
+    {
+        return () -> {
+            GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destConfig, metricId );
+            try
+            {
+                return ChartEngineFactory.buildScoreOutputChartEngine( scoreResults,
+                                                                       DATA_FACTORY,
+                                                                       helper.getOutputType(),
+                                                                       helper.getTemplateResourceName(),
+                                                                       helper.getGraphicsString() );
+            }
+            catch ( ChartEngineException e )
+            {
+                throw new WresProcessingException( "Error while generating score charts:", e );
+            }
+        };
+    }
+    
+    
+    /**
+     * Returns a chart engine supplier from the input.
+     * 
+     * @param projectConfigPlus the project configuration
+     * @param destConfig the destination configuration for the written output
+     * @param metricId the metric identifier
+     * @param scoreResults the metric results 
+     * @return a chart engine supplier
+     */
+
+    private static Supplier<Map<MetricConstants, ChartEngine>>
+            getChartSupplierForDurationScoreOutput( ProjectConfigPlus projectConfigPlus,
+                                                    DestinationConfig destConfig,
+                                                    MetricConstants metricId,
+                                                    MetricOutputMapByTimeAndThreshold<DurationScoreOutput> scoreResults )
+    {
+        return () ->
+        {
+            GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destConfig, metricId );
+            try
+            {
+                Map<MetricConstants, ChartEngine> returnMe = new EnumMap<>( MetricConstants.class );
+                ChartEngine engine = ChartEngineFactory.buildCategoricalDurationScoreChartEngine( scoreResults,
+                                                                                                  helper.getTemplateResourceName(),
+                                                                                                  helper.getGraphicsString() );
+                returnMe.put( MetricConstants.MAIN, engine );
+                return returnMe;
+            }
+            catch ( ChartEngineException | XYChartDataSourceException e )
+            {
+                throw new WresProcessingException( "Error while generating score charts:", e );
+            }
+        };
+    }   
+    
     
     /**
      * Writes a set of charts associated with {@link DoubleScoreOutput} for a single metric and time window, 
@@ -501,7 +653,7 @@ public class ProcessorHelper
      * @param projectConfigPlus the project configuration
      * @param destConfig the destination configuration for the written output
      * @param metricId the metric identifier
-     * @param scoreResults the metric results
+     * @param chartSupplier a supplier of chart engines
      * @throws WresProcessingException when an error occurs during writing
      */
 
@@ -509,41 +661,15 @@ public class ProcessorHelper
                                           ProjectConfigPlus projectConfigPlus,
                                           DestinationConfig destConfig,
                                           MetricConstants metricId,
-                                          MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> scoreResults )
+                                          Supplier<Map<MetricConstants, ChartEngine>> chartSupplier )
     {
         // Build charts
         try
         {
             ProjectConfig config = projectConfigPlus.getProjectConfig();
-            String graphicsString = projectConfigPlus.getGraphicsStrings().get( destConfig );
-            // Build the chart engine
-            MetricConfig nextConfig =
-                    getNamedConfigOrAllValid( metricId, config );
-            // Default to global type parameter
-            OutputTypeSelection outputType = destConfig.getOutputType();
-            String templateResourceName = destConfig.getGraphical().getTemplate();
-            if ( Objects.nonNull( nextConfig ) )
-            {
-                // Local type parameter
-                if ( nextConfig.getOutputType() != null )
-                {
-                    outputType = nextConfig.getOutputType();
-                }
-
-                // Override template name with metric specific name.
-                if (nextConfig.getTemplateResourceName() != null)
-                {
-                    templateResourceName = nextConfig.getTemplateResourceName();
-                }
-            }
-            Map<MetricConstants, ChartEngine> engines =
-                    ChartEngineFactory.buildScoreOutputChartEngine( scoreResults,
-                                                                     DATA_FACTORY,
-                                                                     outputType,
-                                                                     templateResourceName,
-                                                                     graphicsString );
+            Map<MetricConstants, ChartEngine> engines = chartSupplier.get();
             // Build the outputs
-            for ( final Map.Entry<MetricConstants, ChartEngine> nextEntry : engines.entrySet() )
+            for ( final Entry<MetricConstants, ChartEngine> nextEntry : engines.entrySet() )
             {
                 // If the map contains more than one output, qualify with the component name
                 String componentName = "";
@@ -567,14 +693,13 @@ public class ProcessorHelper
                 ChartWriter.writeChart( outputImage, nextEntry.getValue(), destConfig );
             }
         }
-        catch ( ChartEngineException
-                | ChartWritingException
-                | ProjectConfigException e )
+        catch ( ChartWritingException | ProjectConfigException e )
         {
             throw new WresProcessingException( "Error while generating vector charts:", e );
         }
     }      
 
+    
     /**
      * Processes a set of charts associated with {@link MultiVectorOutput} across multiple metrics, time windows,
      * and thresholds, stored in a {@link MetricOutputMultiMapByTimeAndThreshold}.
@@ -598,7 +723,7 @@ public class ProcessorHelper
 
         ProjectConfig config = projectConfigPlus.getProjectConfig();
         // Iterate through each metric 
-        for ( final Map.Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<MultiVectorOutput>> e : multiVectorResults.entrySet() )
+        for ( final Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<MultiVectorOutput>> e : multiVectorResults.entrySet() )
         {
             List<DestinationConfig> destinations =
                     ConfigHelper.getGraphicalDestinations( config );
@@ -633,35 +758,16 @@ public class ProcessorHelper
         try
         {
             ProjectConfig config = projectConfigPlus.getProjectConfig();
-            String graphicsString = projectConfigPlus.getGraphicsStrings().get( destConfig );
-            // Build the chart engine
-            MetricConfig nextConfig = getNamedConfigOrAllValid( metricId, config );
-            // Default to global type parameter
-            OutputTypeSelection outputType = destConfig.getOutputType();
-            String templateResourceName = destConfig.getGraphical().getTemplate();
-            if ( Objects.nonNull( nextConfig ) )
-            {
-                // Local type parameter
-                if ( nextConfig.getOutputType() != null )
-                {
-                    outputType = nextConfig.getOutputType();
-                }
-
-                // Override template name with metric specific name.
-                if (nextConfig.getTemplateResourceName() != null)
-                {
-                    templateResourceName = nextConfig.getTemplateResourceName();
-                }
-            }
-
+            GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destConfig, metricId );
+            
             final Map<Object, ChartEngine> engines =
                     ChartEngineFactory.buildMultiVectorOutputChartEngine( multiVectorResults,
                                                                           DATA_FACTORY,
-                                                                          outputType,
-                                                                          templateResourceName,
-                                                                          graphicsString );
+                                                                          helper.getOutputType(),
+                                                                          helper.getTemplateResourceName(),
+                                                                          helper.getGraphicsString() );
             // Build the outputs
-            for ( final Map.Entry<Object, ChartEngine> nextEntry : engines.entrySet() )
+            for ( final Entry<Object, ChartEngine> nextEntry : engines.entrySet() )
             {
                 // Build the output file name
                 // TODO: adopt a more general naming convention as the pipelines expand
@@ -723,7 +829,7 @@ public class ProcessorHelper
 
         ProjectConfig config = projectConfigPlus.getProjectConfig();
         // Iterate through each metric 
-        for ( final Map.Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<BoxPlotOutput>> e : boxPlotResults.entrySet() )
+        for ( final Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<BoxPlotOutput>> e : boxPlotResults.entrySet() )
         {
             List<DestinationConfig> destinations =
                     ConfigHelper.getGraphicalDestinations( config );
@@ -734,6 +840,7 @@ public class ProcessorHelper
             }
         }
     }
+    
 
     /**
      * Writes a set of charts associated with {@link BoxPlotOutput} for a single metric and time window, 
@@ -757,21 +864,14 @@ public class ProcessorHelper
         try
         {
             ProjectConfig config = projectConfigPlus.getProjectConfig();
-            String graphicsString = projectConfigPlus.getGraphicsStrings().get( destConfig );
-            // Build the chart engine
-            MetricConfig nextConfig = getNamedConfigOrAllValid( metricId, config );
-            String templateResourceName = destConfig.getGraphical().getTemplate();
-            if ( Objects.nonNull( nextConfig ) && nextConfig.getTemplateResourceName() != null )
-            {
-                templateResourceName = nextConfig.getTemplateResourceName();
-            }
+            GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destConfig, metricId );
 
             final Map<Pair<TimeWindow, Threshold>, ChartEngine> engines =
                     ChartEngineFactory.buildBoxPlotChartEngine( boxPlotResults,
-                                                                templateResourceName,
-                                                                graphicsString );
+                                                                helper.getTemplateResourceName(),
+                                                                helper.getGraphicsString() );
             // Build the outputs
-            for ( final Map.Entry<Pair<TimeWindow, Threshold>, ChartEngine> nextEntry : engines.entrySet() )
+            for ( final Entry<Pair<TimeWindow, Threshold>, ChartEngine> nextEntry : engines.entrySet() )
             {
                 // Build the output file name
                 File destDir = ConfigHelper.getDirectoryFromDestinationConfig( destConfig );
@@ -801,7 +901,93 @@ public class ProcessorHelper
         }
     }
 
+    
+    /**
+     * Processes a set of charts associated with {@link PairedOutput} across multiple metrics, time window, and 
+     * thresholds, stored in a {@link MetricOutputMultiMapByTimeAndThreshold}.
+     * 
+     * @param feature the feature for which the chart is defined
+     * @param projectConfigPlus the project configuration
+     * @param pairedOutputResults the outputs
+     * @throws WresProcessingException if the processing completed unsuccessfully
+     */
 
+    static void processPairedOutputByInstantDurationCharts( final Feature feature,
+                                                            final ProjectConfigPlus projectConfigPlus,
+                                                            final MetricOutputMultiMapByTimeAndThreshold<PairedOutput<Instant, Duration>> pairedOutputResults )
+    {
+        // Check for results
+        if ( Objects.isNull( pairedOutputResults ) )
+        {
+            LOGGER.warn( "No box-plot outputs from which to generate charts." );
+            return;
+        }
+
+        ProjectConfig config = projectConfigPlus.getProjectConfig();
+        // Iterate through each metric 
+        for ( final Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<PairedOutput<Instant, Duration>>> e : pairedOutputResults.entrySet() )
+        {
+            List<DestinationConfig> destinations =
+                    ConfigHelper.getGraphicalDestinations( config );
+            // Iterate through each destination
+            for ( DestinationConfig destConfig : destinations )
+            {
+                writePairedOutputByInstantDurationCharts( feature, projectConfigPlus, destConfig, e.getKey().getKey(), e.getValue() );
+            }
+        }
+    }
+
+    
+    /**
+     * Writes a set of charts associated with {@link PairedOutput} for a single metric and time window, 
+     * stored in a {@link MetricOutputMultiMapByTimeAndThreshold}.
+     * 
+     * @param feature the feature
+     * @param projectConfigPlus the project configuration
+     * @param destConfig the destination configuration for the written output
+     * @param metricId the metric identifier
+     * @param pairedOutputResults the metric results
+     * @throws WresProcessingException when an error occurs during writing
+     */
+
+    private static void writePairedOutputByInstantDurationCharts( Feature feature,
+                                                                  ProjectConfigPlus projectConfigPlus,
+                                                                  DestinationConfig destConfig,
+                                                                  MetricConstants metricId,
+                                                                  MetricOutputMapByTimeAndThreshold<PairedOutput<Instant, Duration>> pairedOutputResults )
+    {
+        // Build charts
+        try
+        {
+            ProjectConfig config = projectConfigPlus.getProjectConfig();
+            GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destConfig, metricId );
+
+            final ChartEngine engine = ChartEngineFactory.buildPairedInstantDurationChartEngine( pairedOutputResults,
+                                                                                                 helper.getTemplateResourceName(),
+                                                                                                 helper.getGraphicsString() );
+            // Build the output file name
+            File destDir = ConfigHelper.getDirectoryFromDestinationConfig( destConfig );
+            Path outputImage = Paths.get( destDir.toString(),
+                                          ConfigHelper.getFeatureDescription( feature )
+                                                              + "_"
+                                                              + metricId.name()
+                                                              + "_"
+                                                              + config.getInputs()
+                                                                      .getRight()
+                                                                      .getVariable()
+                                                                      .getValue()
+                                                              + ".png" );
+            ChartWriter.writeChart( outputImage, engine, destConfig );
+        }
+        catch ( ChartEngineException
+                | ChartWritingException
+                | ProjectConfigException e )
+        {
+            throw new WresProcessingException( "Error while generating box-plot charts:", e );
+        }
+    }    
+    
+    
     /**
      * Composes a list of {@link CompletableFuture} so that execution completes when all futures are completed normally
      * or any one future completes exceptionally. None of the {@link CompletableFuture} passed to this utility method
@@ -921,6 +1107,117 @@ public class ProcessorHelper
             cause = cause.getCause();
         }
         return false;
+    }
+    
+    /**
+     * A helper class that builds the parameters required for graphics generation.
+     */
+    
+    private static class GraphicsHelper 
+    {
+        
+        /**
+         * The template resource name.
+         */
+        
+        private final String templateResourceName;
+        
+        /**
+         * The graphics string.
+         */
+        
+        private final String graphicsString;
+        
+        /**
+         * The output type.
+         */
+        
+        private final OutputTypeSelection outputType;
+        
+        /**
+         * Returns a graphics helper.
+         * 
+         * @param projectConfigPlus the project configuration
+         * @param destConfig the destination configuration
+         * @param metricId the metric identifier 
+         */
+        
+        private static GraphicsHelper of(  ProjectConfigPlus projectConfigPlus,
+                                    DestinationConfig destConfig,
+                                    MetricConstants metricId )
+        {
+            return new GraphicsHelper( projectConfigPlus, destConfig, metricId );
+        }
+        
+        /**
+         * Builds a helper.
+         * 
+         * @param projectConfigPlus the project configuration
+         * @param destConfig the destination configuration
+         * @param metricId the metric identifier
+         */
+
+        private GraphicsHelper( ProjectConfigPlus projectConfigPlus,
+                                DestinationConfig destConfig,
+                                MetricConstants metricId )
+        {
+            ProjectConfig config = projectConfigPlus.getProjectConfig();
+            String graphicsString = projectConfigPlus.getGraphicsStrings().get( destConfig );
+            // Build the chart engine
+            MetricConfig nextConfig =
+                    getNamedConfigOrAllValid( metricId, config );
+            // Default to global type parameter
+            OutputTypeSelection outputType = destConfig.getOutputType();
+            String templateResourceName = destConfig.getGraphical().getTemplate();
+            if ( Objects.nonNull( nextConfig ) )
+            {
+                // Local type parameter
+                if ( nextConfig.getOutputType() != null )
+                {
+                    outputType = nextConfig.getOutputType();
+                }
+
+                // Override template name with metric specific name.
+                if ( nextConfig.getTemplateResourceName() != null )
+                {
+                    templateResourceName = nextConfig.getTemplateResourceName();
+                }
+            }
+            this.templateResourceName = templateResourceName;
+            this.outputType = outputType;
+            this.graphicsString = graphicsString;
+        }
+        
+        /**
+         * Returns the output type.
+         * @return the output type
+         */
+        
+        private OutputTypeSelection getOutputType()
+        {
+            return outputType;
+        }
+        
+        /**
+         * Returns the graphics string.
+         * @return the graphics string
+         */
+        
+        private String getGraphicsString()
+        {
+            return graphicsString;
+        }
+        
+        /**
+         * Returns the template resource name.
+         * @return the template resource name
+         */
+        
+        private String getTemplateResourceName()
+        {
+            return templateResourceName;
+        }        
+        
     }
     
     private static Integer featureCount = 0;
