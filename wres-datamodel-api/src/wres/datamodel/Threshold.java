@@ -156,10 +156,9 @@ public interface Threshold extends Comparable<Threshold>, Predicate<Double>
     boolean isFinite();
 
     /**
-     * Returns a string representation of the threshold that can be used for file naming and other operations that do
-     * not allow spaces or special characters.
+     * Returns a string representation of the threshold that does not contain spaces or other special characters.
      * 
-     * @return a string representation
+     * @return a string representation without spaces or special characters
      */
 
     String toStringSafe();

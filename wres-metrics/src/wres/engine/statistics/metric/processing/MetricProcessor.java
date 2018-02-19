@@ -2,6 +2,7 @@ package wres.engine.statistics.metric.processing;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -227,6 +228,19 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
     {
         return Objects.nonNull( mergeList ) && Arrays.stream( mergeList ).anyMatch( a -> a.equals( outputGroup ) );
     }
+    
+    /**
+     * Returns the (possibly empty) set of {@link MetricOutputGroup} that will be cached across successive calls to 
+     * {@link #apply(Object)}.
+     * 
+     * @return the output types that will be cached
+     */
+
+    public Set<MetricOutputGroup> getMetricOutputToCache()
+    {
+        return Objects.nonNull( mergeList ) ? Collections.unmodifiableSet( new HashSet<>( Arrays.asList( mergeList ) ) )
+                                            : Collections.emptySet();
+    }   
 
     /**
      * Returns true if metrics are available for the input {@link MetricInputGroup} and {@link MetricOutputGroup}, false
@@ -497,7 +511,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
     Set<Threshold> getThresholds( MetricInputGroup inGroup, MetricOutputGroup outGroup )
     {
         Set<Threshold> returnMe = new HashSet<>( thresholds.get( Pair.of( inGroup, outGroup ) ) );
-        if ( Objects.isNull( returnMe ) )
+        if ( returnMe.isEmpty() )
         {
             throw new MetricCalculationException( "Could not identify thresholds for '" + inGroup
                                                   + "' and "

@@ -17,15 +17,9 @@ import wres.engine.statistics.metric.MetricParameterException;
 
 /**
  * <p>
- * Base class for a contingency matrix with N*N elements. A contingency matrix compares the number of predictions and
- * observations associated with each of the N possible outcomes of an N-category variable. The rows of the contingency
+ * Base class for a contingency table. A contingency table compares the number of predictions and observations 
+ * associated with each of the N possible outcomes of an N-category variable. The rows of the contingency
  * table store the number of predicted outcomes and the columns store the number of observed outcomes.
- * </p>
- * <p>
- * The elements of the contingency table are unpacked into a vector. The elements are unpacked from left to right and
- * top to bottom. Thus, for a 2x2 contingency table, the "true positives" (hits), "false positives" (false alarms),
- * "false negatives" (misses), and "true negatives" are contained in the first, second, third and fourth positions of
- * the returned vector, respectively.
  * </p>
  * 
  * @author james.brown@hydrosolved.com
@@ -57,7 +51,7 @@ public class ContingencyTable<S extends MulticategoryPairs> implements Metric<S,
         }
         final int outcomes = s.getCategoryCount();
         final double[][] returnMe = new double[outcomes][outcomes];
-        //Function that returns the index within the contingency matrix to increment
+        //Function that returns the index within the contingency table to increment
         final Consumer<VectorOfBooleans> f = a -> {
             boolean[] b = a.getBooleans();
             //Dichotomous event represented as a single outcome: expand
