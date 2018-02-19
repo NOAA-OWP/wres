@@ -325,10 +325,10 @@ public class CommaSeparated
             
             StringJoiner headerRow = new StringJoiner( "," );
             headerRow.merge( HEADER_DEFAULT );
-            // Both lead times and thresholds together
-            if ( Objects.isNull( diagramType ) )
+            // Default
+            if ( Objects.isNull( diagramType ) || diagramType == OutputTypeSelection.DEFAULT )
             {
-                writeOneDiagramOutputType( destinationConfig, m.getValue(), headerRow, formatter );
+                writeOneDiagramOutputTypePerTimeWindow( destinationConfig, m.getValue(), headerRow, formatter );
             }
             // Per time window
             else if ( diagramType == OutputTypeSelection.LEAD_THRESHOLD )
@@ -341,34 +341,6 @@ public class CommaSeparated
                 writeOneDiagramOutputTypePerThreshold( destinationConfig, m.getValue(), headerRow, formatter );
             }
         }
-    }
-    
-    /**
-     * Writes one diagram for all thresholds and time windows in the input.
-     * 
-     * @param destinationConfig the destination configuration    
-     * @param diagramOutput the diagram output
-     * @param headerRow the header row
-     * @param formatter optional formatter, can be null
-     * @throws ProjectConfigException if the path for writing the output cannot be established
-     * @throws IOException if the output cannot be written
-     */
-
-    private static void writeOneDiagramOutputType( DestinationConfig destinationConfig,
-                                                   MetricOutputMapByTimeAndThreshold<MultiVectorOutput> diagramOutput,
-                                                   StringJoiner headerRow,
-                                                   Format formatter )
-            throws ProjectConfigException, IOException
-    {
-        MetricOutputMetadata meta = diagramOutput.getMetadata();
-        List<RowCompareByLeft> rows = getRowsForOneDiagram( diagramOutput, formatter );
-        // Add the header row
-        rows.add( RowCompareByLeft.of( HEADER_INDEX, getDiagramHeader( diagramOutput, headerRow ) ) );
-        // Write the output
-        List<String> nameList = Arrays.asList( meta.getIdentifier().getGeospatialID(),
-                                               meta.getMetricID().name(),
-                                               meta.getIdentifier().getVariableID() );
-        writeTabularOutputToFile( destinationConfig, rows, nameList );
     }
     
     /**

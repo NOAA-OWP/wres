@@ -329,9 +329,13 @@
         </xs:restriction>
     </xs:simpleType>
 
-    <!-- Possibilities for the graphical outputType element. -->
+    <!-- Possibilities for the outputType element. The "default" option indicates 
+    that the default output configuration should be used when multiple options are 
+    possible for the same type of output data. The default should also be assumed 
+    when the output type is undefined.-->
     <xs:simpleType name="outputTypeSelection">
         <xs:restriction base="xs:string">
+            <xs:enumeration value="default" />
             <xs:enumeration value="lead threshold" />
             <xs:enumeration value="threshold lead" />
 	    <xs:enumeration value="pooling window" />
