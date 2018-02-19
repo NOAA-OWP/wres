@@ -12,83 +12,78 @@ import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
-import wres.engine.statistics.metric.processing.MetricProcessorByTime;
+import wres.engine.statistics.metric.processing.MetricProcessorException;
+import wres.engine.statistics.metric.processing.MetricProcessorForProject;
+
+/**
+ * Task that computes a set of metric results for a particular time window.
+ */
+class PairsByTimeWindowProcessor implements Supplier<MetricOutputForProjectByTimeAndThreshold>
+{
+    private static final Logger LOGGER =
+            LoggerFactory.getLogger( PairsByTimeWindowProcessor.class );
 
     /**
-     * Task that computes a set of metric results for a particular time window.
+     * The future metric input.
      */
-    class PairsByTimeWindowProcessor implements Supplier<MetricOutputForProjectByTimeAndThreshold>
+    private final Future<MetricInput<?>> futureInput;
+
+    /**
+     * Processor.
+     */
+
+    private final MetricProcessorForProject metricProcessor;
+
+    /**
+     * Construct.
+     * 
+     * @param futureInput the future metric input
+     * @param metricProcessor the metric processor
+     * @throws NullPointerException if either input is null
+     */
+
+    PairsByTimeWindowProcessor( final Future<MetricInput<?>> futureInput,
+                                MetricProcessorForProject metricProcessor )
     {
-        private static final Logger LOGGER =
-                LoggerFactory.getLogger( PairsByTimeWindowProcessor.class );
+        Objects.requireNonNull( futureInput, "Specify a non-null input for the processor." );
+        Objects.requireNonNull( metricProcessor, "Specify a non-null metric processor." );
+        this.futureInput = futureInput;
+        this.metricProcessor = metricProcessor;
+    }
 
-        /**
-         * The future metric input.
-         */
-        private final Future<MetricInput<?>> futureInput;
-
-        /**
-         * Processor for single-valued pairs.
-         */
-
-        private final MetricProcessorByTime<SingleValuedPairs> singleValuedProcessor;
-
-        /**
-         * Processor for ensemble pairs.
-         */
-
-        private final MetricProcessorByTime<EnsemblePairs> ensembleProcessor;
-
-        /**
-         * Construct.
-         * 
-         * @param futureInput the future metric input
-         * @param singleValuedProcessor a processor for {@link SingleValuedPairs}
-         * @param ensembleProcessor a processor for {@link EnsemblePairs}
-         */
-
-        PairsByTimeWindowProcessor( final Future<MetricInput<?>> futureInput,
-                                    MetricProcessorByTime<SingleValuedPairs> singleValuedProcessor,
-                                    MetricProcessorByTime<EnsemblePairs> ensembleProcessor )
+    @Override
+    public MetricOutputForProjectByTimeAndThreshold get()
+    {
+        MetricOutputForProjectByTimeAndThreshold returnMe = null;
+        try
         {
-            Objects.requireNonNull( futureInput, "Specify a non-null input for the processor." );
-            this.futureInput = futureInput;
-            this.singleValuedProcessor = singleValuedProcessor;
-            this.ensembleProcessor = ensembleProcessor;
-        }
-
-        @Override
-        public MetricOutputForProjectByTimeAndThreshold get()
-        {
-            MetricInput<?> input = null;
-            try
-            {
-                input = futureInput.get();
-                LOGGER.debug( "Completed processing of pairs for feature '{}' and time window {}.",
-                              input.getMetadata().getIdentifier().getGeospatialID(),
-                              input.getMetadata().getTimeWindow() );
-            }
-            catch(final InterruptedException e)
-            {
-                LOGGER.warn( "Interrupted while processing pairs:", e );
-                Thread.currentThread().interrupt();
-            }
-            catch( ExecutionException e )
-            {
-                throw new WresProcessingException( "While processing pairs:", e );
-            }
+            MetricInput<?> input = futureInput.get();
+            LOGGER.debug( "Completed processing of pairs for feature '{}' and time window {}.",
+                          input.getMetadata().getIdentifier().getGeospatialID(),
+                          input.getMetadata().getTimeWindow() );
             // Process the pairs
             if ( input instanceof SingleValuedPairs )
             {
-                return singleValuedProcessor.apply( (SingleValuedPairs) input );
+                returnMe = metricProcessor.getMetricProcessorForSingleValuedPairs().apply( (SingleValuedPairs) input );
             }
             else if ( input instanceof EnsemblePairs )
             {
-                return ensembleProcessor.apply( (EnsemblePairs) input );
+                returnMe = metricProcessor.getMetricProcessorForEnsemblePairs().apply( (EnsemblePairs) input );
             }
             else
             {
                 throw new WresProcessingException( "While processing pairs: encountered an unexpected type of pairs." );
             }
         }
+        catch ( InterruptedException e )
+        {
+            LOGGER.warn( "Interrupted while processing pairs:", e );
+            Thread.currentThread().interrupt();
+        }
+        catch ( ExecutionException | MetricProcessorException e )
+        {
+            throw new WresProcessingException( "While processing pairs:", e );
+        }
+        return returnMe;
     }
+}

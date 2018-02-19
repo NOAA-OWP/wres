@@ -10,9 +10,11 @@ import java.util.stream.Collectors;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
+import wres.config.generated.DestinationConfig;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
 import wres.config.generated.MetricsConfig;
+import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.PoolingWindowConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Outputs;
@@ -347,7 +349,57 @@ public final class MetricConfigHelper
             }
         }
         return allStats.toArray( new MetricConstants[allStats.size()] );
-    }    
+    }
+    
+    /**
+     * Returns <code>true</code> if the input configuration requires any outputs of the type 
+     * {@link MetricOutputGroup#MULTIVECTOR} where the {@link OutputTypeSelection} is
+     * {@link OutputTypeSelection#THRESHOLD_LEAD} for any or all metrics.
+     * 
+     * @param projectConfig the project configuration
+     * @return true if the input configuration requires outputs of the {@link MetricOutputGroup#MULTIVECTOR} 
+     *            type whose output type is {@link OutputTypeSelection#THRESHOLD_LEAD}, false otherwise
+     * @throws NullPointerException if the input is null
+     * @throws MetricConfigurationException if the configuration is invalid
+     */
+
+    public static boolean hasMultiVectorOutputsByThresholdLead( ProjectConfig projectConfig )
+            throws MetricConfigurationException
+    {
+        Objects.requireNonNull( projectConfig, "Specify non-null project configuration." );
+        // Does the configuration contain any multivector types?        
+        boolean hasMultiVectorType = MetricConfigHelper.getMetricsFromConfig( projectConfig )
+                                                    .stream()
+                                                    .anyMatch( a -> a.isInGroup( MetricOutputGroup.MULTIVECTOR ) );
+
+        // Does it contain an threshold lead types?
+        boolean hasThresholdLeadType = false; //Assume not
+
+        // Does it contain any metric-local threshold lead types?
+        for ( MetricConfig next : projectConfig.getMetrics().getMetric() )
+        {
+            if ( next.getOutputType() != null && next.getOutputType() == OutputTypeSelection.THRESHOLD_LEAD )
+            {
+                hasThresholdLeadType = true; //Yes
+                break;
+            }
+        }
+
+        // Check for metric-global threshold lead types if required
+        if ( !hasThresholdLeadType && Objects.nonNull( projectConfig.getOutputs() ) )
+        {
+            List<DestinationConfig> destinations = projectConfig.getOutputs().getDestination();
+            for ( DestinationConfig next : destinations )
+            {
+                if ( next.getOutputType() == OutputTypeSelection.THRESHOLD_LEAD )
+                {
+                    hasThresholdLeadType = true;
+                    break;
+                }
+            }
+        }
+        return hasMultiVectorType && hasThresholdLeadType;
+    }  
 
     /**
      * Returns valid metrics for {@link MetricInputGroup#ENSEMBLE}

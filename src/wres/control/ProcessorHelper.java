@@ -23,7 +23,6 @@ import org.slf4j.LoggerFactory;
 import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
 import wres.config.ProjectConfigException;
-import wres.config.generated.DatasourceType;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.Feature;
@@ -38,14 +37,13 @@ import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.Threshold;
 import wres.datamodel.inputs.InsufficientDataException;
 import wres.datamodel.inputs.MetricInput;
-import wres.datamodel.inputs.pairs.EnsemblePairs;
-import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MapKey;
 import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.MetricOutputAccessException;
+import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
 import wres.datamodel.outputs.MultiVectorOutput;
@@ -53,8 +51,8 @@ import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.config.MetricConfigHelper;
 import wres.engine.statistics.metric.config.MetricConfigurationException;
 import wres.engine.statistics.metric.processing.MetricProcessor;
-import wres.engine.statistics.metric.processing.MetricProcessorByTime;
 import wres.engine.statistics.metric.processing.MetricProcessorException;
+import wres.engine.statistics.metric.processing.MetricProcessorForProject;
 import wres.io.Operations;
 import wres.io.config.ConfigHelper;
 import wres.io.config.ProjectConfigPlus;
@@ -260,45 +258,13 @@ public class ProcessorHelper
 
         // Sink for the results: the results are added incrementally to an immutable store via a builder
         // Some output types are processed at the end of the pipeline, others after each input is processed
-        // Construct a processor that retains all output types required at the end of the pipeline: SCALAR and VECTOR
-        // TODO: support additional processor types
-        MetricProcessorByTime<SingleValuedPairs> singleValuedProcessor = null; // Ensemble processor
-        MetricProcessorByTime<EnsemblePairs> ensembleProcessor = null; // Single-valued processor
-        MetricProcessorByTime<?> processor = null; // The processor used
+        MetricProcessorForProject processor = null;
         try
         {
-            MetricOutputGroup[] cacheMe = null;
-            // Multivector outputs by threshold must be cached across time windows
-            if ( hasMultiVectorOutputsToCache( projectConfig ) )
-            {
-                cacheMe = new MetricOutputGroup[] { MetricOutputGroup.DOUBLE_SCORE,
-                                                    MetricOutputGroup.MULTIVECTOR };
-            }
-            else
-            {
-                cacheMe = new MetricOutputGroup[] { MetricOutputGroup.DOUBLE_SCORE };
-            }
-
-            MetricFactory mF = MetricFactory.getInstance( DATA_FACTORY );
-            DatasourceType type = projectConfig.getInputs().getRight().getType();
-            if ( type.equals( DatasourceType.SINGLE_VALUED_FORECASTS ) || type.equals( DatasourceType.SIMULATIONS ) )
-            {
-                singleValuedProcessor = mF.ofMetricProcessorByTimeSingleValuedPairs( projectConfig,
-                                                                                     thresholdExecutor,
-                                                                                     metricExecutor,
-                                                                                     cacheMe );
-                processor = singleValuedProcessor;
-            }
-            else
-            {
-                ensembleProcessor = mF.ofMetricProcessorByTimeEnsemblePairs( projectConfig,
-                                                                             thresholdExecutor,
-                                                                             metricExecutor,
-                                                                             cacheMe );
-                processor = ensembleProcessor;
-            }
+            processor = MetricFactory.getInstance( DATA_FACTORY )
+                                     .getMetricProcessorForProject( projectConfig, thresholdExecutor, metricExecutor );
         }
-        catch(final MetricProcessorException | MetricConfigurationException e)
+        catch(final MetricProcessorException e )
         {
             throw new WresProcessingException( errorMessage, e );
         }
@@ -323,13 +289,11 @@ public class ProcessorHelper
                 final CompletableFuture<Void> c =
                         CompletableFuture.supplyAsync( new PairsByTimeWindowProcessor(
                                                                                        nextInput,
-                                                                                       singleValuedProcessor,
-                                                                                       ensembleProcessor ),
+                                                                                       processor ),
                                                        pairExecutor )
-                                         .thenAcceptAsync( new IntermediateResultProcessor(
-                                                                                            feature,
+                                         .thenAcceptAsync( new IntermediateResultProcessor( feature,
                                                                                             projectConfigPlus,
-                                                                                            processor ),
+                                                                                            processor.getCachedMetricOutputTypes() ),
                                                            pairExecutor )
                                          .thenAccept(
                                                       aVoid -> ProgressMonitor.completeStep() );
@@ -370,7 +334,14 @@ public class ProcessorHelper
         // Generate cached output if available
         if ( processor.hasCachedMetricOutput() )
         {
-            processCachedProducts( projectConfigPlus, processor, feature );
+            try
+            {
+                processCachedProducts( projectConfigPlus, processor.getCachedMetricOutput(), feature );
+            }
+            catch ( MetricOutputAccessException e )
+            {
+                throw new WresProcessingException( errorMessage, e );
+            }
         }
 
         return new FeatureProcessingResult( feature, true, null );
@@ -382,14 +353,19 @@ public class ProcessorHelper
      * the supplied {@link ProjectConfig}.
      * 
      * @param projectConfigPlus the project configuration
-     * @param processor the processor with cached metric outputs
+     * @param cachedOutput the cached output
      * @param feature the feature being processed
      */
 
     private static void processCachedProducts( ProjectConfigPlus projectConfigPlus,
-                                               MetricProcessorByTime<?> processor,
+                                               MetricOutputForProjectByTimeAndThreshold cachedOutput,
                                                Feature feature )
     {
+        if( Objects.isNull( cachedOutput ) )
+        {
+            LOGGER.warn( "No cached outputs to process. ");
+            return;
+        }
         ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
         final String featureDescription = ConfigHelper.getFeatureDescription( feature );
 
@@ -402,7 +378,7 @@ public class ProcessorHelper
 
             processCachedCharts( feature,
                                  projectConfigPlus,
-                                 processor );
+                                 cachedOutput );
 
             LOGGER.debug( "Finished building charts for feature {}.",
                           featureDescription );
@@ -419,10 +395,10 @@ public class ProcessorHelper
             {
                 CommaSeparated.writeOutputFiles( projectConfig,
                                                  feature,
-                                                 processor.getCachedMetricOutput() );
+                                                 cachedOutput );
 
             }
-            catch ( IOException | MetricOutputAccessException e )
+            catch ( IOException e )
             {
                 throw new WresProcessingException( "While writing output files: ",
                                                    e );
@@ -440,48 +416,36 @@ public class ProcessorHelper
      * 
      * @param feature the feature for which the charts are defined
      * @param projectConfigPlus the project configuration
-     * @param processor the {@link MetricProcessor} that contains the results for all chart types
+     * @param cachedOutput the cached output
      * @throws WresProcessingException when an error occurs during processing
      */
 
     private static void processCachedCharts( final Feature feature,
                                              final ProjectConfigPlus projectConfigPlus,
-                                             final MetricProcessorByTime<?> processor )
+                                             final MetricOutputForProjectByTimeAndThreshold cachedOutput )
     {
-        if(!processor.hasCachedMetricOutput())
-        {
-            LOGGER.warn( "No cached outputs to process. ");
-            return;
-        }
-
         try
         {
             // Process score charts
-            if ( processor.willCacheMetricOutput( MetricOutputGroup.DOUBLE_SCORE )
-                 && processor.getCachedMetricOutput().hasOutput( MetricOutputGroup.DOUBLE_SCORE ) )
+            if ( cachedOutput.hasOutput( MetricOutputGroup.DOUBLE_SCORE ) )
             {
-                processScoreCharts( feature,
-                                     projectConfigPlus,
-                                     processor.getCachedMetricOutput()
-                                              .getDoubleScoreOutput() );
+                processScoreCharts( feature, 
+                                    projectConfigPlus, 
+                                    cachedOutput.getDoubleScoreOutput() );
             }
             // Process multivector charts
-            if ( processor.willCacheMetricOutput( MetricOutputGroup.MULTIVECTOR )
-                 && processor.getCachedMetricOutput().hasOutput( MetricOutputGroup.MULTIVECTOR ) )
+            if ( cachedOutput.hasOutput( MetricOutputGroup.MULTIVECTOR ) )
             {
-                processMultiVectorCharts( feature,
-                                          projectConfigPlus,
-                                          processor.getCachedMetricOutput()
-                                                   .getMultiVectorOutput() );
+                processMultiVectorCharts( feature, 
+                                          projectConfigPlus, 
+                                          cachedOutput.getMultiVectorOutput() );
             }
             // Process box plot charts
-            if ( processor.willCacheMetricOutput( MetricOutputGroup.BOXPLOT )
-                 && processor.getCachedMetricOutput().hasOutput( MetricOutputGroup.BOXPLOT ) )
+            if ( cachedOutput.hasOutput( MetricOutputGroup.BOXPLOT ) )
             {
-                processBoxPlotCharts( feature,
-                                      projectConfigPlus,
-                                      processor.getCachedMetricOutput()
-                                               .getBoxPlotOutput() );
+                processBoxPlotCharts( feature, 
+                                      projectConfigPlus, 
+                                      cachedOutput.getBoxPlotOutput() );
             }
         }
         catch ( final MetricOutputAccessException e )
@@ -959,57 +923,6 @@ public class ProcessorHelper
         return false;
     }
     
-    /**
-     * Returns <code>true</code> if the input configuration requires any outputs of the type 
-     * {@link MetricOutputGroup#MULTIVECTOR} that must be cached across time windows; that is, when the plot type 
-     * configuration is {@link PlotTypeSelection#THRESHOLD_LEAD} for any or all metrics.
-     * 
-     * @param projectConfig the project configuration
-     * @return true if the input configuration requires cached outputs of the {@link MetricOutputGroup#MULTIVECTOR} 
-     *            type, false otherwise
-     * @throws NullPointerException if the input is null
-     * @throws MetricConfigurationException if the configuration is invalid
-     */
-
-    private static boolean hasMultiVectorOutputsToCache( ProjectConfig projectConfig )
-            throws MetricConfigurationException
-    {
-        Objects.requireNonNull( projectConfig, "Specify non-null project configuration." );
-        // Does the configuration contain any multivector types?        
-        boolean hasMultiVectorType = MetricConfigHelper.getMetricsFromConfig( projectConfig )
-                                                    .stream()
-                                                    .anyMatch( a -> a.isInGroup( MetricOutputGroup.MULTIVECTOR ) );
-
-        // Does it contain an threshold lead types?
-        boolean hasThresholdLeadType = false; //Assume not
-
-        // Does it contain any metric-local threshold lead types?
-        for ( MetricConfig next : projectConfig.getMetrics().getMetric() )
-        {
-            if ( next.getOutputType() != null && next.getOutputType() == OutputTypeSelection.THRESHOLD_LEAD )
-            {
-                hasThresholdLeadType = true; //Yes
-                break;
-            }
-        }
-
-        // Check for metric-global threshold lead types if required
-        if ( !hasThresholdLeadType )
-        {
-            List<DestinationConfig> destinations =
-                    ConfigHelper.getGraphicalDestinations( projectConfig );
-            for ( DestinationConfig next : destinations )
-            {
-                if ( next.getOutputType() == OutputTypeSelection.THRESHOLD_LEAD )
-                {
-                    hasThresholdLeadType = true;
-                    break;
-                }
-            }
-        }
-        return hasMultiVectorType && hasThresholdLeadType;
-    }
-
     private static Integer featureCount = 0;
     private static Integer completedFeatureCount = 1;
 }

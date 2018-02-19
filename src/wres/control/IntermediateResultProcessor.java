@@ -2,6 +2,7 @@ package wres.control;
 
 import java.io.IOException;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Consumer;
 
 import org.slf4j.Logger;
@@ -13,7 +14,6 @@ import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MetricOutputAccessException;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
-import wres.engine.statistics.metric.processing.MetricProcessorByTime;
 import wres.io.config.ProjectConfigPlus;
 import wres.io.writing.CommaSeparated;
 
@@ -47,34 +47,35 @@ public class IntermediateResultProcessor implements Consumer<MetricOutputForProj
      */
 
     private final Feature feature;
-       
+    
     /**
-     * The processor used to determined whether the output is intermediate or being cached.
+     * The types that should not be processed as intermediate output, because they are being cached until the end
+     * of a processing pipeline.
      */
-
-    private final MetricProcessorByTime<?> processor;
-        
+       
+    private final Set<MetricOutputGroup> ignoreTheseTypes;
+    
     /**
      * Construct.
      * 
      * @param feature the feature
      * @param projectConfigPlus the project configuration
-     * @param processor the metric processor
+     * @throws NullPointerException if any of the inputs are null
      */
 
     IntermediateResultProcessor( final Feature feature,
                                  final ProjectConfigPlus projectConfigPlus,
-                                 final MetricProcessorByTime<?> processor )
+                                 final Set<MetricOutputGroup> ignoreTheseTypes )
     {
         Objects.requireNonNull( feature,
                                 "Specify a non-null feature for the results processor." );
         Objects.requireNonNull( projectConfigPlus,
                                 "Specify a non-null configuration for the results processor." );
-        Objects.requireNonNull( processor,
-                                "Specify a non-null metric processor for the results processor." );
+        Objects.requireNonNull( projectConfigPlus, 
+                                "Specify a non-null set of output types to ignore, such as the empty set." );
         this.feature = feature;
         this.projectConfigPlus = projectConfigPlus;
-        this.processor = processor;
+        this.ignoreTheseTypes = ignoreTheseTypes;
     }
 
     @Override
@@ -87,9 +88,9 @@ public class IntermediateResultProcessor implements Consumer<MetricOutputForProj
             {
                 MetricOutputMetadata meta = null;
 
-                //Multivector output available, not being cached to the end
+                //Multivector output available and not being cached to the end
                 if ( input.hasOutput( MetricOutputGroup.MULTIVECTOR )
-                     && !processor.willCacheMetricOutput( MetricOutputGroup.MULTIVECTOR ) )
+                     && !ignoreTheseTypes.contains( MetricOutputGroup.MULTIVECTOR ) )
                 {
                     ProcessorHelper.processMultiVectorCharts( feature,
                                                               projectConfigPlus,
@@ -99,9 +100,9 @@ public class IntermediateResultProcessor implements Consumer<MetricOutputForProj
                     CommaSeparated.writeDiagramFiles( projectConfigPlus.getProjectConfig(),
                                                       input.getMultiVectorOutput() );
                 }
-                //Box-plot output available, not being cached to the end
+                //Box-plot output available and not being cached to the end
                 if ( input.hasOutput( MetricOutputGroup.BOXPLOT )
-                     && !processor.willCacheMetricOutput( MetricOutputGroup.BOXPLOT ) )
+                     && !ignoreTheseTypes.contains( MetricOutputGroup.BOXPLOT ) )
                 {
                     ProcessorHelper.processBoxPlotCharts( feature,
                                                           projectConfigPlus,
