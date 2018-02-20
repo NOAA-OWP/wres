@@ -15,10 +15,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.TreeMap;
@@ -28,6 +30,8 @@ import org.apache.commons.lang3.tuple.Pair;
 import wres.config.ProjectConfigException;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.Feature;
+import wres.config.generated.MetricConfig;
+import wres.config.generated.MetricConfigName;
 import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DefaultDataFactory;
@@ -122,7 +126,7 @@ public class CommaSeparated
             List<DestinationConfig> numericalDestinations = ConfigHelper.getNumericalDestinations( projectConfig );
             for ( DestinationConfig d : numericalDestinations )
             {
-                writeAllOutputsForOneDestination( d, storedMetricOutput );
+                writeAllOutputsForOneDestination( projectConfig, d, storedMetricOutput );
             }
         }
         catch ( final ProjectConfigException pce )
@@ -151,6 +155,7 @@ public class CommaSeparated
     {
         Objects.requireNonNull( projectConfig, "Specify non-null project configuration when writing diagram outputs." );
         Objects.requireNonNull( diagramOutput, "Specify non-null input data when writing diagram outputs." );
+
         try
         {
             if ( projectConfig.getOutputs() == null
@@ -164,7 +169,7 @@ public class CommaSeparated
             List<DestinationConfig> numericalDestinations = ConfigHelper.getNumericalDestinations( projectConfig );
             for ( DestinationConfig d : numericalDestinations )
             {
-                writeOneDiagramOutputType( d, diagramOutput, ConfigHelper.getDecimalFormatter( d ) );
+                writeOneDiagramOutputType( projectConfig, d, diagramOutput, ConfigHelper.getDecimalFormatter( d ) );
             }
         }
         catch ( final ProjectConfigException pce )
@@ -178,15 +183,17 @@ public class CommaSeparated
     }
     
     /**
-     * Writes all outputs for one destination,
+     * Writes all outputs for one destination.
      *     
+     * @param projectConfig the project configuration    
      * @param destinationConfig the destination configuration    
      * @param storedMetricOutput the output to use to build rows
      * @throws ProjectConfigException if the path for writing the output cannot be established
      * @throws IOException if the output cannot be written
      */
 
-    private static void writeAllOutputsForOneDestination( DestinationConfig destinationConfig,
+    private static void writeAllOutputsForOneDestination( ProjectConfig projectConfig,
+                                                          DestinationConfig destinationConfig,
                                                           MetricOutputForProjectByTimeAndThreshold storedMetricOutput )
             throws IOException, ProjectConfigException
     {
@@ -219,7 +226,8 @@ public class CommaSeparated
             // Diagrams
             if ( storedMetricOutput.hasOutput( MetricOutputGroup.MULTIVECTOR ) )
             {
-                CommaSeparated.writeOneDiagramOutputType( destinationConfig,
+                CommaSeparated.writeOneDiagramOutputType( projectConfig,
+                                                          destinationConfig,
                                                           storedMetricOutput.getMultiVectorOutput(),
                                                           ConfigHelper.getDecimalFormatter( destinationConfig ) );
             }
@@ -302,6 +310,7 @@ public class CommaSeparated
     /**
      * Writes all output for one diagram type.
      *
+     * @param projectConfig the project configuration
      * @param destinationConfig the destination configuration    
      * @param diagramOutput the diagram output
      * @param formatter optional formatter, can be null
@@ -309,7 +318,8 @@ public class CommaSeparated
      * @throws IOException if the output cannot be written
      */
 
-    private static void writeOneDiagramOutputType( DestinationConfig destinationConfig,
+    private static void writeOneDiagramOutputType( ProjectConfig projectConfig,
+                                                   DestinationConfig destinationConfig,
                                                    MetricOutputMultiMapByTimeAndThreshold<MultiVectorOutput> diagramOutput,
                                                    Format formatter )
             throws ProjectConfigException, IOException
@@ -317,26 +327,47 @@ public class CommaSeparated
         // Obtain the plot type configuration
         OutputTypeSelection diagramType = ConfigHelper.getOutputTypeSelection( destinationConfig );
 
+        // Obtain any override configuration
+        Map<MetricConfigName, MetricConfig> override = new EnumMap<>( MetricConfigName.class );
+        if( Objects.nonNull( projectConfig.getMetrics() ) )
+        {
+            projectConfig.getMetrics().getMetric().forEach( config -> override.put( config.getName(), config ) );
+        }
+        // If all valid metrics are required, check for override configuration
+        if ( override.containsKey( MetricConfigName.ALL_VALID )
+             && Objects.nonNull( override.get( MetricConfigName.ALL_VALID ).getOutputType() ) )
+        {
+            diagramType = override.get( MetricConfigName.ALL_VALID ).getOutputType();
+        }
+
         // Loop across diagrams
         for ( Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<MultiVectorOutput>> m : diagramOutput.entrySet() )
         {
-            // TODO: allow metric-specific overrides of the output type
-
+            OutputTypeSelection useType = diagramType;
             
+            // Is an override present? Find the first MetricConfigName.name() that matches MetricConstants.name()
+            Optional<MetricConfigName> match =
+                    override.keySet()
+                            .stream()
+                            .filter( configName -> configName.name().equals( m.getKey().getKey().name() ) )
+                            .findFirst();
+            
+            // Set the type to an override type
+            if ( match.isPresent() && Objects.nonNull( override.get( match.get() ).getOutputType() ) )
+            {
+                useType = override.get( match.get() ).getOutputType();
+            }
+
             StringJoiner headerRow = new StringJoiner( "," );
             headerRow.merge( HEADER_DEFAULT );
-            // Default
-            if ( Objects.isNull( diagramType ) || diagramType == OutputTypeSelection.DEFAULT )
-            {
-                writeOneDiagramOutputTypePerTimeWindow( destinationConfig, m.getValue(), headerRow, formatter );
-            }
-            // Per time window
-            else if ( diagramType == OutputTypeSelection.LEAD_THRESHOLD )
+            // Default, per time-window
+            if ( Objects.isNull( useType ) || useType == OutputTypeSelection.DEFAULT
+                 || useType == OutputTypeSelection.LEAD_THRESHOLD )
             {
                 writeOneDiagramOutputTypePerTimeWindow( destinationConfig, m.getValue(), headerRow, formatter );
             }
             // Per threshold
-            else if ( diagramType == OutputTypeSelection.THRESHOLD_LEAD )
+            else if ( useType == OutputTypeSelection.THRESHOLD_LEAD )
             {
                 writeOneDiagramOutputTypePerThreshold( destinationConfig, m.getValue(), headerRow, formatter );
             }

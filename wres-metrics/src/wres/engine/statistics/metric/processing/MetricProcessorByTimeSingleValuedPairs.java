@@ -298,7 +298,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                                                  futures,
                                                  useMe,
                                                  ignoreTheseMetricsForThisThreshold );
-            if ( !Objects.isNull( result ) )
+            if ( Objects.nonNull( result ) )
             {
                 failures.put( useMe, result );
             }

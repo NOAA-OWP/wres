@@ -350,7 +350,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                                               outGroup,
                                               useMe,
                                               ignoreTheseMetricsForThisThreshold );
-            if ( !Objects.isNull( result ) )
+            if ( Objects.nonNull( result ) )
             {
                 failures.put( useMe, result );
             }
@@ -478,7 +478,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                                                          outGroup,
                                                          useMe,
                                                          ignoreTheseMetricsForThisThreshold );
-            if ( !Objects.isNull( result ) )
+            if ( Objects.nonNull( result ) )
             {
                 failures.put( useMe, result );
             }
