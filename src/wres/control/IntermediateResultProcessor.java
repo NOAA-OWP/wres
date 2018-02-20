@@ -108,6 +108,9 @@ public class IntermediateResultProcessor implements Consumer<MetricOutputForProj
                                                           projectConfigPlus,
                                                           input.getBoxPlotOutput() );
                     meta = input.getBoxPlotOutput().entrySet().iterator().next().getValue().getMetadata();
+                    // Write the CSV output
+                    CommaSeparated.writeBoxPlotFiles( projectConfigPlus.getProjectConfig(),
+                                                      input.getBoxPlotOutput() );
                 }
                 if ( Objects.nonNull( meta ) )
                 {
