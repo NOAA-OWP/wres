@@ -20,7 +20,6 @@
 >../data/abrfcExample/LGNN5_hefs-mefp_flow_1yr.tgz</source>
             <variable>QINE</variable>
         </baseline>
-
     </inputs>
 
     <pair label="Pairs by location and lead time"> 
