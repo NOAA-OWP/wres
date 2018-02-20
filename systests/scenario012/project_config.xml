@@ -36,18 +36,6 @@
     </pair>
 
     <metrics>
-        <!--<metric>
-            <name>root mean square error</name>
-        </metric>
-        <metric>
-            <name>mean square error</name>
-        </metric>
-        <metric>
-            <name>mean square error skill score</name>
-        </metric>
-        <metric>
-            <name>sample size</name>
-        </metric>-->
         <metric>
             <name>mean error</name>
         </metric>
