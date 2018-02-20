@@ -44,12 +44,13 @@
         <destination type="pairs" decimalFormat="0.000000">
             <path>output</path>
         </destination>
-        <destination type="graphic">
-            <outputType>lead threshold</outputType>
+<!--        <destination type="graphic">
             <path>output/</path>
+            <outputType>lead threshold</outputType>
             <graphical width="800" height="600">
             </graphical>
         </destination>
+-->
     </outputs>
 
 </project>

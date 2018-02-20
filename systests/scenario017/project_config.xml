@@ -51,6 +51,8 @@
             <path>output/</path>
             <outputType>lead threshold</outputType>
             <graphical width="800" height="600">
+
+<!-- Work-around test to ensure enough space is available for last tick mark on domain axis.-->
 <config>
 <chartDrawingParameters>
     <subtitleList>
@@ -71,6 +73,7 @@
     </subtitleList>
 </chartDrawingParameters>
 </config>
+
             </graphical>
         </destination>
     </outputs>
