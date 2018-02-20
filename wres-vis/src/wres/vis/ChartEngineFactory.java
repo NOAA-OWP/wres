@@ -496,7 +496,7 @@ public abstract class ChartEngineFactory
                                                                               inputSlice,
                                                                               MetricDimension.RANK_ORDER,
                                                                               MetricDimension.OBSERVED_RELATIVE_FREQUENCY,
-                                                                              "Bin Separating Ranked Eensemble Members",
+                                                                              "Bin Separating Ranked Ensemble Members",
                                                                               MetricDimension.OBSERVED_RELATIVE_FREQUENCY.toString(),
                                                                               0,
                                                                               new Supplier<XYDataset>()

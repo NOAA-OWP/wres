@@ -255,7 +255,7 @@ public class Validation
         for ( MetricConfig next : metrics )
         {
             //Unnamed metric
-            if ( next.getName().equals( MetricConfigName.ALL_VALID ) && metrics.size() > 1 )
+            if ( MetricConfigName.ALL_VALID == next.getName() && metrics.size() > 1 )
             {
                 if ( LOGGER.isWarnEnabled() )
                 {
@@ -290,7 +290,7 @@ public class Validation
         for ( MetricConfig next : metrics )
         {
             // Named metric
-            if ( !next.getName().equals( MetricConfigName.ALL_VALID ) )
+            if ( Objects.nonNull( next.getName() ) && MetricConfigName.ALL_VALID != next.getName() )
             {
                 try
                 {

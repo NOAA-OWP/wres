@@ -462,8 +462,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
 
     /**
      * Handles failures at individual thresholds due to insufficient data. Some failures are allowed, and are logged
-     * as warnings. However, if all thresholds fail, a {@link MetricCalculationException} is thrown to terminate 
-     * further processing, as this indicates a serious failure.
+     * as warnings. However, if all thresholds fail, an exception is thrown, as this indicates a serious failure.
      * 
      * @param failures a map of failures and associated {@link MetricCalculationException}
      * @param thresholdCount the total number of thresholds attempted
@@ -562,7 +561,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
                                                   outGroup,
                                                   useMe,
                                                   ignoreTheseMetricsForThisThreshold );
-            if ( !Objects.isNull( result ) )
+            if ( Objects.nonNull( result ) )
             {
                 failures.put( useMe, result );
             }

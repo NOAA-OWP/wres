@@ -56,8 +56,6 @@ import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.PairedOutput;
 import wres.engine.statistics.metric.MetricFactory;
-import wres.engine.statistics.metric.config.MetricConfigHelper;
-import wres.engine.statistics.metric.config.MetricConfigurationException;
 import wres.engine.statistics.metric.processing.MetricProcessor;
 import wres.engine.statistics.metric.processing.MetricProcessorException;
 import wres.engine.statistics.metric.processing.MetricProcessorForProject;
@@ -1031,7 +1029,7 @@ public class ProcessorHelper
      * @return the metric configuration or null
      */
 
-    static MetricConfig getNamedConfigOrAllValid( final MetricConstants metric, final ProjectConfig config )
+    private static MetricConfig getNamedConfigOrAllValid( final MetricConstants metric, final ProjectConfig config )
     {
         // Deal with MetricConfigName.ALL_VALID first
         MetricConfig allValid = ConfigHelper.getMetricConfigByName( config, MetricConfigName.ALL_VALID );
@@ -1043,17 +1041,8 @@ public class ProcessorHelper
         final Optional<MetricConfig> returnMe = config.getMetrics()
                                                       .getMetric()
                                                       .stream()
-                                                      .filter( a -> {
-            try
-            {
-                return metric.equals( MetricConfigHelper.from( a.getName() ) );
-            }
-            catch ( final MetricConfigurationException e )
-            {
-                LOGGER.error( "Could not map metric name '{}' to metric configuration.", metric, e );
-                return false;
-            }
-        } ).findFirst();
+                                                      .filter( a -> metric.name().equals( a.getName().name() ) )
+                                                      .findFirst();
         return returnMe.isPresent() ? returnMe.get() : null;
     }
 
