@@ -17,14 +17,12 @@
             <source format="PI-XML">../data/abrfcExample/LGNN5_hefs-mefp_flow_1yr.tgz</source>
             <variable>QINE</variable>
         </baseline>
-
     </inputs>
 
     <pair label="Pairs by location and lead time"> 
         <unit>CMS</unit>
         <feature locationId="LGNN5" />
         <leadHours minimum="1" maximum="48" />
-
         <desiredTimeScale>
             <function>avg</function>
             <period>24</period>
@@ -66,12 +64,6 @@
         </destination>
         <destination type="pairs" decimalFormat="0.000000">
             <path>output</path>
-        </destination>
-        <destination type="graphic">
-            <path>output/</path>
-            <outputType>pooling window</outputType>
-            <graphical width="800" height="600">
-            </graphical>
         </destination>
     </outputs>
 
