@@ -33,10 +33,13 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.Threshold;
 import wres.datamodel.Threshold.Operator;
+import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
+import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.DurationScoreOutput;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
@@ -514,6 +517,114 @@ public class CommaSeparatedTest
         // If all succeeded, remove the file, otherwise leave to help debugging.
         Files.deleteIfExists( pathToFile );
     }
+    
+    /**
+     * Tests the writing of {@link BoxPlotOutput} to file.
+     * 
+     * @throws ProjectConfigException if the project configuration is incorrect
+     * @throws IOException if the output could not be written
+     * @throws InterruptedException if the process is interrupted
+     * @throws ExecutionException if the execution fails
+     */
+    
+    @Test
+    public void writeBoxPlotOutput()
+            throws ProjectConfigException, IOException, InterruptedException,
+            ExecutionException
+    {
+
+        // location id
+        final String LID = "JUNP1";
+
+        // Create fake outputs
+
+        DataFactory outputFactory = DefaultDataFactory.getInstance();
+        MetadataFactory metaFac = outputFactory.getMetadataFactory();
+
+        MetricOutputForProjectByTimeAndThreshold.MetricOutputForProjectByTimeAndThresholdBuilder
+                outputBuilder =
+                outputFactory.ofMetricOutputForProjectByTimeAndThreshold();
+
+        TimeWindow timeOne =
+                TimeWindow.of( Instant.MIN,
+                               Instant.MAX,
+                               ReferenceTime.VALID_TIME,
+                               Duration.ofHours( 24 ),
+                               Duration.ofHours( 24 ) );
+
+        // Output requires a future... which requires a metadata...
+        // which requires a datasetidentifier..
+
+        DatasetIdentifier datasetIdentifier =
+                metaFac.getDatasetIdentifier( LID,
+                                              "SQIN",
+                                              "HEFS",
+                                              "ESP" );
+
+        MetricOutputMetadata fakeMetadata =
+                metaFac.getOutputMetadata( 1000,
+                                           metaFac.getDimension(),
+                                           metaFac.getDimension( "CMS" ),
+                                           MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
+                                           null,
+                                           datasetIdentifier );
+
+        List<PairOfDoubleAndVectorOfDoubles> fakeOutputs = new ArrayList<>();
+        VectorOfDoubles probs = outputFactory.vectorOf( new double[] { 0, 0.25, 0.5, 0.75, 1.0 } );
+
+        fakeOutputs.add( outputFactory.pairOf( 1, new double[] { 2, 3, 4, 5, 6 } ) );
+        fakeOutputs.add( outputFactory.pairOf( 3, new double[] { 7, 9, 11, 13, 15 } ) );
+        fakeOutputs.add( outputFactory.pairOf( 5, new double[] { 21, 24, 27, 30, 33 } ) );
+
+        // Fake output wrapper.
+        MetricOutputMapByMetric<BoxPlotOutput> fakeOutputData =
+                outputFactory.ofMap( Arrays.asList( outputFactory.ofBoxPlotOutput( fakeOutputs,
+                                                                                   probs,
+                                                                                   fakeMetadata,
+                                                                                   MetricDimension.OBSERVED_VALUE,
+                                                                                   MetricDimension.FORECAST_ERROR ) ) );
+        // wrap outputs in future
+        Future<MetricOutputMapByMetric<BoxPlotOutput>> outputMapByMetricFuture =
+                CompletableFuture.completedFuture( fakeOutputData );
+
+
+        // Fake lead time and threshold
+        Pair<TimeWindow, Threshold> mapKeyByLeadThreshold =
+                Pair.of( timeOne, outputFactory.getThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER ) );
+
+        outputBuilder.addBoxPlotOutput( mapKeyByLeadThreshold,
+                                            outputMapByMetricFuture );
+
+        MetricOutputForProjectByTimeAndThreshold output = outputBuilder.build();
+
+        // Construct a fake configuration file.
+        Feature feature = getMockedFeature( LID );
+        ProjectConfig projectConfig = getMockedProjectConfig( feature );
+
+        // Begin the actual test now that we have constructed dependencies.
+        CommaSeparated.writeOutputFiles( projectConfig, feature, output );
+
+        // read the file, verify it has what we wanted:
+        Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ),
+                                     "JUNP1_BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE_SQIN_24.csv" );
+        List<String> result = Files.readAllLines( pathToFile );
+
+        assertTrue( result.get( 0 ).contains( "," ) );
+        assertTrue( result.get( 0 ).contains( "OBSERVED VALUE" ) );
+        assertTrue( result.get( 0 ).contains( "FORECAST ERROR" ) );
+        
+        assertTrue( result.get( 1 )
+                          .equals( "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,24,24,"
+                                   + "1.0,2.0,3.0,4.0,5.0,6.0" ) );
+        assertTrue( result.get( 2 )
+                          .equals( "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,24,24,"
+                                   + "3.0,7.0,9.0,11.0,13.0,15.0" ) );
+        assertTrue( result.get( 3 )
+                          .equals( "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,24,24,"
+                                   + "5.0,21.0,24.0,27.0,30.0,33.0" ) );
+        // If all succeeded, remove the file, otherwise leave to help debugging.
+        Files.deleteIfExists( pathToFile );
+    }       
     
     /**
      * Returns a fake project configuration for a specified feature.

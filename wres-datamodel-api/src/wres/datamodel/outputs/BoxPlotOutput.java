@@ -43,6 +43,6 @@ public interface BoxPlotOutput
      * @return the range axis dimension
      */
     
-    MetricDimension getRangeAxisDimension();    
+    MetricDimension getRangeAxisDimension();
     
 }

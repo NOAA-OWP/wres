@@ -24,6 +24,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -40,9 +41,11 @@ import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.Threshold;
 import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
+import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.MapKey;
 import wres.datamodel.outputs.MetricOutputAccessException;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
@@ -88,6 +91,15 @@ public class CommaSeparated
                                                                                 + "LEAD"
                                                                                 + HEADER_DELIMITER
                                                                                 + "HOUR" );
+    
+    /**
+     * Default exception message when a destination cannot be established.
+     */
+
+    private static final String OUTPUT_CLAUSE_BOILERPLATE = "Please include valid numeric output clause(s) in"
+                                                            + " the project configuration. Example: <destination>"
+                                                            + "<path>c:/Users/myname/wres_output/</path>"
+                                                            + "</destination>";
 
     /**
      * Write numerical outputs to CSV files.
@@ -109,33 +121,17 @@ public class CommaSeparated
                                 "Metric outputs must not be null." );
         Objects.requireNonNull( feature,
                                 "The feature must not be null." );
-        Objects.requireNonNull( projectConfig,
-                                "The project config must not be null." );
-        try
+
+        // Validate project for writing
+        validateProjectForWriting( projectConfig );
+
+        // Write output
+        // In principle, each destination could have a different formatter, so 
+        // the output must be generated separately for each destination
+        List<DestinationConfig> numericalDestinations = ConfigHelper.getNumericalDestinations( projectConfig );
+        for ( DestinationConfig d : numericalDestinations )
         {
-            if ( projectConfig.getOutputs() == null
-                 || projectConfig.getOutputs().getDestination() == null
-                 || projectConfig.getOutputs().getDestination().isEmpty() )
-            {
-                String message = "No numeric output files specified for project.";
-                throw new ProjectConfigException( projectConfig.getOutputs(),
-                                                  message );
-            }
-            // In principle, each destination could have a different formatter, so 
-            // the output must be generated separately for each destination
-            List<DestinationConfig> numericalDestinations = ConfigHelper.getNumericalDestinations( projectConfig );
-            for ( DestinationConfig d : numericalDestinations )
-            {
-                writeAllOutputsForOneDestination( projectConfig, d, storedMetricOutput );
-            }
-        }
-        catch ( final ProjectConfigException pce )
-        {
-            throw new IOException( "Please include valid numeric output clause(s) in"
-                                   + " the project configuration. Example: <destination>"
-                                   + "<path>c:/Users/myname/wres_output/</path>"
-                                   + "</destination>",
-                                   pce );
+            writeAllOutputsForOneDestination( projectConfig, d, storedMetricOutput );
         }
     }
     
@@ -144,43 +140,54 @@ public class CommaSeparated
      * a processing pipeline has been completed (which is not true for all output types).
      *
      * @param projectConfig the project configuration    
-     * @param diagramOutput the diagram output
+     * @param output the diagram output
      * @throws IOException if the output cannot be written
      * @throws NullPointerException when any of the arguments are null
      */
 
     public static void writeDiagramFiles( ProjectConfig projectConfig,
-                                      MetricOutputMultiMapByTimeAndThreshold<MultiVectorOutput> diagramOutput )
+                                      MetricOutputMultiMapByTimeAndThreshold<MultiVectorOutput> output )
             throws IOException
     {
-        Objects.requireNonNull( projectConfig, "Specify non-null project configuration when writing diagram outputs." );
-        Objects.requireNonNull( diagramOutput, "Specify non-null input data when writing diagram outputs." );
+        Objects.requireNonNull( output, "Specify non-null input data when writing diagram outputs." );
 
-        try
+        // Validate project for writing
+        validateProjectForWriting( projectConfig );
+
+        // Write output
+        List<DestinationConfig> numericalDestinations = ConfigHelper.getNumericalDestinations( projectConfig );
+        for ( DestinationConfig d : numericalDestinations )
         {
-            if ( projectConfig.getOutputs() == null
-                 || projectConfig.getOutputs().getDestination() == null
-                 || projectConfig.getOutputs().getDestination().isEmpty() )
-            {
-                String message = "No numeric output files specified for project.";
-                throw new ProjectConfigException( projectConfig.getOutputs(),
-                                                  message );
-            }
-            List<DestinationConfig> numericalDestinations = ConfigHelper.getNumericalDestinations( projectConfig );
-            for ( DestinationConfig d : numericalDestinations )
-            {
-                writeOneDiagramOutputType( projectConfig, d, diagramOutput, ConfigHelper.getDecimalFormatter( d ) );
-            }
-        }
-        catch ( final ProjectConfigException pce )
-        {
-            throw new IOException( "Please include valid numeric output clause(s) in"
-                                   + " the project configuration. Example: <destination>"
-                                   + "<path>c:/Users/myname/wres_output/</path>"
-                                   + "</destination>",
-                                   pce );
+            writeOneDiagramOutputType( projectConfig, d, output, ConfigHelper.getDecimalFormatter( d ) );
         }
     }
+    
+    /**
+     * Writes all box plot outputs to file. This is part of the public API because box plots can be written to file 
+     * before a processing pipeline has been completed (which is not true for all output types).
+     *
+     * @param projectConfig the project configuration    
+     * @param output the box plot output
+     * @throws IOException if the output cannot be written
+     * @throws NullPointerException when any of the arguments are null
+     */
+
+    public static void writeBoxPlotFiles( ProjectConfig projectConfig,
+                                      MetricOutputMultiMapByTimeAndThreshold<BoxPlotOutput> output )
+            throws IOException
+    {
+        Objects.requireNonNull( output, "Specify non-null input data when writing diagram outputs." );
+
+        // Validate project for writing
+        validateProjectForWriting( projectConfig );
+
+        // Write output
+        List<DestinationConfig> numericalDestinations = ConfigHelper.getNumericalDestinations( projectConfig );
+        for ( DestinationConfig d : numericalDestinations )
+        {
+            writeOneBoxPlotOutputType( d, output, ConfigHelper.getDecimalFormatter( d ) );
+        }
+    }    
     
     /**
      * Writes all outputs for one destination.
@@ -188,14 +195,13 @@ public class CommaSeparated
      * @param projectConfig the project configuration    
      * @param destinationConfig the destination configuration    
      * @param storedMetricOutput the output to use to build rows
-     * @throws ProjectConfigException if the path for writing the output cannot be established
      * @throws IOException if the output cannot be written
      */
 
     private static void writeAllOutputsForOneDestination( ProjectConfig projectConfig,
                                                           DestinationConfig destinationConfig,
                                                           MetricOutputForProjectByTimeAndThreshold storedMetricOutput )
-            throws IOException, ProjectConfigException
+            throws IOException
     {
         try
         {
@@ -231,6 +237,13 @@ public class CommaSeparated
                                                           storedMetricOutput.getMultiVectorOutput(),
                                                           ConfigHelper.getDecimalFormatter( destinationConfig ) );
             }
+            // Box plots
+            if ( storedMetricOutput.hasOutput( MetricOutputGroup.BOXPLOT ) )
+            {
+                CommaSeparated.writeOneBoxPlotOutputType( destinationConfig,
+                                                          storedMetricOutput.getBoxPlotOutput(),
+                                                          ConfigHelper.getDecimalFormatter( destinationConfig ) );
+            }
         }
         catch ( MetricOutputAccessException e )
         {
@@ -245,14 +258,13 @@ public class CommaSeparated
      * @param destinationConfig the destination configuration    
      * @param output the score output to iterate through
      * @param formatter optional formatter, can be null
-     * @throws ProjectConfigException if the path for writing the output cannot be established
      * @throws IOException if the output cannot be written
      */
 
     private static <T extends ScoreOutput<?, T>> void writeOneScoreOutputType( DestinationConfig destinationConfig,
                                                                                MetricOutputMultiMapByTimeAndThreshold<T> output,
                                                                                Format formatter )
-            throws ProjectConfigException, IOException
+            throws IOException
     {        
         // Loop across scores
         for ( Map.Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<T>> m : output.entrySet() )
@@ -280,14 +292,13 @@ public class CommaSeparated
      * @param destinationConfig the destination configuration    
      * @param output the score output to iterate through
      * @param formatter optional formatter, can be null
-     * @throws ProjectConfigException if the path for writing the output cannot be established
      * @throws IOException if the output cannot be written
      */
 
     private static <S, T> void writeOnePairedOutputType( DestinationConfig destinationConfig,
                                                          MetricOutputMultiMapByTimeAndThreshold<PairedOutput<S, T>> output,
                                                          Format formatter )
-            throws ProjectConfigException, IOException
+            throws IOException
     {
         // Loop across paired output
         for ( Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<PairedOutput<S, T>>> m : output.entrySet() )
@@ -312,17 +323,16 @@ public class CommaSeparated
      *
      * @param projectConfig the project configuration
      * @param destinationConfig the destination configuration    
-     * @param diagramOutput the diagram output
+     * @param output the diagram output
      * @param formatter optional formatter, can be null
-     * @throws ProjectConfigException if the path for writing the output cannot be established
      * @throws IOException if the output cannot be written
      */
 
     private static void writeOneDiagramOutputType( ProjectConfig projectConfig,
                                                    DestinationConfig destinationConfig,
-                                                   MetricOutputMultiMapByTimeAndThreshold<MultiVectorOutput> diagramOutput,
+                                                   MetricOutputMultiMapByTimeAndThreshold<MultiVectorOutput> output,
                                                    Format formatter )
-            throws ProjectConfigException, IOException
+            throws IOException
     {
         // Obtain the plot type configuration
         OutputTypeSelection diagramType = ConfigHelper.getOutputTypeSelection( destinationConfig );
@@ -341,7 +351,7 @@ public class CommaSeparated
         }
 
         // Loop across diagrams
-        for ( Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<MultiVectorOutput>> m : diagramOutput.entrySet() )
+        for ( Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<MultiVectorOutput>> m : output.entrySet() )
         {
             OutputTypeSelection useType = diagramType;
             
@@ -372,29 +382,29 @@ public class CommaSeparated
                 writeOneDiagramOutputTypePerThreshold( destinationConfig, m.getValue(), headerRow, formatter );
             }
         }
-    }
+    }    
     
     /**
-     * Writes a one diagram for all thresholds at each time window in the input.
+     * Writes one diagram for all thresholds at each time window in the input.
      * 
      * @param destinationConfig the destination configuration    
-     * @param diagramOutput the diagram output
+     * @param output the diagram output
      * @param headerRow the header row
      * @param formatter optional formatter, can be null
-     * @throws ProjectConfigException if the path for writing the output cannot be established
      * @throws IOException if the output cannot be written
      */
 
     private static void writeOneDiagramOutputTypePerTimeWindow( DestinationConfig destinationConfig,
-                                                          MetricOutputMapByTimeAndThreshold<MultiVectorOutput> diagramOutput,
-                                                          StringJoiner headerRow,
-                                                          Format formatter ) throws ProjectConfigException, IOException
+                                                                MetricOutputMapByTimeAndThreshold<MultiVectorOutput> output,
+                                                                StringJoiner headerRow,
+                                                                Format formatter )
+            throws IOException
     {
         // Loop across time windows
-        for ( TimeWindow timeWindow : diagramOutput.setOfTimeWindowKey() )
+        for ( TimeWindow timeWindow : output.setOfTimeWindowKey() )
         {
-            MetricOutputMetadata meta = diagramOutput.getMetadata();
-            MetricOutputMapByTimeAndThreshold<MultiVectorOutput> next = diagramOutput.filterByTime( timeWindow );
+            MetricOutputMetadata meta = output.getMetadata();
+            MetricOutputMapByTimeAndThreshold<MultiVectorOutput> next = output.filterByTime( timeWindow );
             List<RowCompareByLeft> rows = getRowsForOneDiagram( next, formatter );
             // Add the header row
             rows.add( RowCompareByLeft.of( HEADER_INDEX, getDiagramHeader( next, headerRow ) ) );
@@ -411,23 +421,23 @@ public class CommaSeparated
      * Writes one diagram for all time windows at each threshold in the input.
      * 
      * @param destinationConfig the destination configuration    
-     * @param diagramOutput the diagram output
+     * @param output the diagram output
      * @param headerRow the header row
      * @param formatter optional formatter, can be null
-     * @throws ProjectConfigException if the path for writing the output cannot be established
      * @throws IOException if the output cannot be written
      */
 
     private static void writeOneDiagramOutputTypePerThreshold( DestinationConfig destinationConfig,
-                                                          MetricOutputMapByTimeAndThreshold<MultiVectorOutput> diagramOutput,
-                                                          StringJoiner headerRow,
-                                                          Format formatter ) throws ProjectConfigException, IOException
+                                                               MetricOutputMapByTimeAndThreshold<MultiVectorOutput> output,
+                                                               StringJoiner headerRow,
+                                                               Format formatter )
+            throws IOException
     {
         // Loop across thresholds
-        for ( Threshold threshold : diagramOutput.setOfThresholdKey() )
+        for ( Threshold threshold : output.setOfThresholdKey() )
         {
-            MetricOutputMetadata meta = diagramOutput.getMetadata();
-            MetricOutputMapByTimeAndThreshold<MultiVectorOutput> next = diagramOutput.filterByThreshold( threshold );
+            MetricOutputMetadata meta = output.getMetadata();
+            MetricOutputMapByTimeAndThreshold<MultiVectorOutput> next = output.filterByThreshold( threshold );
             List<RowCompareByLeft> rows = getRowsForOneDiagram( next, formatter );
             // Add the header row
             rows.add( RowCompareByLeft.of( HEADER_INDEX, getDiagramHeader( next, headerRow ) ) );
@@ -440,12 +450,72 @@ public class CommaSeparated
         }        
     }    
     
+    
+    /**
+     * Writes all output for one box plot type.
+     *
+     * @param destinationConfig the destination configuration    
+     * @param output the box plot output to iterate through
+     * @param formatter optional formatter, can be null
+     * @throws IOException if the output cannot be written
+     */
+
+    private static void writeOneBoxPlotOutputType( DestinationConfig destinationConfig,
+                                                   MetricOutputMultiMapByTimeAndThreshold<BoxPlotOutput> output,
+                                                   Format formatter )
+            throws IOException
+    {
+        // Loop across the box plot output
+        for ( Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<BoxPlotOutput>> m : output.entrySet() )
+        {
+            StringJoiner headerRow = new StringJoiner( "," );
+            headerRow.merge( HEADER_DEFAULT );
+
+            // Write the output
+            writeOneBoxPlotOutputTypePerTimeWindow( destinationConfig, m.getValue(), headerRow, formatter );
+        }
+    }
+    
+    /**
+     * Writes one box plot for all thresholds at each time window in the input.
+     * 
+     * @param destinationConfig the destination configuration    
+     * @param output the box plot output
+     * @param headerRow the header row
+     * @param formatter optional formatter, can be null
+     * @throws IOException if the output cannot be written
+     */
+
+    private static void writeOneBoxPlotOutputTypePerTimeWindow( DestinationConfig destinationConfig,
+                                                                MetricOutputMapByTimeAndThreshold<BoxPlotOutput> output,
+                                                                StringJoiner headerRow,
+                                                                Format formatter )
+            throws IOException
+    {
+        // Loop across time windows
+        for ( TimeWindow timeWindow : output.setOfTimeWindowKey() )
+        {
+            MetricOutputMetadata meta = output.getMetadata();
+            MetricOutputMapByTimeAndThreshold<BoxPlotOutput> next = output.filterByTime( timeWindow );
+            List<RowCompareByLeft> rows =
+                    getRowsForOneBoxPlotOutput( next, headerRow, formatter );
+            // Add the header row
+            rows.add( RowCompareByLeft.of( HEADER_INDEX, headerRow ) );
+            // Write the output
+            List<String> nameList = Arrays.asList( meta.getIdentifier().getGeospatialID(),
+                                                   meta.getMetricID().name(),
+                                                   meta.getIdentifier().getVariableID(),
+                                                   Long.toString( timeWindow.getLatestLeadTimeInHours() ) );
+            writeTabularOutputToFile( destinationConfig, rows, nameList );
+        }
+    }       
+    
     /**
      * Returns the results for one score output.
      *
      * @param <T> the score component type
      * @param scoreName the score name
-     * @param score the score results
+     * @param output the score output
      * @param headerRow the header row
      * @param formatter optional formatter, can be null
      * @return the rows to write
@@ -453,7 +523,7 @@ public class CommaSeparated
 
     private static <T extends ScoreOutput<?, T>> List<RowCompareByLeft>
             getRowsForOneScore( MetricConstants scoreName,
-                                MetricOutputMapByTimeAndThreshold<T> score,
+                                MetricOutputMapByTimeAndThreshold<T> output,
                                 StringJoiner headerRow,
                                 Format formatter )
     {
@@ -461,7 +531,7 @@ public class CommaSeparated
         Map<MetricConstants, MetricOutputMapByTimeAndThreshold<T>> helper =
                 DefaultDataFactory.getInstance()
                                   .getSlicer()
-                                  .filterByMetricComponent( score );
+                                  .filterByMetricComponent( output );
 
         String outerName = scoreName.toString();
         List<RowCompareByLeft> returnMe = new ArrayList<>();
@@ -485,7 +555,7 @@ public class CommaSeparated
      * @param <S> the left side of the paired output type
      * @param <T> the right side if the paired output type
      * @param metricName the score name
-     * @param pairedOutput the score results
+     * @param output the paired output
      * @param headerRow the header row
      * @param formatter optional formatter, can be null
      * @return the rows to write
@@ -493,7 +563,7 @@ public class CommaSeparated
 
     private static <S, T> List<RowCompareByLeft>
             getRowsForOnePairedOutput( MetricConstants metricName,
-                                MetricOutputMapByTimeAndThreshold<PairedOutput<S,T>> pairedOutput,
+                                MetricOutputMapByTimeAndThreshold<PairedOutput<S,T>> output,
                                 StringJoiner headerRow,
                                 Format formatter )
     {
@@ -502,16 +572,16 @@ public class CommaSeparated
 
         // Add the rows
         // Loop across the thresholds
-        for ( Threshold t : pairedOutput.setOfThresholdKey() )
+        for ( Threshold t : output.setOfThresholdKey() )
         {
             // Append to header
             headerRow.add( HEADER_DELIMITER + outerName + HEADER_DELIMITER + "BASIS TIME" + HEADER_DELIMITER + t );
             headerRow.add( HEADER_DELIMITER + outerName + HEADER_DELIMITER + "DURATION" + HEADER_DELIMITER + t );
             // Loop across time windows
-            for ( TimeWindow timeWindow : pairedOutput.setOfTimeWindowKey() )
+            for ( TimeWindow timeWindow : output.setOfTimeWindowKey() )
             {
                 Pair<TimeWindow, Threshold> key = Pair.of( timeWindow, t );
-                List<Pair<S, T>> nextValues = pairedOutput.get( key ).getData();
+                List<Pair<S, T>> nextValues = output.get( key ).getData();
                 for ( Pair<S, T> nextPair : nextValues )
                 {
                     addRowToInput( returnMe,
@@ -527,27 +597,87 @@ public class CommaSeparated
     }     
     
     /**
-     * Returns the results for one diagram output.
+     * Returns the results for one box plot output.
      *
-     * @param diagramOutput the score results
+     * @param metricName the score name
+     * @param output the box plot output
+     * @param headerRow the header row
      * @param formatter optional formatter, can be null
      * @return the rows to write
      */
 
-    private static List<RowCompareByLeft> getRowsForOneDiagram( MetricOutputMapByTimeAndThreshold<MultiVectorOutput> diagramOutput,
+    private static List<RowCompareByLeft>
+            getRowsForOneBoxPlotOutput( MetricOutputMapByTimeAndThreshold<BoxPlotOutput> output,
+                                        StringJoiner headerRow,
+                                        Format formatter )
+    {
+        List<RowCompareByLeft> returnMe = new ArrayList<>();
+
+        // Add the rows
+        // Loop across the thresholds
+        boolean addHeaderProbabilities = true;
+        for ( Threshold t : output.setOfThresholdKey() )
+        {
+            // Loop across time windows
+            for ( TimeWindow timeWindow : output.setOfTimeWindowKey() )
+            {
+                BoxPlotOutput nextValues = output.get( Pair.of( timeWindow, t ) );
+                // Add the probabilities to the header. These are constant across time windows
+                if ( addHeaderProbabilities )
+                {
+                    headerRow.add( HEADER_DELIMITER + nextValues.getDomainAxisDimension() + HEADER_DELIMITER + t );
+                    VectorOfDoubles headerProbabilities = nextValues.getProbabilities();
+                    for ( double nextProb : headerProbabilities.getDoubles() )
+                    {
+                        headerRow.add( HEADER_DELIMITER + nextValues.getRangeAxisDimension()
+                                       + HEADER_DELIMITER
+                                       + t
+                                       + HEADER_DELIMITER
+                                       + "QUANTILE Pr="
+                                       + nextProb );
+                    }
+                }
+                // Add each box
+                for ( PairOfDoubleAndVectorOfDoubles nextBox : nextValues )
+                {
+                    List<Double> data = new ArrayList<>();
+                    data.add( nextBox.getItemOne() );
+                    data.addAll( Arrays.stream( nextBox.getItemTwo() ).boxed().collect( Collectors.toList() ) );
+                    addRowToInput( returnMe,
+                                   timeWindow,
+                                   data,
+                                   formatter,
+                                   false );
+                }
+                addHeaderProbabilities = false;
+            }
+        }
+
+        return returnMe;
+    }  
+    
+    /**
+     * Returns the results for one diagram output.
+     *
+     * @param output the diagram output
+     * @param formatter optional formatter, can be null
+     * @return the rows to write
+     */
+
+    private static List<RowCompareByLeft> getRowsForOneDiagram( MetricOutputMapByTimeAndThreshold<MultiVectorOutput> output,
                                                                 Format formatter )
     {
         List<RowCompareByLeft> returnMe = new ArrayList<>();
 
         // Add the rows
         // Loop across time windows
-        for ( TimeWindow timeWindow : diagramOutput.setOfTimeWindowKey() )
+        for ( TimeWindow timeWindow : output.setOfTimeWindowKey() )
         {
             // Loop across the thresholds, merging results when multiple thresholds occur
             Map<Integer, List<Double>> merge = new TreeMap<>();
-            for ( Threshold threshold : diagramOutput.setOfThresholdKey() )
+            for ( Threshold threshold : output.setOfThresholdKey() )
             {
-                MultiVectorOutput next = diagramOutput.get( Pair.of( timeWindow, threshold ) );
+                MultiVectorOutput next = output.get( Pair.of( timeWindow, threshold ) );
                 // For safety, find the largest vector and use Double.NaN in place for vectors of differing size
                 // In practice, all should be the same length
                 int maxRows = next.getData()
@@ -680,16 +810,23 @@ public class CommaSeparated
      * @param destinationConfig the destination configuration
      * @param rows the tabular data to write
      * @param nameElements the elements to use when naming the file
-     * @throws ProjectConfigException if the path for writing the output cannot be established
      * @throws IOException if the output cannot be written
      */
 
     private static void writeTabularOutputToFile( DestinationConfig destinationConfig,
                                                   List<RowCompareByLeft> rows,
                                                   List<String> nameElements )
-            throws ProjectConfigException, IOException
+            throws IOException
     {              
-        File outputDirectory = ConfigHelper.getDirectoryFromDestinationConfig( destinationConfig );
+        File outputDirectory = null;
+        try 
+        {
+            outputDirectory = ConfigHelper.getDirectoryFromDestinationConfig( destinationConfig );
+        }
+        catch ( final ProjectConfigException pce )
+        {
+            throw new IOException( OUTPUT_CLAUSE_BOILERPLATE, pce );
+        }
         StringJoiner joinElements = new StringJoiner("_");
         nameElements.forEach( joinElements::add );
         Path outputPath = Paths.get( outputDirectory.toString(),joinElements.toString()+".csv" );
@@ -764,7 +901,36 @@ public class CommaSeparated
             row.add( toWrite );
         }
     }
+    
+    /**
+     * Validates the input configuration for writing. Throws an exception if the configuration is invalid.
+     * 
+     * @param projectConfig the project configuration
+     * @throws NullPointerException if the input is null
+     * @throws IOException if the project is not correctly configured for writing numerical output
+     */
 
+    private static void validateProjectForWriting( ProjectConfig projectConfig ) throws IOException
+    {
+        Objects.requireNonNull( projectConfig, "Specify non-null project configuration when writing diagram outputs." );
+
+        try
+        {
+            if ( projectConfig.getOutputs() == null
+                 || projectConfig.getOutputs().getDestination() == null
+                 || projectConfig.getOutputs().getDestination().isEmpty() )
+            {
+                String message = "No numeric output files specified for project.";
+                throw new ProjectConfigException( projectConfig.getOutputs(),
+                                                  message );
+            }
+        }
+        catch ( final ProjectConfigException pce )
+        {
+            throw new IOException( OUTPUT_CLAUSE_BOILERPLATE, pce );
+        }
+    }
+    
     /**
      * A helper class that contains a single row whose natural order is based on the {@link TimeWindow} of the row
      * and not the contents. All comparisons are based on the left value only.
