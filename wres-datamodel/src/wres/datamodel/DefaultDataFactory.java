@@ -305,9 +305,12 @@ public class DefaultDataFactory implements DataFactory
     }
 
     @Override
-    public MatrixOutput ofMatrixOutput( final double[][] output, final MetricOutputMetadata meta )
+    public MatrixOutput ofMatrixOutput( final double[][] output,
+                                        final List<MetricDimension> names,
+                                        final MetricOutputMetadata meta )
     {
-        return new SafeMatrixOutput( matrixOf( output ), meta );
+        Objects.requireNonNull( output, "Specify a non-null array of inputs." );
+        return new SafeMatrixOutput( matrixOf( output ), names, meta );
     }
 
     @Override
@@ -639,6 +642,7 @@ public class DefaultDataFactory implements DataFactory
 
     VectorOfDoubles safeVectorOf( VectorOfDoubles input )
     {
+        Objects.requireNonNull( input, "Expected non-null input for the safe vector." );
         if ( input instanceof SafeVectorOfDoubles )
         {
             return input;
@@ -655,6 +659,7 @@ public class DefaultDataFactory implements DataFactory
 
     MatrixOfDoubles safeMatrixOf( MatrixOfDoubles input )
     {
+        Objects.requireNonNull( input, "Expected non-null input for the safe matrix." );
         if ( input instanceof SafeMatrixOfDoubles )
         {
             return input;

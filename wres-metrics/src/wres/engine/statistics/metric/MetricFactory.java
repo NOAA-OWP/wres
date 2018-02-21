@@ -2,11 +2,11 @@ package wres.engine.statistics.metric;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.EnumMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 
@@ -500,7 +500,7 @@ public class MetricFactory
     }
 
     /**
-     * <p>Returns a {@link MetricCollection} of metrics that consume {@link MulticategoryPairs} and produce
+     * <p>Returns a {@link MetricCollection} of metrics that consume {@link DichotomousPairs} and produce
      * {@link MatrixOutput}.</p>
      * 
      * <p>Uses the {@link ForkJoinPool#commonPool()} for execution.</p>
@@ -511,10 +511,10 @@ public class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized
      */
 
-    public MetricCollection<MulticategoryPairs, MatrixOutput, MatrixOutput>
-            ofMulticategoryMatrixCollection( MetricConstants... metric ) throws MetricParameterException
+    public MetricCollection<DichotomousPairs, MatrixOutput, MatrixOutput>
+            ofDichotomousMatrixCollection( MetricConstants... metric ) throws MetricParameterException
     {
-        return ofMulticategoryMatrixCollection( ForkJoinPool.commonPool(), metric );
+        return ofDichotomousMatrixCollection( ForkJoinPool.commonPool(), metric );
     }
 
     /**
@@ -753,7 +753,7 @@ public class MetricFactory
     }
 
     /**
-     * Returns a {@link MetricCollection} of metrics that consume {@link MulticategoryPairs} and produce
+     * Returns a {@link MetricCollection} of metrics that consume {@link DichotomousPairs} and produce
      * {@link MatrixOutput}.
      * 
      * @param executor an optional {@link ExecutorService} for executing the metrics
@@ -763,16 +763,16 @@ public class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized 
      */
 
-    public MetricCollection<MulticategoryPairs, MatrixOutput, MatrixOutput>
-            ofMulticategoryMatrixCollection( ExecutorService executor,
+    public MetricCollection<DichotomousPairs, MatrixOutput, MatrixOutput>
+            ofDichotomousMatrixCollection( ExecutorService executor,
                                              MetricConstants... metric )
                     throws MetricParameterException
     {
-        final MetricCollectionBuilder<MulticategoryPairs, MatrixOutput, MatrixOutput> builder =
+        final MetricCollectionBuilder<DichotomousPairs, MatrixOutput, MatrixOutput> builder =
                 MetricCollectionBuilder.of();
         for ( MetricConstants next : metric )
         {
-            builder.add( ofMulticategoryMatrix( next ) );
+            builder.add( ofDichotomousMatrix( next ) );
         }
         builder.setOutputFactory( outputFactory ).setExecutorService( executor );
         return builder.build();
@@ -1047,7 +1047,7 @@ public class MetricFactory
     }
 
     /**
-     * Returns a {@link Metric} that consumes {@link MulticategoryPairs} and produces {@link MatrixOutput}.
+     * Returns a {@link Metric} that consumes {@link DichotomousPairs} and produces {@link MatrixOutput}.
      * 
      * @param metric the metric identifier
      * @return a metric
@@ -1055,12 +1055,12 @@ public class MetricFactory
      * @throws IllegalArgumentException if the metric identifier is not recognized
      */
 
-    public Metric<MulticategoryPairs, MatrixOutput> ofMulticategoryMatrix( MetricConstants metric )
+    public Metric<DichotomousPairs, MatrixOutput> ofDichotomousMatrix( MetricConstants metric )
             throws MetricParameterException
     {
         if ( MetricConstants.CONTINGENCY_TABLE.equals( metric ) )
         {
-            return ofContingencyTable();
+            return ofDichotomousContingencyTable();
         }
         else
         {
@@ -1197,10 +1197,10 @@ public class MetricFactory
      * @throws MetricParameterException if one or more parameter values is incorrect
      */
 
-    public ContingencyTable<MulticategoryPairs> ofContingencyTable() throws MetricParameterException
+    public ContingencyTable<DichotomousPairs> ofDichotomousContingencyTable() throws MetricParameterException
     {
-        return new ContingencyTable.ContingencyTableBuilder<>().setOutputFactory( outputFactory )
-                                                               .build();
+        return new ContingencyTable.ContingencyTableBuilder<DichotomousPairs>().setOutputFactory( outputFactory )
+                                                                               .build();
     }
 
     /**
@@ -1585,14 +1585,28 @@ public class MetricFactory
             throws MetricConfigurationException
     {
         // Always cache ordinary scores and paired output for timing error metrics 
-        List<MetricOutputGroup> returnMe = new ArrayList<>();
+        Set<MetricOutputGroup> returnMe = new TreeSet<>();
         returnMe.add( MetricOutputGroup.DOUBLE_SCORE );
         returnMe.add( MetricOutputGroup.PAIRED );
-        // Multivector outputs by threshold must be cached, as the processor operates by time
-        if ( MetricConfigHelper.hasMultiVectorOutputsByThresholdLead( projectConfig ) )
+        
+        // Cache other outputs as required
+        MetricOutputGroup[] options = MetricOutputGroup.values();
+        for( MetricOutputGroup next : options )
         {
-            returnMe.add( MetricOutputGroup.MULTIVECTOR );
+            if ( !returnMe.contains( next )
+                 && MetricConfigHelper.hasTheseOutputsByThresholdLead( projectConfig, next ) )
+            {
+                returnMe.add( next );
+            }
         }
+        
+        // Never cache box plot output, as it does not apply to thresholds
+        returnMe.remove( MetricOutputGroup.BOXPLOT );
+        
+        // Never cache duration score output as timing error summary statistics are computed once all data 
+        // is available
+        returnMe.remove( MetricOutputGroup.DURATION_SCORE );
+        
         return returnMe.toArray( new MetricOutputGroup[returnMe.size()] );
     }
 

@@ -48,6 +48,7 @@
     <metric><name>coefficient of determination</name></metric>
     <metric><name>root mean square error</name></metric>
     <metric><name>threat score</name></metric>
+    <metric><name>contingency table</name></metric>
     <metric><name>quantile quantile diagram</name></metric>
   </metrics>
   <outputs>

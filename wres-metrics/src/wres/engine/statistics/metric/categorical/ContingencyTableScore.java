@@ -88,7 +88,7 @@ abstract class ContingencyTableScore<S extends MulticategoryPairs> extends Ordin
         final MetadataFactory f = getDataFactory().getMetadataFactory();
         return f.getOutputMetadata( metIn.getSampleSize(),
                                     f.getDimension(),
-                                    metIn.getDimension(),
+                                    metIn.getInputDimension(),
                                     getID(),
                                     MetricConstants.MAIN,
                                     metIn.getIdentifier() );

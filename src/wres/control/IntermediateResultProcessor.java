@@ -33,7 +33,7 @@ public class IntermediateResultProcessor implements Consumer<MetricOutputForProj
     /**
      * Logger.
      */
-    
+
     private static final Logger LOGGER = LoggerFactory.getLogger( IntermediateResultProcessor.class );
 
     /**
@@ -47,14 +47,14 @@ public class IntermediateResultProcessor implements Consumer<MetricOutputForProj
      */
 
     private final Feature feature;
-    
+
     /**
      * The types that should not be processed as intermediate output, because they are being cached until the end
      * of a processing pipeline.
      */
-       
+
     private final Set<MetricOutputGroup> ignoreTheseTypes;
-    
+
     /**
      * Construct.
      * 
@@ -71,7 +71,7 @@ public class IntermediateResultProcessor implements Consumer<MetricOutputForProj
                                 "Specify a non-null feature for the results processor." );
         Objects.requireNonNull( projectConfigPlus,
                                 "Specify a non-null configuration for the results processor." );
-        Objects.requireNonNull( projectConfigPlus, 
+        Objects.requireNonNull( projectConfigPlus,
                                 "Specify a non-null set of output types to ignore, such as the empty set." );
         this.feature = feature;
         this.projectConfigPlus = projectConfigPlus;
@@ -112,19 +112,15 @@ public class IntermediateResultProcessor implements Consumer<MetricOutputForProj
                     CommaSeparated.writeBoxPlotFiles( projectConfigPlus.getProjectConfig(),
                                                       input.getBoxPlotOutput() );
                 }
-                if ( Objects.nonNull( meta ) )
+                //Matrix output available and not being cached to the end
+                if ( input.hasOutput( MetricOutputGroup.MATRIX )
+                     && !ignoreTheseTypes.contains( MetricOutputGroup.MATRIX ) )
                 {
-                    LOGGER.debug( "Completed processing of intermediate metrics results for feature '{}' "
-                                  + "and time window {}.",
-                                  meta.getIdentifier().getGeospatialID(),
-                                  meta.getTimeWindow() );
+                    // Only CSV output: write the CSV output
+                    CommaSeparated.writeMatrixOutputFiles( projectConfigPlus.getProjectConfig(),
+                                                           input.getMatrixOutput() );
                 }
-                else
-                {
-                    LOGGER.debug( "Completed processing of intermediate metrics results for feature '{}' with "
-                                  + "unknown time window.",
-                                  feature.getLocationId() );
-                }
+                log( meta );
             }
         }
         catch ( final MetricOutputAccessException | IOException e )
@@ -134,6 +130,29 @@ public class IntermediateResultProcessor implements Consumer<MetricOutputForProj
                 LOGGER.warn( "Interrupted while processing intermediate results:", e );
             }
             throw new WresProcessingException( "Error while processing intermediate results:", e );
+        }
+    }
+
+    /**
+     * Logs the current status.
+     * 
+     * @param meta the metadata to assist with logging
+     */
+
+    private void log( MetricOutputMetadata meta )
+    {
+        if ( Objects.nonNull( meta ) )
+        {
+            LOGGER.debug( "Completed processing of intermediate metrics results for feature '{}' "
+                          + "and time window {}.",
+                          meta.getIdentifier().getGeospatialID(),
+                          meta.getTimeWindow() );
+        }
+        else
+        {
+            LOGGER.debug( "Completed processing of intermediate metrics results for feature '{}' with "
+                          + "unknown time window.",
+                          feature.getLocationId() );
         }
     }
 }

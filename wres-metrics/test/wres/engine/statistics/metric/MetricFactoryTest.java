@@ -50,7 +50,7 @@ public final class MetricFactoryTest
         metF.ofBiasFraction();
         metF.ofBrierScore();
         metF.ofBrierSkillScore();
-        metF.ofContingencyTable();
+        metF.ofDichotomousContingencyTable();
         metF.ofCriticalSuccessIndex();
         metF.ofEquitableThreatScore();
         metF.ofMeanAbsoluteError();
@@ -168,16 +168,16 @@ public final class MetricFactoryTest
     }
 
     /**
-     * Tests {@link MetricFactory#ofMulticategoryMatrix(MetricConstants)}. 
+     * Tests {@link MetricFactory#ofDichotomousMatrix(MetricConstants)}. 
      * @throws MetricParameterException if the metric construction fails 
      */
     @Test
     public void test6OfMulticategoryMatrix() throws MetricParameterException
     {
-        metF.ofMulticategoryMatrix( MetricConstants.CONTINGENCY_TABLE );
+        metF.ofDichotomousMatrix( MetricConstants.CONTINGENCY_TABLE );
         try
         {
-            metF.ofMulticategoryMatrix( MetricConstants.MAIN );
+            metF.ofDichotomousMatrix( MetricConstants.MAIN );
             fail( "Expected a checked exception on attempting to construct a metric with an incorrect identifier." );
         }
         catch ( IllegalArgumentException e )
@@ -273,13 +273,13 @@ public final class MetricFactoryTest
     }    
     
     /**
-     * Tests {@link MetricFactory#ofMulticategoryMatrixCollection(MetricConstants...)}. 
+     * Tests {@link MetricFactory#ofDichotomousMatrixCollection(MetricConstants...)}. 
      * @throws MetricParameterException if the metric construction fails 
      */
     @Test
     public void test13OfMulticategoryMatrixCollection() throws MetricParameterException
     {
-        metF.ofMulticategoryMatrixCollection( MetricConstants.CONTINGENCY_TABLE );
+        metF.ofDichotomousMatrixCollection( MetricConstants.CONTINGENCY_TABLE );
     }    
     
     /**

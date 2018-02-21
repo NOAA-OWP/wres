@@ -34,6 +34,7 @@ import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.DurationScoreOutput;
+import wres.datamodel.outputs.MatrixOutput;
 import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold.MetricOutputForProjectByTimeAndThresholdBuilder;
@@ -164,6 +165,13 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
 
         private final ConcurrentMap<Pair<TimeWindow, Threshold>, List<Future<MetricOutputMapByMetric<PairedOutput<Instant, Duration>>>>> paired =
                 new ConcurrentHashMap<>();
+        
+        /**
+         * {@link MatrixOutput} results.
+         */
+
+        private final ConcurrentMap<Pair<TimeWindow, Threshold>, List<Future<MetricOutputMapByMetric<MatrixOutput>>>> matrix =
+                new ConcurrentHashMap<>();        
 
         /**
          * Returns the results associated with the futures.
@@ -182,6 +190,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
             multiVector.forEach( ( key, list ) -> list.forEach( value -> builder.addMultiVectorOutput( key, value ) ) );
             boxplot.forEach( ( key, list ) -> list.forEach( value -> builder.addBoxPlotOutput( key, value ) ) );
             paired.forEach( ( key, list ) -> list.forEach( value -> builder.addPairedOutput( key, value ) ) );
+            matrix.forEach( ( key, list ) -> list.forEach( value -> builder.addMatrixOutput( key, value ) ) );
             return builder.build();
         }
 
@@ -197,7 +206,8 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
             return ! ( scoresEmpty
                        && multiVector.isEmpty()
                        && boxplot.isEmpty()
-                       && paired.isEmpty() );
+                       && paired.isEmpty()
+                       && matrix.isEmpty() );
         }
 
         /**
@@ -248,6 +258,13 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
             private final ConcurrentMap<Pair<TimeWindow, Threshold>, List<Future<MetricOutputMapByMetric<PairedOutput<Instant, Duration>>>>> paired =
                     new ConcurrentHashMap<>();
 
+            /**
+             * {@link MatrixOutput} results.
+             */
+
+            private final ConcurrentMap<Pair<TimeWindow, Threshold>, List<Future<MetricOutputMapByMetric<MatrixOutput>>>> matrix =
+                    new ConcurrentHashMap<>();
+            
             /**
              * Adds a data factory.
              * 
@@ -342,7 +359,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
             }
 
             /**
-             * Adds a set of future {@link PairedOutput} to the appropriate internal store.
+             * Adds a set of future {@link MatrixOutput} to the appropriate internal store.
              * 
              * @param key the key
              * @param value the future result
@@ -360,7 +377,27 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
                 }
                 return this;
             }
+            
+            /**
+             * Adds a set of future {@link MatrixOutput} to the appropriate internal store.
+             * 
+             * @param key the key
+             * @param value the future result
+             * @return the builder
+             */
 
+            MetricFuturesByTimeBuilder addMatrixOutput( Pair<TimeWindow, Threshold> key,
+                                                        Future<MetricOutputMapByMetric<MatrixOutput>> value )
+            {
+                List<Future<MetricOutputMapByMetric<MatrixOutput>>> result =
+                        matrix.putIfAbsent( key, new ArrayList<>( Arrays.asList( value ) ) );
+                if ( Objects.nonNull( result ) )
+                {
+                    result.add( value );
+                }
+                return this;
+            }
+            
             /**
              * Build the metric futures.
              * 
@@ -408,6 +445,10 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
                         {
                             paired.putAll( futures.paired );
                         }
+                        else if ( nextGroup == MetricOutputGroup.MATRIX )
+                        {
+                            matrix.putAll( futures.matrix );
+                        }
                     }
                 }
                 return this;
@@ -429,6 +470,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
             multiVector.putAll( builder.multiVector );
             boxplot.putAll( builder.boxplot );
             paired.putAll( builder.paired );
+            matrix.putAll( builder.matrix );
             dataFactory = builder.dataFactory;
         }
 

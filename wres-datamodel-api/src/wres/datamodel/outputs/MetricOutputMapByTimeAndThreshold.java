@@ -77,15 +77,15 @@ public interface MetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>>
     {
         return setOfThresholdKey().stream().anyMatch( Threshold::isQuantile );
     }
-    
+
     /**
      * Return only those {@link TimeWindow} keys whose pairs of lead times are unique.
      * 
      * @return a view of the time window keys
      */
 
-    Set<TimeWindow> setOfTimeWindowKeyByLeadTime();  
-    
+    Set<TimeWindow> setOfTimeWindowKeyByLeadTime();
+
     /**
      * Filters the map by the {@link TimeWindow#getEarliestLeadTime()} and {@link TimeWindow#getLatestLeadTime()} in
      * the input {@link TimeWindow}, returning a new sub-map of elements with matching times.
@@ -94,8 +94,8 @@ public interface MetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>>
      * @return the submap
      * @throws MetricOutputException if the map could not be filtered
      */
-    
-    MetricOutputMapByTimeAndThreshold<T> filterByLeadTime( TimeWindow window );   
+
+    MetricOutputMapByTimeAndThreshold<T> filterByLeadTime( TimeWindow window );
 
     /**
      * Returns the {@link MetricOutputMetadata} associated with all {@link MetricOutput} in the store. This may contain

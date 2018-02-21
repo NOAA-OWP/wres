@@ -75,13 +75,13 @@ public final class CriticalSuccessIndexTest
         assertTrue( "The Critical Success Index is not a skill score.", !csi.isSkillScore() );
         assertTrue( "The Critical Success Index cannot be decomposed.",
                     csi.getScoreOutputGroup() == ScoreOutputGroup.NONE );
-        final String expName = metF.ofContingencyTable().getName();
+        final String expName = metF.ofDichotomousContingencyTable().getName();
         final String actName = csi.getCollectionOf().toString();
         assertTrue( "The Critical Success Index should be a collection of '" + expName
                     + "', but is actually a collection of '"
                     + actName
                     + "'.",
-                    csi.getCollectionOf() == metF.ofContingencyTable().getID() );
+                    csi.getCollectionOf() == metF.ofDichotomousContingencyTable().getID() );
     }
 
 }
