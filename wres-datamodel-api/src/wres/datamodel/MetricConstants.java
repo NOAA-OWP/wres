@@ -77,7 +77,7 @@ public enum MetricConstants
      * Identifier for a Contingency Table.
      */
 
-    CONTINGENCY_TABLE( MetricInputGroup.MULTICATEGORY, MetricOutputGroup.MATRIX ),
+    CONTINGENCY_TABLE( MetricInputGroup.DICHOTOMOUS, MetricInputGroup.MULTICATEGORY, MetricOutputGroup.MATRIX ),
 
     /**
      * Identifier for Pearson's product-moment correlation coefficient.
@@ -807,8 +807,32 @@ public enum MetricConstants
          * Identifier for a sample size.
          */
         
-        SAMPLE_SIZE;
-                
+        SAMPLE_SIZE,
+        
+        /**
+         * Identifier for true positives.
+         */
+         
+        TRUE_POSITIVES,
+        
+        /**
+         * Identifier for false positives.
+         */
+        
+        FALSE_POSITIVES,
+        
+        /**
+         * Identifier for false negatives.
+         */
+        
+        FALSE_NEGATIVES,
+        
+        /**
+         * Identifier for true negatives.
+         */
+        
+        TRUE_NEGATIVES;
+        
         /**
          * Returns a string representation.
          * 

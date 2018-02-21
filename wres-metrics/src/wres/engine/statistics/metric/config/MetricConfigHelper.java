@@ -375,25 +375,25 @@ public final class MetricConfigHelper
     }
     
     /**
-     * Returns <code>true</code> if the input configuration requires any outputs of the type 
-     * {@link MetricOutputGroup#MULTIVECTOR} where the {@link OutputTypeSelection} is
-     * {@link OutputTypeSelection#THRESHOLD_LEAD} for any or all metrics.
+     * Returns <code>true</code> if the input configuration requires any outputs of the specified type  where the 
+     * {@link OutputTypeSelection} is {@link OutputTypeSelection#THRESHOLD_LEAD} for any or all metrics.
      * 
      * @param projectConfig the project configuration
+     * @param outGroup the output group to test
      * @return true if the input configuration requires outputs of the {@link MetricOutputGroup#MULTIVECTOR} 
      *            type whose output type is {@link OutputTypeSelection#THRESHOLD_LEAD}, false otherwise
      * @throws NullPointerException if the input is null
      * @throws MetricConfigurationException if the configuration is invalid
      */
 
-    public static boolean hasMultiVectorOutputsByThresholdLead( ProjectConfig projectConfig )
+    public static boolean hasTheseOutputsByThresholdLead( ProjectConfig projectConfig, MetricOutputGroup outGroup )
             throws MetricConfigurationException
     {
         Objects.requireNonNull( projectConfig, "Specify non-null project configuration." );
         // Does the configuration contain any multivector types?        
-        boolean hasMultiVectorType = MetricConfigHelper.getMetricsFromConfig( projectConfig )
-                                                       .stream()
-                                                       .anyMatch( a -> a.isInGroup( MetricOutputGroup.MULTIVECTOR ) );
+        boolean hasSpecifiedType = MetricConfigHelper.getMetricsFromConfig( projectConfig )
+                                                     .stream()
+                                                     .anyMatch( a -> a.isInGroup( outGroup ) );
 
         // If there is a metric-local override for ALL_VALID, and this is *not* THRESHOLD_LEAD, return false
         // immediately because the metric-local override covers all metrics and the local type is canonical       
@@ -422,7 +422,7 @@ public final class MetricConfigHelper
                                  .stream()
                                  .anyMatch( next -> OutputTypeSelection.THRESHOLD_LEAD == next.getOutputType() );
         }
-        return hasMultiVectorType && hasThresholdLeadType;
+        return hasSpecifiedType && hasThresholdLeadType;
     }
 
     /**

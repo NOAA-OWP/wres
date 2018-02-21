@@ -20,6 +20,7 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.DefaultMetadataFactory;
+import wres.datamodel.MatrixOfDoubles;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
@@ -141,7 +142,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                         MetricOutputGroup.values() );
         SingleValuedPairs pairs = MetricTestDataFactory.getSingleValuedPairsFour();
         final MetadataFactory metFac = metIn.getMetadataFactory();
-        //Generate results for 10 nominal lead times
+        // Generate results for 10 nominal lead times
         for ( int i = 1; i < 11; i++ )
         {
             final TimeWindow window = TimeWindow.of( Instant.MIN,
@@ -154,7 +155,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
             processor.apply( metIn.ofSingleValuedPairs( pairs.getData(), meta ) );
         }
 
-        //Validate a subset of the data            
+        // Validate a subset of the data            
         processor.getCachedMetricOutput().getDoubleScoreOutput().forEach( ( key, value ) -> {
             if ( key.getKey() == MetricConstants.THREAT_SCORE )
             {
@@ -171,6 +172,20 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                             value.size() == 20 );
             }
         } );
+
+        // Expected result
+        MatrixOfDoubles expected = metIn.matrixOf( new double[][] { { 400.0, 100.0 }, { 0.0, 0.0 } } );
+        final TimeWindow expectedWindow = TimeWindow.of( Instant.MIN,
+                                                 Instant.MAX,
+                                                 ReferenceTime.VALID_TIME,
+                                                 Duration.ofHours( 1 ) );
+        Pair<TimeWindow,Threshold> key = Pair.of( expectedWindow, metIn.getThreshold( 1.0, Operator.GREATER ) );
+        assertTrue( "Unexpected results for the contingency table.",
+                    expected.equals( processor.getCachedMetricOutput()
+                                              .getMatrixOutput()
+                                              .get( MetricConstants.CONTINGENCY_TABLE )
+                                              .get( key )
+                                              .getData() ) );       
     }
 
     /**

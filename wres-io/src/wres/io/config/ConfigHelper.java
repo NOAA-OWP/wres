@@ -17,8 +17,11 @@ import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -44,6 +47,7 @@ import wres.config.generated.PoolingWindowConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.TimeScaleConfig;
 import wres.config.generated.TimeWindowMode;
+import wres.datamodel.MetricConstants;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
 import wres.io.data.caching.Features;
@@ -1182,20 +1186,94 @@ public class ConfigHelper
     }
     
     /**
-     * Returns a {@link OutputTypeSelection} from the input configuration or null if no selection is provided.
+     * <p>Returns an {@link OutputTypeSelection} from the input configuration or {@link OutputTypeSelection#DEFAULT} if 
+     * no selection is provided.</p> 
      * 
+     * <p>If an override exists for a metric with the identifier {@link MetricConfigName#ALL_VALID} and this has a 
+     * designated {@link OutputTypeSelection}, the override is returned. If an override does not exist, the 
+     * {@link OutputTypeSelection} associated with the destination configuration is returned instead.</p>
+     * 
+     * @param projectConfig the project configuration to search for overrides
      * @param destinationConfig the destination configuration
      * @return the required output type
+     * @throws NullPointerException if any input is null
      */
 
-    public static OutputTypeSelection getOutputTypeSelection( DestinationConfig destinationConfig )
+    public static OutputTypeSelection getOutputTypeSelection( ProjectConfig projectConfig,
+                                                              DestinationConfig destinationConfig )
     {
-        OutputTypeSelection returnMe = null;
+        Objects.requireNonNull( projectConfig, "Specify non-null project configuration." );
+        
+        Objects.requireNonNull( destinationConfig, "Specify non-null destination configuration." );
+        
+        OutputTypeSelection returnMe = OutputTypeSelection.DEFAULT;
         if ( Objects.nonNull( destinationConfig ) && Objects.nonNull( destinationConfig.getOutputType() ) )
         {
             returnMe = destinationConfig.getOutputType();
         }
+
+        // Obtain any override configuration
+        if ( Objects.nonNull( projectConfig.getMetrics() ) )
+        {
+            Optional<MetricConfig> first = projectConfig.getMetrics()
+                                                        .getMetric()
+                                                        .stream()
+                                                        .filter( config -> config.getName() == MetricConfigName.ALL_VALID )
+                                                        .findFirst();
+            if( first.isPresent() && Objects.nonNull( first.get().getOutputType() ) )
+            {
+                returnMe = first.get().getOutputType();
+            }
+        }
+
         return returnMe;
-    }        
+    }       
+    
+    /**
+     * Returns the default {@link OutputTypeSelection} or an override if an {@link OutputTypeSelection} exists for the
+     * specified {@link MetricConstants} whose {@link MetricConstants#name()} matches a {@link MetricConfigName#name()} 
+     * in the {@link ProjectConfig} supplied.
+     * 
+     * @param projectConfig the project configuration to search for overrides
+     * @param defaultSelection the default selection
+     * @param overrideMetric the named metric to search for an override
+     * @return the default or an override
+     * @throws NullPointerException if any input is null
+     */
+
+    public static OutputTypeSelection getOutputTypeSelection( ProjectConfig projectConfig,
+                                                              OutputTypeSelection defaultSelection,
+                                                              MetricConstants overrideMetric )
+    {
+        Objects.requireNonNull( projectConfig, "Specify non-null project configuration." );
+        
+        Objects.requireNonNull( defaultSelection, "Specify a non-null default selection." );
+        
+        Objects.requireNonNull( overrideMetric, "Specify a non-null override metric." );
+        
+        OutputTypeSelection useType = defaultSelection;
+        
+        // Look for potential overrides
+        Map<MetricConfigName, MetricConfig> override = new EnumMap<>( MetricConfigName.class );
+        if( Objects.nonNull( projectConfig.getMetrics() ) )
+        {
+            projectConfig.getMetrics().getMetric().forEach( config -> override.put( config.getName(), config ) );
+        }
+        
+        // Is an override present? Find the first MetricConfigName.name() that matches MetricConstants.name()
+        Optional<MetricConfigName> match =
+                override.keySet()
+                        .stream()
+                        .filter( configName -> configName.name().equals( overrideMetric.name() ) )
+                        .findFirst();
+
+        // Set the type to an override type
+        if ( match.isPresent() && Objects.nonNull( override.get( match.get() ).getOutputType() ) )
+        {
+            useType = override.get( match.get() ).getOutputType();
+        }
+        
+        return useType;
+    }
     
 }

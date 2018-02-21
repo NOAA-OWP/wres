@@ -1,11 +1,14 @@
 package wres.engine.statistics.metric.categorical;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.VectorOfBooleans;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.MulticategoryPairs;
@@ -35,38 +38,47 @@ public class ContingencyTable<S extends MulticategoryPairs> implements Metric<S,
      */
 
     private final DataFactory dataFactory;
-    
+
     @Override
     public DataFactory getDataFactory()
     {
         return dataFactory;
-    }       
-    
+    }
+
     @Override
-    public MatrixOutput apply(final MulticategoryPairs s)
+    public MatrixOutput apply( final MulticategoryPairs s )
     {
-        if(Objects.isNull(s))
+        if ( Objects.isNull( s ) )
         {
-            throw new MetricInputException("Specify non-null input to the '"+this+"'.");
+            throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
         }
         final int outcomes = s.getCategoryCount();
         final double[][] returnMe = new double[outcomes][outcomes];
-        //Function that returns the index within the contingency table to increment
+        // Function that returns the index within the contingency table to increment
         final Consumer<VectorOfBooleans> f = a -> {
             boolean[] b = a.getBooleans();
-            //Dichotomous event represented as a single outcome: expand
-            if(b.length == 2)
+            // Dichotomous event represented as a single outcome: expand
+            if ( b.length == 2 )
             {
-                b = new boolean[]{b[0], !b[0], b[1], !b[1]};
+                b = new boolean[] { b[0], !b[0], b[1], !b[1] };
             }
             final boolean[] c = b;
-            final int[] index = IntStream.range(0, c.length).filter(i -> c[i]).toArray();
+            final int[] index = IntStream.range( 0, c.length ).filter( i -> c[i] ).toArray();
             returnMe[index[1] - outcomes][index[0]] += 1;
         };
-        //Increment the count in a serial stream as the lambda is stateful
-        s.getData().stream().forEach(f);
-        final MetricOutputMetadata metOut = getMetadata(s, s.getData().size(), MetricConstants.MAIN, null);
-        return getDataFactory().ofMatrixOutput(returnMe, metOut);
+        // Increment the count in a serial stream as the lambda is stateful
+        s.getData().stream().forEach( f );
+        // Name the outcomes for a 2x2 contingency table
+        List<MetricDimension> componentNames = null;
+        if ( outcomes == 2 )
+        {
+            componentNames = Arrays.asList( MetricDimension.TRUE_POSITIVES,
+                                            MetricDimension.FALSE_POSITIVES,
+                                            MetricDimension.FALSE_NEGATIVES,
+                                            MetricDimension.TRUE_NEGATIVES );
+        }
+        final MetricOutputMetadata metOut = getMetadata( s, s.getData().size(), MetricConstants.MAIN, null );
+        return getDataFactory().ofMatrixOutput( returnMe, componentNames, metOut );
     }
 
     @Override
@@ -80,12 +92,12 @@ public class ContingencyTable<S extends MulticategoryPairs> implements Metric<S,
     {
         return false;
     }
-    
+
     @Override
     public String toString()
     {
         return getID().toString();
-    }  
+    }
 
     /**
      * A {@link MetricBuilder} to build the metric.
@@ -97,13 +109,13 @@ public class ContingencyTable<S extends MulticategoryPairs> implements Metric<S,
         @Override
         public ContingencyTable<S> build() throws MetricParameterException
         {
-            return new ContingencyTable<>(this);
+            return new ContingencyTable<>( this );
         }
 
         /**
          * The data factory.
          */
-        
+
         private DataFactory dataFactory;
 
         /**
@@ -118,7 +130,7 @@ public class ContingencyTable<S extends MulticategoryPairs> implements Metric<S,
         {
             this.dataFactory = dataFactory;
             return this;
-        }  
+        }
 
     }
 
@@ -129,7 +141,7 @@ public class ContingencyTable<S extends MulticategoryPairs> implements Metric<S,
      * @throws MetricParameterException if one or more parameters is invalid 
      */
 
-    ContingencyTable(final ContingencyTableBuilder<S> builder) throws MetricParameterException
+    ContingencyTable( final ContingencyTableBuilder<S> builder ) throws MetricParameterException
     {
         if ( Objects.isNull( builder ) )
         {

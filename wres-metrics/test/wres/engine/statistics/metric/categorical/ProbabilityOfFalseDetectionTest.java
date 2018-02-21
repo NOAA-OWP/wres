@@ -74,13 +74,13 @@ public final class ProbabilityOfFalseDetectionTest
         assertTrue( "The Probability of False Detection is not a skill score.", !pofd.isSkillScore() );
         assertTrue( "The Probability of False Detection cannot be decomposed.",
                     pofd.getScoreOutputGroup() == ScoreOutputGroup.NONE );
-        final String expName = metF.ofContingencyTable().getName();
+        final String expName = metF.ofDichotomousContingencyTable().getName();
         final String actName = pofd.getCollectionOf().toString();
         assertTrue( "The Probability of False Detection should be a collection of '" + expName
                     + "', but is actually a collection of '"
                     + actName
                     + "'.",
-                    pofd.getCollectionOf() == metF.ofContingencyTable().getID() );
+                    pofd.getCollectionOf() == metF.ofDichotomousContingencyTable().getID() );
     }
 
 }
