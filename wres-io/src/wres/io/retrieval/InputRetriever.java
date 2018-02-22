@@ -363,7 +363,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
      * @param multiValuedPairs A set of packaged pairs
      * @return A list of all raw pairs converted into single valued pairs
      */
-    private List<PairOfDoubles>
+    private static List<PairOfDoubles>
     convertToPairOfDoubles( List<ForecastedPair> multiValuedPairs )
     {
         List<PairOfDoubles> pairs = new ArrayList<>(  );
@@ -617,14 +617,13 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
 
         final String VALID_DATETIME_COLUMN = "valid_time";
         final String RESULT_VALUE_COLUMN = "observed_value";
-
-        long basisEpochTimeMillis;
+        final String MEASUREMENT_ID_COLUMN = "measurementunit_id";
 
         Connection connection = null;
         ResultSet resultSet = null;
 
         // First, store the raw results
-        List<Pair<Long,Double>> rawRawPersistenceValues = new ArrayList<>();
+        List<RawPersistenceRow> rawRawPersistenceValues = new ArrayList<>();
 
         try
         {
@@ -633,10 +632,13 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
 
             while ( resultSet.next() )
             {
-                basisEpochTimeMillis = resultSet.getLong( VALID_DATETIME_COLUMN );
+                long basisEpochTimeMillis = resultSet.getLong( VALID_DATETIME_COLUMN );
                 double value = resultSet.getDouble( RESULT_VALUE_COLUMN );
-                Pair<Long,Double> doubleEvent = Pair.of( basisEpochTimeMillis, value );
-                rawRawPersistenceValues.add( doubleEvent );
+                int measurementUnitId = resultSet.getInt( MEASUREMENT_ID_COLUMN );
+                RawPersistenceRow row = new RawPersistenceRow( basisEpochTimeMillis,
+                                                               value,
+                                                               measurementUnitId );
+                rawRawPersistenceValues.add( row );
             }
         }
         finally
@@ -652,7 +654,9 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             }
         }
 
-        List<Pair<Long,Double>> rawPersistenceValues = Collections.unmodifiableList( rawRawPersistenceValues );
+        List<RawPersistenceRow> rawPersistenceValues =
+                Collections.unmodifiableList( rawRawPersistenceValues );
+
         // Second, analyze the results for the majority count-per-agg-window
 
         Duration aggDuration = ConfigHelper.getDurationFromTimeScale( projectDetails.getScale() );
@@ -668,8 +672,8 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         // 2a slide a window over the data and count the number of values
         for ( int i = 0; i < rawPersistenceValues.size(); i++ )
         {
-            Pair<Long,Double> currentEvent = rawPersistenceValues.get( i );
-            long earliestTime = currentEvent.getLeft() - aggDurationMillis;
+            RawPersistenceRow currentEvent = rawPersistenceValues.get( i );
+            long earliestTime = currentEvent.getMillisSinceEpoch() - aggDurationMillis;
             Integer count = 0;
 
             LOGGER.trace( "i: {}, count: {}, earliestTime: {}",
@@ -677,9 +681,9 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
 
             for ( int j = i + 1; j < rawPersistenceValues.size(); j++ )
             {
-                Pair<Long,Double> possibleEndEvent = rawPersistenceValues.get( j );
+                RawPersistenceRow possibleEndEvent = rawPersistenceValues.get( j );
 
-                if ( possibleEndEvent.getLeft() >= earliestTime )
+                if ( possibleEndEvent.getMillisSinceEpoch() >= earliestTime )
                 {
                     count++;
                 }
@@ -715,22 +719,83 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             throw new IllegalStateException( "The regularity of data in baseline could not be guessed." );
         }
 
+        boolean shouldAggregate = true;
+
+        if ( countOfValuesInAGoodWindow == 1 )
+        {
+            // There should be no need for aggregation when 1 value per window.
+            shouldAggregate = false;
+        }
+
         // Third, for each basis time, find the latest valid agg-window and agg
 
         for ( ForecastedPair primaryPair : primaryPairs )
         {
-            ForecastedPair persistencePair =
-                    getAggregatedPairFromRawPairs( primaryPair,
-                                                   rawPersistenceValues,
-                                                   aggDurationMillis,
-                                                   countOfValuesInAGoodWindow,
-                                                   projectDetails.getScale() );
+            ForecastedPair persistencePair;
+            if ( shouldAggregate )
+            {
+                persistencePair =
+                        getAggregatedPairFromRawPairs( primaryPair,
+                                                       rawPersistenceValues,
+                                                       aggDurationMillis,
+                                                       countOfValuesInAGoodWindow,
+                                                       projectDetails.getScale() );
+            }
+            else
+            {
+                persistencePair = getLatestPairFromRawPairs( primaryPair,
+                                                             rawPersistenceValues );
+            }
+
             this.writePair( persistencePair.getValidTime(), persistencePair, dataSourceConfig );
             pairs.add( persistencePair );
         }
 
         LOGGER.trace( "Returning persistence pairs: {}", pairs );
         return Collections.unmodifiableList( pairs );
+    }
+
+
+    /**
+     * Create a persistence forecast pair from a set of raw pairs and a primary
+     * pair.
+     *
+     * @param primaryPair the primary pair to match up to
+     * @param rawPersistenceValues pairs of ( valid time in millis since epoch,
+     *                                        value ) ordered latest to earliest
+     * @return the persistence pair
+     * @throws IllegalArgumentException when no persistence pair can be found
+     */
+
+    private ForecastedPair getLatestPairFromRawPairs( ForecastedPair primaryPair,
+                                                      List<RawPersistenceRow> rawPersistenceValues )
+    {
+        for ( RawPersistenceRow rawPair : rawPersistenceValues )
+        {
+            if ( rawPair.getMillisSinceEpoch() < primaryPair.getBasisTime().toEpochMilli() )
+            {
+                // Convert units!
+                Double convertedValue =
+                        this.convertMeasurement( rawPair.getValue(),
+                                                 rawPair.getMeasurementUnitId() );
+
+                double[] wrappedValue = { convertedValue };
+
+                PairOfDoubleAndVectorOfDoubles pair =
+                        DefaultDataFactory.getInstance()
+                                          .pairOf( primaryPair.getValues()
+                                                              .getItemOne(),
+                                                   wrappedValue );
+
+                return new ForecastedPair( primaryPair.getBasisTime(),
+                                           primaryPair.getValidTime(),
+                                           pair );
+            }
+        }
+
+        throw new IllegalArgumentException( "Could not find a persistence "
+                                            + "forecast value for pair "
+                                            + primaryPair );
     }
 
 
@@ -744,7 +809,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
      */
 
     private ForecastedPair getAggregatedPairFromRawPairs( ForecastedPair primaryPair,
-                                                          List<Pair<Long,Double>> rawPersistenceValues,
+                                                          List<RawPersistenceRow> rawPersistenceValues,
                                                           long aggDurationMillis,
                                                           int countOfValuesInAGoodWindow,
                                                           TimeScaleConfig scaleConfig )
@@ -755,18 +820,18 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
 
         for ( int i = 0; i < rawPersistenceValues.size(); i++ )
         {
-            Pair<Long,Double> currentEvent = rawPersistenceValues.get( i );
+            RawPersistenceRow currentEvent = rawPersistenceValues.get( i );
 
             // We found a possible starting value. Calculate window.
-            long earliestTime = currentEvent.getKey() - aggDurationMillis;
+            long earliestTime = currentEvent.getMillisSinceEpoch() - aggDurationMillis;
             valuesToAggregate = new ArrayList<>( countOfValuesInAGoodWindow );
 
-            if ( basisTimeEpochMillis > currentEvent.getKey() )
+            if ( basisTimeEpochMillis > currentEvent.getMillisSinceEpoch() )
             {
                 for ( int j = i; j < rawPersistenceValues.size(); j++ )
                 {
-                    Pair<Long,Double> possibleEndEvent = rawPersistenceValues.get( j );
-                    Long epochMillisOfEvent = possibleEndEvent.getKey();
+                    RawPersistenceRow possibleEndEvent = rawPersistenceValues.get( j );
+                    long epochMillisOfEvent = possibleEndEvent.getMillisSinceEpoch();
                     Double valueOfEvent = possibleEndEvent.getValue();
 
                     if ( epochMillisOfEvent > earliestTime )
@@ -776,7 +841,12 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                                       epochMillisOfEvent,
                                       epochMillisOfEvent,
                                       earliestTime );
-                        valuesToAggregate.add( valueOfEvent );
+
+                        // Convert units if needed!
+                        Double convertedValue =
+                                this.convertMeasurement( valueOfEvent,
+                                                         possibleEndEvent.getMeasurementUnitId() );
+                        valuesToAggregate.add( convertedValue );
                     }
                     else
                     {
@@ -1132,6 +1202,42 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         public Integer apply( Integer first, Integer second )
         {
             return first + second;
+        }
+    }
+
+
+    /**
+     * Encapsulates a single persistence result row.
+     */
+
+    private static class RawPersistenceRow
+    {
+        private final long millisSinceEpoch;
+        private final double value;
+        private final int measurementUnitId;
+
+        public RawPersistenceRow( long millisSinceEpoch,
+                                  double value,
+                                  int measurementUnitId )
+        {
+            this.millisSinceEpoch = millisSinceEpoch;
+            this.value = value;
+            this.measurementUnitId = measurementUnitId;
+        }
+
+        public long getMillisSinceEpoch()
+        {
+            return this.millisSinceEpoch;
+        }
+
+        public double getValue()
+        {
+            return this.value;
+        }
+
+        public int getMeasurementUnitId()
+        {
+            return this.measurementUnitId;
         }
     }
 }
