@@ -12,6 +12,7 @@ import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.Collectable;
+import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricParameterException;
 
@@ -127,7 +128,7 @@ public class MeanSquareError<S extends SingleValuedPairs> extends SumOfSquareErr
         }
         // Set the output dimension
         Dimension outputDimension = f.getDimension();
-        if( hasRealUnits() )
+        if ( hasRealUnits() )
         {
             outputDimension = metIn.getDimension();
         }
@@ -149,7 +150,7 @@ public class MeanSquareError<S extends SingleValuedPairs> extends SumOfSquareErr
 
     private DoubleScoreOutput getMSENoDecomp( final SingleValuedPairs s )
     {
-        double mse = getSumOfSquareError( s ) / s.getData().size();
+        double mse = FunctionFactory.finiteOrNaN().applyAsDouble( getSumOfSquareError( s ) / s.getData().size() );
         return getDataFactory().ofDoubleScoreOutput( mse, getMetadata( s ) );
     }
 
