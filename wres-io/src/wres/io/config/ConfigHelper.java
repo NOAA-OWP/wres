@@ -1207,7 +1207,7 @@ public class ConfigHelper
         Objects.requireNonNull( destinationConfig, "Specify non-null destination configuration." );
         
         OutputTypeSelection returnMe = OutputTypeSelection.DEFAULT;
-        if ( Objects.nonNull( destinationConfig ) && Objects.nonNull( destinationConfig.getOutputType() ) )
+        if ( Objects.nonNull( destinationConfig.getOutputType() ) )
         {
             returnMe = destinationConfig.getOutputType();
         }
@@ -1275,5 +1275,65 @@ public class ConfigHelper
         
         return useType;
     }
+
+    /**
+     * <p>Returns the variable identifier from the project configuration. The identifier is one of the following in 
+     * order of precedent:</p>
+     * 
+     * <p>If the variable identifier is required for the left and right:</p>
+     * <ol>
+     * <li>The label associated with the variable in the left source.</li>
+     * <li>The label associated with the variable in the right source.</li>
+     * <li>The value associated with the left variable.</li>
+     * </ol>
+     * 
+     * <p>If the variable identifier is required for the baseline:</p>
+     * <ol>
+     * <li>The label associated with the variable in the baseline source.</li>
+     * <li>The value associated with the baseline variable.</li>
+     * </ol>
+     * 
+     * <p>In both cases, the last declaration is always present.</p>
+     * 
+     * @param projectConfig the project configuration
+     * @param isBaseline is true if the variable name is required for the baseline
+     * @return the variable identifier
+     * @throws IllegalArgumentException if the baseline variable is requested and the input does not contain 
+     *            a baseline source
+     */
+
+    public static String getVariableIdFromProjectConfig( ProjectConfig projectConfig, boolean isBaseline )
+    {
+        // Baseline required?
+        if( isBaseline )
+        {
+            // Has a baseline source
+            if ( Objects.nonNull( projectConfig.getInputs().getBaseline() ) )
+            {
+                // Has a baseline source with a label
+                if ( Objects.nonNull( projectConfig.getInputs().getBaseline().getLabel() ) ) 
+                {
+                    return projectConfig.getInputs().getBaseline().getVariable().getLabel();
+                }
+                // Only has a baseline source with a variable value
+                return projectConfig.getInputs().getBaseline().getVariable().getValue();
+            }
+            throw new IllegalArgumentException( "Cannot identify the variable for the baseline as the input project "
+                    + "does not contain a baseline source." );
+        }
+        // Has a left source with a label 
+        if ( Objects.nonNull( projectConfig.getInputs().getLeft().getVariable().getLabel() ) )
+        {
+            return projectConfig.getInputs().getLeft().getVariable().getLabel();
+        }
+        // Has a right source with a label
+        else if ( Objects.nonNull( projectConfig.getInputs().getRight().getVariable().getLabel() ) )
+        {
+            return projectConfig.getInputs().getRight().getVariable().getLabel();
+        }
+        // Has a left source with a variable value
+        return projectConfig.getInputs().getLeft().getVariable().getValue();
+    }
+
     
 }

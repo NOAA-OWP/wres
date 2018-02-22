@@ -37,6 +37,7 @@ import wres.config.generated.MetricConfigName;
 import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
+import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
@@ -385,8 +386,7 @@ public class ProcessorHelper
             LOGGER.debug( "Beginning to build charts for feature {}...",
                           featureDescription );
 
-            processCachedCharts( feature,
-                                 projectConfigPlus,
+            processCachedCharts( projectConfigPlus,
                                  cachedOutput );
 
             LOGGER.debug( "Finished building charts for feature {}.",
@@ -424,14 +424,12 @@ public class ProcessorHelper
     /**
      * Processes all charts for which metric outputs were cached across successive calls to a {@link MetricProcessor}.
      * 
-     * @param feature the feature for which the charts are defined
      * @param projectConfigPlus the project configuration
      * @param cachedOutput the cached output
      * @throws WresProcessingException when an error occurs during processing
      */
 
-    private static void processCachedCharts( final Feature feature,
-                                             final ProjectConfigPlus projectConfigPlus,
+    private static void processCachedCharts( final ProjectConfigPlus projectConfigPlus,
                                              final MetricOutputForProjectByTimeAndThreshold cachedOutput )
     {
         try
@@ -439,36 +437,31 @@ public class ProcessorHelper
             // Process charts for ordinary scores
             if ( cachedOutput.hasOutput( MetricOutputGroup.DOUBLE_SCORE ) )
             {
-                processChartsForDoubleScoreOutput( feature, 
-                                    projectConfigPlus, 
-                                    cachedOutput.getDoubleScoreOutput() );
+                processChartsForDoubleScoreOutput( projectConfigPlus,
+                                                   cachedOutput.getDoubleScoreOutput() );
             }
             // Process charts for scores that comprise durations
             if ( cachedOutput.hasOutput( MetricOutputGroup.DURATION_SCORE ) )
             {
-                processChartsForDurationScoreOutput( feature, 
-                                    projectConfigPlus, 
-                                    cachedOutput.getDurationScoreOutput() );
+                processChartsForDurationScoreOutput( projectConfigPlus,
+                                                     cachedOutput.getDurationScoreOutput() );
             }
             // Process multivector charts
             if ( cachedOutput.hasOutput( MetricOutputGroup.MULTIVECTOR ) )
             {
-                processMultiVectorCharts( feature, 
-                                          projectConfigPlus, 
+                processMultiVectorCharts( projectConfigPlus,
                                           cachedOutput.getMultiVectorOutput() );
             }
             // Process box plot charts
             if ( cachedOutput.hasOutput( MetricOutputGroup.BOXPLOT ) )
             {
-                processBoxPlotCharts( feature, 
-                                      projectConfigPlus, 
+                processBoxPlotCharts( projectConfigPlus,
                                       cachedOutput.getBoxPlotOutput() );
             }
             // Process paired output
             if ( cachedOutput.hasOutput( MetricOutputGroup.PAIRED ) )
             {
-                processPairedOutputByInstantDurationCharts( feature,
-                                                            projectConfigPlus,
+                processPairedOutputByInstantDurationCharts( projectConfigPlus,
                                                             cachedOutput.getPairedOutput() );
             }
         }
@@ -487,14 +480,12 @@ public class ProcessorHelper
      * Processes a set of charts associated with {@link DoubleScoreOutput} across multiple metrics, time windows, 
      * and thresholds, stored in a {@link MetricOutputMultiMapByTimeAndThreshold}.
      * 
-     * @param feature the feature for which the chart is defined
      * @param projectConfigPlus the project configuration
      * @param scoreResults the metric results
      * @throws WresProcessingException when an error occurs during processing
      */
 
-    private static void processChartsForDoubleScoreOutput( final Feature feature,
-                                                           final ProjectConfigPlus projectConfigPlus,
+    private static void processChartsForDoubleScoreOutput( final ProjectConfigPlus projectConfigPlus,
                                                            final MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> scoreResults )
     {
         // Check for results
@@ -510,6 +501,10 @@ public class ProcessorHelper
         {
             List<DestinationConfig> destinations =
                     ConfigHelper.getGraphicalDestinations( config );
+            
+            // Metadata
+            DatasetIdentifier identifier = e.getValue().getMetadata().getIdentifier();
+            
             // Iterate through each destination
             for ( DestinationConfig destConfig : destinations )
             {
@@ -518,11 +513,10 @@ public class ProcessorHelper
                                                               destConfig,
                                                               e.getKey().getKey(),
                                                               e.getValue() );
-                writeScoreCharts( feature,
-                                  projectConfigPlus,
-                                  destConfig,
+                writeScoreCharts( destConfig,
                                   e.getKey().getKey(),
-                                  supplier );
+                                  supplier,
+                                  identifier );
             }
         }
     }
@@ -532,14 +526,12 @@ public class ProcessorHelper
      * Processes a set of charts associated with {@link DurationScoreOutput} across multiple metrics, time windows, 
      * and thresholds, stored in a {@link MetricOutputMultiMapByTimeAndThreshold}.
      * 
-     * @param feature the feature for which the chart is defined
      * @param projectConfigPlus the project configuration
      * @param scoreResults the metric results
      * @throws WresProcessingException when an error occurs during processing
      */
 
-    private static void processChartsForDurationScoreOutput( final Feature feature,
-                                                             final ProjectConfigPlus projectConfigPlus,
+    private static void processChartsForDurationScoreOutput( final ProjectConfigPlus projectConfigPlus,
                                                              final MetricOutputMultiMapByTimeAndThreshold<DurationScoreOutput> scoreResults )
     {
         // Check for results
@@ -550,11 +542,16 @@ public class ProcessorHelper
         }
 
         ProjectConfig config = projectConfigPlus.getProjectConfig();
+
         // Iterate through each metric 
         for ( final Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<DurationScoreOutput>> e : scoreResults.entrySet() )
         {
             List<DestinationConfig> destinations =
                     ConfigHelper.getGraphicalDestinations( config );
+            
+            // Metadata
+            DatasetIdentifier identifier = e.getValue().getMetadata().getIdentifier();
+            
             // Iterate through each destination
             for ( DestinationConfig destConfig : destinations )
             {
@@ -563,11 +560,10 @@ public class ProcessorHelper
                                                                 destConfig,
                                                                 e.getKey().getKey(),
                                                                 e.getValue() );
-                writeScoreCharts( feature,
-                                  projectConfigPlus,
-                                  destConfig,
+                writeScoreCharts( destConfig,
                                   e.getKey().getKey(),
-                                  supplier );
+                                  supplier,
+                                  identifier );
             }
         }
     }
@@ -647,24 +643,21 @@ public class ProcessorHelper
      * Writes a set of charts associated with {@link DoubleScoreOutput} for a single metric and time window, 
      * stored in a {@link MetricOutputMultiMapByTimeAndThreshold}.
      * 
-     * @param feature the feature
-     * @param projectConfigPlus the project configuration
      * @param destConfig the destination configuration for the written output
      * @param metricId the metric identifier
      * @param chartSupplier a supplier of chart engines
+     * @param identifier the dataset identifier
      * @throws WresProcessingException when an error occurs during writing
      */
 
-    private static void writeScoreCharts( Feature feature,
-                                          ProjectConfigPlus projectConfigPlus,
-                                          DestinationConfig destConfig,
+    private static void writeScoreCharts( DestinationConfig destConfig,
                                           MetricConstants metricId,
-                                          Supplier<Map<MetricConstants, ChartEngine>> chartSupplier )
+                                          Supplier<Map<MetricConstants, ChartEngine>> chartSupplier,
+                                          DatasetIdentifier identifier )
     {
         // Build charts
         try
         {
-            ProjectConfig config = projectConfigPlus.getProjectConfig();
             Map<MetricConstants, ChartEngine> engines = chartSupplier.get();
             // Build the outputs
             for ( final Entry<MetricConstants, ChartEngine> nextEntry : engines.entrySet() )
@@ -678,15 +671,12 @@ public class ProcessorHelper
                 // Build the output file name
                 File destDir = ConfigHelper.getDirectoryFromDestinationConfig( destConfig );
                 Path outputImage = Paths.get( destDir.toString(),
-                                              ConfigHelper.getFeatureDescription( feature )
+                                              identifier.getGeospatialID()
                                                                   + "_"
                                                                   + metricId.name()
                                                                   + componentName
                                                                   + "_"
-                                                                  + config.getInputs()
-                                                                          .getRight()
-                                                                          .getVariable()
-                                                                          .getValue()
+                                                                  + identifier.getVariableID()
                                                                   + ".png" );
                 ChartWriter.writeChart( outputImage, nextEntry.getValue(), destConfig );
             }
@@ -702,14 +692,12 @@ public class ProcessorHelper
      * Processes a set of charts associated with {@link MultiVectorOutput} across multiple metrics, time windows,
      * and thresholds, stored in a {@link MetricOutputMultiMapByTimeAndThreshold}.
      * 
-     * @param feature the feature for which the chart is defined
      * @param projectConfigPlus the project configuration
      * @param multiVectorResults the metric results
      * @throws WresProcessingException if the processing completed unsuccessfully
      */
 
-    static void processMultiVectorCharts( final Feature feature,
-                                          final ProjectConfigPlus projectConfigPlus,
+    static void processMultiVectorCharts( final ProjectConfigPlus projectConfigPlus,
                                           final MetricOutputMultiMapByTimeAndThreshold<MultiVectorOutput> multiVectorResults )
     {
         // Check for results
@@ -728,7 +716,7 @@ public class ProcessorHelper
             // Iterate through each destination
             for ( DestinationConfig destConfig : destinations )
             {
-                writeMultiVectorCharts( feature, projectConfigPlus, destConfig, e.getKey().getKey(), e.getValue() );
+                writeMultiVectorCharts( projectConfigPlus, destConfig, e.getKey().getKey(), e.getValue() );
             }
         }
     }
@@ -738,7 +726,6 @@ public class ProcessorHelper
      * Writes a set of charts associated with {@link MultiVectorOutput} for a single metric and time window, 
      * stored in a {@link MetricOutputMultiMapByTimeAndThreshold}.
      * 
-     * @param feature the feature
      * @param projectConfigPlus the project configuration
      * @param destConfig the destination configuration for the written output
      * @param metricId the metric identifier
@@ -746,8 +733,7 @@ public class ProcessorHelper
      * @throws WresProcessingException when an error occurs during writing
      */
 
-    private static void writeMultiVectorCharts( Feature feature,
-                                                ProjectConfigPlus projectConfigPlus,
+    private static void writeMultiVectorCharts( ProjectConfigPlus projectConfigPlus,
                                                 DestinationConfig destConfig,
                                                 MetricConstants metricId,
                                                 MetricOutputMapByTimeAndThreshold<MultiVectorOutput> multiVectorResults )
@@ -755,7 +741,6 @@ public class ProcessorHelper
         // Build charts
         try
         {
-            ProjectConfig config = projectConfigPlus.getProjectConfig();
             GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destConfig, metricId );
             
             final Map<Object, ChartEngine> engines =
@@ -764,6 +749,10 @@ public class ProcessorHelper
                                                                           helper.getOutputType(),
                                                                           helper.getTemplateResourceName(),
                                                                           helper.getGraphicsString() );
+            
+            // Metadata
+            DatasetIdentifier identifier = multiVectorResults.getMetadata().getIdentifier();
+            
             // Build the outputs
             for ( final Entry<Object, ChartEngine> nextEntry : engines.entrySet() )
             {
@@ -781,14 +770,11 @@ public class ProcessorHelper
                 }
                 File destDir = ConfigHelper.getDirectoryFromDestinationConfig( destConfig );
                 Path outputImage = Paths.get( destDir.toString(),
-                                              ConfigHelper.getFeatureDescription( feature )
+                                              identifier.getGeospatialID()
                                                                   + "_"
                                                                   + metricId.name()
                                                                   + "_"
-                                                                  + config.getInputs()
-                                                                          .getRight()
-                                                                          .getVariable()
-                                                                          .getValue()
+                                                                  + identifier.getVariableID()
                                                                   + "_"
                                                                   + key
                                                                   + ".png" );
@@ -808,14 +794,12 @@ public class ProcessorHelper
      * Processes a set of charts associated with {@link BoxPlotOutput} across multiple metrics, time window, and 
      * thresholds, stored in a {@link MetricOutputMultiMapByTimeAndThreshold}.
      * 
-     * @param feature the feature for which the chart is defined
      * @param projectConfigPlus the project configuration
      * @param boxPlotResults the box plot outputs
      * @throws WresProcessingException if the processing completed unsuccessfully
      */
 
-    static void processBoxPlotCharts( final Feature feature,
-                                      final ProjectConfigPlus projectConfigPlus,
+    static void processBoxPlotCharts( final ProjectConfigPlus projectConfigPlus,
                                       final MetricOutputMultiMapByTimeAndThreshold<BoxPlotOutput> boxPlotResults )
     {
         // Check for results
@@ -834,7 +818,7 @@ public class ProcessorHelper
             // Iterate through each destination
             for ( DestinationConfig destConfig : destinations )
             {
-                writeBoxPlotCharts( feature, projectConfigPlus, destConfig, e.getKey().getKey(), e.getValue() );
+                writeBoxPlotCharts( projectConfigPlus, destConfig, e.getKey().getKey(), e.getValue() );
             }
         }
     }
@@ -844,7 +828,6 @@ public class ProcessorHelper
      * Writes a set of charts associated with {@link BoxPlotOutput} for a single metric and time window, 
      * stored in a {@link MetricOutputMultiMapByTimeAndThreshold}.
      * 
-     * @param feature the feature
      * @param projectConfigPlus the project configuration
      * @param destConfig the destination configuration for the written output
      * @param metricId the metric identifier
@@ -852,8 +835,7 @@ public class ProcessorHelper
      * @throws WresProcessingException when an error occurs during writing
      */
 
-    private static void writeBoxPlotCharts( Feature feature,
-                                            ProjectConfigPlus projectConfigPlus,
+    private static void writeBoxPlotCharts( ProjectConfigPlus projectConfigPlus,
                                             DestinationConfig destConfig,
                                             MetricConstants metricId,
                                             MetricOutputMapByTimeAndThreshold<BoxPlotOutput> boxPlotResults )
@@ -861,13 +843,16 @@ public class ProcessorHelper
         // Build charts
         try
         {
-            ProjectConfig config = projectConfigPlus.getProjectConfig();
             GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destConfig, metricId );
 
             final Map<Pair<TimeWindow, Threshold>, ChartEngine> engines =
                     ChartEngineFactory.buildBoxPlotChartEngine( boxPlotResults,
                                                                 helper.getTemplateResourceName(),
                                                                 helper.getGraphicsString() );
+            
+            // Metadata
+            DatasetIdentifier identifier = boxPlotResults.getMetadata().getIdentifier();
+            
             // Build the outputs
             for ( final Entry<Pair<TimeWindow, Threshold>, ChartEngine> nextEntry : engines.entrySet() )
             {
@@ -877,14 +862,11 @@ public class ProcessorHelper
                 // For now, the only temporal pipeline is by lead time
                 long key = nextEntry.getKey().getLeft().getLatestLeadTimeInHours();
                 Path outputImage = Paths.get( destDir.toString(),
-                                              ConfigHelper.getFeatureDescription( feature )
+                                              identifier.getGeospatialID()
                                                                   + "_"
                                                                   + metricId.name()
                                                                   + "_"
-                                                                  + config.getInputs()
-                                                                          .getRight()
-                                                                          .getVariable()
-                                                                          .getValue()
+                                                                  + identifier.getVariableID()
                                                                   + "_"
                                                                   + key
                                                                   + ".png" );
@@ -904,14 +886,12 @@ public class ProcessorHelper
      * Processes a set of charts associated with {@link PairedOutput} across multiple metrics, time window, and 
      * thresholds, stored in a {@link MetricOutputMultiMapByTimeAndThreshold}.
      * 
-     * @param feature the feature for which the chart is defined
      * @param projectConfigPlus the project configuration
      * @param pairedOutputResults the outputs
      * @throws WresProcessingException if the processing completed unsuccessfully
      */
 
-    static void processPairedOutputByInstantDurationCharts( final Feature feature,
-                                                            final ProjectConfigPlus projectConfigPlus,
+    static void processPairedOutputByInstantDurationCharts( final ProjectConfigPlus projectConfigPlus,
                                                             final MetricOutputMultiMapByTimeAndThreshold<PairedOutput<Instant, Duration>> pairedOutputResults )
     {
         // Check for results
@@ -930,7 +910,7 @@ public class ProcessorHelper
             // Iterate through each destination
             for ( DestinationConfig destConfig : destinations )
             {
-                writePairedOutputByInstantDurationCharts( feature, projectConfigPlus, destConfig, e.getKey().getKey(), e.getValue() );
+                writePairedOutputByInstantDurationCharts( projectConfigPlus, destConfig, e.getKey().getKey(), e.getValue() );
             }
         }
     }
@@ -940,7 +920,6 @@ public class ProcessorHelper
      * Writes a set of charts associated with {@link PairedOutput} for a single metric and time window, 
      * stored in a {@link MetricOutputMultiMapByTimeAndThreshold}.
      * 
-     * @param feature the feature
      * @param projectConfigPlus the project configuration
      * @param destConfig the destination configuration for the written output
      * @param metricId the metric identifier
@@ -948,8 +927,7 @@ public class ProcessorHelper
      * @throws WresProcessingException when an error occurs during writing
      */
 
-    private static void writePairedOutputByInstantDurationCharts( Feature feature,
-                                                                  ProjectConfigPlus projectConfigPlus,
+    private static void writePairedOutputByInstantDurationCharts( ProjectConfigPlus projectConfigPlus,
                                                                   DestinationConfig destConfig,
                                                                   MetricConstants metricId,
                                                                   MetricOutputMapByTimeAndThreshold<PairedOutput<Instant, Duration>> pairedOutputResults )
@@ -957,23 +935,22 @@ public class ProcessorHelper
         // Build charts
         try
         {
-            ProjectConfig config = projectConfigPlus.getProjectConfig();
             GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destConfig, metricId );
 
             final ChartEngine engine = ChartEngineFactory.buildPairedInstantDurationChartEngine( pairedOutputResults,
                                                                                                  helper.getTemplateResourceName(),
                                                                                                  helper.getGraphicsString() );
+            // Metadata
+            DatasetIdentifier identifier = pairedOutputResults.getMetadata().getIdentifier();
+
             // Build the output file name
             File destDir = ConfigHelper.getDirectoryFromDestinationConfig( destConfig );
             Path outputImage = Paths.get( destDir.toString(),
-                                          ConfigHelper.getFeatureDescription( feature )
+                                          identifier.getGeospatialID()
                                                               + "_"
                                                               + metricId.name()
                                                               + "_"
-                                                              + config.getInputs()
-                                                                      .getRight()
-                                                                      .getVariable()
-                                                                      .getValue()
+                                                              + identifier.getVariableID()
                                                               + ".png" );
             ChartWriter.writeChart( outputImage, engine, destConfig );
         }
@@ -1016,36 +993,6 @@ public class ProcessorHelper
         //Either all done OR one completes exceptionally
         return CompletableFuture.anyOf(allDone, oneExceptional);
     }
-
-
-    /**
-     * Locates the metric configuration corresponding to the input {@link MetricConstants} or null if no corresponding
-     * configuration could be found. If the configuration contains a {@link MetricConfigName#ALL_VALID}, the 
-     * prescribed metric identifier is ignored and the configuration is returned for 
-     * {@link MetricConfigName#ALL_VALID}.
-     * 
-     * @param metric the metric
-     * @param config the project configuration
-     * @return the metric configuration or null
-     */
-
-    private static MetricConfig getNamedConfigOrAllValid( final MetricConstants metric, final ProjectConfig config )
-    {
-        // Deal with MetricConfigName.ALL_VALID first
-        MetricConfig allValid = ConfigHelper.getMetricConfigByName( config, MetricConfigName.ALL_VALID );
-        if ( allValid != null )
-        {
-            return allValid;
-        }
-        // Find the corresponding configuration
-        final Optional<MetricConfig> returnMe = config.getMetrics()
-                                                      .getMetric()
-                                                      .stream()
-                                                      .filter( a -> metric.name().equals( a.getName().name() ) )
-                                                      .findFirst();
-        return returnMe.isPresent() ? returnMe.get() : null;
-    }
-
 
     /**
      * Returns true if the given config has one or more of given output type.
@@ -1205,7 +1152,35 @@ public class ProcessorHelper
         private String getTemplateResourceName()
         {
             return templateResourceName;
-        }        
+        }  
+        
+        /**
+         * Locates the metric configuration corresponding to the input {@link MetricConstants} or null if no corresponding
+         * configuration could be found. If the configuration contains a {@link MetricConfigName#ALL_VALID}, the 
+         * prescribed metric identifier is ignored and the configuration is returned for 
+         * {@link MetricConfigName#ALL_VALID}.
+         * 
+         * @param metric the metric
+         * @param config the project configuration
+         * @return the metric configuration or null
+         */
+
+        private static MetricConfig getNamedConfigOrAllValid( final MetricConstants metric, final ProjectConfig config )
+        {
+            // Deal with MetricConfigName.ALL_VALID first
+            MetricConfig allValid = ConfigHelper.getMetricConfigByName( config, MetricConfigName.ALL_VALID );
+            if ( allValid != null )
+            {
+                return allValid;
+            }
+            // Find the corresponding configuration
+            final Optional<MetricConfig> returnMe = config.getMetrics()
+                                                          .getMetric()
+                                                          .stream()
+                                                          .filter( a -> metric.name().equals( a.getName().name() ) )
+                                                          .findFirst();
+            return returnMe.isPresent() ? returnMe.get() : null;
+        }     
         
     }
     
