@@ -38,6 +38,12 @@
             <period>6</period>
             <unit>hours</unit>
         </desiredTimeScale>
+        
+        <!-- Eventually, 400 will use lead times pooling instead of desiredTimeScale "none".  So I'm doing it now in this test.-->
+        <leadTimesPoolingWindow>
+            <period>6</period>
+            <unit>hours</unit>
+        </leadTimesPoolingWindow>
     </pair>
 
     <metrics>
