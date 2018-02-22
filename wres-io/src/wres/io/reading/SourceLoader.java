@@ -198,7 +198,7 @@ public class SourceLoader
                 if ( !file.exists() )
                 {
                     files.close();
-                    throw new IllegalArgumentException( "The source path of" +
+                    throw new IllegalArgumentException( "The source path of " +
                                                         path.toAbsolutePath().toString() +
                                                         " does not exist and is therefore not a valid source.");
                 }
@@ -229,6 +229,14 @@ public class SourceLoader
                                           + directory + "':", e );
         }
 
+        //If the results are empty, then there were either no files in the specified source or pattern matched 
+        //none of the files.  
+        if (results.isEmpty())
+        {
+            throw new IllegalArgumentException( "The pattern of \"" + source.getPattern() 
+                                                + "\" does not yield any files within the provided source path and is therefore not a valid source.");
+        }
+        
         ProgressMonitor.completeStep();
 
         return Collections.unmodifiableList( results );
