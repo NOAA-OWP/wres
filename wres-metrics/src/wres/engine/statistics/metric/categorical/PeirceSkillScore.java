@@ -5,6 +5,7 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.pairs.MulticategoryPairs;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MatrixOutput;
+import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricParameterException;
 
@@ -39,8 +40,9 @@ public class PeirceSkillScore<S extends MulticategoryPairs> extends ContingencyT
         //Dichotomous predictand
         if ( v.rows() == 2 )
         {
-            return getDataFactory().ofDoubleScoreOutput( ( cm[0][0] / ( cm[0][0] + cm[1][0] ) )
-                                                   - ( cm[0][1] / ( cm[0][1] + cm[1][1] ) ), getMetadata( output ) );
+            double result = FunctionFactory.finiteOrNaN().applyAsDouble( ( cm[0][0] / ( cm[0][0] + cm[1][0] ) )
+                                                                         - ( cm[0][1] / ( cm[0][1] + cm[1][1] ) ) );
+            return getDataFactory().ofDoubleScoreOutput( result, getMetadata( output ) );
         }
 
         //Multicategory predictand
@@ -74,7 +76,8 @@ public class PeirceSkillScore<S extends MulticategoryPairs> extends ContingencyT
         }
         //Compose the result
         final double nSquared = n * n;
-        final double result = ( ( diag / n ) - ( sumProd / nSquared ) ) / ( 1.0 - ( uniProd / nSquared ) );
+        final double result = FunctionFactory.finiteOrNaN().applyAsDouble( ( ( diag / n ) - ( sumProd / nSquared ) )
+                                                                           / ( 1.0 - ( uniProd / nSquared ) ) );
         return getDataFactory().ofDoubleScoreOutput( result, getMetadata( output ) );
     }
 

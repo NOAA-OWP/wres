@@ -202,12 +202,9 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
 
         boolean hasFutureOutputs()
         {
-            boolean scoresEmpty = doubleScore.isEmpty() && durationScore.isEmpty();
-            return ! ( scoresEmpty
-                       && multiVector.isEmpty()
-                       && boxplot.isEmpty()
-                       && paired.isEmpty()
-                       && matrix.isEmpty() );
+            boolean first = doubleScore.isEmpty() && durationScore.isEmpty() && multiVector.isEmpty();
+            boolean second = boxplot.isEmpty() && paired.isEmpty() && matrix.isEmpty();
+            return ! ( first && second );
         }
 
         /**
@@ -503,48 +500,33 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
     }
 
     /**
-     * Handles failures at individual thresholds due to insufficient data. Some failures are allowed, and are logged
-     * as warnings. However, if all thresholds fail, an exception is thrown, as this indicates a serious failure.
+     * Logs failures at individual thresholds due to insufficient data.
      * 
      * @param failures a map of failures and associated {@link MetricCalculationException}
      * @param thresholdCount the total number of thresholds attempted
      * @param meta the {@link Metadata} used to help focus messaging
      * @param inGroup the {@link MetricInputGroup} consumed by the metrics on which the failure occurred, used to 
      *            focus messaging
-     * @throws InsufficientDataException if all thresholds fail
      */
 
-    static void handleThresholdFailures( Map<Threshold, MetricCalculationException> failures,
+    static void logThresholdFailures( Map<Threshold, MetricCalculationException> failures,
                                          int thresholdCount,
                                          Metadata meta,
                                          MetricInputGroup inGroup )
     {
-        if ( failures.isEmpty() )
+        if ( Objects.isNull( failures ) || failures.isEmpty() )
         {
             return;
         }
-        //All failed: not allowed
-        if ( failures.size() == thresholdCount )
-        {
-            // Set the first failure as the cause
-            throw new InsufficientDataException( "Failed to compute metrics at all " + thresholdCount
-                                                 + " available thresholds at time window '"
-                                                 + meta.getTimeWindow()
-                                                 + "' as insufficient data was available.",
-                                                 failures.get( failures.keySet().iterator().next() ) );
-        }
-        else
-        {
-            // Aggregate, and report first instance
-            LOGGER.warn( "WARN: failed to compute {} of {} thresholds at time window {} for metrics that consume {} "
-                         + "inputs. "
-                         +
-                         failures.get( failures.keySet().iterator().next() ).getMessage(),
-                         failures.size(),
-                         thresholdCount,
-                         meta.getTimeWindow(),
-                         inGroup );
-        }
+        // Aggregate, and report first instance
+        LOGGER.warn( "WARN: failed to compute {} of {} thresholds at time window {} for metrics that consume {} "
+                     + "inputs. "
+                     +
+                     failures.get( failures.keySet().iterator().next() ).getMessage(),
+                     failures.size(),
+                     thresholdCount,
+                     meta.getTimeWindow(),
+                     inGroup );
     }
 
     /**
@@ -609,7 +591,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
             }
         } );
         //Handle any failures
-        handleThresholdFailures( failures, global.size(), input.getMetadata(), MetricInputGroup.SINGLE_VALUED );
+        logThresholdFailures( failures, global.size(), input.getMetadata(), MetricInputGroup.SINGLE_VALUED );
     }
 
     /**
@@ -689,7 +671,6 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
         {
             subset = dataFactory.getSlicer().filterByLeft( pairs, threshold );
         }
-        checkSlice( subset, threshold );
         SingleValuedPairs finalPairs = subset;
         return CompletableFuture.supplyAsync( () -> collection.apply( finalPairs, ignoreTheseMetricsForThisThreshold ),
                                               thresholdExecutor );

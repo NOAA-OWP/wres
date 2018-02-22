@@ -353,7 +353,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
             }
         } );
         //Handle any failures
-        handleThresholdFailures( failures, global.size(), input.getMetadata(), MetricInputGroup.DICHOTOMOUS );
+        logThresholdFailures( failures, global.size(), input.getMetadata(), MetricInputGroup.DICHOTOMOUS );
     }
 
     /**
@@ -450,43 +450,14 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                                          Set<MetricConstants> ignoreTheseMetricsForThisThreshold )
                     throws MetricInputSliceException
     {
-        //Check the data before transformation
-        checkSlice( pairs, threshold );
         //Define a mapper to convert the single-valued pairs to dichotomous pairs
         Function<PairOfDoubles, PairOfBooleans> mapper =
                 pair -> dataFactory.pairOf( threshold.test( pair.getItemOne() ),
                                             threshold.test( pair.getItemTwo() ) );
         //Slice the pairs
         DichotomousPairs transformed = dataFactory.getSlicer().transformPairs( pairs, mapper );
-        //Check the data after transformation
-        checkDichotomousSlice( transformed, threshold );
         return CompletableFuture.supplyAsync( () -> collection.apply( transformed, ignoreTheseMetricsForThisThreshold ),
                                               thresholdExecutor );
-    }
-
-    /**
-     * Validates the {@link DichotomousPairs} and throws an exception if the smaller of the number of 
-     * occurrences or non-occurrences is less than the {@link #minimumSampleSize}.
-     * 
-     * @param subset the data to validate
-     * @param threshold the threshold used to localize the error message
-     * @throws MetricInputSliceException if the input contains insufficient data for metric calculation 
-     */
-
-    private void checkDichotomousSlice( DichotomousPairs subset, Threshold threshold )
-            throws MetricInputSliceException
-    {
-        long occurrences = subset.getData().stream().filter( a -> a.getBooleans()[0] ).count();
-        double min = Math.min( occurrences, subset.getData().size() - occurrences );
-        if ( min < minimumSampleSize )
-        {
-            throw new MetricInputSliceException( "Failed to compute one or more metrics for threshold '"
-                                                 + threshold
-                                                 + "', as the (smaller of the) number of observed occurrences and "
-                                                 + "non-occurrences was less than the prescribed minimum of '"
-                                                 + minimumSampleSize
-                                                 + "'." );
-        }
     }
 
 }

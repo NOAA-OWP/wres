@@ -356,7 +356,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
             }
         } );
         //Handle any failures
-        handleThresholdFailures( failures, global.size(), input.getMetadata(), MetricInputGroup.ENSEMBLE );
+        logThresholdFailures( failures, global.size(), input.getMetadata(), MetricInputGroup.ENSEMBLE );
     }
 
     /**
@@ -484,7 +484,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
             }
         } );
         //Handle any failures
-        handleThresholdFailures( failures,
+        logThresholdFailures( failures,
                                  global.size(),
                                  input.getMetadata(),
                                  MetricInputGroup.DISCRETE_PROBABILITY );
@@ -563,12 +563,8 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                                                  Set<MetricConstants> ignoreTheseMetricsForThisThreshold )
                     throws MetricInputSliceException
     {
-        //Check the slice before transformation
-        checkSlice( pairs, threshold );
         DiscreteProbabilityPairs transformed = dataFactory.getSlicer()
                                                           .transformPairs( pairs, threshold, toDiscreteProbabilities );
-        //Check the slice after transformation
-        checkDiscreteProbabilitySlice( transformed, threshold );
         return CompletableFuture.supplyAsync( () -> collection.apply( transformed, ignoreTheseMetricsForThisThreshold ),
                                               thresholdExecutor );
     }
@@ -601,36 +597,9 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         {
             subset = dataFactory.getSlicer().filterByLeft( pairs, threshold );
         }
-        checkSlice( subset, threshold );
         EnsemblePairs finalPairs = subset;
         return CompletableFuture.supplyAsync( () -> collection.apply( finalPairs, ignoreTheseMetricsForThisThreshold ),
                                               thresholdExecutor );
-    }
-
-    /**
-     * Validates the {@link DiscreteProbabilityPairs} and throws an exception if the smaller of the number of 
-     * occurrences ({@link PairOfDoubles#getItemOne()} = 0) or non-occurrences ({@link PairOfDoubles#getItemOne()} = 1) 
-     * is less than the {@link #minimumSampleSize}.
-     * 
-     * @param subset the data to validate
-     * @param threshold the threshold used to localize the error message
-     * @throws MetricInputSliceException if the input contains insufficient data for metric calculation 
-     */
-
-    private void checkDiscreteProbabilitySlice( DiscreteProbabilityPairs subset, Threshold threshold )
-            throws MetricInputSliceException
-    {
-        long nonOccurrences = subset.getData().stream().filter( a -> Double.compare( a.getItemOne(), 0 ) == 0 ).count();
-        double min = Math.min( nonOccurrences, subset.getData().size() - nonOccurrences );
-        if ( min < minimumSampleSize )
-        {
-            throw new MetricInputSliceException( "Failed to compute one or more metrics for threshold '"
-                                                 + threshold
-                                                 + "', as the (smaller of the) number of observed occurrences and "
-                                                 + "non-occurrences was less than the prescribed minimum of '"
-                                                 + minimumSampleSize
-                                                 + "'." );
-        }
     }
 
 }

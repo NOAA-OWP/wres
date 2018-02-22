@@ -3,9 +3,6 @@ package wres.engine.statistics.metric.singlevalued;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
 import org.junit.Test;
 
@@ -14,12 +11,10 @@ import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
-import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.engine.statistics.metric.singlevalued.CorrelationPearsons.CorrelationPearsonsBuilder;
@@ -101,19 +96,6 @@ public final class CorrelationPearsonsTest
             fail( "Expected an exception on null input." );
         }
         catch ( MetricInputException e )
-        {
-        }
-        try
-        {
-            List<PairOfDoubles> list = new ArrayList<>();
-            list.add( outF.pairOf( 0.0, 0.0 ) );
-            rho.apply( outF.ofSingleValuedPairs( list, metaFac.getOutputMetadata( 1,
-                                                                                  metaFac.getDimension(),
-                                                                                  metaFac.getDimension(),
-                                                                                  MetricConstants.PEARSON_CORRELATION_COEFFICIENT ) ) );
-            fail( "Expected a checked exception on invalid inputs: insufficient pairs." );
-        }
-        catch ( MetricCalculationException e )
         {
         }
     }

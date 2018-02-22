@@ -14,7 +14,6 @@ import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.datamodel.inputs.InsufficientDataException;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MetricOutputAccessException;
@@ -498,10 +497,11 @@ public final class MetricProcessorByTimeEnsemblePairsTest
 
     /**
      * Tests for exceptions associated with a {@link MetricProcessorByTimeEnsemblePairs}.
+     * @throws IOException if the test data could not be read
      */
 
     @Test
-    public void test4Exceptions()
+    public void test4Exceptions() throws IOException
     {
         final DataFactory metIn = DefaultDataFactory.getInstance();
         String testOne = "testinput/metricProcessorEnsemblePairsByTimeTest/test4ExceptionsOne.xml";
@@ -517,54 +517,8 @@ public final class MetricProcessorByTimeEnsemblePairsTest
             processor.apply( null );
             fail( "Expected a checked exception on processing the project configuration '" + testOne + "'." );
         }
-        catch ( Exception e )
+        catch ( MetricProcessorException e )
         {
-        }
-        //Check for fail on insufficient data with ensemble metrics
-        String testTwo = "testinput/metricProcessorEnsemblePairsByTimeTest/test4ExceptionsTwo.xml";
-        try
-        {
-            ProjectConfig config =
-                    ProjectConfigPlus.from( Paths.get( testTwo ) )
-                                     .getProjectConfig();
-            MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
-                    MetricFactory.getInstance( metIn )
-                                 .ofMetricProcessorByTimeEnsemblePairs( config,
-                                                                        MetricOutputGroup.SCORE );
-            processor.apply( MetricTestDataFactory.getEnsemblePairsTwo() );
-            fail( "Expected a checked exception on processing the project configuration '" + testTwo
-                  + "' with insufficient data." );
-        }
-        catch ( InsufficientDataException e )
-        {
-        }
-        catch ( Exception e )
-        {
-            fail( "Unexpected exception on processing the project configuration '" + testTwo
-                  + "' with insufficient data." );
-        }
-        //Check for fail on insufficient data with discrete probability metrics
-        String testThree = "testinput/metricProcessorEnsemblePairsByTimeTest/test4ExceptionsThree.xml";
-        try
-        {
-            ProjectConfig config =
-                    ProjectConfigPlus.from( Paths.get( testThree ) )
-                                     .getProjectConfig();
-            MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
-                    MetricFactory.getInstance( metIn )
-                                 .ofMetricProcessorByTimeEnsemblePairs( config,
-                                                                        MetricOutputGroup.SCORE );
-            processor.apply( MetricTestDataFactory.getEnsemblePairsTwo() );
-            fail( "Expected a checked exception on processing the project configuration '" + testThree
-                  + "' with insufficient data." );
-        }
-        catch ( InsufficientDataException e )
-        {
-        }
-        catch ( Exception e )
-        {
-            fail( "Unexpected exception on processing the project configuration '" + testThree
-                  + "' with insufficient data." );
         }
         //Check for fail on configuration of a dichotomous metric
         String testFour = "testinput/metricProcessorEnsemblePairsByTimeTest/test4ExceptionsFour.xml";
@@ -584,11 +538,6 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         catch ( MetricProcessorException e )
         {
         }
-        catch ( Exception e )
-        {
-            fail( "Unexpected exception on processing the project configuration '" + testFour
-                  + "' with a dichotomous metric." );
-        }
         //Check for fail on configuration of a multicategory metric
         String testFive = "testinput/metricProcessorEnsemblePairsByTimeTest/test4ExceptionsFive.xml";
         try
@@ -607,11 +556,6 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         catch ( MetricProcessorException e )
         {
         }
-        catch ( Exception e )
-        {
-            fail( "Unexpected exception on processing the project configuration '" + testFive
-                  + "' with a multicategory metric." );
-        }
         //Check for fail on configuration of a skill metric that requires a baseline, with no baseline configured
         String testSix = "testinput/metricProcessorEnsemblePairsByTimeTest/test4ExceptionsSix.xml";
         try
@@ -629,11 +573,6 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         }
         catch ( MetricProcessorException e )
         {
-        }
-        catch ( Exception e )
-        {
-            fail( "Unexpected exception on processing the project configuration '" + testSix
-                  + "' with a skill metric that requires a baseline, in the absence of a baseline." );
         }
     }
 

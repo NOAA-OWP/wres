@@ -45,7 +45,7 @@ public class VolumetricEfficiency extends DoubleErrorScore<SingleValuedPairs>
         //Compute the atomic errors in a stream
         if( vO.equals( 0.0 ) )
         {
-            return getDataFactory().ofDoubleScoreOutput( Double.POSITIVE_INFINITY, metOut );
+            return getDataFactory().ofDoubleScoreOutput( Double.NaN, metOut );
         }
         return getDataFactory().ofDoubleScoreOutput( ( vO - vP ) / vO, metOut );
     }

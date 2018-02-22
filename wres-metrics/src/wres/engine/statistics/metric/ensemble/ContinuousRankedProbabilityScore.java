@@ -15,6 +15,7 @@ import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.DecomposableScore;
+import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.ProbabilityScore;
 
@@ -55,7 +56,7 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Ensemble
         double[] crps = new double[1];
         sliced.values().forEach( pairs -> crps[0] += getSumCRPS( pairs )[0] );
         //Compute the average (implicitly weighted by the number of pairs in each group)
-        crps[0] = crps[0] / s.getData().size();
+        crps[0] = FunctionFactory.finiteOrNaN().applyAsDouble( crps[0] / s.getData().size() );
         //Metadata
         final MetricOutputMetadata metOut = getMetadata( s, s.getData().size(), MetricConstants.MAIN, null );
         return getDataFactory().ofDoubleScoreOutput( crps[0], metOut );

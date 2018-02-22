@@ -10,6 +10,7 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.DoubleBinaryOperator;
+import java.util.function.DoubleUnaryOperator;
 import java.util.function.ToDoubleFunction;
 
 import org.apache.commons.math3.stat.descriptive.rank.Median;
@@ -91,8 +92,22 @@ public class FunctionFactory
 
     public static DoubleBinaryOperator skill()
     {
-        return ( a, b ) -> 1.0 - ( a / b );
+        return ( a, b ) -> finiteOrNaN().applyAsDouble ( 1.0 - ( a / b ) );
     }
+    
+    /**
+     * <p>
+     * Return a function that produces the identity of the finite input or {@link Double#NaN} if the input is 
+     * non-finite.
+     * </p>
+     * 
+     * @return a function that computes the finite identity
+     */
+
+    public static DoubleUnaryOperator finiteOrNaN()
+    {
+        return a -> Double.isFinite( a ) ? a : Double.NaN;
+    }    
 
     /**
      * Rounds the input to the prescribed number of decimal places using {@link BigDecimal#ROUND_HALF_UP}.
