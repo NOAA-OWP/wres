@@ -26,6 +26,7 @@ import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.Feature;
+import wres.config.generated.ProjectConfig;
 import wres.config.generated.TimeScaleConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DatasetIdentifier;
@@ -248,10 +249,11 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
 
         DatasourceType dataType = this.projectDetails.getRight().getType();
 
-        Metadata metadata = this.buildMetadata(this.projectDetails.getRight());
+        Metadata metadata =
+                this.buildMetadata( this.projectDetails.getProjectConfig(), false );
         Metadata baselineMetadata = null;
 
-        if (this.primaryPairs.size() == 0)
+        if (this.primaryPairs.isEmpty())
         {
             throw new NoDataException( "No data could be retrieved for Metric calculation for window " +
                                        this.leadIteration +
@@ -263,7 +265,8 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
 
         if (this.projectDetails.hasBaseline())
         {
-            baselineMetadata = this.buildMetadata(this.projectDetails.getBaseline());
+            baselineMetadata =
+                    this.buildMetadata( this.projectDetails.getProjectConfig(), true );
         }
 
         try
@@ -620,8 +623,6 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         Connection connection = null;
         ResultSet resultSet = null;
 
-        DataFactory df = DefaultDataFactory.getInstance();
-
         // First, store the raw results
         List<Pair<Long,Double>> rawRawPersistenceValues = new ArrayList<>();
 
@@ -858,21 +859,34 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
      * Creates the metadata object containing information about the location,
      * variable, unit of measurement, lead time, and time window for the
      * eventual MetricInput object
-     * @param sourceConfig The configuration of the data source for this metadata
+     * @param projectConfig the project configuration
+     * @param isBaseline is true to build the metadata for the baseline source, false for the left and right source
      * @return A metadata object that may be used to create a MetricInput Object
      * @throws SQLException
      * @throws IOException
      */
-    private Metadata buildMetadata (DataSourceConfig sourceConfig)
+    private Metadata buildMetadata( ProjectConfig projectConfig,
+                                    boolean isBaseline )
             throws SQLException, IOException
     {
         DataFactory dataFactory = DefaultDataFactory.getInstance();
+        
+        DataSourceConfig sourceConfig;
+        if( isBaseline )
+        {
+            sourceConfig = projectConfig.getInputs().getBaseline();
+        }
+        else
+        {
+            sourceConfig = projectConfig.getInputs().getRight(); 
+        }
 
         MetadataFactory metadataFactory = dataFactory.getMetadataFactory();
         Dimension dim = metadataFactory.getDimension( this.projectDetails.getDesiredMeasurementUnit());
 
         String geospatialIdentifier = ConfigHelper.getFeatureDescription(this.feature);
-        String variableIdentifier = sourceConfig.getVariable().getValue();
+        // Get the variable identifier
+        String variableIdentifier = ConfigHelper.getVariableIdFromProjectConfig( projectConfig, isBaseline );
 
         DatasetIdentifier datasetIdentifier = metadataFactory.getDatasetIdentifier(geospatialIdentifier,
                                                                                    variableIdentifier,
@@ -952,7 +966,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
 
         List<Double> leftValues = this.getLeftValues.apply( startDate, endDate );
 
-        if (leftValues == null || leftValues.size() == 0)
+        if (leftValues == null || leftValues.isEmpty())
         {
             LOGGER.trace( "No values from the left could be retrieved to pair with the retrieved right values." );
             return null;

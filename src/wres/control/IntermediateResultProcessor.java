@@ -92,8 +92,7 @@ public class IntermediateResultProcessor implements Consumer<MetricOutputForProj
                 if ( input.hasOutput( MetricOutputGroup.MULTIVECTOR )
                      && !ignoreTheseTypes.contains( MetricOutputGroup.MULTIVECTOR ) )
                 {
-                    ProcessorHelper.processMultiVectorCharts( feature,
-                                                              projectConfigPlus,
+                    ProcessorHelper.processMultiVectorCharts( projectConfigPlus,
                                                               input.getMultiVectorOutput() );
                     meta = input.getMultiVectorOutput().entrySet().iterator().next().getValue().getMetadata();
                     // Write the CSV output
@@ -104,8 +103,7 @@ public class IntermediateResultProcessor implements Consumer<MetricOutputForProj
                 if ( input.hasOutput( MetricOutputGroup.BOXPLOT )
                      && !ignoreTheseTypes.contains( MetricOutputGroup.BOXPLOT ) )
                 {
-                    ProcessorHelper.processBoxPlotCharts( feature,
-                                                          projectConfigPlus,
+                    ProcessorHelper.processBoxPlotCharts( projectConfigPlus,
                                                           input.getBoxPlotOutput() );
                     meta = input.getBoxPlotOutput().entrySet().iterator().next().getValue().getMetadata();
                     // Write the CSV output
