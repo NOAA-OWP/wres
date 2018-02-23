@@ -66,7 +66,8 @@ class PersistenceForecastScripter extends Scripter
         // correct data for each basis time. The reason for this is rescaling.
         return "SELECT ( EXTRACT( epoch from o.observation_time ) * 1000 )::bigint AS valid_time,"
                 + NEWLINE
-                + "    o.observed_value AS observed_value" +NEWLINE
+                + "    o.observed_value AS observed_value," + NEWLINE
+                + "    o.measurementunit_id" + NEWLINE
                 + "FROM wres.observation AS o" + NEWLINE
                 + "INNER JOIN wres.projectsource AS ps" + NEWLINE
                 + "    ON ps.source_id = o.source_id" + NEWLINE
