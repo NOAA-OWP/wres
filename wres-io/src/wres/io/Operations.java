@@ -274,24 +274,28 @@ public final class Operations {
             // common case of a single file in the args.
             String project = "";
 
-            for ( String arg : arguments )
+            if (Strings.isOneOf( arguments[0].toLowerCase(), "execute", "ingest" ))
             {
-                Path path = Paths.get( arg );
-
-                if ( path.toFile()
-                         .isFile() )
+                for ( String arg : arguments )
                 {
-                    try
-                    {
-                        project = String.join( System.lineSeparator(), Files.readAllLines( path ) );
-                    }
-                    catch ( IOException e )
-                    {
-                        LOGGER.warn( "A project could not be recorded." );
-                    }
+                    Path path = Paths.get( arg );
 
-                    // Since this is an xml column, only go for first file.
-                    break;
+                    if ( path.toFile()
+                             .isFile() )
+                    {
+                        try
+                        {
+                            project = String.join( System.lineSeparator(),
+                                                   Files.readAllLines( path ) );
+                        }
+                        catch ( IOException e )
+                        {
+                            LOGGER.warn( "A project could not be recorded." );
+                        }
+
+                        // Since this is an xml column, only go for first file.
+                        break;
+                    }
                 }
             }
 
