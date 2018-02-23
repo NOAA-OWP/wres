@@ -971,7 +971,11 @@ public final class Database {
                                     + "cannot be created." );
         }
 
-        if (resultSet.getObject( fieldName ) instanceof String || resultSet.getObject( fieldName ) instanceof java.sql.Timestamp)
+        // Timestamps are interpretted as strings in order to avoid the 'help'
+		// that JDBC provides by converting timestamps to local times and
+		// applying daylight savings changes
+        if (resultSet.getObject( fieldName ) instanceof String ||
+			resultSet.getObject( fieldName ) instanceof java.sql.Timestamp)
         {
             result = Instant.parse( resultSet.getString( fieldName )
                                              .replace( " ", "T" )
@@ -990,14 +994,6 @@ public final class Database {
         {
 			Double epochSeconds = (Double)resultSet.getObject( fieldName );
 			result = Instant.ofEpochSecond( epochSeconds.longValue() );
-        }
-        else if (resultSet.getObject( fieldName ) instanceof java.sql.Timestamp)
-        {
-            // Attempting to convert directly from Timestamp to Instant will
-            // result in the wrong time zone
-			result = resultSet.getTimestamp( fieldName )
-                              .toLocalDateTime()
-                              .toInstant( ZoneOffset.UTC );
         }
         else
         {

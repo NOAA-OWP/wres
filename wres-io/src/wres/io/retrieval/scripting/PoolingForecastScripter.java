@@ -61,15 +61,6 @@ class PoolingForecastScripter extends Scripter
 
         this.addLine( "        AND F.feature_id = ", Features.getFeatureID(this.getFeature()));
         this.addTab(2).addLine("AND ", this.getProjectDetails().getLeadQualifier( this.getFeature(), this.getProgress(), "F" ));
-        /*this.addLine( "        AND F.lead > ", this.getProgress() );
-        this.add( "        AND F.lead <= ");
-        this.addLine(
-                this.getProgress() +
-                TimeHelper.unitsToLeadUnits(
-                        this.getProjectDetails().getLeadUnit(),
-                        this.getProjectDetails().getLeadPeriod()
-                )
-        );*/
 
         this.add( "        AND F.basis_time >= ('", this.getProjectDetails().getEarliestIssueDate(), "'::timestamp without time zone + (INTERVAL '1 HOUR' * ");
         this.add( TimeHelper.unitsToLeadUnits( getProjectDetails().getIssuePoolingWindowUnit(), frequency ) );
@@ -178,13 +169,7 @@ class PoolingForecastScripter extends Scripter
     {
         return "F.valid_time";
     }
-/*
-    @Override
-    protected int getProgress() throws IOException
-    {
-        return super.getProgress() + this.getLeadOffset();
-    }
-*/
+
     private int getLeadOffset() throws IOException
     {
         Integer offset  = null;

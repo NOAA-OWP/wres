@@ -283,7 +283,6 @@ public final class Operations {
                          .isFile() )
                 {
                     project = String.join( System.lineSeparator(), Files.readAllLines( path ) );
-                    //project = Operations.getFileContents( path );
 
                     // Since this is an xml column, only go for first file.
                     break;
@@ -329,32 +328,6 @@ public final class Operations {
         {
             LOGGER.warn("The system configuration could not be loaded. Execution information was not logged to the database.", e);
         }
-    }
-
-    /**
-     * Return the contents of a file as a String
-     * @param path a path that has already been verified as being a file
-     * @return the contents of the file at path
-     */
-    private static String getFileContents( Path path )
-    {
-        StringJoiner contentJoiner = new StringJoiner( System.lineSeparator() );
-
-        try
-        {
-            for ( String line : Files.readAllLines( path ) )
-            {
-                contentJoiner.add( line );
-            }
-        }
-        catch ( IOException ioe )
-        {
-            LOGGER.warn( "While attempting to read path {} while logging executions",
-                         path,
-                         ioe );
-        }
-
-        return contentJoiner.toString();
     }
 
     /**
