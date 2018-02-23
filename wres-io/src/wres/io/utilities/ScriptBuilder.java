@@ -67,8 +67,9 @@ public class ScriptBuilder
 
     /**
      * Adds the specified number of tabs greater than 0 to the script
-     * <br/>
-     * One tab is equivalent to four whitespace characters.
+     *  <p>
+     *      One tab is equivalent to four whitespace characters
+     *  </p>
      * @param numberOfTabs The number of tabs to add to the script. If the
      *                     number is less than one, no tabs will be added.
      * @return The updated ScriptBuilder
@@ -85,8 +86,9 @@ public class ScriptBuilder
 
     /**
      * Adds a single tab to the script
-     * <br/>
-     * One tab is equivalent to four whitespace characters
+     *  <p>
+     *      One tab is equivalent to four whitespace characters
+     *  </p>
      * @return The updated ScriptBuilder
      */
     public ScriptBuilder addTab()
