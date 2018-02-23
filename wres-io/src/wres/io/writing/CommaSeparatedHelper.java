@@ -1,12 +1,10 @@
 package wres.io.writing;
 
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.text.Format;
 import java.time.Duration;
@@ -28,7 +26,6 @@ import java.util.stream.IntStream;
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.config.ProjectConfigException;
-import wres.config.generated.DestinationConfig;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
@@ -60,16 +57,6 @@ public class CommaSeparatedHelper
      */
 
     static final String HEADER_DELIMITER = " ";
-
-
-    /**
-     * Default exception message when a destination cannot be established.
-     */
-
-    static final String OUTPUT_CLAUSE_BOILERPLATE = "Please include valid numeric output clause(s) in"
-                                                    + " the project configuration. Example: <destination>"
-                                                    + "<path>c:/Users/myname/wres_output/</path>"
-                                                    + "</destination>";
 
     /**
      * Earliest possible time window to index the header.
@@ -461,31 +448,17 @@ public class CommaSeparatedHelper
     }    
     
     /**
-     * Writes the raw tabular output to file. Uses the supplied metadata for file naming.
+     * Writes the raw tabular output to file.
      * 
-     * @param destinationConfig the destination configuration
      * @param rows the tabular data to write
-     * @param nameElements the elements to use when naming the file
+     * @param path the path to which the file should be written
      * @throws IOException if the output cannot be written
      */
 
-    static void writeTabularOutputToFile( DestinationConfig destinationConfig,
-                                                  List<RowCompareByLeft> rows,
-                                                  List<String> nameElements )
+    static void writeTabularOutputToFile( List<RowCompareByLeft> rows,
+                                          Path outputPath )
             throws IOException
-    {              
-        File outputDirectory = null;
-        try 
-        {
-            outputDirectory = ConfigHelper.getDirectoryFromDestinationConfig( destinationConfig );
-        }
-        catch ( final ProjectConfigException pce )
-        {
-            throw new IOException( OUTPUT_CLAUSE_BOILERPLATE, pce );
-        }
-        StringJoiner joinElements = new StringJoiner("_");
-        nameElements.forEach( joinElements::add );
-        Path outputPath = Paths.get( outputDirectory.toString(),joinElements.toString()+".csv" );
+    {
         // Sort the rows before writing them
         Collections.sort( rows );
         
@@ -527,7 +500,7 @@ public class CommaSeparatedHelper
         }
         catch ( final ProjectConfigException pce )
         {
-            throw new IOException( OUTPUT_CLAUSE_BOILERPLATE, pce );
+            throw new IOException( ConfigHelper.OUTPUT_CLAUSE_BOILERPLATE, pce );
         }
     }
 
