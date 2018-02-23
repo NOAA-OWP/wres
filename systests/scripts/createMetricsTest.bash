@@ -44,6 +44,7 @@ do
 			(Rscript ../../rsrc/CheckMetrics.R sorted_pairs.csv "$ename" $value > temp1.txt) 2>> $errorFile
 			head -6 temp1.txt > header.txt
 			sed -n "7,$"p temp1.txt | gawk '{print($1 "          "  $3)}' > metricsValues.txt
+			#rm -v temp1.txt
 		fi
 
 		# compare the output of metrics values versus the *.csv file 
