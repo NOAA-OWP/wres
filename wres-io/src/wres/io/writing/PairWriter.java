@@ -106,9 +106,6 @@ public class PairWriter extends WRESCallable<Boolean>
                 Files.deleteIfExists( Paths.get( actualFileDestination) );
             }
 
-//            try ( FileWriter fileWriter = new FileWriter( actualFileDestination,
-//                                                         true );
-//                  BufferedWriter writer = new BufferedWriter( fileWriter ) )
             try
             {
                 BufferedWriter writer = obtainWriter( actualFileDestination );
@@ -228,7 +225,6 @@ public class PairWriter extends WRESCallable<Boolean>
         // compensate for the number of intermediate windows
         if ( this.projectDetails.getPoolingMode() == TimeWindowMode.ROLLING )
         {
-            //window /= this.projectDetails.getLeadFrequency();
             window *= (this.projectDetails.getIssuePoolCount( this.feature ));
             window += this.poolingStep;
         }
