@@ -109,7 +109,7 @@ public class Main {
             Operations.logExecution( args,
                                      startTime,
                                      duration,
-                                     null );
+                                     Main.combineExceptions() );
         }
         catch ( Exception e )
         {

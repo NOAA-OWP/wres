@@ -992,6 +992,9 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     /**
      * @param dataSourceConfig The data source that might need to be scaled
      * @return Whether or not to scale this data source
+     * @throws IOException Thrown if there was either not enough data available
+     * to determine the scale or the sets of data were of fundamentally
+     * incompatible scales.
      */
     public boolean shouldScale(DataSourceConfig dataSourceConfig)
             throws IOException
