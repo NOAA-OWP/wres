@@ -31,7 +31,6 @@ import wres.config.generated.DestinationType;
 import wres.config.generated.DurationUnit;
 import wres.config.generated.EnsembleCondition;
 import wres.config.generated.Feature;
-import wres.config.generated.MetricConfig;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.PoolingWindowConfig;
@@ -575,7 +574,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     /**
      * @return The name of the left variable
      */
-    public String getLeftVariableName()
+    private String getLeftVariableName()
     {
         return this.getLeft().getVariable().getValue();
     }
@@ -583,7 +582,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     /**
      * @return The unit that the left variable is measured in
      */
-    public String getLeftVariableUnit()
+    private String getLeftVariableUnit()
     {
         return this.getLeft().getVariable().getUnit();
     }
@@ -615,7 +614,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     /**
      * @return The unit that the right variable is measured in
      */
-    public String getRightVariableUnit()
+    private String getRightVariableUnit()
     {
         return this.getRight().getVariable().getUnit();
     }
@@ -639,7 +638,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     /**
      * @return The name of the baseline variable
      */
-    public String getBaselineVariableName()
+    private String getBaselineVariableName()
     {
         String name = null;
         if (this.hasBaseline())
@@ -652,7 +651,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     /**
      * @return The unit that the baseline variable is measured in
      */
-    public String getBaselineVariableUnit()
+    private String getBaselineVariableUnit()
     {
         String unit = null;
         if (this.hasBaseline())
@@ -988,6 +987,52 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return this.getScale() != null &&
                !TimeScaleFunction.NONE
                        .value().equalsIgnoreCase(this.getScale().getFunction().value());
+    }
+
+    /**
+     * @param dataSourceConfig The data source that might need to be scaled
+     * @return Whether or not to scale this data source
+     */
+    public boolean shouldScale(DataSourceConfig dataSourceConfig)
+            throws IOException
+    {
+        boolean scale;
+
+        try
+        {
+            TimeScaleConfig desiredScale = this.getScale();
+
+            long dataSourcesScale;
+
+            if (dataSourceConfig == this.getLeft())
+            {
+                dataSourcesScale = this.getLeftScale();
+            }
+            else if (dataSourceConfig == this.getRight())
+            {
+                dataSourcesScale = this.getRightScale();
+            }
+            else
+            {
+                dataSourcesScale = this.getBaselineScale();
+            }
+
+            if ( dataSourcesScale == desiredScale.getPeriod() )
+            {
+                scale = false;
+            }
+            else
+            {
+                scale = this.shouldScale();
+            }
+        }
+        catch (NoDataException | SQLException e)
+        {
+            throw new IOException( "The scales for either the project or the "
+                                   + "data source could not be determined.", e );
+        }
+
+        return scale;
     }
 
     /**
@@ -1558,125 +1603,102 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
                                                      this.getScale().getPeriod());
 
         String script = ScriptGenerator.formVariablePositionLoadScript( this, true );
+        ScriptBuilder part = new ScriptBuilder(  );
 
-        String beginning = "";
+        part.addLine("SELECT TS.offset");
+        part.addLine("FROM (");
+        part.addTab().add("SELECT TS.initialization_date + INTERVAL '1 HOUR' * (FV.lead + ", width, ")");
 
-        beginning += "SELECT (FV.lead - " + width + ")::integer AS offset" + NEWLINE;
-        beginning += "FROM (" + NEWLINE;
-        beginning += "    SELECT TS.timeseries_id, TS.initialization_date" + NEWLINE;
-        beginning += "    FROM wres.TimeSeries TS" + NEWLINE;
-        beginning += "    WHERE TS.variableposition_id = ";
+        if (this.getRight().getTimeShift() != null)
+        {
+            part.add(" + '", this.getRight().getTimeShift().getWidth(), " ", this.getRight().getTimeShift().getUnit().value(), "'");
+        }
 
-        String middle = "";
+        part.addLine(" AS valid_time,");
+        part.addTab(  2  ).addLine("FV.lead - ", width, " AS offset");
+        part.addTab().addLine("FROM wres.TimeSeries TS");
+        part.addTab().addLine("INNER JOIN wres.ForecastValue FV");
+        part.addTab(  2  ).addLine("ON FV.timeseries_id = TS.timeseries_id");
+        part.addTab().add("WHERE TS.variableposition_id = ");
+
+        String beginning = part.toString();
+
+        part = new ScriptBuilder(  );
+
+        if (width > 1 || this.getMinimumLeadHour() != Integer.MIN_VALUE)
+        {
+            part.addTab( 2 ).addLine( "AND FV.lead >= ", Math.max( width, this.getMinimumLeadHour() ) );
+        }
+
+        if (this.getMaximumLeadHour() != Integer.MAX_VALUE)
+        {
+            part.addTab(  2  ).addLine( "AND FV.lead <= ", this.getMaximumLeadHour());
+        }
 
         if (Strings.hasValue( this.getEarliestIssueDate() ))
         {
-            middle += "        AND TS.initialization_date >= '" + this.getEarliestIssueDate() + "'" + NEWLINE;
+            part.addTab(  2  ).addLine("AND TS.initialization_date >= '", this.getEarliestIssueDate() + "'");
         }
 
         if (Strings.hasValue( this.getLatestIssueDate() ))
         {
-            middle += "        AND TS.initialization_date <= '" + this.getLatestIssueDate() + "'" + NEWLINE;
+            part.addTab(  2  ).addLine("AND TS.initialization_date <= '", this.getLatestIssueDate(), "'");
         }
 
-        middle += "        AND EXISTS (" + NEWLINE;
-        middle += "            SELECT 1" + NEWLINE;
-        middle += "            FROM wres.ProjectSource PS" + NEWLINE;
-        middle += "            INNER JOIN wres.ForecastSource FS" + NEWLINE;
-        middle += "                ON FS.source_id = PS.source_id" + NEWLINE;
-        middle += "            WHERE PS.project_id = " + this.getId() + NEWLINE;
-        middle += "                AND PS.member = 'right'" + NEWLINE;
-        middle += "                AND FS.forecast_id = TS.timeseries_id" + NEWLINE;
-        middle += "        )" + NEWLINE;
-        middle += "    ) AS TS" + NEWLINE;
-        middle += "INNER JOIN wres.ForecastValue FV" + NEWLINE;
-        middle += "    ON FV.timeseries_id = TS.timeseries_id" + NEWLINE;
-        middle += "WHERE " + NEWLINE;
+        part.addTab(  2  ).addLine("AND EXISTS (");
+        part.addTab(   3   ).addLine("SELECT 1");
+        part.addTab(   3   ).addLine("FROM wres.ProjectSource PS");
+        part.addTab(   3   ).addLine("INNER JOIN wres.ForecastSource FS");
+        part.addTab(    4    ).addLine("ON FS.source_id = PS.source_id");
+        part.addTab(   3   ).addLine("WHERE PS.project_id = ", this.getId());
+        part.addTab(    4    ).addLine("AND PS.member = 'right'");
+        part.addTab(    4    ).addLine("AND FS.forecast_id = TS.timeseries_id");
+        part.addTab(  2  ).addLine(")");
 
-        boolean clauseAdded = false;
 
-        if (width > 1)
+        part.addLine(") AS TS");
+        part.addLine("WHERE EXISTS (");
+        part.addTab().addLine("SELECT 1");
+        part.addTab().addLine("FROM (");
+        part.addTab(  2  ).addLine("SELECT source_id");
+        part.addTab(  2  ).addLine("FROM wres.ProjectSource PS");
+        part.addTab(  2  ).addLine("WHERE PS.project_id = ", this.getId());
+        part.addTab(   3   ).addLine("AND PS.member = 'left'");
+        part.addLine(") AS PS");
+        part.addLine("INNER JOIN (");
+        part.addTab(  2  ).add("SELECT source_id, observation_time");
+
+        if (this.getLeft().getTimeShift() != null)
         {
-            middle += "FV.lead - " + width + " >= 0" + NEWLINE;
-            clauseAdded = true;
+            part.add(" + '", this.getLeft().getTimeShift().getWidth(), " ", this.getLeft().getTimeShift().getUnit().value(), "'");
         }
 
-        if ( this.getMinimumLeadHour() != Integer.MIN_VALUE)
-        {
-            if (clauseAdded)
-            {
-                middle += "    AND ";
-            }
+        part.addLine(" AS observation_time");
+        part.addTab(  2  ).addLine("FROM wres.Observation O");
+        part.addTab(  2  ).add("WHERE O.variableposition_id = ");
 
-            middle += "FV.lead >= " + this.getMinimumLeadHour() + NEWLINE;
-            clauseAdded = true;
-        }
+        String middle = part.toString();
 
-
-        if ( this.getMaximumLeadHour() != Integer.MAX_VALUE )
-        {
-            if (clauseAdded)
-            {
-                middle += "    AND ";
-            }
-
-            middle += "FV.lead <= " + this.getMaximumLeadHour( ) + NEWLINE;
-            clauseAdded = true;
-        }
-
-        if (clauseAdded)
-        {
-            middle += "    AND ";
-        }
-
-        middle += "EXISTS (" + NEWLINE;
-        middle += "    SELECT 1" + NEWLINE;
-        middle += "    FROM wres.ProjectSource PS" + NEWLINE;
-        middle += "    INNER JOIN wres.observation o" + NEWLINE;
-        middle += "        ON PS.source_id = O.source_id" + NEWLINE;
-        middle += "    WHERE PS.project_id = " + this.getId() + NEWLINE;
-        middle += "        AND PS.member = 'left'" + NEWLINE;
-        middle += "        AND O.variableposition_id = ";
-
-        String end = "";
+        part = new ScriptBuilder(  );
 
         if (Strings.hasValue( this.getEarliestDate() ))
         {
-            end += "        AND O.observation_time >= '" + this.getEarliestDate() + "'" + NEWLINE;
+            part.addTab(   3   ).addLine("AND O.observation_time >= '", this.getEarliestDate(), "'");
         }
 
         if (Strings.hasValue( this.getLatestDate() ))
         {
-            end += "        AND O.observation_time <= '" + this.getLatestDate() + "'" + NEWLINE;
+            part.addTab(   3   ).addLine("AND O.observation_time <= '", this.getLatestDate(), "'");
         }
 
-        end += "        AND O.observation_time ";
+        part.addTab().addLine(") AS O");
+        part.addTab(  2  ).addLine("ON O.source_id = PS.source_id");
+        part.addTab().addLine("WHERE O.observation_time = TS.valid_time");
+        part.addLine(")");
+        part.addLine("ORDER BY TS.offset");
+        part.addLine("LIMIT 1;");
 
-        if (this.getLeft().getTimeShift() != null)
-        {
-            end += "+ '";
-            end += this.getLeft().getTimeShift().getWidth();
-            end += " ";
-            end += this.getLeft().getTimeShift().getUnit().value();
-            end += "' ";
-        }
-
-        end += "= TS.initialization_date + INTERVAL '1 HOUR' * (FV.lead + " + width + ")";
-
-        if (this.getRight().getTimeShift() != null)
-        {
-            end += " + '";
-            end += this.getRight().getTimeShift().getWidth();
-            end += " ";
-            end += this.getRight().getTimeShift().getUnit().value();
-            end += "'";
-        }
-
-        end += NEWLINE;
-
-        end += "    )" + NEWLINE;
-        end += "ORDER BY FV.lead" + NEWLINE;
-        end += "LIMIT 1;";
+        String end = part.toString();
 
         Connection connection = null;
         ResultSet resultSet = null;
@@ -1691,11 +1713,12 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
 
             while (resultSet.next())
             {
-                script = beginning +
-                         Database.getValue( resultSet, "forecast_position" ) +
-                         middle +
-                         Database.getValue(resultSet, "observation_position") +
-                         end;
+                ScriptBuilder finalScript = new ScriptBuilder( );
+                finalScript.add(beginning);
+                finalScript.addLine((Integer)Database.getValue( resultSet, "forecast_position" ));
+                finalScript.add(middle);
+                finalScript.addLine((Integer)Database.getValue( resultSet, "observation_position" ));
+                finalScript.addLine(end);
 
                 FeatureDetails.FeatureKey key = new FeatureDetails.FeatureKey(
                         Database.getValue(resultSet, "comid"),
@@ -1704,12 +1727,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
                         Database.getValue(resultSet,"huc" )
                 );
 
-                futureOffsets.put(
-                        key,
-                        Database.submit(
-                                new ValueRetriever<>(  script, "offset" )
-                        )
-                );
+                futureOffsets.put(key, finalScript.submit( "offset" ));
 
                 LOGGER.trace( "A task has been created to find the offset for {}.", key );
             }
@@ -1886,7 +1904,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         }
     }
 
-    public String getProjectName()
+    private String getProjectName()
     {
         return this.projectConfig.getName();
     }
@@ -1913,7 +1931,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
      * @throws SQLException Thrown if an error was encountered while retrieving
      * scale information from the database
      */
-    public long getLeftScale() throws NoDataException, SQLException
+    private long getLeftScale() throws NoDataException, SQLException
     {
         if (this.leftScale == -1)
         {
@@ -2131,7 +2149,8 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     }
 
     @Override
-    public void setID(Integer id) {
+    protected void setID(Integer id)
+    {
         this.projectID = id;
     }
 
@@ -2380,7 +2399,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         {
             hasProbabilityThreshold = wres.util.Collections.exists(
                     this.projectConfig.getMetrics().getMetric(),
-                    ( MetricConfig config) -> config.getProbabilityThresholds() != null
+                    config -> config.getProbabilityThresholds() != null
             );
         }
 

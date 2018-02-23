@@ -4,6 +4,7 @@ import java.sql.SQLException;
 import java.util.HashMap;
 
 import wres.io.utilities.Database;
+import wres.io.utilities.ScriptBuilder;
 
 /**
  * Defines details about a forecasted time series
@@ -246,16 +247,13 @@ public final class TimeSeries
 
                 name = "partitions.ForecastValue_Lead_" + partitionNumberWord;
 
-                StringBuilder script = new StringBuilder();
-                script.append("CREATE TABLE IF NOT EXISTS ").append(name).append(NEWLINE);
-                script.append("(").append(NEWLINE);
-                script.append("		CHECK ( ")
-                      .append(highCheck)
-                      .append(" AND ")
-                      .append(lowCheck)
-                      .append(" )")
-                      .append(NEWLINE);
-                script.append(") INHERITS (wres.ForecastValue);");
+                ScriptBuilder script = new ScriptBuilder();
+                script.addLine("CREATE TABLE IF NOT EXISTS ", name);
+                script.addLine("(");
+                script.addTab().addLine("CHECK ( ", highCheck, " AND ", lowCheck, " )");
+                script.addLine(") INHERITS (wres.ForecastValue);");
+                script.addLine("ALTER TABLE ", name, " ALTER COLUMN lead SET STATISTICS 2000;");
+                script.addLine("ALTER TABLE ", name, " ALTER COLUMN timeseries_id SET STATISTICS 2000;");
 
                 synchronized (PARTITION_LOCK)
                 {

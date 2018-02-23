@@ -37,18 +37,7 @@ class BackToBackForecastScripter extends Scripter
         this.addLine( "INNER JOIN wres.ForecastValue FV");
         this.addLine( "    ON FV.timeseries_id = TS.timeseries_id" );
 
-        this.addLine( "INNER JOIN wres.ForecastSource AS FS" );
-        this.addLine( "    ON FS.forecast_id = TS.timeseries_id" );
-        this.addLine( "INNER JOIN wres.ProjectSource AS PS" );
-        this.addLine( "    ON PS.source_id = FS.source_id" );
-
-        // TODO: move wres.Source.lead to wres.ForecastSource to avoid the extremely expensive join to wres.Source
-        // Source is needed due to NWM having the lead information
-        this.addLine( "INNER JOIN wres.Source as S" );
-        this.addLine( "    ON S.source_id = PS.source_id" );
-        // S.lead IS NULL when using "a forecast came from a file", whereas
-        // S.lead = FV.lead when using "a forecast came from several files"
-        this.addLine( "        AND ( S.lead IS NULL OR S.lead = FV.lead )" );
+        this.applySourceConstraint();
 
         this.applyVariablePositionClause();
         this.applyLeadQualifier();
@@ -181,6 +170,22 @@ class BackToBackForecastScripter extends Scripter
     {
         this.addLine( "    AND PS.project_id = ", this.getProjectDetails().getId() );
         this.addLine( "    AND PS.member = ", this.getMember());
+    }
+
+    private void applySourceConstraint()
+    {
+        this.addLine( "INNER JOIN wres.ForecastSource AS FS" );
+        this.addLine( "    ON FS.forecast_id = TS.timeseries_id" );
+        this.addLine( "INNER JOIN wres.ProjectSource AS PS" );
+        this.addLine( "    ON PS.source_id = FS.source_id" );
+
+        if (ConfigHelper.usesNetCDFData( this.getProjectDetails().getProjectConfig() ))
+        {
+            this.addLine( "INNER JOIN wres.Source S");
+            this.addTab().addLine("ON S.source_id = PS.source_id");
+            this.addTab( 2 )
+                .addLine( "AND (S.lead IS NULL OR S.lead = FV.lead)" );
+        }
     }
 
     private void applyGrouping()

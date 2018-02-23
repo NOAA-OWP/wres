@@ -9,7 +9,6 @@ import org.slf4j.LoggerFactory;
 
 import wres.io.data.details.SourceDetails.SourceKey;
 import wres.io.utilities.Database;
-import wres.util.TimeHelper;
 
 /**
  * Details about a source of observation or forecast data

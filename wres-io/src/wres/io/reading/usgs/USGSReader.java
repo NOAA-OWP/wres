@@ -27,7 +27,6 @@ import org.slf4j.LoggerFactory;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DurationUnit;
 import wres.config.generated.ProjectConfig;
-import wres.io.Operations;
 import wres.io.concurrency.StatementRunner;
 import wres.io.config.ConfigHelper;
 import wres.io.config.SystemSettings;

@@ -414,7 +414,7 @@ public final class Collections
             aggregatedValue = operation.evaluate(
                     values.stream()
                           .mapToDouble(
-                                  (Double value) -> {
+                                  value -> {
                                       if (value == null)
                                           return Double.NaN;
                                       else

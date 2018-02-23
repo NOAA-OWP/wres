@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -121,7 +122,7 @@ public class Control implements Function<String[], Integer>
         {
 
             LOGGER.error( "Could not complete project execution:", e );
-
+            Control.addException( e );
             return -1;
         }
         // Shutdown
@@ -173,6 +174,7 @@ public class Control implements Function<String[], Integer>
             catch(final IOException ioe)
             {
                 LOGGER.error("Could not read project configuration: ", ioe);
+                Control.addException( ioe );
             }
         }
         return projectConfiggies;
@@ -198,6 +200,7 @@ public class Control implements Function<String[], Integer>
         }
         catch ( InterruptedException ie )
         {
+            Control.addException( ie );
             Thread.currentThread().interrupt();
         }
     }
@@ -248,6 +251,38 @@ public class Control implements Function<String[], Integer>
                          MAX_THREADS_PROP_NAME );
 
             MAX_THREADS = 3;
+        }
+    }
+
+    private static final Object EXCEPTION_LOCK = new Object();
+    private static List<Exception> encounteredExceptions;
+
+    private static void addException(Exception recentException)
+    {
+        synchronized ( EXCEPTION_LOCK )
+        {
+            if (Control.encounteredExceptions == null)
+            {
+                Control.encounteredExceptions = new ArrayList<>(  );
+            }
+
+            Control.encounteredExceptions.add(recentException);
+        }
+    }
+
+    public static List<Exception> getMostRecentException()
+    {
+        synchronized ( EXCEPTION_LOCK )
+        {
+            if (Control.encounteredExceptions == null)
+            {
+                Control.encounteredExceptions = new ArrayList<>(  );
+            }
+
+            Control.encounteredExceptions.addAll( WresProcessingException.getOccurrences() );
+            Control.encounteredExceptions.addAll(ProcessorHelper.getEncounteredExceptions());
+
+            return Collections.unmodifiableList(Control.encounteredExceptions);
         }
     }
 

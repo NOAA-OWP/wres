@@ -295,14 +295,17 @@ class GriddedNWMValueSaver extends WRESRunnable
     {
         if (builder.length() > 0)
         {
-            try {
+            try
+            {
                 CopyExecutor copier = new CopyExecutor(getTableDefinition(), builder.toString(), DELIMITER);
                 copier.setOnRun(ProgressMonitor.onThreadStartHandler());
                 copier.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
 
                 this.getLogger().trace("Sending NetCDF values to the database executor to copy...");
                 this.operations.push(Database.execute(copier));
-            } catch (ExecutionException | InterruptedException | SQLException | IOException e) {
+            }
+            catch (ExecutionException | InterruptedException | SQLException | IOException e)
+            {
                 LOGGER.error(Strings.getStackTrace(e));
             }
             builder = new StringBuilder();
@@ -438,18 +441,21 @@ class GriddedNWMValueSaver extends WRESRunnable
 
             parts = augmentedName.split("\\.");
 
-            String range = Collections.find(parts, (String possibility) -> {
-                return possibility.endsWith("range") || possibility.endsWith("assim");
-            }).split("_")[0];
+            String range = Collections.find(
+                    parts,
+                    possibility -> possibility.endsWith("range") || possibility.endsWith("assim")
+            ).split("_")[0];
 
-            if (range.equalsIgnoreCase("analysis")) {
-                leadDescription = Collections.find(parts, (String possibility) -> {
-                    return possibility.startsWith("t") || possibility.endsWith("z");
-                });
-            } else {
-                leadDescription = Collections.find(parts, (String possibility) -> {
-                    return possibility.startsWith("f");
-                });
+            if (range.equalsIgnoreCase("analysis"))
+            {
+                leadDescription = Collections.find(
+                        parts,
+                        possibility -> possibility.startsWith("t") || possibility.endsWith("z")
+                );
+            }
+            else
+            {
+                leadDescription = Collections.find(parts, possibility -> possibility.startsWith( "f") );
             }
 
 

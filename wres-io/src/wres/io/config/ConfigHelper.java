@@ -45,10 +45,8 @@ import wres.config.generated.TimeWindowMode;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
 import wres.io.data.caching.Features;
-import wres.io.data.caching.Variables;
 import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.Database;
-import wres.util.Collections;
 import wres.util.Strings;
 import wres.util.TimeHelper;
 

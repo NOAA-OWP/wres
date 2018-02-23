@@ -191,7 +191,7 @@ public class SourceLoader
             
             files = Files.walk(directory);
 
-            files.forEach((Path path) -> {
+            files.forEach(path -> {
 
                 File file = path.toFile();
 

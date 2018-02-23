@@ -5,6 +5,8 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -71,7 +73,7 @@ public class Main {
             }
             else
             {
-                MainFunctions.shutdownWithAbandon( 6, TimeUnit.SECONDS );
+                MainFunctions.forceShutdown( 6, TimeUnit.SECONDS );
             }
             LOGGER.info("The function '{}' took {}", operation, watch.getFormattedDuration());
         }));
@@ -90,30 +92,36 @@ public class Main {
 
         // The following two are for logging run information to the database.
         long startTime = System.currentTimeMillis();
-        long endTime;
+        Long duration;
 
         try
         {
             exitCode.set( MainFunctions.call( operation, cutArgs ) );
+
+            if (exitCode.get() != MainFunctions.SUCCESS)
+            {
+                throw new Exception( "An operation failed. Please consult the "
+                                     + "logs for more details." );
+            }
+
+            duration = System.currentTimeMillis() - startTime;
+
+            Operations.logExecution( args,
+                                     startTime,
+                                     duration,
+                                     null );
         }
         catch ( Exception e )
         {
-            endTime = System.currentTimeMillis();
-            LOGGER.error( "Operation {} completed unsuccessfully", operation, e );
-
+            duration = System.currentTimeMillis() - startTime;
+            String message = "Operation '" + operation + "' completed unsuccessfully";
+            LOGGER.error( message, e );
             Operations.logExecution( args,
-                                     Main.sqlDateFromMillis( startTime ),
-                                     Main.sqlDateFromMillis( endTime ),
-                                     true );
+                                     startTime,
+                                     duration,
+                                     Main.combineExceptions( ) );
         }
-
-        endTime = System.currentTimeMillis();
         watch.stop();
-
-        Operations.logExecution( args,
-                                 Main.sqlDateFromMillis( startTime ),
-                                 Main.sqlDateFromMillis( endTime ),
-                                 exitCode.get() != MainFunctions.SUCCESS );
 
         System.out.println( "Log messages have been written to the file "
                             + System.getProperty("user.home")
@@ -128,15 +136,30 @@ public class Main {
         return version.toString();
     }
 
-
-    private static String sqlDateFromMillis( long millis )
+    /**
+     * Combines errors occurred throughout all highlevel processing
+     * @return
+     */
+    private static String combineExceptions()
     {
-        final String PATTERN = "YYYY-MM-dd HH:mm:ss.SSSZ";
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern( PATTERN,
-                                                                   Locale.US )
-                                                       .withZone( ZoneId.systemDefault() );
-        Instant instant = Instant.ofEpochMilli( millis );
-        return formatter.format( instant );
-    }
+        List<Exception> encounteredExceptions = MainFunctions.getEncounteredExceptions();
+        List<String> messages = new ArrayList<>();
+        String message = "";
 
+        String separator = System.lineSeparator() +
+                           "------------------------------------------------------------------------" +
+                           System.lineSeparator();
+
+        if (encounteredExceptions.size() > 0)
+        {
+            for ( Exception exception : encounteredExceptions )
+            {
+                messages.add( Strings.getStackTrace( exception ) );
+            }
+
+            message = String.join( separator, messages );
+        }
+
+        return message;
+    }
 }

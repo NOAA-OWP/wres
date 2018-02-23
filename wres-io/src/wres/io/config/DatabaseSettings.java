@@ -6,7 +6,6 @@ import org.slf4j.LoggerFactory;
 
 import wres.io.utilities.ScriptBuilder;
 import wres.util.Strings;
-import wres.util.XML;
 
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;

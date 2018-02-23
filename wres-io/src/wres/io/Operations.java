@@ -1,12 +1,13 @@
 package wres.io;
 
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
+import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -37,6 +38,7 @@ import wres.io.reading.SourceLoader;
 import wres.io.reading.fews.PIXMLReader;
 import wres.io.retrieval.InputGenerator;
 import wres.io.utilities.Database;
+import wres.io.utilities.ScriptBuilder;
 import wres.io.writing.PairWriter;
 import wres.util.Strings;
 
@@ -122,17 +124,24 @@ public final class Operations {
         return result;
     }
 
+
     public static InputGenerator getInputs( ProjectDetails projectDetails,
                                             Feature feature )
     {
             return new InputGenerator( feature, projectDetails );
     }
 
+    /**
+     * Builds the database up to current specifications
+     */
     public static void install()
     {
         Database.buildInstance();
     }
 
+    /**
+     * Gracefully shuts down all IO operations
+     */
     public static void shutdown()
     {
         LOGGER.info("Shutting down the IO layer...");
@@ -142,14 +151,19 @@ public final class Operations {
         PairWriter.flushAndCloseAllWriters();
     }
 
-    public static void shutdownWithAbandon( long timeOut, TimeUnit timeUnit )
+    /**
+     * Forces the IO to shutdown all IO operations without finishing stored tasks
+     * @param timeOut The amount of time to wait while shutting down tasks
+     * @param timeUnit The unit with which to measure the shutdown
+     */
+    public static void forceShutdown( long timeOut, TimeUnit timeUnit )
     {
         LOGGER.info( "Forcefully shutting down the IO module..." );
         Database.addNewIndexes();
         List<Runnable> executorTasks =
-                Executor.shutdownWithAbandon( timeOut / 2, timeUnit );
+                Executor.forceShutdown( timeOut / 2, timeUnit );
         List<Runnable> databaseTasks =
-                Database.shutdownWithAbandon( timeOut / 2, timeUnit );
+                Database.forceShutdown( timeOut / 2, timeUnit );
 
         if ( LOGGER.isInfoEnabled() )
         {
@@ -162,10 +176,16 @@ public final class Operations {
         PairWriter.flushAndCloseAllWriters();
     }
 
+    /**
+     * Tests whether or not the WRES may access the database and logs the
+     * version of the database it may access
+     * @return Whether or not the WRES can access the database
+     */
     public static boolean testConnection()
     {
         boolean result = FAILURE;
-        try {
+        try
+        {
             final String version = Database.getResult("Select version() AS version_detail", "version_detail");
             LOGGER.info(version);
             LOGGER.info("Successfully connected to the database");
@@ -179,10 +199,15 @@ public final class Operations {
         return result;
     }
 
+    /**
+     * Removes all loaded user information from the database
+     * @return Whether or not the operation was a success
+     */
     public static boolean cleanDatabase()
     {
         boolean successfullyCleaned = FAILURE;
-        try {
+        try
+        {
             Database.clean();
             Database.refreshStatistics( true );
             successfullyCleaned = SUCCESS;
@@ -194,26 +219,45 @@ public final class Operations {
         return  successfullyCleaned;
     }
 
+    /**
+     * Updates the statistics and removes all dead rows from the database
+     * @return Whether or not the operation was a success
+     */
     public static boolean refreshDatabase()
     {
         Database.refreshStatistics(true);
         return SUCCESS;
     }
 
+    /**
+     * Logs information about the execution of the WRES into the database for
+     * aid in remote debugging
+     * @param arguments The arguments used to run the WRES
+     * @param start The time (in milliseconds) at which the WRES was executed
+     * @param duration The length of time (in milliseconds) that the WRES
+     *                 executed in
+     * @param error Any error that caused the WRES to crash
+     */
     public static void logExecution( String[] arguments,
-                                     String start,
-                                     String stop,
-                                     boolean failed )
+                                     long start,
+                                     long duration,
+                                     String error)
     {
         String address;
 
         try
         {
-            address = String.valueOf(InetAddress.getLocalHost());
+            // Determines the network address of the machine that runs the WRES
+            // Should be of the format of '192.168.122.1'
+            address = NetworkInterface.getNetworkInterfaces()
+                                      .nextElement()
+                                      .getInterfaceAddresses().get( 0 )
+                                      .getAddress()
+                                      .getHostName();
         }
-        catch (UnknownHostException e)
+        catch (SocketException e)
         {
-            LOGGER.warn( "Could not figure out host name", e );
+            LOGGER.warn( "The execution address could not be determined.", e );
             address = "Unknown";
         }
 
@@ -221,6 +265,9 @@ public final class Operations {
         {
             String systemConfiguration = SystemSettings.getRawConfiguration();
             String username = SystemSettings.getUserName();
+            Timestamp startTimestamp = new Timestamp( start );
+            String runTime = duration + " MILLISECONDS";
+            boolean failed = Strings.hasValue(error);
 
             // For any arguments that happen to be regular files, read the
             // contents of the first file into the "project" field. Maybe there
@@ -235,42 +282,52 @@ public final class Operations {
                 if ( path.toFile()
                          .isFile() )
                 {
-                    project = Operations.getFileContents( path );
+                    project = String.join( System.lineSeparator(), Files.readAllLines( path ) );
+                    //project = Operations.getFileContents( path );
 
                     // Since this is an xml column, only go for first file.
                     break;
                 }
             }
 
-            String script = "INSERT INTO ExecutionLog(" +
-                            "arguments, " +
-                            "system_settings, " +
-                            "project, " +
-                            "username, " +
-                            "address, " +
-                            "start_time, " +
-                            "run_time, " +
-                            "failed) " +
-                            "VALUES (" +
-                            "'" + String.join( " ", arguments ) +
-                            "', " +
-                            "'" + systemConfiguration + "', " +
-                            "'" + project + "', " +
-                            "'" + username + "', " +
-                            "'" + address + "', " +
-                            "'" + start + "'::timestamp, " +
-                            "'" + stop + "'::timestamp - '" + start
-                            + "'::timestamp" +
-                            ", " + failed + ");";
+            ScriptBuilder script = new ScriptBuilder(  );
 
-            Database.execute( script );
+            script.addLine("INSERT INTO ExecutionLog (");
+            script.addTab().addLine("arguments,");
+            script.addTab().addLine("system_settings,");
+            script.addTab().addLine("project,");
+            script.addTab().addLine("username,");
+            script.addTab().addLine("address,");
+            script.addTab().addLine("start_time,");
+            script.addTab().addLine("run_time,");
+            script.addTab().addLine("failed,");
+            script.addTab().addLine("error");
+            script.addLine(")");
+            script.addLine("VALUES (");
+            script.addTab().addLine("?,");
+            script.addTab().addLine("?,");
+            script.addTab().addLine("?,");
+            script.addTab().addLine("?,");
+            script.addTab().addLine("?,");
+            script.addTab().addLine("?,");
+            script.addTab().addLine("CAST(? AS INTERVAL),");
+            script.addTab().addLine("?,");
+            script.addTab().addLine("?");
+            script.addLine(");");
+
+            script.issue( String.join(" ", arguments),
+                          systemConfiguration,
+                          project,
+                          username,
+                          address,
+                          startTimestamp,
+                          runTime,
+                          failed,
+                          error );
         }
         catch (XMLStreamException | TransformerException | IOException e)
         {
             LOGGER.warn("The system configuration could not be loaded. Execution information was not logged to the database.", e);
-        }
-        catch (SQLException e) {
-            LOGGER.warn("Execution information could not be saved to the database.", e);
         }
     }
 
@@ -279,16 +336,15 @@ public final class Operations {
      * @param path a path that has already been verified as being a file
      * @return the contents of the file at path
      */
-
     private static String getFileContents( Path path )
     {
-        StringJoiner project = new StringJoiner( System.lineSeparator() );
+        StringJoiner contentJoiner = new StringJoiner( System.lineSeparator() );
 
         try
         {
             for ( String line : Files.readAllLines( path ) )
             {
-                project.add( line );
+                contentJoiner.add( line );
             }
         }
         catch ( IOException ioe )
@@ -298,9 +354,20 @@ public final class Operations {
                          ioe );
         }
 
-        return project.toString();
+        return contentJoiner.toString();
     }
 
+    /**
+     * Creates a set of {@link wres.config.generated.Feature Features} to
+     * evaluate statistics for
+     * @param projectDetails The object that holds details on what a project
+     *                       should do
+     * @return A set of {@link wres.config.generated.Feature Features}
+     * @throws SQLException Thrown if information about the features could not
+     * be retrieved from the database
+     * @throws IOException Thrown if IO operations prevented the set from being
+     * created
+     */
     public static Set<Feature> decomposeFeatures( ProjectDetails projectDetails )
 
             throws SQLException, IOException

@@ -60,7 +60,8 @@ class PoolingForecastScripter extends Scripter
         long span = TimeHelper.unitsToLeadUnits( this.getProjectDetails().getIssuePoolingWindowUnit(), this.getProjectDetails().getIssuePoolingWindowPeriod());
 
         this.addLine( "        AND F.feature_id = ", Features.getFeatureID(this.getFeature()));
-        this.addLine( "        AND F.lead > ", this.getProgress() );
+        this.addTab(2).addLine("AND ", this.getProjectDetails().getLeadQualifier( this.getFeature(), this.getProgress(), "F" ));
+        /*this.addLine( "        AND F.lead > ", this.getProgress() );
         this.add( "        AND F.lead <= ");
         this.addLine(
                 this.getProgress() +
@@ -68,7 +69,7 @@ class PoolingForecastScripter extends Scripter
                         this.getProjectDetails().getLeadUnit(),
                         this.getProjectDetails().getLeadPeriod()
                 )
-        );
+        );*/
 
         this.add( "        AND F.basis_time >= ('", this.getProjectDetails().getEarliestIssueDate(), "'::timestamp without time zone + (INTERVAL '1 HOUR' * ");
         this.add( TimeHelper.unitsToLeadUnits( getProjectDetails().getIssuePoolingWindowUnit(), frequency ) );
@@ -106,19 +107,21 @@ class PoolingForecastScripter extends Scripter
 
     private void applyGroupAndOrderBy()
     {
-        this.addLine( "GROUP BY F.valid_time, F.lead, F.measurementunit_id" );
-        this.addLine( "ORDER BY F.valid_time, F.lead;" );
+        this.addLine( "GROUP BY F.basis_time, F.valid_time, F.lead, F.measurementunit_id" );
+        this.addLine( "ORDER BY F.basis_time, F.valid_time, F.lead;" );
     }
 
     private void applyScaleMember() throws IOException
     {
-        if ( !this.getProjectDetails().shouldScale() )
+        if ( !this.getProjectDetails().shouldScale(this.getDataSourceConfig()) )
         {
             this.add("F.lead");
         }
         else
         {
-            this.add( "(F.lead - ", this.getProgress() + 1, ") % " );
+            int leadModifier = this.getProgress() + this.getLeadOffset() + 1;
+
+            this.add( "(F.lead - ", leadModifier, ") % " );
             this.add( TimeHelper.unitsToLeadUnits( this.getProjectDetails()
                                                        .getScale().getUnit().value(),
                                                    this.getProjectDetails()
@@ -175,13 +178,13 @@ class PoolingForecastScripter extends Scripter
     {
         return "F.valid_time";
     }
-
+/*
     @Override
     protected int getProgress() throws IOException
     {
         return super.getProgress() + this.getLeadOffset();
     }
-
+*/
     private int getLeadOffset() throws IOException
     {
         Integer offset  = null;

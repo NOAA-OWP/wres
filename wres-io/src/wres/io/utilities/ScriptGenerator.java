@@ -4,18 +4,13 @@
 package wres.io.utilities;
 
 import java.sql.SQLException;
-import java.util.HashSet;
-import java.util.Set;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Variables;
 import wres.io.data.details.ProjectDetails;
-import wres.util.Collections;
 import wres.util.Strings;
-import wres.util.TimeHelper;
-
 /**
  * @author Christopher Tubbs
  *
@@ -293,7 +288,7 @@ public final class ScriptGenerator
                         "TS"
                 );
 
-        script.addLine("WITH earliest_latest AS");
+        /*script.addLine("WITH earliest_latest AS");
         script.addLine("(");
         script.addLine("    SELECT GREATEST(O.min, F.min) AS earliest,");
         script.addLine("        LEAST(O.max, F.max) AS latest");
@@ -366,7 +361,16 @@ public final class ScriptGenerator
         script.addLine("CROSS JOIN earliest_latest EL");
         script.addLine("WHERE ", timeSeriesVariablePosition);
         script.addLine( "    AND TS.initialization_date >= EL.earliest" );
-        script.addLine( "    AND TS.initialization_date <= EL.latest" );
+        script.addLine( "    AND TS.initialization_date <= EL.latest" );*/
+
+        script.addLine("SELECT FLOOR(((EXTRACT( epoch FROM AGE(LEAST(MAX(initialization_date), '",
+                       projectDetails.getLatestIssueDate(), "'), '",
+                       projectDetails.getEarliestIssueDate(),
+                       "')) / 3600) / (",
+                       projectDetails.getIssuePoolingWindowPeriod() - projectDetails.getIssuePoolingWindowFrequency(),
+                       ")) - 1)::int AS window_count");
+        script.addLine("FROM wres.TimeSeries TS");
+        script.addLine("WHERE ", timeSeriesVariablePosition);
         script.addLine("    AND EXISTS (");
         script.addLine("        SELECT 1");
         script.addLine("        FROM wres.ForecastSource FS");

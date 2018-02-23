@@ -228,7 +228,7 @@ public class PairWriter extends WRESCallable<Boolean>
         // compensate for the number of intermediate windows
         if ( this.projectDetails.getPoolingMode() == TimeWindowMode.ROLLING )
         {
-            window /= this.projectDetails.getLeadFrequency();
+            //window /= this.projectDetails.getLeadFrequency();
             window *= (this.projectDetails.getIssuePoolCount( this.feature ));
             window += this.poolingStep;
         }
