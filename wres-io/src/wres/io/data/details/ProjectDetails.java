@@ -38,7 +38,6 @@ import wres.config.generated.TimeScaleConfig;
 import wres.config.generated.TimeScaleFunction;
 import wres.config.generated.TimeWindowMode;
 import wres.io.concurrency.DataSetRetriever;
-import wres.io.concurrency.ValueRetriever;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.Variables;
@@ -59,6 +58,21 @@ import wres.util.Collections;
 public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger( ProjectDetails.class );
+
+    /**
+     * Lock used to protect access to the logic used to determine the left hand scale
+     */
+    private static final Object LEFT_LEAD_LOCK = new Object();
+
+    /**
+     * Lock used to protect access to the logic used to determine the rightt hand scale
+     */
+    private static final Object RIGHT_LEAD_LOCK = new Object();
+
+    /**
+     * Lock used to protect access to the logic used to determine the baseline scale
+     */
+    private static final Object BASELINE_LEAD_LOCK = new Object();
 
     /**
      * The member identifier for left handed data in the database
@@ -999,6 +1013,12 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     public boolean shouldScale(DataSourceConfig dataSourceConfig)
             throws IOException
     {
+        // If no scaling will need to be done, skip right past this.
+        if (!this.shouldScale())
+        {
+            return false;
+        }
+
         boolean scale;
 
         try
@@ -1020,14 +1040,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
                 dataSourcesScale = this.getBaselineScale();
             }
 
-            if ( dataSourcesScale == desiredScale.getPeriod() )
-            {
-                scale = false;
-            }
-            else
-            {
-                scale = this.shouldScale();
-            }
+            scale = ( dataSourcesScale != desiredScale.getPeriod());
         }
         catch (NoDataException | SQLException e)
         {
@@ -1227,43 +1240,53 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
      */
     private boolean shouldCalculateLeads() throws SQLException
     {
-        if (this.calculateLeads == null)
+        if ( this.calculateLeads == null )
         {
             this.calculateLeads = !this.shouldDynamicallyPoolByLeads();
 
-            if (!this.calculateLeads)
+            if ( !this.calculateLeads )
             {
-                ScriptBuilder script = new ScriptBuilder(  );
+                ScriptBuilder script = new ScriptBuilder();
 
-                script.addLine("WITH unique_leads AS" );
-                script.addLine("(");
-                script.addTab().addLine("SELECT FV.lead, lag(FV.lead) OVER ( ORDER BY FV.lead)");
-                script.addTab().addLine("FROM wres.ForecastValue FV");
-                script.addTab().addLine("WHERE FV.lead > 0");
+                script.addLine( "WITH unique_leads AS" );
+                script.addLine( "(" );
+                script.addTab()
+                      .addLine(
+                              "SELECT FV.lead, lag(FV.lead) OVER ( ORDER BY FV.lead)" );
+                script.addTab().addLine( "FROM wres.ForecastValue FV" );
+                script.addTab().addLine( "WHERE FV.lead > 0" );
 
-                if (this.getMaximumLeadHour() != Integer.MAX_VALUE)
+                if ( this.getMaximumLeadHour() != Integer.MAX_VALUE )
                 {
-                    script.addTab(2).addLine("AND FV.lead <= ", this.getMaximumLeadHour());
+                    script.addTab( 2 )
+                          .addLine( "AND FV.lead <= ",
+                                    this.getMaximumLeadHour() );
                 }
 
-                script.addTab(2).addLine("AND EXISTS (");
-                script.addTab(3).addLine("SELECT 1");
-                script.addTab(3).addLine("FROM wres.ForecastSource FS");
-                script.addTab(3).addLine("INNER JOIN wres.ProjectSource PS");
-                script.addTab(4).addLine("ON PS.source_id = FS.source_id");
-                script.addTab(3).addLine("WHERE FS.forecast_id = FV.timeseries_id");
-                script.addTab(4).addLine("AND PS.project_id = ", this.getId());
-                script.addTab(4).addLine("AND PS.member = 'right'");
-                script.addTab(2).addLine(")");
-                script.addTab().addLine("GROUP BY FV.lead");
-                script.addLine(")");
-                script.addLine("SELECT MAX(row_number) = 1 AS is_regular");
-                script.addLine("FROM (");
-                script.addTab().addLine( "SELECT lead - lag, row_number() OVER (ORDER BY lead - lag)" );
-                script.addTab().addLine( "FROM unique_leads");
-                script.addTab().addLine( "WHERE lag IS NOT NULL");
-                script.addTab().addLine( "GROUP BY lead - lag");
-                script.addLine(") AS differences;");
+                script.addTab( 2 ).addLine( "AND EXISTS (" );
+                script.addTab( 3 ).addLine( "SELECT 1" );
+                script.addTab( 3 ).addLine( "FROM wres.ForecastSource FS" );
+                script.addTab( 3 )
+                      .addLine( "INNER JOIN wres.ProjectSource PS" );
+                script.addTab( 4 )
+                      .addLine( "ON PS.source_id = FS.source_id" );
+                script.addTab( 3 )
+                      .addLine( "WHERE FS.forecast_id = FV.timeseries_id" );
+                script.addTab( 4 )
+                      .addLine( "AND PS.project_id = ", this.getId() );
+                script.addTab( 4 ).addLine( "AND PS.member = 'right'" );
+                script.addTab( 2 ).addLine( ")" );
+                script.addTab().addLine( "GROUP BY FV.lead" );
+                script.addLine( ")" );
+                script.addLine( "SELECT MAX(row_number) = 1 AS is_regular" );
+                script.addLine( "FROM (" );
+                script.addTab()
+                      .addLine(
+                              "SELECT lead - lag, row_number() OVER (ORDER BY lead - lag)" );
+                script.addTab().addLine( "FROM unique_leads" );
+                script.addTab().addLine( "WHERE lag IS NOT NULL" );
+                script.addTab().addLine( "GROUP BY lead - lag" );
+                script.addLine( ") AS differences;" );
 
                 this.calculateLeads = script.retrieve( "is_regular" );
             }
@@ -1936,22 +1959,25 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
      */
     private long getLeftScale() throws NoDataException, SQLException
     {
-        if (this.leftScale == -1)
+        synchronized ( LEFT_LEAD_LOCK )
         {
-            if (this.getLeft().getExistingTimeScale() == null)
+            if ( this.leftScale == -1 )
             {
-                this.leftScale = this.getScale( this.getLeft() );
-            }
-            else
-            {
-                this.leftScale =
-                        TimeHelper.unitsToLeadUnits( this.getLeft()
-                                                         .getExistingTimeScale()
-                                                         .getUnit()
-                                                         .value(),
-                                                     this.getLeft()
-                                                         .getExistingTimeScale()
-                                                         .getPeriod() );
+                if ( this.getLeft().getExistingTimeScale() == null )
+                {
+                    this.leftScale = this.getScale( this.getLeft() );
+                }
+                else
+                {
+                    this.leftScale =
+                            TimeHelper.unitsToLeadUnits( this.getLeft()
+                                                             .getExistingTimeScale()
+                                                             .getUnit()
+                                                             .value(),
+                                                         this.getLeft()
+                                                             .getExistingTimeScale()
+                                                             .getPeriod() );
+                }
             }
         }
 
@@ -1973,19 +1999,27 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
      */
     public long getRightScale() throws NoDataException, SQLException
     {
-        if (this.rightScale == -1)
+        synchronized ( RIGHT_LEAD_LOCK )
         {
-            if (this.getRight().getExistingTimeScale() == null)
+            if ( this.rightScale == -1 )
             {
-                this.rightScale = this.getScale( this.getRight() );
-            }
-            else
-            {
-                this.rightScale =
-                        TimeHelper.unitsToLeadUnits(
-                                this.getRight().getExistingTimeScale().getUnit().value(),
-                                this.getRight().getExistingTimeScale().getPeriod()
-                        );
+                if ( this.getRight().getExistingTimeScale() == null )
+                {
+                    this.rightScale = this.getScale( this.getRight() );
+                }
+                else
+                {
+                    this.rightScale =
+                            TimeHelper.unitsToLeadUnits(
+                                    this.getRight()
+                                        .getExistingTimeScale()
+                                        .getUnit()
+                                        .value(),
+                                    this.getRight()
+                                        .getExistingTimeScale()
+                                        .getPeriod()
+                            );
+                }
             }
         }
 
@@ -2007,16 +2041,25 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
      */
     public long getBaselineScale() throws NoDataException, SQLException
     {
-        if ( this.getBaseline() != null && this.baselineScale == -1)
+        synchronized ( BASELINE_LEAD_LOCK )
         {
-            if (this.getBaseline().getExistingTimeScale() == null)
+            if ( this.getBaseline() != null && this.baselineScale == -1 )
             {
-                this.baselineScale = this.getScale( this.getBaseline() );
-            }
-            else
-            {
-                this.baselineScale = TimeHelper.unitsToLeadUnits( this.getBaseline().getExistingTimeScale().getUnit().value(),
-                                                                  this.getBaseline().getExistingTimeScale().getPeriod() );
+                if ( this.getBaseline().getExistingTimeScale() == null )
+                {
+                    this.baselineScale = this.getScale( this.getBaseline() );
+                }
+                else
+                {
+                    this.baselineScale =
+                            TimeHelper.unitsToLeadUnits( this.getBaseline()
+                                                             .getExistingTimeScale()
+                                                             .getUnit()
+                                                             .value(),
+                                                         this.getBaseline()
+                                                             .getExistingTimeScale()
+                                                             .getPeriod() );
+                }
             }
         }
 
@@ -2072,19 +2115,36 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
 
         script.addLine("WITH differences AS");
         script.addLine("(");
-        script.addLine("    SELECT lead - lag(lead) OVER (ORDER BY timeseries_id, lead) AS difference");
+        script.addLine("    SELECT lead - lag(lead) OVER (ORDER BY TS.timeseries_id, lead) AS difference");
         script.addLine("    FROM wres.ForecastValue FV");
+        script.addTab().addLine("INNER JOIN wres.TimeSeries TS");
+        script.addTab(  2  ).addLine("ON FV.timeseries_id = TS.timeseries_id");
+        script.addTab().addLine("INNER JOIN (");
+        script.addTab(  2  ).addLine("SELECT ensemble_id");
+        script.addTab(  2  ).addLine("FROM wres.Ensemble E");
+        script.addTab(  2  ).addLine("WHERE EXISTS (");
+        script.addTab(   3   ).addLine("SELECT 1");
+        script.addTab(   3   ).addLine("FROM wres.TimeSeries TS");
+        script.addTab(   3   ).addLine("INNER JOIN wres.ForecastSource FS");
+        script.addTab(    4    ).addLine("ON TS.timeseries_id = FS.forecast_id");
+        script.addTab(   3   ).addLine("INNER JOIN wres.ProjectSource PS");
+        script.addTab(    4    ).addLine("ON PS.source_id = FS.source_id");
+        script.addTab(   3   ).addLine("WHERE PS.project_id = ", this.getId());
+        script.addTab(    4    ).addLine("AND PS.member = ", this.getInputName( dataSourceConfig ));
+        script.addTab(    4    ).addLine("AND TS.ensemble_id = E.ensemble_id");
+        script.addTab(  2  ).addLine( ")" );
+        script.addTab(  2  ).addLine("LIMIT 1");
+        script.addTab().addLine(") AS e");
+        script.addTab(  2  ).addLine("ON e.ensemble_id = TS.ensemble_id");
         script.addLine("    WHERE lead > 0");
         script.addLine("        AND EXISTS (");
         script.addLine("            SELECT 1");
         script.addLine("            FROM wres.ProjectSource PS");
         script.addLine("            INNER JOIN wres.ForecastSource FS");
         script.addLine("                ON FS.source_id = PS.source_id");
-        script.addLine("            INNER JOIN wres.TimeSeries TS");
-        script.addLine("                ON TS.timeseries_id = FS.forecast_id");
         script.addLine("            WHERE PS.project_id = ", this.getId());
         script.addLine("                AND PS.member = ", this.getInputName( dataSourceConfig ));
-        script.addLine("                AND TS.timeseries_id = FV.timeseries_id");
+        script.addLine("                AND TS.timeseries_id = FS.forecast_id");
         script.addLine("        )");
         script.addLine(")");
         script.addLine("SELECT MIN(difference)::integer AS scale");
