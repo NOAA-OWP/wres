@@ -22,11 +22,13 @@ class PersistenceForecastScripter extends Scripter
 
     private final Instant zeroDate;
     private final String variablePositionClause;
+    // The Integer is the count of values expected for a basis time
     private List<Instant> instantsToGetValuesFor;
 
     PersistenceForecastScripter( ProjectDetails projectDetails,
                                  DataSourceConfig dataSourceConfig,
-                                 Feature feature )
+                                 Feature feature,
+                                 List<Instant> instantsToGetValuesFor )
             throws SQLException
     {
         super( projectDetails, dataSourceConfig, feature, DUMMY, DUMMY );
@@ -39,11 +41,7 @@ class PersistenceForecastScripter extends Scripter
                              + "Z";
         this.zeroDate = Instant.parse( isoZeroDate );
         this.variablePositionClause = super.getVariablePositionClause();
-    }
-
-    public void setInstantsToGetValueFor( List<Instant> forecastBasisTimes )
-    {
-        this.instantsToGetValuesFor = forecastBasisTimes;
+        this.instantsToGetValuesFor = instantsToGetValuesFor;
     }
 
     @Override
@@ -52,43 +50,41 @@ class PersistenceForecastScripter extends Scripter
         Objects.requireNonNull( this.instantsToGetValuesFor,
                                 "Persistence Forecast depends on a basis time." );
 
-        StringJoiner outerResult =
-                new StringJoiner( NEWLINE + "UNION" + NEWLINE,
-                                  "SELECT basis_time, persistence_time, observed_value FROM (" + NEWLINE,
-                                  NEWLINE + ") AS times");
+        // Find the latest basis time for this chunk aka MetricInput:
+        Instant latestBasisTime = this.getZeroDate();
 
-        for ( Instant basisTime : this.instantsToGetValuesFor )
+        for ( Instant basisTime : this.getInstantsToGetValuesFor() )
         {
-            String result =
-                    "(" + NEWLINE
-                    + "    SELECT "
-                    + basisTime.getEpochSecond() + " AS basis_time," + NEWLINE
-                    + "        EXTRACT( epoch from o.observation_time ) AS persistence_time,"
-                    + NEWLINE
-                    + "        o.observed_value AS observed_value" +NEWLINE
-                    + "    FROM wres.observation AS o" + NEWLINE
-                    + "    INNER JOIN wres.projectsource AS ps" + NEWLINE
-                    + "        ON ps.source_id = o.source_id" + NEWLINE
-                    + "    WHERE o.observed_value IS NOT NULL" + NEWLINE
-                    + "        AND ps.project_id = "
-                    + getProjectDetails().getId() + NEWLINE
-                    + "        AND ps.member = 'baseline'" + NEWLINE
-                    + "        AND o." + this.variablePositionClause + NEWLINE
-                    + "        AND o.observation_time >= '"
-                    + this.getZeroDate() + "'" + NEWLINE
-
-                    // The next line is intentionally exclusive to avoid picking
-                    // t0's value.
-                    + "        AND o.observation_time < '"
-                    + basisTime.toString() + "'" + NEWLINE
-                    + "    ORDER BY o.observation_time DESC" + NEWLINE
-                    + "    LIMIT 1" + NEWLINE
-                    + ")";
-
-            outerResult.add( result );
+            if ( basisTime.isAfter( latestBasisTime ) )
+            {
+                latestBasisTime = basisTime;
+            }
         }
 
-        return outerResult.toString();
+        // Get ALL the values from zerodate to latest basis time for this chunk.
+        // The caller then will have to do some work on the results to find the
+        // correct data for each basis time. The reason for this is rescaling.
+        return "SELECT ( EXTRACT( epoch from o.observation_time ) * 1000 )::bigint AS valid_time,"
+                + NEWLINE
+                + "    o.observed_value AS observed_value," + NEWLINE
+                + "    o.measurementunit_id" + NEWLINE
+                + "FROM wres.observation AS o" + NEWLINE
+                + "INNER JOIN wres.projectsource AS ps" + NEWLINE
+                + "    ON ps.source_id = o.source_id" + NEWLINE
+                + "WHERE o.observed_value IS NOT NULL" + NEWLINE
+                + "    AND ps.project_id = "
+                + getProjectDetails().getId() + NEWLINE
+                + "    AND ps.member = 'baseline'" + NEWLINE
+                + "    AND o." + this.variablePositionClause + NEWLINE
+                + "    AND o.observation_time >= '"
+                + this.getZeroDate() + "'" + NEWLINE
+
+                // The next line is intentionally inclusive to pick t0's value.
+                // InputRetriever counts on this.
+                + "    AND o.observation_time <= '"
+                + latestBasisTime.toString() + "'" + NEWLINE
+                + "ORDER BY o.observation_time DESC";
+                // Removing limit because we *can't* limit it due to scaling
     }
 
     @Override
@@ -112,10 +108,12 @@ class PersistenceForecastScripter extends Scripter
     public String toString()
     {
         StringJoiner result = new StringJoiner( ",", "PersistenceForecastScripter: ", "" );
-        for ( Instant instant : this.instantsToGetValuesFor )
-        {
-            result.add( instant.toString() );
-        }
+        result.add( this.instantsToGetValuesFor.toString() );
         return result.toString();
+    }
+
+    private List<Instant> getInstantsToGetValuesFor()
+    {
+        return this.instantsToGetValuesFor;
     }
 }

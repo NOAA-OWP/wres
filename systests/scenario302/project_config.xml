@@ -21,7 +21,6 @@
         <feature locationId="LGNN5" />
         <leadHours minimum="1" maximum="48" />
         <values minimum="0.00001"/><!-- I think this results in only positive values for both obs and fcst-->
-
         <desiredTimeScale>
             <function>sum</function>
             <period>6</period>
@@ -39,12 +38,6 @@
         </destination>
         <destination type="pairs">
             <path>output/</path>
-        </destination>
-        <destination type="graphic">
-            <path>output/</path>
-            <graphical width="800" height="600">
-                <plotType>lead threshold</plotType>
-            </graphical>
         </destination>
     </outputs>
 

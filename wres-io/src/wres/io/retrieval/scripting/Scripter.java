@@ -122,8 +122,8 @@ public abstract class Scripter extends ScriptBuilder
 
         PersistenceForecastScripter s = new PersistenceForecastScripter( projectDetails,
                                                                          dataSourceConfig,
-                                                                         feature );
-        s.setInstantsToGetValueFor( basisTimes );
+                                                                         feature,
+                                                                         basisTimes );
         return s.formScript();
     }
 

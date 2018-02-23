@@ -4,9 +4,11 @@ import static wres.config.generated.SourceTransformationType.PERSISTENCE;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URLEncoder;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
+import java.text.DecimalFormat;
 import java.time.DateTimeException;
 import java.time.Duration;
 import java.time.Instant;
@@ -16,8 +18,11 @@ import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -38,10 +43,14 @@ import wres.config.generated.Format;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
+import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.PoolingWindowConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.TimeScaleConfig;
 import wres.config.generated.TimeWindowMode;
+import wres.datamodel.MetricConstants;
+import wres.datamodel.Threshold;
+import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
 import wres.io.data.caching.Features;
@@ -56,6 +65,15 @@ public class ConfigHelper
 
     private static final ConcurrentMap<ProjectConfig, ConcurrentSkipListSet<String>> messages
             = new ConcurrentHashMap<>();
+    
+    /**
+     * Default exception message when a destination cannot be established.
+     */
+
+    public static final String OUTPUT_CLAUSE_BOILERPLATE = "Please include valid numeric output clause(s) in"
+                                                           + " the project configuration. Example: <destination>"
+                                                           + "<path>c:/Users/myname/wres_output/</path>"
+                                                           + "</destination>";
 
     private ConfigHelper()
     {
@@ -1158,4 +1176,324 @@ public class ConfigHelper
                                                              .toUpperCase() );
         return Duration.of( timeScaleConfig.getPeriod(), unit );
     }
+    
+    
+    /**
+     * Returns a {@link DecimalFormat} from the input configuration or null if no formatter is required.
+     * 
+     * @param destinationConfig the destination configuration
+     * @return a decimal formatter or null.
+     */
+
+    public static DecimalFormat getDecimalFormatter( DestinationConfig destinationConfig )
+    {
+        DecimalFormat decimalFormatter = null;
+        if ( destinationConfig.getDecimalFormat() != null
+             && !destinationConfig.getDecimalFormat().isEmpty() )
+        {
+            decimalFormatter = new DecimalFormat();
+            decimalFormatter.applyPattern( destinationConfig.getDecimalFormat() );
+        }
+        return decimalFormatter;
+    }
+    
+    /**
+     * <p>Returns an {@link OutputTypeSelection} from the input configuration or {@link OutputTypeSelection#DEFAULT} if 
+     * no selection is provided.</p> 
+     * 
+     * <p>If an override exists for a metric with the identifier {@link MetricConfigName#ALL_VALID} and this has a 
+     * designated {@link OutputTypeSelection}, the override is returned. If an override does not exist, the 
+     * {@link OutputTypeSelection} associated with the destination configuration is returned instead.</p>
+     * 
+     * @param projectConfig the project configuration to search for overrides
+     * @param destinationConfig the destination configuration
+     * @return the required output type
+     * @throws NullPointerException if any input is null
+     */
+
+    public static OutputTypeSelection getOutputTypeSelection( ProjectConfig projectConfig,
+                                                              DestinationConfig destinationConfig )
+    {
+        Objects.requireNonNull( projectConfig, "Specify non-null project configuration." );
+        
+        Objects.requireNonNull( destinationConfig, "Specify non-null destination configuration." );
+        
+        OutputTypeSelection returnMe = OutputTypeSelection.DEFAULT;
+        if ( Objects.nonNull( destinationConfig.getOutputType() ) )
+        {
+            returnMe = destinationConfig.getOutputType();
+        }
+
+        // Obtain any override configuration
+        if ( Objects.nonNull( projectConfig.getMetrics() ) )
+        {
+            Optional<MetricConfig> first = projectConfig.getMetrics()
+                                                        .getMetric()
+                                                        .stream()
+                                                        .filter( config -> config.getName() == MetricConfigName.ALL_VALID )
+                                                        .findFirst();
+            if( first.isPresent() && Objects.nonNull( first.get().getOutputType() ) )
+            {
+                returnMe = first.get().getOutputType();
+            }
+        }
+
+        return returnMe;
+    }       
+    
+    /**
+     * Returns the default {@link OutputTypeSelection} or an override if an {@link OutputTypeSelection} exists for the
+     * specified {@link MetricConstants} whose {@link MetricConstants#name()} matches a {@link MetricConfigName#name()} 
+     * in the {@link ProjectConfig} supplied.
+     * 
+     * @param projectConfig the project configuration to search for overrides
+     * @param defaultSelection the default selection
+     * @param overrideMetric the named metric to search for an override
+     * @return the default or an override
+     * @throws NullPointerException if any input is null
+     */
+
+    public static OutputTypeSelection getOutputTypeSelection( ProjectConfig projectConfig,
+                                                              OutputTypeSelection defaultSelection,
+                                                              MetricConstants overrideMetric )
+    {
+        Objects.requireNonNull( projectConfig, "Specify non-null project configuration." );
+        
+        Objects.requireNonNull( defaultSelection, "Specify a non-null default selection." );
+        
+        Objects.requireNonNull( overrideMetric, "Specify a non-null override metric." );
+        
+        OutputTypeSelection useType = defaultSelection;
+        
+        // Look for potential overrides
+        Map<MetricConfigName, MetricConfig> override = new EnumMap<>( MetricConfigName.class );
+        if( Objects.nonNull( projectConfig.getMetrics() ) )
+        {
+            projectConfig.getMetrics().getMetric().forEach( config -> override.put( config.getName(), config ) );
+        }
+        
+        // Is an override present? Find the first MetricConfigName.name() that matches MetricConstants.name()
+        Optional<MetricConfigName> match =
+                override.keySet()
+                        .stream()
+                        .filter( configName -> configName.name().equals( overrideMetric.name() ) )
+                        .findFirst();
+
+        // Set the type to an override type
+        if ( match.isPresent() && Objects.nonNull( override.get( match.get() ).getOutputType() ) )
+        {
+            useType = override.get( match.get() ).getOutputType();
+        }
+        
+        return useType;
+    }
+
+    /**
+     * <p>Returns the variable identifier from the project configuration. The identifier is one of the following in 
+     * order of precedent:</p>
+     * 
+     * <p>If the variable identifier is required for the left and right:</p>
+     * <ol>
+     * <li>The label associated with the variable in the left source.</li>
+     * <li>The label associated with the variable in the right source.</li>
+     * <li>The value associated with the left variable.</li>
+     * </ol>
+     * 
+     * <p>If the variable identifier is required for the baseline:</p>
+     * <ol>
+     * <li>The label associated with the variable in the baseline source.</li>
+     * <li>The value associated with the baseline variable.</li>
+     * </ol>
+     * 
+     * <p>In both cases, the last declaration is always present.</p>
+     * 
+     * @param projectConfig the project configuration
+     * @param isBaseline is true if the variable name is required for the baseline
+     * @return the variable identifier
+     * @throws IllegalArgumentException if the baseline variable is requested and the input does not contain 
+     *            a baseline source
+     */
+
+    public static String getVariableIdFromProjectConfig( ProjectConfig projectConfig, boolean isBaseline )
+    {
+        // Baseline required?
+        if( isBaseline )
+        {
+            // Has a baseline source
+            if ( Objects.nonNull( projectConfig.getInputs().getBaseline() ) )
+            {
+                // Has a baseline source with a label
+                if ( Objects.nonNull( projectConfig.getInputs().getBaseline().getLabel() ) ) 
+                {
+                    return projectConfig.getInputs().getBaseline().getVariable().getLabel();
+                }
+                // Only has a baseline source with a variable value
+                return projectConfig.getInputs().getBaseline().getVariable().getValue();
+            }
+            throw new IllegalArgumentException( "Cannot identify the variable for the baseline as the input project "
+                    + "does not contain a baseline source." );
+        }
+        // Has a left source with a label 
+        if ( Objects.nonNull( projectConfig.getInputs().getLeft().getVariable().getLabel() ) )
+        {
+            return projectConfig.getInputs().getLeft().getVariable().getLabel();
+        }
+        // Has a right source with a label
+        else if ( Objects.nonNull( projectConfig.getInputs().getRight().getVariable().getLabel() ) )
+        {
+            return projectConfig.getInputs().getRight().getVariable().getLabel();
+        }
+        // Has a left source with a variable value
+        return projectConfig.getInputs().getLeft().getVariable().getValue();
+    }
+
+    /**
+     * Returns a path to write from a combination of the {@link DestinationConfig} and the {@link MetricOutputMetadata}.
+     * 
+     * @param destinationConfig the destination configuration
+     * @param meta the metadata
+     * @return a path to write
+     * @throws NullPointerException if any input is null, including the identifier associated with the metadata
+     * @throws IOException if the path cannot be produced
+     */
+
+    public static Path getOutputPathToWrite( DestinationConfig destinationConfig,
+                                             MetricOutputMetadata meta )
+            throws IOException
+    {
+        return getOutputPathToWrite( destinationConfig, meta, (String) null );
+    }   
+    
+    /**
+     * Returns a path to write from a combination of the {@link DestinationConfig}, the {@link MetricOutputMetadata} 
+     * associated with the results and a {@link TimeWindow}.
+     * 
+     * @param destinationConfig the destination configuration
+     * @param meta the metadata
+     * @param timeWindow the time window
+     * @return a path to write
+     * @throws NullPointerException if any input is null, including the identifier associated with the metadata
+     * @throws IOException if the path cannot be produced
+     */
+
+    public static Path getOutputPathToWrite( DestinationConfig destinationConfig,
+                                             MetricOutputMetadata meta,
+                                             TimeWindow timeWindow )
+            throws IOException
+    {
+        Objects.requireNonNull( destinationConfig, "Enter non-null time window to establish a path for writing." );
+
+        return getOutputPathToWrite( destinationConfig, meta, timeWindow.getLatestLeadTimeInHours() + "_HOUR" );
+    }
+
+    /**
+     * Returns a path to write from a combination of the {@link DestinationConfig}, the {@link MetricOutputMetadata} 
+     * associated with the results and a {@link Threshold}.
+     * 
+     * @param destinationConfig the destination configuration
+     * @param meta the metadata
+     * @param threshold the threshold
+     * @return a path to write
+     * @throws NullPointerException if any input is null, including the identifier associated with the metadata
+     * @throws IOException if the path cannot be produced
+     */
+
+    public static Path getOutputPathToWrite( DestinationConfig destinationConfig,
+                                             MetricOutputMetadata meta,
+                                             Threshold threshold )
+            throws IOException
+    {
+        Objects.requireNonNull( meta, "Enter non-null metadata to establish a path for writing." );
+
+        Objects.requireNonNull( threshold, "Enter non-null threshold to establish a path for writing." );
+
+        String append = "";
+        // Finite threshold has a dimension
+        if( threshold.isFinite() )
+        {
+            append = "_"+meta.getInputDimension();
+        }
+        return getOutputPathToWrite( destinationConfig, meta, threshold.toStringSafe() + append );
+    }
+
+    /**
+     * Returns a path to write from a combination of the destination configuration, the input metadata and any 
+     * additional string that should be appended to the path (e.g. lead time or threshold). 
+     * 
+     * @param destinationConfig the destination configuration
+     * @param meta the metadata
+     * @param append an optional string to append to the end of the path, may be null
+     * @return a path to write
+     * @throws NullPointerException if any required input is null, including the identifier associated 
+     *            with the metadata
+     * @throws IOException if the path cannot be produced
+     */
+
+    private static Path getOutputPathToWrite( DestinationConfig destinationConfig,
+                                              MetricOutputMetadata meta,
+                                              String append )
+            throws IOException
+    {
+        Objects.requireNonNull( destinationConfig, "Enter non-null destination configuration to establish "
+                                                   + "a path for writing." );
+
+        Objects.requireNonNull( meta, "Enter non-null metadata to establish a path for writing." );
+
+        Objects.requireNonNull( meta.getIdentifier(), "Enter a non-null identifier for the metadata to establish "
+                                                      + "a path for writing." );
+
+        // Determine the directory
+        File outputDirectory = null;
+        try
+        {
+            outputDirectory = getDirectoryFromDestinationConfig( destinationConfig );
+        }
+        catch ( ProjectConfigException pce )
+        {
+            throw new IOException( ConfigHelper.OUTPUT_CLAUSE_BOILERPLATE, pce );
+        }
+
+        // Build the path 
+        StringJoiner joinElements = new StringJoiner( "_" );
+        joinElements.add( meta.getIdentifier().getGeospatialID() )
+                    .add( meta.getIdentifier().getVariableID() );
+
+        // Add optional scenario identifier
+        if ( meta.getIdentifier().hasScenarioID() )
+        {
+            joinElements.add( meta.getIdentifier().getScenarioID() );
+        }
+
+        // Add the metric name()
+        joinElements.add( meta.getMetricID().name() );
+        
+        // Add a non-default component name
+        if ( meta.hasMetricComponentID() && MetricConstants.MAIN != meta.getMetricComponentID() )
+        {
+            joinElements.add( meta.getMetricComponentID().name() );
+        }
+
+        // Add optional append
+        if ( Objects.nonNull( append ) )
+        {
+            joinElements.add( append );
+        }
+
+        // Add extension
+        String extension;
+        if ( destinationConfig.getType() == DestinationType.GRAPHIC )
+        {
+            extension = ".png";
+        }
+        else
+        {
+            extension = ".csv";
+        }
+        
+        // Derive a sanitized name
+        String safeName = URLEncoder.encode( joinElements.toString().replace( " ", "_" ) + extension, "UTF-8" );
+        
+        return Paths.get( outputDirectory.toString(), safeName );
+    }   
+    
 }

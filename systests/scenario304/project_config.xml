@@ -42,8 +42,6 @@
             <operator>greater than</operator>
         </probabilityThresholds>
         <metric> <name>mean error</name> </metric>
-        <metric> <name>brier score</name> </metric>
-        <metric> <name>reliability diagram</name> </metric>
         <metric> <name>sample size</name> </metric>
     </metrics>
     <outputs>
@@ -54,15 +52,6 @@
         <destination type="pairs" decimalFormat="0.000000">
             <path>output</path>
         </destination>
-
-
-        <destination type="graphic">
-            <path>output/</path>
-            <graphical width="800" height="600">
-                <plotType>lead threshold</plotType>
-            </graphical>
-        </destination>
     </outputs>
-
 </project>
 

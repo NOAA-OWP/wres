@@ -14,6 +14,7 @@ import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
+import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.OrdinaryScore;
 import wres.engine.statistics.metric.ProbabilityScore;
@@ -183,7 +184,9 @@ public class RelativeOperatingCharacteristicScore extends OrdinaryScore<Discrete
                 }
             }
         }
-        return 1.0 - ( ( 1.0 / ( 2.0 * byOccurrence.size() * byNonOccurrence.size() ) ) * rhs );
+        return FunctionFactory.finiteOrNaN()
+                              .applyAsDouble( 1.0 - ( ( 1.0 / ( 2.0 * byOccurrence.size() * byNonOccurrence.size() ) )
+                                                      * rhs ) );
     }
 
     /**

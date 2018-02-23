@@ -5,6 +5,8 @@ import java.time.Instant;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 
@@ -29,12 +31,13 @@ import wres.datamodel.outputs.PairedOutput;
 import wres.engine.statistics.metric.MetricCollection.MetricCollectionBuilder;
 import wres.engine.statistics.metric.SampleSize.SampleSizeBuilder;
 import wres.engine.statistics.metric.categorical.ContingencyTable;
-import wres.engine.statistics.metric.categorical.CriticalSuccessIndex;
 import wres.engine.statistics.metric.categorical.EquitableThreatScore;
 import wres.engine.statistics.metric.categorical.FrequencyBias;
 import wres.engine.statistics.metric.categorical.PeirceSkillScore;
 import wres.engine.statistics.metric.categorical.ProbabilityOfDetection;
 import wres.engine.statistics.metric.categorical.ProbabilityOfFalseDetection;
+import wres.engine.statistics.metric.categorical.ThreatScore;
+import wres.engine.statistics.metric.config.MetricConfigHelper;
 import wres.engine.statistics.metric.config.MetricConfigurationException;
 import wres.engine.statistics.metric.discreteprobability.BrierScore;
 import wres.engine.statistics.metric.discreteprobability.BrierSkillScore;
@@ -59,6 +62,7 @@ import wres.engine.statistics.metric.processing.MetricProcessorByTime;
 import wres.engine.statistics.metric.processing.MetricProcessorByTimeEnsemblePairs;
 import wres.engine.statistics.metric.processing.MetricProcessorByTimeSingleValuedPairs;
 import wres.engine.statistics.metric.processing.MetricProcessorException;
+import wres.engine.statistics.metric.processing.MetricProcessorForProject;
 import wres.engine.statistics.metric.singlevalued.BiasFraction;
 import wres.engine.statistics.metric.singlevalued.CoefficientOfDetermination;
 import wres.engine.statistics.metric.singlevalued.CorrelationPearsons;
@@ -99,10 +103,24 @@ public class MetricFactory
     private static MetricFactory instance = null;
 
     /**
-     * String used in several error messages.
+     * String used in several error messages to denote an unrecognized metric.
      */
 
-    private static final String error = "Unrecognized metric for identifier";
+    private static final String UNRECOGNIZED_METRIC_ERROR = "Unrecognized metric for identifier";
+
+    /**
+     * String used in several error messages to denote a configuration error.
+     */
+
+    private static final String CONFIGURATION_ERROR =
+            "While building the metric processor, a configuration exception occurred: ";
+
+    /**
+     * String used in several error messages to denote a parameter error.
+     */
+
+    private static final String PARAMETER_ERROR =
+            "While building the metric processor, a parameter exception occurred: ";
 
     /**
      * Instance of an {@link DataFactory} for building metric outputs.
@@ -156,8 +174,8 @@ public class MetricFactory
      * Cached {@link Metric} that consume {@link TimeSeriesOfSingleValuedPairs} and produce {@link PairedOutput}. 
      */
 
-    private Map<MetricConstants, Metric<TimeSeriesOfSingleValuedPairs, PairedOutput<Instant,Duration>>> singleValuedTimeSeries;
-    
+    private Map<MetricConstants, Metric<TimeSeriesOfSingleValuedPairs, PairedOutput<Instant, Duration>>> singleValuedTimeSeries;
+
     /**
      * Returns an instance of a {@link MetricFactory}.
      * 
@@ -173,6 +191,24 @@ public class MetricFactory
             instance = new MetricFactory( dataFactory );
         }
         return instance;
+    }
+
+    /**
+     * Returns a {@link MetricProcessorForProject} for the specified project configuration.
+     * 
+     * @param projectConfig the project configuration
+     * @param thresholdExecutor an executor service for processing thresholds
+     * @param metricExecutor an executor service for processing metrics
+     * @return a metric processor
+     * @throws MetricProcessorException if the metric processor could not be built
+     */
+
+    public MetricProcessorForProject getMetricProcessorForProject( ProjectConfig projectConfig,
+                                                                   ExecutorService thresholdExecutor,
+                                                                   ExecutorService metricExecutor )
+            throws MetricProcessorException
+    {
+        return new MetricProcessorForProject( this, projectConfig, thresholdExecutor, metricExecutor );
     }
 
     /**
@@ -226,6 +262,73 @@ public class MetricFactory
     }
 
     /**
+     * Returns an instance of a {@link MetricProcessor} for processing {@link SingleValuedPairs}. Uses the input 
+     * project configuration to determine which results should be merged and cached across successive calls to
+     * {@link MetricProcessor#apply(Object)}. If results are retained and merged across calls, the
+     * {@link MetricProcessor#apply(Object)} will return the merged results from all prior calls.
+     * 
+     * @param config the project configuration
+     * @param thresholdExecutor an optional {@link ExecutorService} for executing thresholds. Defaults to the 
+     *            {@link ForkJoinPool#commonPool()}
+     * @param metricExecutor an optional {@link ExecutorService} for executing metrics. Defaults to the 
+     *            {@link ForkJoinPool#commonPool()} 
+     * @return the {@link MetricProcessorByTime}
+     * @throws MetricProcessorException if the metric processor could not be built
+     */
+
+    public MetricProcessorByTime<SingleValuedPairs>
+            ofMetricProcessorByTimeSingleValuedPairs( final ProjectConfig config,
+                                                      final ExecutorService thresholdExecutor,
+                                                      final ExecutorService metricExecutor )
+                    throws MetricProcessorException
+    {
+        try
+        {
+            return ofMetricProcessorByTimeSingleValuedPairs( config,
+                                                             thresholdExecutor,
+                                                             metricExecutor,
+                                                             getCacheListFromProjectConfig( config ) );
+        }
+        catch ( MetricConfigurationException e )
+        {
+            throw new MetricProcessorException( CONFIGURATION_ERROR, e );
+        }
+    }
+
+    /**
+     * Returns an instance of a {@link MetricProcessor} for processing {@link EnsemblePairs}. Uses the input 
+     * project configuration to determine which results should be merged and cached across successive calls to
+     * {@link MetricProcessor#apply(Object)}. If results are retained and merged across calls, the
+     * {@link MetricProcessor#apply(Object)} will return the merged results from all prior calls.
+     * 
+     * @param config the project configuration
+     * @param thresholdExecutor an optional {@link ExecutorService} for executing thresholds. Defaults to the 
+     *            {@link ForkJoinPool#commonPool()}
+     * @param metricExecutor an optional {@link ExecutorService} for executing metrics. Defaults to the 
+     *            {@link ForkJoinPool#commonPool()} 
+     * @return the {@link MetricProcessorByTime}
+     * @throws MetricProcessorException if the metric processor could not be built
+     */
+
+    public MetricProcessorByTime<EnsemblePairs> ofMetricProcessorByTimeEnsemblePairs( final ProjectConfig config,
+                                                                                      final ExecutorService thresholdExecutor,
+                                                                                      final ExecutorService metricExecutor )
+            throws MetricProcessorException
+    {
+        try
+        {
+            return ofMetricProcessorByTimeEnsemblePairs( config,
+                                                         thresholdExecutor,
+                                                         metricExecutor,
+                                                         getCacheListFromProjectConfig( config ) );
+        }
+        catch ( MetricConfigurationException e )
+        {
+            throw new MetricProcessorException( CONFIGURATION_ERROR, e );
+        }
+    }
+
+    /**
      * Returns an instance of a {@link MetricProcessor} for processing {@link SingleValuedPairs}. Optionally, retain 
      * and merge the results associated with specific {@link MetricOutputGroup} across successive calls to
      * {@link MetricProcessor#apply(Object)}. If results are retained and merged across calls, the
@@ -258,13 +361,11 @@ public class MetricFactory
         }
         catch ( MetricConfigurationException e )
         {
-            throw new MetricProcessorException( "While building the metric processor, a configuration exception "
-                                                + "occurred: ", e );
+            throw new MetricProcessorException( CONFIGURATION_ERROR, e );
         }
         catch ( MetricParameterException e )
         {
-            throw new MetricProcessorException( "While building the metric processor, a parameter exception occurred: ",
-                                                e );
+            throw new MetricProcessorException( PARAMETER_ERROR, e );
         }
     }
 
@@ -300,13 +401,11 @@ public class MetricFactory
         }
         catch ( MetricConfigurationException e )
         {
-            throw new MetricProcessorException( "While building the metric processor, a configuration exception "
-                                                + "occurred: ", e );
+            throw new MetricProcessorException( CONFIGURATION_ERROR, e );
         }
         catch ( MetricParameterException e )
         {
-            throw new MetricProcessorException( "While building the metric processor, a parameter exception occurred: ",
-                                                e );
+            throw new MetricProcessorException( PARAMETER_ERROR, e );
         }
     }
 
@@ -401,7 +500,7 @@ public class MetricFactory
     }
 
     /**
-     * <p>Returns a {@link MetricCollection} of metrics that consume {@link MulticategoryPairs} and produce
+     * <p>Returns a {@link MetricCollection} of metrics that consume {@link DichotomousPairs} and produce
      * {@link MatrixOutput}.</p>
      * 
      * <p>Uses the {@link ForkJoinPool#commonPool()} for execution.</p>
@@ -412,10 +511,10 @@ public class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized
      */
 
-    public MetricCollection<MulticategoryPairs, MatrixOutput, MatrixOutput>
-            ofMulticategoryMatrixCollection( MetricConstants... metric ) throws MetricParameterException
+    public MetricCollection<DichotomousPairs, MatrixOutput, MatrixOutput>
+            ofDichotomousMatrixCollection( MetricConstants... metric ) throws MetricParameterException
     {
-        return ofMulticategoryMatrixCollection( ForkJoinPool.commonPool(), metric );
+        return ofDichotomousMatrixCollection( ForkJoinPool.commonPool(), metric );
     }
 
     /**
@@ -524,7 +623,7 @@ public class MetricFactory
             }
             else
             {
-                throw new IllegalArgumentException( error + " '" + metric + "'." );
+                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
             }
         }
         builder.setOutputFactory( outputFactory ).setExecutorService( executor );
@@ -581,7 +680,7 @@ public class MetricFactory
         {
             if ( !discreteProbabilityScore.containsKey( next ) )
             {
-                throw new IllegalArgumentException( error + " '" + metric + "'." );
+                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
             }
             builder.add( discreteProbabilityScore.get( next ) );
         }
@@ -613,7 +712,7 @@ public class MetricFactory
         {
             if ( !dichotomousScoreCol.containsKey( next ) )
             {
-                throw new IllegalArgumentException( error + " '" + metric + "'." );
+                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
             }
             builder.add( dichotomousScoreCol.get( next ) );
         }
@@ -645,7 +744,7 @@ public class MetricFactory
         {
             if ( !discreteProbabilityMultiVector.containsKey( next ) )
             {
-                throw new IllegalArgumentException( error + " '" + metric + "'." );
+                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
             }
             builder.add( discreteProbabilityMultiVector.get( next ) );
         }
@@ -654,7 +753,7 @@ public class MetricFactory
     }
 
     /**
-     * Returns a {@link MetricCollection} of metrics that consume {@link MulticategoryPairs} and produce
+     * Returns a {@link MetricCollection} of metrics that consume {@link DichotomousPairs} and produce
      * {@link MatrixOutput}.
      * 
      * @param executor an optional {@link ExecutorService} for executing the metrics
@@ -664,16 +763,16 @@ public class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized 
      */
 
-    public MetricCollection<MulticategoryPairs, MatrixOutput, MatrixOutput>
-            ofMulticategoryMatrixCollection( ExecutorService executor,
+    public MetricCollection<DichotomousPairs, MatrixOutput, MatrixOutput>
+            ofDichotomousMatrixCollection( ExecutorService executor,
                                              MetricConstants... metric )
                     throws MetricParameterException
     {
-        final MetricCollectionBuilder<MulticategoryPairs, MatrixOutput, MatrixOutput> builder =
+        final MetricCollectionBuilder<DichotomousPairs, MatrixOutput, MatrixOutput> builder =
                 MetricCollectionBuilder.of();
         for ( MetricConstants next : metric )
         {
-            builder.add( ofMulticategoryMatrix( next ) );
+            builder.add( ofDichotomousMatrix( next ) );
         }
         builder.setOutputFactory( outputFactory ).setExecutorService( executor );
         return builder.build();
@@ -703,7 +802,7 @@ public class MetricFactory
         {
             if ( !ensembleScore.containsKey( next ) )
             {
-                throw new IllegalArgumentException( error + " '" + metric + "'." );
+                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
             }
             builder.add( ensembleScore.get( next ) );
         }
@@ -761,7 +860,7 @@ public class MetricFactory
         {
             if ( !ensembleBoxPlot.containsKey( next ) )
             {
-                throw new IllegalArgumentException( error + " '" + metric + "'." );
+                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
             }
             builder.add( ensembleBoxPlot.get( next ) );
         }
@@ -793,10 +892,10 @@ public class MetricFactory
         }
         else
         {
-            throw new IllegalArgumentException( error + " '" + metric + "'." );
+            throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
         }
     }
-    
+
     /**
      * Returns a {@link MetricCollection} of metrics that consume {@link TimeSeriesOfSingleValuedPairs} and produce
      * {@link PairedOutput}.
@@ -821,13 +920,13 @@ public class MetricFactory
         {
             if ( !singleValuedTimeSeries.containsKey( next ) )
             {
-                throw new IllegalArgumentException( error + " '" + metric + "'." );
+                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
             }
             builder.add( singleValuedTimeSeries.get( next ) );
         }
         builder.setOutputFactory( outputFactory ).setExecutorService( executor );
         return builder.build();
-    }  
+    }
 
     /**
      * Returns a {@link Metric} that consumes {@link SingleValuedPairs} and produces {@link MultiVectorOutput}.
@@ -847,7 +946,7 @@ public class MetricFactory
         }
         else
         {
-            throw new IllegalArgumentException( error + " '" + metric + "'." );
+            throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
         }
     }
 
@@ -872,7 +971,7 @@ public class MetricFactory
         }
         else
         {
-            throw new IllegalArgumentException( error + " '" + metric + "'." );
+            throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
         }
     }
 
@@ -896,7 +995,7 @@ public class MetricFactory
         }
         else
         {
-            throw new IllegalArgumentException( error + " '" + metric + "'." );
+            throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
         }
     }
 
@@ -919,7 +1018,7 @@ public class MetricFactory
         }
         else
         {
-            throw new IllegalArgumentException( error + " '" + metric + "'." );
+            throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
         }
     }
 
@@ -943,12 +1042,12 @@ public class MetricFactory
         }
         else
         {
-            throw new IllegalArgumentException( error + " '" + metric + "'." );
+            throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
         }
     }
 
     /**
-     * Returns a {@link Metric} that consumes {@link MulticategoryPairs} and produces {@link MatrixOutput}.
+     * Returns a {@link Metric} that consumes {@link DichotomousPairs} and produces {@link MatrixOutput}.
      * 
      * @param metric the metric identifier
      * @return a metric
@@ -956,16 +1055,16 @@ public class MetricFactory
      * @throws IllegalArgumentException if the metric identifier is not recognized
      */
 
-    public Metric<MulticategoryPairs, MatrixOutput> ofMulticategoryMatrix( MetricConstants metric )
+    public Metric<DichotomousPairs, MatrixOutput> ofDichotomousMatrix( MetricConstants metric )
             throws MetricParameterException
     {
         if ( MetricConstants.CONTINGENCY_TABLE.equals( metric ) )
         {
-            return ofContingencyTable();
+            return ofDichotomousContingencyTable();
         }
         else
         {
-            throw new IllegalArgumentException( error + " '" + metric + "'." );
+            throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
         }
     }
 
@@ -989,7 +1088,7 @@ public class MetricFactory
         }
         else
         {
-            throw new IllegalArgumentException( error + " '" + metric + "'." );
+            throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
         }
     }
 
@@ -1013,7 +1112,7 @@ public class MetricFactory
         }
         else
         {
-            throw new IllegalArgumentException( error + " '" + metric + "'." );
+            throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
         }
     }
 
@@ -1035,7 +1134,7 @@ public class MetricFactory
         }
         else
         {
-            throw new IllegalArgumentException( error + " '" + metric + "'." );
+            throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
         }
     }
 
@@ -1098,10 +1197,10 @@ public class MetricFactory
      * @throws MetricParameterException if one or more parameter values is incorrect
      */
 
-    public ContingencyTable<MulticategoryPairs> ofContingencyTable() throws MetricParameterException
+    public ContingencyTable<DichotomousPairs> ofDichotomousContingencyTable() throws MetricParameterException
     {
-        return new ContingencyTable.ContingencyTableBuilder<>().setOutputFactory( outputFactory )
-                                                               .build();
+        return new ContingencyTable.ContingencyTableBuilder<DichotomousPairs>().setOutputFactory( outputFactory )
+                                                                               .build();
     }
 
     /**
@@ -1118,16 +1217,16 @@ public class MetricFactory
     }
 
     /**
-     * Return a default {@link CriticalSuccessIndex} function.
+     * Return a default {@link ThreatScore} function.
      * 
-     * @return a default {@link CriticalSuccessIndex} function
+     * @return a default {@link ThreatScore} function
      * @throws MetricParameterException if one or more parameter values is incorrect 
      */
 
-    public CriticalSuccessIndex ofCriticalSuccessIndex() throws MetricParameterException
+    public ThreatScore ofCriticalSuccessIndex() throws MetricParameterException
     {
         buildDichotomousScalarStore();
-        return (CriticalSuccessIndex) dichotomousScoreCol.get( MetricConstants.CRITICAL_SUCCESS_INDEX );
+        return (ThreatScore) dichotomousScoreCol.get( MetricConstants.THREAT_SCORE );
     }
 
     /**
@@ -1468,8 +1567,47 @@ public class MetricFactory
             throws MetricParameterException
     {
         return (TimeToPeakErrorStatistics) new TimeToPeakErrorStatisticBuilder().setStatistic( statistics )
-                                                                               .setOutputFactory( outputFactory )
-                                                                               .build();
+                                                                                .setOutputFactory( outputFactory )
+                                                                                .build();
+    }
+
+    /**
+     * Helper that interprets the input configuration and returns a list of {@link MetricOutputGroup} whose results 
+     * should be cached across successive calls to a {@link MetricProcessor}.
+     * 
+     * @param projectConfif the project configuration
+     * @return a list of output types that should be cached
+     * @throws MetricConfigurationException if the configuration is invalid
+     * @throws NullPointerException if the input is null
+     */
+
+    private MetricOutputGroup[] getCacheListFromProjectConfig( ProjectConfig projectConfig )
+            throws MetricConfigurationException
+    {
+        // Always cache ordinary scores and paired output for timing error metrics 
+        Set<MetricOutputGroup> returnMe = new TreeSet<>();
+        returnMe.add( MetricOutputGroup.DOUBLE_SCORE );
+        returnMe.add( MetricOutputGroup.PAIRED );
+        
+        // Cache other outputs as required
+        MetricOutputGroup[] options = MetricOutputGroup.values();
+        for( MetricOutputGroup next : options )
+        {
+            if ( !returnMe.contains( next )
+                 && MetricConfigHelper.hasTheseOutputsByThresholdLead( projectConfig, next ) )
+            {
+                returnMe.add( next );
+            }
+        }
+        
+        // Never cache box plot output, as it does not apply to thresholds
+        returnMe.remove( MetricOutputGroup.BOXPLOT );
+        
+        // Never cache duration score output as timing error summary statistics are computed once all data 
+        // is available
+        returnMe.remove( MetricOutputGroup.DURATION_SCORE );
+        
+        return returnMe.toArray( new MetricOutputGroup[returnMe.size()] );
     }
 
     /**
@@ -1547,9 +1685,9 @@ public class MetricFactory
         if ( Objects.isNull( dichotomousScoreCol ) )
         {
             dichotomousScoreCol = new EnumMap<>( MetricConstants.class );
-            dichotomousScoreCol.put( MetricConstants.CRITICAL_SUCCESS_INDEX,
-                                     (CriticalSuccessIndex) new CriticalSuccessIndex.CriticalSuccessIndexBuilder().setOutputFactory( outputFactory )
-                                                                                                                  .build() );
+            dichotomousScoreCol.put( MetricConstants.THREAT_SCORE,
+                                     (ThreatScore) new ThreatScore.CriticalSuccessIndexBuilder().setOutputFactory( outputFactory )
+                                                                                                .build() );
             dichotomousScoreCol.put( MetricConstants.EQUITABLE_THREAT_SCORE,
                                      (EquitableThreatScore) new EquitableThreatScore.EquitableThreatScoreBuilder().setOutputFactory( outputFactory )
                                                                                                                   .build() );
@@ -1648,7 +1786,7 @@ public class MetricFactory
                                  new BoxPlotErrorByForecastBuilder().setOutputFactory( outputFactory ).build() );
         }
     }
-    
+
     /**
      * Builds the store of metrics that consumes {@link TimeSeriesOfSingleValuedPairs} and produces 
      * {@link PairedOutput}. 

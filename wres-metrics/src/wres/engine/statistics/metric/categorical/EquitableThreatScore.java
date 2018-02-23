@@ -7,6 +7,7 @@ import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MatrixOutput;
+import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 
 /**
@@ -21,24 +22,26 @@ public class EquitableThreatScore extends ContingencyTableScore<DichotomousPairs
 {
 
     @Override
-    public DoubleScoreOutput apply(final DichotomousPairs s)
+    public DoubleScoreOutput apply( final DichotomousPairs s )
     {
-        return aggregate(getCollectionInput(s));
+        return aggregate( getCollectionInput( s ) );
     }
 
     @Override
-    public DoubleScoreOutput aggregate(final MatrixOutput output)
+    public DoubleScoreOutput aggregate( final MatrixOutput output )
     {
-        if(Objects.isNull(output))
+        if ( Objects.isNull( output ) )
         {
-            throw new MetricInputException("Specify non-null input to the '"+this+"'.");
+            throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
         }
-        is2x2ContingencyTable(output, this);
+        is2x2ContingencyTable( output, this );
         final MatrixOutput v = output;
         final double[][] cm = v.getData().getDoubles();
         final double t = cm[0][0] + cm[0][1] + cm[1][0];
-        final double hitsRandom = ((cm[0][0] + cm[1][0]) * (cm[0][0] + cm[0][1])) / (t + cm[1][1]);
-        return getDataFactory().ofDoubleScoreOutput((cm[0][0] - hitsRandom) / (t - hitsRandom), getMetadata(output));
+        final double hitsRandom = ( ( cm[0][0] + cm[1][0] ) * ( cm[0][0] + cm[0][1] ) ) / ( t + cm[1][1] );
+        double result =
+                FunctionFactory.finiteOrNaN().applyAsDouble( ( cm[0][0] - hitsRandom ) / ( t - hitsRandom ) );
+        return getDataFactory().ofDoubleScoreOutput( result, getMetadata( output ) );
     }
 
     @Override
@@ -63,7 +66,7 @@ public class EquitableThreatScore extends ContingencyTableScore<DichotomousPairs
         @Override
         public EquitableThreatScore build() throws MetricParameterException
         {
-            return new EquitableThreatScore(this);
+            return new EquitableThreatScore( this );
         }
 
     }
@@ -75,9 +78,9 @@ public class EquitableThreatScore extends ContingencyTableScore<DichotomousPairs
      * @throws MetricParameterException if one or more parameters is invalid
      */
 
-    private EquitableThreatScore(final EquitableThreatScoreBuilder builder) throws MetricParameterException
+    private EquitableThreatScore( final EquitableThreatScoreBuilder builder ) throws MetricParameterException
     {
-        super(builder);
+        super( builder );
     }
 
 }

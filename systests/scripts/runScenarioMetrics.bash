@@ -26,19 +26,27 @@ else # run all scenarios
 	scenario_dirs=$(ls -d scenario*)
 fi
 
-MetricsScriptDir=/wres_share/releases/systests
+#MetricsScriptDir=/wres_share/releases/systests
+MetricsScriptDir=../..
 
 for scenario_dir in $scenario_dirs
 do
-	if [ -d $scenario_dir/benchmarks ]
+	if [ -d $scenario_dir/output ]
 	then
-		cd $scenario_dir/benchmarks
+		cd $scenario_dir/output
+		#touch error.txt
 		pwd
 		if [ -f testMetricsResults.txt ]
 		then # remove the old results file
 			rm -v testMetricsResults.txt
 		fi
+		#$MetricsScriptDir/scripts/createMetricsTest.bash
 		$MetricsScriptDir/scripts/createMetricsTest.bash
+		rm -v temp1.txt header.txt metricsValues.txt fileValues.txt joinFiles.txt
+		#if [ ! -s error.txt ]
+		#then # remove it if is an empty file (no error occured)
+		#	rm -v error.txt
+		#fi
 		cd ../..
 	fi
 done

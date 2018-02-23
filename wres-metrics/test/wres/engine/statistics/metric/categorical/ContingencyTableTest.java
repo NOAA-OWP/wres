@@ -3,11 +3,14 @@ package wres.engine.statistics.metric.categorical;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.util.Arrays;
+
 import org.junit.Test;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.metadata.MetadataFactory;
@@ -15,7 +18,6 @@ import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MatrixOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
-import wres.engine.statistics.metric.categorical.ContingencyTable;
 import wres.engine.statistics.metric.categorical.ContingencyTable.ContingencyTableBuilder;
 
 /**
@@ -59,13 +61,13 @@ public final class ContingencyTableTest
         final ContingencyTable<DichotomousPairs> table = b.build();
         final double[][] benchmark = new double[][] { { 82.0, 38.0 }, { 23.0, 222.0 } };
         final MatrixOutput actual = table.apply( input );
-        final MatrixOutput expected = outF.ofMatrixOutput( benchmark, m1 );
-        assertTrue( "Actual: " + actual.getData().getDoubles()[0]
-                    + ". Expected: "
-                    + expected.getData().getDoubles()[0]
-                    + ".",
-                    actual.equals( expected ) );
-
+        final MatrixOutput expected = outF.ofMatrixOutput( benchmark,
+                                                           Arrays.asList( MetricDimension.TRUE_POSITIVES,
+                                                                          MetricDimension.FALSE_POSITIVES,
+                                                                          MetricDimension.FALSE_NEGATIVES,
+                                                                          MetricDimension.TRUE_NEGATIVES ),
+                                                           m1 );       
+        assertTrue( "Unexpected result for the contingency table.", actual.equals( expected ) );
         //Check the parameters
         assertTrue( table.getName().equals( MetricConstants.CONTINGENCY_TABLE.toString() ) );
     }

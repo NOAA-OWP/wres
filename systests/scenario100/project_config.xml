@@ -20,7 +20,6 @@
         <unit>CMS</unit>
         <feature locationId="LGNN5" />
         <leadHours minimum="1" maximum="48" />
-
         <desiredTimeScale>
             <function>avg</function>
             <period>24</period>
@@ -45,8 +44,8 @@
         </destination>
         <destination type="graphic">
             <path>output/</path>
+            <outputType>lead threshold</outputType>
             <graphical width="800" height="600">
-                <plotType>lead threshold</plotType>
             </graphical>
         </destination>
     </outputs>

@@ -2,6 +2,7 @@ package wres.engine.statistics.metric.processing;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -30,9 +31,7 @@ import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.Threshold;
 import wres.datamodel.Threshold.Operator;
-import wres.datamodel.inputs.InsufficientDataException;
 import wres.datamodel.inputs.MetricInput;
-import wres.datamodel.inputs.MetricInputSliceException;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.PairedInput;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
@@ -168,12 +167,6 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
     final ExecutorService thresholdExecutor;
 
     /**
-     * The minimum sample size to use when computing metrics.
-     */
-
-    final int minimumSampleSize;
-
-    /**
      * The number of decimal places to use when rounding.
      */
 
@@ -227,6 +220,19 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
     {
         return Objects.nonNull( mergeList ) && Arrays.stream( mergeList ).anyMatch( a -> a.equals( outputGroup ) );
     }
+    
+    /**
+     * Returns the (possibly empty) set of {@link MetricOutputGroup} that will be cached across successive calls to 
+     * {@link #apply(Object)}.
+     * 
+     * @return the output types that will be cached
+     */
+
+    public Set<MetricOutputGroup> getMetricOutputToCache()
+    {
+        return Objects.nonNull( mergeList ) ? Collections.unmodifiableSet( new HashSet<>( Arrays.asList( mergeList ) ) )
+                                            : Collections.emptySet();
+    }   
 
     /**
      * Returns true if metrics are available for the input {@link MetricInputGroup} and {@link MetricOutputGroup}, false
@@ -386,8 +392,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         {
             this.thresholdExecutor = ForkJoinPool.commonPool();
         }
-        //Set the minimum sample size for computing metrics
-        minimumSampleSize = 2;
+
         //Finally, validate the configuration against the parameters set
         validate( config );
     }
@@ -497,7 +502,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
     Set<Threshold> getThresholds( MetricInputGroup inGroup, MetricOutputGroup outGroup )
     {
         Set<Threshold> returnMe = new HashSet<>( thresholds.get( Pair.of( inGroup, outGroup ) ) );
-        if ( Objects.isNull( returnMe ) )
+        if ( returnMe.isEmpty() )
         {
             throw new MetricCalculationException( "Could not identify thresholds for '" + inGroup
                                                   + "' and "
@@ -560,28 +565,6 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
             }
         }
         return returnMe;
-    }
-
-    /**
-     * Validates the inputs and throws a {@link MetricInputSliceException} if the input contains fewer samples than
-     * {@link #minimumSampleSize}.
-     * 
-     * @param subset the data to validate
-     * @param threshold the threshold used to localize the error message
-     * @throws MetricInputSliceException if the input contains insufficient data for metric calculation 
-     * @throws InsufficientDataException if the input contains all missing pairs after slicing
-     */
-
-    void checkSlice( PairedInput<?> subset, Threshold threshold ) throws MetricInputSliceException
-    {
-        if ( subset.getData().size() < minimumSampleSize )
-        {
-            throw new MetricInputSliceException( "Failed to compute one or more metrics for threshold '"
-                                                 + threshold
-                                                 + "', as the sample size was less than the prescribed minimum of '"
-                                                 + minimumSampleSize
-                                                 + "'." );
-        }
     }
 
     /**

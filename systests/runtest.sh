@@ -179,8 +179,12 @@ for scenarioName in $*; do
 
     #Compare all csv files except for *pairs* files.
     echo "$echoPrefix Comparing output .csv files..."
-    for fileName in $(ls *.csv | grep -v "pairs"); do
-        diff --brief $fileName ../$benchDirName/$fileName | tee /dev/stderr
+    #for fileName in $(ls *.csv | grep -v "pairs"); do
+    for fileName in $(grep .csv dirListing.txt | grep -v "pairs"); do
+	if [ -f $fileName -a -f ../$benchDirName/$fileNmae ] # if file name also in benchmarks/
+	then
+        	diff --brief $fileName ../$benchDirName/$fileName | tee /dev/stderr
+	fi
     done
 
     #Compare files by calling the script.

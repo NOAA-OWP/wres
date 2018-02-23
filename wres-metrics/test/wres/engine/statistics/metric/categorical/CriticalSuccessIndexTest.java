@@ -15,10 +15,10 @@ import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
-import wres.engine.statistics.metric.categorical.CriticalSuccessIndex.CriticalSuccessIndexBuilder;
+import wres.engine.statistics.metric.categorical.ThreatScore.CriticalSuccessIndexBuilder;
 
 /**
- * Tests the {@link CriticalSuccessIndex}.
+ * Tests the {@link ThreatScore}.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
@@ -28,7 +28,7 @@ public final class CriticalSuccessIndexTest
 {
 
     /**
-     * Constructs a {@link CriticalSuccessIndex} and compares the actual result to the expected result. Also, checks the
+     * Constructs a {@link ThreatScore} and compares the actual result to the expected result. Also, checks the
      * parameters of the metric.
      * @throws MetricParameterException if the metric construction fails
      */
@@ -49,14 +49,14 @@ public final class CriticalSuccessIndexTest
                 metaFac.getOutputMetadata( input.getData().size(),
                                            metaFac.getDimension(),
                                            metaFac.getDimension(),
-                                           MetricConstants.CRITICAL_SUCCESS_INDEX,
+                                           MetricConstants.THREAT_SCORE,
                                            MetricConstants.MAIN,
                                            metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ) );
 
         //Build the metric
-        final CriticalSuccessIndexBuilder b = new CriticalSuccessIndex.CriticalSuccessIndexBuilder();
+        final CriticalSuccessIndexBuilder b = new ThreatScore.CriticalSuccessIndexBuilder();
         b.setOutputFactory( outF );
-        final CriticalSuccessIndex csi = b.build();
+        final ThreatScore csi = b.build();
 
         //Check the results
         final DoubleScoreOutput actual = csi.apply( input );
@@ -70,18 +70,18 @@ public final class CriticalSuccessIndexTest
 
         //Check the parameters
         assertTrue( "Unexpected name for the Critical Success Index.",
-                    csi.getName().equals( MetricConstants.CRITICAL_SUCCESS_INDEX.toString() ) );
+                    csi.getName().equals( MetricConstants.THREAT_SCORE.toString() ) );
         assertTrue( "The Critical Success Index is not decomposable.", !csi.isDecomposable() );
         assertTrue( "The Critical Success Index is not a skill score.", !csi.isSkillScore() );
         assertTrue( "The Critical Success Index cannot be decomposed.",
                     csi.getScoreOutputGroup() == ScoreOutputGroup.NONE );
-        final String expName = metF.ofContingencyTable().getName();
+        final String expName = metF.ofDichotomousContingencyTable().getName();
         final String actName = csi.getCollectionOf().toString();
         assertTrue( "The Critical Success Index should be a collection of '" + expName
                     + "', but is actually a collection of '"
                     + actName
                     + "'.",
-                    csi.getCollectionOf() == metF.ofContingencyTable().getID() );
+                    csi.getCollectionOf() == metF.ofDichotomousContingencyTable().getID() );
     }
 
 }

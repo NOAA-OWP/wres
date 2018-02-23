@@ -20,7 +20,6 @@
         <unit>CMS</unit>
         <feature locationId="LGNN5" />
         <leadHours minimum="1" maximum="48" />
-
         <desiredTimeScale>
             <function>avg</function>
             <period>24</period>
@@ -34,7 +33,8 @@
             <commaSeparatedValues>0.1,0.25,0.5,0.75,0.9,0.95</commaSeparatedValues>
             <operator>greater than or equal to</operator>
         </probabilityThresholds>
-        <metric><name>all valid</name></metric>
+        <metric><name>mean error</name></metric>
+        <metric><name>sample size</name></metric>
     </metrics>
     <outputs>
         <destination type="numeric" decimalFormat="0.000000">
@@ -42,12 +42,6 @@
         </destination>
         <destination type="pairs" decimalFormat="0.000000">
             <path>output</path>
-        </destination>
-        <destination type="graphic">
-            <path>output/</path>
-            <graphical width="800" height="600">
-                <plotType>lead threshold</plotType>
-            </graphical>
         </destination>
     </outputs>
 

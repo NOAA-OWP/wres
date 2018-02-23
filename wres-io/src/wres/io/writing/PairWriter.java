@@ -335,7 +335,7 @@ public class PairWriter extends WRESCallable<Boolean>
             }
             catch ( IOException e )
             {
-                LOGGER.warn( "Failed to flush and close pairs file, " + entry.getKey() + ".");
+                LOGGER.warn( "Failed to flush and close pairs file, " + entry.getKey() + ".", e);
             }
         }
         PATH_NAME_TO_WRITER_MAP.clear();

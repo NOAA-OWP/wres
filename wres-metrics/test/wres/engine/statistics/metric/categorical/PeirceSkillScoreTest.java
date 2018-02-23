@@ -74,13 +74,13 @@ public final class PeirceSkillScoreTest
         assertTrue( "The Peirce Skill Score is a skill score.", ps.isSkillScore() );
         assertTrue( "The Peirce Skill Score cannot be decomposed.",
                     ps.getScoreOutputGroup() == ScoreOutputGroup.NONE );
-        final String expName = metF.ofContingencyTable().getName();
+        final String expName = metF.ofDichotomousContingencyTable().getName();
         final String actName = ps.getCollectionOf().toString();
         assertTrue( "The Peirce Skill Score should be a collection of '" + expName
                     + "', but is actually a collection of '"
                     + actName
                     + "'.",
-                    ps.getCollectionOf() == metF.ofContingencyTable().getID() );
+                    ps.getCollectionOf() == metF.ofDichotomousContingencyTable().getID() );
         //Test exceptions
         try
         {

@@ -24,19 +24,19 @@ public class MeanSquareErrorSkillScore<S extends SingleValuedPairs> extends Mean
 {
 
     @Override
-    public DoubleScoreOutput apply(final S s)
+    public DoubleScoreOutput apply( final S s )
     {
-        if(Objects.isNull(s))
+        if ( Objects.isNull( s ) )
         {
-            throw new MetricInputException("Specify non-null input to the '"+this+"'.");
+            throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
         }
         //TODO: implement any required decompositions, based on the instance parameters and return the decomposition
         //template as the componentID in the metadata
-        double numerator = getSumOfSquareError(s);
+        double numerator = getSumOfSquareError( s );
         double denominator = 0.0;
-        if(s.hasBaseline())
+        if ( s.hasBaseline() )
         {
-            denominator = getSumOfSquareError(s.getBaselineData());
+            denominator = getSumOfSquareError( s.getBaselineData() );
         }
         else
         {
@@ -47,15 +47,11 @@ public class MeanSquareErrorSkillScore<S extends SingleValuedPairs> extends Mean
                 denominator += Math.pow( next.getItemOne() - meanLeft, 2 );
             }
         }
-        double result = FunctionFactory.skill().applyAsDouble(numerator, denominator);
-        //Set NaN if not finite
-        if( ! Double.isFinite( result ) )
-        {
-            result = Double.NaN;
-        }
+        
         //Metadata
         final MetricOutputMetadata metOut = getMetadata( s );
-        return getDataFactory().ofDoubleScoreOutput(result, metOut);
+        return getDataFactory().ofDoubleScoreOutput( FunctionFactory.skill().applyAsDouble( numerator, denominator ),
+                                                     metOut );
     }
 
     @Override
@@ -81,14 +77,14 @@ public class MeanSquareErrorSkillScore<S extends SingleValuedPairs> extends Mean
      */
 
     public static class MeanSquareErrorSkillScoreBuilder<S extends SingleValuedPairs>
-    extends
-        MeanSquareErrorBuilder<S>
+            extends
+            MeanSquareErrorBuilder<S>
     {
 
         @Override
         public MeanSquareErrorSkillScore<S> build() throws MetricParameterException
         {
-            return new MeanSquareErrorSkillScore<>(this);
+            return new MeanSquareErrorSkillScore<>( this );
         }
 
     }
@@ -100,9 +96,10 @@ public class MeanSquareErrorSkillScore<S extends SingleValuedPairs> extends Mean
      * @throws MetricParameterException if one or more parameters is invalid
      */
 
-    protected MeanSquareErrorSkillScore(final MeanSquareErrorSkillScoreBuilder<S> builder) throws MetricParameterException
+    protected MeanSquareErrorSkillScore( final MeanSquareErrorSkillScoreBuilder<S> builder )
+            throws MetricParameterException
     {
-        super(builder);
+        super( builder );
     }
 
 }

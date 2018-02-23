@@ -28,13 +28,6 @@
             <frequency>3</frequency>
             <unit>hours</unit>
         </desiredTimeScale>
-<!--
-        <issuedDatesPoolingWindow mode="rolling" anchor="center">
-            <period>48</period>
-            <frequency>24</frequency>
-            <unit>hours</unit>
-        </issuedDatesPoolingWindow>
--->
     </pair>
 
     <metrics>
@@ -51,12 +44,6 @@
         </destination>
         <destination type="pairs" decimalFormat="0.000000">
             <path>output</path>
-        </destination>
-        <destination type="graphic">
-            <path>output</path>
-            <graphical width="800" height="600">
-                <plotType>threshold lead</plotType>
-            </graphical>
         </destination>
     </outputs>
 

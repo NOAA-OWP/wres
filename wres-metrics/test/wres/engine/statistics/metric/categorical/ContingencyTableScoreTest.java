@@ -16,7 +16,7 @@ import wres.datamodel.outputs.MatrixOutput;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.categorical.ContingencyTableScore;
-import wres.engine.statistics.metric.categorical.CriticalSuccessIndex;
+import wres.engine.statistics.metric.categorical.ThreatScore;
 
 /**
  * Tests the {@link ContingencyTableScore}.
@@ -39,7 +39,7 @@ public final class ContingencyTableScoreTest
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
         final MetadataFactory metaFac = outputFactory.getMetadataFactory();
         final MetricFactory metricFactory = MetricFactory.getInstance( outputFactory );
-        final CriticalSuccessIndex cs = metricFactory.ofCriticalSuccessIndex();
+        final ThreatScore cs = metricFactory.ofCriticalSuccessIndex();
 
         //Metadata for the output
         final MetricOutputMetadata m1 = metaFac.getOutputMetadata( 365,
@@ -74,7 +74,7 @@ public final class ContingencyTableScoreTest
         final DataFactory outF = DefaultDataFactory.getInstance();
         final MetadataFactory metaFac = outF.getMetadataFactory();
         final MetricFactory metricFactory = MetricFactory.getInstance( outF );
-        final CriticalSuccessIndex cs = metricFactory.ofCriticalSuccessIndex();
+        final ThreatScore cs = metricFactory.ofCriticalSuccessIndex();
         final MetricOutputMetadata m1 = metaFac.getOutputMetadata( 365,
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension(),

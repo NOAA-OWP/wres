@@ -73,21 +73,25 @@ public class KlingGuptaEfficiency extends MeanSquareError<SingleValuedPairs>
 
         DataFactory dataFactory = getDataFactory();
         Slicer slicer = dataFactory.getSlicer();
-        double result;
-        //Compute the components
+        double result = Double.NaN;
+        // Compute the components
         VectorOfDoubles leftValues = dataFactory.vectorOf( slicer.getLeftSide( s ) );
         VectorOfDoubles rightValues = dataFactory.vectorOf( slicer.getRightSide( s ) );
         double rhoVal = rho.apply( s ).getData();
-        double meanPred = FunctionFactory.mean().applyAsDouble( rightValues );
-        double meanObs = FunctionFactory.mean().applyAsDouble( leftValues );
-        double sdPred = FunctionFactory.standardDeviation().applyAsDouble( rightValues );
-        double sdObs = FunctionFactory.standardDeviation().applyAsDouble( leftValues );
-        double gamma = ( sdPred / meanPred ) / ( sdObs / meanObs );
-        double beta = meanPred / meanObs;
-        double left = Math.pow( rhoWeight * ( rhoVal - 1.0 ), 2 );
-        double middle = Math.pow( varWeight * ( gamma - 1.0 ), 2 );
-        double right = Math.pow( biasWeight * ( beta - 1.0 ), 2 );
-        result = 1.0 - Math.sqrt( left + middle + right );
+        // Check for finite correlation
+        if ( Double.isFinite( rhoVal ) )
+        {
+            double meanPred = FunctionFactory.mean().applyAsDouble( rightValues );
+            double meanObs = FunctionFactory.mean().applyAsDouble( leftValues );
+            double sdPred = FunctionFactory.standardDeviation().applyAsDouble( rightValues );
+            double sdObs = FunctionFactory.standardDeviation().applyAsDouble( leftValues );
+            double gamma = ( sdPred / meanPred ) / ( sdObs / meanObs );
+            double beta = meanPred / meanObs;
+            double left = Math.pow( rhoWeight * ( rhoVal - 1.0 ), 2 );
+            double middle = Math.pow( varWeight * ( gamma - 1.0 ), 2 );
+            double right = Math.pow( biasWeight * ( beta - 1.0 ), 2 );
+            result = FunctionFactory.finiteOrNaN().applyAsDouble( 1.0 - Math.sqrt( left + middle + right ) );
+        }
         //Metadata
         final MetricOutputMetadata metOut = getMetadata( s );
         return dataFactory.ofDoubleScoreOutput( result, metOut );

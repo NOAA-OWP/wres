@@ -77,7 +77,7 @@ public enum MetricConstants
      * Identifier for a Contingency Table.
      */
 
-    CONTINGENCY_TABLE( MetricInputGroup.MULTICATEGORY, MetricOutputGroup.MATRIX ),
+    CONTINGENCY_TABLE( MetricInputGroup.DICHOTOMOUS, MetricInputGroup.MULTICATEGORY, MetricOutputGroup.MATRIX ),
 
     /**
      * Identifier for Pearson's product-moment correlation coefficient.
@@ -86,10 +86,10 @@ public enum MetricConstants
     PEARSON_CORRELATION_COEFFICIENT( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCORE ),
 
     /**
-     * Identifier for a Critical Success Index.
+     * Identifier for a Threat Score.
      */
 
-    CRITICAL_SUCCESS_INDEX( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCORE ),
+    THREAT_SCORE( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCORE ),
 
     /**
      * Identifier for an Equitable Threat Score.
@@ -722,29 +722,32 @@ public enum MetricConstants
     }
     
     /**
-     * A dimension associated with a verification metric.
+     * A dimension associated with a verification metric. The natural order of an enum type is dictated by the order 
+     * of declaration. The general rule for diagram outputs is to specify the domain axis first and the range axis 
+     * second, i.e. the declaration order should reflect the desired order of the outputs for storage in a map, for 
+     * example.
      */    
     
     public enum MetricDimension
     {
-
-        /**
-         * Identifier for a sample size.
-         */
-        
-        SAMPLE_SIZE,
-        
-        /**
-         * Identifier for probability of detection.
-         */
-        
-        PROBABILITY_OF_DETECTION,
         
         /**
          * Identifier for probability of false detection.
          */
         
         PROBABILITY_OF_FALSE_DETECTION,
+        
+        /**
+         * Identifier for probability of detection.
+         */
+        
+        PROBABILITY_OF_DETECTION,
+
+        /**
+         * Identifier for a rank ordering.
+         */
+
+        RANK_ORDER,        
         
         /**
          * Identifier for a forecast probability.
@@ -759,22 +762,16 @@ public enum MetricConstants
         OBSERVED_RELATIVE_FREQUENCY,
 
         /**
-         * Identifier for a rank ordering.
+         * Identifier for observed quantiles.
          */
 
-        RANK_ORDER,
-
+        OBSERVED_QUANTILES,   
+        
         /**
          * Identifier for predicted quantiles.
          */
 
-        PREDICTED_QUANTILES,
-
-        /**
-         * Identifier for observed quantiles.
-         */
-
-        OBSERVED_QUANTILES,    
+        PREDICTED_QUANTILES, 
         
         /**
          * Identifier for forecast error.
@@ -804,8 +801,38 @@ public enum MetricConstants
          * Identifier for ensemble median. 
          */
         
-        ENSEMBLE_MEDIAN;   
-                
+        ENSEMBLE_MEDIAN,
+        
+        /**
+         * Identifier for a sample size.
+         */
+        
+        SAMPLE_SIZE,
+        
+        /**
+         * Identifier for true positives.
+         */
+         
+        TRUE_POSITIVES,
+        
+        /**
+         * Identifier for false positives.
+         */
+        
+        FALSE_POSITIVES,
+        
+        /**
+         * Identifier for false negatives.
+         */
+        
+        FALSE_NEGATIVES,
+        
+        /**
+         * Identifier for true negatives.
+         */
+        
+        TRUE_NEGATIVES;
+        
         /**
          * Returns a string representation.
          * 

@@ -141,7 +141,7 @@ public class MetricCollectionTest
         final Double expectedThird = 0.14615384615384616;
         final Double expectedFourth = 0.6347985347985348;
         final Double expectedFifth = 0.43768152544513195;
-        final Double actualFirst = c.get( MetricConstants.CRITICAL_SUCCESS_INDEX ).getData();
+        final Double actualFirst = c.get( MetricConstants.THREAT_SCORE ).getData();
         final Double actualSecond = c.get( MetricConstants.PROBABILITY_OF_DETECTION ).getData();
         final Double actualThird = c.get( MetricConstants.PROBABILITY_OF_FALSE_DETECTION ).getData();
         final Double actualFourth = c.get( MetricConstants.PEIRCE_SKILL_SCORE ).getData();

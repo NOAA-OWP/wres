@@ -211,7 +211,7 @@
             <xs:enumeration value="pearson correlation coefficient" />
             <xs:enumeration value="continuous ranked probability score" />
             <xs:enumeration value="continuous ranked probability skill score" />
-            <xs:enumeration value="critical success index" />
+            <xs:enumeration value="threat score" />
             <xs:enumeration value="equitable threat score" />
             <xs:enumeration value="frequency bias" />
             <xs:enumeration value="index of agreement" />
@@ -276,7 +276,7 @@
 
         <xs:sequence>
             <xs:element name="name" type="metricConfigName" />
-            <xs:element name="plotType" type="plotTypeSelection" minOccurs="0" />
+            <xs:element name="outputType" type="outputTypeSelection" minOccurs="0" />
             <xs:element name="templateResourceName" type="xs:anyURI" minOccurs="0" />
         </xs:sequence>
 
@@ -295,8 +295,8 @@
         <xs:complexContent>
             <xs:extension base="abstractMetric">
                 <xs:sequence>
-                    <xs:element name="probabilityThresholds" type="probabilityThreshold" minOccurs="0" maxOccurs="1"/>
                     <xs:element name="valueThresholds" type="valueThreshold" minOccurs="0" maxOccurs="1" />
+                    <xs:element name="probabilityThresholds" type="probabilityThreshold" minOccurs="0" maxOccurs="1"/>
                  </xs:sequence>
             </xs:extension>
         </xs:complexContent>
@@ -329,9 +329,13 @@
         </xs:restriction>
     </xs:simpleType>
 
-    <!-- Possibilities for the graphical plotType element. -->
-    <xs:simpleType name="plotTypeSelection">
+    <!-- Possibilities for the outputType element. The "default" option indicates 
+    that the default output configuration should be used when multiple options are 
+    possible for the same type of output data. The default should also be assumed 
+    when the output type is undefined.-->
+    <xs:simpleType name="outputTypeSelection">
         <xs:restriction base="xs:string">
+            <xs:enumeration value="default" />
             <xs:enumeration value="lead threshold" />
             <xs:enumeration value="threshold lead" />
 	    <xs:enumeration value="pooling window" />
@@ -343,9 +347,6 @@
     <xs:complexType name="graphicalType">
 
         <xs:sequence>
-            <!-- Specifies the type of the plot.  Is required. -->
-            <xs:element name="plotType" type="plotTypeSelection" minOccurs="0" maxOccurs="1"/>
-            
             <!-- Specifies the override chart drawing parameters.  Will be processed as a String and passed to 
             charting tool so it can parse it.  Hence, the reason it is skipped. -->
             <xs:element name="config" minOccurs="0" maxOccurs="1">
@@ -381,6 +382,8 @@
 
         <xs:sequence>
             <xs:element name="path" type="xs:anyURI" />
+            <!-- Specifies the type of output required. -->
+            <xs:element name="outputType" type="outputTypeSelection" minOccurs="0" maxOccurs="1"/>           
             <!-- If output type is graphical (a chart)... -->
             <xs:element name="graphical" type="graphicalType" minOccurs="0" maxOccurs="1" />
         </xs:sequence>

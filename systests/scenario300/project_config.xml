@@ -20,12 +20,12 @@
         <unit>MM</unit>
         <feature locationId="LGNN5" />
         <leadHours minimum="1" maximum="48" />
-
-        <desiredTimeScale>
+<!--        <desiredTimeScale>
             <function>none</function>
             <period>6</period>
             <unit>hours</unit>
         </desiredTimeScale>
+-->
     </pair>
 
     <metrics>
@@ -54,8 +54,8 @@
         </destination>
         <destination type="graphic">
             <path>output/</path>
+            <outputType>lead threshold</outputType>
             <graphical width="800" height="600">
-                <plotType>lead threshold</plotType>
             </graphical>
         </destination>
     </outputs>
