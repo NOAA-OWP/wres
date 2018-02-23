@@ -362,9 +362,10 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
         try
         {
             // TODO: Pass the leftHandMap instead of the function
-            InputRetriever retriever = new InputRetriever( this.getProjectDetails(),
-                                                           ( LocalDateTime firstDate, LocalDateTime lastDate) -> Collections
-                                                                   .getValuesInRange( this.leftHandMap, firstDate, lastDate ) );
+            InputRetriever retriever = new InputRetriever(
+                    this.getProjectDetails(),
+                    ( firstDate, lastDate ) -> Collections.getValuesInRange( this.leftHandMap, firstDate, lastDate )
+            );
             retriever.setFeature(feature);
             retriever.setClimatology( this.getClimatology() );
             retriever.setLeadIteration( this.getWindowNumber() );

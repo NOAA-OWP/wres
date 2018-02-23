@@ -152,9 +152,9 @@ public final class NetCDF {
 
     public static Attribute getVariableAttribute(final Variable variable, final String attributeName)
     {
-        return Collections.find(variable.getAttributes(), (Attribute attribute) -> {
-            return attribute.getShortName().equalsIgnoreCase(attributeName);
-        });
+        return Collections.find(variable.getAttributes(), attribute ->
+            attribute.getShortName().equalsIgnoreCase(attributeName)
+        );
     }
 
     public static String[] getNWMFilenameParts(NetcdfFile file)
@@ -211,7 +211,7 @@ public final class NetCDF {
         }
 
         String[] parts = NetCDF.getNWMFilenameParts( file );
-        String name = Collections.find(parts, (String possibility) ->
+        String name = Collections.find(parts, possibility ->
                         Strings.hasValue( possibility) &&
                         ( possibility.endsWith( "range") || possibility.endsWith( "assim")) );
         String qualifier = NetCDF.getNWMCategory( file );
@@ -220,7 +220,7 @@ public final class NetCDF {
         if (name.endsWith( "assim" ))
         {
             String minus = Collections.find(parts,
-                                            (String possibility) ->
+                                             possibility ->
                                                     Strings.hasValue( possibility ) &&
                                                     possibility.startsWith( "tm" )
             );

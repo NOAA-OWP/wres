@@ -114,8 +114,8 @@ public final class Executor {
      * @return the list of abandoned tasks as a result of forced shutdown
      */
 
-    public static List<Runnable> shutdownWithAbandon( long timeOut,
-                                                      TimeUnit timeUnit )
+    public static List<Runnable> forceShutdown( long timeOut,
+                                                TimeUnit timeUnit )
     {
         long halfTheTimeout = timeOut / 2;
         List<Runnable> abandonedTasks = new ArrayList<>();

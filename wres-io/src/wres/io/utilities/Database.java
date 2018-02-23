@@ -482,8 +482,8 @@ public final class Database {
      * @return the list of abandoned tasks
      */
 
-    public static List<Runnable> shutdownWithAbandon( long timeOut,
-                                                      TimeUnit timeUnit )
+    public static List<Runnable> forceShutdown( long timeOut,
+                                                TimeUnit timeUnit )
     {
         List<Runnable> abandoned = new ArrayList<>();
 
@@ -494,7 +494,7 @@ public final class Database {
         }
         catch ( InterruptedException ie )
         {
-            LOGGER.warn( "Database shutdownWithAbandon interrupted." );
+            LOGGER.warn( "Database forceShutdown interrupted." );
             List<Runnable> abandonedDbTasks = SQL_TASKS.shutdownNow();
             abandoned.addAll( abandonedDbTasks );
             CONNECTION_POOL.close();
@@ -706,10 +706,12 @@ public final class Database {
 		{
 			if (reader != null)
 			{
-				try {
+				try
+                {
 					reader.close();
 				}
-				catch (IOException e) {
+				catch (IOException e)
+                {
 					LOGGER.warn("The reader for copy values could not be properly closed.");
 				}
 			}
@@ -806,7 +808,8 @@ public final class Database {
 
         boolean shouldLock = tablesToLock != null && tablesToLock.length > 0;
 
-        try {
+        try
+        {
             connection = getConnection();
 
             if ( shouldLock )
@@ -893,8 +896,11 @@ public final class Database {
                 LOGGER.warn( "Finished rolling back" );
             }
             throw error;
-        } finally {
-            if (results != null) {
+        }
+        finally
+        {
+            if (results != null)
+            {
                 results.close();
             }
 
@@ -908,7 +914,8 @@ public final class Database {
                 statement.close();
             }
 
-            if (connection != null) {
+            if (connection != null)
+            {
                 if ( shouldLock )
                 {
                     connection.setAutoCommit( true );
@@ -964,7 +971,7 @@ public final class Database {
                                     + "cannot be created." );
         }
 
-        if (resultSet.getObject( fieldName ) instanceof String)
+        if (resultSet.getObject( fieldName ) instanceof String || resultSet.getObject( fieldName ) instanceof java.sql.Timestamp)
         {
             result = Instant.parse( resultSet.getString( fieldName )
                                              .replace( " ", "T" )
@@ -1099,63 +1106,65 @@ public final class Database {
      *
      * <p>
      *     If a query returns:
-     *</p>
-     *     <table>
-     *         <caption>Query Results</caption>
-     *         <tr>
-     *             <th>key</th>
-     *             <th>value</th>
-     *         </tr>
-     *         <tr>
-     *             <td>1</td>
-     *             <td>"Alabama"</td>
-     *         </tr>
-     *         <tr>
-     *             <td>2</td>
-     *             <td>"Delaware"</td>
-     *         </tr>
-     *         <tr>
-     *             <td>3</td>
-     *             <td>"Kansas"</td>
-     *         </tr>
-     *         <tr>
-     *             <td>4</td>
-     *             <td>"Arkansas"</td>
-     *         </tr>
-     *     </table>
-     *<p>
+     * </p>
+     *
+     * <table>
+     *     <caption>Query Results</caption>
+     *     <tr>
+     *         <th>key</th>
+     *         <th>value</th>
+     *     </tr>
+     *     <tr>
+     *         <td>1</td>
+     *         <td>"Alabama"</td>
+     *     </tr>
+     *     <tr>
+     *         <td>2</td>
+     *         <td>"Delaware"</td>
+     *     </tr>
+     *     <tr>
+     *         <td>3</td>
+     *         <td>"Kansas"</td>
+     *     </tr>
+     *     <tr>
+     *         <td>4</td>
+     *         <td>"Arkansas"</td>
+     *     </tr>
+     * </table>
+	 *
+     * <p>
      *     and the caller dictates that the label for the key is "key" and the
      *     label for the value is "value", it may populate the map such that it
      *     looks like:
      * </p>
      *
-     *     <table>
-     *         <caption>Resulting Map</caption>
-     *         <tr>
-     *             <td>{</td>
-     *             <td></td>
-     *         </tr>
-     *         <tr>
-     *             <td></td>
-     *             <td>1 -&gt; "Alabama"</td>
-     *         </tr>
-     *         <tr>
-     *             <td></td>
-     *             <td>2 -&gt; "Delaware"</td>
-     *         </tr>
-     *         <tr>
-     *             <td></td>
-     *             <td>3 -&gt; "Kansas"</td>
-     *         </tr>
-     *         <tr>
-     *             <td></td>
-     *             <td>4 -&gt; "Arkansas"</td>
-     *         </tr>
-     *         <tr>
-     *             <td>}</td>
-     *             <td></td>
-     *         </tr>
-     *     </table>
+     * <table>
+     *     <caption>Resulting Map</caption>
+     *     <tr>
+     *         <td>{</td>
+     *         <td></td>
+     *     </tr>
+     *     <tr>
+     *         <td></td>
+     *         <td>1 -&gt; "Alabama"</td>
+     *     </tr>
+     *     <tr>
+     *         <td></td>
+     *         <td>2 -&gt; "Delaware"</td>
+     *     </tr>
+     *     <tr>
+     *         <td></td>
+     *         <td>3 -&gt; "Kansas"</td>
+     *     </tr>
+     *     <tr>
+     *         <td></td>
+     *         <td>4 -&gt; "Arkansas"</td>
+     *     </tr>
+     *     <tr>
+     *         <td>}</td>
+     *         <td></td>
+     *     </tr>
+     * </table>
      *
      * @param map The map to populate
      * @param query The script that will retrieve the values
@@ -1178,13 +1187,11 @@ public final class Database {
 
 		if (LOGGER.isTraceEnabled())
 		{
-			LOGGER.trace("");
-			LOGGER.trace(query);
-			LOGGER.trace("");
-			LOGGER.trace("The key is '{}' and the value is '{}'",
+			LOGGER.trace("{}{}{}", NEWLINE, query, NEWLINE);
+			LOGGER.trace("The key is '{}' and the value is '{}'{}",
 						 keyLabel,
-						 valueLabel);
-			LOGGER.trace( "" );
+						 valueLabel,
+                         NEWLINE);
 		}
 
 		try
@@ -1294,7 +1301,8 @@ public final class Database {
 		ResultSet results;
 
 		// TODO: Thread this operation such that each table is analyzed simultaneously
-        try {
+        try
+        {
             connection = getConnection();
 
             StringBuilder script = new StringBuilder();
@@ -1330,10 +1338,12 @@ public final class Database {
             Database.execute(script.toString());
 
         }
-        catch (SQLException e) {
+        catch (SQLException e)
+        {
 			LOGGER.error(Strings.getStackTrace(e));
         }
-        finally {
+        finally
+        {
         	Database.returnConnection(connection);
 		}
 	}
@@ -1403,8 +1413,8 @@ public final class Database {
 			@Override
 			public void run()
 			{
-				LOGGER.debug( "A long running query has been encountered:" +
-                              System.lineSeparator() +
+				LOGGER.debug( "A long running query has been encountered:{}{}",
+                              NEWLINE,
                               query );
 				this.cancel();
 			}
@@ -1448,7 +1458,8 @@ public final class Database {
         {
 			Database.execute(builder.toString());
 		}
-		catch (final SQLException e) {
+		catch (final SQLException e)
+        {
 			LOGGER.error("WRES data could not be removed from the database." + NEWLINE);
 			LOGGER.error("");
 			LOGGER.error(builder.toString());

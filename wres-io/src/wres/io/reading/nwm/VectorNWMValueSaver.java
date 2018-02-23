@@ -23,7 +23,6 @@ import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
 
 import wres.config.generated.DataSourceConfig;
-import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.CopyExecutor;
 import wres.io.concurrency.WRESRunnable;
 import wres.io.config.ConfigHelper;
@@ -38,7 +37,6 @@ import wres.io.utilities.Database;
 import wres.util.NetCDF;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
-import wres.util.TimeHelper;
 
 class VectorNWMValueSaver extends WRESRunnable
 {

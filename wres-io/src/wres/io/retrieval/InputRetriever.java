@@ -496,9 +496,9 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                 // See Bug #41816
 
                 if (scaleMember != null &&
-                    (!this.projectDetails.shouldScale() || resultSet.getInt( "scale_member" ) <= scaleMember ))
+                    (!this.projectDetails.shouldScale(dataSourceConfig) || resultSet.getInt( "scale_member" ) <= scaleMember ))
                 {
-                    if (this.shouldAddPair( scaleMember ))
+                    if (this.shouldAddPair( scaleMember, dataSourceConfig ))
                     {
                         pairs = this.addPair( pairs,
                                               valueDate,
@@ -538,11 +538,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             // the last one won't have a scaleMember equalling the period. The
             // scaleMember of the last number is actually one below.  If there isn't
             // a scaling operation, we don't care.
-            if ( rightValues.size() > 0 &&
-                 (!this.projectDetails.shouldScale() ||
-                 scaleMember == TimeHelper.unitsToLeadUnits(
-                         this.projectDetails.getScale().getUnit().value(),
-                         this.projectDetails.getScale().getPeriod()) - 1))
+            if ( rightValues.size() > 0 && this.shouldAddPair( scaleMember, dataSourceConfig ))
             {
                 pairs = this.addPair( pairs,
                                       valueDate,
@@ -578,14 +574,15 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
      * @return
      * @throws NoDataException
      */
-    private boolean shouldAddPair(Integer scaleMember) throws NoDataException
+    private boolean shouldAddPair(Integer scaleMember, DataSourceConfig dataSourceConfig)
+            throws IOException
     {
         long period = TimeHelper.unitsToLeadUnits(
                 this.projectDetails.getScale().getUnit().value(),
                 this.projectDetails.getScale().getPeriod()
         );
 
-        return !this.projectDetails.shouldScale() ||
+        return !this.projectDetails.shouldScale(dataSourceConfig) ||
                period == 0 ||
                scaleMember == period - 1;
     }

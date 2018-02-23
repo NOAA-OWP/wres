@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -132,7 +133,9 @@ public class ProcessorHelper
         }
         catch ( SQLException e )
         {
-            throw new IOException( "Failed to retrieve the set of features.", e );
+            IOException ioe = new IOException( "Failed to retrieve the set of features.", e );
+            ProcessorHelper.addException( ioe );
+            throw ioe;
         }
 
         List<Feature> successfulFeatures = new ArrayList<>();
@@ -345,6 +348,10 @@ public class ProcessorHelper
                 return new FeatureProcessingResult( feature,
                                                     false,
                                                     re );
+            }
+            else
+            {
+                ProcessorHelper.addException( re );
             }
         }
 
@@ -1012,4 +1019,33 @@ public class ProcessorHelper
 
     private static Integer featureCount = 0;
     private static Integer completedFeatureCount = 1;
+
+    private static List<Exception> exceptionList;
+    private static final Object EXCEPTION_LOCK = new Object();
+
+    private static void addException(Exception exception)
+    {
+        synchronized ( EXCEPTION_LOCK )
+        {
+            if (ProcessorHelper.exceptionList == null)
+            {
+                ProcessorHelper.exceptionList = new ArrayList<>(  );
+            }
+
+            ProcessorHelper.exceptionList.add( exception );
+        }
+    }
+
+    public static List<Exception> getEncounteredExceptions()
+    {
+        synchronized(EXCEPTION_LOCK)
+        {
+            if (ProcessorHelper.exceptionList == null)
+            {
+                ProcessorHelper.exceptionList = new ArrayList<>(  );
+            }
+
+            return Collections.unmodifiableList(ProcessorHelper.exceptionList);
+        }
+    }
 }

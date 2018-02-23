@@ -12,7 +12,6 @@ import wres.config.generated.Feature;
 import wres.config.generated.TimeWindowMode;
 import wres.io.config.ConfigHelper;
 import wres.io.data.details.ProjectDetails;
-import wres.io.utilities.NoDataException;
 import wres.io.utilities.ScriptBuilder;
 import wres.util.NotImplementedException;
 

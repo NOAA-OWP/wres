@@ -10,12 +10,12 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Random;
 import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -66,12 +66,12 @@ final class MainFunctions
 		wres.io.Operations.shutdown();
 	}
 
-    static void shutdownWithAbandon( long timeOut, TimeUnit timeUnit )
+    static void forceShutdown( long timeOut, TimeUnit timeUnit )
     {
         ProgressMonitor.deactivate();
         LOGGER.info("");
         LOGGER.info( "Forcefully shutting down the application (you may see some errors)..." );
-        wres.io.Operations.shutdownWithAbandon( timeOut, timeUnit );
+        wres.io.Operations.forceShutdown( timeOut, timeUnit );
     }
 
 	/**
@@ -142,6 +142,7 @@ final class MainFunctions
                 }
                 catch ( IOException e )
                 {
+                    MainFunctions.addException( e );
                     LOGGER.error( Strings.getStackTrace( e ) );
                 }
             }
@@ -173,6 +174,7 @@ final class MainFunctions
                 result = SUCCESS;
             }
             catch (SQLException e) {
+                MainFunctions.addException( e );
                 LOGGER.error("Orphaned WRES connections to the WRES database could not be canceled.");
                 LOGGER.error(Strings.getStackTrace(e));
             }
@@ -360,6 +362,7 @@ final class MainFunctions
                         }
                         catch (final SecurityException exception)
                         {
+                            MainFunctions.addException( exception );
                             LOGGER.error("You lack the permissions necessary to make the directory for this data.");
                             LOGGER.error("You will need to get access to your data through other means.");
                             throw exception;
@@ -666,6 +669,7 @@ final class MainFunctions
                         }
                         catch (InterruptedException | ExecutionException e)
                         {
+                            MainFunctions.addException( e );
                             LOGGER.error("An error was encountered while attempting to complete the download for '" + operation.getKey() + "'.");
                             throw e;
                         }
@@ -676,6 +680,7 @@ final class MainFunctions
                 }
                 catch (final Exception e)
                 {
+                    MainFunctions.addException( e );
                     LOGGER.error(Strings.getStackTrace(e));
                     result = FAILURE;
                 }
@@ -723,6 +728,7 @@ final class MainFunctions
             }
             catch (final Exception e)
             {
+                MainFunctions.addException( e );
                 LOGGER.error(Strings.getStackTrace(e));
             }
             return result;
@@ -747,6 +753,7 @@ final class MainFunctions
                 }
                 catch ( IOException e )
                 {
+                    MainFunctions.addException( e );
                     LOGGER.error(Strings.getStackTrace(e));
                 }
             }
@@ -859,6 +866,7 @@ final class MainFunctions
                     result = SUCCESS;
                 }
                 catch (Exception e) {
+                    MainFunctions.addException( e );
                     LOGGER.error(Strings.getStackTrace(e));
                     result = FAILURE;
                 }
@@ -934,6 +942,7 @@ final class MainFunctions
                                     statement.executeBatch();
                                 }
                                 catch (SQLException e) {
+                                    MainFunctions.addException( e );
                                     LOGGER.error(Strings.getStackTrace(e));
                                 }
                                 finally {
@@ -993,10 +1002,14 @@ final class MainFunctions
                     Database.completeAllIngestTasks();
 
                 }
-                catch (IOException e) {
+                catch (IOException e)
+                {
+                    MainFunctions.addException( e );
                     LOGGER.error(Strings.getStackTrace(e));
                 }
-                catch (SQLException e) {
+                catch (SQLException e)
+                {
+                    MainFunctions.addException( e );
                     LOGGER.error(Strings.getStackTrace(e));
                 }
             }
@@ -1017,4 +1030,35 @@ final class MainFunctions
 			return FAILURE;
 		};
 	}
+
+    private static final Object EXCEPTION_LOCK = new Object();
+    private static List<Exception> encounteredExceptions;
+
+    private static void addException(Exception recentException)
+    {
+        synchronized ( EXCEPTION_LOCK )
+        {
+            if (MainFunctions.encounteredExceptions == null)
+            {
+                MainFunctions.encounteredExceptions = new ArrayList<>(  );
+            }
+
+            MainFunctions.encounteredExceptions.add(recentException);
+        }
+    }
+
+    public static List<Exception> getEncounteredExceptions()
+    {
+        synchronized ( EXCEPTION_LOCK )
+        {
+            if (MainFunctions.encounteredExceptions == null)
+            {
+                MainFunctions.encounteredExceptions = new ArrayList<>(  );
+            }
+
+            MainFunctions.encounteredExceptions.addAll( Control.getMostRecentException() );
+
+            return Collections.unmodifiableList(MainFunctions.encounteredExceptions);
+        }
+    }
 }

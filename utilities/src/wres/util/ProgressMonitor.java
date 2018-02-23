@@ -70,7 +70,7 @@ public class ProgressMonitor
 
         if (ProgressMonitor.UPDATE_MONITOR)
         {
-            handler = (Object t) -> ProgressMonitor.increment();
+            handler = t -> ProgressMonitor.increment();
         }
 
         return handler;
@@ -78,11 +78,11 @@ public class ProgressMonitor
     
     public static Consumer<Object> onThreadCompleteHandler() {
 
-        Consumer<Object> handler = (Object obj) -> {};
+        Consumer<Object> handler = obj -> {};
 
         if (ProgressMonitor.UPDATE_MONITOR)
         {
-            handler = (Object t) -> ProgressMonitor.completeStep();
+            handler = t -> ProgressMonitor.completeStep();
         }
 
         return handler;
@@ -109,7 +109,7 @@ public class ProgressMonitor
         }
 
         this.printer = printer;
-        this.outputFunction = (ProgressMonitor monitor) -> {
+        this.outputFunction = monitor -> {
             if (this.shouldUpdate())
             {
                 ASYNC_UPDATER.execute(()-> this.printMessage(getProgressMessage()));
@@ -122,7 +122,7 @@ public class ProgressMonitor
     {
         this.startTime = System.currentTimeMillis();
         this.printer = System.out;
-        this.outputFunction = (ProgressMonitor monitor) -> {
+        this.outputFunction = monitor -> {
             if (this.shouldUpdate())
             {
                 ASYNC_UPDATER.execute(()-> this.printMessage(getProgressMessage()));
