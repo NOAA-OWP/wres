@@ -263,7 +263,6 @@ public final class Operations {
 
         try
         {
-            String systemConfiguration = SystemSettings.getRawConfiguration();
             String username = SystemSettings.getUserName();
             Timestamp startTimestamp = new Timestamp( start );
             String runTime = duration + " MILLISECONDS";
@@ -282,7 +281,14 @@ public final class Operations {
                 if ( path.toFile()
                          .isFile() )
                 {
-                    project = String.join( System.lineSeparator(), Files.readAllLines( path ) );
+                    try
+                    {
+                        project = String.join( System.lineSeparator(), Files.readAllLines( path ) );
+                    }
+                    catch ( IOException e )
+                    {
+                        LOGGER.warn( "A project could not be recorded." );
+                    }
 
                     // Since this is an xml column, only go for first file.
                     break;
@@ -304,7 +310,7 @@ public final class Operations {
             script.addLine(")");
             script.addLine("VALUES (");
             script.addTab().addLine("?,");
-            script.addTab().addLine("?,");
+            script.addTab().addLine("'',");
             script.addTab().addLine("?,");
             script.addTab().addLine("?,");
             script.addTab().addLine("?,");
@@ -314,8 +320,7 @@ public final class Operations {
             script.addTab().addLine("?");
             script.addLine(");");
 
-            script.issue( String.join(" ", arguments),
-                          systemConfiguration,
+            script.execute( String.join(" ", arguments),
                           project,
                           username,
                           address,
@@ -324,9 +329,9 @@ public final class Operations {
                           failed,
                           error );
         }
-        catch (XMLStreamException | TransformerException | IOException e)
+        catch ( SQLException e )
         {
-            LOGGER.warn("The system configuration could not be loaded. Execution information was not logged to the database.", e);
+            LOGGER.warn("Execution metadata could not be logged to the database.");
         }
     }
 
