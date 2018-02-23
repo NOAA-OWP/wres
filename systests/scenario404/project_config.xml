@@ -33,11 +33,11 @@
         <feature locationId="GLOO2" />
         <leadHours minimum="1" maximum="24" />
 
-        <desiredTimeScale>
+        <!--<desiredTimeScale>
             <function>avg</function>
             <period>6</period>
             <unit>hours</unit>
-        </desiredTimeScale>
+        </desiredTimeScale>-->
         
         <!-- Eventually, 400 will use lead times pooling instead of desiredTimeScale "none".  So I'm doing it now in this test.-->
         <leadTimesPoolingWindow>
