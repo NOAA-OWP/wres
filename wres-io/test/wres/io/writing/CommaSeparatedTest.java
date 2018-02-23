@@ -176,7 +176,7 @@ public class CommaSeparatedTest
 
         // read the file, verify it has what we wanted:
         Path pathToFirstFile = Paths.get( System.getProperty( "java.io.tmpdir" ),
-                                     "DRRC2_MEAN_SQUARE_ERROR_SQIN.csv" );
+                                     "DRRC2_SQIN_HEFS_MEAN_SQUARE_ERROR.csv" );
         List<String> firstResult = Files.readAllLines( pathToFirstFile );
 
         assertTrue( firstResult.get(0).contains( "," ) );
@@ -185,7 +185,7 @@ public class CommaSeparatedTest
                           .equals( "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,1,1,"
                                   + "1.0" ) );
         Path pathToSecondFile = Paths.get( System.getProperty( "java.io.tmpdir" ),
-                                          "DRRC2_MEAN_ERROR_SQIN.csv" );
+                                          "DRRC2_SQIN_HEFS_MEAN_ERROR.csv" );
         List<String> secondResult = Files.readAllLines( pathToSecondFile );
 
         assertTrue( secondResult.get( 0 ).contains( "," ) );
@@ -194,7 +194,7 @@ public class CommaSeparatedTest
                           .equals( "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,1,1,"
                                    + "2.0" ) );
         Path pathToThirdFile = Paths.get( System.getProperty( "java.io.tmpdir" ),
-                                           "DRRC2_MEAN_ABSOLUTE_ERROR_SQIN.csv" );
+                                           "DRRC2_SQIN_HEFS_MEAN_ABSOLUTE_ERROR.csv" );
         List<String> thirdResult = Files.readAllLines( pathToThirdFile );
 
         assertTrue( thirdResult.get( 0 ).contains( "," ) );
@@ -293,7 +293,7 @@ public class CommaSeparatedTest
 
         // read the file, verify it has what we wanted:
         Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ),
-                                     "DOLC2_TIME_TO_PEAK_ERROR_STATISTIC_SQIN.csv" );
+                                     "DOLC2_SQIN_HEFS_TIME_TO_PEAK_ERROR_STATISTIC.csv" );
         List<String> result = Files.readAllLines( pathToFile );
 
         assertTrue( result.get(0).contains( "," ) );
@@ -390,7 +390,7 @@ public class CommaSeparatedTest
 
         // read the file, verify it has what we wanted:
         Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ),
-                                     "FTSC1_TIME_TO_PEAK_ERROR_SQIN.csv" );
+                                     "FTSC1_SQIN_HEFS_TIME_TO_PEAK_ERROR.csv" );
         List<String> result = Files.readAllLines( pathToFile );
 
         assertTrue( result.get(0).contains( "," ) );
@@ -495,7 +495,7 @@ public class CommaSeparatedTest
 
         // read the file, verify it has what we wanted:
         Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ),
-                                     "CREC1_RELIABILITY_DIAGRAM_SQIN_24.csv" );
+                                     "CREC1_SQIN_HEFS_RELIABILITY_DIAGRAM_24_HOUR.csv" );
         List<String> result = Files.readAllLines( pathToFile );
 
         assertTrue( result.get( 0 ).contains( "," ) );
@@ -607,7 +607,7 @@ public class CommaSeparatedTest
 
         // read the file, verify it has what we wanted:
         Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ),
-                                     "JUNP1_BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE_SQIN_24.csv" );
+                                     "JUNP1_SQIN_HEFS_BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE_24_HOUR.csv" );
         List<String> result = Files.readAllLines( pathToFile );
 
         assertTrue( result.get( 0 ).contains( "," ) );
@@ -712,7 +712,7 @@ public class CommaSeparatedTest
 
         // read the file, verify it has what we wanted:
         Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ),
-                                     "BDAC1_CONTINGENCY_TABLE_SQIN_24.csv" );
+                                     "BDAC1_SQIN_HEFS_CONTINGENCY_TABLE_24_HOUR.csv" );
         List<String> result = Files.readAllLines( pathToFile );
 
         assertTrue( result.get( 0 ).contains( "," ) );

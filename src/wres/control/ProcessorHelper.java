@@ -1,9 +1,7 @@
 package wres.control;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
@@ -28,7 +26,6 @@ import org.slf4j.LoggerFactory;
 import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
 import ohd.hseb.charter.datasource.XYChartDataSourceException;
-import wres.config.ProjectConfigException;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.Feature;
@@ -37,13 +34,13 @@ import wres.config.generated.MetricConfigName;
 import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
-import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.Threshold;
 import wres.datamodel.inputs.InsufficientDataException;
 import wres.datamodel.inputs.MetricInput;
+import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.DoubleScoreOutput;
@@ -501,10 +498,7 @@ public class ProcessorHelper
         {
             List<DestinationConfig> destinations =
                     ConfigHelper.getGraphicalDestinations( config );
-            
-            // Metadata
-            DatasetIdentifier identifier = e.getValue().getMetadata().getIdentifier();
-            
+
             // Iterate through each destination
             for ( DestinationConfig destConfig : destinations )
             {
@@ -514,9 +508,8 @@ public class ProcessorHelper
                                                               e.getKey().getKey(),
                                                               e.getValue() );
                 writeScoreCharts( destConfig,
-                                  e.getKey().getKey(),
                                   supplier,
-                                  identifier );
+                                  e.getValue().getMetadata() );
             }
         }
     }
@@ -548,10 +541,7 @@ public class ProcessorHelper
         {
             List<DestinationConfig> destinations =
                     ConfigHelper.getGraphicalDestinations( config );
-            
-            // Metadata
-            DatasetIdentifier identifier = e.getValue().getMetadata().getIdentifier();
-            
+
             // Iterate through each destination
             for ( DestinationConfig destConfig : destinations )
             {
@@ -561,9 +551,8 @@ public class ProcessorHelper
                                                                 e.getKey().getKey(),
                                                                 e.getValue() );
                 writeScoreCharts( destConfig,
-                                  e.getKey().getKey(),
                                   supplier,
-                                  identifier );
+                                  e.getValue().getMetadata() );
             }
         }
     }
@@ -644,16 +633,14 @@ public class ProcessorHelper
      * stored in a {@link MetricOutputMultiMapByTimeAndThreshold}.
      * 
      * @param destConfig the destination configuration for the written output
-     * @param metricId the metric identifier
      * @param chartSupplier a supplier of chart engines
-     * @param identifier the dataset identifier
+     * @param meta the metadata associated with the score results
      * @throws WresProcessingException when an error occurs during writing
      */
 
     private static void writeScoreCharts( DestinationConfig destConfig,
-                                          MetricConstants metricId,
                                           Supplier<Map<MetricConstants, ChartEngine>> chartSupplier,
-                                          DatasetIdentifier identifier )
+                                          MetricOutputMetadata meta )
     {
         // Build charts
         try
@@ -662,26 +649,14 @@ public class ProcessorHelper
             // Build the outputs
             for ( final Entry<MetricConstants, ChartEngine> nextEntry : engines.entrySet() )
             {
-                // If the map contains more than one output, qualify with the component name
-                String componentName = "";
-                if ( engines.size() > 1 )
-                {
-                    componentName = "_"+nextEntry.getKey().name();
-                }
+                
                 // Build the output file name
-                File destDir = ConfigHelper.getDirectoryFromDestinationConfig( destConfig );
-                Path outputImage = Paths.get( destDir.toString(),
-                                              identifier.getGeospatialID()
-                                                                  + "_"
-                                                                  + metricId.name()
-                                                                  + componentName
-                                                                  + "_"
-                                                                  + identifier.getVariableID()
-                                                                  + ".png" );
+                Path outputImage = ConfigHelper.getOutputPathToWrite( destConfig, meta );
+                
                 ChartWriter.writeChart( outputImage, nextEntry.getValue(), destConfig );
             }
         }
-        catch ( ChartWritingException | ProjectConfigException e )
+        catch ( ChartWritingException | IOException e )
         {
             throw new WresProcessingException( "Error while generating vector charts:", e );
         }
@@ -749,41 +724,34 @@ public class ProcessorHelper
                                                                           helper.getOutputType(),
                                                                           helper.getTemplateResourceName(),
                                                                           helper.getGraphicsString() );
-            
-            // Metadata
-            DatasetIdentifier identifier = multiVectorResults.getMetadata().getIdentifier();
-            
+                       
             // Build the outputs
             for ( final Entry<Object, ChartEngine> nextEntry : engines.entrySet() )
             {
                 // Build the output file name
                 // TODO: adopt a more general naming convention as the pipelines expand
                 // For now, the only supported temporal pipeline is per lead time
-                Object key = nextEntry.getKey();
-                if ( key instanceof TimeWindow )
+                Path outputImage = null;
+                Object append = nextEntry.getKey();
+                if ( append instanceof TimeWindow )
                 {
-                    key = ( (TimeWindow) key ).getLatestLeadTimeInHours();
+                    outputImage = ConfigHelper.getOutputPathToWrite( destConfig,
+                                                                     multiVectorResults.getMetadata(),
+                                                                     (TimeWindow) append );
                 }
-                else if ( key instanceof Threshold )
+                else if ( append instanceof Threshold )
                 {
-                    key = ( (Threshold) key ).toStringSafe();
+                    outputImage = ConfigHelper.getOutputPathToWrite( destConfig,
+                                                                     multiVectorResults.getMetadata(),
+                                                                     (Threshold) append );
                 }
-                File destDir = ConfigHelper.getDirectoryFromDestinationConfig( destConfig );
-                Path outputImage = Paths.get( destDir.toString(),
-                                              identifier.getGeospatialID()
-                                                                  + "_"
-                                                                  + metricId.name()
-                                                                  + "_"
-                                                                  + identifier.getVariableID()
-                                                                  + "_"
-                                                                  + key
-                                                                  + ".png" );
+                
                 ChartWriter.writeChart( outputImage, nextEntry.getValue(), destConfig );
             }
         }
         catch ( ChartEngineException
                 | ChartWritingException
-                | ProjectConfigException e )
+                | IOException e )
         {
             throw new WresProcessingException( "Error while generating multi-vector charts:", e );
         }
@@ -849,33 +817,22 @@ public class ProcessorHelper
                     ChartEngineFactory.buildBoxPlotChartEngine( boxPlotResults,
                                                                 helper.getTemplateResourceName(),
                                                                 helper.getGraphicsString() );
-            
-            // Metadata
-            DatasetIdentifier identifier = boxPlotResults.getMetadata().getIdentifier();
-            
+ 
             // Build the outputs
             for ( final Entry<Pair<TimeWindow, Threshold>, ChartEngine> nextEntry : engines.entrySet() )
             {
-                // Build the output file name
-                File destDir = ConfigHelper.getDirectoryFromDestinationConfig( destConfig );
                 // TODO: adopt a more general naming convention as the pipelines expand
                 // For now, the only temporal pipeline is by lead time
-                long key = nextEntry.getKey().getLeft().getLatestLeadTimeInHours();
-                Path outputImage = Paths.get( destDir.toString(),
-                                              identifier.getGeospatialID()
-                                                                  + "_"
-                                                                  + metricId.name()
-                                                                  + "_"
-                                                                  + identifier.getVariableID()
-                                                                  + "_"
-                                                                  + key
-                                                                  + ".png" );
+                Path outputImage = ConfigHelper.getOutputPathToWrite( destConfig,
+                                                                      boxPlotResults.getMetadata(),
+                                                                      nextEntry.getKey().getLeft() );
+
                 ChartWriter.writeChart( outputImage, nextEntry.getValue(), destConfig );
             }
         }
         catch ( ChartEngineException
                 | ChartWritingException
-                | ProjectConfigException e )
+                | IOException e )
         {
             throw new WresProcessingException( "Error while generating box-plot charts:", e );
         }
@@ -940,23 +897,16 @@ public class ProcessorHelper
             final ChartEngine engine = ChartEngineFactory.buildPairedInstantDurationChartEngine( pairedOutputResults,
                                                                                                  helper.getTemplateResourceName(),
                                                                                                  helper.getGraphicsString() );
-            // Metadata
-            DatasetIdentifier identifier = pairedOutputResults.getMetadata().getIdentifier();
 
             // Build the output file name
-            File destDir = ConfigHelper.getDirectoryFromDestinationConfig( destConfig );
-            Path outputImage = Paths.get( destDir.toString(),
-                                          identifier.getGeospatialID()
-                                                              + "_"
-                                                              + metricId.name()
-                                                              + "_"
-                                                              + identifier.getVariableID()
-                                                              + ".png" );
+            Path outputImage = ConfigHelper.getOutputPathToWrite( destConfig,
+                                                                  pairedOutputResults.getMetadata() );
+
             ChartWriter.writeChart( outputImage, engine, destConfig );
         }
         catch ( ChartEngineException
                 | ChartWritingException
-                | ProjectConfigException e )
+                | IOException e )
         {
             throw new WresProcessingException( "Error while generating box-plot charts:", e );
         }
