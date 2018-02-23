@@ -2,7 +2,7 @@
 
 CREATE SCHEMA IF NOT EXISTS wres AUTHORIZATION wres;
 
-DROP TABLE IF EXISTS wres.ForecastValue;
+DROP TABLE IF EXISTS wres.ForecastValue CASCADE;
 
 CREATE TABLE IF NOT EXISTS wres.ForecastValue
 (
