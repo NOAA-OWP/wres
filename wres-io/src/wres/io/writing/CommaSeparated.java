@@ -1,8 +1,8 @@
 package wres.io.writing;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.text.Format;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -117,7 +117,7 @@ public class CommaSeparated
                                           MetricOutputMultiMapByTimeAndThreshold<BoxPlotOutput> output )
             throws IOException
     {
-        Objects.requireNonNull( output, "Specify non-null input data when writing diagram outputs." );
+        Objects.requireNonNull( output, "Specify non-null input data when writing box plot outputs." );
 
         // Validate project for writing
         CommaSeparatedHelper.validateProjectForWriting( projectConfig );
@@ -144,7 +144,7 @@ public class CommaSeparated
                                                MetricOutputMultiMapByTimeAndThreshold<MatrixOutput> output )
             throws IOException
     {
-        Objects.requireNonNull( output, "Specify non-null input data when writing diagram outputs." );
+        Objects.requireNonNull( output, "Specify non-null input data when writing matrix outputs." );
 
         // Validate project for writing
         CommaSeparatedHelper.validateProjectForWriting( projectConfig );
@@ -255,10 +255,9 @@ public class CommaSeparated
             
             // Write the output
             MetricOutputMetadata meta = m.getValue().getMetadata();
-            List<String> nameList = Arrays.asList( meta.getIdentifier().getGeospatialID(),
-                                                   meta.getMetricID().name(),
-                                                   meta.getIdentifier().getVariableID() );
-            CommaSeparatedHelper.writeTabularOutputToFile( destinationConfig, rows, nameList );
+            Path outputPath = ConfigHelper.getOutputPathToWrite( destinationConfig, meta );
+            
+            CommaSeparatedHelper.writeTabularOutputToFile( rows, outputPath );
         }
     }
 
@@ -294,10 +293,9 @@ public class CommaSeparated
             
             // Write the output
             MetricOutputMetadata meta = m.getValue().getMetadata();
-            List<String> nameList = Arrays.asList( meta.getIdentifier().getGeospatialID(),
-                                                   meta.getMetricID().name(),
-                                                   meta.getIdentifier().getVariableID() );
-            CommaSeparatedHelper.writeTabularOutputToFile( destinationConfig, rows, nameList );
+            Path outputPath = ConfigHelper.getOutputPathToWrite( destinationConfig, meta );
+            
+            CommaSeparatedHelper.writeTabularOutputToFile( rows, outputPath );
         }
     }
 
@@ -371,11 +369,9 @@ public class CommaSeparated
                                            CommaSeparatedHelper.getDiagramHeader( next, headerRow ) ) );
             
             // Write the output
-            List<String> nameList = Arrays.asList( meta.getIdentifier().getGeospatialID(),
-                                                   meta.getMetricID().name(),
-                                                   meta.getIdentifier().getVariableID(),
-                                                   Long.toString( timeWindow.getLatestLeadTimeInHours() ) );
-            CommaSeparatedHelper.writeTabularOutputToFile( destinationConfig, rows, nameList );
+            Path outputPath = ConfigHelper.getOutputPathToWrite( destinationConfig, meta, timeWindow );
+            
+            CommaSeparatedHelper.writeTabularOutputToFile( rows, outputPath );
         }
     }
 
@@ -407,11 +403,9 @@ public class CommaSeparated
                                            CommaSeparatedHelper.getDiagramHeader( next, headerRow ) ) );
             
             // Write the output
-            List<String> nameList = Arrays.asList( meta.getIdentifier().getGeospatialID(),
-                                                   meta.getMetricID().name(),
-                                                   meta.getIdentifier().getVariableID(),
-                                                   threshold.toStringSafe() );
-            CommaSeparatedHelper.writeTabularOutputToFile( destinationConfig, rows, nameList );
+            Path outputPath = ConfigHelper.getOutputPathToWrite( destinationConfig, meta, threshold );
+            
+            CommaSeparatedHelper.writeTabularOutputToFile( rows, outputPath );
         }
     }
 
@@ -463,7 +457,7 @@ public class CommaSeparated
      * @param destinationConfig the destination configuration    
      * @param output the box plot output to iterate through
      * @param formatter optional formatter, can be null
-     * @throws IOException if the output cannot be written
+     * @throws IOException if the output cannot be written 
      */
 
     private static void writeOneBoxPlotOutputType( DestinationConfig destinationConfig,
@@ -506,11 +500,9 @@ public class CommaSeparated
             rows.add( RowCompareByLeft.of( CommaSeparatedHelper.HEADER_INDEX,
                                            CommaSeparatedHelper.getBoxPlotHeader( next, headerRow ) ) );
             // Write the output
-            List<String> nameList = Arrays.asList( meta.getIdentifier().getGeospatialID(),
-                                                   meta.getMetricID().name(),
-                                                   meta.getIdentifier().getVariableID(),
-                                                   Long.toString( timeWindow.getLatestLeadTimeInHours() ) );
-            CommaSeparatedHelper.writeTabularOutputToFile( destinationConfig, rows, nameList );
+            Path outputPath = ConfigHelper.getOutputPathToWrite( destinationConfig, meta, timeWindow );
+            
+            CommaSeparatedHelper.writeTabularOutputToFile( rows, outputPath );
         }
     }
 
@@ -542,11 +534,9 @@ public class CommaSeparated
                                            CommaSeparatedHelper.getMatrixOutputHeader( next, headerRow ) ) );
             
             // Write the output
-            List<String> nameList = Arrays.asList( meta.getIdentifier().getGeospatialID(),
-                                                   meta.getMetricID().name(),
-                                                   meta.getIdentifier().getVariableID(),
-                                                   Long.toString( timeWindow.getLatestLeadTimeInHours() ) );
-            CommaSeparatedHelper.writeTabularOutputToFile( destinationConfig, rows, nameList );
+            Path outputPath = ConfigHelper.getOutputPathToWrite( destinationConfig, meta, timeWindow );
+            
+            CommaSeparatedHelper.writeTabularOutputToFile( rows, outputPath );
         }
     }
 
@@ -557,7 +547,7 @@ public class CommaSeparated
      * @param output the matrix output
      * @param headerRow the header row
      * @param formatter optional formatter, can be null
-     * @throws IOException if the output cannot be written
+     * @throws IOException if the output cannot be written 
      */
 
     private static void writeOneMatrixOutputTypePerThreshold( DestinationConfig destinationConfig,
@@ -578,11 +568,9 @@ public class CommaSeparated
                                            CommaSeparatedHelper.getMatrixOutputHeader( next, headerRow ) ) );
             
             // Write the output
-            List<String> nameList = Arrays.asList( meta.getIdentifier().getGeospatialID(),
-                                                   meta.getMetricID().name(),
-                                                   meta.getIdentifier().getVariableID(),
-                                                   threshold.toStringSafe() );
-            CommaSeparatedHelper.writeTabularOutputToFile( destinationConfig, rows, nameList );
+            Path outputPath = ConfigHelper.getOutputPathToWrite( destinationConfig, meta, threshold );
+            
+            CommaSeparatedHelper.writeTabularOutputToFile( rows, outputPath );
         }
     }
     

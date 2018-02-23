@@ -1,5 +1,7 @@
 package wres.datamodel.metadata;
 
+import java.util.Objects;
+
 import wres.datamodel.Dimension;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.outputs.MetricOutput;
@@ -15,6 +17,17 @@ public interface MetricOutputMetadata extends Metadata
 {
   
     /**
+     * Returns <code>true</code> if the {@link #getMetricComponentID()} has been set, otherwise <code>false</code>.
+     * 
+     * @return true if the metric component identifier is defined, otherwise false
+     */
+
+    default boolean hasMetricComponentID()
+    {
+        return Objects.nonNull( getMetricComponentID() );
+    }
+    
+    /**
      * Returns an identifier associated with the metric that produced the output.
      * 
      * @return the metric identifier
@@ -23,11 +36,11 @@ public interface MetricOutputMetadata extends Metadata
     MetricConstants getMetricID();
 
     /**
-     * Returns an identifier associated with the component of the metric to which the output corresponds or a template
-     * for a score decomposition where the output contains multiple components. In that case, the template dictates the
-     * order in which components are returned.
+     * Returns an optional identifier associated with the component of the metric to which the output corresponds or 
+     * a template for a score decomposition where the output contains multiple components. In that case, the template 
+     * dictates the order in which components are returned.
      * 
-     * @return the component identifier
+     * @return the component identifier or null
      */
 
     MetricConstants getMetricComponentID();

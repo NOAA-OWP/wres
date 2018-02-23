@@ -4,6 +4,7 @@ import static wres.config.generated.SourceTransformationType.PERSISTENCE;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URLEncoder;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
@@ -48,6 +49,8 @@ import wres.config.generated.ProjectConfig;
 import wres.config.generated.TimeScaleConfig;
 import wres.config.generated.TimeWindowMode;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.Threshold;
+import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
 import wres.io.data.caching.Features;
@@ -62,6 +65,15 @@ public class ConfigHelper
 
     private static final ConcurrentMap<ProjectConfig, ConcurrentSkipListSet<String>> messages
             = new ConcurrentHashMap<>();
+    
+    /**
+     * Default exception message when a destination cannot be established.
+     */
+
+    public static final String OUTPUT_CLAUSE_BOILERPLATE = "Please include valid numeric output clause(s) in"
+                                                           + " the project configuration. Example: <destination>"
+                                                           + "<path>c:/Users/myname/wres_output/</path>"
+                                                           + "</destination>";
 
     private ConfigHelper()
     {
@@ -1335,5 +1347,153 @@ public class ConfigHelper
         return projectConfig.getInputs().getLeft().getVariable().getValue();
     }
 
+    /**
+     * Returns a path to write from a combination of the {@link DestinationConfig} and the {@link MetricOutputMetadata}.
+     * 
+     * @param destinationConfig the destination configuration
+     * @param meta the metadata
+     * @return a path to write
+     * @throws NullPointerException if any input is null, including the identifier associated with the metadata
+     * @throws IOException if the path cannot be produced
+     */
+
+    public static Path getOutputPathToWrite( DestinationConfig destinationConfig,
+                                             MetricOutputMetadata meta )
+            throws IOException
+    {
+        return getOutputPathToWrite( destinationConfig, meta, (String) null );
+    }   
+    
+    /**
+     * Returns a path to write from a combination of the {@link DestinationConfig}, the {@link MetricOutputMetadata} 
+     * associated with the results and a {@link TimeWindow}.
+     * 
+     * @param destinationConfig the destination configuration
+     * @param meta the metadata
+     * @param timeWindow the time window
+     * @return a path to write
+     * @throws NullPointerException if any input is null, including the identifier associated with the metadata
+     * @throws IOException if the path cannot be produced
+     */
+
+    public static Path getOutputPathToWrite( DestinationConfig destinationConfig,
+                                             MetricOutputMetadata meta,
+                                             TimeWindow timeWindow )
+            throws IOException
+    {
+        Objects.requireNonNull( destinationConfig, "Enter non-null time window to establish a path for writing." );
+
+        return getOutputPathToWrite( destinationConfig, meta, timeWindow.getLatestLeadTimeInHours() + "_HOUR" );
+    }
+
+    /**
+     * Returns a path to write from a combination of the {@link DestinationConfig}, the {@link MetricOutputMetadata} 
+     * associated with the results and a {@link Threshold}.
+     * 
+     * @param destinationConfig the destination configuration
+     * @param meta the metadata
+     * @param threshold the threshold
+     * @return a path to write
+     * @throws NullPointerException if any input is null, including the identifier associated with the metadata
+     * @throws IOException if the path cannot be produced
+     */
+
+    public static Path getOutputPathToWrite( DestinationConfig destinationConfig,
+                                             MetricOutputMetadata meta,
+                                             Threshold threshold )
+            throws IOException
+    {
+        Objects.requireNonNull( meta, "Enter non-null metadata to establish a path for writing." );
+
+        Objects.requireNonNull( threshold, "Enter non-null threshold to establish a path for writing." );
+
+        String append = "";
+        // Finite threshold has a dimension
+        if( threshold.isFinite() )
+        {
+            append = "_"+meta.getInputDimension();
+        }
+        return getOutputPathToWrite( destinationConfig, meta, threshold.toStringSafe() + append );
+    }
+
+    /**
+     * Returns a path to write from a combination of the destination configuration, the input metadata and any 
+     * additional string that should be appended to the path (e.g. lead time or threshold). 
+     * 
+     * @param destinationConfig the destination configuration
+     * @param meta the metadata
+     * @param append an optional string to append to the end of the path, may be null
+     * @return a path to write
+     * @throws NullPointerException if any required input is null, including the identifier associated 
+     *            with the metadata
+     * @throws IOException if the path cannot be produced
+     */
+
+    private static Path getOutputPathToWrite( DestinationConfig destinationConfig,
+                                              MetricOutputMetadata meta,
+                                              String append )
+            throws IOException
+    {
+        Objects.requireNonNull( destinationConfig, "Enter non-null destination configuration to establish "
+                                                   + "a path for writing." );
+
+        Objects.requireNonNull( meta, "Enter non-null metadata to establish a path for writing." );
+
+        Objects.requireNonNull( meta.getIdentifier(), "Enter a non-null identifier for the metadata to establish "
+                                                      + "a path for writing." );
+
+        // Determine the directory
+        File outputDirectory = null;
+        try
+        {
+            outputDirectory = getDirectoryFromDestinationConfig( destinationConfig );
+        }
+        catch ( ProjectConfigException pce )
+        {
+            throw new IOException( ConfigHelper.OUTPUT_CLAUSE_BOILERPLATE, pce );
+        }
+
+        // Build the path 
+        StringJoiner joinElements = new StringJoiner( "_" );
+        joinElements.add( meta.getIdentifier().getGeospatialID() )
+                    .add( meta.getIdentifier().getVariableID() );
+
+        // Add optional scenario identifier
+        if ( meta.getIdentifier().hasScenarioID() )
+        {
+            joinElements.add( meta.getIdentifier().getScenarioID() );
+        }
+
+        // Add the metric name()
+        joinElements.add( meta.getMetricID().name() );
+        
+        // Add a non-default component name
+        if ( meta.hasMetricComponentID() && MetricConstants.MAIN != meta.getMetricComponentID() )
+        {
+            joinElements.add( meta.getMetricComponentID().name() );
+        }
+
+        // Add optional append
+        if ( Objects.nonNull( append ) )
+        {
+            joinElements.add( append );
+        }
+
+        // Add extension
+        String extension;
+        if ( destinationConfig.getType() == DestinationType.GRAPHIC )
+        {
+            extension = ".png";
+        }
+        else
+        {
+            extension = ".csv";
+        }
+        
+        // Derive a sanitized name
+        String safeName = URLEncoder.encode( joinElements.toString().replace( " ", "_" ) + extension, "UTF-8" );
+        
+        return Paths.get( outputDirectory.toString(), safeName );
+    }   
     
 }
