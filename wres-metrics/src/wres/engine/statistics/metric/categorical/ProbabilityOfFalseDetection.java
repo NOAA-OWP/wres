@@ -4,6 +4,7 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MatrixOutput;
+import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 
 /**
@@ -28,7 +29,8 @@ public class ProbabilityOfFalseDetection extends ContingencyTableScore<Dichotomo
         is2x2ContingencyTable( output, this );
         final MatrixOutput v = output;
         final double[][] cm = v.getData().getDoubles();
-        return getDataFactory().ofDoubleScoreOutput( cm[0][1] / ( cm[0][1] + cm[1][1] ), getMetadata( output ) );
+        double result = FunctionFactory.finiteOrNaN().applyAsDouble( cm[0][1] / ( cm[0][1] + cm[1][1] ) );
+        return getDataFactory().ofDoubleScoreOutput( result, getMetadata( output ) );
     }
 
     @Override

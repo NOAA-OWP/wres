@@ -1,6 +1,8 @@
 package wres.control;
 
+import java.io.IOException;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Consumer;
 
 import org.slf4j.Logger;
@@ -12,8 +14,8 @@ import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MetricOutputAccessException;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
-import wres.engine.statistics.metric.processing.MetricProcessorByTime;
 import wres.io.config.ProjectConfigPlus;
+import wres.io.writing.CommaSeparated;
 
 /**
  * A processor that generates outputs while a processing pipeline is ongoing (i.e. has more outputs to generate), rather 
@@ -31,7 +33,7 @@ public class IntermediateResultProcessor implements Consumer<MetricOutputForProj
     /**
      * Logger.
      */
-    
+
     private static final Logger LOGGER = LoggerFactory.getLogger( IntermediateResultProcessor.class );
 
     /**
@@ -45,86 +47,110 @@ public class IntermediateResultProcessor implements Consumer<MetricOutputForProj
      */
 
     private final Feature feature;
-       
+
     /**
-     * The processor used to determined whether the output is intermediate or being cached.
+     * The types that should not be processed as intermediate output, because they are being cached until the end
+     * of a processing pipeline.
      */
 
-    private final MetricProcessorByTime<?> processor;
-        
+    private final Set<MetricOutputGroup> ignoreTheseTypes;
+
     /**
      * Construct.
      * 
      * @param feature the feature
      * @param projectConfigPlus the project configuration
-     * @param processor the metric processor
+     * @throws NullPointerException if any of the inputs are null
      */
 
     IntermediateResultProcessor( final Feature feature,
                                  final ProjectConfigPlus projectConfigPlus,
-                                 final MetricProcessorByTime<?> processor )
+                                 final Set<MetricOutputGroup> ignoreTheseTypes )
     {
         Objects.requireNonNull( feature,
                                 "Specify a non-null feature for the results processor." );
         Objects.requireNonNull( projectConfigPlus,
                                 "Specify a non-null configuration for the results processor." );
-        Objects.requireNonNull( processor,
-                                "Specify a non-null metric processor for the results processor." );
+        Objects.requireNonNull( projectConfigPlus,
+                                "Specify a non-null set of output types to ignore, such as the empty set." );
         this.feature = feature;
         this.projectConfigPlus = projectConfigPlus;
-        this.processor = processor;
+        this.ignoreTheseTypes = ignoreTheseTypes;
     }
 
-        @Override
-        public void accept(final MetricOutputForProjectByTimeAndThreshold input)
+    @Override
+    public void accept( final MetricOutputForProjectByTimeAndThreshold input )
+    {
+        try
         {
-            try
+            if ( ProcessorHelper.configNeedsThisTypeOfOutput( projectConfigPlus.getProjectConfig(),
+                                                              DestinationType.GRAPHIC ) )
             {
-                if ( ProcessorHelper.configNeedsThisTypeOfOutput( projectConfigPlus.getProjectConfig(),
-                                                                  DestinationType.GRAPHIC ) )
-                {
-                    MetricOutputMetadata meta = null;
+                MetricOutputMetadata meta = null;
 
-                    //Multivector output available, not being cached to the end
-                    if ( input.hasOutput( MetricOutputGroup.MULTIVECTOR )
-                         && !processor.willCacheMetricOutput( MetricOutputGroup.MULTIVECTOR ) )
-                    {
-                        ProcessorHelper.processMultiVectorCharts( feature,
-                                                                  projectConfigPlus,
-                                                                  input.getMultiVectorOutput() );
-                        meta = input.getMultiVectorOutput().entrySet().iterator().next().getValue().getMetadata();
-                    }
-                    //Box-plot output available, not being cached to the end
-                    if ( input.hasOutput( MetricOutputGroup.BOXPLOT )
-                         && !processor.willCacheMetricOutput( MetricOutputGroup.BOXPLOT ) )
-                    {
-                        ProcessorHelper.processBoxPlotCharts( feature,
-                                                              projectConfigPlus,
-                                                              input.getBoxPlotOutput() );
-                        meta = input.getBoxPlotOutput().entrySet().iterator().next().getValue().getMetadata();
-                    }
-                    if ( Objects.nonNull( meta ) )
-                    {
-                        LOGGER.debug( "Completed processing of intermediate metrics results for feature '{}' "
-                                      + "and time window {}.",
-                                      meta.getIdentifier().getGeospatialID(),
-                                      meta.getTimeWindow() );
-                    }
-                    else
-                    {
-                        LOGGER.debug( "Completed processing of intermediate metrics results for feature '{}' with "
-                                      + "unknown time window.",
-                                      feature.getLocationId() );
-                    }
-                }
-            }
-            catch ( final MetricOutputAccessException e )
-            {
-                if ( Thread.currentThread().isInterrupted() )
+                //Multivector output available and not being cached to the end
+                if ( input.hasOutput( MetricOutputGroup.MULTIVECTOR )
+                     && !ignoreTheseTypes.contains( MetricOutputGroup.MULTIVECTOR ) )
                 {
-                    LOGGER.warn( "Interrupted while processing intermediate results:", e );
+                    ProcessorHelper.processMultiVectorCharts( projectConfigPlus,
+                                                              input.getMultiVectorOutput() );
+                    meta = input.getMultiVectorOutput().entrySet().iterator().next().getValue().getMetadata();
+                    // Write the CSV output
+                    CommaSeparated.writeDiagramFiles( projectConfigPlus.getProjectConfig(),
+                                                      input.getMultiVectorOutput() );
                 }
-                throw new WresProcessingException( "Error while processing intermediate results:", e );
+                //Box-plot output available and not being cached to the end
+                if ( input.hasOutput( MetricOutputGroup.BOXPLOT )
+                     && !ignoreTheseTypes.contains( MetricOutputGroup.BOXPLOT ) )
+                {
+                    ProcessorHelper.processBoxPlotCharts( projectConfigPlus,
+                                                          input.getBoxPlotOutput() );
+                    meta = input.getBoxPlotOutput().entrySet().iterator().next().getValue().getMetadata();
+                    // Write the CSV output
+                    CommaSeparated.writeBoxPlotFiles( projectConfigPlus.getProjectConfig(),
+                                                      input.getBoxPlotOutput() );
+                }
+                //Matrix output available and not being cached to the end
+                if ( input.hasOutput( MetricOutputGroup.MATRIX )
+                     && !ignoreTheseTypes.contains( MetricOutputGroup.MATRIX ) )
+                {
+                    // Only CSV output: write the CSV output
+                    CommaSeparated.writeMatrixOutputFiles( projectConfigPlus.getProjectConfig(),
+                                                           input.getMatrixOutput() );
+                }
+                log( meta );
             }
         }
+        catch ( final MetricOutputAccessException | IOException e )
+        {
+            if ( Thread.currentThread().isInterrupted() )
+            {
+                LOGGER.warn( "Interrupted while processing intermediate results:", e );
+            }
+            throw new WresProcessingException( "Error while processing intermediate results:", e );
+        }
+    }
+
+    /**
+     * Logs the current status.
+     * 
+     * @param meta the metadata to assist with logging
+     */
+
+    private void log( MetricOutputMetadata meta )
+    {
+        if ( Objects.nonNull( meta ) )
+        {
+            LOGGER.debug( "Completed processing of intermediate metrics results for feature '{}' "
+                          + "and time window {}.",
+                          meta.getIdentifier().getGeospatialID(),
+                          meta.getTimeWindow() );
+        }
+        else
+        {
+            LOGGER.debug( "Completed processing of intermediate metrics results for feature '{}' with "
+                          + "unknown time window.",
+                          feature.getLocationId() );
+        }
+    }
 }

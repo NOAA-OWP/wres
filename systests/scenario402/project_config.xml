@@ -21,7 +21,6 @@
         <unit>CMS</unit>
         <feature locationId="GLOO2" />
         <leadHours minimum="1" maximum="24" />
-
         <desiredTimeScale>
             <function>none</function>
             <period>6</period>
@@ -45,14 +44,6 @@
         <destination type="numeric" decimalFormat="0.000000">
             <path>output/</path>
         </destination>
-        <!--
-        <destination type="graphic">
-            <path>output/</path>
-            <graphical width="800" height="600">
-                <plotType>lead threshold</plotType>
-            </graphical>
-        </destination>
-        -->
     </outputs>
 
 </project>

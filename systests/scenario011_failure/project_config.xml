@@ -52,9 +52,9 @@
         <destination type="graphic">
 <!-- Hank: Why is the slash at the end needed?  This appears to be a pathPrefix.  I would prefer a simple directory name.  Regardless, path is not a good name. -->
             <path>output/</path>
+            <outputType>lead threshold</outputType>
             <!--Optional: -->
             <graphical width="800" height="600">
-                <plotType>lead threshold</plotType>
             </graphical>
         </destination>
     </outputs>

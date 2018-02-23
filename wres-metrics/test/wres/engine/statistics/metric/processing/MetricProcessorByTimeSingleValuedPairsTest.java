@@ -20,12 +20,12 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.DefaultMetadataFactory;
+import wres.datamodel.MatrixOfDoubles;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.Threshold;
 import wres.datamodel.Threshold.Operator;
-import wres.datamodel.inputs.InsufficientDataException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.metadata.Metadata;
@@ -141,7 +141,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                         MetricOutputGroup.values() );
         SingleValuedPairs pairs = MetricTestDataFactory.getSingleValuedPairsFour();
         final MetadataFactory metFac = metIn.getMetadataFactory();
-        //Generate results for 10 nominal lead times
+        // Generate results for 10 nominal lead times
         for ( int i = 1; i < 11; i++ )
         {
             final TimeWindow window = TimeWindow.of( Instant.MIN,
@@ -154,9 +154,9 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
             processor.apply( metIn.ofSingleValuedPairs( pairs.getData(), meta ) );
         }
 
-        //Validate a subset of the data            
+        // Validate a subset of the data            
         processor.getCachedMetricOutput().getDoubleScoreOutput().forEach( ( key, value ) -> {
-            if ( key.getKey() == MetricConstants.CRITICAL_SUCCESS_INDEX )
+            if ( key.getKey() == MetricConstants.THREAT_SCORE )
             {
                 assertTrue( "Expected ten results for the " + key.getKey()
                             + ": "
@@ -171,6 +171,20 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                             value.size() == 20 );
             }
         } );
+
+        // Expected result
+        MatrixOfDoubles expected = metIn.matrixOf( new double[][] { { 400.0, 100.0 }, { 0.0, 0.0 } } );
+        final TimeWindow expectedWindow = TimeWindow.of( Instant.MIN,
+                                                 Instant.MAX,
+                                                 ReferenceTime.VALID_TIME,
+                                                 Duration.ofHours( 1 ) );
+        Pair<TimeWindow,Threshold> key = Pair.of( expectedWindow, metIn.getThreshold( 1.0, Operator.GREATER ) );
+        assertTrue( "Unexpected results for the contingency table.",
+                    expected.equals( processor.getCachedMetricOutput()
+                                              .getMatrixOutput()
+                                              .get( MetricConstants.CONTINGENCY_TABLE )
+                                              .get( key )
+                                              .getData() ) );       
     }
 
     /**
@@ -199,8 +213,8 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         catch ( NullPointerException e )
         {
         }
-        //Check for fail on insufficient data for a single-valued metric
-        String testTwo = "testinput/metricProcessorSingleValuedPairsByTimeTest/test3ExceptionsTwo.xml";
+        //Check for absence of thresholds on metrics that require them
+        String testTwo = "testinput/metricProcessorSingleValuedPairsByTimeTest/test3ExceptionsFour.xml";
         try
         {
             ProjectConfig config = ProjectConfigPlus.from( Paths.get( testTwo ) ).getProjectConfig();
@@ -211,13 +225,13 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
             processor.apply( MetricTestDataFactory.getSingleValuedPairsSix() );
             fail( "Expected a checked exception on processing the project configuration '" + testTwo
                   + "' "
-                  + "with insufficient data for a single-valued metric." );
+                  + "with no thresholds for metrics that require them." );
         }
-        catch ( InsufficientDataException e )
+        catch ( MetricProcessorException e )
         {
         }
-        //Check for fail on insufficient data for a dichotomous metric
-        String testThree = "testinput/metricProcessorSingleValuedPairsByTimeTest/test3ExceptionsThree.xml";
+        //Checked for value thresholds that do not apply to left
+        String testThree = "testinput/metricProcessorSingleValuedPairsByTimeTest/test3ExceptionsFive.xml";
         try
         {
             ProjectConfig config = ProjectConfigPlus.from( Paths.get( testThree ) ).getProjectConfig();
@@ -228,13 +242,13 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
             processor.apply( MetricTestDataFactory.getSingleValuedPairsSix() );
             fail( "Expected a checked exception on processing the project configuration '" + testThree
                   + "' "
-                  + "with insufficient data for a dichotomous metric." );
+                  + "with value thresholds that do not apply to left." );
         }
-        catch ( InsufficientDataException e )
+        catch ( MetricProcessorException e )
         {
         }
-        //Check for absence of thresholds on metrics that require them
-        String testFour = "testinput/metricProcessorSingleValuedPairsByTimeTest/test3ExceptionsFour.xml";
+        //Checked for probability thresholds that do not apply to left
+        String testFour = "testinput/metricProcessorSingleValuedPairsByTimeTest/test3ExceptionsSix.xml";
         try
         {
             ProjectConfig config = ProjectConfigPlus.from( Paths.get( testFour ) ).getProjectConfig();
@@ -245,13 +259,13 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
             processor.apply( MetricTestDataFactory.getSingleValuedPairsSix() );
             fail( "Expected a checked exception on processing the project configuration '" + testFour
                   + "' "
-                  + "with no thresholds for metrics that require them." );
+                  + "with probability thresholds that do not apply to left." );
         }
         catch ( MetricProcessorException e )
         {
         }
-        //Checked for value thresholds that do not apply to left
-        String testFive = "testinput/metricProcessorSingleValuedPairsByTimeTest/test3ExceptionsFive.xml";
+        //Check for insufficient data to compute climatological probability thresholds
+        String testFive = "testinput/metricProcessorSingleValuedPairsByTimeTest/test3ExceptionsEight.xml";
         try
         {
             ProjectConfig config = ProjectConfigPlus.from( Paths.get( testFive ) ).getProjectConfig();
@@ -262,59 +276,9 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
             processor.apply( MetricTestDataFactory.getSingleValuedPairsSix() );
             fail( "Expected a checked exception on processing the project configuration '" + testFive
                   + "' "
-                  + "with value thresholds that do not apply to left." );
-        }
-        catch ( MetricProcessorException e )
-        {
-        }
-        //Checked for probability thresholds that do not apply to left
-        String testSix = "testinput/metricProcessorSingleValuedPairsByTimeTest/test3ExceptionsSix.xml";
-        try
-        {
-            ProjectConfig config = ProjectConfigPlus.from( Paths.get( testSix ) ).getProjectConfig();
-            MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
-                    MetricFactory.getInstance( metIn )
-                                 .ofMetricProcessorByTimeSingleValuedPairs( config,
-                                                                            MetricOutputGroup.SCORE );
-            processor.apply( MetricTestDataFactory.getSingleValuedPairsSix() );
-            fail( "Expected a checked exception on processing the project configuration '" + testSix
-                  + "' "
-                  + "with probability thresholds that do not apply to left." );
-        }
-        catch ( MetricProcessorException e )
-        {
-        }
-        //Check for insufficient data to compute climatological probability thresholds
-        String testEight = "testinput/metricProcessorSingleValuedPairsByTimeTest/test3ExceptionsEight.xml";
-        try
-        {
-            ProjectConfig config = ProjectConfigPlus.from( Paths.get( testEight ) ).getProjectConfig();
-            MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
-                    MetricFactory.getInstance( metIn )
-                                 .ofMetricProcessorByTimeSingleValuedPairs( config,
-                                                                            MetricOutputGroup.SCORE );
-            processor.apply( MetricTestDataFactory.getSingleValuedPairsSix() );
-            fail( "Expected a checked exception on processing the project configuration '" + testEight
-                  + "' "
                   + "with metric-local thresholds that are not supported." );
         }
         catch ( MetricCalculationException e )
-        {
-        }
-        //Check for insufficient data to compute a dichotomous metric
-        String testNine = "testinput/metricProcessorSingleValuedPairsByTimeTest/test3ExceptionsNine.xml";
-        try
-        {
-            ProjectConfig config = ProjectConfigPlus.from( Paths.get( testNine ) ).getProjectConfig();
-            MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
-                    MetricFactory.getInstance( metIn )
-                                 .ofMetricProcessorByTimeSingleValuedPairs( config,
-                                                                            MetricOutputGroup.SCORE );
-            processor.apply( MetricTestDataFactory.getSingleValuedPairsFour() );
-            fail( "Expected a checked exception on processing the project configuration '" + testNine
-                  + "' with insufficient data." );
-        }
-        catch ( InsufficientDataException e )
         {
         }
     }

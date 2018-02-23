@@ -4,6 +4,7 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MatrixOutput;
+import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 
 /**
@@ -18,19 +19,20 @@ public class FrequencyBias extends ContingencyTableScore<DichotomousPairs>
 {
 
     @Override
-    public DoubleScoreOutput apply(final DichotomousPairs s)
+    public DoubleScoreOutput apply( final DichotomousPairs s )
     {
-        return aggregate(getCollectionInput(s));
+        return aggregate( getCollectionInput( s ) );
     }
 
     @Override
-    public DoubleScoreOutput aggregate(final MatrixOutput output)
+    public DoubleScoreOutput aggregate( final MatrixOutput output )
     {
-        is2x2ContingencyTable(output, this);
+        is2x2ContingencyTable( output, this );
         final MatrixOutput v = output;
         final double[][] cm = v.getData().getDoubles();
-        final double score = (cm[0][0] + cm[0][1]) / (cm[0][0] + cm[1][0]);
-        return getDataFactory().ofDoubleScoreOutput(score, getMetadata(output));
+        final double score =
+                FunctionFactory.finiteOrNaN().applyAsDouble( ( cm[0][0] + cm[0][1] ) / ( cm[0][0] + cm[1][0] ) );
+        return getDataFactory().ofDoubleScoreOutput( score, getMetadata( output ) );
     }
 
     @Override
@@ -54,7 +56,7 @@ public class FrequencyBias extends ContingencyTableScore<DichotomousPairs>
         @Override
         public FrequencyBias build() throws MetricParameterException
         {
-            return new FrequencyBias(this);
+            return new FrequencyBias( this );
         }
     }
 
@@ -65,9 +67,9 @@ public class FrequencyBias extends ContingencyTableScore<DichotomousPairs>
      * @throws MetricParameterException if one or more parameters is invalid
      */
 
-    private FrequencyBias(final FrequencyBiasBuilder builder) throws MetricParameterException
+    private FrequencyBias( final FrequencyBiasBuilder builder ) throws MetricParameterException
     {
-        super(builder);
+        super( builder );
     }
 
 }

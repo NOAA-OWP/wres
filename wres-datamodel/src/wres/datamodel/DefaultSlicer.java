@@ -25,7 +25,6 @@ import wres.datamodel.inputs.pairs.PairOfBooleans;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
-import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.ScoreOutput;
@@ -341,24 +340,20 @@ class DefaultSlicer implements Slicer
         List<PairOfDoubles> mainPairs = input.getData();
         List<PairOfBooleans> mainPairsTransformed = new ArrayList<>();
         mainPairs.stream().map( mapper ).forEach( mainPairsTransformed::add );
-        Metadata metaTransformed =
-                dataFac.getMetadataFactory().getMetadata( input.getMetadata(),
-                                                          dataFac.getMetadataFactory().getDimension() );
         if ( input.hasBaseline() )
         {
             List<PairOfDoubles> basePairs = input.getDataForBaseline();
             List<PairOfBooleans> basePairsTransformed = new ArrayList<>();
             basePairs.stream().map( mapper ).forEach( basePairsTransformed::add );
-            Metadata metaBaseTransformed = dataFac.getMetadataFactory()
-                                                  .getMetadata( input.getMetadataForBaseline(),
-                                                                dataFac.getMetadataFactory().getDimension() );
             return dataFac.ofDichotomousPairsFromAtomic( mainPairsTransformed,
                                                          basePairsTransformed,
-                                                         metaTransformed,
-                                                         metaBaseTransformed,
+                                                         input.getMetadata(),
+                                                         input.getMetadataForBaseline(),
                                                          input.getClimatology() );
         }
-        return dataFac.ofDichotomousPairsFromAtomic( mainPairsTransformed, metaTransformed, input.getClimatology() );
+        return dataFac.ofDichotomousPairsFromAtomic( mainPairsTransformed,
+                                                     input.getMetadata(),
+                                                     input.getClimatology() );
     }
 
     @Override

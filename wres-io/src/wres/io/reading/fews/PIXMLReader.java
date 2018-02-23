@@ -375,7 +375,7 @@ public final class PIXMLReader extends XMLReader
             String formattedDate = offsetDateTime.format( FORMATTER );
             addObservedEvent( formattedDate, this.getValueToSave( value ) );
         }
-		
+
 		if (insertCount >= SystemSettings.getMaximumCopies()) {
             saveLeftoverObservations();
 		}
@@ -486,7 +486,7 @@ public final class PIXMLReader extends XMLReader
 
     private void saveLeftoverObservations()
     {
-        if (insertCount > 0)
+        if ( inChargeOfIngest && insertCount > 0 )
         {
             insertCount = 0;
             CopyExecutor copier = new CopyExecutor(currentTableDefinition, currentScript.toString(), delimiter);

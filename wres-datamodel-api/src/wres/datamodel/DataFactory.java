@@ -138,6 +138,19 @@ public interface DataFactory
     {
         return getQuantileThreshold( threshold, null, probability, null, condition );
     }
+    
+    /**
+     * Return a {@link MatrixOutput}.
+     * 
+     * @param output the output data
+     * @param meta the metadata
+     * @return a {@link MatrixOutput}
+     */
+
+    default MatrixOutput ofMatrixOutput( final double[][] output, final MetricOutputMetadata meta )
+    {
+        return ofMatrixOutput( output, null, meta );
+    }
 
     /**
      * Construct the dichotomous input without any pairs for a baseline.
@@ -832,11 +845,14 @@ public interface DataFactory
      * Return a {@link MatrixOutput}.
      * 
      * @param output the output data
+     * @param names an optional list of names in row-major order, with as many elements as the cardinality of the matrix
      * @param meta the metadata
      * @return a {@link MatrixOutput}
      */
 
-    MatrixOutput ofMatrixOutput( final double[][] output, final MetricOutputMetadata meta );
+    MatrixOutput ofMatrixOutput( final double[][] output,
+                                 final List<MetricDimension> names,
+                                 final MetricOutputMetadata meta );
 
     /**
      * Return a {@link BoxPlotOutput}.

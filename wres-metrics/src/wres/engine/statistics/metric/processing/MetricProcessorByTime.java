@@ -34,6 +34,7 @@ import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.DurationScoreOutput;
+import wres.datamodel.outputs.MatrixOutput;
 import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold.MetricOutputForProjectByTimeAndThresholdBuilder;
@@ -164,6 +165,13 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
 
         private final ConcurrentMap<Pair<TimeWindow, Threshold>, List<Future<MetricOutputMapByMetric<PairedOutput<Instant, Duration>>>>> paired =
                 new ConcurrentHashMap<>();
+        
+        /**
+         * {@link MatrixOutput} results.
+         */
+
+        private final ConcurrentMap<Pair<TimeWindow, Threshold>, List<Future<MetricOutputMapByMetric<MatrixOutput>>>> matrix =
+                new ConcurrentHashMap<>();        
 
         /**
          * Returns the results associated with the futures.
@@ -182,6 +190,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
             multiVector.forEach( ( key, list ) -> list.forEach( value -> builder.addMultiVectorOutput( key, value ) ) );
             boxplot.forEach( ( key, list ) -> list.forEach( value -> builder.addBoxPlotOutput( key, value ) ) );
             paired.forEach( ( key, list ) -> list.forEach( value -> builder.addPairedOutput( key, value ) ) );
+            matrix.forEach( ( key, list ) -> list.forEach( value -> builder.addMatrixOutput( key, value ) ) );
             return builder.build();
         }
 
@@ -193,11 +202,9 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
 
         boolean hasFutureOutputs()
         {
-            boolean scoresEmpty = doubleScore.isEmpty() && durationScore.isEmpty();
-            return ! ( scoresEmpty
-                       && multiVector.isEmpty()
-                       && boxplot.isEmpty()
-                       && paired.isEmpty() );
+            boolean first = doubleScore.isEmpty() && durationScore.isEmpty() && multiVector.isEmpty();
+            boolean second = boxplot.isEmpty() && paired.isEmpty() && matrix.isEmpty();
+            return ! ( first && second );
         }
 
         /**
@@ -248,6 +255,13 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
             private final ConcurrentMap<Pair<TimeWindow, Threshold>, List<Future<MetricOutputMapByMetric<PairedOutput<Instant, Duration>>>>> paired =
                     new ConcurrentHashMap<>();
 
+            /**
+             * {@link MatrixOutput} results.
+             */
+
+            private final ConcurrentMap<Pair<TimeWindow, Threshold>, List<Future<MetricOutputMapByMetric<MatrixOutput>>>> matrix =
+                    new ConcurrentHashMap<>();
+            
             /**
              * Adds a data factory.
              * 
@@ -342,7 +356,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
             }
 
             /**
-             * Adds a set of future {@link PairedOutput} to the appropriate internal store.
+             * Adds a set of future {@link MatrixOutput} to the appropriate internal store.
              * 
              * @param key the key
              * @param value the future result
@@ -360,7 +374,27 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
                 }
                 return this;
             }
+            
+            /**
+             * Adds a set of future {@link MatrixOutput} to the appropriate internal store.
+             * 
+             * @param key the key
+             * @param value the future result
+             * @return the builder
+             */
 
+            MetricFuturesByTimeBuilder addMatrixOutput( Pair<TimeWindow, Threshold> key,
+                                                        Future<MetricOutputMapByMetric<MatrixOutput>> value )
+            {
+                List<Future<MetricOutputMapByMetric<MatrixOutput>>> result =
+                        matrix.putIfAbsent( key, new ArrayList<>( Arrays.asList( value ) ) );
+                if ( Objects.nonNull( result ) )
+                {
+                    result.add( value );
+                }
+                return this;
+            }
+            
             /**
              * Build the metric futures.
              * 
@@ -408,6 +442,10 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
                         {
                             paired.putAll( futures.paired );
                         }
+                        else if ( nextGroup == MetricOutputGroup.MATRIX )
+                        {
+                            matrix.putAll( futures.matrix );
+                        }
                     }
                 }
                 return this;
@@ -429,6 +467,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
             multiVector.putAll( builder.multiVector );
             boxplot.putAll( builder.boxplot );
             paired.putAll( builder.paired );
+            matrix.putAll( builder.matrix );
             dataFactory = builder.dataFactory;
         }
 
@@ -461,49 +500,33 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
     }
 
     /**
-     * Handles failures at individual thresholds due to insufficient data. Some failures are allowed, and are logged
-     * as warnings. However, if all thresholds fail, a {@link MetricCalculationException} is thrown to terminate 
-     * further processing, as this indicates a serious failure.
+     * Logs failures at individual thresholds due to insufficient data.
      * 
      * @param failures a map of failures and associated {@link MetricCalculationException}
      * @param thresholdCount the total number of thresholds attempted
      * @param meta the {@link Metadata} used to help focus messaging
      * @param inGroup the {@link MetricInputGroup} consumed by the metrics on which the failure occurred, used to 
      *            focus messaging
-     * @throws InsufficientDataException if all thresholds fail
      */
 
-    static void handleThresholdFailures( Map<Threshold, MetricCalculationException> failures,
+    static void logThresholdFailures( Map<Threshold, MetricCalculationException> failures,
                                          int thresholdCount,
                                          Metadata meta,
                                          MetricInputGroup inGroup )
     {
-        if ( failures.isEmpty() )
+        if ( Objects.isNull( failures ) || failures.isEmpty() )
         {
             return;
         }
-        //All failed: not allowed
-        if ( failures.size() == thresholdCount )
-        {
-            // Set the first failure as the cause
-            throw new InsufficientDataException( "Failed to compute metrics at all " + thresholdCount
-                                                 + " available thresholds at time window '"
-                                                 + meta.getTimeWindow()
-                                                 + "' as insufficient data was available.",
-                                                 failures.get( failures.keySet().iterator().next() ) );
-        }
-        else
-        {
-            // Aggregate, and report first instance
-            LOGGER.warn( "WARN: failed to compute {} of {} thresholds at time window {} for metrics that consume {} "
-                         + "inputs. "
-                         +
-                         failures.get( failures.keySet().iterator().next() ).getMessage(),
-                         failures.size(),
-                         thresholdCount,
-                         meta.getTimeWindow(),
-                         inGroup );
-        }
+        // Aggregate, and report first instance
+        LOGGER.warn( "WARN: failed to compute {} of {} thresholds at time window {} for metrics that consume {} "
+                     + "inputs. "
+                     +
+                     failures.get( failures.keySet().iterator().next() ).getMessage(),
+                     failures.size(),
+                     thresholdCount,
+                     meta.getTimeWindow(),
+                     inGroup );
     }
 
     /**
@@ -562,13 +585,13 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
                                                   outGroup,
                                                   useMe,
                                                   ignoreTheseMetricsForThisThreshold );
-            if ( !Objects.isNull( result ) )
+            if ( Objects.nonNull( result ) )
             {
                 failures.put( useMe, result );
             }
         } );
         //Handle any failures
-        handleThresholdFailures( failures, global.size(), input.getMetadata(), MetricInputGroup.SINGLE_VALUED );
+        logThresholdFailures( failures, global.size(), input.getMetadata(), MetricInputGroup.SINGLE_VALUED );
     }
 
     /**
@@ -648,7 +671,6 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
         {
             subset = dataFactory.getSlicer().filterByLeft( pairs, threshold );
         }
-        checkSlice( subset, threshold );
         SingleValuedPairs finalPairs = subset;
         return CompletableFuture.supplyAsync( () -> collection.apply( finalPairs, ignoreTheseMetricsForThisThreshold ),
                                               thresholdExecutor );

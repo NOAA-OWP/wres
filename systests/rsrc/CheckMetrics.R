@@ -39,7 +39,7 @@ discrete.probability <-list(
 categorical <-list(
 	c( rep("probability of detection", 2) ),
 	c( rep("probability of false detection", 2) ),
-	c( rep("critical success index", 2) ),
+	c( rep("threat score", 2) ),
 	c( rep("peirce skill score", 2) ),
 	c( rep("equitable threat score", 2) )
 )
@@ -373,7 +373,7 @@ getMetric <- function( metric )
 	      	result$F
 		}		
 	}
-	else if( lower  == "critical success index" )
+	else if( lower  == "threat score" )
 	{
 		function( left, right )
 		{		

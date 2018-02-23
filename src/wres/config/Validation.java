@@ -30,8 +30,8 @@ import wres.config.generated.Feature;
 import wres.config.generated.Format;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
+import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.PairConfig;
-import wres.config.generated.PlotTypeSelection;
 import wres.config.generated.PoolingWindowConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
@@ -255,7 +255,7 @@ public class Validation
         for ( MetricConfig next : metrics )
         {
             //Unnamed metric
-            if ( next.getName().equals( MetricConfigName.ALL_VALID ) && metrics.size() > 1 )
+            if ( MetricConfigName.ALL_VALID == next.getName() && metrics.size() > 1 )
             {
                 if ( LOGGER.isWarnEnabled() )
                 {
@@ -290,7 +290,7 @@ public class Validation
         for ( MetricConfig next : metrics )
         {
             // Named metric
-            if ( !next.getName().equals( MetricConfigName.ALL_VALID ) )
+            if ( Objects.nonNull( next.getName() ) && MetricConfigName.ALL_VALID != next.getName() )
             {
                 try
                 {
@@ -438,9 +438,9 @@ public class Validation
                                                  .getDestination() )
         {
             // Check that the plot type is consistent with other configuration
-            if ( projectConfig.getPair().getIssuedDatesPoolingWindow() != null && d.getGraphical() != null
-                 && d.getGraphical().getPlotType() != null
-                 && !d.getGraphical().getPlotType().equals( PlotTypeSelection.POOLING_WINDOW ) )
+            if ( projectConfig.getPair().getIssuedDatesPoolingWindow() != null
+                 && d.getOutputType() != null
+                 && d.getOutputType() != OutputTypeSelection.POOLING_WINDOW )
             {
                 result = false;
                 if ( LOGGER.isWarnEnabled() )
@@ -451,13 +451,12 @@ public class Validation
                                  d.sourceLocation().getLineNumber(),
                                  d.sourceLocation()
                                   .getColumnNumber(),
-                                 d.getGraphical().getPlotType() );
+                                 d.getOutputType() );
                 }
             }
-            else if ( projectConfig.getPair().getIssuedDatesPoolingWindow() == null && d.getGraphical() != null
-                      && d.getGraphical().getPlotType() != null
-                      &&
-                      d.getGraphical().getPlotType().equals( PlotTypeSelection.POOLING_WINDOW ) )
+            else if ( projectConfig.getPair().getIssuedDatesPoolingWindow() == null
+                      && d.getOutputType() != null
+                      && d.getOutputType() == OutputTypeSelection.POOLING_WINDOW )
             {
                 result = false;
                 if ( LOGGER.isWarnEnabled() )
@@ -468,7 +467,7 @@ public class Validation
                                  d.sourceLocation().getLineNumber(),
                                  d.sourceLocation()
                                   .getColumnNumber(),
-                                 d.getGraphical().getPlotType() );
+                                 d.getOutputType() );
                 }
             }
 

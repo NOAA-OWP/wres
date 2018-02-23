@@ -47,8 +47,8 @@
         <!--
         <destination type="graphic">
             <path>output/scenario406/</path>
+            <outputType>lead threshold</outputType>
             <graphical width="800" height="600">
-                <plotType>lead threshold</plotType>
             </graphical>
         </destination>
         -->

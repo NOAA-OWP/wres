@@ -77,13 +77,13 @@ public final class EquitableThreatScoreTest
         assertTrue( "The Equitable Threat Score is a skill score.", ets.isSkillScore() );
         assertTrue( "The Equitable Threat Score cannot be decomposed.",
                     ets.getScoreOutputGroup() == ScoreOutputGroup.NONE );
-        final String expName = metF.ofContingencyTable().getName();
+        final String expName = metF.ofDichotomousContingencyTable().getName();
         final String actName = ets.getCollectionOf().toString();
         assertTrue( "The Equitable Threat Score should be a collection of '" + expName
                     + "', but is actually a collection of '"
                     + actName
                     + "'.",
-                    ets.getCollectionOf() == metF.ofContingencyTable().getID() );
+                    ets.getCollectionOf() == metF.ofDichotomousContingencyTable().getID() );
     }
 
     /**

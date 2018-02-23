@@ -73,13 +73,13 @@ public final class ProbabilityOfDetectionTest
         assertTrue( "The Probability of Detection is not a skill score.", !pod.isSkillScore() );
         assertTrue( "The Probability of Detection cannot be decomposed.",
                     pod.getScoreOutputGroup() == ScoreOutputGroup.NONE );
-        final String expName = metF.ofContingencyTable().getName();
+        final String expName = metF.ofDichotomousContingencyTable().getName();
         final String actName = pod.getCollectionOf().toString();
         assertTrue( "The Probability of Detection should be a collection of '" + expName
                     + "', but is actually a collection of '"
                     + actName
                     + "'.",
-                    pod.getCollectionOf() == metF.ofContingencyTable().getID() );
+                    pod.getCollectionOf() == metF.ofDichotomousContingencyTable().getID() );
     }
 
 }

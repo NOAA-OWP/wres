@@ -73,13 +73,13 @@ public final class FrequencyBiasTest
         assertTrue( "The Frequency Bias is not a skill score.", !fb.isSkillScore() );
         assertTrue( "The Frequency Bias cannot be decomposed.",
                     fb.getScoreOutputGroup() == ScoreOutputGroup.NONE );
-        final String expName = metF.ofContingencyTable().getName();
+        final String expName = metF.ofDichotomousContingencyTable().getName();
         final String actName = fb.getCollectionOf().toString();
         assertTrue( "The Frequency Bias should be a collection of '" + expName
                     + "', but is actually a collection of '"
                     + actName
                     + "'.",
-                    fb.getCollectionOf() == metF.ofContingencyTable().getID() );
+                    fb.getCollectionOf() == metF.ofDichotomousContingencyTable().getID() );
 
     }
 
