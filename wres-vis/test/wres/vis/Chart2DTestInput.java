@@ -1,6 +1,7 @@
 package wres.vis;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -10,8 +11,11 @@ import javax.swing.JPanel;
 
 import junit.framework.TestCase;
 import ohd.hseb.charter.ChartEngine;
+import ohd.hseb.charter.ChartEngineException;
 import ohd.hseb.charter.ChartPanelTools;
 import ohd.hseb.charter.ChartTools;
+import ohd.hseb.charter.datasource.XYChartDataSourceException;
+
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
@@ -22,6 +26,7 @@ import wres.datamodel.metadata.MetadataFactory;
 public class Chart2DTestInput extends TestCase
 {
     public void test1SingleValuedPairsScatter()
+            throws ChartEngineException, XYChartDataSourceException, IOException
     {
         final Random rand = new Random(0L);
         final DataFactory metIn = DefaultDataFactory.getInstance();
@@ -34,23 +39,21 @@ public class Chart2DTestInput extends TestCase
         final Metadata meta = metFac.getMetadata(metFac.getDimension("CMS"),
                                                  metFac.getDatasetIdentifier("DRRC2", "SQIN", "HEFS"));
         final SingleValuedPairs pairs = metIn.ofSingleValuedPairs(values, meta);
-        
-        //Construct the source from the pairs assigning it a data source order index of 0.  
+
+        //Construct the source from the pairs assigning it a data source order index of 0.
         //The order index indicates the order in which the different sources are rendered.
 
         final String scenarioName = "test1";
-        try
-        {
-            //Build the ChartEngine instance.
-            final ChartEngine engine = ChartEngineFactory.buildSingleValuedPairsChartEngine(pairs, 
-                                                                   "singleValuedPairsTemplate.xml",
-                                                                   null);
+        //Build the ChartEngine instance.
+        final ChartEngine engine = ChartEngineFactory.buildSingleValuedPairsChartEngine( pairs,
+                                                                                         "singleValuedPairsTemplate.xml",
+                                                                                         null );
 
-            //Generate the output file.
-            ChartTools.generateOutputImageFile(new File("testoutput/chart2DTest/" + scenarioName + "_output.png"),
-                                               engine.buildChart(),
-                                               800,
-                                               500);
+        //Generate the output file.
+        ChartTools.generateOutputImageFile( new File( "testoutput/chart2DTest/" + scenarioName + "_output.png" ),
+                                            engine.buildChart(),
+                                            800,
+                                            500 );
 
             //Compare against OS specific image benchmark.
 //Turned off because this often fails.
@@ -61,12 +64,7 @@ public class Chart2DTestInput extends TestCase
 //                                                                      8,
 //                                                                      true,
 //                                                                      false);
-        }
-        catch(final Throwable t)
-        {
-            t.printStackTrace();
-            fail("Unexpected exception: " + t.getMessage());
-        }
+
     }
 
     public static void main(final String[] args)
@@ -101,10 +99,10 @@ public class Chart2DTestInput extends TestCase
             frame.setSize(800, 500);
             frame.setVisible(true);
         }
-        catch(final Throwable t)
+        catch( Exception e )
         {
-            t.printStackTrace();
-            fail("Unexpected exception: " + t.getMessage());
+            e.printStackTrace();
+            fail( "Unexpected exception: " + e.getMessage() );
         }
     }
 
@@ -127,7 +125,7 @@ public class Chart2DTestInput extends TestCase
 //        }
 //
 //    }
-    
-    
-    
+
+
+
 }
