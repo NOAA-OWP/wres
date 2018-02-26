@@ -64,7 +64,7 @@ public abstract class Chart2DTestDataGenerator
                                  { 0.95, 13685.0 }, { 0.99, 26648.0 } };
         for ( final double[] next : allow )
         {
-            combine.add( full.filterByThreshold( outputFactory.getQuantileThreshold( next[1],
+            combine.add( full.filterByThreshold( outputFactory.ofQuantileThreshold( next[1],
                                                                                     next[0],
                                                                                     Operator.GREATER ) ) );
         }
@@ -141,7 +141,7 @@ public abstract class Chart2DTestDataGenerator
                 final DoubleProcedureParameter f = ( DoubleProcedureParameter ) e.next().getKey();
                 final double[] constants = f.getParValReal().getConstants();
                 final double[] probConstants = f.getParVal().getConstants();
-                final Threshold q = outputFactory.getQuantileThreshold( constants[0],
+                final Threshold q = outputFactory.ofQuantileThreshold( constants[0],
                                                                         probConstants[0],
                                                                         Operator.GREATER );
                 TimeWindow window = TimeWindow.of( Instant.MIN,
@@ -208,7 +208,7 @@ public abstract class Chart2DTestDataGenerator
                 final DoubleProcedureParameter f = ( DoubleProcedureParameter ) e.next().getKey();
                 final double[] constants = f.getParValReal().getConstants();
                 final double[] probConstants = f.getParVal().getConstants();
-                final Threshold q = outputFactory.getQuantileThreshold( constants[0],
+                final Threshold q = outputFactory.ofQuantileThreshold( constants[0],
                                                                         probConstants[0],
                                                                         Operator.GREATER );
                 TimeWindow window = TimeWindow.of( Instant.MIN,
@@ -250,7 +250,7 @@ public abstract class Chart2DTestDataGenerator
                 new double[][] { { 0.1, 858.04 }, { 0.5, 2707.5 }, { 0.9, 9647.0 }, { 0.95, 13685.0 } };
         for ( final double[] next : allow )
         {
-            allowed.add( outputFactory.getQuantileThreshold( next[1], next[0], Operator.GREATER ) );
+            allowed.add( outputFactory.ofQuantileThreshold( next[1], next[0], Operator.GREATER ) );
         }
 
         //Create the input file
@@ -294,7 +294,7 @@ public abstract class Chart2DTestDataGenerator
                 final DoubleProcedureParameter f = ( DoubleProcedureParameter ) e.next().getKey();
                 final double[] constants = f.getParValReal().getConstants();
                 final double[] probConstants = f.getParVal().getConstants();
-                final Threshold q = outputFactory.getQuantileThreshold( constants[0],
+                final Threshold q = outputFactory.ofQuantileThreshold( constants[0],
                                                                         probConstants[0],
                                                                         Operator.GREATER );
                 //Read only selected quantiles
@@ -366,7 +366,7 @@ public abstract class Chart2DTestDataGenerator
                 new double[][] { { 0.1, 858.04 }, { 0.5, 2707.5 }, { 0.9, 9647.0 }, { 0.95, 13685.0 } };
         for ( final double[] next : allow )
         {
-            allowed.add( outputFactory.getQuantileThreshold( next[1], next[0], Operator.GREATER ) );
+            allowed.add( outputFactory.ofQuantileThreshold( next[1], next[0], Operator.GREATER ) );
         }
 
         //Create the input file
@@ -400,7 +400,7 @@ public abstract class Chart2DTestDataGenerator
                 final DoubleProcedureParameter f = ( DoubleProcedureParameter ) e.next().getKey();
                 final double[] constants = f.getParValReal().getConstants();
                 final double[] probConstants = f.getParVal().getConstants();
-                final Threshold q = outputFactory.getQuantileThreshold( constants[0],
+                final Threshold q = outputFactory.ofQuantileThreshold( constants[0],
                                                                         probConstants[0],
                                                                         Operator.GREATER );
                 //Read only selected quantiles
@@ -497,7 +497,7 @@ public abstract class Chart2DTestDataGenerator
                 final DoubleProcedureParameter f = ( DoubleProcedureParameter ) e.next().getKey();
                 final double[] constants = f.getParValReal().getConstants();
                 final double[] probConstants = f.getParVal().getConstants();
-                final Threshold q = outputFactory.getQuantileThreshold( constants[0],
+                final Threshold q = outputFactory.ofQuantileThreshold( constants[0],
                                                                         probConstants[0],
                                                                         Operator.GREATER );
                 TimeWindow window = TimeWindow.of( Instant.MIN,
@@ -574,7 +574,7 @@ public abstract class Chart2DTestDataGenerator
                                                                          windowMeta );
 
         //Single threshold
-        final Threshold threshold = outputFactory.getQuantileThreshold( Double.NEGATIVE_INFINITY,
+        final Threshold threshold = outputFactory.ofQuantileThreshold( Double.NEGATIVE_INFINITY,
                                                                         Double.NEGATIVE_INFINITY,
                                                                         Operator.GREATER );
 
@@ -637,7 +637,7 @@ public abstract class Chart2DTestDataGenerator
                                                                                                            "PRECIPITATION",
                                                                                                            "HEFS" ) );
         //Single threshold
-        final Threshold threshold = outputFactory.getQuantileThreshold( Double.NEGATIVE_INFINITY,
+        final Threshold threshold = outputFactory.ofQuantileThreshold( Double.NEGATIVE_INFINITY,
                                                                         Double.NEGATIVE_INFINITY,
                                                                         Operator.GREATER );
 
@@ -709,7 +709,7 @@ public abstract class Chart2DTestDataGenerator
                                                                                                            "PRECIPITATION",
                                                                                                            "HEFS" ) );
         //Single threshold
-        final Threshold threshold = outputFactory.getQuantileThreshold( Double.NEGATIVE_INFINITY,
+        final Threshold threshold = outputFactory.ofQuantileThreshold( Double.NEGATIVE_INFINITY,
                                                                         Double.NEGATIVE_INFINITY,
                                                                         Operator.GREATER );
 
@@ -779,7 +779,7 @@ public abstract class Chart2DTestDataGenerator
         Duration frequency = Duration.ofDays( 30 );
 
         // Threshold
-        final Threshold threshold = outputFactory.getQuantileThreshold( Double.NEGATIVE_INFINITY,
+        final Threshold threshold = outputFactory.ofQuantileThreshold( Double.NEGATIVE_INFINITY,
                                                                         Double.NEGATIVE_INFINITY,
                                                                         Operator.GREATER );
 
@@ -883,7 +883,7 @@ public abstract class Chart2DTestDataGenerator
                                          -0.28105802405674500
         };
         // Build the map
-        Threshold threshold = outputFactory.getThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER );
+        Threshold threshold = outputFactory.ofThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER );
         for ( int i = 0; i < scores.length; i++ )
         {
             String nextDate = "2017-08-08T" + String.format( "%02d", i ) + ":00:00Z";
@@ -941,7 +941,7 @@ public abstract class Chart2DTestDataGenerator
                                                                window );
         // Build and return
         Map<Pair<TimeWindow, Threshold>, PairedOutput<Instant, Duration>> rawData = new TreeMap<>();
-        rawData.put( Pair.of( window, outF.getThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER ) ),
+        rawData.put( Pair.of( window, outF.ofThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER ) ),
                      outF.ofPairedOutput( input, meta ) );
         return outF.ofMap( rawData );
     }
@@ -990,7 +990,7 @@ public abstract class Chart2DTestDataGenerator
                                                                                              "HEFS" ),
                                                                window );
         Map<Pair<TimeWindow, Threshold>, DurationScoreOutput> rawData = new TreeMap<>();
-        rawData.put( Pair.of( window, outF.getThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER ) ),
+        rawData.put( Pair.of( window, outF.ofThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER ) ),
                      outF.ofDurationScoreOutput( returnMe, meta ) );
         return outF.ofMap( rawData );
     }
