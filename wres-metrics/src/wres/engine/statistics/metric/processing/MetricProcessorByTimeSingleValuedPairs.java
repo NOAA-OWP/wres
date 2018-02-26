@@ -79,8 +79,8 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
      * {@link MatrixOutput}.
      */
 
-    private final MetricCollection<DichotomousPairs, MatrixOutput, MatrixOutput> dichotomousMatrix;    
-    
+    private final MetricCollection<DichotomousPairs, MatrixOutput, MatrixOutput> dichotomousMatrix;
+
     /**
      * A {@link MetricCollection} of {@link Metric} that consume {@link TimeSeriesOfSingleValuedPairs} and produce
      * {@link PairedOutput}.
@@ -244,12 +244,26 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                      || next.isInGroup( MetricInputGroup.DICHOTOMOUS ) ) )
             {
                 throw new MetricConfigurationException( "Cannot configure '" + next
-                                                        + "' for "
-                                                        + MetricInputGroup.SINGLE_VALUED
-                                                        + ": correct the configuration '"
+                                                        + "' for single-valued inputs: correct the configuration "
+                                                        + "labelled '"
                                                         + config.getLabel()
                                                         + "'." );
             }
+        }
+        // Check that time-series metrics are not combined with other metrics
+        String message = "Cannot configure time-series metrics together with non-time-series "
+                         + "metrics: correct the configuration labelled '"
+                         + config.getLabel()
+                         + "'.";
+        if ( !config.getMetrics().getTimeSeriesMetric().isEmpty()
+             && ( hasMetrics( MetricInputGroup.SINGLE_VALUED ) || hasMetrics( MetricInputGroup.DICHOTOMOUS ) ) )
+        {
+            throw new MetricConfigurationException( message );
+        }
+        if ( hasMetrics( MetricInputGroup.SINGLE_VALUED_TIME_SERIES )
+             && ( hasMetrics( MetricInputGroup.SINGLE_VALUED ) || hasMetrics( MetricInputGroup.DICHOTOMOUS ) ) )
+        {
+            throw new MetricConfigurationException( message );
         }
     }
 
@@ -310,8 +324,8 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
         {
             processDichotomousPairs( timeWindow, input, futures, MetricOutputGroup.MATRIX );
         }
-    }    
-    
+    }
+
     /**
      * Processes a set of metric futures that consume {@link DichotomousPairs}, which are mapped from the input pairs,
      * {@link SingleValuedPairs}, using a configured mapping function. Skips any thresholds for which

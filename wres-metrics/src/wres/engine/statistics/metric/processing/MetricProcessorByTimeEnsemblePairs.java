@@ -265,13 +265,15 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
     {
         if ( hasMetrics( MetricInputGroup.DICHOTOMOUS ) )
         {
-            throw new MetricConfigurationException( "Cannot configure dichotomous metrics for ensemble inputs: correct the configuration '"
-                                                    + config.getLabel() + "'." );
+            throw new MetricConfigurationException( "Cannot configure dichotomous metrics for ensemble inputs: correct "
+                                                    + "the configuration labelled '" + config.getLabel() + "'." );
         }
         if ( hasMetrics( MetricInputGroup.MULTICATEGORY ) )
         {
-            throw new MetricConfigurationException( "Cannot configure multicategory metrics for ensemble inputs: correct the configuration '"
-                                                    + config.getLabel() + "'." );
+            throw new MetricConfigurationException( "Cannot configure multicategory metrics for ensemble inputs: "
+                                                    + "correct the configuration labelled '"
+                                                    + config.getLabel()
+                                                    + "'." );
         }
         //Ensemble input, vector output
         if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.SCORE )
@@ -279,7 +281,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
              && Objects.isNull( config.getInputs().getBaseline() ) )
         {
             throw new MetricConfigurationException( "Specify a non-null baseline from which to generate the '"
-                                                    + MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE
+                                                    + MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE.name()
                                                     + "'." );
         }
     }
@@ -485,9 +487,9 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         } );
         //Handle any failures
         logThresholdFailures( failures,
-                                 global.size(),
-                                 input.getMetadata(),
-                                 MetricInputGroup.DISCRETE_PROBABILITY );
+                              global.size(),
+                              input.getMetadata(),
+                              MetricInputGroup.DISCRETE_PROBABILITY );
     }
 
     /**
