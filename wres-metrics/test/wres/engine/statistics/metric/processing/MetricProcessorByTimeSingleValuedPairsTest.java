@@ -178,7 +178,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                  Instant.MAX,
                                                  ReferenceTime.VALID_TIME,
                                                  Duration.ofHours( 1 ) );
-        Pair<TimeWindow,Threshold> key = Pair.of( expectedWindow, metIn.getThreshold( 1.0, Operator.GREATER ) );
+        Pair<TimeWindow,Threshold> key = Pair.of( expectedWindow, metIn.ofThreshold( 1.0, Operator.GREATER ) );
         assertTrue( "Unexpected results for the contingency table.",
                     expected.equals( processor.getCachedMetricOutput()
                                               .getMatrixOutput()
@@ -375,9 +375,9 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         PairedOutput<Instant, Duration> expectedErrorsSecond =
                 metIn.ofPairedOutput( expectedSecond, metaFac.getOutputMetadata( m1, secondWindow ) );
         Map<Pair<TimeWindow, Threshold>, PairedOutput<Instant, Duration>> inMap = new HashMap<>();
-        inMap.put( Pair.of( firstWindow, metIn.getThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER ) ),
+        inMap.put( Pair.of( firstWindow, metIn.ofThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER ) ),
                    expectedErrorsFirst );
-        inMap.put( Pair.of( secondWindow, metIn.getThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER ) ),
+        inMap.put( Pair.of( secondWindow, metIn.ofThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER ) ),
                    expectedErrorsSecond );
         MetricOutputMapByTimeAndThreshold<PairedOutput<Instant, Duration>> mapped = metIn.ofMap( inMap );
         MetricOutputMultiMapByTimeAndThresholdBuilder<PairedOutput<Instant, Duration>> builder = metIn.ofMultiMap();
@@ -450,7 +450,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                     combinedWindow );
         DurationScoreOutput expectedScoresSource = metIn.ofDurationScoreOutput( expectedSource, scoreMeta );
         Map<Pair<TimeWindow, Threshold>, DurationScoreOutput> scoreInMap = new HashMap<>();
-        scoreInMap.put( Pair.of( combinedWindow, metIn.getThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER ) ),
+        scoreInMap.put( Pair.of( combinedWindow, metIn.ofThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER ) ),
                         expectedScoresSource );
         MetricOutputMapByTimeAndThreshold<DurationScoreOutput> mappedScores = metIn.ofMap( scoreInMap );
         MetricOutputMultiMapByTimeAndThresholdBuilder<DurationScoreOutput> scoreBuilder = metIn.ofMultiMap();

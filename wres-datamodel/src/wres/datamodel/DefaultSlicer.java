@@ -487,11 +487,12 @@ class DefaultSlicer implements Slicer
                 second = round().apply( second, digits );
             }
         }
-        return dataFac.getQuantileThreshold( first,
-                                             second,
-                                             threshold.getThresholdProbability(),
-                                             threshold.getThresholdUpperProbability(),
-                                             threshold.getCondition() );
+        return dataFac.ofQuantileThreshold( first,
+                                            second,
+                                            threshold.getThresholdProbability(),
+                                            threshold.getThresholdUpperProbability(),
+                                            threshold.getCondition(),
+                                            threshold.getLabel() );
     }
 
     /**

@@ -281,7 +281,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
             PairedOutput<Instant, Duration> union = dataFactory.unionOf( output.values() );
             TimeWindow unionWindow = union.getMetadata().getTimeWindow();
             Pair<TimeWindow, Threshold> key =
-                    Pair.of( unionWindow, dataFactory.getThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER ) );
+                    Pair.of( unionWindow, dataFactory.ofThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER ) );
             //Build the future result
             Supplier<MetricOutputMapByMetric<DurationScoreOutput>> supplier = () -> {
                 DurationScoreOutput result = timeToPeakErrorStats.aggregate( union );
@@ -390,7 +390,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                                                thresholdExecutor );
         //Add the future result to the store
         futures.addPairedOutput( Pair.of( timeWindow,
-                                          dataFactory.getThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER ) ),
+                                          dataFactory.ofThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER ) ),
                                  output );
     }
 

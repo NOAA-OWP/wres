@@ -230,11 +230,11 @@ public final class DefaultDataFactoryTest
         Pair<TimeWindow, Threshold> first = Pair.of( metIn.ofTimeWindow( Instant.MIN,
                                                                          Instant.MAX,
                                                                          ReferenceTime.ISSUE_TIME ),
-                                                     metIn.getThreshold( 1.0, Operator.GREATER ) );
+                                                     metIn.ofThreshold( 1.0, Operator.GREATER ) );
         Pair<TimeWindow, Threshold> second = Pair.of( metIn.ofTimeWindow( Instant.MIN,
                                                                           Instant.MAX,
                                                                           ReferenceTime.ISSUE_TIME ),
-                                                      metIn.getThreshold( 1.0, Operator.GREATER ) );
+                                                      metIn.ofThreshold( 1.0, Operator.GREATER ) );
         assertTrue( "Expected equality.",
                     first.compareTo( second ) == 0 && second.compareTo( first ) == 0 && first.equals( second ) );
         //Test inequality and anticommutativity 
@@ -242,7 +242,7 @@ public final class DefaultDataFactoryTest
         Pair<TimeWindow, Threshold> third = Pair.of( metIn.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                                          Instant.MAX,
                                                                          ReferenceTime.ISSUE_TIME ),
-                                                     metIn.getThreshold( 1.0, Operator.GREATER ) );
+                                                     metIn.ofThreshold( 1.0, Operator.GREATER ) );
         assertTrue( "Expected greater than.", third.compareTo( first ) > 0 );
         assertTrue( "Expected anticommutativity.",
                     Math.abs( first.compareTo( third ) ) == Math.abs( third.compareTo( first ) ) );
@@ -250,7 +250,7 @@ public final class DefaultDataFactoryTest
         Pair<TimeWindow, Threshold> fourth = Pair.of( metIn.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                                           Instant.parse( "1986-01-01T00:00:00Z" ),
                                                                           ReferenceTime.ISSUE_TIME ),
-                                                      metIn.getThreshold( 1.0, Operator.GREATER ) );
+                                                      metIn.ofThreshold( 1.0, Operator.GREATER ) );
         assertTrue( "Expected greater than.", third.compareTo( fourth ) > 0 );
         assertTrue( "Expected anticommutativity.",
                     Math.abs( third.compareTo( fourth ) ) == Math.abs( fourth.compareTo( third ) ) );
@@ -258,7 +258,7 @@ public final class DefaultDataFactoryTest
         Pair<TimeWindow, Threshold> fifth = Pair.of( metIn.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                                          Instant.parse( "1986-01-01T00:00:00Z" ),
                                                                          ReferenceTime.VALID_TIME ),
-                                                     metIn.getThreshold( 1.0, Operator.GREATER ) );
+                                                     metIn.ofThreshold( 1.0, Operator.GREATER ) );
         assertTrue( "Expected greater than.", fourth.compareTo( fifth ) > 0 );
         assertTrue( "Expected anticommutativity.",
                     Math.abs( fourth.compareTo( fifth ) ) == Math.abs( fifth.compareTo( fourth ) ) );
@@ -266,7 +266,7 @@ public final class DefaultDataFactoryTest
         Pair<TimeWindow, Threshold> sixth = Pair.of( metIn.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                                          Instant.parse( "1986-01-01T00:00:00Z" ),
                                                                          ReferenceTime.VALID_TIME ),
-                                                     metIn.getThreshold( 0.0, Operator.GREATER ) );
+                                                     metIn.ofThreshold( 0.0, Operator.GREATER ) );
         assertTrue( "Expected greater than.", fifth.compareTo( sixth ) > 0 );
         assertTrue( "Expected anticommutativity.",
                     Math.abs( fifth.compareTo( sixth ) ) == Math.abs( sixth.compareTo( fifth ) ) );
@@ -292,15 +292,15 @@ public final class DefaultDataFactoryTest
         Pair<TimeWindow, Threshold> zeroeth = Pair.of( metIn.ofTimeWindow( Instant.MIN,
                                                                            Instant.MAX,
                                                                            ReferenceTime.ISSUE_TIME ),
-                                                       metIn.getThreshold( 1.0, Operator.GREATER ) );
+                                                       metIn.ofThreshold( 1.0, Operator.GREATER ) );
         Pair<TimeWindow, Threshold> first = Pair.of( metIn.ofTimeWindow( Instant.MIN,
                                                                          Instant.MAX,
                                                                          ReferenceTime.ISSUE_TIME ),
-                                                     metIn.getThreshold( 1.0, Operator.GREATER ) );
+                                                     metIn.ofThreshold( 1.0, Operator.GREATER ) );
         Pair<TimeWindow, Threshold> second = Pair.of( metIn.ofTimeWindow( Instant.MIN,
                                                                           Instant.MAX,
                                                                           ReferenceTime.ISSUE_TIME ),
-                                                      metIn.getThreshold( 1.0, Operator.GREATER ) );
+                                                      metIn.ofThreshold( 1.0, Operator.GREATER ) );
         //Reflexive
         assertEquals( "Expected reflexive equality.", first, first );
         //Symmetric 
@@ -318,25 +318,25 @@ public final class DefaultDataFactoryTest
         Pair<TimeWindow, Threshold> third = Pair.of( metIn.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                                          Instant.MAX,
                                                                          ReferenceTime.ISSUE_TIME ),
-                                                     metIn.getThreshold( 1.0, Operator.GREATER ) );
+                                                     metIn.ofThreshold( 1.0, Operator.GREATER ) );
         assertTrue( "Expected inequality.", !third.equals( first ) );
         //Latest date
         Pair<TimeWindow, Threshold> fourth = Pair.of( metIn.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                                           Instant.parse( "1986-01-01T00:00:00Z" ),
                                                                           ReferenceTime.ISSUE_TIME ),
-                                                      metIn.getThreshold( 1.0, Operator.GREATER ) );
+                                                      metIn.ofThreshold( 1.0, Operator.GREATER ) );
         assertTrue( "Expected inequality.", !third.equals( fourth ) );
         //Reference time
         Pair<TimeWindow, Threshold> fifth = Pair.of( metIn.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                                          Instant.parse( "1986-01-01T00:00:00Z" ),
                                                                          ReferenceTime.VALID_TIME ),
-                                                     metIn.getThreshold( 1.0, Operator.GREATER ) );
+                                                     metIn.ofThreshold( 1.0, Operator.GREATER ) );
         assertTrue( "Expected inequality.", !fourth.equals( fifth ) );
         //Threshold
         Pair<TimeWindow, Threshold> sixth = Pair.of( metIn.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                                          Instant.parse( "1986-01-01T00:00:00Z" ),
                                                                          ReferenceTime.VALID_TIME ),
-                                                     metIn.getThreshold( 0.0, Operator.GREATER ) );
+                                                     metIn.ofThreshold( 0.0, Operator.GREATER ) );
         assertTrue( "Expected inequality.", !fifth.equals( sixth ) );
     }
 

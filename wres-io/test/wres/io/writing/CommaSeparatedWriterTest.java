@@ -158,7 +158,7 @@ public class CommaSeparatedWriterTest
 
         // Fake lead time and threshold
         Pair<TimeWindow, Threshold> mapKeyByLeadThreshold =
-                outputFactory.getMapKeyByTimeThreshold( timeOne,
+                outputFactory.ofMapKeyByTimeThreshold( timeOne,
                                                         Double.NEGATIVE_INFINITY,
                                                         Threshold.Operator.GREATER );
 
@@ -275,7 +275,7 @@ public class CommaSeparatedWriterTest
 
         // Fake lead time and threshold
         Pair<TimeWindow, Threshold> mapKeyByLeadThreshold =
-                outputFactory.getMapKeyByTimeThreshold( timeOne,
+                outputFactory.ofMapKeyByTimeThreshold( timeOne,
                                                         Double.NEGATIVE_INFINITY,
                                                         Threshold.Operator.GREATER );
 
@@ -372,7 +372,7 @@ public class CommaSeparatedWriterTest
 
         // Fake lead time and threshold
         Pair<TimeWindow, Threshold> mapKeyByLeadThreshold =
-                outputFactory.getMapKeyByTimeThreshold( timeOne,
+                outputFactory.ofMapKeyByTimeThreshold( timeOne,
                                                         Double.NEGATIVE_INFINITY,
                                                         Threshold.Operator.GREATER );
 
@@ -477,7 +477,7 @@ public class CommaSeparatedWriterTest
 
         // Fake lead time and threshold
         Pair<TimeWindow, Threshold> mapKeyByLeadThreshold =
-                Pair.of( timeOne, outputFactory.getQuantileThreshold( 11.94128,
+                Pair.of( timeOne, outputFactory.ofQuantileThreshold( 11.94128,
                                                                       0.9,
                                                                       Operator.GREATER_EQUAL ) );
 
@@ -591,7 +591,7 @@ public class CommaSeparatedWriterTest
 
         // Fake lead time and threshold
         Pair<TimeWindow, Threshold> mapKeyByLeadThreshold =
-                Pair.of( timeOne, outputFactory.getThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER ) );
+                Pair.of( timeOne, outputFactory.ofThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER ) );
 
         outputBuilder.addBoxPlotOutput( mapKeyByLeadThreshold,
                                             outputMapByMetricFuture );
@@ -696,7 +696,7 @@ public class CommaSeparatedWriterTest
 
         // Fake lead time and threshold
         Pair<TimeWindow, Threshold> mapKeyByLeadThreshold =
-                Pair.of( timeOne, outputFactory.getThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER ) );
+                Pair.of( timeOne, outputFactory.ofThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER ) );
 
         outputBuilder.addMatrixOutput( mapKeyByLeadThreshold,
                                             outputMapByMetricFuture );
