@@ -11,7 +11,6 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.Instant;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -61,6 +60,10 @@ public final class Database {
     private Database(){}
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Database.class);
+
+	// The ingest lock key kind of resembles word INGEST, doesn't it?
+	private static final long MUTATION_LOCK_KEY = 126357;
+	private static final long MUTATION_LOCK_WAIT_MS = 32000;
 
 	/**
 	 * The standard priority set of connections to the database
@@ -1472,4 +1475,94 @@ public final class Database {
     {
         return Database.CONNECTION_POOL;
     }
+
+    /**
+     * Lock the database for mutation so that we can do clean up accurately.
+     * @throws IOException when lock cannot be acquired or db has an error
+     */
+
+    public static void lockForMutation() throws IOException
+    {
+        final String RESULT_COLUMN = "pg_try_advisory_lock";
+        final String TRY_LOCK_SCRIPT = "SELECT pg_try_advisory_lock( "
+                                       + MUTATION_LOCK_KEY
+                                       + " )";
+        final long START_TIME_MILLIS = System.currentTimeMillis();
+
+        final long BACKOFF_START_MILLIS = 1000;
+        final long BACKOFF_MULTIPLIER = 2;
+        long backoff = BACKOFF_START_MILLIS;
+
+        try
+        {
+            boolean shouldTryAgain;
+
+            do
+            {
+                boolean successfullyLocked =
+                        Database.getResult( TRY_LOCK_SCRIPT, RESULT_COLUMN );
+
+                backoff = backoff * BACKOFF_MULTIPLIER;
+
+                shouldTryAgain =  START_TIME_MILLIS + MUTATION_LOCK_WAIT_MS
+                                  >= System.currentTimeMillis() + backoff;
+
+                if ( successfullyLocked )
+                {
+                    LOGGER.info( "Successfully acquired database change privileges." );
+                    break;
+                }
+                else
+                {
+                    if ( shouldTryAgain )
+                    {
+                        LOGGER.info( "Waiting for another wres process to finish modifying the database..." );
+                        Thread.sleep( backoff );
+                    }
+                    else
+                    {
+                        throw new IOException( "Another wres process is taking "
+                                               + "a while. Gave up trying to "
+                                               + "start ingest. Wait a bit "
+                                               + "and try again." );
+                    }
+                }
+            }
+            while ( shouldTryAgain );
+        }
+        catch ( InterruptedException ie )
+        {
+            Thread.currentThread().interrupt();
+        }
+        catch ( SQLException se )
+        {
+            throw new IngestException( "While attempting to acquire database change privileges",
+                                       se );
+        }
+    }
+
+
+    /**
+     * Release the lock for database mutation. The lock should also be released
+     * automatically by postgres if our process dies.
+     * @throws IOException when anything goes wrong
+     */
+
+    public static void releaseLockForMutation() throws IOException
+    {
+        final String RELEASE_LOCK_SCRIPT = "SELECT pg_advisory_unlock( "
+                                           + MUTATION_LOCK_KEY
+                                           + " )";
+        try
+        {
+            Database.execute( RELEASE_LOCK_SCRIPT );
+            LOGGER.info( "Successfully released database change privileges." );
+        }
+        catch ( SQLException se )
+        {
+            throw new IOException( "Failed to release database change privileges.",
+                                   se );
+        }
+    }
+
 }
