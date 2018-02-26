@@ -15,7 +15,7 @@ import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MetricOutputAccessException;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.io.config.ProjectConfigPlus;
-import wres.io.writing.CommaSeparated;
+import wres.io.writing.CommaSeparatedWriter;
 
 /**
  * A processor that generates outputs while a processing pipeline is ongoing (i.e. has more outputs to generate), rather 
@@ -96,7 +96,7 @@ public class IntermediateResultProcessor implements Consumer<MetricOutputForProj
                                                               input.getMultiVectorOutput() );
                     meta = input.getMultiVectorOutput().entrySet().iterator().next().getValue().getMetadata();
                     // Write the CSV output
-                    CommaSeparated.writeDiagramFiles( projectConfigPlus.getProjectConfig(),
+                    CommaSeparatedWriter.writeDiagramFiles( projectConfigPlus.getProjectConfig(),
                                                       input.getMultiVectorOutput() );
                 }
                 //Box-plot output available and not being cached to the end
@@ -107,7 +107,7 @@ public class IntermediateResultProcessor implements Consumer<MetricOutputForProj
                                                           input.getBoxPlotOutput() );
                     meta = input.getBoxPlotOutput().entrySet().iterator().next().getValue().getMetadata();
                     // Write the CSV output
-                    CommaSeparated.writeBoxPlotFiles( projectConfigPlus.getProjectConfig(),
+                    CommaSeparatedWriter.writeBoxPlotFiles( projectConfigPlus.getProjectConfig(),
                                                       input.getBoxPlotOutput() );
                 }
                 //Matrix output available and not being cached to the end
@@ -115,7 +115,7 @@ public class IntermediateResultProcessor implements Consumer<MetricOutputForProj
                      && !ignoreTheseTypes.contains( MetricOutputGroup.MATRIX ) )
                 {
                     // Only CSV output: write the CSV output
-                    CommaSeparated.writeMatrixOutputFiles( projectConfigPlus.getProjectConfig(),
+                    CommaSeparatedWriter.writeMatrixOutputFiles( projectConfigPlus.getProjectConfig(),
                                                            input.getMatrixOutput() );
                 }
                 log( meta );

@@ -52,7 +52,7 @@ import wres.datamodel.outputs.PairedOutput;
 //@RunWith( PowerMockRunner.class )
 //@PrepareForTest( { Files.class, BufferedWriter.class, Writer.class } )
 //@PowerMockIgnore( "javax.management.*" )
-public class CommaSeparatedTest
+public class CommaSeparatedWriterTest
 {
 
 // what follows is a started attempt at avoiding filesystem (use powermockito)
@@ -172,7 +172,7 @@ public class CommaSeparatedTest
         ProjectConfig projectConfig = getMockedProjectConfig( feature );
 
         // Begin the actual test now that we have constructed dependencies.
-        CommaSeparated.writeOutputFiles( projectConfig, feature, output );
+        CommaSeparatedWriter.writeOutputFiles( projectConfig, feature, output );
 
         // read the file, verify it has what we wanted:
         Path pathToFirstFile = Paths.get( System.getProperty( "java.io.tmpdir" ),
@@ -289,7 +289,7 @@ public class CommaSeparatedTest
         ProjectConfig projectConfig = getMockedProjectConfig( feature );
 
         // Begin the actual test now that we have constructed dependencies.
-        CommaSeparated.writeOutputFiles( projectConfig, feature, output );
+        CommaSeparatedWriter.writeOutputFiles( projectConfig, feature, output );
 
         // read the file, verify it has what we wanted:
         Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ),
@@ -386,7 +386,7 @@ public class CommaSeparatedTest
         ProjectConfig projectConfig = getMockedProjectConfig( feature );
 
         // Begin the actual test now that we have constructed dependencies.
-        CommaSeparated.writeOutputFiles( projectConfig, feature, output );
+        CommaSeparatedWriter.writeOutputFiles( projectConfig, feature, output );
 
         // read the file, verify it has what we wanted:
         Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ),
@@ -491,7 +491,7 @@ public class CommaSeparatedTest
         ProjectConfig projectConfig = getMockedProjectConfig( feature );
 
         // Begin the actual test now that we have constructed dependencies.
-        CommaSeparated.writeOutputFiles( projectConfig, feature, output );
+        CommaSeparatedWriter.writeOutputFiles( projectConfig, feature, output );
 
         // read the file, verify it has what we wanted:
         Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ),
@@ -603,7 +603,7 @@ public class CommaSeparatedTest
         ProjectConfig projectConfig = getMockedProjectConfig( feature );
 
         // Begin the actual test now that we have constructed dependencies.
-        CommaSeparated.writeOutputFiles( projectConfig, feature, output );
+        CommaSeparatedWriter.writeOutputFiles( projectConfig, feature, output );
 
         // read the file, verify it has what we wanted:
         Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ),
@@ -708,7 +708,7 @@ public class CommaSeparatedTest
         ProjectConfig projectConfig = getMockedProjectConfig( feature );
 
         // Begin the actual test now that we have constructed dependencies.
-        CommaSeparated.writeOutputFiles( projectConfig, feature, output );
+        CommaSeparatedWriter.writeOutputFiles( projectConfig, feature, output );
 
         // read the file, verify it has what we wanted:
         Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ),

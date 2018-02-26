@@ -50,7 +50,7 @@ import wres.io.config.ConfigHelper;
  * @version 0.1
  * @since 0.4
  */
-public class CommaSeparatedHelper
+class CommaSeparatedHelper
 {
     /**
      * Delimiter for the header.
