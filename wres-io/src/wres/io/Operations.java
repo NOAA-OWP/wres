@@ -65,7 +65,8 @@ public final class Operations {
         Database.lockForMutation();
 
         // Second, remove data from previously interrupted ingests.
-        Operations.deleteOrphanedData();
+        // TODO: finish #40432 informed by #46959, re-enable delete:
+        // Operations.deleteOrphanedData();
 
         ProjectDetails result;
 
