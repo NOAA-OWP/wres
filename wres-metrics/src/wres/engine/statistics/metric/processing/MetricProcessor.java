@@ -686,7 +686,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         Set<Threshold> thresholdsWithAllDataOnly = new HashSet<>();
 
         //Add a threshold for "all data" by default
-        Threshold allData = dataFactory.getThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER );
+        Threshold allData = dataFactory.ofThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER );
         thresholdsWithAllData.add( allData );
         thresholdsWithAllDataOnly.add( allData );
         //Add probability thresholds
@@ -840,11 +840,11 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
             {
                 if ( areProbs )
                 {
-                    returnMe.add( dataFactory.getProbabilityThreshold( addMe.get( i ), addMe.get( i + 1 ), oper ) );
+                    returnMe.add( dataFactory.ofProbabilityThreshold( addMe.get( i ), addMe.get( i + 1 ), oper ) );
                 }
                 else
                 {
-                    returnMe.add( dataFactory.getThreshold( addMe.get( i ), addMe.get( i + 1 ), oper ) );
+                    returnMe.add( dataFactory.ofThreshold( addMe.get( i ), addMe.get( i + 1 ), oper ) );
                 }
             }
         }
@@ -853,11 +853,11 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         {
             if ( areProbs )
             {
-                addMe.forEach( threshold -> returnMe.add( dataFactory.getProbabilityThreshold( threshold, oper ) ) );
+                addMe.forEach( threshold -> returnMe.add( dataFactory.ofProbabilityThreshold( threshold, oper ) ) );
             }
             else
             {
-                addMe.forEach( threshold -> returnMe.add( dataFactory.getThreshold( threshold, oper ) ) );
+                addMe.forEach( threshold -> returnMe.add( dataFactory.ofThreshold( threshold, oper ) ) );
             }
         }
         return returnMe;

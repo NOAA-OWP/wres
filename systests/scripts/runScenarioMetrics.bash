@@ -34,6 +34,7 @@ do
 	if [ -d $scenario_dir/output ]
 	then
 		cd $scenario_dir/output
+		$MetricsScriptDir/scripts/checkSorted.bash sorted_pairs.csv > checkedSorted_pairs.csv
 		#touch error.txt
 		pwd
 		if [ -f testMetricsResults.txt ]

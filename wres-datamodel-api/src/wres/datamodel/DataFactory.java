@@ -71,11 +71,11 @@ public interface DataFactory
      * @return a map key
      */
 
-    default Pair<TimeWindow, Threshold> getMapKeyByTimeThreshold( final TimeWindow timeWindow,
-                                                                  final Double threshold,
-                                                                  final Operator condition )
+    default Pair<TimeWindow, Threshold> ofMapKeyByTimeThreshold( TimeWindow timeWindow,
+                                                                  Double threshold,
+                                                                  Operator condition )
     {
-        return Pair.of( timeWindow, getThreshold( threshold, condition ) );
+        return Pair.of( timeWindow, ofThreshold( threshold, condition ) );
     }
 
     /**
@@ -89,12 +89,62 @@ public interface DataFactory
      * @return a map key
      */
 
-    default Pair<TimeWindow, Threshold> getMapKeyByTimeThreshold( final TimeWindow timeWindow,
-                                                                  final Double threshold,
-                                                                  final Double thresholdUpper,
-                                                                  final Operator condition )
+    default Pair<TimeWindow, Threshold> ofMapKeyByTimeThreshold( TimeWindow timeWindow,
+                                                                  Double threshold,
+                                                                  Double thresholdUpper,
+                                                                  Operator condition )
     {
-        return Pair.of( timeWindow, getThreshold( threshold, thresholdUpper, condition ) );
+        return Pair.of( timeWindow, ofThreshold( threshold, thresholdUpper, condition ) );
+    }
+
+    /**
+     * Returns {@link Threshold} from the specified input.
+     * 
+     * @param threshold the threshold value or lower bound of a {@link Operator#BETWEEN} condition
+     * @param thresholdUpper the upper threshold of a {@link Operator#BETWEEN} or null
+     * @param condition the threshold condition
+     * @return a threshold
+     */
+
+    default Threshold ofThreshold( Double threshold, Double thresholdUpper, Operator condition )
+    {
+        return ofThreshold( threshold, thresholdUpper, condition, null );
+    }
+
+    /**
+     * Returns {@link Threshold} from the specified input. Both inputs must be in the unit interval, [0,1].
+     * 
+     * @param threshold the threshold value or lower bound of a {@link Operator#BETWEEN} condition
+     * @param thresholdUpper the upper threshold of a {@link Operator#BETWEEN} or null
+     * @param condition the threshold condition
+     * @return a threshold
+     */
+
+    default Threshold ofProbabilityThreshold( Double threshold,
+                                              Double thresholdUpper,
+                                              Operator condition )
+    {
+        return ofProbabilityThreshold( threshold, thresholdUpper, condition, null );
+    }
+
+    /**
+     * Returns a {@link Threshold} from the specified input
+     * 
+     * @param threshold the threshold value or lower bound of a {@link Operator#BETWEEN} condition
+     * @param thresholdUpper the upper threshold of a {@link Operator#BETWEEN} or null
+     * @param probability the probability associated with the threshold
+     * @param probabilityUpper the probability associated with the upper threshold or null
+     * @param condition the threshold condition
+     * @return a quantile
+     */
+
+    default Threshold ofQuantileThreshold( Double threshold,
+                                           Double thresholdUpper,
+                                           Double probability,
+                                           Double probabilityUpper,
+                                           Operator condition )
+    {
+        return ofQuantileThreshold( threshold, thresholdUpper, probability, probabilityUpper, condition, null );
     }
 
     /**
@@ -105,9 +155,9 @@ public interface DataFactory
      * @return a threshold
      */
 
-    default Threshold getThreshold( final Double threshold, final Operator condition )
+    default Threshold ofThreshold( Double threshold, Operator condition )
     {
-        return getThreshold( threshold, null, condition );
+        return ofThreshold( threshold, null, condition, null );
     }
 
     /**
@@ -118,9 +168,53 @@ public interface DataFactory
      * @return a threshold
      */
 
-    default Threshold getProbabilityThreshold( final Double threshold, final Operator condition )
+    default Threshold ofProbabilityThreshold( Double threshold, Operator condition )
     {
-        return getProbabilityThreshold( threshold, null, condition );
+        return ofProbabilityThreshold( threshold, null, condition, null );
+    }
+
+    /**
+     * Returns a {@link Threshold} from the specified input.
+     * 
+     * @param threshold the threshold value
+     * @param probability the probability associated with the threshold
+     * @param condition the threshold condition
+     * @return a quantile
+     */
+
+    default Threshold ofQuantileThreshold( Double threshold,
+                                           Double probability,
+                                           Operator condition )
+    {
+        return ofQuantileThreshold( threshold, null, probability, null, condition, null );
+    }
+    
+    /**
+     * Returns {@link Threshold} from the specified input.
+     * 
+     * @param threshold the threshold value or lower bound
+     * @param condition the threshold condition
+     * @param label an optional label
+     * @return a threshold
+     */
+
+    default Threshold ofThreshold( Double threshold, Operator condition, String label )
+    {
+        return ofThreshold( threshold, null, condition, label );
+    }
+
+    /**
+     * Returns {@link Threshold} from the specified input. The input must be in the unit interval, [0,1].
+     * 
+     * @param threshold the threshold value or lower bound
+     * @param condition the threshold condition
+     * @param label an optional label
+     * @return a threshold
+     */
+
+    default Threshold ofProbabilityThreshold( Double threshold, Operator condition, String label )
+    {
+        return ofProbabilityThreshold( threshold, null, condition, label );
     }
 
     /**
@@ -129,16 +223,18 @@ public interface DataFactory
      * @param threshold the threshold value
      * @param probability the probability associated with the threshold
      * @param condition the threshold condition
+     * @param label an optional label
      * @return a quantile
      */
 
-    default Threshold getQuantileThreshold( final Double threshold,
-                                            final Double probability,
-                                            final Operator condition )
+    default Threshold ofQuantileThreshold( Double threshold,
+                                           Double probability,
+                                           Operator condition,
+                                           String label )
     {
-        return getQuantileThreshold( threshold, null, probability, null, condition );
-    }
-    
+        return ofQuantileThreshold( threshold, null, probability, null, condition, label );
+    }    
+
     /**
      * Return a {@link MatrixOutput}.
      * 
@@ -147,7 +243,7 @@ public interface DataFactory
      * @return a {@link MatrixOutput}
      */
 
-    default MatrixOutput ofMatrixOutput( final double[][] output, final MetricOutputMetadata meta )
+    default MatrixOutput ofMatrixOutput( double[][] output, MetricOutputMetadata meta )
     {
         return ofMatrixOutput( output, null, meta );
     }
@@ -161,7 +257,7 @@ public interface DataFactory
      * @throws MetricInputException if the inputs are invalid
      */
 
-    default DichotomousPairs ofDichotomousPairs( final List<VectorOfBooleans> pairs, final Metadata meta )
+    default DichotomousPairs ofDichotomousPairs( List<VectorOfBooleans> pairs, Metadata meta )
     {
         return ofDichotomousPairs( pairs, null, meta, null, null );
     }
@@ -175,7 +271,7 @@ public interface DataFactory
      * @throws MetricInputException if the inputs are invalid
      */
 
-    default DichotomousPairs ofDichotomousPairsFromAtomic( final List<PairOfBooleans> pairs, final Metadata meta )
+    default DichotomousPairs ofDichotomousPairsFromAtomic( List<PairOfBooleans> pairs, Metadata meta )
     {
         return ofDichotomousPairsFromAtomic( pairs, null, meta, null, null );
     }
@@ -189,7 +285,7 @@ public interface DataFactory
      * @throws MetricInputException if the inputs are invalid
      */
 
-    default MulticategoryPairs ofMulticategoryPairs( final List<VectorOfBooleans> pairs, final Metadata meta )
+    default MulticategoryPairs ofMulticategoryPairs( List<VectorOfBooleans> pairs, Metadata meta )
     {
         return ofMulticategoryPairs( pairs, null, meta, null, null );
     }
@@ -203,7 +299,7 @@ public interface DataFactory
      * @return the pairs
      */
 
-    default DiscreteProbabilityPairs ofDiscreteProbabilityPairs( final List<PairOfDoubles> pairs, final Metadata meta )
+    default DiscreteProbabilityPairs ofDiscreteProbabilityPairs( List<PairOfDoubles> pairs, Metadata meta )
     {
         return ofDiscreteProbabilityPairs( pairs, null, meta, null, null );
     }
@@ -217,7 +313,7 @@ public interface DataFactory
      * @throws MetricInputException if the inputs are invalid
      */
 
-    default SingleValuedPairs ofSingleValuedPairs( final List<PairOfDoubles> pairs, final Metadata meta )
+    default SingleValuedPairs ofSingleValuedPairs( List<PairOfDoubles> pairs, Metadata meta )
     {
         return ofSingleValuedPairs( pairs, null, meta, null, null );
     }
@@ -231,7 +327,7 @@ public interface DataFactory
      * @throws MetricInputException if the inputs are invalid
      */
 
-    default EnsemblePairs ofEnsemblePairs( final List<PairOfDoubleAndVectorOfDoubles> pairs, final Metadata meta )
+    default EnsemblePairs ofEnsemblePairs( List<PairOfDoubleAndVectorOfDoubles> pairs, Metadata meta )
     {
         return ofEnsemblePairs( pairs, null, meta, null, null );
     }
@@ -246,9 +342,9 @@ public interface DataFactory
      * @throws MetricInputException if the inputs are invalid
      */
 
-    default DichotomousPairs ofDichotomousPairs( final List<VectorOfBooleans> pairs,
-                                                 final Metadata meta,
-                                                 final VectorOfDoubles climatology )
+    default DichotomousPairs ofDichotomousPairs( List<VectorOfBooleans> pairs,
+                                                 Metadata meta,
+                                                 VectorOfDoubles climatology )
     {
         return ofDichotomousPairs( pairs, null, meta, null, climatology );
     }
@@ -263,9 +359,9 @@ public interface DataFactory
      * @throws MetricInputException if the inputs are invalid
      */
 
-    default DichotomousPairs ofDichotomousPairsFromAtomic( final List<PairOfBooleans> pairs,
-                                                           final Metadata meta,
-                                                           final VectorOfDoubles climatology )
+    default DichotomousPairs ofDichotomousPairsFromAtomic( List<PairOfBooleans> pairs,
+                                                           Metadata meta,
+                                                           VectorOfDoubles climatology )
     {
         return ofDichotomousPairsFromAtomic( pairs, null, meta, null, climatology );
     }
@@ -280,9 +376,9 @@ public interface DataFactory
      * @throws MetricInputException if the inputs are invalid
      */
 
-    default MulticategoryPairs ofMulticategoryPairs( final List<VectorOfBooleans> pairs,
-                                                     final Metadata meta,
-                                                     final VectorOfDoubles climatology )
+    default MulticategoryPairs ofMulticategoryPairs( List<VectorOfBooleans> pairs,
+                                                     Metadata meta,
+                                                     VectorOfDoubles climatology )
     {
         return ofMulticategoryPairs( pairs, null, meta, null, climatology );
     }
@@ -297,9 +393,9 @@ public interface DataFactory
      * @return the pairs
      */
 
-    default DiscreteProbabilityPairs ofDiscreteProbabilityPairs( final List<PairOfDoubles> pairs,
-                                                                 final Metadata meta,
-                                                                 final VectorOfDoubles climatology )
+    default DiscreteProbabilityPairs ofDiscreteProbabilityPairs( List<PairOfDoubles> pairs,
+                                                                 Metadata meta,
+                                                                 VectorOfDoubles climatology )
     {
         return ofDiscreteProbabilityPairs( pairs, null, meta, null, climatology );
     }
@@ -314,9 +410,9 @@ public interface DataFactory
      * @throws MetricInputException if the inputs are invalid
      */
 
-    default SingleValuedPairs ofSingleValuedPairs( final List<PairOfDoubles> pairs,
-                                                   final Metadata meta,
-                                                   final VectorOfDoubles climatology )
+    default SingleValuedPairs ofSingleValuedPairs( List<PairOfDoubles> pairs,
+                                                   Metadata meta,
+                                                   VectorOfDoubles climatology )
     {
         return ofSingleValuedPairs( pairs, null, meta, null, climatology );
     }
@@ -331,9 +427,9 @@ public interface DataFactory
      * @throws MetricInputException if the inputs are invalid
      */
 
-    default EnsemblePairs ofEnsemblePairs( final List<PairOfDoubleAndVectorOfDoubles> pairs,
-                                           final Metadata meta,
-                                           final VectorOfDoubles climatology )
+    default EnsemblePairs ofEnsemblePairs( List<PairOfDoubleAndVectorOfDoubles> pairs,
+                                           Metadata meta,
+                                           VectorOfDoubles climatology )
     {
         return ofEnsemblePairs( pairs, null, meta, null, climatology );
     }
@@ -349,10 +445,10 @@ public interface DataFactory
      * @throws MetricInputException if the inputs are invalid
      */
 
-    default SingleValuedPairs ofSingleValuedPairs( final List<PairOfDoubles> pairs,
-                                                   final List<PairOfDoubles> basePairs,
-                                                   final Metadata mainMeta,
-                                                   final Metadata baselineMeta )
+    default SingleValuedPairs ofSingleValuedPairs( List<PairOfDoubles> pairs,
+                                                   List<PairOfDoubles> basePairs,
+                                                   Metadata mainMeta,
+                                                   Metadata baselineMeta )
     {
         return ofSingleValuedPairs( pairs, basePairs, mainMeta, baselineMeta, null );
     }
@@ -368,10 +464,10 @@ public interface DataFactory
      * @throws MetricInputException if the inputs are invalid
      */
 
-    default EnsemblePairs ofEnsemblePairs( final List<PairOfDoubleAndVectorOfDoubles> pairs,
-                                           final List<PairOfDoubleAndVectorOfDoubles> basePairs,
-                                           final Metadata mainMeta,
-                                           final Metadata baselineMeta )
+    default EnsemblePairs ofEnsemblePairs( List<PairOfDoubleAndVectorOfDoubles> pairs,
+                                           List<PairOfDoubleAndVectorOfDoubles> basePairs,
+                                           Metadata mainMeta,
+                                           Metadata baselineMeta )
     {
         return ofEnsemblePairs( pairs, basePairs, mainMeta, baselineMeta, null );
     }
@@ -387,10 +483,10 @@ public interface DataFactory
      * @throws MetricInputException if the inputs are invalid
      */
 
-    default MulticategoryPairs ofMulticategoryPairs( final List<VectorOfBooleans> pairs,
-                                                     final List<VectorOfBooleans> basePairs,
-                                                     final Metadata mainMeta,
-                                                     final Metadata baselineMeta )
+    default MulticategoryPairs ofMulticategoryPairs( List<VectorOfBooleans> pairs,
+                                                     List<VectorOfBooleans> basePairs,
+                                                     Metadata mainMeta,
+                                                     Metadata baselineMeta )
     {
         return ofMulticategoryPairs( pairs, basePairs, mainMeta, baselineMeta, null );
     }
@@ -406,10 +502,10 @@ public interface DataFactory
      * @return the pairs
      */
 
-    default DiscreteProbabilityPairs ofDiscreteProbabilityPairs( final List<PairOfDoubles> pairs,
-                                                                 final List<PairOfDoubles> basePairs,
-                                                                 final Metadata mainMeta,
-                                                                 final Metadata baselineMeta )
+    default DiscreteProbabilityPairs ofDiscreteProbabilityPairs( List<PairOfDoubles> pairs,
+                                                                 List<PairOfDoubles> basePairs,
+                                                                 Metadata mainMeta,
+                                                                 Metadata baselineMeta )
     {
         return ofDiscreteProbabilityPairs( pairs, basePairs, mainMeta, baselineMeta, null );
     }
@@ -425,10 +521,10 @@ public interface DataFactory
      * @throws MetricInputException if the inputs are invalid
      */
 
-    default DichotomousPairs ofDichotomousPairs( final List<VectorOfBooleans> pairs,
-                                                 final List<VectorOfBooleans> basePairs,
-                                                 final Metadata mainMeta,
-                                                 final Metadata baselineMeta )
+    default DichotomousPairs ofDichotomousPairs( List<VectorOfBooleans> pairs,
+                                                 List<VectorOfBooleans> basePairs,
+                                                 Metadata mainMeta,
+                                                 Metadata baselineMeta )
     {
         return ofDichotomousPairs( pairs, basePairs, mainMeta, baselineMeta, null );
     }
@@ -547,7 +643,7 @@ public interface DataFactory
                                          Metadata meta )
     {
         return ofTimeSeriesOfEnsemblePairs( timeSeries, meta, null, null );
-    } 
+    }
 
     /**
      * Forms the union of the {@link PairedOutput}, returning a {@link PairedOutput} that contains all of the pairs in 
@@ -614,11 +710,11 @@ public interface DataFactory
      * @throws MetricInputException if the inputs are invalid
      */
 
-    SingleValuedPairs ofSingleValuedPairs( final List<PairOfDoubles> pairs,
-                                           final List<PairOfDoubles> basePairs,
-                                           final Metadata mainMeta,
-                                           final Metadata baselineMeta,
-                                           final VectorOfDoubles climatology );
+    SingleValuedPairs ofSingleValuedPairs( List<PairOfDoubles> pairs,
+                                           List<PairOfDoubles> basePairs,
+                                           Metadata mainMeta,
+                                           Metadata baselineMeta,
+                                           VectorOfDoubles climatology );
 
     /**
      * Construct the ensemble input with a baseline.
@@ -632,11 +728,11 @@ public interface DataFactory
      * @throws MetricInputException if the inputs are invalid
      */
 
-    EnsemblePairs ofEnsemblePairs( final List<PairOfDoubleAndVectorOfDoubles> pairs,
-                                   final List<PairOfDoubleAndVectorOfDoubles> basePairs,
-                                   final Metadata mainMeta,
-                                   final Metadata baselineMeta,
-                                   final VectorOfDoubles climatology );
+    EnsemblePairs ofEnsemblePairs( List<PairOfDoubleAndVectorOfDoubles> pairs,
+                                   List<PairOfDoubleAndVectorOfDoubles> basePairs,
+                                   Metadata mainMeta,
+                                   Metadata baselineMeta,
+                                   VectorOfDoubles climatology );
 
     /**
      * Construct the multicategory input without any pairs for a baseline.
@@ -650,11 +746,11 @@ public interface DataFactory
      * @throws MetricInputException if the inputs are invalid
      */
 
-    MulticategoryPairs ofMulticategoryPairs( final List<VectorOfBooleans> pairs,
-                                             final List<VectorOfBooleans> basePairs,
-                                             final Metadata mainMeta,
-                                             final Metadata baselineMeta,
-                                             final VectorOfDoubles climatology );
+    MulticategoryPairs ofMulticategoryPairs( List<VectorOfBooleans> pairs,
+                                             List<VectorOfBooleans> basePairs,
+                                             Metadata mainMeta,
+                                             Metadata baselineMeta,
+                                             VectorOfDoubles climatology );
 
     /**
      * Construct the discrete probability input with a baseline.
@@ -668,11 +764,11 @@ public interface DataFactory
      * @return the pairs
      */
 
-    DiscreteProbabilityPairs ofDiscreteProbabilityPairs( final List<PairOfDoubles> pairs,
-                                                         final List<PairOfDoubles> basePairs,
-                                                         final Metadata mainMeta,
-                                                         final Metadata baselineMeta,
-                                                         final VectorOfDoubles climatology );
+    DiscreteProbabilityPairs ofDiscreteProbabilityPairs( List<PairOfDoubles> pairs,
+                                                         List<PairOfDoubles> basePairs,
+                                                         Metadata mainMeta,
+                                                         Metadata baselineMeta,
+                                                         VectorOfDoubles climatology );
 
     /**
      * Construct the dichotomous input with pairs for a baseline.
@@ -686,11 +782,11 @@ public interface DataFactory
      * @throws MetricInputException if the inputs are invalid
      */
 
-    DichotomousPairs ofDichotomousPairs( final List<VectorOfBooleans> pairs,
-                                         final List<VectorOfBooleans> basePairs,
-                                         final Metadata mainMeta,
-                                         final Metadata baselineMeta,
-                                         final VectorOfDoubles climatology );
+    DichotomousPairs ofDichotomousPairs( List<VectorOfBooleans> pairs,
+                                         List<VectorOfBooleans> basePairs,
+                                         Metadata mainMeta,
+                                         Metadata baselineMeta,
+                                         VectorOfDoubles climatology );
 
     /**
      * Construct the dichotomous input from atomic {@link PairOfBooleans} with pairs for a baseline.
@@ -704,11 +800,11 @@ public interface DataFactory
      * @throws MetricInputException if the inputs are invalid
      */
 
-    DichotomousPairs ofDichotomousPairsFromAtomic( final List<PairOfBooleans> pairs,
-                                                   final List<PairOfBooleans> basePairs,
-                                                   final Metadata mainMeta,
-                                                   final Metadata baselineMeta,
-                                                   final VectorOfDoubles climatology );
+    DichotomousPairs ofDichotomousPairsFromAtomic( List<PairOfBooleans> pairs,
+                                                   List<PairOfBooleans> basePairs,
+                                                   Metadata mainMeta,
+                                                   Metadata baselineMeta,
+                                                   VectorOfDoubles climatology );
 
     /**
      * Return a {@link PairOfDoubles} from two double values.
@@ -718,7 +814,7 @@ public interface DataFactory
      * @return the pair
      */
 
-    PairOfDoubles pairOf( final double left, final double right );
+    PairOfDoubles pairOf( double left, double right );
 
     /**
      * Return a {@link PairOfBooleans} from two boolean values.
@@ -728,7 +824,7 @@ public interface DataFactory
      * @return the pair
      */
 
-    PairOfBooleans pairOf( final boolean left, final boolean right );
+    PairOfBooleans pairOf( boolean left, boolean right );
 
     /**
      * Return a {@link PairOfDoubleAndVectorOfDoubles} from a double value and a double vector of values.
@@ -738,7 +834,7 @@ public interface DataFactory
      * @return the pair
      */
 
-    PairOfDoubleAndVectorOfDoubles pairOf( final double left, final double[] right );
+    PairOfDoubleAndVectorOfDoubles pairOf( double left, double[] right );
 
     /**
      * Return a {@link PairOfDoubleAndVectorOfDoubles} from a double value and a double vector of values.
@@ -748,7 +844,7 @@ public interface DataFactory
      * @return the pair
      */
 
-    PairOfDoubleAndVectorOfDoubles pairOf( final Double left, final Double[] right );
+    PairOfDoubleAndVectorOfDoubles pairOf( Double left, Double[] right );
 
     /**
      * Return a {@link Pair} from two double vectors.
@@ -758,7 +854,7 @@ public interface DataFactory
      * @return the pair
      */
 
-    Pair<VectorOfDoubles, VectorOfDoubles> pairOf( final double[] left, final double[] right );
+    Pair<VectorOfDoubles, VectorOfDoubles> pairOf( double[] left, double[] right );
 
     /**
      * Return a {@link VectorOfDoubles} from a vector of doubles
@@ -767,7 +863,7 @@ public interface DataFactory
      * @return the vector
      */
 
-    VectorOfDoubles vectorOf( final double[] vec );
+    VectorOfDoubles vectorOf( double[] vec );
 
     /**
      * Return a {@link VectorOfDoubles} from a vector of doubles
@@ -776,7 +872,7 @@ public interface DataFactory
      * @return the vector
      */
 
-    VectorOfDoubles vectorOf( final Double[] vec );
+    VectorOfDoubles vectorOf( Double[] vec );
 
     /**
      * Return a {@link VectorOfBooleans} from a vector of booleans
@@ -785,7 +881,7 @@ public interface DataFactory
      * @return the vector
      */
 
-    VectorOfBooleans vectorOf( final boolean[] vec );
+    VectorOfBooleans vectorOf( boolean[] vec );
 
     /**
      * Return a {@link VectorOfBooleans} from a vector of booleans
@@ -794,7 +890,7 @@ public interface DataFactory
      * @return the vector
      */
 
-    MatrixOfDoubles matrixOf( final double[][] vec );
+    MatrixOfDoubles matrixOf( double[][] vec );
 
     /**
      * Return a {@link DoubleScoreOutput} with a single component. The score component is stored against the 
@@ -805,7 +901,7 @@ public interface DataFactory
      * @return a {@link DoubleScoreOutput}
      */
 
-    DoubleScoreOutput ofDoubleScoreOutput( final double output, final MetricOutputMetadata meta );
+    DoubleScoreOutput ofDoubleScoreOutput( double output, MetricOutputMetadata meta );
 
     /**
      * Return a {@link DoubleScoreOutput} with multiple components.
@@ -815,7 +911,7 @@ public interface DataFactory
      * @return a {@link DoubleScoreOutput}
      */
 
-    DoubleScoreOutput ofDoubleScoreOutput( final Map<MetricConstants, Double> output, final MetricOutputMetadata meta );
+    DoubleScoreOutput ofDoubleScoreOutput( Map<MetricConstants, Double> output, MetricOutputMetadata meta );
 
     /**
      * Return a {@link DoubleScoreOutput} with multiple components that are ordered according to the template provided.
@@ -826,9 +922,9 @@ public interface DataFactory
      * @return a {@link DoubleScoreOutput}
      */
 
-    DoubleScoreOutput ofDoubleScoreOutput( final double[] output,
+    DoubleScoreOutput ofDoubleScoreOutput( double[] output,
                                            ScoreOutputGroup template,
-                                           final MetricOutputMetadata meta );
+                                           MetricOutputMetadata meta );
 
     /**
      * Return a {@link MultiVectorOutput}.
@@ -838,8 +934,8 @@ public interface DataFactory
      * @return a {@link MultiVectorOutput}
      */
 
-    MultiVectorOutput ofMultiVectorOutput( final Map<MetricDimension, double[]> output,
-                                           final MetricOutputMetadata meta );
+    MultiVectorOutput ofMultiVectorOutput( Map<MetricDimension, double[]> output,
+                                           MetricOutputMetadata meta );
 
     /**
      * Return a {@link MatrixOutput}.
@@ -850,9 +946,9 @@ public interface DataFactory
      * @return a {@link MatrixOutput}
      */
 
-    MatrixOutput ofMatrixOutput( final double[][] output,
-                                 final List<MetricDimension> names,
-                                 final MetricOutputMetadata meta );
+    MatrixOutput ofMatrixOutput( double[][] output,
+                                 List<MetricDimension> names,
+                                 MetricOutputMetadata meta );
 
     /**
      * Return a {@link BoxPlotOutput}.
@@ -895,7 +991,7 @@ public interface DataFactory
      * @return a {@link DurationScoreOutput}
      */
 
-    DurationScoreOutput ofDurationScoreOutput( final Duration output, final MetricOutputMetadata meta );
+    DurationScoreOutput ofDurationScoreOutput( Duration output, MetricOutputMetadata meta );
 
     /**
      * Return a {@link DurationScoreOutput} with multiple components.
@@ -905,8 +1001,8 @@ public interface DataFactory
      * @return a {@link DurationScoreOutput}
      */
 
-    DurationScoreOutput ofDurationScoreOutput( final Map<MetricConstants, Duration> output,
-                                               final MetricOutputMetadata meta );
+    DurationScoreOutput ofDurationScoreOutput( Map<MetricConstants, Duration> output,
+                                               MetricOutputMetadata meta );
 
     /**
      * Returns a {@link MapKey} to map a {@link MetricOutput} by an elementary key.
@@ -918,17 +1014,17 @@ public interface DataFactory
 
     <S extends Comparable<S>> MapKey<S> getMapKey( S key );
 
-
     /**
      * Returns {@link Threshold} from the specified input.
      * 
      * @param threshold the threshold value or lower bound of a {@link Operator#BETWEEN} condition
      * @param thresholdUpper the upper threshold of a {@link Operator#BETWEEN} or null
      * @param condition the threshold condition
+     * @param label an optional label
      * @return a threshold
      */
 
-    Threshold getThreshold( final Double threshold, final Double thresholdUpper, final Operator condition );
+    Threshold ofThreshold( Double threshold, Double thresholdUpper, Operator condition, String label );
 
     /**
      * Returns {@link Threshold} from the specified input. Both inputs must be in the unit interval, [0,1].
@@ -936,12 +1032,14 @@ public interface DataFactory
      * @param threshold the threshold value or lower bound of a {@link Operator#BETWEEN} condition
      * @param thresholdUpper the upper threshold of a {@link Operator#BETWEEN} or null
      * @param condition the threshold condition
+     * @param label an optional label
      * @return a threshold
      */
 
-    Threshold getProbabilityThreshold( final Double threshold,
-                                       final Double thresholdUpper,
-                                       final Operator condition );
+    Threshold ofProbabilityThreshold( Double threshold,
+                                      Double thresholdUpper,
+                                      Operator condition,
+                                      String label );
 
     /**
      * Returns a {@link Threshold} from the specified input
@@ -951,14 +1049,16 @@ public interface DataFactory
      * @param probability the probability associated with the threshold
      * @param probabilityUpper the probability associated with the upper threshold or null
      * @param condition the threshold condition
+     * @param label an optional label
      * @return a quantile
      */
 
-    Threshold getQuantileThreshold( final Double threshold,
-                                    final Double thresholdUpper,
-                                    Double probability,
-                                    Double probabilityUpper,
-                                    final Operator condition );
+    Threshold ofQuantileThreshold( Double threshold,
+                                   Double thresholdUpper,
+                                   Double probability,
+                                   Double probabilityUpper,
+                                   Operator condition,
+                                   String label );
 
     /**
      * Returns a {@link MetricOutputMapByTimeAndThreshold} from the raw map of inputs.
@@ -969,7 +1069,7 @@ public interface DataFactory
      */
 
     <T extends MetricOutput<?>> MetricOutputMapByTimeAndThreshold<T>
-            ofMap( final Map<Pair<TimeWindow, Threshold>, T> input );
+            ofMap( Map<Pair<TimeWindow, Threshold>, T> input );
 
     /**
      * Returns a {@link MetricOutputMultiMapByTimeAndThreshold} from a map of inputs by {@link TimeWindow} and 
@@ -982,7 +1082,7 @@ public interface DataFactory
      */
 
     <T extends MetricOutput<?>> MetricOutputMultiMapByTimeAndThreshold<T>
-            ofMultiMap( final Map<Pair<TimeWindow, Threshold>, List<MetricOutputMapByMetric<T>>> input );
+            ofMultiMap( Map<Pair<TimeWindow, Threshold>, List<MetricOutputMapByMetric<T>>> input );
 
     /**
      * Returns a builder for a {@link MetricOutputMultiMapByTimeAndThreshold} that allows for the incremental addition of
@@ -1121,7 +1221,7 @@ public interface DataFactory
      * @return a {@link MetricOutputMapByMetric} of metric outputs
      */
 
-    <T extends MetricOutput<?>> MetricOutputMapByMetric<T> ofMap( final List<T> input );
+    <T extends MetricOutput<?>> MetricOutputMapByMetric<T> ofMap( List<T> input );
 
     /**
      * Combines a list of {@link MetricOutputMapByTimeAndThreshold} into a single map.
@@ -1132,7 +1232,7 @@ public interface DataFactory
      */
 
     <T extends MetricOutput<?>> MetricOutputMapByTimeAndThreshold<T>
-            combine( final List<MetricOutputMapByTimeAndThreshold<T>> input );
+            combine( List<MetricOutputMapByTimeAndThreshold<T>> input );
 
     /**
      * Helper that checks for the equality of two double values using a prescribed number of significant digits.

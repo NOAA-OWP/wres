@@ -52,7 +52,7 @@ import wres.datamodel.outputs.PairedOutput;
 //@RunWith( PowerMockRunner.class )
 //@PrepareForTest( { Files.class, BufferedWriter.class, Writer.class } )
 //@PowerMockIgnore( "javax.management.*" )
-public class CommaSeparatedTest
+public class CommaSeparatedWriterTest
 {
 
 // what follows is a started attempt at avoiding filesystem (use powermockito)
@@ -158,7 +158,7 @@ public class CommaSeparatedTest
 
         // Fake lead time and threshold
         Pair<TimeWindow, Threshold> mapKeyByLeadThreshold =
-                outputFactory.getMapKeyByTimeThreshold( timeOne,
+                outputFactory.ofMapKeyByTimeThreshold( timeOne,
                                                         Double.NEGATIVE_INFINITY,
                                                         Threshold.Operator.GREATER );
 
@@ -172,7 +172,7 @@ public class CommaSeparatedTest
         ProjectConfig projectConfig = getMockedProjectConfig( feature );
 
         // Begin the actual test now that we have constructed dependencies.
-        CommaSeparated.writeOutputFiles( projectConfig, feature, output );
+        CommaSeparatedWriter.writeOutputFiles( projectConfig, feature, output );
 
         // read the file, verify it has what we wanted:
         Path pathToFirstFile = Paths.get( System.getProperty( "java.io.tmpdir" ),
@@ -275,7 +275,7 @@ public class CommaSeparatedTest
 
         // Fake lead time and threshold
         Pair<TimeWindow, Threshold> mapKeyByLeadThreshold =
-                outputFactory.getMapKeyByTimeThreshold( timeOne,
+                outputFactory.ofMapKeyByTimeThreshold( timeOne,
                                                         Double.NEGATIVE_INFINITY,
                                                         Threshold.Operator.GREATER );
 
@@ -289,7 +289,7 @@ public class CommaSeparatedTest
         ProjectConfig projectConfig = getMockedProjectConfig( feature );
 
         // Begin the actual test now that we have constructed dependencies.
-        CommaSeparated.writeOutputFiles( projectConfig, feature, output );
+        CommaSeparatedWriter.writeOutputFiles( projectConfig, feature, output );
 
         // read the file, verify it has what we wanted:
         Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ),
@@ -372,7 +372,7 @@ public class CommaSeparatedTest
 
         // Fake lead time and threshold
         Pair<TimeWindow, Threshold> mapKeyByLeadThreshold =
-                outputFactory.getMapKeyByTimeThreshold( timeOne,
+                outputFactory.ofMapKeyByTimeThreshold( timeOne,
                                                         Double.NEGATIVE_INFINITY,
                                                         Threshold.Operator.GREATER );
 
@@ -386,7 +386,7 @@ public class CommaSeparatedTest
         ProjectConfig projectConfig = getMockedProjectConfig( feature );
 
         // Begin the actual test now that we have constructed dependencies.
-        CommaSeparated.writeOutputFiles( projectConfig, feature, output );
+        CommaSeparatedWriter.writeOutputFiles( projectConfig, feature, output );
 
         // read the file, verify it has what we wanted:
         Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ),
@@ -477,7 +477,7 @@ public class CommaSeparatedTest
 
         // Fake lead time and threshold
         Pair<TimeWindow, Threshold> mapKeyByLeadThreshold =
-                Pair.of( timeOne, outputFactory.getQuantileThreshold( 11.94128,
+                Pair.of( timeOne, outputFactory.ofQuantileThreshold( 11.94128,
                                                                       0.9,
                                                                       Operator.GREATER_EQUAL ) );
 
@@ -491,7 +491,7 @@ public class CommaSeparatedTest
         ProjectConfig projectConfig = getMockedProjectConfig( feature );
 
         // Begin the actual test now that we have constructed dependencies.
-        CommaSeparated.writeOutputFiles( projectConfig, feature, output );
+        CommaSeparatedWriter.writeOutputFiles( projectConfig, feature, output );
 
         // read the file, verify it has what we wanted:
         Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ),
@@ -591,7 +591,7 @@ public class CommaSeparatedTest
 
         // Fake lead time and threshold
         Pair<TimeWindow, Threshold> mapKeyByLeadThreshold =
-                Pair.of( timeOne, outputFactory.getThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER ) );
+                Pair.of( timeOne, outputFactory.ofThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER ) );
 
         outputBuilder.addBoxPlotOutput( mapKeyByLeadThreshold,
                                             outputMapByMetricFuture );
@@ -603,7 +603,7 @@ public class CommaSeparatedTest
         ProjectConfig projectConfig = getMockedProjectConfig( feature );
 
         // Begin the actual test now that we have constructed dependencies.
-        CommaSeparated.writeOutputFiles( projectConfig, feature, output );
+        CommaSeparatedWriter.writeOutputFiles( projectConfig, feature, output );
 
         // read the file, verify it has what we wanted:
         Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ),
@@ -696,7 +696,7 @@ public class CommaSeparatedTest
 
         // Fake lead time and threshold
         Pair<TimeWindow, Threshold> mapKeyByLeadThreshold =
-                Pair.of( timeOne, outputFactory.getThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER ) );
+                Pair.of( timeOne, outputFactory.ofThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER ) );
 
         outputBuilder.addMatrixOutput( mapKeyByLeadThreshold,
                                             outputMapByMetricFuture );
@@ -708,7 +708,7 @@ public class CommaSeparatedTest
         ProjectConfig projectConfig = getMockedProjectConfig( feature );
 
         // Begin the actual test now that we have constructed dependencies.
-        CommaSeparated.writeOutputFiles( projectConfig, feature, output );
+        CommaSeparatedWriter.writeOutputFiles( projectConfig, feature, output );
 
         // read the file, verify it has what we wanted:
         Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ),
