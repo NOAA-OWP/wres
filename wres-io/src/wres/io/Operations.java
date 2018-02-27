@@ -66,9 +66,16 @@ public final class Operations {
         // First, ensure this process is the only one ingesting
         Database.lockForMutation();
 
-        // Second, remove data from previously interrupted ingests.
-        // TODO: finish #40432 informed by #46959, re-enable delete:
-        // Operations.deleteOrphanedData();
+        boolean orphansDeleted = Database.removeOrphanedData();
+
+        // If data had been removed, it needs to be officially vacuumed up and
+        // statistics need to be reevaluated.
+        if (orphansDeleted)
+        {
+            LOGGER.info("Since previously incomplete data was removed, the "
+                        + "state of the database will now be refreshed.");
+            Database.refreshStatistics( true );
+        }
 
         ProjectDetails result;
 
@@ -139,7 +146,7 @@ public final class Operations {
     public static InputGenerator getInputs( ProjectDetails projectDetails,
                                             Feature feature )
     {
-            return new InputGenerator( feature, projectDetails );
+        return new InputGenerator( feature, projectDetails );
     }
 
     /**
@@ -229,6 +236,7 @@ public final class Operations {
      */
     public static boolean refreshDatabase()
     {
+        Database.removeOrphanedData();
         Database.refreshStatistics(true);
         return SUCCESS;
     }
@@ -419,72 +427,8 @@ public final class Operations {
 
     private static boolean shouldAnalyze( List<IngestResult> ingestResults )
     {
-        return wres.util.Collections.exists( ingestResults, ingestResult -> !ingestResult.wasFoundAlready() );
-
-        /*for ( IngestResult ingestResult : ingestResults )
-        {
-            if ( !ingestResult.wasFoundAlready() )
-            {
-                return true;
-            }
-        }
-
-        return false;*/
-    }
-
-
-    /**
-     * Deletes data that was part of an incomplete ingest.
-     * Will need to run as a user that has DELETE access.
-     * @throws IOException when something goes wrong
-     */
-
-    private static void deleteOrphanedData() throws IOException
-    {
-        // Anything that is missing glue in projectsource should be removed.
-        // Start with source, project, work way out from there.
-
-        String firstOne = "DELETE FROM wres.source "
-                          + "WHERE source_id NOT IN "
-                          + "( SELECT source_id FROM wres.projectsource );";
-
-        String firstTwo = "DELETE FROM wres.project "
-                          + "WHERE project_id NOT IN "
-                          + "( SELECT project_id FROM wres.projectsource );";
-
-        String secondOne = "DELETE FROM wres.forecastsource "
-                           + "WHERE source_id NOT IN "
-                           + "( SELECT source_id FROM wres.source );";
-
-        String secondTwo = "DELETE FROM wres.observation "
-                           + "WHERE source_id NOT IN "
-                           + "( SELECT source_id FROM wres.source );";
-
-        String third = "DELETE FROM wres.timeseries "
-                       + "WHERE timeseries_id NOT IN "
-                       + "( SELECT forecast_id FROM wres.forecastsource );";
-
-        String fourth = "DELETE FROM wres.forecastvalue "
-                        + "WHERE timeseries_id NOT IN "
-                        + "( select forecast_id FROM wres.forecastsource );";
-
-        LOGGER.info( "Removing orphaned data." );
-
-        try
-        {
-            Database.execute( firstOne );
-            Database.execute( firstTwo );
-            Database.execute( secondOne );
-            Database.execute( secondTwo );
-            Database.execute( third );
-            Database.execute( fourth );
-        }
-        catch ( SQLException se )
-        {
-            throw new IOException( "Failed to remove orphaned data." , se );
-        }
-
-        LOGGER.info( "Finished removing orphaned data." );
+        return wres.util.Collections.exists( ingestResults,
+                                             ingestResult -> !ingestResult.wasFoundAlready() );
     }
 
 

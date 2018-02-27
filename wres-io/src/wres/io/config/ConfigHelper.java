@@ -571,10 +571,6 @@ public class ConfigHelper
 
         if ( feature != null )
         {
-            if (Strings.hasValue( feature.getName() ))
-            {
-                description = feature.getName();
-            }
             if ( feature.getLocationId() != null
                  && !feature.getLocationId()
                             .trim()
@@ -592,6 +588,10 @@ public class ConfigHelper
             else if ( feature.getComid() != null )
             {
                 description = String.valueOf( feature.getComid() );
+            }
+            else if (Strings.hasValue( feature.getName() ))
+            {
+                description = feature.getName();
             }
         }
 

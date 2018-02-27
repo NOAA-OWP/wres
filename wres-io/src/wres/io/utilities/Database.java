@@ -66,6 +66,19 @@ public final class Database {
 	private static final long MUTATION_LOCK_WAIT_MS = 32000;
 
 	/**
+	 * An advisory lock only lasts for the duration of a connection. If we
+	 * open and create an advisory lock in a connection, it is lost  when the
+	 * connection is lost. To keep it up, we're going to attempt to store the
+	 * connection and close it to release the lock
+	 */
+	private static Connection advisoryLockConnection = null;
+
+    /**
+     * @Guards advisoryLockConnection
+     */
+	private static final Object ADVISORY_LOCK = new Object();
+
+	/**
 	 * The standard priority set of connections to the database
 	 */
 	private static final ComboPooledDataSource CONNECTION_POOL =
@@ -168,7 +181,24 @@ public final class Database {
 	 */
 	public static void addNewIndexes()
 	{
-		StringBuilder builder;
+	    try
+        {
+            ScriptBuilder script = new ScriptBuilder(  );
+            script.addLine("DELETE FROM IndexQueue IQ");
+            script.addLine("WHERE NOT EXISTS (");
+            script.addTab().addLine("SELECT 1");
+            script.addTab().addLine("FROM INFORMATION_SCHEMA.TABLES T");
+            script.addTab().addLine("WHERE LOWER(T.table_schema || '.' || T.table_name) = LOWER(IQ.table_name)");
+            script.addLine(");");
+
+            script.execute();
+        }
+        catch ( SQLException e )
+        {
+            LOGGER.error( "Invalid dynamic indexes could not be removed from the queue." );
+        }
+
+        StringBuilder builder;
         LinkedList<Future<?>> indexTasks = new LinkedList<>();
 
         Connection connection = null;
@@ -949,6 +979,12 @@ public final class Database {
 	public static <U> U getValue(ResultSet resultSet, String fieldName)
 			throws SQLException
 	{
+	    // Jump to the first row if the jump hasn't already been made
+	    if (resultSet.isBeforeFirst())
+        {
+            resultSet.next();
+        }
+
 		return (U)resultSet.getObject( fieldName);
 	}
 
@@ -965,13 +1001,19 @@ public final class Database {
 	public static Instant getInstant(ResultSet resultSet, String fieldName)
             throws SQLException
     {
-        Instant result = null;
+        Instant result;
 
         if (!Database.hasColumn( resultSet, fieldName ))
         {
             throw new SQLException( "The field '" + fieldName + "' is not "
                                     + "present in the result set. An instant "
                                     + "cannot be created." );
+        }
+
+        // Jump to the first row if the jump hasn't already been made
+        if (resultSet.isBeforeFirst())
+        {
+            resultSet.next();
         }
 
         // Timestamps are interpretted as strings in order to avoid the 'help'
@@ -1343,9 +1385,209 @@ public final class Database {
         }
         finally
         {
+            LOGGER.info("Database statistical analysis is now complete.");
         	Database.returnConnection(connection);
 		}
 	}
+
+	public static final boolean removeOrphanedData()
+    {
+        boolean orphanedDataRemoved = false;
+        Connection connection = null;
+        Boolean initialAutoCommit = null;
+
+        try
+        {
+            if (!Database.thereAreOrphanedValues())
+            {
+                return false;
+            }
+
+            LOGGER.info("Incomplete data has been detected. Incomplete data "
+                        + "will now be removed to ensure that all data operated "
+                        + "upon is valid.");
+
+            connection = Database.getConnection();
+            initialAutoCommit = connection.getAutoCommit();
+            connection.setAutoCommit( false );
+
+            ResultSet resultSet = null;
+            List<String> partitionTables = new ArrayList<>();
+            ScriptBuilder scriptBuilder;
+
+            // First, get list of all partition tables to gather
+            try
+            {
+                scriptBuilder = new ScriptBuilder();
+                scriptBuilder.addLine(
+                        "SELECT N.nspname || '.' || C.relname AS table_name" );
+                scriptBuilder.addLine( "FROM pg_catalog.pg_class C" );
+                scriptBuilder.addLine( "INNER JOIN pg_catalog.pg_namespace N" );
+                scriptBuilder.addTab().addLine( "ON N.oid = C.relnamespace" );
+                scriptBuilder.addLine( "WHERE relchecks > 0" );
+                scriptBuilder.addTab()
+                             .addLine( "AND N.nspname = 'partitions'" );
+                scriptBuilder.addTab()
+                             .addLine( "AND C.relname LIKE 'forecastvalue_lead%'" );
+                scriptBuilder.addTab().addLine( "AND relkind = 'r';" );
+
+                resultSet = scriptBuilder.retrieve( connection );
+
+                while ( resultSet.next() )
+                {
+                    partitionTables.add( resultSet.getString( "table_name" ) );
+                }
+            }
+            catch ( SQLException databaseError )
+            {
+                throw new SQLException(
+                        "A list of partition tables to evaluate "
+                        + "could not be loaded.",
+                        databaseError );
+            }
+            finally
+            {
+                if ( resultSet != null )
+                {
+                    resultSet.close();
+                }
+            }
+
+            // Next obtain locks for individual tables
+            // Exclusive mode is used so that unrelated processes may read, but not modify
+
+            scriptBuilder = new ScriptBuilder(  );
+
+            scriptBuilder.addLine( "LOCK TABLE wres.Source IN EXCLUSIVE MODE;" );
+            scriptBuilder.addLine( "LOCK TABLE wres.ProjectSource IN EXCLUSIVE MODE;");
+            scriptBuilder.addLine( "LOCK TABLE wres.Project IN EXCLUSIVE MODE;");
+            scriptBuilder.addLine( "LOCK TABLE wres.ForecastSource IN EXCLUSIVE MODE;");
+            scriptBuilder.addLine( "LOCK TABLE wres.TimeSeries IN EXCLUSIVE MODE;");
+            scriptBuilder.addLine( "LOCK TABLE wres.Observation IN EXCLUSIVE MODE;");
+
+            for (String partition : partitionTables)
+            {
+                scriptBuilder.addLine( "LOCK TABLE ", partition, " IN EXCLUSIVE MODE;" );
+            }
+
+            scriptBuilder.addLine();
+
+            /*scriptBuilder.execute();
+
+            // Next remove orphaned data per table
+            scriptBuilder = new ScriptBuilder(  );*/
+
+            scriptBuilder.addLine("DELETE FROM wres.Source S" );
+            scriptBuilder.addLine("WHERE NOT EXISTS (");
+            scriptBuilder.addTab().addLine("SELECT 1");
+            scriptBuilder.addTab().addLine("FROM wres.ProjectSource PS");
+            scriptBuilder.addTab().addLine("WHERE PS.source_id = S.source_id");
+            scriptBuilder.addLine(");");
+            scriptBuilder.addLine("DELETE FROM wres.Project P");
+            scriptBuilder.addLine("WHERE NOT EXISTS (");
+            scriptBuilder.addTab().addLine("SELECT 1");
+            scriptBuilder.addTab().addLine("FROM wres.ProjectSource PS");
+            scriptBuilder.addTab().addLine("WHERE PS.project_id = P.project_id");
+            scriptBuilder.addLine(");");
+            scriptBuilder.addLine("DELETE FROM wres.ForecastSource FS");
+            scriptBuilder.addLine("WHERE NOT EXISTS (");
+            scriptBuilder.addTab().addLine("SELECT 1");
+            scriptBuilder.addTab().addLine("FROM wres.ProjectSource S");
+            scriptBuilder.addTab().addLine("WHERE S.source_id = FS.source_id");
+            scriptBuilder.addLine(");");
+            scriptBuilder.addLine("DELETE FROM wres.Observation O");
+            scriptBuilder.addLine("WHERE NOT EXISTS (");
+            scriptBuilder.addTab().addLine("SELECT 1");
+            scriptBuilder.addTab().addLine("FROM wres.ProjectSource S");
+            scriptBuilder.addTab().addLine("WHERE S.source_id = O.source_id");
+            scriptBuilder.addLine(");");
+            scriptBuilder.addLine("DELETE FROM wres.TimeSeries TS");
+            scriptBuilder.addLine("WHERE NOT EXISTS (");
+            scriptBuilder.addTab().addLine("SELECT 1");
+            scriptBuilder.addTab().addLine("FROM wres.ForecastSource FS");
+            scriptBuilder.addTab().addLine("INNER JOIN wres.ProjectSource PS");
+            scriptBuilder.addTab(  2  ).addLine("ON PS.source_id = FS.source_id");
+            scriptBuilder.addTab().addLine("WHERE FS.forecast_id = TS.timeseries_id");
+            scriptBuilder.addLine(");");
+
+            for (String partition : partitionTables)
+            {
+                scriptBuilder.addLine("DELETE FROM ", partition, " FV");
+                scriptBuilder.addLine("WHERE NOT EXISTS (");
+                scriptBuilder.addTab().addLine("SELECT 1");
+                scriptBuilder.addTab().addLine("FROM wres.ProjectSource PS");
+                scriptBuilder.addTab().addLine("INNER JOIN wres.ForecastSource FS");
+                scriptBuilder.addTab(  2  ).addLine("ON FS.source_id = PS.source_id");
+                scriptBuilder.addTab().addLine("WHERE FS.forecast_id = FV.timeseries_id");
+                scriptBuilder.addLine(");");
+            }
+
+            connection.createStatement().executeUpdate( scriptBuilder.toString() );
+
+            orphanedDataRemoved = true;
+
+            connection.commit();
+            LOGGER.info("Incomplete data has been removed from the system.");
+        }
+        catch ( SQLException databaseError )
+        {
+            if (connection != null)
+            {
+                try
+                {
+                    connection.rollback();
+                }
+                catch ( SQLException e )
+                {
+                    LOGGER.error( "The operation that attempted to remove"
+                                  + "orphaned data could not be rolled back."
+                                  + "Either try again or perform a full clean"
+                                  + "on the database." );
+                }
+            }
+
+            LOGGER.error("Orphaned data could not be removed.", databaseError);
+        }
+        finally
+        {
+            if (connection != null)
+            {
+                try
+                {
+                    connection.setAutoCommit( initialAutoCommit );
+                }
+                catch ( SQLException e )
+                {
+                    LOGGER.error("The autocommit state for the connection used "
+                                 + "to remove orphaned data could not be "
+                                 + "returned to its previous state ({}).",
+                                 initialAutoCommit);
+                }
+
+                // Any left over locks will be returned when the transaction is over
+                Database.returnConnection( connection );
+            }
+        }
+
+        return orphanedDataRemoved;
+    }
+
+    public static boolean thereAreOrphanedValues() throws SQLException
+    {
+        ScriptBuilder scriptBuilder = new ScriptBuilder(  );
+
+        scriptBuilder.addLine("SELECT EXISTS (");
+        scriptBuilder.addTab().addLine("SELECT 1");
+        scriptBuilder.addTab().addLine("FROM wres.Source S");
+        scriptBuilder.addTab().addLine("WHERE NOT EXISTS (");
+        scriptBuilder.addTab(  2  ).addLine("SELECT 1");
+        scriptBuilder.addTab(  2  ).addLine("FROM wres.ProjectSource PS");
+        scriptBuilder.addTab(  2  ).addLine("WHERE PS.source_id = S.source_id");
+        scriptBuilder.addTab().addLine(")");
+        scriptBuilder.addLine(") AS orphans_exist;");
+
+        return scriptBuilder.retrieve( "orphans_exist" );
+    }
     
     /**
      * Creates set of results from the given query through the given connection
@@ -1492,6 +1734,8 @@ public final class Database {
         final long BACKOFF_START_MILLIS = 1000;
         final long BACKOFF_MULTIPLIER = 2;
         long backoff = BACKOFF_START_MILLIS;
+        Connection connection;
+        ResultSet resultSet;
 
         try
         {
@@ -1499,21 +1743,30 @@ public final class Database {
 
             do
             {
-                boolean successfullyLocked =
-                        Database.getResult( TRY_LOCK_SCRIPT, RESULT_COLUMN );
+                connection = Database.getHighPriorityConnection();
+                resultSet = Database.getResults( connection, TRY_LOCK_SCRIPT );
+                boolean successfullyLocked = false;
 
-                backoff = backoff * BACKOFF_MULTIPLIER;
-
-                shouldTryAgain =  START_TIME_MILLIS + MUTATION_LOCK_WAIT_MS
-                                  >= System.currentTimeMillis() + backoff;
+                if (resultSet.next())
+                {
+                    successfullyLocked = Database.getValue( resultSet, RESULT_COLUMN );
+                }
 
                 if ( successfullyLocked )
                 {
+                    Database.setAdvisoryLockConnection( connection );
+                    resultSet.close();
                     LOGGER.info( "Successfully acquired database change privileges." );
                     break;
                 }
                 else
                 {
+
+                    backoff = backoff * BACKOFF_MULTIPLIER;
+
+                    shouldTryAgain =  START_TIME_MILLIS + MUTATION_LOCK_WAIT_MS
+                                      >= System.currentTimeMillis() + backoff;
+
                     if ( shouldTryAgain )
                     {
                         LOGGER.info( "Waiting for another wres process to finish modifying the database..." );
@@ -1550,18 +1803,44 @@ public final class Database {
 
     public static void releaseLockForMutation() throws IOException
     {
+        // This script is unneccessary; the advisory lock ends at session death
+        /*
         final String RELEASE_LOCK_SCRIPT = "SELECT pg_advisory_unlock( "
                                            + MUTATION_LOCK_KEY
-                                           + " )";
-        try
+                                           + " )";*/
+
+        //Since the advisory lock ends at session death, we don't need to run the release script
+        //Database.execute( RELEASE_LOCK_SCRIPT );
+
+        // We instead need to release the connection
+        synchronized ( Database.ADVISORY_LOCK )
         {
-            Database.execute( RELEASE_LOCK_SCRIPT );
-            LOGGER.info( "Successfully released database change privileges." );
+            try
+            {
+                if (Database.advisoryLockConnection == null || Database.advisoryLockConnection.isClosed())
+                {
+                    LOGGER.info("{}The advisory lock was released too early.{}", NEWLINE, NEWLINE);
+                }
+            }
+            catch ( SQLException e )
+            {
+                // The above statement is a diagnostic measure - it doesn't
+                // affect the user, but we do need to log it for our own sakes
+                LOGGER.error( Strings.getStackTrace( e ) );
+            }
+
+            Database.returnHighPriorityConnection( Database.advisoryLockConnection );
+            Database.setAdvisoryLockConnection( null );
         }
-        catch ( SQLException se )
+
+        LOGGER.info( "Successfully released database change privileges." );
+    }
+
+    private static void setAdvisoryLockConnection(Connection connection)
+    {
+        synchronized ( Database.ADVISORY_LOCK )
         {
-            throw new IOException( "Failed to release database change privileges.",
-                                   se );
+            Database.advisoryLockConnection = connection;
         }
     }
 
