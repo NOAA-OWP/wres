@@ -1,6 +1,5 @@
 package wres.engine.statistics.metric.processing;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -10,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.DoublePredicate;
@@ -694,7 +694,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         {
             Operator oper = MetricConfigHelper.from( metrics.getProbabilityThresholds().getOperator() );
             String values = metrics.getProbabilityThresholds().getCommaSeparatedValues();
-            List<Threshold> thresholds = getThresholdsFromCommaSeparatedValues( values, oper, true );
+            Set<Threshold> thresholds = getThresholdsFromCommaSeparatedValues( values, oper, true );
             thresholdsWithoutAllData.addAll( thresholds );
             thresholdsWithAllData.addAll( thresholds );
         }
@@ -703,7 +703,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         {
             Operator oper = MetricConfigHelper.from( metrics.getValueThresholds().getOperator() );
             String values = metrics.getValueThresholds().getCommaSeparatedValues();
-            List<Threshold> thresholds = getThresholdsFromCommaSeparatedValues( values, oper, false );
+            Set<Threshold> thresholds = getThresholdsFromCommaSeparatedValues( values, oper, false );
             thresholdsWithoutAllData.addAll( thresholds );
             thresholdsWithAllData.addAll( thresholds );
         }
@@ -819,7 +819,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
      * @throws MetricConfigurationException if the thresholds are configured incorrectly
      */
 
-    private List<Threshold> getThresholdsFromCommaSeparatedValues( String inputString,
+    private Set<Threshold> getThresholdsFromCommaSeparatedValues( String inputString,
                                                                    Operator oper,
                                                                    boolean areProbs )
             throws MetricConfigurationException
@@ -827,7 +827,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         //Parse the double values
         List<Double> addMe =
                 Arrays.stream( inputString.split( "," ) ).map( Double::parseDouble ).collect( Collectors.toList() );
-        List<Threshold> returnMe = new ArrayList<>();
+        Set<Threshold> returnMe = new TreeSet<>();
         //Between operator
         if ( oper == Operator.BETWEEN )
         {

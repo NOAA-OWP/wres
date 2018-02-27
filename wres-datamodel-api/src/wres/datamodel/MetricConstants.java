@@ -455,7 +455,18 @@ public enum MetricConstants
     {
         return isInGroup( inGroup ) && isInGroup( outGroup );
     }
+    
+    /**
+     * Returns the {@link MetricOutputGroup} associated with the {@link MetricConstants}.
+     * 
+     * @return the {@link MetricOutputGroup}.
+     */
 
+    public MetricOutputGroup getMetricOutputGroup()
+    {
+        return outGroup;
+    }
+    
     /**
      * Returns all metric components in the {@link ScoreOutputGroup} with which this constant is associated or
      * null if none is defined.
