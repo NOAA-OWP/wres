@@ -238,6 +238,11 @@ public class ScriptBuilder
         return Database.submit( retriever );
     }
 
+    public DataSet getData() throws SQLException
+    {
+        return Database.getDataSet( this.toString() );
+    }
+
     /**
      * Creates a prepared statement using the script
      * @param connection The connection that the prepared statement will be run on

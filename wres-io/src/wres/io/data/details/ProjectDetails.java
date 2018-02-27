@@ -1683,15 +1683,15 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
 
 
         part.addLine(") AS TS");
-        part.addLine("WHERE EXISTS (");
-        part.addTab().addLine("SELECT 1");
+        part.addLine("INNER JOIN (");
+        part.addTab().addLine("SELECT O.observation_time");
         part.addTab().addLine("FROM (");
         part.addTab(  2  ).addLine("SELECT source_id");
         part.addTab(  2  ).addLine("FROM wres.ProjectSource PS");
         part.addTab(  2  ).addLine("WHERE PS.project_id = ", this.getId());
-        part.addTab(   3   ).addLine("AND PS.member = 'left'");
-        part.addLine(") AS PS");
-        part.addLine("INNER JOIN (");
+        part.addTab(   3  ).addLine("AND PS.member = ", ProjectDetails.LEFT_MEMBER);
+        part.addTab().addLine(") AS PS");
+        part.addTab().addLine("INNER JOIN (");
         part.addTab(  2  ).add("SELECT source_id, observation_time");
 
         if (this.getLeft().getTimeShift() != null)
@@ -1719,8 +1719,8 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
 
         part.addTab().addLine(") AS O");
         part.addTab(  2  ).addLine("ON O.source_id = PS.source_id");
-        part.addTab().addLine("WHERE O.observation_time = TS.valid_time");
-        part.addLine(")");
+        part.addLine(") AS OT");
+        part.addTab().addLine("ON OT.observation_time = TS.valid_time");
         part.addLine("ORDER BY TS.offset");
         part.addLine("LIMIT 1;");
 
