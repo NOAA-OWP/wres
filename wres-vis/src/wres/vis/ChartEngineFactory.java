@@ -123,7 +123,7 @@ public abstract class ChartEngineFactory
     private static Table<MetricConstants, OutputTypeSelection, PlotTypeInformation> multiVectorOutputPlotTypeInfoTable =
             HashBasedTable.create();
     static
-    {
+    {    
         multiVectorOutputPlotTypeInfoTable.put( MetricConstants.RELIABILITY_DIAGRAM,
                                                 OutputTypeSelection.DEFAULT,
                                                 new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,

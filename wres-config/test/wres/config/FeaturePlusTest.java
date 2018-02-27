@@ -518,7 +518,7 @@ public class FeaturePlusTest
                              "G",
                              "H" );
         FeaturePlus fourth = FeaturePlus.of( four );
-        
+
         assertTrue( "Expected equal hashcodes.", third.hashCode() == fourth.hashCode() && third.equals( fourth ) );
 
     }
@@ -545,7 +545,7 @@ public class FeaturePlusTest
         FeaturePlus first = FeaturePlus.of( one );
 
         assertTrue( "Expected comparable features.", first.compareTo( first ) == 0 );
-        
+
         // Anticommutative
         Feature two =
                 new Feature( Arrays.asList( "A" ),
@@ -558,7 +558,7 @@ public class FeaturePlusTest
                              "R",
                              "G",
                              "H" );
-        FeaturePlus second = FeaturePlus.of( two );  
+        FeaturePlus second = FeaturePlus.of( two );
 
         assertTrue( "Expected anticommutative behaviour.",
                     Math.abs( second.compareTo( first ) ) == Math.abs( first.compareTo( second ) ) );
@@ -575,9 +575,9 @@ public class FeaturePlusTest
                              "R",
                              "G",
                              "H" );
-        FeaturePlus third = FeaturePlus.of( three );        
-        
-        
+        FeaturePlus third = FeaturePlus.of( three );
+
+
         assertTrue( "Expected symmetric comparability.",
                     second.compareTo( third ) == 0 && third.compareTo( second ) == 0 );
 
@@ -593,11 +593,11 @@ public class FeaturePlusTest
                              "R",
                              "G",
                              "H" );
-        FeaturePlus thirdTrans = FeaturePlus.of( threeTrans );  
-        
+        FeaturePlus thirdTrans = FeaturePlus.of( threeTrans );
+
         assertTrue( "Expected transitive behaviour.",
                     thirdTrans.compareTo( third ) < 0 && third.compareTo( first ) < 0
-                                                      && thirdTrans.compareTo( first ) < 0 );               
+                                                      && thirdTrans.compareTo( first ) < 0 );
 
         // Unequal combinations based on different components
         Feature nullFeature =
@@ -631,7 +631,7 @@ public class FeaturePlusTest
 
         assertFalse( "Expected unequal features.", first.compareTo( fourth ) == 0 );
         assertFalse( "Expected unequal features.", fourth.compareTo( first ) == 0 );
-        
+
         // Coordinate
         Feature five =
                 new Feature( null,
@@ -962,6 +962,45 @@ public class FeaturePlusTest
 
         assertFalse( "Expected unequal features.", twentySecond.compareTo( twentyFirst ) == 0 );
 
-    }    
-    
+    }
+
+    /**
+     * Tests {@link FeaturePlus#compareByLocationId(FeaturePlus, FeaturePlus)}.
+     */
+
+    @Test
+    public void testCompareByLocationId()
+    {
+        Feature one =
+                new Feature( null,
+                             null,
+                             null,
+                             "A",
+                             null,
+                             null,
+                             null,
+                             null,
+                             null,
+                             null );
+
+        FeaturePlus first = FeaturePlus.of( one );
+
+        Feature two =
+                new Feature( null,
+                             null,
+                             null,
+                             "A",
+                             null,
+                             null,
+                             null,
+                             null,
+                             null,
+                             null );
+
+        FeaturePlus second = FeaturePlus.of( two );
+
+        assertTrue( "Expected equal features by location identifier.",
+                    FeaturePlus.compareByLocationId( first, second ) == 0 );
+    }
+
 }

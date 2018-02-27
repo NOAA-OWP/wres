@@ -2,16 +2,16 @@ package wres.config;
 
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.Map;
 import java.util.Objects;
+import java.util.SortedMap;
 
 import wres.config.generated.CoordinateSelection;
 import wres.config.generated.Feature;
 
 /**
  * Class that wraps a {@link Feature} and implements {@link Comparable} on the contents of the {@link Feature}. As such,
- * a {@link FeaturePlus} may be used to key a {@link Map} and in other contexts for which natural order must be
- * preserved.
+ * {@link FeaturePlus} may be used as keys in a {@link SortedMap} or in any other context for which natural order must 
+ * be preserved.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
@@ -39,7 +39,25 @@ public class FeaturePlus implements Comparable<FeaturePlus>
     {
         return new FeaturePlus( feature );
     }
+    
+    /**
+     * Compares two {@link FeaturePlus} based on the {@link Feature#getLocationId()} of their contained features only.
+     * 
+     * @param left the left feature
+     * @param right the right feature
+     * @return a negative integer, zero, or a positive integer as the left feature is less than, equal to, or greater 
+     *            than the right feature, based on location identifier only
+     */
 
+    public static int compareByLocationId( FeaturePlus left, FeaturePlus right )
+    {
+        Objects.requireNonNull( left, "Specify non-null left feature for comparison." );
+        
+        Objects.requireNonNull( right, "Specify non-null right feature for comparison." );
+        
+        return left.getFeature().getLocationId().compareTo( right.getFeature().getLocationId() );        
+    }
+    
     /**
      * Returns the wrapped {@link Feature}.
      * 
