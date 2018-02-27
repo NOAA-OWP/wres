@@ -12,7 +12,8 @@ then
 fi
 
 #CSV_FILES=`ls *.csv | grep -v pairs`
-CSV_FILES=`grep .csv dirListing.txt | grep -v pairs`
+#CSV_FILES=`grep .csv dirListing.txt | grep -v pairs`
+CSV_FILES=`grep .csv dirListing.txt | grep -v pairs | egrep -v '(CONTINGENCY_TABLE|FREQUENCY_BIAS|PEIRCE_SKILL_SCORE|QUANTILE_QUANTILE_DIAGRAM)'`
 for CSV_FILE in $CSV_FILES
 do
 	#echo $CSV_FILE
@@ -41,7 +42,8 @@ do
 		if [ -f sorted_pairs.csv ] # just double check
 		then
 			#Rscript ../../rsrc/CheckMetrics.R sorted_pairs.csv "$ename" $value 2>&1 | tee -a testMetricsResults.txt
-			(Rscript ../../rsrc/CheckMetrics.R sorted_pairs.csv "$ename" $value > temp1.txt) 2>> $errorFile
+			#(Rscript ../../rsrc/CheckMetrics.R sorted_pairs.csv "$ename" $value > temp1.txt) 2>> $errorFile
+			(Rscript ../../rsrc/CheckMetrics.R checkedSorted_pairs.csv "$ename" $value > temp1.txt) 2>> $errorFile
 			head -6 temp1.txt > header.txt
 			sed -n "7,$"p temp1.txt | gawk '{print($1 "          "  $3)}' > metricsValues.txt
 			#rm -v temp1.txt
