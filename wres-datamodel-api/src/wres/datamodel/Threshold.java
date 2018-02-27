@@ -63,7 +63,8 @@ public interface Threshold extends Comparable<Threshold>, Predicate<Double>
     }
 
     /**
-     * Returns true if the threshold contains one or more ordinary (non-probability) values, false otherwise.
+     * Returns <code>true</code> if the threshold contains one or more ordinary (non-probability) values, otherwise
+     * <code>false</code>.
      * 
      * @return true if ordinary values are defined, false otherwise
      */
@@ -74,7 +75,7 @@ public interface Threshold extends Comparable<Threshold>, Predicate<Double>
     }
 
     /**
-     * Returns true if the threshold contains one or more probability values, false otherwise.
+     * Returns <code>true</code> if the threshold contains one or more probability values, otherwise <code>false</code>.
      * 
      * @return true if probability values are defined, false otherwise
      */
@@ -85,7 +86,18 @@ public interface Threshold extends Comparable<Threshold>, Predicate<Double>
     }
 
     /**
-     * Returns true if the threshold is a quantile; that is, when {@link #hasOrdinaryValues()} and 
+     * Returns <code>true</code> if {@link #getLabel()} returns a non-null label, otherwise <code>false</code>.
+     * 
+     * @return true if the threshold has a label, false otherwise
+     */
+
+    default boolean hasLabel()
+    {
+        return Objects.nonNull( getLabel() );
+    }
+
+    /**
+     * Returns <code>true</code> if the threshold is a quantile; that is, when {@link #hasOrdinaryValues()} and 
      * {@link #hasProbabilityValues()} both return <code>true</code>.
      * 
      * @return true if the threshold is a quantile, false otherwise
@@ -139,6 +151,14 @@ public interface Threshold extends Comparable<Threshold>, Predicate<Double>
     Double getThresholdUpperProbability();
 
     /**
+     * Returns the label associated with the {@link Threshold} or null if no label is defined.
+     * 
+     * @return the label or null
+     */
+
+    String getLabel();
+
+    /**
      * Returns true if the threshold condition corresponds to a {@link Operator#BETWEEN} condition and, hence, that
      * {@link #getThresholdUpper()} returns a non-null threshold value.
      * 
@@ -162,7 +182,7 @@ public interface Threshold extends Comparable<Threshold>, Predicate<Double>
      */
 
     String toStringSafe();
-    
+
     /**
      * Returns a string representation of the threshold.
      * 

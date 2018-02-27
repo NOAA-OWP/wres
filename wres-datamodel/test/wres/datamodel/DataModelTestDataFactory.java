@@ -94,7 +94,7 @@ public final class DataModelTestDataFactory
                     final DoubleProcedureParameter f = (DoubleProcedureParameter) e.next().getKey();
                     final double[] constants = f.getParValReal().getConstants();
                     final double[] probConstants = f.getParVal().getConstants();
-                    final Threshold q = outputFactory.getQuantileThreshold( constants[0],
+                    final Threshold q = outputFactory.ofQuantileThreshold( constants[0],
                                                                             probConstants[0],
                                                                             Operator.GREATER );
                     final Pair<TimeWindow, Threshold> key = Pair.of( timeWindow, q );
@@ -170,7 +170,7 @@ public final class DataModelTestDataFactory
                     final DoubleProcedureParameter f = (DoubleProcedureParameter) e.next().getKey();
                     final double[] constants = f.getParValReal().getConstants();
                     final double[] probConstants = f.getParVal().getConstants();
-                    final Threshold q = outputFactory.getQuantileThreshold( constants[0],
+                    final Threshold q = outputFactory.ofQuantileThreshold( constants[0],
                                                                             probConstants[0],
                                                                             Operator.GREATER );
                     final Pair<TimeWindow, Threshold> key = Pair.of( timeWindow, q );
@@ -230,7 +230,7 @@ public final class DataModelTestDataFactory
                                                      ReferenceTime.VALID_TIME,
                                                      Duration.ofHours( 1 ) );
         //Fake lead time and threshold
-        builder.addDoubleScoreOutput( factory.getMapKeyByTimeThreshold( timeWindow, 23.0, Operator.GREATER ),
+        builder.addDoubleScoreOutput( factory.ofMapKeyByTimeThreshold( timeWindow, 23.0, Operator.GREATER ),
                                 CompletableFuture.completedFuture( in ) );
 
         //Return data

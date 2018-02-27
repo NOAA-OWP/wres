@@ -39,7 +39,7 @@ import wres.io.writing.CommaSeparatedHelper.RowCompareByLeft;
  * @version 0.2
  * @since 0.1
  */
-public class CommaSeparated
+public class CommaSeparatedWriter
 {
 
     /**
@@ -176,7 +176,7 @@ public class CommaSeparated
             // Scores with double output
             if ( storedMetricOutput.hasOutput( MetricOutputGroup.DOUBLE_SCORE ) )
             {
-                CommaSeparated.writeOneScoreOutputType( destinationConfig,
+                CommaSeparatedWriter.writeOneScoreOutputType( destinationConfig,
                                                         storedMetricOutput.getDoubleScoreOutput(),
                                                         ConfigHelper.getDecimalFormatter( destinationConfig ) );
             }
@@ -184,7 +184,7 @@ public class CommaSeparated
             // Scores with duration output
             if ( storedMetricOutput.hasOutput( MetricOutputGroup.DURATION_SCORE ) )
             {
-                CommaSeparated.writeOneScoreOutputType( destinationConfig,
+                CommaSeparatedWriter.writeOneScoreOutputType( destinationConfig,
                                                         storedMetricOutput.getDurationScoreOutput(),
                                                         null );
             }
@@ -192,7 +192,7 @@ public class CommaSeparated
             // Metrics with PairedOutput
             if ( storedMetricOutput.hasOutput( MetricOutputGroup.PAIRED ) )
             {
-                CommaSeparated.writeOnePairedOutputType( destinationConfig,
+                CommaSeparatedWriter.writeOnePairedOutputType( destinationConfig,
                                                          storedMetricOutput.getPairedOutput(),
                                                          null );
             }
@@ -200,7 +200,7 @@ public class CommaSeparated
             // Diagrams
             if ( storedMetricOutput.hasOutput( MetricOutputGroup.MULTIVECTOR ) )
             {
-                CommaSeparated.writeOneDiagramOutputType( projectConfig,
+                CommaSeparatedWriter.writeOneDiagramOutputType( projectConfig,
                                                           destinationConfig,
                                                           storedMetricOutput.getMultiVectorOutput(),
                                                           ConfigHelper.getDecimalFormatter( destinationConfig ) );
@@ -208,14 +208,14 @@ public class CommaSeparated
             // Box plots
             if ( storedMetricOutput.hasOutput( MetricOutputGroup.BOXPLOT ) )
             {
-                CommaSeparated.writeOneBoxPlotOutputType( destinationConfig,
+                CommaSeparatedWriter.writeOneBoxPlotOutputType( destinationConfig,
                                                           storedMetricOutput.getBoxPlotOutput(),
                                                           ConfigHelper.getDecimalFormatter( destinationConfig ) );
             }
             // Matrix output
             if ( storedMetricOutput.hasOutput( MetricOutputGroup.MATRIX ) )
             {
-                CommaSeparated.writeOneMatrixOutputType( projectConfig,
+                CommaSeparatedWriter.writeOneMatrixOutputType( projectConfig,
                                                          destinationConfig,
                                                          storedMetricOutput.getMatrixOutput(),
                                                          ConfigHelper.getDecimalFormatter( destinationConfig ) );
@@ -578,7 +578,7 @@ public class CommaSeparated
      * Prevent construction.
      */
 
-    private CommaSeparated()
+    private CommaSeparatedWriter()
     {        
     }
     

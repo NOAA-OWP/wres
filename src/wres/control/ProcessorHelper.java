@@ -67,7 +67,7 @@ import wres.io.retrieval.IterationFailedException;
 import wres.io.utilities.NoDataException;
 import wres.io.writing.ChartWriter;
 import wres.io.writing.ChartWriter.ChartWritingException;
-import wres.io.writing.CommaSeparated;
+import wres.io.writing.CommaSeparatedWriter;
 import wres.util.ProgressMonitor;
 import wres.vis.ChartEngineFactory;
 
@@ -406,7 +406,7 @@ public class ProcessorHelper
 
             try
             {
-                CommaSeparated.writeOutputFiles( projectConfig,
+                CommaSeparatedWriter.writeOutputFiles( projectConfig,
                                                  feature,
                                                  cachedOutput );
 

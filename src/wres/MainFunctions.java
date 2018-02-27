@@ -232,11 +232,16 @@ final class MainFunctions
 	private static Function<String[], Integer> cleanDatabase ()
 	{
 		return (final String[] args) -> {
-			Integer result = FAILURE;
-            boolean successfullyCleaned = Operations.cleanDatabase();
-            if (successfullyCleaned)
+            Integer result;
+            try
             {
+                Operations.cleanDatabase();
                 result = SUCCESS;
+            }
+            catch ( IOException | SQLException e )
+            {
+                LOGGER.error( "While cleaning the database", e );
+                result = FAILURE;
             }
 			return result;
 		};

@@ -211,61 +211,54 @@ public class ProgressMonitor
     {
         MONITOR.showStepDescription = showStepDescription;
     }
-    
+
     public void reset()
     {
         this.totalSteps = 0L;
         this.completedSteps = 0L;
         this.startTime = System.currentTimeMillis();
     }
-    
+
     private String getProgressMessage()
     {
-        String message = "COULDN'T CREATE UPDATE MESSAGE";
+        String message;
         String builder = "\r  ";
-        try
+
+        if ( this.showStepDescription )
         {
-            if (this.showStepDescription)
-            {
-                builder += mainFormat.format(completedSteps);
-                builder += " steps out of ";
-                builder += mainFormat.format(totalSteps);
-                builder += " completed";
-
-                builder += " at an average speed of ";
-                builder += getCompletionSpeed();
-            }
-            else
-            {
-                float completion = ((completedSteps * 1.0F) / (totalSteps * 1.0F)) * 100.0f;
-                if (Float.isNaN( completion ))
-                {
-                    completion = 0.0F;
-                }
-                else if (completion > 100.0)
-                {
-                    completion = 100.0F;
-                }
-                builder += String.format("%.2f", completion);
-                builder += "% Completed ";
-
-                for (int i = 0; i < completion; i += 2)
-                {
-                    builder += "=";
-                }
-
-                builder += ">";
-            }
-            message = builder;
+            builder += mainFormat.format( completedSteps );
+            builder += " steps out of ";
+            builder += mainFormat.format( totalSteps );
+            builder += " completed";
+            builder += " at an average speed of ";
+            builder += getCompletionSpeed();
         }
-        catch (Exception e)
+        else
         {
-            LOGGER.error("{}Could not print:{}{}",
-                         System.lineSeparator(),
-                         System.lineSeparator(),
-                         builder);
-            LOGGER.error(Strings.getStackTrace( e ));
+            float completion = ( ( completedSteps * 1.0F ) / ( totalSteps * 1.0F ) ) * 100.0f;
+
+            if ( Float.isNaN( completion ) )
+            {
+                completion = 0.0F;
+            }
+            else if ( completion > 100.0 )
+            {
+                completion = 100.0F;
+            }
+
+            builder += String.format( "%.2f", completion );
+            builder += "% Completed ";
+
+            for ( int i = 0; i < completion; i += 2 )
+            {
+                builder += "=";
+            }
+
+            builder += ">";
         }
+
+        message = builder;
+
         return message;
     }
 

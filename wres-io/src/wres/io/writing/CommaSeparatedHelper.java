@@ -50,7 +50,7 @@ import wres.io.config.ConfigHelper;
  * @version 0.1
  * @since 0.4
  */
-public class CommaSeparatedHelper
+class CommaSeparatedHelper
 {
     /**
      * Delimiter for the header.
@@ -154,14 +154,17 @@ public class CommaSeparatedHelper
             for ( TimeWindow timeWindow : output.setOfTimeWindowKey() )
             {
                 Pair<TimeWindow, Threshold> key = Pair.of( timeWindow, t );
-                List<Pair<S, T>> nextValues = output.get( key ).getData();
-                for ( Pair<S, T> nextPair : nextValues )
+                if ( output.containsKey( key ) )
                 {
-                    addRowToInput( returnMe,
-                                   timeWindow,
-                                   Arrays.asList( nextPair.getLeft(), nextPair.getRight() ),
-                                   formatter,
-                                   false );
+                    List<Pair<S, T>> nextValues = output.get( key ).getData();
+                    for ( Pair<S, T> nextPair : nextValues )
+                    {
+                        addRowToInput( returnMe,
+                                       timeWindow,
+                                       Arrays.asList( nextPair.getLeft(), nextPair.getRight() ),
+                                       formatter,
+                                       false );
+                    }
                 }
             }
         }
@@ -191,18 +194,22 @@ public class CommaSeparatedHelper
             // Loop across time windows
             for ( TimeWindow timeWindow : output.setOfTimeWindowKey() )
             {
-                BoxPlotOutput nextValues = output.get( Pair.of( timeWindow, t ) );
-                // Add each box
-                for ( PairOfDoubleAndVectorOfDoubles nextBox : nextValues )
+                Pair<TimeWindow, Threshold> key = Pair.of( timeWindow, t );
+                if ( output.containsKey( key ) )
                 {
-                    List<Double> data = new ArrayList<>();
-                    data.add( nextBox.getItemOne() );
-                    data.addAll( Arrays.stream( nextBox.getItemTwo() ).boxed().collect( Collectors.toList() ) );
-                    addRowToInput( returnMe,
-                                   timeWindow,
-                                   data,
-                                   formatter,
-                                   false );
+                    BoxPlotOutput nextValues = output.get( key );
+                    // Add each box
+                    for ( PairOfDoubleAndVectorOfDoubles nextBox : nextValues )
+                    {
+                        List<Double> data = new ArrayList<>();
+                        data.add( nextBox.getItemOne() );
+                        data.addAll( Arrays.stream( nextBox.getItemTwo() ).boxed().collect( Collectors.toList() ) );
+                        addRowToInput( returnMe,
+                                       timeWindow,
+                                       data,
+                                       formatter,
+                                       false );
+                    }
                 }
             }
         }
@@ -233,10 +240,14 @@ public class CommaSeparatedHelper
             List<Double> merge = new ArrayList<>();
             for ( Threshold threshold : output.setOfThresholdKey() )
             {
-                MatrixOutput next = output.get( Pair.of( timeWindow, threshold ) );
+                Pair<TimeWindow, Threshold> key = Pair.of( timeWindow, threshold );
+                if ( output.containsKey( key ) )
+                {
+                    MatrixOutput next = output.get( key );
 
-                // Add the row
-                next.iterator().forEachRemaining( merge::add );
+                    // Add the row
+                    next.iterator().forEachRemaining( merge::add );
+                }
             }
             // Add the merged row
             addRowToInput( returnMe,
@@ -258,7 +269,7 @@ public class CommaSeparatedHelper
      */
 
     static List<RowCompareByLeft> getRowsForOneDiagram( MetricOutputMapByTimeAndThreshold<MultiVectorOutput> output,
-                                                                Format formatter )
+                                                        Format formatter )
     {
         List<RowCompareByLeft> returnMe = new ArrayList<>();
 
@@ -270,29 +281,8 @@ public class CommaSeparatedHelper
             Map<Integer, List<Double>> merge = new TreeMap<>();
             for ( Threshold threshold : output.setOfThresholdKey() )
             {
-                MultiVectorOutput next = output.get( Pair.of( timeWindow, threshold ) );
-                // For safety, find the largest vector and use Double.NaN in place for vectors of differing size
-                // In practice, all should be the same length
-                int maxRows = next.getData()
-                                  .values()
-                                  .stream()
-                                  .max( Comparator.comparingInt( VectorOfDoubles::size ) )
-                                  .get()
-                                  .size();
-                // Loop until the maximum row 
-                for ( int rowIndex = 0; rowIndex < maxRows; rowIndex++ )
-                {
-                    // Add the row
-                    List<Double> row = getOneRowForOneDiagram( next, rowIndex );
-                    if ( merge.containsKey( rowIndex ) )
-                    {
-                        merge.get( rowIndex ).addAll( row );
-                    }
-                    else
-                    {
-                        merge.put( rowIndex, row );
-                    }
-                }
+                Pair<TimeWindow, Threshold> key = Pair.of( timeWindow, threshold );
+                addRowsForOneDiagramAtOneTimeWindowAndThreshold( output, key, merge );
             }
             // Add the merged rows
             for ( List<Double> next : merge.values() )
@@ -307,6 +297,51 @@ public class CommaSeparatedHelper
 
         return returnMe;
     }
+
+    /**
+     * Adds rows to the input map of merged rows for a specific {@link TimeWindow} and {@link Threshold}.
+     *
+     * @param output the diagram output
+     * @param key the key for which rows are required
+     * @param merge the merged rows to mutate
+     */
+
+    static void
+            addRowsForOneDiagramAtOneTimeWindowAndThreshold( MetricOutputMapByTimeAndThreshold<MultiVectorOutput> output,
+                                                             Pair<TimeWindow, Threshold> key,
+                                                             Map<Integer, List<Double>> merge )
+    {
+
+        // Check that the output exists
+        if ( output.containsKey( key ) )
+        {
+            MultiVectorOutput next = output.get( key );
+
+            // For safety, find the largest vector and use Double.NaN in place for vectors of differing size
+            // In practice, all should be the same length
+            int maxRows = next.getData()
+                              .values()
+                              .stream()
+                              .max( Comparator.comparingInt( VectorOfDoubles::size ) )
+                              .get()
+                              .size();
+
+            // Loop until the maximum row 
+            for ( int rowIndex = 0; rowIndex < maxRows; rowIndex++ )
+            {
+                // Add the row
+                List<Double> row = getOneRowForOneDiagram( next, rowIndex );
+                if ( merge.containsKey( rowIndex ) )
+                {
+                    merge.get( rowIndex ).addAll( row );
+                }
+                else
+                {
+                    merge.put( rowIndex, row );
+                }
+            }
+        }
+    }   
 
     /**
      * Returns the row from the diagram from the input data at a specified threshold and row index.
@@ -530,7 +565,10 @@ public class CommaSeparatedHelper
             for ( TimeWindow timeWindow : component.setOfTimeWindowKey() )
             {
                 Pair<TimeWindow, Threshold> key = Pair.of( timeWindow, t );
-                addRowToInput( rows, timeWindow, Arrays.asList( component.get( key ).getData() ), formatter, true );
+                if ( component.containsKey( key ) )
+                {
+                    addRowToInput( rows, timeWindow, Arrays.asList( component.get( key ).getData() ), formatter, true );
+                }
             }
         }
     }   
