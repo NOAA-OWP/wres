@@ -2115,27 +2115,8 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
 
         script.addLine("WITH differences AS");
         script.addLine("(");
-        script.addLine("    SELECT lead - lag(lead) OVER (ORDER BY TS.timeseries_id, lead) AS difference");
+        script.addLine("    SELECT lead - lag(lead) OVER (ORDER BY FV.timeseries_id, lead) AS difference");
         script.addLine("    FROM wres.ForecastValue FV");
-        script.addTab().addLine("INNER JOIN wres.TimeSeries TS");
-        script.addTab(  2  ).addLine("ON FV.timeseries_id = TS.timeseries_id");
-        script.addTab().addLine("INNER JOIN (");
-        script.addTab(  2  ).addLine("SELECT ensemble_id");
-        script.addTab(  2  ).addLine("FROM wres.Ensemble E");
-        script.addTab(  2  ).addLine("WHERE EXISTS (");
-        script.addTab(   3   ).addLine("SELECT 1");
-        script.addTab(   3   ).addLine("FROM wres.TimeSeries TS");
-        script.addTab(   3   ).addLine("INNER JOIN wres.ForecastSource FS");
-        script.addTab(    4    ).addLine("ON TS.timeseries_id = FS.forecast_id");
-        script.addTab(   3   ).addLine("INNER JOIN wres.ProjectSource PS");
-        script.addTab(    4    ).addLine("ON PS.source_id = FS.source_id");
-        script.addTab(   3   ).addLine("WHERE PS.project_id = ", this.getId());
-        script.addTab(    4    ).addLine("AND PS.member = ", this.getInputName( dataSourceConfig ));
-        script.addTab(    4    ).addLine("AND TS.ensemble_id = E.ensemble_id");
-        script.addTab(  2  ).addLine( ")" );
-        script.addTab(  2  ).addLine("LIMIT 1");
-        script.addTab().addLine(") AS e");
-        script.addTab(  2  ).addLine("ON e.ensemble_id = TS.ensemble_id");
         script.addLine("    WHERE lead > 0");
         script.addLine("        AND EXISTS (");
         script.addLine("            SELECT 1");
@@ -2144,7 +2125,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         script.addLine("                ON FS.source_id = PS.source_id");
         script.addLine("            WHERE PS.project_id = ", this.getId());
         script.addLine("                AND PS.member = ", this.getInputName( dataSourceConfig ));
-        script.addLine("                AND TS.timeseries_id = FS.forecast_id");
+        script.addLine("                AND FV.timeseries_id = FS.forecast_id");
         script.addLine("        )");
         script.addLine(")");
         script.addLine("SELECT MIN(difference)::integer AS scale");

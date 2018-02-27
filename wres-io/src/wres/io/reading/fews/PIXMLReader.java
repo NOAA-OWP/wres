@@ -824,20 +824,20 @@ public final class PIXMLReader extends XMLReader
             // Ask the cache "do you have this source?"
             boolean wasInCache = DataSources.isCached( sourceKey );
             boolean wasThisReaderTheOneThatInserted = false;
-            SourceDetails deets = null;
+            SourceDetails sourceDetails;
 
             if ( !wasInCache )
             {
                 // We *might* be the one in charge of doing this source ingest.
-                deets = new SourceDetails( sourceKey );
-                deets.save();
-                if ( deets.performedInsert() )
+                sourceDetails = new SourceDetails( sourceKey );
+                sourceDetails.save();
+                if ( sourceDetails.performedInsert() )
                 {
                     // Now we have the definitive answer from the database.
                     wasThisReaderTheOneThatInserted = true;
 
                     // Now that ball is in our court we should put in cache
-                    DataSources.put( deets );
+                    DataSources.put( sourceDetails );
                     // // Older, implicit way:
                     // DataSources.hasSource( this.getHash() );
                 }

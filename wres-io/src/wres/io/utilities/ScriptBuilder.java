@@ -2,6 +2,7 @@ package wres.io.utilities;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -226,6 +227,17 @@ public class ScriptBuilder
     }
 
     /**
+     * Retrieves a ResultSet for query result streaming
+     * @param connection The connection that will facilitate the result streaming
+     * @return The ResultSet containing the query results
+     * @throws SQLException Thrown if the query cannot be executed
+     */
+    public ResultSet retrieve( Connection connection) throws SQLException
+    {
+        return Database.getResults( connection, this.toString() );
+    }
+
+    /**
      * Retrieves a single value, denoted by the given label, asynchronously
      * using the script
      * @param label The name of the column containing the value
@@ -238,6 +250,12 @@ public class ScriptBuilder
         return Database.submit( retriever );
     }
 
+    /**
+     * Retrieves all data from the script and presents it in a structure
+     * divorced from the database itself.
+     * @return A DataSet containing all returned values
+     * @throws SQLException Thrown if the DataSet could not be created
+     */
     public DataSet getData() throws SQLException
     {
         return Database.getDataSet( this.toString() );
