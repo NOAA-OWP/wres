@@ -11,6 +11,7 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.Set;
 import java.util.StringJoiner;
@@ -22,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.transform.TransformerException;
 
+import com.google.common.graph.Network;
 import org.slf4j.LoggerFactory;
 
 import wres.config.generated.Feature;
@@ -243,22 +245,51 @@ public final class Operations {
                                      long duration,
                                      String error)
     {
-        String address;
+        String address = "Unknown";
 
         try
         {
             // Determines the network address of the machine that runs the WRES
             // Should be of the format of '192.168.122.1'
-            address = NetworkInterface.getNetworkInterfaces()
-                                      .nextElement()
-                                      .getInterfaceAddresses().get( 0 )
-                                      .getAddress()
-                                      .getHostName();
+            NetworkInterface currentInterface;
+            int interfaceIndex = NetworkInterface.getNetworkInterfaces().nextElement().getIndex();
+            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+
+
+
+            while ( interfaceIndex > 0)
+            {
+                currentInterface = NetworkInterface.getByIndex( interfaceIndex );
+
+                String currentAddress = currentInterface.getInterfaceAddresses()
+                                                        .get(currentInterface.getInterfaceAddresses().size() - 1)
+                                                        .getAddress()
+                                                        .getHostName();
+
+                // If nothing has been assigned, go with whatever is found
+                if (address.equals( "Unknown" ))
+                {
+                    address = currentAddress;
+                }
+                else if (currentAddress.matches( "^10[\\.\\d]+$" ))
+                {
+                    address = currentAddress;
+                }
+                else if (currentAddress.matches( "^172[\\.\\d]+$" ))
+                {
+                    address = currentAddress;
+                }
+                else if (currentAddress.matches( "^192[\\.\\d]+$" ))
+                {
+                    address = currentAddress;
+                }
+
+                interfaceIndex--;
+            }
         }
         catch (SocketException e)
         {
             LOGGER.warn( "The execution address could not be determined.", e );
-            address = "Unknown";
         }
 
         try
@@ -386,7 +417,9 @@ public final class Operations {
 
     private static boolean shouldAnalyze( List<IngestResult> ingestResults )
     {
-        for ( IngestResult ingestResult : ingestResults )
+        return wres.util.Collections.exists( ingestResults, ingestResult -> !ingestResult.wasFoundAlready() );
+
+        /*for ( IngestResult ingestResult : ingestResults )
         {
             if ( !ingestResult.wasFoundAlready() )
             {
@@ -394,7 +427,7 @@ public final class Operations {
             }
         }
 
-        return false;
+        return false;*/
     }
 
 }

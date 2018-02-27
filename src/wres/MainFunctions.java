@@ -40,7 +40,10 @@ import wres.io.config.ConfigHelper;
 import wres.io.config.SystemSettings;
 import wres.io.reading.ReaderFactory;
 import wres.io.reading.usgs.USGSParameterReader;
+import wres.io.utilities.DataSet;
 import wres.io.utilities.Database;
+import wres.io.utilities.NoDataException;
+import wres.io.utilities.ScriptBuilder;
 import wres.util.NetCDF;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
@@ -107,24 +110,27 @@ final class MainFunctions
 	 * Creates the mapping of operation names to their corresponding methods
 	 */
 	private static Map<String, Function<String[], Integer>> createMap () {
-		final Map<String, Function<String[], Integer>> prototypes = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+		final Map<String, Function<String[], Integer>> functions = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
-		prototypes.put("connecttodb", connectToDB());
-		prototypes.put("commands", printCommands());
-		prototypes.put("--help", printCommands());
-		prototypes.put("-h", printCommands());
-		prototypes.put("cleandatabase", cleanDatabase());
-		prototypes.put("execute", new Control());
-		prototypes.put("downloadtestdata", refreshTestData());
-		prototypes.put("refreshdatabase", refreshDatabase());
-		prototypes.put("loadcoordinates", loadCoordinates());
-		prototypes.put("install", install());
-		prototypes.put("ingest", ingest());
-		prototypes.put("loadfeatures", loadFeatures());
-		prototypes.put("killconnections", killWRESConnections());
-		prototypes.put( "loadusgsparameters", loadUSGSParameters());
+		functions.put("connecttodb", connectToDB());
+		functions.put("commands", printCommands());
+		functions.put("--help", printCommands());
+		functions.put("-h", printCommands());
+		functions.put("cleandatabase", cleanDatabase());
+		functions.put("execute", new Control());
+		functions.put("downloadtestdata", refreshTestData());
+		functions.put("refreshdatabase", refreshDatabase());
+		functions.put("loadcoordinates", loadCoordinates());
+		functions.put("install", install());
+		functions.put("ingest", ingest());
+		functions.put("loadfeatures", loadFeatures());
+		functions.put("killconnections", killWRESConnections());
+		functions.put( "loadusgsparameters", loadUSGSParameters());
+		functions.put( "latestprojecterror", getLatestProjectError() );
+		functions.put( "getexecutions", getExecutions() );
+		functions.put("viewruns", viewRuns());
 
-		return prototypes;
+		return functions;
 	}
 
 	private static Function<String[], Integer> loadUSGSParameters()
@@ -1030,6 +1036,180 @@ final class MainFunctions
 			return FAILURE;
 		};
 	}
+
+	private static Function<String[], Integer> getLatestProjectError()
+    {
+        return args -> {
+            Integer result = FAILURE;
+
+            try
+            {
+                ScriptBuilder script = new ScriptBuilder();
+
+                script.addLine( "SELECT username, address, arguments, run_time, error" );
+                script.addLine( "FROM ExecutionLog" );
+                script.addLine( "WHERE failed = true" );
+                script.addTab()
+                      .addLine( "AND LOWER(arguments) LIKE 'execute%'" );
+                script.addLine( "ORDER BY log_id" );
+                script.addLine( "LIMIT 1;" );
+
+                DataSet errorData = script.getData();
+
+                String arguments = errorData.getString( "arguments" );
+                String userIdentifier = errorData.getString( "username" ) +
+                                        ":" +
+                                        errorData.getString( "address" );
+                String runTime = errorData.getString( "run_time" );
+                String errors = errorData.getString( "error" );
+
+                String newline = System.lineSeparator();
+
+                LOGGER.info( "{}"
+                             + "User: {}{}"
+                             + "Arguments: {}{}"
+                             + "Run Time: {}{}"
+                             + "Errors:{}{}"
+                             + "{}",
+                             newline,
+                             userIdentifier, newline,
+                             arguments, newline,
+                             runTime, newline,
+                             newline, newline,
+                             errors );
+
+                result = SUCCESS;
+            }
+            catch ( SQLException e )
+            {
+                MainFunctions.addException( e );
+                LOGGER.error(
+                        "Information about the most recently failed project"
+                        + "could not be loaded.",
+                        e );
+            }
+            catch ( NoDataException e )
+            {
+                e.printStackTrace();
+            }
+
+            return result;
+        };
+    }
+
+    private static final Function<String[], Integer> getExecutions()
+    {
+        return args -> {
+            Integer result = SUCCESS;
+
+            Integer valueCount = 10;
+            boolean includeFailures = false;
+            String newline = System.lineSeparator();
+
+            String template = "'Arguments: ' || arguments || '" + newline +
+                              "User: ' || username || ':' || address || '" + newline
+                              + "Run Time: ' || run_time::text || '" + newline + "'";
+
+            if (args.length > 0)
+            {
+                valueCount = Integer.parseInt( args[0] );
+            }
+
+            if (args.length > 1)
+            {
+                includeFailures = Boolean.valueOf( args[1] );
+            }
+
+            ScriptBuilder script = new ScriptBuilder(  );
+            script.addLine("SELECT ", template);
+            script.addLine("FROM ExecutionLog");
+            script.addLine("WHERE LOWER(arguments) LIKE 'execute%'");
+
+            if (!includeFailures)
+            {
+                script.addTab().addLine("AND failed = false");
+            }
+
+            script.addLine("ORDER BY log_id DESC");
+            script.addLine("LIMIT ", valueCount);
+
+            try
+            {
+                DataSet executions = script.getData();
+
+                while (executions.next())
+                {
+                    LOGGER.info(executions.getString( 0 ));
+                }
+            }
+            catch ( SQLException | NoDataException e )
+            {
+                MainFunctions.addException( e );
+                LOGGER.error( Strings.getStackTrace( e ));
+                result = FAILURE;
+            }
+
+            return result;
+        };
+    }
+
+    private static Function<String[], Integer> viewRuns()
+    {
+        return args -> {
+            Integer result = SUCCESS;
+
+            if (args.length == 0)
+            {
+                LOGGER.info("Please provide the name of a project to check.");
+                LOGGER.info("usage: viewruns <project name> [<maximum row count>]");
+            }
+            else
+            {
+                String newline = System.lineSeparator();
+
+                String projectName = "LOWER('execute%" + args[0] + "%')";
+                Integer valueCount = 10;
+
+                if (args.length > 1)
+                {
+                    valueCount = Integer.parseInt( args[1] );
+                }
+
+                ScriptBuilder script = new ScriptBuilder(  );
+
+                script.addLine("SELECT rpad('Run Time: ' || run_time::text, 25) || ' | ' "
+                               + "|| lpad('Start Time: ' || start_time::text, 36) || ' | ' "
+                               + "|| lpad('User: ' || username || ':' || address, 35) "
+                               + "|| '" + newline + "' "
+                               + "|| repeat('-', 102)");
+                script.addLine("FROM ExecutionLog");
+                script.addLine("WHERE LOWER(arguments) LIKE ", projectName);
+                script.addTab().addLine("AND failed = false");
+                script.addLine("ORDER BY log_id DESC");
+                script.addLine("LIMIT ", valueCount);
+
+                try
+                {
+                    DataSet runs = script.getData();
+
+                    LOGGER.info( newline );
+                    while (runs.next())
+                    {
+                        LOGGER.info( runs.getString( 0 ) );
+                    }
+                    LOGGER.info( newline );
+                }
+                catch ( SQLException | NoDataException e )
+                {
+                    result = FAILURE;
+                    MainFunctions.addException( e );
+                    LOGGER.error( Strings.getStackTrace( e ));
+                }
+            }
+
+            return result;
+        };
+    }
 
     private static final Object EXCEPTION_LOCK = new Object();
     private static List<Exception> encounteredExceptions;

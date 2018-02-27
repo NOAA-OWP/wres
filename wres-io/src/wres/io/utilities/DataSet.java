@@ -104,6 +104,12 @@ public class DataSet
 
     private Object getObject(int rowNumber, int index) throws NoDataException
     {
+        // If "next" hasn't been called, go ahead and move on to the next row
+        if (rowNumber < 0)
+        {
+            rowNumber++;
+        }
+
         if (this.rows == null)
         {
             throw new NoDataException( "There is no data to retrieve from the data set." );
