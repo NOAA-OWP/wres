@@ -513,7 +513,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
             MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
                                  .ofMetricProcessorByTimeEnsemblePairs( config,
-                                                                        MetricOutputGroup.SCORE );
+                                                                        MetricOutputGroup.DOUBLE_SCORE );
             processor.apply( null );
             fail( "Expected a checked exception on processing the project configuration '" + testOne + "'." );
         }
@@ -530,7 +530,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
             MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
                                  .ofMetricProcessorByTimeEnsemblePairs( config,
-                                                                        MetricOutputGroup.SCORE );
+                                                                        MetricOutputGroup.DOUBLE_SCORE );
             processor.apply( MetricTestDataFactory.getEnsemblePairsTwo() );
             fail( "Expected a checked exception on processing the project configuration '" + testFour
                   + "' with a dichotomous metric." );
@@ -548,7 +548,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
             MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
                                  .ofMetricProcessorByTimeEnsemblePairs( config,
-                                                                        MetricOutputGroup.SCORE );
+                                                                        MetricOutputGroup.DOUBLE_SCORE );
             processor.apply( MetricTestDataFactory.getEnsemblePairsTwo() );
             fail( "Expected a checked exception on processing the project configuration '" + testFive
                   + "' with a multicategory metric." );
@@ -566,7 +566,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
             MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
                                  .ofMetricProcessorByTimeEnsemblePairs( config,
-                                                                        MetricOutputGroup.SCORE );
+                                                                        MetricOutputGroup.DOUBLE_SCORE );
             processor.apply( MetricTestDataFactory.getEnsemblePairsTwo() );
             fail( "Expected a checked exception on processing the project configuration '" + testSix
                   + "' with a skill metric that requires a baseline, in the absence of a baseline." );

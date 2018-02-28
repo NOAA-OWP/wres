@@ -207,7 +207,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
             MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
                                  .ofMetricProcessorByTimeSingleValuedPairs( config,
-                                                                            MetricOutputGroup.SCORE );
+                                                                            MetricOutputGroup.DOUBLE_SCORE );
             processor.apply( null );
             fail( "Expected a checked exception on processing the project configuration '" + testOne + "'." );
         }
@@ -222,7 +222,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
             MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
                                  .ofMetricProcessorByTimeSingleValuedPairs( config,
-                                                                            MetricOutputGroup.SCORE );
+                                                                            MetricOutputGroup.DOUBLE_SCORE );
             processor.apply( MetricTestDataFactory.getSingleValuedPairsSix() );
             fail( "Expected a checked exception on processing the project configuration '" + testTwo
                   + "' "
@@ -239,7 +239,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
             MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
                                  .ofMetricProcessorByTimeSingleValuedPairs( config,
-                                                                            MetricOutputGroup.SCORE );
+                                                                            MetricOutputGroup.DOUBLE_SCORE );
             processor.apply( MetricTestDataFactory.getSingleValuedPairsSix() );
             fail( "Expected a checked exception on processing the project configuration '" + testThree
                   + "' "
@@ -256,7 +256,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
             MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
                                  .ofMetricProcessorByTimeSingleValuedPairs( config,
-                                                                            MetricOutputGroup.SCORE );
+                                                                            MetricOutputGroup.DOUBLE_SCORE );
             processor.apply( MetricTestDataFactory.getSingleValuedPairsSix() );
             fail( "Expected a checked exception on processing the project configuration '" + testFour
                   + "' "
@@ -273,7 +273,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
             MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
                                  .ofMetricProcessorByTimeSingleValuedPairs( config,
-                                                                            MetricOutputGroup.SCORE );
+                                                                            MetricOutputGroup.DOUBLE_SCORE );
             processor.apply( MetricTestDataFactory.getSingleValuedPairsSix() );
             fail( "Expected a checked exception on processing the project configuration '" + testFive
                   + "' "

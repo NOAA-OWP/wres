@@ -489,9 +489,9 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
                                    MetricFuturesByTime.MetricFuturesByTimeBuilder futures )
     {
 
-        if ( hasMetrics( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCORE ) )
+        if ( hasMetrics( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.DOUBLE_SCORE ) )
         {
-            processSingleValuedThresholds( timeWindow, input, futures, MetricOutputGroup.SCORE );
+            processSingleValuedThresholds( timeWindow, input, futures, MetricOutputGroup.DOUBLE_SCORE );
         }
         if ( hasMetrics( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.MULTIVECTOR ) )
         {
@@ -620,7 +620,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
         MetricCalculationException returnMe = null;
         try
         {
-            if ( outGroup == MetricOutputGroup.SCORE )
+            if ( outGroup == MetricOutputGroup.DOUBLE_SCORE )
             {
                 futures.addDoubleScoreOutput( Pair.of( timeWindow, threshold ),
                                               processSingleValuedThreshold( threshold,
