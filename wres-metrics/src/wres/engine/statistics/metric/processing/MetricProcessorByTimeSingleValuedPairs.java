@@ -183,13 +183,13 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
         super( dataFactory, config, canonicalThresholds, thresholdExecutor, metricExecutor, mergeList );
         //Construct the metrics
         //Dichotomous scores
-        if ( hasMetrics( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCORE ) )
+        if ( hasMetrics( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.DOUBLE_SCORE ) )
         {
             dichotomousScalar =
                     metricFactory.ofDichotomousScoreCollection( metricExecutor,
                                                                 getSelectedMetrics( metrics,
                                                                                     MetricInputGroup.DICHOTOMOUS,
-                                                                                    MetricOutputGroup.SCORE ) );
+                                                                                    MetricOutputGroup.DOUBLE_SCORE ) );
         }
         else
         {
@@ -318,9 +318,9 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                                           SingleValuedPairs input,
                                           MetricFuturesByTimeBuilder futures )
     {
-        if ( hasMetrics( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.SCORE ) )
+        if ( hasMetrics( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.DOUBLE_SCORE ) )
         {
-            processDichotomousPairs( timeWindow, input, futures, MetricOutputGroup.SCORE );
+            processDichotomousPairs( timeWindow, input, futures, MetricOutputGroup.DOUBLE_SCORE );
         }
         if ( hasMetrics( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.MATRIX ) )
         {
@@ -398,7 +398,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
 
     /**
      * Processes one threshold for metrics that consume {@link DichotomousPairs}, which are mapped from the input pairs,
-     * {@link SingleValuedPairs}, using a configured mapping function, and produce a {@link MetricOutputGroup#SCORE}. 
+     * {@link SingleValuedPairs}, using a configured mapping function. 
      * 
      * @param timeWindow the time window
      * @param input the input pairs
@@ -420,7 +420,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
         MetricCalculationException returnMe = null;
         try
         {
-            if ( outGroup == MetricOutputGroup.SCORE )
+            if ( outGroup == MetricOutputGroup.DOUBLE_SCORE )
             {
                 futures.addDoubleScoreOutput( Pair.of( timeWindow, threshold ),
                                               processDichotomousThreshold( threshold,

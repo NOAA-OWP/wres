@@ -350,15 +350,15 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         this.dataFactory = dataFactory;
         metrics = MetricConfigHelper.getMetricsFromConfig( config );
         metricFactory = MetricFactory.getInstance( dataFactory );
+        
         //Construct the metrics that are common to more than one type of input pairs
-
-        if ( hasMetrics( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCORE ) )
+        if ( hasMetrics( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.DOUBLE_SCORE ) )
         {
             singleValuedScore =
                     metricFactory.ofSingleValuedScoreCollection( metricExecutor,
                                                                  getSelectedMetrics( metrics,
                                                                                      MetricInputGroup.SINGLE_VALUED,
-                                                                                     MetricOutputGroup.SCORE ) );
+                                                                                     MetricOutputGroup.DOUBLE_SCORE ) );
         }
         else
         {

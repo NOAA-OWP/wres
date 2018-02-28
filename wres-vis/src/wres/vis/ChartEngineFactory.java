@@ -76,7 +76,6 @@ public abstract class ChartEngineFactory
         defaultOutputTypeMap.put( MetricOutputGroup.MATRIX, OutputTypeSelection.DEFAULT );
         defaultOutputTypeMap.put( MetricOutputGroup.MULTIVECTOR, OutputTypeSelection.LEAD_THRESHOLD );
         defaultOutputTypeMap.put( MetricOutputGroup.PAIRED, OutputTypeSelection.DEFAULT );
-        defaultOutputTypeMap.put( MetricOutputGroup.SCORE, OutputTypeSelection.DEFAULT );
     }
 
     /**

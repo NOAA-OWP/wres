@@ -222,7 +222,8 @@ public final class MetricConfigHelper
         PoolingWindowConfig windows = config.getPair().getIssuedDatesPoolingWindow();
         if ( Objects.nonNull( windows ) )
         {
-            returnMe.removeIf( a -> ! ( a.isInGroup( MetricOutputGroup.SCORE ) ) );
+            returnMe.removeIf( a -> ! ( a.isInGroup( MetricOutputGroup.DOUBLE_SCORE )
+                                        || a.isInGroup( MetricOutputGroup.DURATION_SCORE ) ) );
         }
         return returnMe;
     }

@@ -1070,18 +1070,22 @@ public class ProcessorHelper
             MetricConfig nextConfig =
                     getNamedConfigOrAllValid( metricId, config );
             // Default to global type parameter
-            OutputTypeSelection outputType = destConfig.getOutputType();
+            OutputTypeSelection outputType = OutputTypeSelection.DEFAULT;
+            if( Objects.nonNull( destConfig.getOutputType() ) )
+            {
+                outputType = destConfig.getOutputType();
+            }
             String templateResourceName = destConfig.getGraphical().getTemplate();
             if ( Objects.nonNull( nextConfig ) )
             {
                 // Local type parameter
-                if ( nextConfig.getOutputType() != null )
+                if ( Objects.nonNull( nextConfig.getOutputType() ) )
                 {
                     outputType = nextConfig.getOutputType();
                 }
 
                 // Override template name with metric specific name.
-                if ( nextConfig.getTemplateResourceName() != null )
+                if ( Objects.nonNull( nextConfig.getTemplateResourceName() ) )
                 {
                     templateResourceName = nextConfig.getTemplateResourceName();
                 }
