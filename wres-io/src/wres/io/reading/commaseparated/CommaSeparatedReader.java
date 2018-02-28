@@ -23,18 +23,18 @@ import wres.datamodel.Threshold.Operator;
  * Helps read files of Comma Separated Values (CSV).
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.2
- * @since 0.1
+ * @version 0.1
+ * @since 1.0
  */
 
 public class CommaSeparatedReader
 {
 
     /**
-     * Reads a CSV source that contains one or more thresholds for each of several features into a {@link Map} whose 
-     * keys are {@link FeaturePlus} and whose values comprise a {@link Set} of {@link Threshold}. 
+     * Reads a CSV source that contains one or more thresholds for each of several features. Places the results into 
+     * a {@link Map} whose keys are {@link FeaturePlus} and whose values comprise a {@link Set} of {@link Threshold}. 
      * 
-     * @param commaSeparated the source of CSV
+     * @param commaSeparated the source of comma separated values
      * @param isProbability is true to read probability thresholds
      * @param condition the threshold condition
      * @return a map of thresholds by feature
@@ -107,7 +107,7 @@ public class CommaSeparatedReader
      * Mutates the input map, reading all thresholds for one feature.
      * 
      * @param mutate the map of thresholds to mutate
-     * @param isProbability is true to read probability thresholds
+     * @param isProbability is true to read probability thresholds, false for value thresholds
      * @param condition the threshold condition
      * @param labels the optional labels (may be null)
      * @param nextInputFeature the next set of thresholds to process
@@ -146,7 +146,7 @@ public class CommaSeparatedReader
      * 
      * @param input the comma separated input string
      * @param labels a set of labels (as many as thresholds) or null
-     * @param isProbability is true to build a probability threshold
+     * @param isProbability is true to build probability thresholds, false for value thresholds
      * @param condition the threshold condition
      * @throws NullPointerException if the input or condition is null
      * @throws IllegalArgumentException if the threshold content is inconsistent with the type of threshold     

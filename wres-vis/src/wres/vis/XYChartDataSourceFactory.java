@@ -409,7 +409,7 @@ public abstract class XYChartDataSourceFactory
      * Creates an instance for duration score output; i.e., summary stats of the time-to-peak errors.
      * @param orderIndex The data source order index.
      * @param input The input required for this of method.
-     * @return An instance of {@link WRESCategoricalChartDataSource}.
+     * @return An instance of {@link CategoricalXYChartDataSource}.
      */
     public static CategoricalXYChartDataSource
             ofDurationScoreCategoricalOutput( int orderIndex,

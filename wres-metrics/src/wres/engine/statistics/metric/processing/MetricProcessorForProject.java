@@ -7,6 +7,7 @@ import java.util.concurrent.ExecutorService;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
+import wres.datamodel.Threshold;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.outputs.MetricOutputAccessException;
@@ -40,21 +41,24 @@ public class MetricProcessorForProject
      * 
      * @param metricFactory an instance of a metric factory
      * @param projectConfig the project configuration
+     * @param canonicalThresholds an optional set of canonical thresholds to process, may be null
      * @param thresholdExecutor an executor service for processing thresholds
      * @param metricExecutor an executor service for processing metrics
      * @throws MetricProcessorException if the metric processor could not be built
      */
 
-    public MetricProcessorForProject( MetricFactory metricFactory,
-                                      ProjectConfig projectConfig,
-                                      ExecutorService thresholdExecutor,
-                                      ExecutorService metricExecutor )
+    public MetricProcessorForProject( final MetricFactory metricFactory,
+                                      final ProjectConfig projectConfig,
+                                      final Set<Threshold> canonicalThresholds,
+                                      final ExecutorService thresholdExecutor,
+                                      final ExecutorService metricExecutor )
             throws MetricProcessorException
     {
         DatasourceType type = projectConfig.getInputs().getRight().getType();
         if ( type.equals( DatasourceType.SINGLE_VALUED_FORECASTS ) || type.equals( DatasourceType.SIMULATIONS ) )
         {
             singleValuedProcessor = metricFactory.ofMetricProcessorByTimeSingleValuedPairs( projectConfig,
+                                                                                            canonicalThresholds,
                                                                                             thresholdExecutor,
                                                                                             metricExecutor );
             ensembleProcessor = null;
@@ -62,6 +66,7 @@ public class MetricProcessorForProject
         else
         {
             ensembleProcessor = metricFactory.ofMetricProcessorByTimeEnsemblePairs( projectConfig,
+                                                                                    canonicalThresholds,
                                                                                     thresholdExecutor,
                                                                                     metricExecutor );
             singleValuedProcessor = null;

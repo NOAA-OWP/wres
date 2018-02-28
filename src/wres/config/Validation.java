@@ -297,8 +297,10 @@ public class Validation
                     MetricConstants checkMe = MetricConfigHelper.from( next.getName() );
 
                     // Check that the named metric is consistent with any pooling window configuration
-                    if ( projectConfigPlus.getProjectConfig().getPair().getIssuedDatesPoolingWindow() != null && checkMe != null
-                         && ! ( checkMe.isInGroup( MetricOutputGroup.SCORE ) ) )
+                    if ( projectConfigPlus.getProjectConfig().getPair().getIssuedDatesPoolingWindow() != null
+                         && checkMe != null
+                         && ! ( checkMe.isInGroup( MetricOutputGroup.DOUBLE_SCORE )
+                                || checkMe.isInGroup( MetricOutputGroup.DURATION_SCORE ) ) )
                     {
                         result = false;
                         if ( LOGGER.isWarnEnabled() )
