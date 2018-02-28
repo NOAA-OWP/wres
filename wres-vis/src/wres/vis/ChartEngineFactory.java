@@ -40,6 +40,7 @@ import wres.config.generated.OutputTypeSelection;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
+import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.Threshold;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MetricOutputMetadata;
@@ -50,7 +51,6 @@ import wres.datamodel.outputs.DurationScoreOutput;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.PairedOutput;
-import wres.datamodel.outputs.ScoreOutput;
 
 /**
  * Factory to use in order to construct a wres-vis chart.
@@ -62,140 +62,76 @@ public abstract class ChartEngineFactory
     private static final Logger LOGGER = LoggerFactory.getLogger( ChartEngineFactory.class );
 
     /**
-     * Maintains information about the different {@link ScoreOutput} plot types, including defaults and expected
-     * classes.
+     * Provides the default {@link OutputTypeSelection} for a given {@link MetricOutputGroup}.
+     * That output type can then be used in the other maps to determine the default template file name.
+     * Thus, the values from this map must be kept consistent with the template maps.
      */
-    private static EnumMap<OutputTypeSelection, PlotTypeInformation> scalarOutputPlotTypeInfoMap =
-            new EnumMap<>( OutputTypeSelection.class );
+    private static EnumMap<MetricOutputGroup, OutputTypeSelection> defaultOutputTypeMap =
+            new EnumMap<>( MetricOutputGroup.class );
     static
     {
-        scalarOutputPlotTypeInfoMap.put( OutputTypeSelection.DEFAULT,
-                                         new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
-                                                                  ScoreOutput.class,
-                                                                  "scalarOutputLeadThresholdTemplate.xml" ) );
-        scalarOutputPlotTypeInfoMap.put( OutputTypeSelection.LEAD_THRESHOLD,
-                                         new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
-                                                                  ScoreOutput.class,
-                                                                  "scalarOutputLeadThresholdTemplate.xml" ) );
-        scalarOutputPlotTypeInfoMap.put( OutputTypeSelection.THRESHOLD_LEAD,
-                                         new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
-                                                                  ScoreOutput.class,
-                                                                  "scalarOutputThresholdLeadTemplate.xml" ) );
-        scalarOutputPlotTypeInfoMap.put( OutputTypeSelection.POOLING_WINDOW,
-                                         new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
-                                                                  ScoreOutput.class,
-                                                                  "scalarOutputPoolingWindowTemplate.xml" ) );
+        defaultOutputTypeMap.put( MetricOutputGroup.BOXPLOT, OutputTypeSelection.DEFAULT );
+        defaultOutputTypeMap.put( MetricOutputGroup.DOUBLE_SCORE, OutputTypeSelection.LEAD_THRESHOLD );
+        defaultOutputTypeMap.put( MetricOutputGroup.DURATION_SCORE, OutputTypeSelection.DEFAULT );
+        defaultOutputTypeMap.put( MetricOutputGroup.MATRIX, OutputTypeSelection.DEFAULT );
+        defaultOutputTypeMap.put( MetricOutputGroup.MULTIVECTOR, OutputTypeSelection.LEAD_THRESHOLD );
+        defaultOutputTypeMap.put( MetricOutputGroup.PAIRED, OutputTypeSelection.DEFAULT );
+        defaultOutputTypeMap.put( MetricOutputGroup.SCORE, OutputTypeSelection.DEFAULT );
     }
 
     /**
-     * Maintains information about the different {@link ScoreOutput} plot types, including defaults and expected
-     * classes.
+     * Map for scalar output (i.e., {@link DoubleScoreOutput}) is a model for how to handle the case where
+     * the template does not depend on the individual metric.  
      */
-    private static EnumMap<OutputTypeSelection, PlotTypeInformation> pairedInstantDurationOutputPlotTypeInfoMap =
+    private static EnumMap<OutputTypeSelection, String> scalarOutputDefaultTemplateMap =
             new EnumMap<>( OutputTypeSelection.class );
     static
     {
-        pairedInstantDurationOutputPlotTypeInfoMap.put( OutputTypeSelection.DEFAULT,
-                                                        new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
-                                                                                 PairedOutput.class,
-                                                                                 "timeToPeakErrorTemplate.xml" ) );
+        scalarOutputDefaultTemplateMap.put( OutputTypeSelection.LEAD_THRESHOLD, "scalarOutputLeadThresholdTemplate.xml" );
+        scalarOutputDefaultTemplateMap.put( OutputTypeSelection.THRESHOLD_LEAD, "scalarOutputThresholdLeadTemplate.xml" );
+        scalarOutputDefaultTemplateMap.put( OutputTypeSelection.POOLING_WINDOW, "scalarOutputPoolingWindowTemplate.xml" );
     }
 
     /**
-     * Maintains information about the different {@link ScoreOutput} plot types, including defaults and expected
-     * classes.
+     * Map for multi-vector output is a model for how to handle the case where the template depends on both
+     * the output type and the metric itself.  In this case, a table is used.
      */
-    private static EnumMap<OutputTypeSelection, PlotTypeInformation> categoricalDurationScorePlotTypeInfoMap =
-            new EnumMap<>( OutputTypeSelection.class );
-    static
-    {
-        categoricalDurationScorePlotTypeInfoMap.put( OutputTypeSelection.DEFAULT,
-                                                     new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
-                                                                              DurationScoreOutput.class,
-                                                                              "timeToPeakSummaryStatsTemplate.xml" ) );
-    }
-
-    /**
-     * Maintains information about the different {@link MultiVectorOutput} plot types, including defaults and expected
-     * classes.  For metrics where the plot type is not used, such as box plots, you must put the information using
-     * a {@link OutputTypeSelection#DEFAULT}!  You cannot "put" with a null plot type selection!
-     */
-    private static Table<MetricConstants, OutputTypeSelection, PlotTypeInformation> multiVectorOutputPlotTypeInfoTable =
+    private static Table<MetricConstants, OutputTypeSelection, String> multiVectorOutputDefaultTemplateTable =
             HashBasedTable.create();
     static
-    {    
-        multiVectorOutputPlotTypeInfoTable.put( MetricConstants.RELIABILITY_DIAGRAM,
-                                                OutputTypeSelection.DEFAULT,
-                                                new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
-                                                                         MultiVectorOutput.class,
-                                                                         "reliabilityDiagramTemplate.xml" ) );
-        multiVectorOutputPlotTypeInfoTable.put( MetricConstants.RELIABILITY_DIAGRAM,
-                                                OutputTypeSelection.LEAD_THRESHOLD,
-                                                new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
-                                                                         MultiVectorOutput.class,
-                                                                         "reliabilityDiagramTemplate.xml" ) );
-        multiVectorOutputPlotTypeInfoTable.put( MetricConstants.RELIABILITY_DIAGRAM,
-                                                OutputTypeSelection.THRESHOLD_LEAD,
-                                                new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
-                                                                         MultiVectorOutput.class,
-                                                                         "reliabilityDiagramTemplate.xml" ) );
-        multiVectorOutputPlotTypeInfoTable.put( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
-                                                OutputTypeSelection.DEFAULT,
-                                                new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
-                                                                         MultiVectorOutput.class,
-                                                                         "rocDiagramTemplate.xml" ) );
-        multiVectorOutputPlotTypeInfoTable.put( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
-                                                OutputTypeSelection.LEAD_THRESHOLD,
-                                                new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
-                                                                         MultiVectorOutput.class,
-                                                                         "rocDiagramTemplate.xml" ) );
-        multiVectorOutputPlotTypeInfoTable.put( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
-                                                OutputTypeSelection.THRESHOLD_LEAD,
-                                                new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
-                                                                         MultiVectorOutput.class,
-                                                                         "rocDiagramTemplate.xml" ) );
-        multiVectorOutputPlotTypeInfoTable.put( MetricConstants.QUANTILE_QUANTILE_DIAGRAM,
-                                                OutputTypeSelection.DEFAULT,
-                                                new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
-                                                                         MultiVectorOutput.class,
-                                                                         "qqDiagramTemplate.xml" ) );
-        multiVectorOutputPlotTypeInfoTable.put( MetricConstants.QUANTILE_QUANTILE_DIAGRAM,
-                                                OutputTypeSelection.LEAD_THRESHOLD,
-                                                new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
-                                                                         MultiVectorOutput.class,
-                                                                         "qqDiagramTemplate.xml" ) );
-        multiVectorOutputPlotTypeInfoTable.put( MetricConstants.QUANTILE_QUANTILE_DIAGRAM,
-                                                OutputTypeSelection.THRESHOLD_LEAD,
-                                                new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
-                                                                         MultiVectorOutput.class,
-                                                                         "qqDiagramTemplate.xml" ) );
-        multiVectorOutputPlotTypeInfoTable.put( MetricConstants.RANK_HISTOGRAM,
-                                                OutputTypeSelection.DEFAULT,
-                                                new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
-                                                                         MultiVectorOutput.class,
-                                                                         "rankHistogramTemplate.xml" ) );
-        multiVectorOutputPlotTypeInfoTable.put( MetricConstants.RANK_HISTOGRAM,
-                                                OutputTypeSelection.LEAD_THRESHOLD,
-                                                new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
-                                                                         MultiVectorOutput.class,
-                                                                         "rankHistogramTemplate.xml" ) );
-        multiVectorOutputPlotTypeInfoTable.put( MetricConstants.RANK_HISTOGRAM,
-                                                OutputTypeSelection.THRESHOLD_LEAD,
-                                                new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
-                                                                         MultiVectorOutput.class,
-                                                                         "rankHistogramTemplate.xml" ) );
-        multiVectorOutputPlotTypeInfoTable.put( MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE,
-                                                OutputTypeSelection.DEFAULT,
-                                                new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
-                                                                         BoxPlotOutput.class,
-                                                                         "boxPlotOfErrorsTemplate.xml" ) );
-        multiVectorOutputPlotTypeInfoTable.put( MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
-                                                OutputTypeSelection.DEFAULT,
-                                                new PlotTypeInformation( MetricOutputMapByTimeAndThreshold.class,
-                                                                         BoxPlotOutput.class,
-                                                                         "boxPlotOfErrorsTemplate.xml" ) );
+    {
+        multiVectorOutputDefaultTemplateTable.put( MetricConstants.RELIABILITY_DIAGRAM, OutputTypeSelection.LEAD_THRESHOLD, "reliabilityDiagramTemplate.xml" );
+        multiVectorOutputDefaultTemplateTable.put( MetricConstants.RELIABILITY_DIAGRAM, OutputTypeSelection.THRESHOLD_LEAD, "reliabilityDiagramTemplate.xml" );
+        multiVectorOutputDefaultTemplateTable.put( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM, OutputTypeSelection.LEAD_THRESHOLD, "rocDiagramTemplate.xml" );
+        multiVectorOutputDefaultTemplateTable.put( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM, OutputTypeSelection.THRESHOLD_LEAD, "rocDiagramTemplate.xml" );
+        multiVectorOutputDefaultTemplateTable.put( MetricConstants.QUANTILE_QUANTILE_DIAGRAM, OutputTypeSelection.LEAD_THRESHOLD, "qqDiagramTemplate.xml" );
+        multiVectorOutputDefaultTemplateTable.put( MetricConstants.QUANTILE_QUANTILE_DIAGRAM, OutputTypeSelection.THRESHOLD_LEAD, "qqDiagramTemplate.xml" );
+        multiVectorOutputDefaultTemplateTable.put( MetricConstants.RANK_HISTOGRAM, OutputTypeSelection.LEAD_THRESHOLD, "rankHistogramTemplate.xml" );
+        multiVectorOutputDefaultTemplateTable.put( MetricConstants.RANK_HISTOGRAM, OutputTypeSelection.THRESHOLD_LEAD, "rankHistogramTemplate.xml" );
+        multiVectorOutputDefaultTemplateTable.put( MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE, OutputTypeSelection.DEFAULT, "boxPlotOfErrorsTemplate.xml" );
+        multiVectorOutputDefaultTemplateTable.put( MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE, OutputTypeSelection.DEFAULT, "boxPlotOfErrorsTemplate.xml" );
     }
 
+    /**
+     * For time-to-peak error plots (error against instant), only the default output type is used.
+     */
+    private static EnumMap<OutputTypeSelection, String> pairedInstantDurationOutputDefaultTemplateMap =
+            new EnumMap<>( OutputTypeSelection.class );
+    static
+    {
+        pairedInstantDurationOutputDefaultTemplateMap.put( OutputTypeSelection.DEFAULT, "timeToPeakErrorTemplate.xml" );
+    }
+    
+    /**
+     * The generic score otuput template table currently only stores information for the time-to-peak summary stat
+     * plots, which use output type DEFAULT, and nothing else.
+     */
+    private static Table<MetricConstants, OutputTypeSelection, String> genericScoreOutputDefaultTemplateTable =
+            HashBasedTable.create();
+    static
+    {
+        genericScoreOutputDefaultTemplateTable.put( MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC, OutputTypeSelection.DEFAULT, "timeToPeakSummaryStatsTemplate.xml" );
+    }
 
     /**
      * Per SonarLint, hiding the public constructor.
@@ -204,26 +140,37 @@ public abstract class ChartEngineFactory
     {
     }
 
-    /**
-     * @param metricId the metric identifier
-     * @param plotType the plot type.  May be null.  If it is null, {@link OutputTypeSelection#DEFAULT} is used to access
-     *        the map of information; see the map comment for more info.
-     * @return {@link PlotTypeInformation} for the provided {@link MetricConstants} metric id and
-     *         {@link OutputTypeSelection}. This will throw an {@link IllegalArgumentException} if the combination is not
-     *         yet supported in the {@link #multiVectorOutputPlotTypeInfoTable}.
-     */
-    private static PlotTypeInformation getNonNullMultiVectorOutputPlotTypeInformation( final MetricConstants metricId,
-                                                                                       final OutputTypeSelection plotType )
+    private static String getNonNullMultiVectorPlotTemplate( final MetricConstants metricId,
+                                                             final OutputTypeSelection plotType )
     {
-        final PlotTypeInformation results = multiVectorOutputPlotTypeInfoTable.get( metricId, plotType );
+        final String results = multiVectorOutputDefaultTemplateTable.get( metricId, plotType );
         if ( results == null )
         {
-            throw new IllegalArgumentException( "MultiVectorOutput plot type for metric " + metricId
+            throw new IllegalArgumentException( "MultiVectorOutput metric " + metricId
                                                 + " and plot type "
                                                 + plotType
                                                 + " is not supported." );
         }
         return results;
+    }
+    
+    /**
+     * 
+     * @param input The input provided for charting, which is the metric output.
+     * @param userSpecifiedOutputType A user specified plot type; null means the user did not provide one.
+     * @return The {@link OutputTypeSelection} specifying the output type for the plot.  
+     */
+    private static OutputTypeSelection determineOutputType(MetricOutputMapByTimeAndThreshold<?> input, OutputTypeSelection userSpecifiedOutputType)
+    {
+        //TODO This is where the configuration may be useful.  For scalar output (DoubleScoreOutput) If the plot type is not provided, 
+        //  then the default depends on the configuration: if issued date pooling windows are used, then POOLING_WINDOW; otherwise LEAD_THRESHOLD.
+        //  This may require another method for scalar output, since it is the only type where the pooling window check must be made... I think.
+        OutputTypeSelection usedPlotType = userSpecifiedOutputType;
+        if (( usedPlotType == null ) || (usedPlotType == OutputTypeSelection.DEFAULT))
+        {
+            usedPlotType = defaultOutputTypeMap.get(input.getMetadata().getMetricID().getMetricOutputGroup());
+        }
+        return usedPlotType;
     }
 
     /**
@@ -543,16 +490,11 @@ public abstract class ChartEngineFactory
     {
         final ConcurrentMap<Object, ChartEngine> results = new ConcurrentSkipListMap<>();
 
-        //Determine used plot type and template name.  Note that if no plot type information is provided for the metric id
-        //and plot type, then an illegal argument exception will be thrown.
-        OutputTypeSelection usedPlotType = OutputTypeSelection.DEFAULT;
-        if ( userSpecifiedPlotType != null )
-        {
-            usedPlotType = userSpecifiedPlotType;
-        }
+        //Determine the output type, converting DEFAULT accordingly, and template name.
+        OutputTypeSelection usedPlotType = determineOutputType( input, userSpecifiedPlotType );
         String templateName =
-                getNonNullMultiVectorOutputPlotTypeInformation( input.getMetadata().getMetricID(),
-                                                                usedPlotType ).getDefaultTemplateName();
+                getNonNullMultiVectorPlotTemplate( input.getMetadata().getMetricID(),
+                                                   usedPlotType );
         if ( userSpecifiedTemplateResourceName != null )
         {
             templateName = userSpecifiedTemplateResourceName;
@@ -661,7 +603,6 @@ public abstract class ChartEngineFactory
                                     axisToSquareAgainstDomain );
     }
 
-
     /**
      * At this time, there is only one plot type available for box plots, so the user specified plot type is not included as an argument.
      * @param input The metric output to plot.
@@ -680,9 +621,11 @@ public abstract class ChartEngineFactory
     {
         final ConcurrentMap<Pair<TimeWindow, Threshold>, ChartEngine> results = new ConcurrentSkipListMap<>();
 
+        //Determine the output type, converting DEFAULT accordingly, and template name.
+        OutputTypeSelection usedPlotType = determineOutputType(input, null);
         String templateName =
-                getNonNullMultiVectorOutputPlotTypeInformation( input.getMetadata().getMetricID(),
-                                                                OutputTypeSelection.DEFAULT ).getDefaultTemplateName();
+                getNonNullMultiVectorPlotTemplate( input.getMetadata().getMetricID(),
+                                                   usedPlotType );
         if ( userSpecifiedTemplateResourceName != null )
         {
             templateName = userSpecifiedTemplateResourceName;
@@ -777,11 +720,12 @@ public abstract class ChartEngineFactory
                                          final String overrideParametersStr )
                     throws ChartEngineException
     {
-        //Define the used plot type.
-        OutputTypeSelection usedPlotType = OutputTypeSelection.DEFAULT;
-        if ( userSpecifiedPlotType != null )
+        //Determine the used plot type and template.
+        OutputTypeSelection usedPlotType = determineOutputType( input, userSpecifiedPlotType );
+        String templateName = scalarOutputDefaultTemplateMap.get( usedPlotType );
+        if ( userSpecifiedTemplateResourceName != null )
         {
-            usedPlotType = userSpecifiedPlotType;
+            templateName = userSpecifiedTemplateResourceName;
         }
 
         //Setup the default arguments.
@@ -793,11 +737,6 @@ public abstract class ChartEngineFactory
 
         //Build the source.
         XYChartDataSource source = null;
-        String templateName = scalarOutputPlotTypeInfoMap.get( usedPlotType ).getDefaultTemplateName();
-        if ( userSpecifiedTemplateResourceName != null )
-        {
-            templateName = userSpecifiedTemplateResourceName;
-        }
 
         //Lead-threshold is the default.
         if ( usedPlotType == OutputTypeSelection.DEFAULT || usedPlotType == OutputTypeSelection.LEAD_THRESHOLD )
@@ -855,6 +794,14 @@ public abstract class ChartEngineFactory
                                                    final String overrideParametersStr )
                     throws ChartEngineException
     {
+        //Determine the used plot type and template.
+        OutputTypeSelection usedPlotType = determineOutputType( input, null );
+        String templateName = pairedInstantDurationOutputDefaultTemplateMap.get( usedPlotType );
+        if ( userSpecifiedTemplateResourceName != null )
+        {
+            templateName = userSpecifiedTemplateResourceName;
+        }
+        
         //Setup the default arguments.
         final MetricOutputMetadata meta = input.getMetadata();
         final WRESArgumentProcessor arguments = new WRESArgumentProcessor( input, null );
@@ -865,12 +812,6 @@ public abstract class ChartEngineFactory
 
         //Build the source.
         XYChartDataSource source = null;
-        String templateName = pairedInstantDurationOutputPlotTypeInfoMap.get( OutputTypeSelection.DEFAULT )
-                                                                        .getDefaultTemplateName();
-        if ( userSpecifiedTemplateResourceName != null )
-        {
-            templateName = userSpecifiedTemplateResourceName;
-        }
 
         //Setup the assumed source and arguments.
         source = XYChartDataSourceFactory.ofPairedOutputInstantDuration( 0, input );
@@ -903,6 +844,14 @@ public abstract class ChartEngineFactory
                                                       final String overrideParametersStr )
                     throws ChartEngineException, XYChartDataSourceException
     {
+        //Determine the used plot type and template.
+        OutputTypeSelection usedPlotType = determineOutputType( input, null );
+        String templateName = genericScoreOutputDefaultTemplateTable.get(input.getMetadata().getMetricID(), usedPlotType );
+        if ( userSpecifiedTemplateResourceName != null )
+        {
+            templateName = userSpecifiedTemplateResourceName;
+        }
+        
         //Setup the default arguments.
         final MetricOutputMetadata meta = input.getMetadata();
         final WRESArgumentProcessor arguments = new WRESArgumentProcessor( input, null );
@@ -910,14 +859,6 @@ public abstract class ChartEngineFactory
         //Setup plot specific arguments.
         arguments.addBaselineArguments( meta );
         arguments.addDurationMetricArguments();
-
-        //Build the source.
-        String templateName = categoricalDurationScorePlotTypeInfoMap.get( OutputTypeSelection.DEFAULT )
-                                                                     .getDefaultTemplateName();
-        if ( userSpecifiedTemplateResourceName != null )
-        {
-            templateName = userSpecifiedTemplateResourceName;
-        }
 
         //Setup the assumed source and arguments.
         CategoricalXYChartDataSource source =
@@ -1100,42 +1041,5 @@ public abstract class ChartEngineFactory
                                     override,
                                     diagonalDataSourceIndices,
                                     axisToSquareAgainstDomain );
-    }
-
-    /**
-     * Stores information about each plot type necessary to validate user parameters, including the default template
-     * name.
-     * 
-     * @author hank.herr
-     */
-    public static class PlotTypeInformation
-    {
-        private final Class<?> expectedPlotDataClass;
-        private final Class<?> dataGenericType;
-        private final String defaultTemplateName;
-
-        public PlotTypeInformation( final Class<?> expectedPlotDataClass,
-                                    final Class<?> dataGenericType,
-                                    final String defaultTemplateName )
-        {
-            this.expectedPlotDataClass = expectedPlotDataClass;
-            this.dataGenericType = dataGenericType;
-            this.defaultTemplateName = defaultTemplateName;
-        }
-
-        public Class<?> getExpectedPlotDataClass()
-        {
-            return expectedPlotDataClass;
-        }
-
-        public Class<?> getDataGenericType()
-        {
-            return dataGenericType;
-        }
-
-        public String getDefaultTemplateName()
-        {
-            return defaultTemplateName;
-        }
     }
 }
