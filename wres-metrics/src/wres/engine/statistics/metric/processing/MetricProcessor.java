@@ -5,16 +5,13 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.DoublePredicate;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -600,21 +597,30 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
             if ( metric.getName() != MetricConfigName.ALL_VALID )
             {
                 Set<Threshold> thresholds = new HashSet<>();
+                
                 //Add probability thresholds
                 if ( Objects.nonNull( metric.getProbabilityThresholds() ) )
                 {
                     Operator oper = MetricConfigHelper.from( metric.getProbabilityThresholds().getOperator() );
                     String values = metric.getProbabilityThresholds().getCommaSeparatedValues();
-                    thresholds.addAll( getThresholdsFromCommaSeparatedValues( values, oper, true ) );
+                    thresholds.addAll( MetricConfigHelper.getThresholdsFromCommaSeparatedValues( dataFactory,
+                                                                                                 values,
+                                                                                                 oper,
+                                                                                                 true ) );
 
                 }
+                
                 //Add real-valued thresholds
                 if ( Objects.nonNull( metric.getValueThresholds() ) )
                 {
                     Operator oper = MetricConfigHelper.from( metric.getValueThresholds().getOperator() );
                     String values = metric.getValueThresholds().getCommaSeparatedValues();
-                    thresholds.addAll( getThresholdsFromCommaSeparatedValues( values, oper, false ) );
+                    thresholds.addAll( MetricConfigHelper.getThresholdsFromCommaSeparatedValues( dataFactory,
+                                                                                                 values,
+                                                                                                 oper,
+                                                                                                 false ) );
                 }
+                
                 if ( !thresholds.isEmpty() )
                 {
                     thresholdOverrides.put( MetricConfigHelper.from( metric.getName() ), thresholds );
@@ -734,7 +740,8 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         {
             Operator oper = MetricConfigHelper.from( metrics.getProbabilityThresholds().getOperator() );
             String values = metrics.getProbabilityThresholds().getCommaSeparatedValues();
-            Set<Threshold> thresholds = getThresholdsFromCommaSeparatedValues( values, oper, true );
+            Set<Threshold> thresholds =
+                    MetricConfigHelper.getThresholdsFromCommaSeparatedValues( dataFactory, values, oper, true );
             thresholdsWithoutAllData.addAll( thresholds );
             thresholdsWithAllData.addAll( thresholds );
         }
@@ -744,7 +751,8 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         {
             Operator oper = MetricConfigHelper.from( metrics.getValueThresholds().getOperator() );
             String values = metrics.getValueThresholds().getCommaSeparatedValues();
-            Set<Threshold> thresholds = getThresholdsFromCommaSeparatedValues( values, oper, false );
+            Set<Threshold> thresholds =
+                    MetricConfigHelper.getThresholdsFromCommaSeparatedValues( dataFactory, values, oper, false );
             thresholdsWithoutAllData.addAll( thresholds );
             thresholdsWithAllData.addAll( thresholds );
         }
@@ -847,61 +855,6 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
                                                     + LeftOrRightOrBaseline.LEFT
                                                     + "' instead." );
         }
-    }
-
-    /**
-     * Returns a list of {@link Threshold} from a comma-separated string. Specify the type of {@link Threshold}
-     * required.
-     * 
-     * @param inputString the comma-separated input string
-     * @param oper the operator
-     * @param areProbs is true to generate probability thresholds, false for ordinary thresholds
-     * @return the thresholds
-     * @throws MetricConfigurationException if the thresholds are configured incorrectly
-     */
-
-    private Set<Threshold> getThresholdsFromCommaSeparatedValues( String inputString,
-                                                                  Operator oper,
-                                                                  boolean areProbs )
-            throws MetricConfigurationException
-    {
-        //Parse the double values
-        List<Double> addMe =
-                Arrays.stream( inputString.split( "," ) ).map( Double::parseDouble ).collect( Collectors.toList() );
-        Set<Threshold> returnMe = new TreeSet<>();
-        //Between operator
-        if ( oper == Operator.BETWEEN )
-        {
-            if ( addMe.size() < 2 )
-            {
-                throw new MetricConfigurationException( "At least two values are required to compose a "
-                                                        + "threshold that operates between a lower and an upper bound." );
-            }
-            for ( int i = 0; i < addMe.size() - 1; i++ )
-            {
-                if ( areProbs )
-                {
-                    returnMe.add( dataFactory.ofProbabilityThreshold( addMe.get( i ), addMe.get( i + 1 ), oper ) );
-                }
-                else
-                {
-                    returnMe.add( dataFactory.ofThreshold( addMe.get( i ), addMe.get( i + 1 ), oper ) );
-                }
-            }
-        }
-        //Other operators
-        else
-        {
-            if ( areProbs )
-            {
-                addMe.forEach( threshold -> returnMe.add( dataFactory.ofProbabilityThreshold( threshold, oper ) ) );
-            }
-            else
-            {
-                addMe.forEach( threshold -> returnMe.add( dataFactory.ofThreshold( threshold, oper ) ) );
-            }
-        }
-        return returnMe;
     }
 
 }
