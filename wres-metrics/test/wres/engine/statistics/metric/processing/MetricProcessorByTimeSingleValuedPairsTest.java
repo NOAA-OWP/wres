@@ -9,8 +9,10 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Executors;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -120,7 +122,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
     /**
      * Tests the construction of a {@link MetricProcessorByTimeSingleValuedPairs} and application of
      * {@link MetricProcessorByTimeSingleValuedPairs#apply(SingleValuedPairs)} to 
-     * configuration obtained from testinput/metricProcessorSingleValuedPairsByTimeTest/test1ApplyNoThresholds.xml and 
+     * configuration obtained from testinput/metricProcessorSingleValuedPairsByTimeTest/test2ApplyNoThresholds.xml and 
      * pairs obtained from {@link MetricTestDataFactory#getSingleValuedPairsFour()}. Tests the output for multiple 
      * calls with separate forecast lead times.
      * 
@@ -461,5 +463,84 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         assertTrue( "Actual output differs from expected output for time-series metrics. ",
                     actualScores.equals( expectedScores ) );
     }    
+    
+    /**
+     * Tests the construction of a {@link MetricProcessorByTimeSingleValuedPairs} with a canonical source of thresholds
+     * and the application of {@link MetricProcessorByTimeSingleValuedPairs#apply(SingleValuedPairs)} to configuration 
+     * obtained from testinput/metricProcessorSingleValuedPairsByTimeTest/test2ApplyNoThresholds.xml and pairs obtained 
+     * from {@link MetricTestDataFactory#getSingleValuedPairsFour()}. Tests the output for multiple calls with separate 
+     * forecast lead times.
+     * 
+     * @throws IOException if the input data could not be read
+     * @throws MetricOutputAccessException if the outputs could not be accessed
+     * @throws MetricProcessorException if the metric processor could not be built
+     */
+
+    @Test
+    public void test7ApplyThresholdsFromSource() throws IOException, MetricOutputAccessException, MetricProcessorException
+    {
+        final DataFactory metIn = DefaultDataFactory.getInstance();
+        String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/test2ApplyThresholds.xml";
+
+        // Define the canonical thresholds to use
+        Set<Threshold> canonical = new HashSet<>();
+        canonical.add( metIn.ofThreshold( 0.5, Operator.GREATER_EQUAL) );
+        
+        ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
+        MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
+                MetricFactory.getInstance( metIn )
+                             .ofMetricProcessorByTimeSingleValuedPairs( config,
+                                                                        canonical,
+                                                                        MetricOutputGroup.values() );
+        SingleValuedPairs pairs = MetricTestDataFactory.getSingleValuedPairsFour();
+        final MetadataFactory metFac = metIn.getMetadataFactory();
+        
+        // Generate results for 10 nominal lead times
+        for ( int i = 1; i < 11; i++ )
+        {
+            final TimeWindow window = TimeWindow.of( Instant.MIN,
+                                                     Instant.MAX,
+                                                     ReferenceTime.VALID_TIME,
+                                                     Duration.ofHours( i ) );
+            final Metadata meta = metFac.getMetadata( metFac.getDimension( "CMS" ),
+                                                      metFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ),
+                                                      window );
+            processor.apply( metIn.ofSingleValuedPairs( pairs.getData(), meta ) );
+        }
+
+        // Validate a subset of the data            
+        processor.getCachedMetricOutput().getDoubleScoreOutput().forEach( ( key, value ) -> {
+            if ( key.getKey() == MetricConstants.THREAT_SCORE )
+            {
+                assertTrue( "Expected twenty results for the " + key.getKey()
+                            + ": "
+                            + value.size(),
+                            value.size() == 20 );
+            }
+            else
+            {
+                assertTrue( "Expected thirty results for the " + key.getKey()
+                            + ": "
+                            + value.size(),
+                            value.size() == 30 );
+            }
+        } );
+
+        // Expected result
+        MatrixOfDoubles expected = metIn.matrixOf( new double[][] { { 500.0, 0.0 }, { 0.0, 0.0 } } );
+        final TimeWindow expectedWindow = TimeWindow.of( Instant.MIN,
+                                                 Instant.MAX,
+                                                 ReferenceTime.VALID_TIME,
+                                                 Duration.ofHours( 1 ) );
+        Pair<TimeWindow,Threshold> key = Pair.of( expectedWindow, metIn.ofThreshold( 0.5, Operator.GREATER_EQUAL ) );
+        assertTrue( "Unexpected results for the contingency table.",
+                    expected.equals( processor.getCachedMetricOutput()
+                                              .getMatrixOutput()
+                                              .get( MetricConstants.CONTINGENCY_TABLE )
+                                              .get( key )
+                                              .getData() ) );       
+    }    
+    
+    
     
 }
