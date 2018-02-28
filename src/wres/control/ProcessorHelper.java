@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
 import ohd.hseb.charter.datasource.XYChartDataSourceException;
+import wres.config.FeaturePlus;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.Feature;
@@ -144,12 +145,16 @@ public class ProcessorHelper
 
         List<Feature> successfulFeatures = new ArrayList<>();
         List<Feature> missingDataFeatures = new ArrayList<>();
+        
+        // Read any threshold source in the configuration
+        Map<FeaturePlus,Set<Threshold>> thresholds = ConfigHelper.readThresholdsFromProjectConfig( projectConfig );
 
         for ( Feature feature : decomposedFeatures )
         {
             ProgressMonitor.resetMonitor();
             FeatureProcessingResult result =
                     processFeature( feature,
+                                    thresholds.get( FeaturePlus.of( feature ) ),
                                     projectConfigPlus,
                                     projectDetails,
                                     pairExecutor,
@@ -241,6 +246,7 @@ public class ProcessorHelper
      * for each of the pairs, thresholds and metrics.
      * 
      * @param feature the feature to process
+     * @param an optional set of (canonical) thresholds for which results are required, may be null
      * @param projectConfigPlus the project configuration
      * @param projectDetails the project details to use
      * @param pairExecutor the {@link ExecutorService} for processing pairs
@@ -251,6 +257,7 @@ public class ProcessorHelper
      */
 
     static FeatureProcessingResult processFeature( final Feature feature,
+                                                   final Set<Threshold> thresholds,
                                                    final ProjectConfigPlus projectConfigPlus,
                                                    final ProjectDetails projectDetails,
                                                    final ExecutorService pairExecutor,
@@ -271,7 +278,10 @@ public class ProcessorHelper
         try
         {
             processor = MetricFactory.getInstance( DATA_FACTORY )
-                                     .getMetricProcessorForProject( projectConfig, thresholdExecutor, metricExecutor );
+                                     .getMetricProcessorForProject( projectConfig,
+                                                                    thresholds,
+                                                                    thresholdExecutor,
+                                                                    metricExecutor );
         }
         catch(final MetricProcessorException e )
         {

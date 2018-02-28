@@ -78,6 +78,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
                 MetricFactory.getInstance( dataFactory )
                              .ofMetricProcessorByTimeSingleValuedPairs( config,
+                                                                        null,
                                                                         Executors.newSingleThreadExecutor(),
                                                                         Executors.newSingleThreadExecutor(),
                                                                         (MetricOutputGroup[]) null );

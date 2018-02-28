@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.SortedMap;
+import java.util.StringJoiner;
 
 import wres.config.generated.CoordinateSelection;
 import wres.config.generated.Feature;
@@ -39,7 +40,7 @@ public class FeaturePlus implements Comparable<FeaturePlus>
     {
         return new FeaturePlus( feature );
     }
-    
+
     /**
      * Compares two {@link FeaturePlus} based on the {@link Feature#getLocationId()} of their contained features only.
      * 
@@ -52,12 +53,12 @@ public class FeaturePlus implements Comparable<FeaturePlus>
     public static int compareByLocationId( FeaturePlus left, FeaturePlus right )
     {
         Objects.requireNonNull( left, "Specify non-null left feature for comparison." );
-        
+
         Objects.requireNonNull( right, "Specify non-null right feature for comparison." );
-        
-        return left.getFeature().getLocationId().compareTo( right.getFeature().getLocationId() );        
+
+        return left.getFeature().getLocationId().compareTo( right.getFeature().getLocationId() );
     }
-    
+
     /**
      * Returns the wrapped {@link Feature}.
      * 
@@ -182,6 +183,29 @@ public class FeaturePlus implements Comparable<FeaturePlus>
             return returnMe;
         }
         return 0;
+    }
+
+    @Override
+    public String toString()
+    {
+        String coordinate = null;
+        if ( Objects.nonNull( feature.getCoordinate() ) )
+        {
+            CoordinateSelection c = feature.getCoordinate();
+            coordinate = "(" + c.getLatitude() + "," + c.getLongitude() + "," + c.getRange() + ")";
+        }
+        StringJoiner joiner = new StringJoiner( ",", "{", "}" );
+        joiner.add( feature.getLocationId() )
+              .add( feature.getName() )
+              .add( feature.getLabel() )
+              .add( feature.getGageId() )
+              .add( feature.getHuc() )
+              .add( Objects.toString( feature.getComid() ) )
+              .add( feature.getRfc() )
+              .add( feature.getWkt() )
+              .add( coordinate )
+              .add( Objects.toString( feature.getAlias() ) );
+        return joiner.toString();
     }
 
     /**

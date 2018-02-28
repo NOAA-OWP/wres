@@ -127,6 +127,8 @@ public final class MetricConfigHelper
         }
         switch ( configName )
         {
+            case EQUAL_TO:
+                return Operator.EQUAL;
             case LESS_THAN:
                 return Operator.LESS;
             case GREATER_THAN:
