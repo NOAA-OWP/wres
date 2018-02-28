@@ -12,19 +12,26 @@ then
 	exit 2
 fi
 systests_dir=$1
+#scenario_dirs=$2
+#echo "$systests_dir $scenario_dirs"
+
 if [ ! -d $systests_dir ]
 then
 	echo "$systests_dir directory is not existed"
 	exit 2
 fi
 cd $systests_dir
-
+pwd
+#scenario_dirs=`ls -d $2`
 if [ $# -ge 2 ]
 then
+#	echo $2
 	scenario_dirs=$2
 else # run all scenarios
 	scenario_dirs=$(ls -d scenario*)
 fi
+
+echo $scenario_dirs
 
 #MetricsScriptDir=/wres_share/releases/systests
 MetricsScriptDir=../..
@@ -34,20 +41,28 @@ do
 	if [ -d $scenario_dir/output ]
 	then
 		cd $scenario_dir/output
-		$MetricsScriptDir/scripts/checkSorted.bash sorted_pairs.csv > checkedSorted_pairs.csv
-		#touch error.txt
-		pwd
-		if [ -f testMetricsResults.txt ]
-		then # remove the old results file
-			rm -v testMetricsResults.txt
+		if [ -f sorted_pairs.csv ]
+		then
+			($MetricsScriptDir/scripts/checkSorted.bash sorted_pairs.csv > checkedSorted_pairs.csv) 2> error.txt
+			theDiff=`diff -q sorted_pairs.csv checkedSorted_pairs.csv`
+			if [ -z "$theDiff" ]
+			then
+				echo "There are no extra column in sorted_pairs.csv"
+				rm -v checkedSorted_pairs.csv
+			fi
+			#touch error.txt
+			pwd
+			if [ -f testMetricsResults.txt ]
+			then # remove the old results file
+				rm -v testMetricsResults.txt
+			fi
+			$MetricsScriptDir/scripts/createMetricsTest.bash
+			rm -v temp1.txt header.txt metricsValues.txt fileValues.txt joinFiles.txt
+			if [ ! -s error.txt ]
+			then # remove it if is an empty file (no error occured)
+				rm -v error.txt
+			fi
 		fi
-		#$MetricsScriptDir/scripts/createMetricsTest.bash
-		$MetricsScriptDir/scripts/createMetricsTest.bash
-		rm -v temp1.txt header.txt metricsValues.txt fileValues.txt joinFiles.txt
-		#if [ ! -s error.txt ]
-		#then # remove it if is an empty file (no error occured)
-		#	rm -v error.txt
-		#fi
 		cd ../..
 	fi
 done
