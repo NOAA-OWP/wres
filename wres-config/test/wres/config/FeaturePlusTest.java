@@ -1003,4 +1003,46 @@ public class FeaturePlusTest
                     FeaturePlus.compareByLocationId( first, second ) == 0 );
     }
 
+    /**
+     * Tests the {@link FeaturePlus#toString()}.
+     */
+
+    @Test
+    public void testToString()
+    {
+        Feature one =
+                new Feature( Arrays.asList( "A" ),
+                             new CoordinateSelection( 1.0f, 2.0f, 3.0f ),
+                             "A",
+                             "B",
+                             12345L,
+                             "D",
+                             "E",
+                             "F",
+                             "G",
+                             "H" );
+        FeaturePlus first = FeaturePlus.of( one );
+        
+        assertTrue( "Unexpected string representation of feature.",
+                    first.toString().equals( "{B,F,A,D,E,12345,G,H,(2.0,1.0,3.0),[A]}" ) );
+        
+        Feature two =
+                new Feature( null,
+                             null,
+                             null,
+                             null,
+                             null,
+                             null,
+                             null,
+                             null,
+                             null,
+                             null );
+
+        FeaturePlus second = FeaturePlus.of( two );
+
+        assertTrue( "Unexpected string representation of feature.",
+                    second.toString().equals( "{null,null,null,null,null,null,null,null,null,[]}" ) );
+        
+    }
+
 }

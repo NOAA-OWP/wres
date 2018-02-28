@@ -129,7 +129,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
     final EnumMap<MetricConstants, Set<Threshold>> thresholdOverrides;
 
     /**
-     * Set of thresholds that apply each group of metrics.
+     * Set of thresholds that apply to each group of metrics.
      */
 
     final Map<Pair<MetricInputGroup, MetricOutputGroup>, Set<Threshold>> thresholds;
@@ -220,7 +220,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
     {
         return Objects.nonNull( mergeList ) && Arrays.stream( mergeList ).anyMatch( a -> a.equals( outputGroup ) );
     }
-    
+
     /**
      * Returns the (possibly empty) set of {@link MetricOutputGroup} that will be cached across successive calls to 
      * {@link #apply(Object)}.
@@ -232,7 +232,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
     {
         return Objects.nonNull( mergeList ) ? Collections.unmodifiableSet( new HashSet<>( Arrays.asList( mergeList ) ) )
                                             : Collections.emptySet();
-    }   
+    }
 
     /**
      * Returns true if metrics are available for the input {@link MetricInputGroup} and {@link MetricOutputGroup}, false
@@ -327,6 +327,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
      * 
      * @param dataFactory the data factory
      * @param config the project configuration
+     * @param canonicalThresholds an optional set of canonical thresholds to process, may be null
      * @param thresholdExecutor an optional {@link ExecutorService} for executing thresholds. Defaults to the 
      *            {@link ForkJoinPool#commonPool()}
      * @param metricExecutor an optional {@link ExecutorService} for executing metrics. Defaults to the 
@@ -339,6 +340,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
 
     MetricProcessor( final DataFactory dataFactory,
                      final ProjectConfig config,
+                     final Set<Threshold> canonicalThresholds,
                      final ExecutorService thresholdExecutor,
                      final ExecutorService metricExecutor,
                      final MetricOutputGroup... mergeList )
@@ -378,11 +380,13 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
             singleValuedMultiVector = null;
         }
 
-        //Obtain the thresholds for each metric and store them
+        //Set the thresholds: canonical --> metric-local overrides --> global        
         thresholdOverrides = new EnumMap<>( MetricConstants.class );
         thresholds = new HashMap<>();
-        setThresholds( config );
+        setThresholds( config, canonicalThresholds );
+
         this.mergeList = mergeList;
+
         //Set the executor for processing thresholds
         if ( Objects.nonNull( thresholdExecutor ) )
         {
@@ -517,7 +521,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
 
     /**
      * Returns a list of metrics for the prescribed {@link MetricInputGroup} and {@link MetricOutputGroup} that 
-     * should not be computed for the specified threshold. 
+     * should not be computed for the specified {@link Threshold}. 
      * 
      * @param inGroup the input group
      * @param outGroup the output group
@@ -569,18 +573,28 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
 
     /**
      * Sets the thresholds for each metric in the configuration, including any thresholds that apply globally (to all
-     * metrics).
+     * metrics). Thresholds apply in this order of precedent:
+     * 
+     * <ol>
+     * <li>Canonical thresholds, which are supplied as input and cannot be overridden, only augmented</li>
+     * <li>Metric-local thresholds, which can augment but not override canonical thresholds and can override 
+     * metric-global thresholds</li>
+     * <li>Metric-global thresholds, which can augment but not override canonical thresholds and can augment but not
+     * override metric-local thresholds</li>
+     * </ol>
      * 
      * @param config the project configuration
+     * @param canonical a canonical set of thresholds (may be null)
      * @throws MetricConfigurationException if thresholds are configured incorrectly
      */
 
-    private void setThresholds( ProjectConfig config ) throws MetricConfigurationException
+    private void setThresholds( ProjectConfig config, Set<Threshold> canonical ) throws MetricConfigurationException
     {
         //Validate the configuration
         MetricsConfig metrics = config.getMetrics();
         validateOutputsConfig( metrics );
-        //Check for metric-local thresholds and throw an exception if they are defined, as they are currently not supported
+
+        //Set any metric-local thresholds (overrides for global thresholds)
         for ( MetricConfig metric : metrics.getMetric() )
         {
             if ( metric.getName() != MetricConfigName.ALL_VALID )
@@ -607,7 +621,32 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
                 }
             }
         }
+
+        //Set the global thresholds
         setThresholdsForAllGroups( metrics );
+
+        //Set the canonical thresholds, which are added to both global and local overrides
+        setCanonicalThresholds( canonical );
+
+    }
+
+    /**
+     * Adds a set of canonical thresholds to the global thresholds and to any metric-local overrides. Canonical 
+     * thresholds are always processed; they are never overridden, only augmented by other thresholds (global or
+     * metric-local). This method should always be called *last* when generating thresholds from configuration.
+     * 
+     * @param canonical the canonical thresholds (may be null)
+     */
+
+    private void setCanonicalThresholds( Set<Threshold> canonical )
+    {
+        if ( Objects.nonNull( canonical ) )
+        {
+            // Add the canonical thresholds to the global thresholds
+            thresholds.values().forEach( next -> next.addAll( canonical ) );
+            // Add the canonical thresholds to the metric-local overrides
+            thresholdOverrides.values().forEach( next -> next.addAll( canonical ) );
+        }
     }
 
     /**
@@ -689,6 +728,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         Threshold allData = dataFactory.ofThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER );
         thresholdsWithAllData.add( allData );
         thresholdsWithAllDataOnly.add( allData );
+
         //Add probability thresholds
         if ( Objects.nonNull( metrics.getProbabilityThresholds() ) )
         {
@@ -698,6 +738,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
             thresholdsWithoutAllData.addAll( thresholds );
             thresholdsWithAllData.addAll( thresholds );
         }
+
         //Add real-valued thresholds
         if ( Objects.nonNull( metrics.getValueThresholds() ) )
         {
@@ -820,8 +861,8 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
      */
 
     private Set<Threshold> getThresholdsFromCommaSeparatedValues( String inputString,
-                                                                   Operator oper,
-                                                                   boolean areProbs )
+                                                                  Operator oper,
+                                                                  boolean areProbs )
             throws MetricConfigurationException
     {
         //Parse the double values

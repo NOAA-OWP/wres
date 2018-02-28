@@ -151,6 +151,7 @@
     <!-- Thresholds need to specify an operator suitable for thresholding -->
     <xs:simpleType name="thresholdOperator">
         <xs:restriction base="xs:string">
+            <xs:enumeration value="equal to" />
             <xs:enumeration value="less than" />
             <xs:enumeration value="less than or equal to" />
             <xs:enumeration value="greater than" />
