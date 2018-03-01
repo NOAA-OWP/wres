@@ -37,6 +37,7 @@ public class CommaSeparatedReader
      * @param commaSeparated the source of comma separated values
      * @param isProbability is true to read probability thresholds
      * @param condition the threshold condition
+     * @param missingValue an optional missing value identifier to ignore (may be null)
      * @return a map of thresholds by feature
      * @throws IOException if the source cannot be read or contains unexpected input
      * @throws NullPointerException if the source is null or the condition is null
@@ -45,7 +46,8 @@ public class CommaSeparatedReader
 
     public static Map<FeaturePlus, Set<Threshold>> readThresholds( Path commaSeparated,
                                                                    boolean isProbability,
-                                                                   Operator condition )
+                                                                   Operator condition,
+                                                                   Double missingValue )
             throws IOException
     {
         Objects.requireNonNull( commaSeparated, "Specify a non-null source of comma separated thresholds to read." );
@@ -60,44 +62,44 @@ public class CommaSeparatedReader
             String firstLine = input.readLine();
             String[] header = firstLine.split( "\\s*(,)\\s*" );
             String[] labels = null;
-            try
+
+            // Header?
+            // Yes: process it
+            if ( header.length > 0 && "locationId".equalsIgnoreCase( header[0] ) )
             {
-                // Header?
-                // Yes: process it
-                if ( header.length > 0 && "locationId".equalsIgnoreCase( header[0] ) )
+                // locationId allowed without labels
+                if ( header.length > 1 )
                 {
-                    // locationId allowed without labels
-                    if( header.length > 1 )
-                    {
-                        labels = Arrays.copyOfRange( header, 1, header.length );
-                    }
-                }
-                // No: add the first row
-                else
-                {
-                    readAllThresholdsForOneFeature( returnMe,
-                                                    isProbability,
-                                                    condition,
-                                                    labels,
-                                                    firstLine );
-                }
-
-                // Process each feature
-                String nextLine;
-                while ( Objects.nonNull( nextLine = input.readLine() ) )
-                {
-                    readAllThresholdsForOneFeature( returnMe,
-                                                    isProbability,
-                                                    condition,
-                                                    labels,
-                                                    nextLine );
-
+                    labels = Arrays.copyOfRange( header, 1, header.length );
                 }
             }
-            catch ( IllegalArgumentException e )
+            // No: add the first row
+            else
             {
-                throw new IOException( "While processing '" + commaSeparated + "': ", e );
+                readAllThresholdsForOneFeature( returnMe,
+                                                isProbability,
+                                                condition,
+                                                labels,
+                                                firstLine,
+                                                missingValue );
             }
+
+            // Process each feature
+            String nextLine;
+            while ( Objects.nonNull( nextLine = input.readLine() ) )
+            {
+                readAllThresholdsForOneFeature( returnMe,
+                                                isProbability,
+                                                condition,
+                                                labels,
+                                                nextLine,
+                                                missingValue );
+
+            }
+        }
+        catch ( IllegalArgumentException e )
+        {
+            throw new IOException( "While processing '" + commaSeparated + "': ", e );
         }
 
         return returnMe;
@@ -111,6 +113,7 @@ public class CommaSeparatedReader
      * @param condition the threshold condition
      * @param labels the optional labels (may be null)
      * @param nextInputFeature the next set of thresholds to process
+     * @param missingValue an optional missing value identifier to ignore (may be null)
      * @throws IllegalArgumentException if the number of labels is inconsistent with the number of thresholds or
      *            the threshold content is inconsistent with the specified type of threshold
      */
@@ -119,7 +122,8 @@ public class CommaSeparatedReader
                                                         boolean isProbability,
                                                         Operator condition,
                                                         String[] labels,
-                                                        String nextInputFeature )
+                                                        String nextInputFeature,
+                                                        Double missingValue )
             throws IOException
     {
         // Ignore empty lines
@@ -137,7 +141,8 @@ public class CommaSeparatedReader
             mutate.put( nextFeature, getThresholds( Arrays.copyOfRange( next, 1, next.length ),
                                                     labels,
                                                     isProbability,
-                                                    condition ) );
+                                                    condition,
+                                                    missingValue ) );
         }
     }
 
@@ -148,6 +153,7 @@ public class CommaSeparatedReader
      * @param labels a set of labels (as many as thresholds) or null
      * @param isProbability is true to build probability thresholds, false for value thresholds
      * @param condition the threshold condition
+     * @param missingValue an optional missing value identifier to ignore (may be null)
      * @throws NullPointerException if the input or condition is null
      * @throws IllegalArgumentException if the threshold content is inconsistent with the type of threshold     
      * @throws NumberFormatException if the strings cannot be parsed to numbers                  
@@ -156,7 +162,8 @@ public class CommaSeparatedReader
     private static Set<Threshold> getThresholds( String[] input,
                                                  String[] labels,
                                                  boolean isProbability,
-                                                 Operator condition )
+                                                 Operator condition,
+                                                 Double missingValue )
     {
         Objects.requireNonNull( input, "Specify non-null input in order to obtain the thresholds." );
 
@@ -176,17 +183,24 @@ public class CommaSeparatedReader
         // Iterate through the thresholds
         for ( int i = 0; i < input.length; i++ )
         {
-            // Probability thresholds
-            if ( isProbability )
+            double threshold = Double.parseDouble( input[i] );
+
+            // Non-missing value?
+            if ( Objects.isNull( missingValue ) || Math.abs( missingValue - threshold ) > .00000001 )
             {
-                returnMe.add( factory.ofProbabilityThreshold( Double.valueOf( input[i] ),
-                                                              condition,
-                                                              iterateLabels[i] ) );
-            }
-            // Ordinary thresholds
-            else
-            {
-                returnMe.add( factory.ofThreshold( Double.valueOf( input[i] ), condition, iterateLabels[i] ) );
+
+                // Probability thresholds
+                if ( isProbability )
+                {
+                    returnMe.add( factory.ofProbabilityThreshold( threshold,
+                                                                  condition,
+                                                                  iterateLabels[i] ) );
+                }
+                // Ordinary thresholds
+                else
+                {
+                    returnMe.add( factory.ofThreshold( threshold, condition, iterateLabels[i] ) );
+                }
             }
         }
 
