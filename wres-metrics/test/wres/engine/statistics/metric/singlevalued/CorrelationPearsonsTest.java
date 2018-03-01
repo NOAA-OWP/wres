@@ -84,7 +84,6 @@ public final class CorrelationPearsonsTest
     {
         //Build the metric
         final DataFactory outF = DefaultDataFactory.getInstance();
-        final MetadataFactory metaFac = outF.getMetadataFactory();
         final CorrelationPearsonsBuilder b = new CorrelationPearsons.CorrelationPearsonsBuilder();
         b.setOutputFactory( outF );
         final CorrelationPearsons rho = b.build();

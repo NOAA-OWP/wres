@@ -82,7 +82,6 @@ public final class CoefficientOfDeterminationTest
     {
         //Build the metric
         final DataFactory outF = DefaultDataFactory.getInstance();
-        final MetadataFactory metaFac = outF.getMetadataFactory();
         final CoefficientOfDeterminationBuilder b = new CoefficientOfDetermination.CoefficientOfDeterminationBuilder();
         b.setOutputFactory( outF );
         final CoefficientOfDetermination cod = b.build();

@@ -43,7 +43,7 @@ public class CommaSeparatedReaderTest
         Path commaSeparated = Paths.get( "testinput/commaseparated/testProbabilityThresholdsWithLabels.csv" );
 
         Map<FeaturePlus, Set<Threshold>> actual =
-                CommaSeparatedReader.readThresholds( commaSeparated, true, Operator.GREATER );
+                CommaSeparatedReader.readThresholds( commaSeparated, true, Operator.GREATER, null );
 
         DataFactory factory = DefaultDataFactory.getInstance();
 
@@ -84,7 +84,7 @@ public class CommaSeparatedReaderTest
         Path commaSeparated = Paths.get( "testinput/commaseparated/testValueThresholdsWithLabels.csv" );
 
         Map<FeaturePlus, Set<Threshold>> actual =
-                CommaSeparatedReader.readThresholds( commaSeparated, false, Operator.GREATER );
+                CommaSeparatedReader.readThresholds( commaSeparated, false, Operator.GREATER, null );
 
         DataFactory factory = DefaultDataFactory.getInstance();
 
@@ -125,7 +125,7 @@ public class CommaSeparatedReaderTest
         Path commaSeparated = Paths.get( "testinput/commaseparated/testProbabilityThresholdsWithoutLabels.csv" );
 
         Map<FeaturePlus, Set<Threshold>> actual =
-                CommaSeparatedReader.readThresholds( commaSeparated, true, Operator.GREATER );
+                CommaSeparatedReader.readThresholds( commaSeparated, true, Operator.GREATER, null );
 
         DataFactory factory = DefaultDataFactory.getInstance();
 
@@ -166,7 +166,7 @@ public class CommaSeparatedReaderTest
         Path commaSeparated = Paths.get( "testinput/commaseparated/testValueThresholdsWithoutLabels.csv" );
 
         Map<FeaturePlus, Set<Threshold>> actual =
-                CommaSeparatedReader.readThresholds( commaSeparated, false, Operator.GREATER );
+                CommaSeparatedReader.readThresholds( commaSeparated, false, Operator.GREATER, null );
 
         DataFactory factory = DefaultDataFactory.getInstance();
 
@@ -193,6 +193,45 @@ public class CommaSeparatedReaderTest
         assertTrue( "The actual thresholds do not match the expected thresholds.", actual.equals( expected ) );
 
     }
+    
+    /**
+     * Tests the {@link CommaSeparatedReader#readThresholds(java.net.URI, boolean, wres.datamodel.Threshold.Operator)}
+     * using input from testinput/commaseparated/testValueThresholdsWithoutLabelsWithMissings.csv.
+     * 
+     * @throws IOException if the test data could not be read
+     */
 
+    @Test
+    public void testValueThresholdsWithoutLabelsWithMissings() throws IOException
+    {
+        Path commaSeparated = Paths.get( "testinput/commaseparated/testValueThresholdsWithoutLabelsWithMissings.csv" );
+
+        Map<FeaturePlus, Set<Threshold>> actual =
+                CommaSeparatedReader.readThresholds( commaSeparated, false, Operator.GREATER, -999.0 );
+
+        DataFactory factory = DefaultDataFactory.getInstance();
+
+        // Compare to expected
+        Map<FeaturePlus, Set<Threshold>> expected = new TreeMap<>();
+
+        Set<Threshold> first = new TreeSet<>();
+        first.add( factory.ofThreshold( 3.0, Operator.GREATER ) );
+        first.add( factory.ofThreshold( 7.0, Operator.GREATER ) );
+
+        Feature firstFeature = new Feature( null, null, null, "DRRC2", null, null, null, null, null, null );
+        expected.put( FeaturePlus.of( firstFeature ), first );
+
+        Set<Threshold> second = new TreeSet<>();
+        second.add( factory.ofThreshold( 23.0, Operator.GREATER ) );
+        second.add( factory.ofThreshold( 99.7, Operator.GREATER ) );
+
+        Feature secondFeature = new Feature( null, null, null, "DOLC2", null, null, null, null, null, null );
+        expected.put( FeaturePlus.of( secondFeature ), second );
+
+        // Compare
+        assertTrue( "The actual thresholds do not match the expected thresholds.", actual.equals( expected ) );
+
+    }    
+    
 
 }
