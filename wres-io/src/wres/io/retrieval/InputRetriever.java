@@ -256,7 +256,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         if (this.primaryPairs.isEmpty())
         {
             throw new NoDataException( "No data could be retrieved for Metric calculation for window " +
-                                       this.leadIteration +
+                                       metadata.getTimeWindow().toString() +
                                        " for " +
                                        this.projectDetails.getRightVariableName() +
                                        " at " +
