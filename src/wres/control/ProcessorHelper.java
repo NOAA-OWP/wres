@@ -134,7 +134,6 @@ public class ProcessorHelper
         try
         {
             decomposedFeatures = Operations.decomposeFeatures( projectDetails );
-            featureCount = decomposedFeatures.size();
         }
         catch ( SQLException e )
         {
@@ -149,9 +148,21 @@ public class ProcessorHelper
         // Read any threshold source in the configuration
         Map<FeaturePlus,Set<Threshold>> thresholds = ConfigHelper.readThresholdsFromProjectConfig( projectConfig );
 
+        int currentFeature = 0;
+
         for ( Feature feature : decomposedFeatures )
         {
             ProgressMonitor.resetMonitor();
+
+            if ( LOGGER.isInfoEnabled() )
+            {
+                currentFeature++;
+                LOGGER.info( "[{}/{}] Processing feature '{}'",
+                             currentFeature,
+                             decomposedFeatures.size(),
+                             ConfigHelper.getFeatureDescription( feature ) );
+            }
+
             FeatureProcessingResult result =
                     processFeature( feature,
                                     thresholds.get( FeaturePlus.of( feature ) ),
@@ -175,8 +186,6 @@ public class ProcessorHelper
                 }
                 missingDataFeatures.add( result.getFeature() );
             }
-
-            completedFeatureCount++;
         }
 
         printFeaturesReport( projectConfigPlus,
@@ -269,8 +278,6 @@ public class ProcessorHelper
 
         final String featureDescription = ConfigHelper.getFeatureDescription( feature );
         final String errorMessage = "While processing feature "+ featureDescription;
-
-        LOGGER.info( "[{}/{}] Processing feature '{}'", completedFeatureCount, featureCount, featureDescription );
 
         // Sink for the results: the results are added incrementally to an immutable store via a builder
         // Some output types are processed at the end of the pipeline, others after each input is processed
@@ -1154,9 +1161,6 @@ public class ProcessorHelper
         }
 
     }
-
-    private static Integer featureCount = 0;
-    private static Integer completedFeatureCount = 1;
 
     private static List<Exception> exceptionList;
     private static final Object EXCEPTION_LOCK = new Object();
