@@ -81,7 +81,7 @@ import wres.vis.ChartEngineFactory;
  * @author james.brown@hydrosolved.com
  * @author jesse.bickel@***REMOVED***
  */
-public class ProcessorHelper
+class ProcessorHelper
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( ProcessorHelper.class );
 
