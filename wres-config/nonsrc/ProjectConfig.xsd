@@ -182,11 +182,11 @@
 	    <xs:element name="type" type="probabilityOrValue" default="probability" minOccurs="0" maxOccurs="1"/>
             <xs:element name="applyTo" type="leftOrRightOrBaseline" default="left" minOccurs="0" maxOccurs="1"/>
             <!-- Choice of using an internal source or an external source -->
-            <xs:choice minOccurs = "0" maxOccurs = "1">
+            <xs:choice>
                 <!-- Internal source -->
-                <xs:element name="commaSeparatedValues" type="xs:string" default="0.05,0.1,0.25,0.50,0.75,0.90,0.95"/>
+                <xs:element name="commaSeparatedValues" type="xs:string" default="0.05,0.1,0.25,0.50,0.75,0.90,0.95" minOccurs = "1"/>
                 <!-- External source -->
-                <xs:element name="source">
+                <xs:element name="source" minOccurs="1">
                     <xs:complexType>
                         <xs:simpleContent>
                             <xs:extension base="xs:anyURI">
