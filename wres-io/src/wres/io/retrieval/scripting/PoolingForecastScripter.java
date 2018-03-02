@@ -63,7 +63,7 @@ class PoolingForecastScripter extends Scripter
         this.addTab(2).addLine("AND ", this.getProjectDetails().getLeadQualifier( this.getFeature(), this.getProgress(), "F" ));
 
         this.add( "        AND F.basis_time >= ('", this.getProjectDetails().getEarliestIssueDate(), "'::timestamp without time zone + (INTERVAL '1 HOUR' * ");
-        this.add( TimeHelper.unitsToLeadUnits( getProjectDetails().getIssuePoolingWindowUnit(), frequency ) );
+        this.add( frequency );
         this.addLine(" ) * ", this.getSequenceStep(), ")");
         this.add( "        AND F.basis_time <= ('", this.getProjectDetails().getEarliestIssueDate() );
         this.add("'::timestamp without time zone + (INTERVAL '1 HOUR' * ", frequency, ") * ", this.getSequenceStep(), ")");
