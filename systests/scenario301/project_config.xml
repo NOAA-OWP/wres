@@ -29,11 +29,11 @@
 
     <metrics>
 <!-- By removing the value thresholds, I am testing the stats unconditional on precip occurrence... I think. -->
-        <valueThresholds>
-            <applyTo>left</applyTo> 
+        <thresholds>
+            <type>value</type> 
             <commaSeparatedValues>0.0</commaSeparatedValues>
             <operator>greater than</operator>
-        </valueThresholds>
+        </thresholds>
         <metric> <name>mean error</name> </metric>
         <metric> <name>sample size</name> </metric>
     </metrics>

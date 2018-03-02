@@ -142,7 +142,7 @@ project(':utilities')
         compile 'com.google.guava:guava:22.0'
         compile group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
 
-        compile('edu.ucar:cdm:4.6.8')
+        compile('edu.ucar:cdm:4.6.11')
         {
             // because we are getting a later version from diff group:
             exclude group: 'c3p0', module: 'c3p0'
@@ -204,7 +204,7 @@ project(':wres-io')
         compile 'org.glassfish.jersey.inject:jersey-hk2:2.26'
         compile 'org.glassfish.jersey.media:jersey-media-json-jackson:2.26'
 
-        compile('edu.ucar:cdm:4.6.8')
+        compile('edu.ucar:cdm:4.6.11')
         {
             // because we are getting a later version from diff group:
             exclude group: 'c3p0', module: 'c3p0'

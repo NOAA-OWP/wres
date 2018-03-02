@@ -18,7 +18,6 @@ import java.util.TreeMap;
 import java.util.function.BiFunction;
 import java.util.function.BinaryOperator;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -256,7 +255,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         if (this.primaryPairs.isEmpty())
         {
             throw new NoDataException( "No data could be retrieved for Metric calculation for window " +
-                                       this.leadIteration +
+                                       metadata.getTimeWindow().toString() +
                                        " for " +
                                        this.projectDetails.getRightVariableName() +
                                        " at " +

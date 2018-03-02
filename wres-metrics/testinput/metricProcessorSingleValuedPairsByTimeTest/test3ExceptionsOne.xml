@@ -34,11 +34,12 @@
       </timeAggregation>
   </pair>
   <metrics>
-    <valueThresholds>
+    <thresholds>
+      <type>value</type>
       <applyTo>left</applyTo>
       <commaSeparatedValues>0.5</commaSeparatedValues>
       <operator>greater than</operator>
-    </valueThresholds>	
+    </thresholds>	
     <metric><name>threat score</name></metric>
   </metrics>
   <outputs>

@@ -16,40 +16,37 @@
     <unit>CMS</unit>
   </pair>
   <metrics>
-    <valueThresholds>
-      <applyTo>left</applyTo>
+    <thresholds>
+      <type>value</type>
       <commaSeparatedValues>0.5,0.75,0.83,1.0</commaSeparatedValues>
-      <operator>greater than</operator>
-    </valueThresholds>	
+    </thresholds>	
     <metric>
 	<name>mean error</name>
     </metric>
     <metric>
 	<name>pearson correlation coefficient</name>
-        <valueThresholds>
-            <applyTo>left</applyTo>
+        <thresholds>
+            <type>value</type>
             <commaSeparatedValues>0.5,0.75,0.83</commaSeparatedValues>
-            <operator>greater than</operator>
-        </valueThresholds>
+        </thresholds>
     </metric>
     <metric>
 	<name>root mean square error</name>
-        <valueThresholds>
-            <applyTo>left</applyTo>
+        <thresholds>
+            <type>value</type>
             <commaSeparatedValues>0.5,0.75,0.8</commaSeparatedValues>
-            <operator>greater than</operator>
-        </valueThresholds>
+        </thresholds>
     </metric>
     <metric>
 	<name>mean square error</name>
     </metric>
     <metric>
 	<name>mean absolute error</name>
-        <valueThresholds>
-            <applyTo>left</applyTo>
+        <thresholds>
+            <type>value</type>
             <commaSeparatedValues>0.83</commaSeparatedValues>
             <operator>greater than or equal to</operator>
-        </valueThresholds>
+        </thresholds>
     </metric>
   </metrics>
   <outputs>
