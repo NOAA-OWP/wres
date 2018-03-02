@@ -602,7 +602,8 @@ public class ProcessorHelper
             GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destConfig, metricId );
             try
             {
-                return ChartEngineFactory.buildScoreOutputChartEngine( scoreResults,
+                return ChartEngineFactory.buildScoreOutputChartEngine( projectConfigPlus.getProjectConfig(), 
+                                                                       scoreResults,
                                                                        DATA_FACTORY,
                                                                        helper.getOutputType(),
                                                                        helper.getTemplateResourceName(),
@@ -638,7 +639,8 @@ public class ProcessorHelper
             try
             {
                 Map<MetricConstants, ChartEngine> returnMe = new EnumMap<>( MetricConstants.class );
-                ChartEngine engine = ChartEngineFactory.buildCategoricalDurationScoreChartEngine( scoreResults,
+                ChartEngine engine = ChartEngineFactory.buildCategoricalDurationScoreChartEngine( projectConfigPlus.getProjectConfig(),
+                                                                                                  scoreResults,
                                                                                                   helper.getTemplateResourceName(),
                                                                                                   helper.getGraphicsString() );
                 returnMe.put( MetricConstants.MAIN, engine );
@@ -743,7 +745,8 @@ public class ProcessorHelper
             GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destConfig, metricId );
 
             final Map<Object, ChartEngine> engines =
-                    ChartEngineFactory.buildMultiVectorOutputChartEngine( multiVectorResults,
+                    ChartEngineFactory.buildMultiVectorOutputChartEngine( projectConfigPlus.getProjectConfig(),
+                                                                          multiVectorResults,
                                                                           DATA_FACTORY,
                                                                           helper.getOutputType(),
                                                                           helper.getTemplateResourceName(),
@@ -838,7 +841,8 @@ public class ProcessorHelper
             GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destConfig, metricId );
 
             final Map<Pair<TimeWindow, Threshold>, ChartEngine> engines =
-                    ChartEngineFactory.buildBoxPlotChartEngine( boxPlotResults,
+                    ChartEngineFactory.buildBoxPlotChartEngine( projectConfigPlus.getProjectConfig(),
+                                                                boxPlotResults,
                                                                 helper.getTemplateResourceName(),
                                                                 helper.getGraphicsString() );
 
@@ -918,7 +922,8 @@ public class ProcessorHelper
         {
             GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destConfig, metricId );
 
-            final ChartEngine engine = ChartEngineFactory.buildPairedInstantDurationChartEngine( pairedOutputResults,
+            final ChartEngine engine = ChartEngineFactory.buildPairedInstantDurationChartEngine( projectConfigPlus.getProjectConfig(),
+                                                                                                 pairedOutputResults,
                                                                                                  helper.getTemplateResourceName(),
                                                                                                  helper.getGraphicsString() );
 
