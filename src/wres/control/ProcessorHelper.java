@@ -18,6 +18,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -117,10 +118,6 @@ class ProcessorHelper
     {
 
         final ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
-
-        // Make netcdf output if needed
-        NetcdfOutputWriter outputWriter = new NetcdfOutputWriter( projectConfig );
-
         ProgressMonitor.setShowStepDescription( true );
         ProgressMonitor.resetMonitor();
 
@@ -152,6 +149,15 @@ class ProcessorHelper
         // Read any threshold source in the configuration
         Map<FeaturePlus,Set<Threshold>> thresholds = ConfigHelper.readThresholdsFromProjectConfig( projectConfig );
 
+        // Get the consumers (output writers) of metric outputs
+        List<Consumer<MetricOutputMapByTimeAndThreshold<?>>> writers =
+                ProcessorHelper.getWriters( projectConfig );
+
+        // Reduce our triad of executors to one object
+        ExecutorServices executors = new ExecutorServices( pairExecutor,
+                                                           thresholdExecutor,
+                                                           metricExecutor );
+
         int currentFeature = 0;
 
         for ( Feature feature : decomposedFeatures )
@@ -172,10 +178,8 @@ class ProcessorHelper
                                     thresholds.get( FeaturePlus.of( feature ) ),
                                     projectConfigPlus,
                                     projectDetails,
-                                    pairExecutor,
-                                    thresholdExecutor,
-                                    metricExecutor,
-                                    outputWriter );
+                                    executors,
+                                    writers );
 
             if ( result.hadData() )
             {
@@ -260,12 +264,11 @@ class ProcessorHelper
      * for each of the pairs, thresholds and metrics.
      * 
      * @param feature the feature to process
-     * @param an optional set of (canonical) thresholds for which results are required, may be null
+     * @param thresholds an optional set of (canonical) thresholds for which
+     *                   results are required, may be null
      * @param projectConfigPlus the project configuration
      * @param projectDetails the project details to use
-     * @param pairExecutor the {@link ExecutorService} for processing pairs
-     * @param thresholdExecutor the {@link ExecutorService} for processing thresholds
-     * @param metricExecutor the {@link ExecutorService} for processing metrics
+     * @param executors the executors for pairs, thresholds, and metrics
      * @throws WresProcessingException when an error occurs during processing
      * @return a feature result
      */
@@ -274,10 +277,8 @@ class ProcessorHelper
                                                    final Set<Threshold> thresholds,
                                                    final ProjectConfigPlus projectConfigPlus,
                                                    final ProjectDetails projectDetails,
-                                                   final ExecutorService pairExecutor,
-                                                   final ExecutorService thresholdExecutor,
-                                                   final ExecutorService metricExecutor,
-                                                   final NetcdfOutputWriter netcdfOutputWriter )
+                                                   final ExecutorServices executors,
+                                                   final List<Consumer<MetricOutputMapByTimeAndThreshold<?>>> outputConsumers )
     {
 
         final ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
@@ -293,8 +294,8 @@ class ProcessorHelper
             processor = MetricFactory.getInstance( DATA_FACTORY )
                                      .getMetricProcessorForProject( projectConfig,
                                                                     thresholds,
-                                                                    thresholdExecutor,
-                                                                    metricExecutor );
+                                                                    executors.getThresholdExecutor(),
+                                                                    executors.getMetricExecutor() );
         }
         catch(final MetricProcessorException e )
         {
@@ -322,11 +323,11 @@ class ProcessorHelper
                         CompletableFuture.supplyAsync( new PairsByTimeWindowProcessor(
                                                                                        nextInput,
                                                                                        processor ),
-                                                       pairExecutor )
+                                                       executors.getPairExecutor() )
                                          .thenAcceptAsync( new IntermediateResultProcessor( feature,
                                                                                             projectConfigPlus,
                                                                                             processor.getCachedMetricOutputTypes() ),
-                                                           pairExecutor )
+                                                           executors.getPairExecutor() )
                                          .thenAccept(
                                                       aVoid -> ProgressMonitor.completeStep() );
 
@@ -1199,6 +1200,51 @@ class ProcessorHelper
             }
 
             return Collections.unmodifiableList(ProcessorHelper.exceptionList);
+        }
+    }
+
+    private static List<Consumer<MetricOutputMapByTimeAndThreshold<?>>>
+    getWriters( ProjectConfig projectConfig )
+    {
+        List<Consumer<MetricOutputMapByTimeAndThreshold<?>>> result =
+                new ArrayList<>( 1 );
+
+        // Make netcdf output if needed
+        NetcdfOutputWriter outputWriter = new NetcdfOutputWriter( projectConfig );
+
+        result.add( outputWriter );
+
+        return Collections.unmodifiableList( result );
+    }
+
+    private static class ExecutorServices
+    {
+        private final ExecutorService pairExecutor;
+        private final ExecutorService thresholdExecutor;
+        private final ExecutorService metricExecutor;
+
+        ExecutorServices( ExecutorService pairExecutor,
+                          ExecutorService thresholdExecutor,
+                          ExecutorService metricExecutor )
+        {
+            this.pairExecutor = pairExecutor;
+            this.thresholdExecutor = thresholdExecutor;
+            this.metricExecutor = metricExecutor;
+        }
+
+        ExecutorService getPairExecutor()
+        {
+            return this.pairExecutor;
+        }
+
+        ExecutorService getThresholdExecutor()
+        {
+            return this.thresholdExecutor;
+        }
+
+        ExecutorService getMetricExecutor()
+        {
+            return this.metricExecutor;
         }
     }
 }
