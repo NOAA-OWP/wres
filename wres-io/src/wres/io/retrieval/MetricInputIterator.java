@@ -9,6 +9,7 @@ import java.util.Iterator;
 import java.util.NavigableMap;
 import java.util.NoSuchElementException;
 import java.util.TreeMap;
+import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -355,25 +356,13 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
     @Override
     public Future<MetricInput<?>> next()
     {
-        Future<MetricInput<?>> nextInput = null;
+        Future<MetricInput<?>> nextInput;
 
         this.inputCounter++;
         this.incrementWindowNumber();
         try
         {
-            // TODO: Pass the leftHandMap instead of the function
-            InputRetriever retriever = new InputRetriever(
-                    this.getProjectDetails(),
-                    ( firstDate, lastDate ) -> Collections.getValuesInRange( this.leftHandMap, firstDate, lastDate )
-            );
-            retriever.setFeature(feature);
-            retriever.setClimatology( this.getClimatology() );
-            retriever.setLeadIteration( this.getWindowNumber() );
-            retriever.setIssueDatesPool( this.poolingStep );
-            retriever.setOnRun( ProgressMonitor.onThreadStartHandler() );
-            retriever.setOnComplete( ProgressMonitor.onThreadCompleteHandler() );
-
-            nextInput = Database.submit(retriever);
+            nextInput = this.submitForRetrieval();
         }
         catch ( IOException e )
         {
@@ -386,6 +375,37 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
         }
 
         return nextInput;
+    }
+
+    /**
+     * Creates the object that will retrieve the data in another thread
+     * @return A callable object that will create a Metric Input
+     * @throws IOException Thrown if a climatology could not be created as needed
+     */
+    protected Callable<MetricInput<?>> createRetriever() throws IOException
+    {
+        // TODO: Pass the leftHandMap instead of the function
+        InputRetriever retriever = new InputRetriever(
+                this.getProjectDetails(),
+                ( firstDate, lastDate ) -> Collections.getValuesInRange( this.leftHandMap, firstDate, lastDate )
+        );
+        retriever.setFeature(feature);
+        retriever.setClimatology( this.getClimatology() );
+        retriever.setLeadIteration( this.getWindowNumber() );
+        retriever.setIssueDatesPool( this.poolingStep );
+        retriever.setOnRun( ProgressMonitor.onThreadStartHandler() );
+        retriever.setOnComplete( ProgressMonitor.onThreadCompleteHandler() );
+        return retriever;
+    }
+
+    /**
+     * Submits a retrieval object for asynchronous execution
+     * @return A MetricInput object that will be fully formed later in the application
+     * @throws IOException Thrown if the retrieval object could not be created
+     */
+    protected Future<MetricInput<?>> submitForRetrieval() throws IOException
+    {
+        return Database.submit( this.createRetriever() );
     }
 
     protected DataSourceConfig getLeft()

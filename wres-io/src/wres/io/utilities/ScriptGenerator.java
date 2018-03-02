@@ -11,6 +11,8 @@ import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Variables;
 import wres.io.data.details.ProjectDetails;
 import wres.util.Strings;
+import wres.util.TimeHelper;
+
 /**
  * @author Christopher Tubbs
  *
@@ -285,11 +287,14 @@ public final class ScriptGenerator
                         "TS"
                 );
 
+        long period = TimeHelper.unitsToLeadUnits(projectDetails.getIssuePoolingWindowUnit(), projectDetails.getIssuePoolingWindowPeriod());
+        long frequency = TimeHelper.unitsToLeadUnits( projectDetails.getIssuePoolingWindowUnit(), projectDetails.getIssuePoolingWindowFrequency() );
+
         script.addLine("SELECT FLOOR(((EXTRACT( epoch FROM AGE(LEAST(MAX(initialization_date), '",
                        projectDetails.getLatestIssueDate(), "'), '",
                        projectDetails.getEarliestIssueDate(),
                        "')) / 3600) / (",
-                       projectDetails.getIssuePoolingWindowPeriod() - projectDetails.getIssuePoolingWindowFrequency(),
+                       period - frequency,
                        ")) - 1)::int AS window_count");
         script.addLine("FROM wres.TimeSeries TS");
         script.addLine("WHERE ", timeSeriesVariablePosition);

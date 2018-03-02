@@ -187,6 +187,20 @@ final class DatabaseSettings
         }
     }
 
+    public Connection getRawConnection() throws SQLException
+	{
+		try
+		{
+			Class.forName(DRIVER_MAPPING.get(getDatabaseType()));
+		}
+		catch ( ClassNotFoundException e )
+		{
+			throw new SQLException( "The driver that will call the database "
+									+ "could not be found.", e );
+		}
+		return DriverManager.getConnection(this.getConnectionString(), this.username, this.password);
+	}
+
 	public ComboPooledDataSource createDatasource()
 	{
 		ComboPooledDataSource datasource = new ComboPooledDataSource();

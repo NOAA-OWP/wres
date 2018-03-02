@@ -1703,7 +1703,7 @@ public final class Database {
 
             do
             {
-                connection = Database.getHighPriorityConnection();
+                connection = SystemSettings.getRawDatabaseConnection();
                 resultSet = Database.getResults( connection, TRY_LOCK_SCRIPT );
                 boolean successfullyLocked = false;
 
@@ -1789,17 +1789,30 @@ public final class Database {
                 LOGGER.error( Strings.getStackTrace( e ) );
             }
 
-            Database.returnHighPriorityConnection( Database.advisoryLockConnection );
-            Database.setAdvisoryLockConnection( null );
+            try
+            {
+                Database.setAdvisoryLockConnection( null );
+            }
+            catch ( SQLException e )
+            {
+                throw new IOException( "Database privileges could not be "
+                                       + "adequately released.", e );
+            }
         }
 
         LOGGER.info( "Successfully released database change privileges." );
     }
 
     private static void setAdvisoryLockConnection(Connection connection)
+            throws SQLException
     {
         synchronized ( Database.ADVISORY_LOCK )
         {
+            if (connection == null)
+            {
+                Database.advisoryLockConnection.close();
+            }
+
             Database.advisoryLockConnection = connection;
         }
     }

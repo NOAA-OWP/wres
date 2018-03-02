@@ -1,6 +1,8 @@
 package wres.io.config;
 
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.SQLException;
 
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
@@ -337,6 +339,11 @@ public final class SystemSettings extends XMLReader
             throws IOException, XMLStreamException, TransformerException
     {
         return instance.getRawXML();
+    }
+
+    public static Connection getRawDatabaseConnection() throws SQLException
+    {
+        return instance.databaseConfiguration.getRawConnection();
     }
 
 	@Override
