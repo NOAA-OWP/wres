@@ -27,7 +27,7 @@ import wres.io.writing.CommaSeparatedWriter;
  * @version 0.2
  */
 
-public class IntermediateResultProcessor implements Consumer<MetricOutputForProjectByTimeAndThreshold>
+class IntermediateResultProcessor implements Consumer<MetricOutputForProjectByTimeAndThreshold>
 {
 
     /**
@@ -60,6 +60,7 @@ public class IntermediateResultProcessor implements Consumer<MetricOutputForProj
      * 
      * @param feature the feature
      * @param projectConfigPlus the project configuration
+     * @param ignoreTheseTypes a set of output types to ignore (because they are processed at the end of a pipeline)
      * @throws NullPointerException if any of the inputs are null
      */
 
@@ -92,28 +93,35 @@ public class IntermediateResultProcessor implements Consumer<MetricOutputForProj
                 if ( input.hasOutput( MetricOutputGroup.MULTIVECTOR )
                      && !ignoreTheseTypes.contains( MetricOutputGroup.MULTIVECTOR ) )
                 {
+                    // Write the graphical output
                     ProcessorHelper.processMultiVectorCharts( projectConfigPlus,
                                                               input.getMultiVectorOutput() );
                     meta = input.getMultiVectorOutput().entrySet().iterator().next().getValue().getMetadata();
+                    
                     // Write the CSV output
                     CommaSeparatedWriter.writeDiagramFiles( projectConfigPlus.getProjectConfig(),
                                                       input.getMultiVectorOutput() );
                 }
+                
                 //Box-plot output available and not being cached to the end
                 if ( input.hasOutput( MetricOutputGroup.BOXPLOT )
                      && !ignoreTheseTypes.contains( MetricOutputGroup.BOXPLOT ) )
                 {
+                    // Write the graphical output
                     ProcessorHelper.processBoxPlotCharts( projectConfigPlus,
                                                           input.getBoxPlotOutput() );
                     meta = input.getBoxPlotOutput().entrySet().iterator().next().getValue().getMetadata();
+                    
                     // Write the CSV output
                     CommaSeparatedWriter.writeBoxPlotFiles( projectConfigPlus.getProjectConfig(),
                                                       input.getBoxPlotOutput() );
                 }
+                
                 //Matrix output available and not being cached to the end
                 if ( input.hasOutput( MetricOutputGroup.MATRIX )
                      && !ignoreTheseTypes.contains( MetricOutputGroup.MATRIX ) )
                 {
+                    
                     // Only CSV output: write the CSV output
                     CommaSeparatedWriter.writeMatrixOutputFiles( projectConfigPlus.getProjectConfig(),
                                                            input.getMatrixOutput() );
