@@ -151,18 +151,7 @@ public final class SafeMatrixOutputTest
                                                                    MetricConstants.CONTINGENCY_TABLE,
                                                                    MetricConstants.MAIN,
                                                                    metaFac.getDatasetIdentifier( "A", "B", "C" ) );
-        final MetricOutputMetadata m2 = metaFac.getOutputMetadata( 10,
-                                                                   metaFac.getDimension(),
-                                                                   metaFac.getDimension( "CMS" ),
-                                                                   MetricConstants.CONTINGENCY_TABLE,
-                                                                   MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( "A", "B", "C" ) );
-        final MetricOutputMetadata m3 = metaFac.getOutputMetadata( 10,
-                                                                   metaFac.getDimension(),
-                                                                   metaFac.getDimension( "CMS" ),
-                                                                   MetricConstants.CONTINGENCY_TABLE,
-                                                                   MetricConstants.MAIN,
-                                                                   metaFac.getDatasetIdentifier( "B", "B", "C" ) );
+
         final DataFactory d = DefaultDataFactory.getInstance();
         final MatrixOutput q = d.ofMatrixOutput( new double[][] { { 1.0 }, { 1.0 } }, m1 );
         final MatrixOutput r = d.ofMatrixOutput( new double[][] { { 1.0 }, { 1.0 } }, m1 );

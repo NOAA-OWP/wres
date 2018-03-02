@@ -18,14 +18,31 @@
     <pair label="Pairs by location and lead time">
         <unit>CMS</unit>
         <leadHours minimum="1" maximum="24" />
+        <issuedDates earliest="1985-06-01T12:00:00Z" latest="1985-06-30T12:00:00Z" />
+        <desiredTimeScale>
+            <function>avg</function>
+            <period>3</period>
+            <frequency>6</frequency>
+            <unit>hours</unit>
+        </desiredTimeScale>
+        <!--<issuedDatesPoolingWindow>
+            <period>21</period>
+            <frequency>14</frequency>
+            <unit>days</unit>
+        </issuedDatesPoolingWindow>
+        <leadTimesPoolingWindow>
+            <period>6</period>
+            <frequency>12</frequency>
+            <unit>hours</unit>
+        </leadTimesPoolingWindow>-->
     </pair>
 
     <metrics>
-        <probabilityThresholds>
+        <thresholds>
             <applyTo>left</applyTo>
             <commaSeparatedValues>0.1,0.25,0.5,0.75,0.9,0.95</commaSeparatedValues>
             <operator>greater than or equal to</operator>
-        </probabilityThresholds>
+        </thresholds>
         <metric> <name>mean error</name> </metric>
         <metric> <name>brier score</name> </metric>
         <metric> <name>sample size</name> </metric>

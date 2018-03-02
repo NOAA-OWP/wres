@@ -13,7 +13,6 @@ import ohd.hseb.hefs.utils.arguments.DefaultArgumentsProcessor;
 import ohd.hseb.hefs.utils.datetime.HEFSTimeZoneTools;
 import ohd.hseb.hefs.utils.plugins.UniqueGenericParameterList;
 import ohd.hseb.util.misc.HString;
-import wres.config.generated.OutputTypeSelection;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Threshold;
@@ -23,6 +22,7 @@ import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
+import wres.vis.ChartEngineFactory.ChartType;
 
 /**
  * WRES implementation of {@link DefaultArgumentsProcessor}.  This is intended as a one-stop shop for setting all arguments necessary
@@ -103,14 +103,14 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * @param plotType the plot type; null is allowed, which will trigger recording arguments as if this were anything but
      *     a pooling window plot.
      */
-    public WRESArgumentProcessor( MetricOutputMapByTimeAndThreshold<?> displayedPlotInput, OutputTypeSelection plotType )
+    public WRESArgumentProcessor( MetricOutputMapByTimeAndThreshold<?> displayedPlotInput, ChartType plotType )
     {
         super();
 
         MetricOutputMetadata meta = displayedPlotInput.getMetadata();
         extractStandardArgumentsFromMetadata( meta );
 
-        if ( plotType != null && plotType == OutputTypeSelection.POOLING_WINDOW )
+        if ( plotType != null && plotType == ChartType.POOLING_WINDOW )
         {
             recordWindowingArguments( displayedPlotInput.firstKey().getLeft().getEarliestTime(),
                                       displayedPlotInput.lastKey().getLeft().getLatestTime(),

@@ -32,8 +32,9 @@ import wres.config.generated.DurationUnit;
 import wres.config.generated.EnsembleCondition;
 import wres.config.generated.Feature;
 import wres.config.generated.PairConfig;
-import wres.config.generated.ProjectConfig;
 import wres.config.generated.PoolingWindowConfig;
+import wres.config.generated.ProbabilityOrValue;
+import wres.config.generated.ProjectConfig;
 import wres.config.generated.TimeScaleConfig;
 import wres.config.generated.TimeScaleFunction;
 import wres.config.generated.TimeWindowMode;
@@ -46,10 +47,10 @@ import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
 import wres.io.utilities.ScriptBuilder;
 import wres.io.utilities.ScriptGenerator;
+import wres.util.Collections;
 import wres.util.FormattedStopwatch;
 import wres.util.Strings;
 import wres.util.TimeHelper;
-import wres.util.Collections;
 
 /**
  * Wrapper object linking a project configuration and the data needed to form
@@ -2437,15 +2438,23 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
      */
     public boolean usesProbabilityThresholds()
     {
+        // Probability thresholds are the default when the type is null
+        
+        // Check internally sourced thresholds
         boolean hasProbabilityThreshold = this.projectConfig.getMetrics()
-                                                            .getProbabilityThresholds() != null;
+                                                            .getThresholds()
+                                                            .stream()
+                                                            .anyMatch( a -> Objects.isNull( a.getType() )
+                                                                            || a.getType() == ProbabilityOrValue.PROBABILITY );
 
-        if (!hasProbabilityThreshold)
+        // Check metric-local thresholds
+        if ( !hasProbabilityThreshold )
         {
-            hasProbabilityThreshold = wres.util.Collections.exists(
-                    this.projectConfig.getMetrics().getMetric(),
-                    config -> config.getProbabilityThresholds() != null
-            );
+            hasProbabilityThreshold = Collections.exists( this.projectConfig.getMetrics().getMetric(),
+                                                          config -> config.getThresholds()
+                                                                          .stream()
+                                                                          .anyMatch( a -> Objects.isNull( a.getType() )
+                                                                                          || a.getType() == ProbabilityOrValue.PROBABILITY ) );
         }
 
         return hasProbabilityThreshold;

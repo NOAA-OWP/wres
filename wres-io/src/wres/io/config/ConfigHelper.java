@@ -23,7 +23,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.StringJoiner;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -31,6 +33,7 @@ import java.util.concurrent.ConcurrentSkipListSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.FeaturePlus;
 import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
@@ -1496,4 +1499,24 @@ public class ConfigHelper
         return Paths.get( outputDirectory.toString(), safeName );
     }   
     
+    /**
+     * Reads a source of thresholds from the input configuration and returns a map containing a set of 
+     * {@link Threshold} for each {@link FeaturePlus} in the source. If no source is provided, an empty map is
+     * returned.
+     * 
+     * @param projectConfig the project configuration
+     * @return the thresholds associated with each feature obtained from a source in the project configuration
+     * @throws IOException if the source could not be read
+     */
+
+    public static Map<FeaturePlus, Set<Threshold>> readThresholdsFromProjectConfig( ProjectConfig projectConfig )
+            throws IOException
+    {
+        Map<FeaturePlus, Set<Threshold>> returnMe = new TreeMap<>();
+
+        //TODO: complete the reading when the project configuration is agreed 
+
+        return returnMe;
+    }
+
 }

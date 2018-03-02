@@ -3,6 +3,7 @@ package wres.engine.statistics.metric;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -271,6 +272,13 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
             throw new MetricCalculationException( "Specify a non-null set of metrics to ignore, such as the empty "
                                                   + "set." );
         }
+        // Count elements in metrics and collected metrics
+        int count = metrics.size() + collectableMetrics.values().stream().mapToInt( Map::size ).sum();
+        if ( ignoreTheseMetrics.size() == count )
+        {
+            throw new MetricCalculationException( "Cannot ignore all metrics in the store: specify some metrics "
+                    + "to process." );
+        }
 
         //Compute only the required metrics
         Map<MetricConstants, Metric<S, U>> localMetrics = new EnumMap<>( metrics );
@@ -287,14 +295,19 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
         //Create the futures for the collectable metrics
         for ( Map<MetricConstants, Collectable<S, T, U>> next : localCollectableMetrics.values() )
         {
-            Collectable<S, T, U> baseMetric = next.values().iterator().next();
-            final CompletableFuture<T> baseFuture = CompletableFuture.supplyAsync(
-                                                                                   () -> baseMetric.getCollectionInput( input ),
-                                                                                   metricPool );
-            //Using the future dependent result, compute a future of each of the independent results
-            next.forEach( ( id, metric ) -> metricFutures.put( id,
-                                                               baseFuture.thenApplyAsync( metric::aggregate,
-                                                                                          metricPool ) ) );
+            Iterator<Collectable<S, T, U>> iterator = next.values().iterator();
+            // Proceed
+            if ( iterator.hasNext() )
+            {
+                Collectable<S, T, U> baseMetric = iterator.next();
+                final CompletableFuture<T> baseFuture = CompletableFuture.supplyAsync(
+                                                                                       () -> baseMetric.getCollectionInput( input ),
+                                                                                       metricPool );
+                //Using the future dependent result, compute a future of each of the independent results
+                next.forEach( ( id, metric ) -> metricFutures.put( id,
+                                                                   baseFuture.thenApplyAsync( metric::aggregate,
+                                                                                              metricPool ) ) );
+            }
         }
         //Create the futures for the ordinary metrics
         localMetrics.forEach( ( key, value ) -> metricFutures.put( key,
@@ -320,6 +333,7 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
             Thread.currentThread().interrupt();
             throw new MetricCalculationException( "While processing metric '" + nextMetric + "'.", e );
         }
+        
         return dataFactory.ofMap( returnMe );
     }
 

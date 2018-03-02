@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
 import ohd.hseb.charter.datasource.XYChartDataSourceException;
+import wres.config.FeaturePlus;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.Feature;
@@ -68,6 +69,7 @@ import wres.io.utilities.NoDataException;
 import wres.io.writing.ChartWriter;
 import wres.io.writing.ChartWriter.ChartWritingException;
 import wres.io.writing.CommaSeparatedWriter;
+import wres.io.writing.NetcdfOutputWriter;
 import wres.util.ProgressMonitor;
 import wres.vis.ChartEngineFactory;
 
@@ -116,6 +118,9 @@ public class ProcessorHelper
 
         final ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
 
+        // Make netcdf output if needed
+        NetcdfOutputWriter outputWriter = new NetcdfOutputWriter( projectConfig );
+
         ProgressMonitor.setShowStepDescription( true );
         ProgressMonitor.resetMonitor();
 
@@ -133,7 +138,6 @@ public class ProcessorHelper
         try
         {
             decomposedFeatures = Operations.decomposeFeatures( projectDetails );
-            featureCount = decomposedFeatures.size();
         }
         catch ( SQLException e )
         {
@@ -144,17 +148,34 @@ public class ProcessorHelper
 
         List<Feature> successfulFeatures = new ArrayList<>();
         List<Feature> missingDataFeatures = new ArrayList<>();
+        
+        // Read any threshold source in the configuration
+        Map<FeaturePlus,Set<Threshold>> thresholds = ConfigHelper.readThresholdsFromProjectConfig( projectConfig );
+
+        int currentFeature = 0;
 
         for ( Feature feature : decomposedFeatures )
         {
             ProgressMonitor.resetMonitor();
+
+            if ( LOGGER.isInfoEnabled() )
+            {
+                currentFeature++;
+                LOGGER.info( "[{}/{}] Processing feature '{}'",
+                             currentFeature,
+                             decomposedFeatures.size(),
+                             ConfigHelper.getFeatureDescription( feature ) );
+            }
+
             FeatureProcessingResult result =
                     processFeature( feature,
+                                    thresholds.get( FeaturePlus.of( feature ) ),
                                     projectConfigPlus,
                                     projectDetails,
                                     pairExecutor,
                                     thresholdExecutor,
-                                    metricExecutor );
+                                    metricExecutor,
+                                    outputWriter );
 
             if ( result.hadData() )
             {
@@ -170,8 +191,6 @@ public class ProcessorHelper
                 }
                 missingDataFeatures.add( result.getFeature() );
             }
-
-            completedFeatureCount++;
         }
 
         printFeaturesReport( projectConfigPlus,
@@ -241,6 +260,7 @@ public class ProcessorHelper
      * for each of the pairs, thresholds and metrics.
      * 
      * @param feature the feature to process
+     * @param an optional set of (canonical) thresholds for which results are required, may be null
      * @param projectConfigPlus the project configuration
      * @param projectDetails the project details to use
      * @param pairExecutor the {@link ExecutorService} for processing pairs
@@ -251,11 +271,13 @@ public class ProcessorHelper
      */
 
     static FeatureProcessingResult processFeature( final Feature feature,
+                                                   final Set<Threshold> thresholds,
                                                    final ProjectConfigPlus projectConfigPlus,
                                                    final ProjectDetails projectDetails,
                                                    final ExecutorService pairExecutor,
                                                    final ExecutorService thresholdExecutor,
-                                                   final ExecutorService metricExecutor )
+                                                   final ExecutorService metricExecutor,
+                                                   final NetcdfOutputWriter netcdfOutputWriter )
     {
 
         final ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
@@ -263,15 +285,16 @@ public class ProcessorHelper
         final String featureDescription = ConfigHelper.getFeatureDescription( feature );
         final String errorMessage = "While processing feature "+ featureDescription;
 
-        LOGGER.info( "[{}/{}] Processing feature '{}'", completedFeatureCount, featureCount, featureDescription );
-
         // Sink for the results: the results are added incrementally to an immutable store via a builder
         // Some output types are processed at the end of the pipeline, others after each input is processed
         MetricProcessorForProject processor = null;
         try
         {
             processor = MetricFactory.getInstance( DATA_FACTORY )
-                                     .getMetricProcessorForProject( projectConfig, thresholdExecutor, metricExecutor );
+                                     .getMetricProcessorForProject( projectConfig,
+                                                                    thresholds,
+                                                                    thresholdExecutor,
+                                                                    metricExecutor );
         }
         catch(final MetricProcessorException e )
         {
@@ -585,7 +608,8 @@ public class ProcessorHelper
             GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destConfig, metricId );
             try
             {
-                return ChartEngineFactory.buildScoreOutputChartEngine( scoreResults,
+                return ChartEngineFactory.buildScoreOutputChartEngine( projectConfigPlus.getProjectConfig(), 
+                                                                       scoreResults,
                                                                        DATA_FACTORY,
                                                                        helper.getOutputType(),
                                                                        helper.getTemplateResourceName(),
@@ -621,7 +645,8 @@ public class ProcessorHelper
             try
             {
                 Map<MetricConstants, ChartEngine> returnMe = new EnumMap<>( MetricConstants.class );
-                ChartEngine engine = ChartEngineFactory.buildCategoricalDurationScoreChartEngine( scoreResults,
+                ChartEngine engine = ChartEngineFactory.buildCategoricalDurationScoreChartEngine( projectConfigPlus.getProjectConfig(),
+                                                                                                  scoreResults,
                                                                                                   helper.getTemplateResourceName(),
                                                                                                   helper.getGraphicsString() );
                 returnMe.put( MetricConstants.MAIN, engine );
@@ -726,7 +751,8 @@ public class ProcessorHelper
             GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destConfig, metricId );
 
             final Map<Object, ChartEngine> engines =
-                    ChartEngineFactory.buildMultiVectorOutputChartEngine( multiVectorResults,
+                    ChartEngineFactory.buildMultiVectorOutputChartEngine( projectConfigPlus.getProjectConfig(),
+                                                                          multiVectorResults,
                                                                           DATA_FACTORY,
                                                                           helper.getOutputType(),
                                                                           helper.getTemplateResourceName(),
@@ -821,7 +847,8 @@ public class ProcessorHelper
             GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destConfig, metricId );
 
             final Map<Pair<TimeWindow, Threshold>, ChartEngine> engines =
-                    ChartEngineFactory.buildBoxPlotChartEngine( boxPlotResults,
+                    ChartEngineFactory.buildBoxPlotChartEngine( projectConfigPlus.getProjectConfig(),
+                                                                boxPlotResults,
                                                                 helper.getTemplateResourceName(),
                                                                 helper.getGraphicsString() );
 
@@ -901,7 +928,8 @@ public class ProcessorHelper
         {
             GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destConfig, metricId );
 
-            final ChartEngine engine = ChartEngineFactory.buildPairedInstantDurationChartEngine( pairedOutputResults,
+            final ChartEngine engine = ChartEngineFactory.buildPairedInstantDurationChartEngine( projectConfigPlus.getProjectConfig(),
+                                                                                                 pairedOutputResults,
                                                                                                  helper.getTemplateResourceName(),
                                                                                                  helper.getGraphicsString() );
 
@@ -1060,18 +1088,22 @@ public class ProcessorHelper
             MetricConfig nextConfig =
                     getNamedConfigOrAllValid( metricId, config );
             // Default to global type parameter
-            OutputTypeSelection outputType = destConfig.getOutputType();
+            OutputTypeSelection outputType = OutputTypeSelection.DEFAULT;
+            if( Objects.nonNull( destConfig.getOutputType() ) )
+            {
+                outputType = destConfig.getOutputType();
+            }
             String templateResourceName = destConfig.getGraphical().getTemplate();
             if ( Objects.nonNull( nextConfig ) )
             {
                 // Local type parameter
-                if ( nextConfig.getOutputType() != null )
+                if ( Objects.nonNull( nextConfig.getOutputType() ) )
                 {
                     outputType = nextConfig.getOutputType();
                 }
 
                 // Override template name with metric specific name.
-                if ( nextConfig.getTemplateResourceName() != null )
+                if ( Objects.nonNull( nextConfig.getTemplateResourceName() ) )
                 {
                     templateResourceName = nextConfig.getTemplateResourceName();
                 }
@@ -1140,9 +1172,6 @@ public class ProcessorHelper
         }
 
     }
-
-    private static Integer featureCount = 0;
-    private static Integer completedFeatureCount = 1;
 
     private static List<Exception> exceptionList;
     private static final Object EXCEPTION_LOCK = new Object();

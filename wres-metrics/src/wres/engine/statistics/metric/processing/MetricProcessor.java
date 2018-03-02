@@ -1,6 +1,5 @@
 package wres.engine.statistics.metric.processing;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -14,7 +13,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.DoublePredicate;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -25,6 +23,7 @@ import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
 import wres.config.generated.MetricsConfig;
 import wres.config.generated.ProjectConfig;
+import wres.config.generated.ThresholdsConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
@@ -129,7 +128,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
     final EnumMap<MetricConstants, Set<Threshold>> thresholdOverrides;
 
     /**
-     * Set of thresholds that apply each group of metrics.
+     * Set of thresholds that apply to each group of metrics.
      */
 
     final Map<Pair<MetricInputGroup, MetricOutputGroup>, Set<Threshold>> thresholds;
@@ -220,7 +219,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
     {
         return Objects.nonNull( mergeList ) && Arrays.stream( mergeList ).anyMatch( a -> a.equals( outputGroup ) );
     }
-    
+
     /**
      * Returns the (possibly empty) set of {@link MetricOutputGroup} that will be cached across successive calls to 
      * {@link #apply(Object)}.
@@ -232,7 +231,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
     {
         return Objects.nonNull( mergeList ) ? Collections.unmodifiableSet( new HashSet<>( Arrays.asList( mergeList ) ) )
                                             : Collections.emptySet();
-    }   
+    }
 
     /**
      * Returns true if metrics are available for the input {@link MetricInputGroup} and {@link MetricOutputGroup}, false
@@ -327,6 +326,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
      * 
      * @param dataFactory the data factory
      * @param config the project configuration
+     * @param canonicalThresholds an optional set of canonical thresholds to process, may be null
      * @param thresholdExecutor an optional {@link ExecutorService} for executing thresholds. Defaults to the 
      *            {@link ForkJoinPool#commonPool()}
      * @param metricExecutor an optional {@link ExecutorService} for executing metrics. Defaults to the 
@@ -339,6 +339,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
 
     MetricProcessor( final DataFactory dataFactory,
                      final ProjectConfig config,
+                     final Set<Threshold> canonicalThresholds,
                      final ExecutorService thresholdExecutor,
                      final ExecutorService metricExecutor,
                      final MetricOutputGroup... mergeList )
@@ -351,15 +352,15 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         this.dataFactory = dataFactory;
         metrics = MetricConfigHelper.getMetricsFromConfig( config );
         metricFactory = MetricFactory.getInstance( dataFactory );
-        //Construct the metrics that are common to more than one type of input pairs
 
-        if ( hasMetrics( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.SCORE ) )
+        //Construct the metrics that are common to more than one type of input pairs
+        if ( hasMetrics( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.DOUBLE_SCORE ) )
         {
             singleValuedScore =
                     metricFactory.ofSingleValuedScoreCollection( metricExecutor,
                                                                  getSelectedMetrics( metrics,
                                                                                      MetricInputGroup.SINGLE_VALUED,
-                                                                                     MetricOutputGroup.SCORE ) );
+                                                                                     MetricOutputGroup.DOUBLE_SCORE ) );
         }
         else
         {
@@ -378,11 +379,13 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
             singleValuedMultiVector = null;
         }
 
-        //Obtain the thresholds for each metric and store them
+        //Set the thresholds: canonical --> metric-local overrides --> global        
         thresholdOverrides = new EnumMap<>( MetricConstants.class );
         thresholds = new HashMap<>();
-        setThresholds( config );
+        setThresholds( config, canonicalThresholds );
+
         this.mergeList = mergeList;
+
         //Set the executor for processing thresholds
         if ( Objects.nonNull( thresholdExecutor ) )
         {
@@ -427,9 +430,11 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
                                           MetricOutputGroup outGroup )
     {
         Objects.requireNonNull( input, "Specify a non-null array of metric identifiers from which to select metrics." );
+
         //Find the matching metrics 
         Set<MetricConstants> metrics = MetricConstants.getMetrics( inGroup, outGroup );
         metrics.removeIf( a -> !input.contains( a ) );
+
         //Remove duplicate sample size
         if ( inGroup == MetricInputGroup.ENSEMBLE && hasMetrics( MetricInputGroup.SINGLE_VALUED ) )
         {
@@ -470,6 +475,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
     Threshold getThreshold( Threshold threshold, double[] sorted )
     {
         Threshold useMe = threshold;
+
         //Quantile required: need to determine real-value from probability
         if ( threshold.hasProbabilityValues() )
         {
@@ -510,6 +516,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
                                                   + outGroup
                                                   + "'." );
         }
+
         //Add any metric-local thresholds for this group
         returnMe.addAll( getThresholdOverrides( inGroup, outGroup ) );
         return returnMe;
@@ -517,7 +524,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
 
     /**
      * Returns a list of metrics for the prescribed {@link MetricInputGroup} and {@link MetricOutputGroup} that 
-     * should not be computed for the specified threshold. 
+     * should not be computed for the specified {@link Threshold}. 
      * 
      * @param inGroup the input group
      * @param outGroup the output group
@@ -531,8 +538,10 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
     {
         //Begin by assuming that all metrics within this group will be computed
         Set<MetricConstants> returnMe = new HashSet<>();
+
         //Find the global thresholds for this group
         Set<Threshold> byGroup = thresholds.get( Pair.of( inGroup, outGroup ) );
+
         //Are there threshold overrides for this group?
         //Yes: add all metrics within this group to the ignore list unless a metric does not have overrides or 
         //this threshold is defined as an override
@@ -541,18 +550,23 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
             //Obtain the unconditional set of metrics for this group
             Set<MetricConstants> fullSet =
                     new HashSet<>( Arrays.asList( getSelectedMetrics( metrics, inGroup, outGroup ) ) );
+
             //Ignore all metrics in this group unless proven otherwise
             Set<MetricConstants> ignoreMe = new HashSet<>( fullSet );
+
             //If the current threshold is within the list of global thresholds for this group, any metrics within this 
             //group that do not have overrides may be computed. Eliminate them from the ignore list.
             if ( byGroup.contains( threshold ) )
             {
                 ignoreMe.removeIf( a -> !thresholdOverrides.containsKey( a ) );
             }
+
             //Next, handle cases where overrides are defined and this threshold is within the override list
             Set<MetricConstants> overriden = getMetricsWithOverridesForThisThreshold( fullSet, threshold );
+
             //Remove them from the ignore list if they are overriden
             ignoreMe.removeIf( overriden::contains );
+
             //Add the rest
             returnMe.addAll( ignoreMe );
         }
@@ -569,45 +583,66 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
 
     /**
      * Sets the thresholds for each metric in the configuration, including any thresholds that apply globally (to all
-     * metrics).
+     * metrics). Thresholds apply in this order of precedent:
+     * 
+     * <ol>
+     * <li>Canonical thresholds, which are supplied as input and cannot be overridden, only augmented</li>
+     * <li>Metric-local thresholds, which can augment but not override canonical thresholds and can override 
+     * metric-global thresholds</li>
+     * <li>Metric-global thresholds, which can augment but not override canonical thresholds and can augment but not
+     * override metric-local thresholds</li>
+     * </ol>
      * 
      * @param config the project configuration
+     * @param canonical a canonical set of thresholds (may be null)
      * @throws MetricConfigurationException if thresholds are configured incorrectly
      */
 
-    private void setThresholds( ProjectConfig config ) throws MetricConfigurationException
+    private void setThresholds( ProjectConfig config, Set<Threshold> canonical ) throws MetricConfigurationException
     {
         //Validate the configuration
         MetricsConfig metrics = config.getMetrics();
         validateOutputsConfig( metrics );
-        //Check for metric-local thresholds and throw an exception if they are defined, as they are currently not supported
+
+        //Set any metric-local thresholds (overrides for global thresholds)
         for ( MetricConfig metric : metrics.getMetric() )
         {
             if ( metric.getName() != MetricConfigName.ALL_VALID )
             {
-                Set<Threshold> thresholds = new HashSet<>();
-                //Add probability thresholds
-                if ( Objects.nonNull( metric.getProbabilityThresholds() ) )
-                {
-                    Operator oper = MetricConfigHelper.from( metric.getProbabilityThresholds().getOperator() );
-                    String values = metric.getProbabilityThresholds().getCommaSeparatedValues();
-                    thresholds.addAll( getThresholdsFromCommaSeparatedValues( values, oper, true ) );
-
-                }
-                //Add real-valued thresholds
-                if ( Objects.nonNull( metric.getValueThresholds() ) )
-                {
-                    Operator oper = MetricConfigHelper.from( metric.getValueThresholds().getOperator() );
-                    String values = metric.getValueThresholds().getCommaSeparatedValues();
-                    thresholds.addAll( getThresholdsFromCommaSeparatedValues( values, oper, false ) );
-                }
+                Set<Threshold> thresholds =
+                        MetricConfigHelper.fromInternalThresholdsConfig( metric.getThresholds(), dataFactory );
+                // Only add to map if overrides exist
                 if ( !thresholds.isEmpty() )
                 {
                     thresholdOverrides.put( MetricConfigHelper.from( metric.getName() ), thresholds );
                 }
             }
         }
+
+        //Set the global thresholds
         setThresholdsForAllGroups( metrics );
+
+        //Set the canonical thresholds, which are added to both global and local overrides
+        setCanonicalThresholds( canonical );
+    }
+
+    /**
+     * Adds a set of canonical thresholds to the global thresholds and to any metric-local overrides. Canonical 
+     * thresholds are always processed; they are never overridden, only augmented by other thresholds (global or
+     * metric-local). This method should always be called *last* when generating thresholds from configuration.
+     * 
+     * @param canonical the canonical thresholds (may be null)
+     */
+
+    private void setCanonicalThresholds( Set<Threshold> canonical )
+    {
+        if ( Objects.nonNull( canonical ) )
+        {
+            // Add the canonical thresholds to the global thresholds
+            thresholds.values().forEach( next -> next.addAll( canonical ) );
+            // Add the canonical thresholds to the metric-local overrides
+            thresholdOverrides.values().forEach( next -> next.addAll( canonical ) );
+        }
     }
 
     /**
@@ -689,21 +724,12 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         Threshold allData = dataFactory.ofThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER );
         thresholdsWithAllData.add( allData );
         thresholdsWithAllDataOnly.add( allData );
-        //Add probability thresholds
-        if ( Objects.nonNull( metrics.getProbabilityThresholds() ) )
+
+        //Add internal thresholds
+        if ( !metrics.getThresholds().isEmpty() )
         {
-            Operator oper = MetricConfigHelper.from( metrics.getProbabilityThresholds().getOperator() );
-            String values = metrics.getProbabilityThresholds().getCommaSeparatedValues();
-            List<Threshold> thresholds = getThresholdsFromCommaSeparatedValues( values, oper, true );
-            thresholdsWithoutAllData.addAll( thresholds );
-            thresholdsWithAllData.addAll( thresholds );
-        }
-        //Add real-valued thresholds
-        if ( Objects.nonNull( metrics.getValueThresholds() ) )
-        {
-            Operator oper = MetricConfigHelper.from( metrics.getValueThresholds().getOperator() );
-            String values = metrics.getValueThresholds().getCommaSeparatedValues();
-            List<Threshold> thresholds = getThresholdsFromCommaSeparatedValues( values, oper, false );
+            Set<Threshold> thresholds =
+                    MetricConfigHelper.fromInternalThresholdsConfig( metrics.getThresholds(), dataFactory );
             thresholdsWithoutAllData.addAll( thresholds );
             thresholdsWithAllData.addAll( thresholds );
         }
@@ -786,81 +812,41 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
             throw new MetricConfigurationException( "Thresholds are required by one or more of the configured "
                                                     + "metrics." );
         }
-        //Check that probability thresholds are configured for left       
-        if ( Objects.nonNull( metrics.getProbabilityThresholds() )
-             && metrics.getProbabilityThresholds().getApplyTo() != LeftOrRightOrBaseline.LEFT )
-        {
-            throw new MetricConfigurationException( "Attempted to apply probability thresholds to '"
-                                                    + metrics.getProbabilityThresholds().getApplyTo()
-                                                    + "': this is not currently supported. Use '"
-                                                    + LeftOrRightOrBaseline.LEFT
-                                                    + "' instead." );
-        }
-        //Check that value thresholds are configured for left  
-        if ( Objects.nonNull( metrics.getValueThresholds() )
-             && metrics.getValueThresholds().getApplyTo() != LeftOrRightOrBaseline.LEFT )
-        {
-            throw new MetricConfigurationException( "Attempted to apply value thresholds to '"
-                                                    + metrics.getValueThresholds().getApplyTo()
-                                                    + "': this is not currently supported. Use '"
-                                                    + LeftOrRightOrBaseline.LEFT
-                                                    + "' instead." );
-        }
-    }
 
-    /**
-     * Returns a list of {@link Threshold} from a comma-separated string. Specify the type of {@link Threshold}
-     * required.
-     * 
-     * @param inputString the comma-separated input string
-     * @param oper the operator
-     * @param areProbs is true to generate probability thresholds, false for ordinary thresholds
-     * @return the thresholds
-     * @throws MetricConfigurationException if the thresholds are configured incorrectly
-     */
+        // Check that global thresholds are configured for left       
+        List<ThresholdsConfig> allThresholds = metrics.getThresholds();
 
-    private List<Threshold> getThresholdsFromCommaSeparatedValues( String inputString,
-                                                                   Operator oper,
-                                                                   boolean areProbs )
-            throws MetricConfigurationException
-    {
-        //Parse the double values
-        List<Double> addMe =
-                Arrays.stream( inputString.split( "," ) ).map( Double::parseDouble ).collect( Collectors.toList() );
-        List<Threshold> returnMe = new ArrayList<>();
-        //Between operator
-        if ( oper == Operator.BETWEEN )
+        if ( !allThresholds.isEmpty()
+             && allThresholds.stream().anyMatch( next -> Objects.nonNull( next.getApplyTo() )
+                                                         && next.getApplyTo() != LeftOrRightOrBaseline.LEFT ) )
         {
-            if ( addMe.size() < 2 )
-            {
-                throw new MetricConfigurationException( "At least two values are required to compose a "
-                                                        + "threshold that operates between a lower and an upper bound." );
-            }
-            for ( int i = 0; i < addMe.size() - 1; i++ )
-            {
-                if ( areProbs )
-                {
-                    returnMe.add( dataFactory.ofProbabilityThreshold( addMe.get( i ), addMe.get( i + 1 ), oper ) );
-                }
-                else
-                {
-                    returnMe.add( dataFactory.ofThreshold( addMe.get( i ), addMe.get( i + 1 ), oper ) );
-                }
-            }
+            throw new MetricConfigurationException( "Currently, the system requires that all thresholds are of type '"
+                                                    + LeftOrRightOrBaseline.LEFT + "'." );
         }
-        //Other operators
-        else
+
+        // Check that local thresholds are configured for left
+        List<MetricConfig> met = metrics.getMetric();
+        boolean anyNonLeft = met.stream().anyMatch( metric -> metric.getThresholds()
+                                                                    .stream()
+                                                                    .anyMatch( next -> Objects.nonNull( next.getApplyTo() )
+                                                                                       && next.getApplyTo() != LeftOrRightOrBaseline.LEFT ) );
+        if ( anyNonLeft )
         {
-            if ( areProbs )
-            {
-                addMe.forEach( threshold -> returnMe.add( dataFactory.ofProbabilityThreshold( threshold, oper ) ) );
-            }
-            else
-            {
-                addMe.forEach( threshold -> returnMe.add( dataFactory.ofThreshold( threshold, oper ) ) );
-            }
+            throw new MetricConfigurationException( "Currently, the system requires that all thresholds are of type '"
+                                                    + LeftOrRightOrBaseline.LEFT + "'." );
         }
-        return returnMe;
+
+        // Check that local thresholds are configured internally
+        boolean anyExternal = met.stream().anyMatch( metric -> metric.getThresholds()
+                                                                     .stream()
+                                                                     .anyMatch( next -> ( next.getCommaSeparatedValuesOrSource() instanceof ThresholdsConfig.Source ) ) );
+        if ( anyExternal )
+        {
+            throw new MetricConfigurationException( "Externally sourced thresholds detected: these thresholds are "
+                                                    + "supported when they have global scope (i.e. apply to all "
+                                                    + "metrics), but they must be supplied directly." );
+        }
+
     }
 
 }
