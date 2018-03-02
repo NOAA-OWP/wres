@@ -36,9 +36,11 @@ import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
+import wres.datamodel.inputs.pairs.builders.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.TimeWindow;
+import wres.datamodel.time.Event;
 import wres.io.concurrency.Executor;
 import wres.io.concurrency.WRESCallable;
 import wres.io.config.ConfigHelper;
@@ -48,6 +50,7 @@ import wres.io.retrieval.scripting.Scripter;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
 import wres.io.writing.PairWriter;
+import wres.util.NotImplementedException;
 import wres.util.TimeHelper;
 
 /**
@@ -81,6 +84,8 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
      * Function used to find all left side data based on a range of dates
      */
     private final BiFunction<LocalDateTime, LocalDateTime, List<Double>> getLeftValues;
+
+    private final Map<LocalDateTime, LocalDateTime> leftValues = null;
 
     /**
      * The total set of climatology data to group with the pairs
@@ -246,8 +251,6 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
     {
         MetricInput<?> input;
 
-        DatasourceType dataType = this.projectDetails.getRight().getType();
-
         Metadata metadata =
                 this.buildMetadata( this.projectDetails.getProjectConfig(), false );
         Metadata baselineMetadata = null;
@@ -268,45 +271,35 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                     this.buildMetadata( this.projectDetails.getProjectConfig(), true );
         }
 
+        List timeSeriesMetricConfigs = projectDetails.getProjectConfig()
+                                                     .getMetrics()
+                                                     .getTimeSeriesMetric();
+
         try
         {
 
-            if ( dataType == DatasourceType.ENSEMBLE_FORECASTS )
+            if ( this.projectDetails.getRight().getType() == DatasourceType.ENSEMBLE_FORECASTS )
             {
-                List<PairOfDoubleAndVectorOfDoubles> primary =
-                        InputRetriever.extractRawPairs( this.primaryPairs );
-
-                List<PairOfDoubleAndVectorOfDoubles> baseline = null;
-
-                if ( this.baselinePairs != null )
+                if (timeSeriesMetricConfigs != null && timeSeriesMetricConfigs.size() > 0)
                 {
-                    baseline = InputRetriever.extractRawPairs( this.baselinePairs );
+                    input = this.createEnsembleTimeSeriesInput( metadata, baselineMetadata );
                 }
-
-                input = DefaultDataFactory.getInstance()
-                                          .ofEnsemblePairs(
-                                                  primary,
-                                                  baseline,
-                                                  metadata,
-                                                  baselineMetadata,
-                                                  this.climatology );
+                else
+                {
+                    input = this.createEnsembleInput( metadata, baselineMetadata );
+                }
             }
             else
             {
-                List<PairOfDoubles> primary = convertToPairOfDoubles( this.primaryPairs );
-                List<PairOfDoubles> baseline = null;
-
-                if ( this.baselinePairs != null && !this.baselinePairs.isEmpty() )
+                if (timeSeriesMetricConfigs != null && timeSeriesMetricConfigs.size() > 0)
                 {
-                    baseline = convertToPairOfDoubles( this.baselinePairs );
+                    input = this.createSingleValuedTimeSeriesInput( metadata, baselineMetadata );
                 }
-
-                input = DefaultDataFactory.getInstance()
-                                          .ofSingleValuedPairs( primary,
-                                                     baseline,
-                                                     metadata,
-                                                     baselineMetadata,
-                                                     this.climatology );
+                else
+                {
+                    input = this.createSingleValuedInput( metadata,
+                                                          baselineMetadata );
+                }
             }
         }
         catch ( MetricInputException mie )
@@ -322,6 +315,129 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         }
 
         return input;
+    }
+
+    private MetricInput createSingleValuedInput(Metadata rightMetadata, Metadata baselineMetadata)
+    {
+        List<PairOfDoubles> primary = convertToPairOfDoubles( this.primaryPairs );
+        List<PairOfDoubles> baseline = null;
+
+        if ( this.baselinePairs != null && !this.baselinePairs.isEmpty() )
+        {
+            baseline = convertToPairOfDoubles( this.baselinePairs );
+        }
+
+        return DefaultDataFactory.getInstance()
+                                  .ofSingleValuedPairs( primary,
+                                                        baseline,
+                                                        rightMetadata,
+                                                        baselineMetadata,
+                                                        this.climatology );
+    }
+
+    private MetricInput createSingleValuedTimeSeriesInput(Metadata rightMetadata, Metadata baselineMetadata)
+            throws IOException, SQLException
+    {
+        TimeSeriesOfSingleValuedPairsBuilder builder = DefaultDataFactory.getInstance()
+                                                                         .ofTimeSeriesOfSingleValuedPairsBuilder();
+
+        Map<Instant, List<Event<PairOfDoubles>>> events = this.getSingleValuedEvents( primaryPairs );
+        events.entrySet().forEach( entry -> builder.addTimeSeriesData( entry.getKey(), entry.getValue() ) );
+        builder.setMetadata( rightMetadata );
+
+        if (baselinePairs != null)
+        {
+            events = this.getSingleValuedEvents( this.baselinePairs );
+            events.entrySet().forEach( entry -> builder.addTimeSeriesDataForBaseline( entry.getKey(), entry.getValue() ) );
+            builder.setMetadataForBaseline( baselineMetadata );
+        }
+
+        builder.setClimatology( this.climatology );
+
+        return builder.build();
+    }
+
+    private MetricInput createEnsembleTimeSeriesInput(Metadata rightMetadata, Metadata baselineMetadata)
+            throws IOException, SQLException
+    {
+        throw new NotImplementedException( "Ensemble Time Series Inputs cannot be created yet." );
+        /*
+        TimeSeriesOfEnsemblePairsBuilder builder = DefaultDataFactory.getInstance()
+                                                                         .ofTimeSeriesOfEnsemblePairsBuilder();
+
+        Map<Instant, List<Event<PairOfDoubleAndVectorOfDoubles>>> events = this.getEnsembleEvents( primaryPairs );
+        events.entrySet().forEach( entry -> builder.addTimeSeriesData( entry.getKey(), entry.getValue() ) );
+        builder.setMetadata( rightMetadata );
+
+        if (baselinePairs != null)
+        {
+            events = this.getEnsembleEvents( this.baselinePairs );
+            events.entrySet().forEach( entry -> builder.addTimeSeriesDataForBaseline( entry.getKey(), entry.getValue() ) );
+            builder.setMetadataForBaseline( baselineMetadata );
+        }
+
+        builder.setClimatology( this.climatology );
+
+        return builder.build();*/
+    }
+
+    private MetricInput createEnsembleInput(Metadata rightMetadata, Metadata baselineMetadata)
+    {
+        List<PairOfDoubleAndVectorOfDoubles> primary =
+                InputRetriever.extractRawPairs( this.primaryPairs );
+
+
+        List<PairOfDoubleAndVectorOfDoubles> baseline = null;
+
+        if ( this.baselinePairs != null )
+        {
+            baseline = InputRetriever.extractRawPairs( this.baselinePairs );
+        }
+
+        return DefaultDataFactory.getInstance()
+                                  .ofEnsemblePairs(
+                                          primary,
+                                          baseline,
+                                          rightMetadata,
+                                          baselineMetadata,
+                                          this.climatology );
+    }
+
+    private Map<Instant, List<Event<PairOfDoubleAndVectorOfDoubles>>> getEnsembleEvents(List<ForecastedPair> pairs)
+    {
+        Map<Instant, List<Event<PairOfDoubleAndVectorOfDoubles>>> events = new TreeMap<>(  );
+
+        for (ForecastedPair pair : pairs)
+        {
+            if (!events.containsKey( pair.getBasisTime() ))
+            {
+                events.put( pair.getBasisTime(), new ArrayList<>() );
+            }
+
+            events.get(pair.getBasisTime()).add( Event.of( pair.getValidTime(), pair.getValues() ) );
+        }
+
+        return events;
+    }
+
+    private Map<Instant, List<Event<PairOfDoubles>>> getSingleValuedEvents(List<ForecastedPair> pairs)
+    {
+        Map<Instant, List<Event<PairOfDoubles>>> events = new TreeMap<>(  );
+
+        for (ForecastedPair pair : pairs)
+        {
+            if (!events.containsKey( pair.getBasisTime() ))
+            {
+                events.put( pair.getBasisTime(), new ArrayList<>() );
+            }
+
+            for (PairOfDoubles singleValue : pair.getSingleValuedPairs())
+            {
+                events.get(pair.getBasisTime()).add( Event.of( pair.getValidTime(), singleValue ) );
+            }
+        }
+
+        return events;
     }
 
     /**
@@ -1172,6 +1288,20 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         public PairOfDoubleAndVectorOfDoubles getValues()
         {
             return this.values;
+        }
+
+        public PairOfDoubles[] getSingleValuedPairs()
+        {
+            PairOfDoubles[] pairOfDoubles = new PairOfDoubles[this.getValues().getItemTwo().length];
+
+            for (int i = 0; i < pairOfDoubles.length; ++i)
+            {
+                pairOfDoubles[i] = DefaultDataFactory.getInstance()
+                                                     .pairOf( this.getValues().getItemOne(),
+                                                              this.getValues().getItemTwo()[i] );
+            }
+
+            return pairOfDoubles;
         }
 
         public Duration getLeadDuration()

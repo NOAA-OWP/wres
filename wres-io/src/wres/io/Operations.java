@@ -67,7 +67,15 @@ public final class Operations {
         // First, ensure this process is the only one ingesting
         Database.lockForMutation();
 
-        boolean orphansDeleted = Database.removeOrphanedData();
+        boolean orphansDeleted = false;
+        try
+        {
+            orphansDeleted = Database.removeOrphanedData();
+        }
+        catch ( SQLException e )
+        {
+            throw new IOException( "Ingest failed when attempting to remove orphaned data.", e );
+        }
 
         // If data had been removed, it needs to be officially vacuumed up and
         // statistics need to be reevaluated.
@@ -236,7 +244,7 @@ public final class Operations {
      * Updates the statistics and removes all dead rows from the database
      * @return Whether or not the operation was a success
      */
-    public static boolean refreshDatabase()
+    public static boolean refreshDatabase() throws SQLException
     {
         Database.removeOrphanedData();
         Database.refreshStatistics(true);
