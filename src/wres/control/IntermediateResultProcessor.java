@@ -1,6 +1,7 @@
 package wres.control;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -14,6 +15,7 @@ import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MetricOutputAccessException;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
+import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.io.config.ProjectConfigPlus;
 import wres.io.writing.CommaSeparatedWriter;
 
@@ -61,12 +63,14 @@ class IntermediateResultProcessor implements Consumer<MetricOutputForProjectByTi
      * @param feature the feature
      * @param projectConfigPlus the project configuration
      * @param ignoreTheseTypes a set of output types to ignore (because they are processed at the end of a pipeline)
+     * @param writers a list of writers to send outputs to
      * @throws NullPointerException if any of the inputs are null
      */
 
     IntermediateResultProcessor( final Feature feature,
                                  final ProjectConfigPlus projectConfigPlus,
-                                 final Set<MetricOutputGroup> ignoreTheseTypes )
+                                 final Set<MetricOutputGroup> ignoreTheseTypes,
+                                 final List<Consumer<MetricOutputMapByTimeAndThreshold<?>>> writers )
     {
         Objects.requireNonNull( feature,
                                 "Specify a non-null feature for the results processor." );

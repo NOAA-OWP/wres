@@ -269,6 +269,7 @@ class ProcessorHelper
      * @param projectConfigPlus the project configuration
      * @param projectDetails the project details to use
      * @param executors the executors for pairs, thresholds, and metrics
+     * @param writers the writers of output
      * @throws WresProcessingException when an error occurs during processing
      * @return a feature result
      */
@@ -278,7 +279,7 @@ class ProcessorHelper
                                                    final ProjectConfigPlus projectConfigPlus,
                                                    final ProjectDetails projectDetails,
                                                    final ExecutorServices executors,
-                                                   final List<Consumer<MetricOutputMapByTimeAndThreshold<?>>> outputConsumers )
+                                                   final List<Consumer<MetricOutputMapByTimeAndThreshold<?>>> writers )
     {
 
         final ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
@@ -326,7 +327,8 @@ class ProcessorHelper
                                                        executors.getPairExecutor() )
                                          .thenAcceptAsync( new IntermediateResultProcessor( feature,
                                                                                             projectConfigPlus,
-                                                                                            processor.getCachedMetricOutputTypes() ),
+                                                                                            processor.getCachedMetricOutputTypes(),
+                                                                                            writers ),
                                                            executors.getPairExecutor() )
                                          .thenAccept(
                                                       aVoid -> ProgressMonitor.completeStep() );
@@ -373,7 +375,10 @@ class ProcessorHelper
         {
             try
             {
-                processCachedProducts( projectConfigPlus, processor.getCachedMetricOutput(), feature );
+                processCachedProducts( projectConfigPlus,
+                                       processor.getCachedMetricOutput(),
+                                       feature,
+                                       writers );
             }
             catch ( MetricOutputAccessException e )
             {
@@ -393,11 +398,13 @@ class ProcessorHelper
      * @param projectConfigPlus the project configuration
      * @param cachedOutput the cached output
      * @param feature the feature being processed
+     * @param writers the writers of outputs
      */
 
     private static void processCachedProducts( ProjectConfigPlus projectConfigPlus,
                                                MetricOutputForProjectByTimeAndThreshold cachedOutput,
-                                               Feature feature )
+                                               Feature feature,
+                                               List<Consumer<MetricOutputMapByTimeAndThreshold<?>>> writers )
     {
         if( Objects.isNull( cachedOutput ) )
         {
