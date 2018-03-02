@@ -1389,10 +1389,9 @@ public final class Database {
 		}
 	}
 
-	public static final boolean removeOrphanedData()
+	public static final boolean removeOrphanedData() throws SQLException
     {
-        boolean orphanedDataRemoved = false;
-        Connection connection = null;
+        boolean orphanedDataRemoved;
 
         try
         {
@@ -1408,6 +1407,7 @@ public final class Database {
             ResultSet resultSet = null;
             List<String> partitionTables = new ArrayList<>();
             ScriptBuilder scriptBuilder;
+            Connection connection = null;
 
             // First, get list of all partition tables to gather
             try
@@ -1526,22 +1526,7 @@ public final class Database {
         }
         catch ( SQLException databaseError )
         {
-            if (connection != null)
-            {
-                try
-                {
-                    connection.rollback();
-                }
-                catch ( SQLException e )
-                {
-                    LOGGER.error( "The operation that attempted to remove"
-                                  + "orphaned data could not be rolled back."
-                                  + "Either try again or perform a full clean"
-                                  + "on the database." );
-                }
-            }
-
-            LOGGER.error("Orphaned data could not be removed.", databaseError);
+            throw new SQLException( "Orphaned data could not be removed", databaseError );
         }
 
         return orphanedDataRemoved;
