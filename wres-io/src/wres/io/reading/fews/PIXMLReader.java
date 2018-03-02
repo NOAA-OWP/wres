@@ -505,9 +505,9 @@ public final class PIXMLReader extends XMLReader
 	 */
 
     private void parseHeader( XMLStreamReader reader )
-            throws XMLStreamException,
+			throws XMLStreamException,
 			SQLException,
-            InvalidInputDataException
+			IngestException
     {
 		//	If the current tag is the header tag itself, move on to the next tag
 		if (reader.isStartElement() && reader.getLocalName().equalsIgnoreCase("header"))
@@ -613,7 +613,17 @@ public final class PIXMLReader extends XMLReader
                 else if (localName.equalsIgnoreCase( "lon" ) || localName.equalsIgnoreCase( "x" ))
                 {
                     // TODO: Store the value as the Longitude on a FeatureDetails Object
-                }
+                }/* This absolutely breaks scenario303 (as it should). uncomment when necessary
+				else if ( localName.equalsIgnoreCase("forecastDate") )
+				{
+					if (!this.isForecast)
+					{
+						throw new IngestException("The file '" + this.getFilename() +
+											  "' cannot be ingested as an "
+											  + "observation since it is a forecast.");
+					}
+					this.forecastDate = PIXMLReader.parseDateTime( reader );
+				}*/
 
 			}
 			reader.next();

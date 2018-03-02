@@ -37,6 +37,7 @@ import wres.io.data.details.ProjectDetails;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
 import wres.io.reading.SourceLoader;
+import wres.io.reading.TimeSeriesValues;
 import wres.io.reading.fews.PIXMLReader;
 import wres.io.retrieval.InputGenerator;
 import wres.io.utilities.Database;
@@ -108,6 +109,7 @@ public final class Operations {
         finally
         {
             PIXMLReader.saveLeftoverForecasts();
+            TimeSeriesValues.complete();
             List<IngestResult> leftovers = Database.completeAllIngestTasks();
             if ( LOGGER.isDebugEnabled() )
             {
@@ -259,13 +261,8 @@ public final class Operations {
 
         try
         {
-            // Determines the network address of the machine that runs the WRES
-            // Should be of the format of '192.168.122.1'
             NetworkInterface currentInterface;
             int interfaceIndex = NetworkInterface.getNetworkInterfaces().nextElement().getIndex();
-            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
-
-
 
             while ( interfaceIndex > 0)
             {

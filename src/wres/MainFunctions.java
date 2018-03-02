@@ -1108,12 +1108,21 @@ final class MainFunctions
             Integer result = SUCCESS;
 
             Integer valueCount = 10;
-            boolean includeFailures = false;
+            boolean includeFailures = true;
+            String projectName = null;
             String newline = System.lineSeparator();
 
-            String template = "'Arguments: ' || arguments || '" + newline +
-                              "User: ' || username || ':' || address || '" + newline
-                              + "Run Time: ' || run_time::text || '" + newline + "'";
+            ScriptBuilder script = new ScriptBuilder(  );
+            script.addLine("SELECT 'Arguments: ' || arguments || '");
+            script.addLine("User: ' || username || ':' || address || '");
+            script.addLine("Run Time: ' || run_time::text || '");
+            script.addLine("Errors: ||");
+            script.addTab().addLine("CASE");
+            script.addTab(  2  ).addLine("WHEN (error IS NULL || error = '') THEN 'None'");
+            script.addTab(  2  ).addLine("ELSE '");
+            script.addLine("' || error || '");
+            script.addLine("'");
+            script.addTab().addLine("END");
 
             if (args.length > 0)
             {
@@ -1122,13 +1131,24 @@ final class MainFunctions
 
             if (args.length > 1)
             {
-                includeFailures = Boolean.valueOf( args[1] );
+                projectName = args[1];
             }
 
-            ScriptBuilder script = new ScriptBuilder(  );
-            script.addLine("SELECT ", template);
+            if (args.length > 2)
+            {
+                includeFailures = Boolean.valueOf( args[2] );
+            }
+
             script.addLine("FROM ExecutionLog");
-            script.addLine("WHERE LOWER(arguments) LIKE 'execute%'");
+
+            if (projectName == null)
+            {
+                script.addLine( "WHERE LOWER(arguments) LIKE LOWER('execute%')" );
+            }
+            else
+            {
+                script.addLine( "WHERE LOWER(arguments) LIKE LOWER('execute%", projectName, "%')");
+            }
 
             if (!includeFailures)
             {
@@ -1182,14 +1202,16 @@ final class MainFunctions
 
                 ScriptBuilder script = new ScriptBuilder(  );
 
-                script.addLine("SELECT rpad('Run Time: ' || run_time::text, 25) || ' | ' "
-                               + "|| lpad('Start Time: ' || start_time::text, 36) || ' | ' "
-                               + "|| lpad('User: ' || username || ':' || address, 35) "
-                               + "|| '" + newline + "' "
-                               + "|| repeat('-', 102)");
+                script.addLine("SELECT rpad('Run Time: ' || run_time::text, 25) || ' | '  || ");
+                script.addTab().addLine("lpad('Start Time: ' || start_time::text, 36) || ' | '  || ");
+                script.addTab().addLine("lpad('User: ' || username || ':' || address, 35) || ' | ' || ");
+                script.addTab().addLine("CASE");
+                script.addTab(  2  ).addLine("WHEN failed = true THEN lpad('Failed', 10)");
+                script.addTab(  2  ).addLine("ELSE lpad('Succeeded', 10)");
+                script.addTab().addLine("END || '" + newline + "' || ");
+                script.addTab().addLine("repeat('-', 115)");
                 script.addLine("FROM ExecutionLog");
                 script.addLine("WHERE LOWER(arguments) LIKE ", projectName);
-                script.addTab().addLine("AND failed = false");
                 script.addLine("ORDER BY log_id DESC");
                 script.addLine("LIMIT ", valueCount);
 
