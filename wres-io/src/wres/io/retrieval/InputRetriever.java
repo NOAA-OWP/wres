@@ -18,7 +18,6 @@ import java.util.TreeMap;
 import java.util.function.BiFunction;
 import java.util.function.BinaryOperator;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

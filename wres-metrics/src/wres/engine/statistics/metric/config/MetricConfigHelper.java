@@ -18,10 +18,12 @@ import wres.config.generated.MetricConfigName;
 import wres.config.generated.MetricsConfig;
 import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.PoolingWindowConfig;
+import wres.config.generated.ProbabilityOrValue;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Outputs;
 import wres.config.generated.SummaryStatisticsName;
 import wres.config.generated.ThresholdOperator;
+import wres.config.generated.ThresholdsConfig;
 import wres.config.generated.TimeSeriesMetricConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
@@ -309,22 +311,62 @@ public final class MetricConfigHelper
 
     public static boolean hasThresholds( MetricsConfig metrics )
     {
-        //Global thresholds
-        if ( Objects.nonNull( metrics.getProbabilityThresholds() )
-             || Objects.nonNull( metrics.getValueThresholds() ) )
+        // Global thresholds
+        if ( !metrics.getThresholds().isEmpty() )
         {
             return true;
         }
-        //Local thresholds
-        for ( MetricConfig metric : metrics.getMetric() )
+        // Local thresholds
+        return metrics.getMetric().stream().anyMatch( nextMetric -> !nextMetric.getThresholds().isEmpty() );
+    }
+    
+    /**
+     * Transforms a list of {@link ThresholdsConfig} to a set of {@link Threshold}.
+     * 
+     * @param thresholds the thresholds configuration
+     * @param dataFactory the data factory with which to build thresholds
+     * @return a set of thresholds (possibly empty)
+     * @throws MetricConfigurationException if the metric configuration is invalid
+     * @throws NullPointerException if either input is null
+     * @throws MetricConfigurationException if the configuration is invalid
+     */
+
+    public static Set<Threshold> fromInternalThresholdsConfig( List<ThresholdsConfig> thresholds,
+                                                               DataFactory dataFactory )
+            throws MetricConfigurationException
+    {
+        Objects.requireNonNull( thresholds, "Cannot obtain thresholds from null configuration." );
+
+        Objects.requireNonNull( dataFactory, "Cannot obtain thresholds without a data factory." );
+
+        Set<Threshold> returnMe = new HashSet<>();
+
+        // Iterate and transform
+        for ( ThresholdsConfig next : thresholds )
         {
-            if ( Objects.nonNull( metric.getProbabilityThresholds() )
-                 || Objects.nonNull( metric.getValueThresholds() ) )
+            Operator operator = Operator.GREATER;
+            // Operator specified
+            if( Objects.nonNull( next.getOperator() ) )
             {
-                return true;
+                operator = from( next.getOperator() );
             }
+            
+            // Must be internally sourced: thresholds with global scope should be provided directly 
+            Object values = next.getCommaSeparatedValuesOrSource();
+            if( values instanceof ThresholdsConfig.Source )
+            {
+                throw new MetricConfigurationException( "Externally sourced thresholds detected: these thresholds "
+                        + "are supported when they have global scope (i.e. apply to all metrics), but they must be "
+                        + "supplied directly." );
+            }
+            
+            // Default to ProbabilityOrValue.PROBABILITY if null
+            returnMe.addAll( getThresholdsFromCommaSeparatedValues( dataFactory,
+                                                                    values.toString(),
+                                                                    operator,
+                                                                    next.getType() != ProbabilityOrValue.VALUE ) );
         }
-        return false;
+        return returnMe;
     }
 
     /**

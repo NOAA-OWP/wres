@@ -1652,7 +1652,7 @@ public class MetricFactory
      * Helper that interprets the input configuration and returns a list of {@link MetricOutputGroup} whose results 
      * should be cached across successive calls to a {@link MetricProcessor}.
      * 
-     * @param projectConfif the project configuration
+     * @param projectConfig the project configuration
      * @return a list of output types that should be cached
      * @throws MetricConfigurationException if the configuration is invalid
      * @throws NullPointerException if the input is null

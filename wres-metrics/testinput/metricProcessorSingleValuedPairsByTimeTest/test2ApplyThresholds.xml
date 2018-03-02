@@ -34,11 +34,12 @@
       </timeAggregation>
   </pair>
   <metrics>
-    <valueThresholds>
+    <thresholds>
+      <type>value</type>
       <applyTo>left</applyTo>
       <commaSeparatedValues>1.0</commaSeparatedValues>
       <operator>greater than</operator>
-    </valueThresholds>	
+    </thresholds>	
     <!-- destinations has one default: text, ., xml; even when nothing is here. Program chooses filenames for now -->
     <metric label="ME"><name>mean error</name></metric>
     <metric><name>pearson correlation coefficient</name></metric>
