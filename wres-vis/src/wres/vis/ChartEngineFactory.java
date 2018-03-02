@@ -170,7 +170,7 @@ public abstract class ChartEngineFactory
     }
 
     /**
-     * 
+     * @param config The project configuration.
      * @param input The input provided for charting, which is the metric output.
      * @param userSpecifiedOutputType A user specified plot type; null means the user did not provide one.
      * @return The {@link OutputTypeSelection} specifying the output type for the plot.  
@@ -515,6 +515,7 @@ public abstract class ChartEngineFactory
     }
 
     /**Calls the process methods as appropriate for the given plot type.
+     * @param config The project configuration.
      * @param input The metric output to plot.
      * @param factory The data factory from which arguments will be identified.
      * @param userSpecifiedPlotType An optional plot type to generate, where multiple plot types are supported for the
@@ -653,6 +654,7 @@ public abstract class ChartEngineFactory
 
     /**
      * At this time, there is only one plot type available for box plots, so the user specified plot type is not included as an argument.
+     * @param config The project configuration.
      * @param input The metric output to plot.
      * @param userSpecifiedTemplateResourceName Name of the resource to load which provides the default template for
      *            chart construction. May be null to use default template identified in static table.
@@ -712,6 +714,7 @@ public abstract class ChartEngineFactory
     /**
      * Builds a {@link ChartEngine} for each component of a score.
      * 
+     * @param config The project configuration.
      * @param input The metric output to plot.
      * @param factory The data factory from which arguments will be identified.
      * @param userSpecifiedPlotType An optional plot type to generate, where multiple plot types are supported for the
@@ -752,6 +755,7 @@ public abstract class ChartEngineFactory
     /**
      * Internal helper that builds a {@link ChartEngine} for one score component.
      * 
+     * @param config The project configuration.
      * @param input The metric output to plot.
      * @param userSpecifiedPlotType The plot type to generate.
      * @param userSpecifiedTemplateResourceName Name of the resource to load which provides the default template for
@@ -832,6 +836,7 @@ public abstract class ChartEngineFactory
 
     /**
      * Only usable with {@link PairedOutput} in which the left is {@link Instant} and the right is {@link Duration}.
+     * @param config The project configuration.
      * @param input The input from which to build the plot.
      * @param userSpecifiedTemplateResourceName Template resource name, or null to use default.
      * @param overrideParametersStr Override template XML string, or null to not use.
@@ -881,6 +886,7 @@ public abstract class ChartEngineFactory
 
     /**
      * 
+     * @param config The project configuration.
      * @param input The input for which to build the categorical plot.
      * @param userSpecifiedTemplateResourceName User specified template resource name providing instructions for display.  
      * If null, then the default template is used.
