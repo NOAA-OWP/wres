@@ -1393,7 +1393,6 @@ public final class Database {
     {
         boolean orphanedDataRemoved = false;
         Connection connection = null;
-        Boolean initialAutoCommit = null;
 
         try
         {
@@ -1406,10 +1405,6 @@ public final class Database {
                         + "will now be removed to ensure that all data operated "
                         + "upon is valid.");
 
-            connection = Database.getConnection();
-            initialAutoCommit = connection.getAutoCommit();
-            connection.setAutoCommit( false );
-
             ResultSet resultSet = null;
             List<String> partitionTables = new ArrayList<>();
             ScriptBuilder scriptBuilder;
@@ -1417,6 +1412,8 @@ public final class Database {
             // First, get list of all partition tables to gather
             try
             {
+                connection = Database.getConnection();
+
                 scriptBuilder = new ScriptBuilder();
                 scriptBuilder.addLine(
                         "SELECT N.nspname || '.' || C.relname AS table_name" );
@@ -1450,6 +1447,11 @@ public final class Database {
                 {
                     resultSet.close();
                 }
+
+                if (connection != null)
+                {
+                    Database.returnConnection( connection );
+                }
             }
 
             // Next obtain locks for individual tables
@@ -1470,11 +1472,6 @@ public final class Database {
             }
 
             scriptBuilder.addLine();
-
-            /*scriptBuilder.execute();
-
-            // Next remove orphaned data per table
-            scriptBuilder = new ScriptBuilder(  );*/
 
             scriptBuilder.addLine("DELETE FROM wres.Source S" );
             scriptBuilder.addLine("WHERE NOT EXISTS (");
@@ -1521,11 +1518,10 @@ public final class Database {
                 scriptBuilder.addLine(");");
             }
 
-            connection.createStatement().executeUpdate( scriptBuilder.toString() );
+            scriptBuilder.execute();
 
             orphanedDataRemoved = true;
 
-            connection.commit();
             LOGGER.info("Incomplete data has been removed from the system.");
         }
         catch ( SQLException databaseError )
@@ -1546,26 +1542,6 @@ public final class Database {
             }
 
             LOGGER.error("Orphaned data could not be removed.", databaseError);
-        }
-        finally
-        {
-            if (connection != null)
-            {
-                try
-                {
-                    connection.setAutoCommit( initialAutoCommit );
-                }
-                catch ( SQLException e )
-                {
-                    LOGGER.error("The autocommit state for the connection used "
-                                 + "to remove orphaned data could not be "
-                                 + "returned to its previous state ({}).",
-                                 initialAutoCommit);
-                }
-
-                // Any left over locks will be returned when the transaction is over
-                Database.returnConnection( connection );
-            }
         }
 
         return orphanedDataRemoved;
