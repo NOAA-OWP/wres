@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -35,6 +36,7 @@ import ohd.hseb.charter.parameters.ChartDrawingParameters;
 import ohd.hseb.hefs.utils.arguments.ArgumentsProcessor;
 import ohd.hseb.hefs.utils.xml.XMLTools;
 import wres.config.generated.OutputTypeSelection;
+import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
@@ -173,17 +175,19 @@ public abstract class ChartEngineFactory
      * @param userSpecifiedOutputType A user specified plot type; null means the user did not provide one.
      * @return The {@link OutputTypeSelection} specifying the output type for the plot.  
      */
-    private static ChartType determineChartType( MetricOutputMapByTimeAndThreshold<?> input,
+    private static ChartType determineChartType(ProjectConfig config,
+                                                MetricOutputMapByTimeAndThreshold<?> input,
                                                 OutputTypeSelection userSpecifiedOutputType )
     {
-        //TODO This is where the configuration may be useful.  For scalar output (DoubleScoreOutput) If the plot type is not provided, 
-        //  then the default depends on the configuration: if issued date pooling windows are used, then POOLING_WINDOW; otherwise LEAD_THRESHOLD.
-        //  This may require another method for scalar output, since it is the only type where the pooling window check must be made... I think.
-        if ( userSpecifiedOutputType == OutputTypeSelection.POOLING_WINDOW )
+        //Pooling window case.
+        if ( Objects.nonNull( config ) && Objects.nonNull( config.getPair() ) && Objects.nonNull( config.getPair().getIssuedDatesPoolingWindow()))
         {
             return ChartType.POOLING_WINDOW;
         }
-        if ( userSpecifiedOutputType == null )
+        
+        //All others.  If user specified nothing, pull from the map.  Otherwise base it on the user
+        //specified type.
+        if ( ( userSpecifiedOutputType == null ) || (userSpecifiedOutputType == OutputTypeSelection.DEFAULT) )
         {
             return metricOutputGroupToDefaultChartTypeMap.get( input.getMetadata()
                                                                     .getMetricID()
@@ -525,7 +529,8 @@ public abstract class ChartEngineFactory
      * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
      */
     public static ConcurrentMap<Object, ChartEngine>
-            buildMultiVectorOutputChartEngine( final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> input,
+            buildMultiVectorOutputChartEngine( final ProjectConfig config, 
+                                               final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> input,
                                                final DataFactory factory,
                                                final OutputTypeSelection userSpecifiedPlotType,
                                                final String userSpecifiedTemplateResourceName,
@@ -535,7 +540,7 @@ public abstract class ChartEngineFactory
         final ConcurrentMap<Object, ChartEngine> results = new ConcurrentSkipListMap<>();
 
         //Determine the output type, converting DEFAULT accordingly, and template name.
-        ChartType usedPlotType = determineChartType( input, userSpecifiedPlotType );
+        ChartType usedPlotType = determineChartType( config, input, userSpecifiedPlotType );
         String templateName = determineTemplate( input.getMetadata().getMetricID(),
                                                  usedPlotType );
         if ( userSpecifiedTemplateResourceName != null )
@@ -657,7 +662,8 @@ public abstract class ChartEngineFactory
      * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
      */
     public static ConcurrentMap<Pair<TimeWindow, Threshold>, ChartEngine>
-            buildBoxPlotChartEngine( final MetricOutputMapByTimeAndThreshold<BoxPlotOutput> input,
+            buildBoxPlotChartEngine( final ProjectConfig config, 
+                                     final MetricOutputMapByTimeAndThreshold<BoxPlotOutput> input,
                                      final String userSpecifiedTemplateResourceName,
                                      final String overrideParametersStr )
                     throws ChartEngineException
@@ -665,7 +671,7 @@ public abstract class ChartEngineFactory
         final ConcurrentMap<Pair<TimeWindow, Threshold>, ChartEngine> results = new ConcurrentSkipListMap<>();
 
         //Determine the output type, converting DEFAULT accordingly, and template name.
-        ChartType usedPlotType = determineChartType( input, null );
+        ChartType usedPlotType = determineChartType( config, input, null );
         String templateName = determineTemplate( input.getMetadata().getMetricID(),
                                                  usedPlotType );
         if ( userSpecifiedTemplateResourceName != null )
@@ -718,7 +724,8 @@ public abstract class ChartEngineFactory
      * @throws ChartEngineException if the ChartEngine fails to construct
      */
     public static ConcurrentMap<MetricConstants, ChartEngine>
-            buildScoreOutputChartEngine( final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> input,
+            buildScoreOutputChartEngine( final ProjectConfig config, 
+                                         final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> input,
                                          final DataFactory factory,
                                          final OutputTypeSelection userSpecifiedPlotType,
                                          final String userSpecifiedTemplateResourceName,
@@ -732,7 +739,8 @@ public abstract class ChartEngineFactory
                        .filterByMetricComponent( input );
         for ( final Map.Entry<MetricConstants, MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>> entry : slicedInput.entrySet() )
         {
-            final ChartEngine engine = buildScoreOutputChartEngine( entry.getValue(),
+            final ChartEngine engine = buildScoreOutputChartEngine( config, 
+                                                                    entry.getValue(),
                                                                     userSpecifiedPlotType,
                                                                     userSpecifiedTemplateResourceName,
                                                                     overrideParametersStr );
@@ -756,14 +764,15 @@ public abstract class ChartEngineFactory
      * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
      */
     private static ChartEngine
-            buildScoreOutputChartEngine( final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> input,
+            buildScoreOutputChartEngine( final ProjectConfig config,
+                                         final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> input,
                                          final OutputTypeSelection userSpecifiedPlotType,
                                          final String userSpecifiedTemplateResourceName,
                                          final String overrideParametersStr )
                     throws ChartEngineException
     {
         //Determine the output type, converting DEFAULT accordingly, and template name.
-        ChartType usedPlotType = determineChartType( input, userSpecifiedPlotType );
+        ChartType usedPlotType = determineChartType( config, input, userSpecifiedPlotType );
         String templateName = determineTemplate( input.getMetadata().getMetricID(),
                                                  usedPlotType );
         if ( userSpecifiedTemplateResourceName != null )
@@ -830,13 +839,14 @@ public abstract class ChartEngineFactory
      * @throws ChartEngineException If the {@link ChartEngine} fails to build for any reason.
      */
     public static ChartEngine
-            buildPairedInstantDurationChartEngine( MetricOutputMapByTimeAndThreshold<PairedOutput<Instant, Duration>> input,
+            buildPairedInstantDurationChartEngine( final ProjectConfig config,
+                                                   MetricOutputMapByTimeAndThreshold<PairedOutput<Instant, Duration>> input,
                                                    final String userSpecifiedTemplateResourceName,
                                                    final String overrideParametersStr )
                     throws ChartEngineException
     {
         //Determine the output type, converting DEFAULT accordingly, and template name.
-        ChartType usedPlotType = determineChartType( input, null );
+        ChartType usedPlotType = determineChartType( config, input, null );
         String templateName = determineTemplate( input.getMetadata().getMetricID(),
                                                  usedPlotType );
         if ( userSpecifiedTemplateResourceName != null )
@@ -881,13 +891,14 @@ public abstract class ChartEngineFactory
      * @throws XYChartDataSourceException A problem was encountered preparing the categorical source.
      */
     public static ChartEngine
-            buildCategoricalDurationScoreChartEngine( MetricOutputMapByTimeAndThreshold<DurationScoreOutput> input,
+            buildCategoricalDurationScoreChartEngine( final ProjectConfig config,
+                                                      MetricOutputMapByTimeAndThreshold<DurationScoreOutput> input,
                                                       final String userSpecifiedTemplateResourceName,
                                                       final String overrideParametersStr )
                     throws ChartEngineException, XYChartDataSourceException
     {
         //Determine the output type, converting DEFAULT accordingly, and template name.
-        ChartType usedPlotType = determineChartType( input, null );
+        ChartType usedPlotType = determineChartType( config, input, null );
         String templateName = determineTemplate( input.getMetadata().getMetricID(),
                                                  usedPlotType );
         if ( userSpecifiedTemplateResourceName != null )
