@@ -45,7 +45,6 @@ import wres.io.concurrency.WRESRunnable;
 import wres.io.config.SystemSettings;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
-import wres.io.reading.TimeSeriesValues;
 import wres.util.FormattedStopwatch;
 import wres.util.NotImplementedException;
 import wres.util.ProgressMonitor;
@@ -183,6 +182,7 @@ public final class Database {
 	{
 	    try
         {
+            // Remove queued indexes for tables that don't exist
             ScriptBuilder script = new ScriptBuilder(  );
             script.addLine("DELETE FROM IndexQueue IQ");
             script.addLine("WHERE NOT EXISTS (");
@@ -402,10 +402,6 @@ public final class Database {
         LOGGER.trace( "Now completing all issued ingest tasks..." );
 
         List<IngestResult> result = new ArrayList<>();
-
-        // This will gather all left over timeseries values that haven't
-        // been sent to the database yet.
-        TimeSeriesValues.complete();
 
 		Future<List<IngestResult>> task;
 
@@ -1346,6 +1342,13 @@ public final class Database {
         {
             connection = getConnection();
 
+            String optionalVacuum = "";
+
+            if (vacuum)
+            {
+                optionalVacuum = "VACUUM ";
+            }
+
             StringBuilder script = new StringBuilder();
 
             script.append("SELECT 'ANALYZE '||n.nspname ||'.'|| c.relname||';' AS alyze").append(NEWLINE);
@@ -1362,18 +1365,14 @@ public final class Database {
 
             while (results.next())
             {
-                if (vacuum)
-                {
-                    script.append("VACUUM ");
-                }
-                script.append(results.getString("alyze")).append(NEWLINE);
+                script.append(optionalVacuum).append(results.getString("alyze")).append(NEWLINE);
             }
 
-            if (vacuum)
-            {
-                script.append("VACUUM ");
-            }
-            script.append("ANALYZE wres.Observation;").append(NEWLINE);
+            script.append(optionalVacuum).append("ANALYZE wres.Observation;").append(NEWLINE);
+            script.append(optionalVacuum).append("ANALYZE wres.TimeSeries;").append(NEWLINE);
+            script.append(optionalVacuum).append("ANALYZE wres.ForecastSource;").append(NEWLINE);
+            script.append(optionalVacuum).append("ANALYZE wres.ProjectSource;").append(NEWLINE);
+            script.append(optionalVacuum).append("ANALYZE wres.Source;").append(NEWLINE);
 
             LOGGER.info("Now refreshing the statistics within the database.");
             Database.execute(script.toString());

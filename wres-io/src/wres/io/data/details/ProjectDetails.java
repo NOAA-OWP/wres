@@ -1680,6 +1680,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         part.addTab(    4    ).addLine("AND PS.member = 'right'");
         part.addTab(    4    ).addLine("AND FS.forecast_id = TS.timeseries_id");
         part.addTab(  2  ).addLine(")");
+        part.addTab(  2  ).addLine("ORDER BY valid_time");
 
 
         part.addLine(") AS TS");
