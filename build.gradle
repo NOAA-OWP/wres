@@ -45,8 +45,8 @@ subprojects
     apply plugin: 'java'
     apply plugin: 'jacoco'
 
-	sourceCompatibility = '1.8'
-	targetCompatibility = '1.8'
+    sourceCompatibility = '1.8'
+    targetCompatibility = '1.8'
 
     // Each module does not need a version update unless code in it has changed.
     def gitCommit = grgit.log(paths: [project.name], maxCommits:1).find()
@@ -91,10 +91,10 @@ subprojects
 
         test
         {
-        	java
-        	{
-        		srcDirs = ['test']
-        	}
+            java
+            {
+                srcDirs = ['test']
+            }
         }
     }
 
@@ -132,8 +132,8 @@ subprojects
 
 project(':utilities')
 {
-	dependencies
-	{
+    dependencies
+    {
         compile project(':wres-datamodel-api')
         compile project(':wres-datamodel')
 
@@ -160,13 +160,13 @@ project(':utilities')
 
         testCompile 'junit:junit:4.12'
         testCompile files('../libs/external/EVS.jar')
-	}
+    }
 }
 
 
 project(':wres-datamodel-api')
 {
-	dependencies
+    dependencies
     {
         compile 'org.apache.commons:commons-lang3:3.6'
         testCompile 'junit:junit:4.12'
@@ -195,7 +195,7 @@ project(':wres-io')
         compile project(':utilities')
         compile project(':wres-datamodel-api')
         compile project(':wres-config')
-	    compile project(':wres-vis')
+        compile project(':wres-vis')
 
         compile 'org.slf4j:slf4j-api:1.7.25'
         compile group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
@@ -225,8 +225,8 @@ project(':wres-io')
         // to use native postgres copy, need this on compile, otherwise runtime
         compile 'org.postgresql:postgresql:42.2.1'
 
-		// connection pooling:
-		compile 'com.mchange:c3p0:0.9.5.2'
+        // connection pooling:
+        compile 'com.mchange:c3p0:0.9.5.2'
 
         //JB @ 02/16/17
         testCompile group: 'com.google.guava', name: 'guava-testlib', version: '21.0'
@@ -250,8 +250,8 @@ project(':wres-metrics')
     dependencies
     {
         compile project(':wres-datamodel-api')
-	compile project(':wres-config')
-	compile group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
+        compile project(':wres-config')
+        compile group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
         compile 'org.slf4j:slf4j-api:1.7.25'
 
         testCompile project (':wres-datamodel')
