@@ -12,16 +12,16 @@ import wres.config.generated.DestinationType;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.MatrixOutput;
-import wres.datamodel.outputs.MetricOutput;
+import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.PairedOutput;
 import wres.datamodel.outputs.ScoreOutput;
 
 /**
- * Manages netcdf outputs for a project. Consumes MetricOutputs.
+ * Manages netcdf outputs for a project. Consumes a metric output map.
  */
 
-public class NetcdfOutputWriter implements Consumer<MetricOutput<?>>
+public class NetcdfOutputWriter implements Consumer<MetricOutputMapByTimeAndThreshold<?>>
 {
     private final ProjectConfig projectConfig;
     private final List<NetcdfFile> files;
@@ -34,7 +34,7 @@ public class NetcdfOutputWriter implements Consumer<MetricOutput<?>>
     }
 
     @Override
-    public void accept( MetricOutput<?> metricOutput )
+    public void accept( MetricOutputMapByTimeAndThreshold<?> metricOutput )
     {
         if ( metricOutput instanceof BoxPlotOutput )
         {
