@@ -69,6 +69,7 @@ import wres.io.utilities.NoDataException;
 import wres.io.writing.ChartWriter;
 import wres.io.writing.ChartWriter.ChartWritingException;
 import wres.io.writing.CommaSeparatedWriter;
+import wres.io.writing.NetcdfOutputWriter;
 import wres.util.ProgressMonitor;
 import wres.vis.ChartEngineFactory;
 
@@ -116,6 +117,9 @@ public class ProcessorHelper
     {
 
         final ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
+
+        // Make netcdf output if needed
+        NetcdfOutputWriter outputWriter = new NetcdfOutputWriter( projectConfig );
 
         ProgressMonitor.setShowStepDescription( true );
         ProgressMonitor.resetMonitor();
@@ -170,7 +174,8 @@ public class ProcessorHelper
                                     projectDetails,
                                     pairExecutor,
                                     thresholdExecutor,
-                                    metricExecutor );
+                                    metricExecutor,
+                                    outputWriter );
 
             if ( result.hadData() )
             {
@@ -271,7 +276,8 @@ public class ProcessorHelper
                                                    final ProjectDetails projectDetails,
                                                    final ExecutorService pairExecutor,
                                                    final ExecutorService thresholdExecutor,
-                                                   final ExecutorService metricExecutor )
+                                                   final ExecutorService metricExecutor,
+                                                   final NetcdfOutputWriter netcdfOutputWriter )
     {
 
         final ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
