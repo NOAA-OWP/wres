@@ -36,11 +36,11 @@
     </pair>
 
     <metrics>
-        <probabilityThresholds>
+        <thresholds>
             <applyTo>left</applyTo>
             <commaSeparatedValues>0.1,0.25,0.5,0.75,0.9,0.95</commaSeparatedValues>
             <operator>greater than or equal to</operator>
-        </probabilityThresholds>
+        </thresholds>
         <metric><name>mean error</name></metric>
         <metric><name>sample size</name></metric>
     </metrics>

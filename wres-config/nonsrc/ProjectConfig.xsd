@@ -148,6 +148,14 @@
         </xs:restriction>
     </xs:simpleType>
 
+    <!-- An enum to specify if a threshold is a probability or real value. -->
+    <xs:simpleType name="probabilityOrValue">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="probability" />
+            <xs:enumeration value="value" />
+        </xs:restriction>
+    </xs:simpleType>
+
     <!-- Thresholds need to specify an operator suitable for thresholding -->
     <xs:simpleType name="thresholdOperator">
         <xs:restriction base="xs:string">
@@ -159,37 +167,38 @@
         </xs:restriction>
     </xs:simpleType>
 
-    <!-- Thresholds need to specify probabilities and an operator. -->
-    <xs:complexType name="probabilityThreshold">
+    <!-- Container for thresholds. -->
+    <xs:complexType name="thresholds">
 
         <!-- for class naming using xjc -->
         <xs:annotation>
             <xs:appinfo>
-                <jaxb:class name="ProbabilityThresholdConfig" />
+                <jaxb:class name="ThresholdsConfig" />
             </xs:appinfo>
         </xs:annotation>
 
+        <!-- A threshold contains a type, applyTo and operator and EITHER an external source OR an internal commaSeparatedValues. -->
         <xs:sequence>
-            <xs:element name="applyTo" type="leftOrRightOrBaseline" default="left" />
-            <xs:element name="commaSeparatedValues" type="xs:string" default="0.05,0.1,0.25,0.50,0.75,0.90,0.95" />
-            <xs:element name="operator" type="thresholdOperator" default="less than" />
-        </xs:sequence>
-    </xs:complexType>
-
-    <!-- Value thresholds need to specify values and an operator. -->
-    <xs:complexType name="valueThreshold">
-
-        <!-- for class naming using xjc -->
-        <xs:annotation>
-            <xs:appinfo>
-                <jaxb:class name="ValueThresholdConfig" />
-            </xs:appinfo>
-        </xs:annotation>
-
-        <xs:sequence>
-            <xs:element name="applyTo" type="leftOrRightOrBaseline" default="left" />
-            <xs:element name="commaSeparatedValues" type="xs:string" />
-            <xs:element name="operator" type="thresholdOperator" default="less than" />
+	    <xs:element name="type" type="probabilityOrValue" default="probability" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="applyTo" type="leftOrRightOrBaseline" default="left" minOccurs="0" maxOccurs="1"/>
+            <!-- Choice of using an internal source or an external source -->
+            <xs:choice minOccurs = "0" maxOccurs = "1">
+                <!-- Internal source -->
+                <xs:element name="commaSeparatedValues" type="xs:string" default="0.05,0.1,0.25,0.50,0.75,0.90,0.95"/>
+                <!-- External source -->
+                <xs:element name="source">
+                    <xs:complexType>
+                        <xs:simpleContent>
+                            <xs:extension base="xs:anyURI">
+                                <xs:attribute name="format" type="format" />
+                                <xs:attribute name="unit" type="xs:string" default="" />
+                                <xs:attribute name="missingValue" type="xs:string" default="-999.0" />
+                            </xs:extension>
+                        </xs:simpleContent>
+                    </xs:complexType>
+                </xs:element>
+            </xs:choice>
+            <xs:element name="operator" type="thresholdOperator" default="less than" minOccurs="0" maxOccurs="1" />
         </xs:sequence>
     </xs:complexType>
 
@@ -296,8 +305,7 @@
         <xs:complexContent>
             <xs:extension base="abstractMetric">
                 <xs:sequence>
-                    <xs:element name="valueThresholds" type="valueThreshold" minOccurs="0" maxOccurs="1" />
-                    <xs:element name="probabilityThresholds" type="probabilityThreshold" minOccurs="0" maxOccurs="1"/>
+                    <xs:element name="thresholds" type="thresholds" minOccurs="0" maxOccurs="unbounded" />
                  </xs:sequence>
             </xs:extension>
         </xs:complexContent>
@@ -556,8 +564,7 @@
         </xs:annotation>
 
         <xs:sequence>
-            <xs:element name="valueThresholds" type="valueThreshold" minOccurs="0" maxOccurs="1"/>
-            <xs:element name="probabilityThresholds" type="probabilityThreshold" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="thresholds" type="thresholds" minOccurs="0" maxOccurs="unbounded"/>
             <xs:element name="metric" type="metric" minOccurs="0" maxOccurs="unbounded"/>
             <xs:element name="timeSeriesMetric" type="timeSeriesMetric" minOccurs="0" maxOccurs="unbounded"/>
         </xs:sequence>

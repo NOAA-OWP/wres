@@ -28,11 +28,11 @@
     </pair>
 
     <metrics>
-        <valueThresholds> 
-            <applyTo>left</applyTo> 
+        <thresholds> 
+            <type>value</type> 
             <commaSeparatedValues>0.5,1,2,5,10,15,20,25</commaSeparatedValues> 
             <operator>greater than or equal to</operator> 
-        </valueThresholds>
+        </thresholds>
         <metric><name>all valid</name></metric>
     </metrics>
     <outputs>

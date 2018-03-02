@@ -37,11 +37,10 @@
       </timeAggregation>
   </pair>
   <metrics>
-    <probabilityThresholds>
-      <applyTo>left</applyTo>
+    <thresholds>
       <commaSeparatedValues>0.0,0.3919,0.4415,0.5042,0.5525</commaSeparatedValues>
       <operator>greater than or equal to</operator>
-    </probabilityThresholds>
+    </thresholds>
     <metric label="ME"><name>mean error</name></metric>
     <metric><name>pearson correlation coefficient</name></metric>
     <metric><name>mean absolute error</name></metric>

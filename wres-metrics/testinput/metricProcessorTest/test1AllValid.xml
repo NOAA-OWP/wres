@@ -34,11 +34,10 @@
       </timeAggregation>
   </pair>
   <metrics>
-    <valueThresholds>
-      <applyTo>left</applyTo>
+    <thresholds>
+      <type>value</type>
       <commaSeparatedValues>0.5</commaSeparatedValues>
-      <operator>greater than</operator>
-    </valueThresholds>	
+    </thresholds>
     <!-- destinations has one default: text, ., xml; even when nothing is here. Program chooses filenames for now -->
     <metric><name>all valid</name></metric>
   </metrics>
