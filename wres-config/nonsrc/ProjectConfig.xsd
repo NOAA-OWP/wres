@@ -332,7 +332,9 @@
 
     <xs:simpleType name="destinationType">
         <xs:restriction base="xs:string">
-            <xs:enumeration value="netCDF" />
+	    <xs:enumeration value="csv" />
+            <xs:enumeration value="png" />
+            <xs:enumeration value="netcdf" />
             <xs:enumeration value="numeric" />
             <xs:enumeration value="graphic" />
             <xs:enumeration value="pairs" />

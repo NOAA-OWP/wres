@@ -179,8 +179,9 @@ class SafeTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
         public SafeTimeSeriesOfSingleValuedPairsBuilder
                 addTimeSeriesData( List<Event<List<Event<PairOfDoubles>>>> values )
         {
-            data.addAll( values );
-            addData( TimeSeriesHelper.unwrap( values ) );
+            List<Event<List<Event<PairOfDoubles>>>> sorted = TimeSeriesHelper.sort( values );
+            data.addAll( sorted );
+            addData( TimeSeriesHelper.unwrap( sorted ) );
             return this;
         }
 
@@ -188,8 +189,9 @@ class SafeTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
         public SafeTimeSeriesOfSingleValuedPairsBuilder
                 addTimeSeriesDataForBaseline( List<Event<List<Event<PairOfDoubles>>>> values )
         {
-            baselineData.addAll( values );
-            addDataForBaseline( TimeSeriesHelper.unwrap( values ) );
+            List<Event<List<Event<PairOfDoubles>>>> sorted = TimeSeriesHelper.sort( values );
+            baselineData.addAll( sorted );
+            addDataForBaseline( TimeSeriesHelper.unwrap( sorted ) );
             return this;
         }
 

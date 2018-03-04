@@ -223,8 +223,9 @@ class SafeTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
         public SafeTimeSeriesOfEnsemblePairsBuilder
                 addTimeSeriesData( List<Event<List<Event<PairOfDoubleAndVectorOfDoubles>>>> values )
         {
-            data.addAll( values );
-            addData( TimeSeriesHelper.unwrap( values ) );
+            List<Event<List<Event<PairOfDoubleAndVectorOfDoubles>>>> sorted = TimeSeriesHelper.sort( values );
+            data.addAll( sorted );
+            addData( TimeSeriesHelper.unwrap( sorted ) );
             return this;
         }
 
@@ -232,8 +233,9 @@ class SafeTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
         public SafeTimeSeriesOfEnsemblePairsBuilder
                 addTimeSeriesDataForBaseline( List<Event<List<Event<PairOfDoubleAndVectorOfDoubles>>>> values )
         {
-            baselineData.addAll( values );
-            addDataForBaseline( TimeSeriesHelper.unwrap( values ) );
+            List<Event<List<Event<PairOfDoubleAndVectorOfDoubles>>>> sorted = TimeSeriesHelper.sort( values );
+            baselineData.addAll( sorted );
+            addDataForBaseline( TimeSeriesHelper.unwrap( sorted ) );
             return this;
         }
 
