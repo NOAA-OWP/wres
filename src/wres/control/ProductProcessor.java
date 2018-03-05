@@ -179,7 +179,7 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
         }
         catch ( ProjectConfigException e )
         {
-            throw new WresProcessingException( "While processing the project configurating to write output:", e );
+            throw new WresProcessingException( "While processing the project configuration to write output:", e );
         }
     }
 
@@ -187,6 +187,7 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
      * Produces graphical and numerical output for each type available in the input.
      * 
      * @param input the input containing results for one project
+     * @throws WresProcessingException if the outputs could not be written
      */
 
     @Override
@@ -383,6 +384,7 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
      * 
      * @param outputs the outputs to consume
      * @throws IOException if the output could not be consumed
+     * @throws NullPointerException if the input is null
      */
 
     private void processDiagramOutputs( MetricOutputMultiMapByTimeAndThreshold<MultiVectorOutput> outputs )
@@ -397,7 +399,7 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
         // Iterate through the consumers
         for ( Entry<DestinationType, Consumer<MetricOutputMultiMapByTimeAndThreshold<MultiVectorOutput>>> next : diagramConsumers.entrySet() )
         {
-            // Consume unconditional formats and types that are not ignored
+            // Consume conditionally
             if ( writeWhenTrue.test( MetricOutputGroup.MULTIVECTOR, next.getKey() ) )
             {
                 log( meta, next.getKey(), true );
@@ -415,6 +417,7 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
      * 
      * @param outputs the output to consume
      * @throws IOException if the output could not be consumed
+     * @throws NullPointerException if the input is null
      */
 
     private void processBoxPlotOutputs( MetricOutputMultiMapByTimeAndThreshold<BoxPlotOutput> outputs )
@@ -429,7 +432,7 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
         // Iterate through the consumers
         for ( Entry<DestinationType, Consumer<MetricOutputMultiMapByTimeAndThreshold<BoxPlotOutput>>> next : boxPlotConsumers.entrySet() )
         {
-            // Consume unconditional formats and types that are not ignored
+            // Consume conditionally
             if ( writeWhenTrue.test( MetricOutputGroup.BOXPLOT, next.getKey() ) )
             {
                 log( meta, next.getKey(), true );
@@ -447,6 +450,7 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
      * 
      * @param outputs the output to consume
      * @throws IOException if the output could not be consumed
+     * @throws NullPointerException if the input is null
      */
 
     private void processMatrixOutputs( MetricOutputMultiMapByTimeAndThreshold<MatrixOutput> outputs )
@@ -461,7 +465,7 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
         // Iterate through the consumers
         for ( Entry<DestinationType, Consumer<MetricOutputMultiMapByTimeAndThreshold<MatrixOutput>>> next : matrixConsumers.entrySet() )
         {
-            // Consume unconditional formats and types that are not ignored
+            // Consume conditionally
             if ( writeWhenTrue.test( MetricOutputGroup.MATRIX, next.getKey() ) )
             {
                 log( meta, next.getKey(), true );
@@ -480,6 +484,7 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
      * 
      * @param outputs the output to consume
      * @throws IOException if the output could not be consumed
+     * @throws NullPointerException if the input is null
      */
 
     private void processDoubleScoreOutputs( MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> outputs )
@@ -494,7 +499,7 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
         // Iterate through the consumers
         for ( Entry<DestinationType, Consumer<MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput>>> next : doubleScoreConsumers.entrySet() )
         {
-            // Consume unconditional formats and types that are not ignored
+            // Consume conditionally
             if ( writeWhenTrue.test( MetricOutputGroup.DOUBLE_SCORE, next.getKey() ) )
             {
                 log( meta, next.getKey(), true );
@@ -513,6 +518,7 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
      * 
      * @param outputs the output to consume
      * @throws IOException if the output could not be consumed
+     * @throws NullPointerException if the input is null
      */
 
     private void processDurationScoreOutputs( MetricOutputMultiMapByTimeAndThreshold<DurationScoreOutput> outputs )
@@ -527,7 +533,7 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
         // Iterate through the consumers
         for ( Entry<DestinationType, Consumer<MetricOutputMultiMapByTimeAndThreshold<DurationScoreOutput>>> next : durationScoreConsumers.entrySet() )
         {
-            // Consume unconditional formats and types that are not ignored
+            // Consume conditionally
             if ( writeWhenTrue.test( MetricOutputGroup.DURATION_SCORE, next.getKey() ) )
             {
                 log( meta, next.getKey(), true );
@@ -545,6 +551,7 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
      * 
      * @param outputs the output to consume
      * @throws IOException if the output could not be consumed
+     * @throws NullPointerException if the input is null
      */
 
     private void
@@ -560,7 +567,7 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
         // Iterate through the consumers
         for ( Entry<DestinationType, Consumer<MetricOutputMultiMapByTimeAndThreshold<PairedOutput<Instant, Duration>>>> next : pairedConsumers.entrySet() )
         {
-            // Consume each output unless the format is not required
+            // Consume conditionally
             if ( writeWhenTrue.test( MetricOutputGroup.PAIRED, next.getKey() ) )
             {
                 log( meta, next.getKey(), true );

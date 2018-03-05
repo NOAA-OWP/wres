@@ -128,8 +128,14 @@ public class FeaturePlus implements Comparable<FeaturePlus>
         {
             return 1;
         }
+        
+        // Null-friendly comparator for strings
+        Comparator<String> nullFriendly = Comparator.nullsFirst( Comparator.naturalOrder() );
+        
         // Compare the comid
-        int returnMe = Objects.compare( input.getComid(), feature.getComid(), Comparator.naturalOrder() );
+        int returnMe = Objects.compare( input.getComid(),
+                                        feature.getComid(),
+                                        Comparator.nullsFirst( Comparator.naturalOrder() ) );
         if ( returnMe != 0 )
         {
             return returnMe;
@@ -141,43 +147,43 @@ public class FeaturePlus implements Comparable<FeaturePlus>
             return returnMe;
         }
         // Compare gageId
-        returnMe = Objects.compare( input.getGageId(), feature.getGageId(), Comparator.naturalOrder() );
+        returnMe = Objects.compare( input.getGageId(), feature.getGageId(), nullFriendly );
         if ( returnMe != 0 )
         {
             return returnMe;
         }
         // Compare HUC
-        returnMe = Objects.compare( input.getHuc(), feature.getHuc(), Comparator.naturalOrder() );
+        returnMe = Objects.compare( input.getHuc(), feature.getHuc(), nullFriendly );
         if ( returnMe != 0 )
         {
             return returnMe;
         }
         // Compare label
-        returnMe = Objects.compare( input.getLabel(), feature.getLabel(), Comparator.naturalOrder() );
+        returnMe = Objects.compare( input.getLabel(), feature.getLabel(), nullFriendly );
         if ( returnMe != 0 )
         {
             return returnMe;
         }
         // Compare locationId
-        returnMe = Objects.compare( input.getLocationId(), feature.getLocationId(), Comparator.naturalOrder() );
+        returnMe = Objects.compare( input.getLocationId(), feature.getLocationId(), nullFriendly );
         if ( returnMe != 0 )
         {
             return returnMe;
         }
         // Compare name
-        returnMe = Objects.compare( input.getName(), feature.getName(), Comparator.naturalOrder() );
+        returnMe = Objects.compare( input.getName(), feature.getName(), nullFriendly );
         if ( returnMe != 0 )
         {
             return returnMe;
         }
         // Compare RFC
-        returnMe = Objects.compare( input.getRfc(), feature.getRfc(), Comparator.naturalOrder() );
+        returnMe = Objects.compare( input.getRfc(), feature.getRfc(), nullFriendly );
         if ( returnMe != 0 )
         {
             return returnMe;
         }
         // Compare Wkt
-        returnMe = Objects.compare( input.getWkt(), feature.getWkt(), Comparator.naturalOrder() );
+        returnMe = Objects.compare( input.getWkt(), feature.getWkt(), nullFriendly );
         if ( returnMe != 0 )
         {
             return returnMe;
@@ -220,7 +226,6 @@ public class FeaturePlus implements Comparable<FeaturePlus>
         Objects.requireNonNull( feature, "Specify a non-null feature to wrap." );
         this.feature = feature;
     }
-
 
     /**
      * Compares two {@link CoordinateSelection}. Returns a negative number, zero, or a positive integer if the left
