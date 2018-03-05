@@ -425,10 +425,16 @@ class ProcessorHelper
     /**
      * Look at a chain of exceptions, returns true if ANY is a NoDataException
      * or if ANY is an InsufficientDataException
+     *
+     * Intended as a stop-gap measure until we figure out how to avoid creating
+     * NoDataExceptions at lower levels of the software. Once that is resolved,
+     * this method can be removed.
+     *
      * @param e the exception (and its chained causes) to look at
      * @return true when either NoDataException or InsufficientDataException is
      * found, false otherwise
      */
+
     private static boolean wasInsufficientDataOrNoDataInThisStack( Exception e )
     {
         Throwable cause = e;
@@ -483,10 +489,12 @@ class ProcessorHelper
         }
     }
 
+
     /**
-     * A collection of executor services.
-     * 
-     * @author jesse.bickel@***REMOVED***
+     * A value object that a) reduces count of args for some methods and
+     * b) provides names for those objects. Can be removed if we can reduce the
+     * count of dependencies in some of our methods, or if we prefer to see all
+     * dependencies clearly laid out in the method signature.
      */
 
     private static class ExecutorServices

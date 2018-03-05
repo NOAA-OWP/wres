@@ -3,8 +3,11 @@ package wres.control;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -56,8 +59,6 @@ import wres.io.writing.png.PNGPairedWriter;
  * 
  * @author james.brown@hydrosolved.com
  * @author jesse.bickel@***REMOVED***
- * @since 0.1
- * @version 0.3
  */
 
 class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThreshold>
@@ -177,7 +178,7 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
         {
             buildConsumers();
         }
-        catch ( ProjectConfigException e )
+        catch ( ProjectConfigException | IOException e )
         {
             throw new WresProcessingException( "While processing the project configuration to write output:", e );
         }
@@ -250,7 +251,7 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
      * @throws ProjectConfigException if the project configuration is invalid for writing
      */
 
-    private void buildConsumers() throws ProjectConfigException
+    private void buildConsumers() throws ProjectConfigException, IOException
     {
         // There is one consumer per project for each type, because consumers are built
         // with projects, not destinations. The consumers must iterate destinations.
@@ -361,23 +362,37 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
         }
     }
 
+
     /**
      * Builds a set of consumers for writing NetCDF output.
      * 
      * @throws ProjectConfigException if the project configuration is invalid for writing
+     * @throws IOException when creation or mutation of netcdf files fails
      */
 
-    private void buildNetCDFConsumers() throws ProjectConfigException
+    private void buildNetCDFConsumers()
+            throws ProjectConfigException, IOException
     {
         // Build the consumers conditionally
 
         // Register consumers for the NetCDF output type
         if ( writeWhenTrue.test( MetricOutputGroup.DOUBLE_SCORE, DestinationType.NETCDF ) )
         {
+            List<String> metricNames = new ArrayList<>( 2 );
+            metricNames.add( "MEAN_ERROR" );
+            metricNames.add( "SAMPLE_SIZE" );
+            List<String> shareableMetricNames =
+                    Collections.unmodifiableList( metricNames );
             doubleScoreConsumers.put( DestinationType.NETCDF,
-                                      NetcdfDoubleScoreWriter.of( projectConfig ) );
+                                      NetcdfDoubleScoreWriter.of( this.getProjectConfig(),
+                                                                  1,
+                                                                  2,
+                                                                  1,
+                                                                  1,
+                                                                  metricNames ) );
         }
     }
+
 
     /**
      * Processes {@link MultiVectorOutput}.
@@ -646,4 +661,13 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
         }
     }
 
+
+    /**
+     * @return the project config
+     */
+
+    private ProjectConfig getProjectConfig()
+    {
+        return this.projectConfig;
+    }
 }
