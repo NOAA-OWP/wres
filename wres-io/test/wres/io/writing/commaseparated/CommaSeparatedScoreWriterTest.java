@@ -133,7 +133,8 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTest
         ProjectConfig projectConfig = getMockedProjectConfig( feature );
 
         // Begin the actual test now that we have constructed dependencies.
-        output.getDoubleScoreOutput().values().forEach( CommaSeparatedScoreWriter.of( projectConfig ) );
+        CommaSeparatedScoreWriter<DoubleScoreOutput> writer = CommaSeparatedScoreWriter.of( projectConfig ); 
+        writer.accept( output.getDoubleScoreOutput() ); 
 
         // read the file, verify it has what we wanted:
         Path pathToFirstFile = Paths.get( System.getProperty( "java.io.tmpdir" ),
@@ -251,7 +252,8 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTest
         ProjectConfig projectConfig = getMockedProjectConfig( feature );
 
         // Begin the actual test now that we have constructed dependencies.
-        output.getDurationScoreOutput().values().forEach( CommaSeparatedScoreWriter.of( projectConfig ) );
+        CommaSeparatedScoreWriter<DurationScoreOutput> writer = CommaSeparatedScoreWriter.of( projectConfig ); 
+        writer.accept( output.getDurationScoreOutput() ); 
 
         // read the file, verify it has what we wanted:
         Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ),

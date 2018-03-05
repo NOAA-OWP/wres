@@ -5,6 +5,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.function.Consumer;
 
@@ -12,8 +13,11 @@ import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
 import wres.config.ProjectConfigException;
 import wres.config.generated.DestinationConfig;
+import wres.datamodel.MetricConstants;
 import wres.datamodel.metadata.MetricOutputMetadata;
+import wres.datamodel.outputs.MapKey;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
+import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
 import wres.datamodel.outputs.PairedOutput;
 import wres.io.config.ConfigHelper;
 import wres.io.config.ProjectConfigPlus;
@@ -28,7 +32,7 @@ import wres.vis.ChartEngineFactory;
  */
 
 public class PNGPairedWriter extends PNGWriter
-        implements Consumer<MetricOutputMapByTimeAndThreshold<PairedOutput<Instant,Duration>>>
+        implements Consumer<MetricOutputMultiMapByTimeAndThreshold<PairedOutput<Instant, Duration>>>
 {
 
     /**
@@ -54,39 +58,65 @@ public class PNGPairedWriter extends PNGWriter
      */
 
     @Override
-    public void accept( final MetricOutputMapByTimeAndThreshold<PairedOutput<Instant,Duration>> output )
+    public void accept( final MetricOutputMultiMapByTimeAndThreshold<PairedOutput<Instant, Duration>> output )
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing diagram outputs." );
 
         // Write output
         List<DestinationConfig> destinations =
                 ConfigHelper.getGraphicalDestinations( projectConfigPlus.getProjectConfig() );
+
+        // Iterate through destinations
         for ( DestinationConfig destinationConfig : destinations )
         {
-            // Build charts
-            try
+
+            // Iterate through each metric 
+            for ( final Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<PairedOutput<Instant, Duration>>> e : output.entrySet() )
             {
-                MetricOutputMetadata meta = output.getMetadata();
-
-                GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destinationConfig, meta.getMetricID() );
-
-                final ChartEngine engine =
-                        ChartEngineFactory.buildPairedInstantDurationChartEngine( projectConfigPlus.getProjectConfig(),
-                                                                                  output,
-                                                                                  helper.getTemplateResourceName(),
-                                                                                  helper.getGraphicsString() );
-
-                // Build the output file name
-                Path outputImage = ConfigHelper.getOutputPathToWrite( destinationConfig, meta );
-
-                PNGWriter.writeChart( outputImage, engine, destinationConfig ); 
+                PNGPairedWriter.writePairedOutputByInstantDurationCharts( projectConfigPlus,
+                                                                          destinationConfig,
+                                                                          e.getValue() );
             }
-            catch ( ChartEngineException | IOException e )
-            {
-                throw new PNGWriteException( "Error while generating multi-vector charts: ", e );
-            }
+
         }
+    }
 
+    /**
+     * Writes a set of charts associated with {@link PairedOutput} for a single metric and time window,
+     * stored in a {@link MetricOutputMapByTimeAndThreshold}.
+     *
+     * @param projectConfigPlus the project configuration
+     * @param destinationConfig the destination configuration for the written output
+     * @param output the metric results
+     * @throws PNGWriteException when an error occurs during writing
+     */
+
+    private static void writePairedOutputByInstantDurationCharts( ProjectConfigPlus projectConfigPlus,
+                                                                  DestinationConfig destinationConfig,
+                                                                  MetricOutputMapByTimeAndThreshold<PairedOutput<Instant, Duration>> output )
+    {
+        // Build charts
+        try
+        {
+            MetricOutputMetadata meta = output.getMetadata();
+
+            GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destinationConfig, meta.getMetricID() );
+
+            final ChartEngine engine =
+                    ChartEngineFactory.buildPairedInstantDurationChartEngine( projectConfigPlus.getProjectConfig(),
+                                                                              output,
+                                                                              helper.getTemplateResourceName(),
+                                                                              helper.getGraphicsString() );
+
+            // Build the output file name
+            Path outputImage = ConfigHelper.getOutputPathToWrite( destinationConfig, meta );
+
+            PNGWriter.writeChart( outputImage, engine, destinationConfig );
+        }
+        catch ( ChartEngineException | IOException e )
+        {
+            throw new PNGWriteException( "Error while generating multi-vector charts: ", e );
+        }
     }
 
     /**

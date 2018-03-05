@@ -17,8 +17,11 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -49,6 +52,7 @@ import wres.config.generated.MetricConfigName;
 import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.PoolingWindowConfig;
 import wres.config.generated.ProjectConfig;
+import wres.config.generated.ProjectConfig.Outputs;
 import wres.config.generated.TimeScaleConfig;
 import wres.config.generated.TimeWindowMode;
 import wres.datamodel.MetricConstants;
@@ -1518,5 +1522,30 @@ public class ConfigHelper
 
         return returnMe;
     }
+    
+    /**
+     * Returns a list of output formats in the input configuration that can be mutated incrementally.
+     * 
+     * @param projectConfig the project configuration
+     * @return the output formats in the configuration that can be mutated incrementally or the empty set
+     */
+
+    public static Set<DestinationType> getIncrementalFormats( ProjectConfig projectConfig )
+    {
+        Outputs output = projectConfig.getOutputs();
+        if ( Objects.isNull( output ) || output.getDestination().isEmpty() )
+        {
+            return Collections.emptySet();
+        }
+
+        // The only incremental type currently supported is DestinationType.NETCDF
+        if ( output.getDestination().stream().anyMatch( type -> type.getType() == DestinationType.NETCDF ) )
+        {
+            return Collections.unmodifiableSet( new HashSet<>( Arrays.asList( DestinationType.NETCDF ) ) );
+        }
+
+        // Return true if any destination types appear in allTypes, otherwise false
+        return Collections.emptySet();
+    }    
 
 }

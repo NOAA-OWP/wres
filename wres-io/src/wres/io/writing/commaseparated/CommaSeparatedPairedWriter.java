@@ -6,6 +6,7 @@ import java.text.Format;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.function.Consumer;
@@ -19,7 +20,9 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.Threshold;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
+import wres.datamodel.outputs.MapKey;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
+import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
 import wres.datamodel.outputs.PairedOutput;
 import wres.io.config.ConfigHelper;
 
@@ -34,7 +37,7 @@ import wres.io.config.ConfigHelper;
  */
 
 public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
-        implements Consumer<MetricOutputMapByTimeAndThreshold<PairedOutput<S, T>>>
+        implements Consumer<MetricOutputMultiMapByTimeAndThreshold<PairedOutput<S, T>>>
 {
 
     /**
@@ -63,7 +66,7 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
      */
 
     @Override
-    public void accept( final MetricOutputMapByTimeAndThreshold<PairedOutput<S, T>> output )
+    public void accept( final MetricOutputMultiMapByTimeAndThreshold<PairedOutput<S, T>> output )
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing box plot outputs." );
 
@@ -77,33 +80,58 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
             // Formatter
             Format formatter = ConfigHelper.getDecimalFormatter( destinationConfig );
 
-            // Write the output
-            MetricOutputMetadata meta = output.getMetadata();
-
-            StringJoiner headerRow = new StringJoiner( "," );
-            headerRow.merge( HEADER_DEFAULT );
-            List<RowCompareByLeft> rows =
-                    getRowsForOnePairedOutput( meta.getMetricID(),
-                                               output,
-                                               headerRow,
-                                               formatter );
-            // Add the header row
-            rows.add( RowCompareByLeft.of( HEADER_INDEX, headerRow ) );
-
             // Write per time-window
             try
             {
-                Path outputPath = ConfigHelper.getOutputPathToWrite( destinationConfig, meta );
-
-                CommaSeparatedWriter.writeTabularOutputToFile( rows, outputPath );
+                CommaSeparatedPairedWriter.writeOnePairedOutputType( destinationConfig, output, formatter );
             }
             catch ( IOException e )
             {
                 throw new CommaSeparatedWriteException( "While writing comma separated output: ", e );
             }
+
         }
 
     }
+
+    /**
+     * Writes all output for one paired type.
+     *
+     * @param <S> the left side of the paired output type
+     * @param <T> the right side if the paired output type
+     * @param destinationConfig the destination configuration    
+     * @param output the paired output to iterate through
+     * @param formatter optional formatter, can be null
+     * @throws IOException if the output cannot be written
+     */
+
+    private static <S, T> void writeOnePairedOutputType( DestinationConfig destinationConfig,
+                                                         MetricOutputMultiMapByTimeAndThreshold<PairedOutput<S, T>> output,
+                                                         Format formatter )
+            throws IOException
+    {
+        // Loop across paired output
+        for ( Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<PairedOutput<S, T>>> m : output.entrySet() )
+        {
+            StringJoiner headerRow = new StringJoiner( "," );
+            headerRow.merge( HEADER_DEFAULT );
+            List<RowCompareByLeft> rows =
+                    CommaSeparatedPairedWriter.getRowsForOnePairedOutput( m.getKey().getKey(),
+                                                                          m.getValue(),
+                                                                          headerRow,
+                                                                          formatter );
+
+            // Add the header row
+            rows.add( RowCompareByLeft.of( HEADER_INDEX, headerRow ) );
+
+            // Write the output
+            MetricOutputMetadata meta = m.getValue().getMetadata();
+            Path outputPath = ConfigHelper.getOutputPathToWrite( destinationConfig, meta );
+
+            CommaSeparatedWriter.writeTabularOutputToFile( rows, outputPath );
+        }
+    }
+
 
     /**
      * Returns the results for one paired output.

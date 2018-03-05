@@ -14,11 +14,14 @@ import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
 import wres.config.ProjectConfigException;
 import wres.config.generated.DestinationConfig;
+import wres.datamodel.MetricConstants;
 import wres.datamodel.Threshold;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
+import wres.datamodel.outputs.MapKey;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
+import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
 import wres.io.config.ConfigHelper;
 import wres.io.config.ProjectConfigPlus;
 import wres.vis.ChartEngineFactory;
@@ -32,7 +35,7 @@ import wres.vis.ChartEngineFactory;
  */
 
 public class PNGBoxPlotWriter extends PNGWriter
-        implements Consumer<MetricOutputMapByTimeAndThreshold<BoxPlotOutput>>
+        implements Consumer<MetricOutputMultiMapByTimeAndThreshold<BoxPlotOutput>>
 {
 
     /**
@@ -58,46 +61,70 @@ public class PNGBoxPlotWriter extends PNGWriter
      */
 
     @Override
-    public void accept( final MetricOutputMapByTimeAndThreshold<BoxPlotOutput> output )
+    public void accept( final MetricOutputMultiMapByTimeAndThreshold<BoxPlotOutput> output )
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing diagram outputs." );
 
         // Write output
         List<DestinationConfig> destinations =
                 ConfigHelper.getGraphicalDestinations( projectConfigPlus.getProjectConfig() );
+
+        // Iterate through destinations
         for ( DestinationConfig destinationConfig : destinations )
         {
-            // Build charts
-            try
+
+            // Iterate through types
+            for ( final Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<BoxPlotOutput>> e : output.entrySet() )
             {
-                MetricOutputMetadata meta = output.getMetadata();
-
-                GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destinationConfig, meta.getMetricID() );
-
-                final Map<Pair<TimeWindow, Threshold>, ChartEngine> engines =
-                        ChartEngineFactory.buildBoxPlotChartEngine( projectConfigPlus.getProjectConfig(),
-                                                                    output,
-                                                                    helper.getTemplateResourceName(),
-                                                                    helper.getGraphicsString() );
-
-                // Build the outputs
-                for ( final Entry<Pair<TimeWindow, Threshold>, ChartEngine> nextEntry : engines.entrySet() )
-                {
-
-                    Path outputImage = ConfigHelper.getOutputPathToWrite( destinationConfig,
-                                                                          meta,
-                                                                          nextEntry.getKey().getLeft() );
-
-                    PNGWriter.writeChart( outputImage, nextEntry.getValue(), destinationConfig );
-                }
-
+                PNGBoxPlotWriter.writeBoxPlotCharts( projectConfigPlus, destinationConfig, e.getValue() );
             }
-            catch ( ChartEngineException | IOException e )
-            {
-                throw new PNGWriteException( "Error while generating multi-vector charts: ", e );
-            }
+
         }
+    }
 
+    /**
+     * Writes a set of charts associated with {@link BoxPlotOutput} for a single metric and time window, 
+     * stored in a {@link MetricOutputMapByTimeAndThreshold}.
+     *
+     * @param projectConfigPlus the project configuration
+     * @param destinationConfig the destination configuration for the written output
+     * @param output the metric results
+     * @throws PNGWriteException when an error occurs during writing
+     */
+
+    private static void writeBoxPlotCharts( ProjectConfigPlus projectConfigPlus,
+                                            DestinationConfig destinationConfig,
+                                            MetricOutputMapByTimeAndThreshold<BoxPlotOutput> output )
+    {
+        // Build charts
+        try
+        {
+            MetricOutputMetadata meta = output.getMetadata();
+
+            GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destinationConfig, meta.getMetricID() );
+
+            final Map<Pair<TimeWindow, Threshold>, ChartEngine> engines =
+                    ChartEngineFactory.buildBoxPlotChartEngine( projectConfigPlus.getProjectConfig(),
+                                                                output,
+                                                                helper.getTemplateResourceName(),
+                                                                helper.getGraphicsString() );
+
+            // Build the outputs
+            for ( final Entry<Pair<TimeWindow, Threshold>, ChartEngine> nextEntry : engines.entrySet() )
+            {
+
+                Path outputImage = ConfigHelper.getOutputPathToWrite( destinationConfig,
+                                                                      meta,
+                                                                      nextEntry.getKey().getLeft() );
+
+                PNGWriter.writeChart( outputImage, nextEntry.getValue(), destinationConfig );
+            }
+
+        }
+        catch ( ChartEngineException | IOException e )
+        {
+            throw new PNGWriteException( "Error while generating box plot charts: ", e );
+        }
     }
 
     /**

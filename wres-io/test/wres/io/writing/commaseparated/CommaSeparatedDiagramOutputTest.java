@@ -128,7 +128,7 @@ public class CommaSeparatedDiagramOutputTest extends CommaSeparatedWriterTest
         ProjectConfig projectConfig = getMockedProjectConfig( feature );
 
         // Begin the actual test now that we have constructed dependencies.
-        output.getMultiVectorOutput().values().forEach( CommaSeparatedDiagramWriter.of( projectConfig ) );
+        CommaSeparatedDiagramWriter.of( projectConfig ).accept( output.getMultiVectorOutput() ); 
 
         // read the file, verify it has what we wanted:
         Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ),

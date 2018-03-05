@@ -93,7 +93,7 @@ abstract class CommaSeparatedWriter
      * Writes the raw tabular output to file.
      * 
      * @param rows the tabular data to write
-     * @param path the path to which the file should be written
+     * @param outputPath the path to which the file should be written
      * @throws IOException if the output cannot be written
      */
 

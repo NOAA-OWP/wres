@@ -15,7 +15,9 @@ import wres.config.generated.DestinationConfig;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
+import wres.datamodel.outputs.MapKey;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
+import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
 import wres.io.config.ConfigHelper;
 import wres.io.config.ProjectConfigPlus;
 import wres.vis.ChartEngineFactory;
@@ -29,7 +31,7 @@ import wres.vis.ChartEngineFactory;
  */
 
 public class PNGDoubleScoreWriter extends PNGWriter
-        implements Consumer<MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>>
+        implements Consumer<MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput>>
 {
 
     /**
@@ -55,47 +57,71 @@ public class PNGDoubleScoreWriter extends PNGWriter
      */
 
     @Override
-    public void accept( final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> output )
+    public void accept( final MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> output )
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing diagram outputs." );
 
         // Write output
         List<DestinationConfig> destinations =
                 ConfigHelper.getGraphicalDestinations( projectConfigPlus.getProjectConfig() );
+
+        // Iterate through destinations
         for ( DestinationConfig destinationConfig : destinations )
         {
-            // Build charts
-            try
+
+            // Iterate through each metric 
+            for ( final Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>> e : output.entrySet() )
             {
-                MetricOutputMetadata meta = output.getMetadata();
-
-                GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destinationConfig, meta.getMetricID() );
-
-                ConcurrentMap<MetricConstants, ChartEngine> engines =
-                        ChartEngineFactory.buildScoreOutputChartEngine( projectConfigPlus.getProjectConfig(),
-                                                                        output,
-                                                                        DATA_FACTORY,
-                                                                        helper.getOutputType(),
-                                                                        helper.getTemplateResourceName(),
-                                                                        helper.getGraphicsString() );
-
-                // Build the outputs
-                for ( final Entry<MetricConstants, ChartEngine> nextEntry : engines.entrySet() )
-                {
-
-                    // Build the output file name
-                    Path outputImage = ConfigHelper.getOutputPathToWrite( destinationConfig, meta );
-
-                    PNGWriter.writeChart( outputImage, nextEntry.getValue(), destinationConfig );
-                }
-
+                PNGDoubleScoreWriter.writeScoreCharts( projectConfigPlus, destinationConfig, e.getValue() );
             }
-            catch ( ChartEngineException | IOException e )
-            {
-                throw new PNGWriteException( "Error while generating multi-vector charts: ", e );
-            }
+
         }
+    }
 
+    /**
+     * Writes a set of charts associated with {@link DoubleScoreOutput} for a single metric and time window,
+     * stored in a {@link MetricOutputMapByTimeAndThreshold}.
+     *
+     * @param projectConfigPlus the project configuration
+     * @param destinationConfig the destination configuration for the written output
+     * @param output the metric output
+     * @throws PNGWriteException when an error occurs during writing
+     */
+
+    private static void writeScoreCharts( ProjectConfigPlus projectConfigPlus,
+                                          DestinationConfig destinationConfig,
+                                          MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> output )
+    {
+        // Build charts
+        try
+        {
+            MetricOutputMetadata meta = output.getMetadata();
+
+            GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destinationConfig, meta.getMetricID() );
+
+            ConcurrentMap<MetricConstants, ChartEngine> engines =
+                    ChartEngineFactory.buildScoreOutputChartEngine( projectConfigPlus.getProjectConfig(),
+                                                                    output,
+                                                                    DATA_FACTORY,
+                                                                    helper.getOutputType(),
+                                                                    helper.getTemplateResourceName(),
+                                                                    helper.getGraphicsString() );
+
+            // Build the outputs
+            for ( final Entry<MetricConstants, ChartEngine> nextEntry : engines.entrySet() )
+            {
+
+                // Build the output file name
+                Path outputImage = ConfigHelper.getOutputPathToWrite( destinationConfig, meta );
+
+                PNGWriter.writeChart( outputImage, nextEntry.getValue(), destinationConfig );
+            }
+
+        }
+        catch ( ChartEngineException | IOException e )
+        {
+            throw new PNGWriteException( "Error while generating multi-vector charts: ", e );
+        }
     }
 
     /**

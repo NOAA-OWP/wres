@@ -6,6 +6,7 @@ import java.text.Format;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.function.Consumer;
@@ -16,13 +17,16 @@ import org.apache.commons.lang3.tuple.Pair;
 import wres.config.ProjectConfigException;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.ProjectConfig;
+import wres.datamodel.MetricConstants;
 import wres.datamodel.Threshold;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
+import wres.datamodel.outputs.MapKey;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
+import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
 import wres.io.config.ConfigHelper;
 
 /**
@@ -34,7 +38,7 @@ import wres.io.config.ConfigHelper;
  */
 
 public class CommaSeparatedBoxPlotWriter extends CommaSeparatedWriter
-        implements Consumer<MetricOutputMapByTimeAndThreshold<BoxPlotOutput>>
+        implements Consumer<MetricOutputMultiMapByTimeAndThreshold<BoxPlotOutput>>
 {
 
     /**
@@ -60,7 +64,7 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedWriter
      */
 
     @Override
-    public void accept( final MetricOutputMapByTimeAndThreshold<BoxPlotOutput> output )
+    public void accept( final MetricOutputMultiMapByTimeAndThreshold<BoxPlotOutput> output )
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing box plot outputs." );
 
@@ -70,14 +74,13 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedWriter
         List<DestinationConfig> numericalDestinations = ConfigHelper.getNumericalDestinations( projectConfig );
         for ( DestinationConfig destinationConfig : numericalDestinations )
         {
-
             // Formatter
             Format formatter = ConfigHelper.getDecimalFormatter( destinationConfig );
 
-            // Write per time-window
+            // Write the output
             try
             {
-                writeOneBoxPlotOutputTypePerTimeWindow( destinationConfig, output, formatter );
+                CommaSeparatedBoxPlotWriter.writeOneBoxPlotOutputType( destinationConfig, output, formatter );
             }
             catch ( IOException e )
             {
@@ -85,6 +88,30 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedWriter
             }
         }
 
+    }
+
+    /**
+     * Writes all output for one box plot type.
+     *
+     * @param destinationConfig the destination configuration    
+     * @param output the box plot output to iterate through
+     * @param formatter optional formatter, can be null
+     * @throws IOException if the output cannot be written 
+     */
+
+    private static void writeOneBoxPlotOutputType( DestinationConfig destinationConfig,
+                                                   MetricOutputMultiMapByTimeAndThreshold<BoxPlotOutput> output,
+                                                   Format formatter )
+            throws IOException
+    {
+        // Loop across the box plot output
+        for ( Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<BoxPlotOutput>> m : output.entrySet() )
+        {
+            // Write the output
+            CommaSeparatedBoxPlotWriter.writeOneBoxPlotOutputTypePerTimeWindow( destinationConfig,
+                                                                                m.getValue(),
+                                                                                formatter );
+        }
     }
 
     /**
@@ -108,11 +135,11 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedWriter
             MetricOutputMapByTimeAndThreshold<BoxPlotOutput> next = output.filterByTime( timeWindow );
             StringJoiner headerRow = new StringJoiner( "," );
             headerRow.merge( HEADER_DEFAULT );
-            List<RowCompareByLeft> rows = getRowsForOneBoxPlot( next, formatter );
+            List<RowCompareByLeft> rows = CommaSeparatedBoxPlotWriter.getRowsForOneBoxPlot( next, formatter );
 
             // Add the header row
             rows.add( RowCompareByLeft.of( HEADER_INDEX,
-                                           getBoxPlotHeader( next, headerRow ) ) );
+                                           CommaSeparatedBoxPlotWriter.getBoxPlotHeader( next, headerRow ) ) );
             // Write the output
             Path outputPath = ConfigHelper.getOutputPathToWrite( destinationConfig, meta, timeWindow );
 
@@ -123,7 +150,6 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedWriter
     /**
      * Returns the results for one box plot output.
      *
-     * @param metricName the score name
      * @param output the box plot output
      * @param formatter optional formatter, can be null
      * @return the rows to write
