@@ -1584,7 +1584,9 @@ public class ConfigHelper
                                                     + nextSource.getFormat() + "'" );
         }
 
-        boolean isProbability = threshold.getType() == ProbabilityOrValue.PROBABILITY;
+        // Default to probability
+        boolean isProbability =
+                Objects.isNull( threshold.getType() ) || threshold.getType() == ProbabilityOrValue.PROBABILITY;
 
         // Missing value?
         Double missing = null;
@@ -1597,7 +1599,7 @@ public class ConfigHelper
         //Path
         Path commaSeparated = Paths.get( nextSource.getValue() );
 
-        // Condition: default is greater
+        // Condition: default to greater
         Operator operator = ConfigHelper.fromThresholdOperator( threshold.getOperator() );
 
         try
