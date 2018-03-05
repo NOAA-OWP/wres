@@ -1,10 +1,14 @@
 package wres.io.writing.netcdf;
 
+import java.util.Map.Entry;
+
 import wres.config.ProjectConfigException;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.outputs.DoubleScoreOutput;
+import wres.datamodel.outputs.MapKey;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
+import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
 
 /**
  * Consumes {@link DoubleScoreOutput} into an output file in NetCDF format.
@@ -38,36 +42,37 @@ public class NetcdfDoubleScoreWriter extends NetcdfWriter<DoubleScoreOutput>
      */
 
     @Override
-    public void accept( MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> output )
+    public void accept( MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> output )
     {
 
-        // Right now, the following is the only information you have about the geospatial index
-        // to which the output corresponds. Clearly, more information will be required, 
-        // such as the geospatial coordinates, (lat,long), or grid cell index, (row,column).
-        // This will need to be added to the {@link Metadata}, and set by wres-io
-        // Also note that the identifier is currently optional. The geospatial index will
-        // probably need to be optional too and hence tested here, exceptionally, before 
-        // writing. Potentially, we could replace the string identifier for the 
-        // geospatial id with a FeaturePlus. However, I am reluctant to do this with the way
-        // FeaturePlus is currently defined, i.e. verbosely, unclearly. Whatever we use, it 
-        // must override equals and probably implement Comparable too.
+        // Iterate through the metrics
+        for ( final Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>> e : output.entrySet() )
+        {
 
-        String myGeospatialIndexToWrite = output.getMetadata().getIdentifier().getGeospatialID();
+            // This is the metric to write
+            MetricConstants myMetricToWrite = e.getKey().getKey();
+            
+            // Right now, the following is the only information you have about the geospatial index
+            // to which the output corresponds. Clearly, more information will be required, 
+            // such as the geospatial coordinates, (lat,long), or grid cell index, (row,column).
+            // This will need to be added to the {@link Metadata}, and set by wres-io
+            // Also note that the identifier is currently optional. The geospatial index will
+            // probably need to be optional too and hence tested here, exceptionally, before 
+            // writing. Potentially, we could replace the string identifier for the 
+            // geospatial id with a FeaturePlus. However, I am reluctant to do this with the way
+            // FeaturePlus is currently defined, i.e. verbosely. Whatever we use, it 
+            // must override equals and probably implement Comparable too.
 
-        // The output is stored by TimeWindow (M) and Threshold (N). In principle, a DoubleScoreOutput 
-        // may contain several score components (O), but the system currently only produces scores 
-        // with one component. Thus, each call to accept() will mutate MNO layers in the NetCDF output
-        // at ONE geospatial index (at least, the way our current process-by-feature processing works.
-        //
-        // Bear in mind that accept() is currently called for all metrics (P) that produce DoubleScoreOutput.
-        // This is a large number of metrics, potentially. Thus, each NetCDF output file will have 
-        // a total of MNOP layers of which MNO are mutated on each call of accept().
+            String myGeospatialIndexToWrite = e.getValue().getMetadata().getIdentifier().getGeospatialID();
 
-        // This is the metric to write: see the API for DoubleScoreOutput w/r to component names
-        MetricConstants myMetricToWrite = output.getMetadata().getMetricID();
+            // There are M metrics in the input. For each metric, the output is stored by TimeWindow (N) 
+            // and Threshold (O). In principle, a DoubleScoreOutput  may contain several score components (P), 
+            // but the system currently only produces scores with one component. Thus, each call to accept() 
+            // will mutate MNOP layers in the NetCDF output at ONE geospatial index (at least, the way our current 
+            // process-by-feature processing works.
 
-
-        // TODO: mutate the netcdf file
+            // TODO: mutate the netcdf file
+        }
 
     }
 

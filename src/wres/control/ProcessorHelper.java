@@ -3,7 +3,6 @@ package wres.control;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -12,7 +11,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.stream.Collectors;
+import java.util.function.BiPredicate;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,7 +90,7 @@ class ProcessorHelper
         LOGGER.debug( "Beginning ingest for project {}...", projectConfigPlus );
 
         // Need to ingest first
-        ProjectDetails projectDetails = Operations.ingest( projectConfig);
+        ProjectDetails projectDetails = Operations.ingest( projectConfig );
 
         LOGGER.debug( "Finished ingest for project {}...", projectConfigPlus );
 
@@ -112,9 +111,9 @@ class ProcessorHelper
 
         List<Feature> successfulFeatures = new ArrayList<>();
         List<Feature> missingDataFeatures = new ArrayList<>();
-        
+
         // Read any threshold source in the configuration
-        Map<FeaturePlus,Set<Threshold>> thresholds = ConfigHelper.readThresholdsFromProjectConfig( projectConfig );
+        Map<FeaturePlus, Set<Threshold>> thresholds = ConfigHelper.readThresholdsFromProjectConfig( projectConfig );
 
         // Reduce our triad of executors to one object
         ExecutorServices executors = new ExecutorServices( pairExecutor,
@@ -245,11 +244,11 @@ class ProcessorHelper
         final ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
 
         final String featureDescription = ConfigHelper.getFeatureDescription( feature );
-        final String errorMessage = "While processing feature "+ featureDescription;
+        final String errorMessage = "While processing feature " + featureDescription;
 
         // Sink for the results: the results are added incrementally to an immutable store via a builder
         // Some output types are processed at the end of the pipeline, others after each input is processed
-        MetricProcessorForProject processor = null;
+        final MetricProcessorForProject processor;
         try
         {
             processor = MetricFactory.getInstance( DATA_FACTORY )
@@ -258,7 +257,7 @@ class ProcessorHelper
                                                                     executors.getThresholdExecutor(),
                                                                     executors.getMetricExecutor() );
         }
-        catch(final MetricProcessorException e )
+        catch ( final MetricProcessorException e )
         {
             throw new WresProcessingException( errorMessage, e );
         }
@@ -270,8 +269,11 @@ class ProcessorHelper
         // Queue the various tasks by time window (time window is the pooling dimension for metric calculation here)
         final List<CompletableFuture<?>> listOfFutures = new ArrayList<>(); //List of futures to test for completion
 
-        // Ignore cached types until the end of the pipeline
-        Set<MetricOutputGroup> cachedTypes = processor.getCachedMetricOutputTypes();
+        // During the pipeline, only write types that are not end-of-pipeline types unless they refer to
+        // a format that can be written incrementally
+        BiPredicate<MetricOutputGroup, DestinationType> onlyWriteTheseTypes =
+                ( type, format ) -> !processor.getCachedMetricOutputTypes().contains( type )
+                                    || ConfigHelper.getIncrementalFormats( projectConfig ).contains( format );
 
         try
         {
@@ -286,7 +288,8 @@ class ProcessorHelper
                 final CompletableFuture<Void> c =
                         CompletableFuture.supplyAsync( new PairsByTimeWindowProcessor( nextInput, processor ),
                                                        executors.getPairExecutor() )
-                                         .thenAcceptAsync( new ProductProcessor( projectConfigPlus, cachedTypes ),
+                                         .thenAcceptAsync( new ProductProcessor( projectConfigPlus,
+                                                                                 onlyWriteTheseTypes ),
                                                            executors.getPairExecutor() )
                                          .thenAccept( aVoid -> ProgressMonitor.completeStep() );
 
@@ -311,9 +314,9 @@ class ProcessorHelper
         // Complete all tasks or one exceptionally: join() is blocking, representing a final sink for the results
         try
         {
-            doAllOrException(listOfFutures).join();
+            doAllOrException( listOfFutures ).join();
         }
-        catch( CompletionException e )
+        catch ( CompletionException e )
         {
             // If there was simply not enough data for this feature, OK
             if ( ProcessorHelper.wasInsufficientDataOrNoDataInThisStack( e ) )
@@ -332,15 +335,15 @@ class ProcessorHelper
         {
             try
             {
-                // Only process cached types
-                Set<MetricOutputGroup> ignoreTheseTypes =
-                        Arrays.stream( MetricOutputGroup.values() )
-                              .filter( next -> ! cachedTypes.contains( next ) )
-                              .collect( Collectors.toSet() );
-
                 // End of pipeline processor
-                ProductProcessor endOfPipeline = new ProductProcessor( projectConfigPlus, ignoreTheseTypes );
-                
+                // Only process cached types that were not written incrementally
+                BiPredicate<MetricOutputGroup, DestinationType> nowWriteTheseTypes =
+                        ( type, format ) -> processor.getCachedMetricOutputTypes().contains( type )
+                                            && !ConfigHelper.getIncrementalFormats( projectConfig ).contains( format );
+                ProductProcessor endOfPipeline =
+                        new ProductProcessor( projectConfigPlus,
+                                              nowWriteTheseTypes );
+
                 // Generate output
                 endOfPipeline.accept( processor.getCachedMetricOutput() );
 
@@ -352,7 +355,7 @@ class ProcessorHelper
         }
 
         return new FeatureProcessingResult( feature, true, null );
-    }    
+    }
 
     /**
      * Composes a list of {@link CompletableFuture} so that execution completes when all futures are completed normally
@@ -365,24 +368,24 @@ class ProcessorHelper
      * @throws CompletionException if completing exceptionally 
      */
 
-    private static CompletableFuture<?> doAllOrException(final List<CompletableFuture<?>> futures)
+    private static CompletableFuture<?> doAllOrException( final List<CompletableFuture<?>> futures )
     {
         //Complete when all futures are completed
         final CompletableFuture<?> allDone =
-                                           CompletableFuture.allOf(futures.toArray(new CompletableFuture[futures.size()]));
+                CompletableFuture.allOf( futures.toArray( new CompletableFuture[futures.size()] ) );
         //Complete when any of the underlying futures completes exceptionally
         final CompletableFuture<?> oneExceptional = new CompletableFuture<>();
         //Link the two
-        for(final CompletableFuture<?> completableFuture: futures)
+        for ( final CompletableFuture<?> completableFuture : futures )
         {
             //When one completes exceptionally, propagate
-            completableFuture.exceptionally(exception -> {
-                oneExceptional.completeExceptionally(exception);
+            completableFuture.exceptionally( exception -> {
+                oneExceptional.completeExceptionally( exception );
                 return null;
-            });
+            } );
         }
         //Either all done OR one completes exceptionally
-        return CompletableFuture.anyOf(allDone, oneExceptional);
+        return CompletableFuture.anyOf( allDone, oneExceptional );
     }
 
     /**
@@ -434,17 +437,17 @@ class ProcessorHelper
             cause = cause.getCause();
         }
         return false;
-    }    
+    }
 
     /**
      * List of exceptions encountered during processing.
      */
-    private static final List<Exception> exceptionList = new ArrayList<>(  );
-    
+    private static final List<Exception> exceptionList = new ArrayList<>();
+
     /**
      * A lock to use when mutating the list of exceptions.
      */
-    
+
     private static final Object EXCEPTION_LOCK = new Object();
 
     /**
@@ -452,8 +455,8 @@ class ProcessorHelper
      * 
      * @param exception the exception to add
      */
-    
-    private static void addException(Exception exception)
+
+    private static void addException( Exception exception )
     {
         synchronized ( EXCEPTION_LOCK )
         {
@@ -466,34 +469,34 @@ class ProcessorHelper
      * 
      * @return a list of processing exceptions
      */
-    
+
     public static List<Exception> getEncounteredExceptions()
     {
-        synchronized(EXCEPTION_LOCK)
+        synchronized ( EXCEPTION_LOCK )
         {
-            return Collections.unmodifiableList(ProcessorHelper.exceptionList);
+            return Collections.unmodifiableList( ProcessorHelper.exceptionList );
         }
     }
-    
+
     /**
      * A collection of executor services.
      * 
      * @author jesse.bickel@***REMOVED***
      */
-    
+
     private static class ExecutorServices
     {
-        
+
         /**
          * The pair executor.
          */
         private final ExecutorService pairExecutor;
-        
+
         /**
          * The threshold executor.
          */
         private final ExecutorService thresholdExecutor;
-        
+
         /**
          * The metric executor.
          */
@@ -519,12 +522,12 @@ class ProcessorHelper
          * Returns the {@link ExecutorService} for pairs.
          * @return the pair executor
          */
-        
+
         ExecutorService getPairExecutor()
         {
             return this.pairExecutor;
         }
-        
+
         /**
          * Returns the {@link ExecutorService} for thresholds.
          * @return the threshold executor
@@ -539,7 +542,7 @@ class ProcessorHelper
          * Returns the {@link ExecutorService} for metrics.
          * @return the metric executor
          */
-        
+
         ExecutorService getMetricExecutor()
         {
             return this.metricExecutor;

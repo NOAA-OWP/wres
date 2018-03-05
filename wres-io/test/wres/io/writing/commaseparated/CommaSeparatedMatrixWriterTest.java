@@ -124,7 +124,7 @@ public class CommaSeparatedMatrixWriterTest extends CommaSeparatedWriterTest
         ProjectConfig projectConfig = getMockedProjectConfig( feature );
 
         // Begin the actual test now that we have constructed dependencies.
-        output.getMatrixOutput().values().forEach( CommaSeparatedMatrixWriter.of( projectConfig ) );
+        CommaSeparatedMatrixWriter.of( projectConfig ).accept( output.getMatrixOutput() ); 
 
         // read the file, verify it has what we wanted:
         Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ),

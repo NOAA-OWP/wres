@@ -12,6 +12,7 @@ import wres.config.generated.DestinationType;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
+import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
 import wres.io.writing.WriterHelper;
 
 /**
@@ -21,7 +22,7 @@ import wres.io.writing.WriterHelper;
  * @author jesse.bickel@***REMOVED***
  */
 
-abstract class NetcdfWriter<T extends MetricOutput<?>> implements Consumer<MetricOutputMapByTimeAndThreshold<T>>
+abstract class NetcdfWriter<T extends MetricOutput<?>> implements Consumer<MetricOutputMultiMapByTimeAndThreshold<T>>
 {
     /**
      * Project configuration.

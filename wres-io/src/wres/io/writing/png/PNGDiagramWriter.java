@@ -12,10 +12,13 @@ import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
 import wres.config.ProjectConfigException;
 import wres.config.generated.DestinationConfig;
+import wres.datamodel.MetricConstants;
 import wres.datamodel.Threshold;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
+import wres.datamodel.outputs.MapKey;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
+import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.io.config.ConfigHelper;
 import wres.io.config.ProjectConfigPlus;
@@ -30,7 +33,7 @@ import wres.vis.ChartEngineFactory;
  */
 
 public class PNGDiagramWriter extends PNGWriter
-        implements Consumer<MetricOutputMapByTimeAndThreshold<MultiVectorOutput>>
+        implements Consumer<MetricOutputMultiMapByTimeAndThreshold<MultiVectorOutput>>
 {
 
     /**
@@ -56,56 +59,82 @@ public class PNGDiagramWriter extends PNGWriter
      */
 
     @Override
-    public void accept( final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> output )
+    public void accept( final MetricOutputMultiMapByTimeAndThreshold<MultiVectorOutput> output )
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing diagram outputs." );
 
         // Write output
         List<DestinationConfig> destinations =
                 ConfigHelper.getGraphicalDestinations( projectConfigPlus.getProjectConfig() );
+
+        // Iterate through destinations
         for ( DestinationConfig destinationConfig : destinations )
         {
-            // Build charts
-            try
+
+            // Iterate through each metric 
+            for ( final Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<MultiVectorOutput>> e : output.entrySet() )
             {
-                MetricOutputMetadata meta = output.getMetadata();
+                PNGDiagramWriter.writeMultiVectorCharts( projectConfigPlus, destinationConfig, e.getValue() );
+            }
 
-                GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destinationConfig, meta.getMetricID() );
+        }
 
-                final Map<Object, ChartEngine> engines =
-                        ChartEngineFactory.buildMultiVectorOutputChartEngine( projectConfigPlus.getProjectConfig(),
-                                                                              output,
-                                                                              DATA_FACTORY,
-                                                                              helper.getOutputType(),
-                                                                              helper.getTemplateResourceName(),
-                                                                              helper.getGraphicsString() );
+    }
 
-                // Build the outputs
-                for ( final Entry<Object, ChartEngine> nextEntry : engines.entrySet() )
+    /**
+     * Writes a set of charts associated with {@link MultiVectorOutput} for a single metric and time window, 
+     * stored in a {@link MetricOutputMapByTimeAndThreshold}.
+     *
+     * @param projectConfigPlus the project configuration
+     * @param destinationConfig the destination configuration for the written output
+     * @param output the metric results
+     * @throws PNGWriteException when an error occurs during writing
+     */
+
+    private static void writeMultiVectorCharts( ProjectConfigPlus projectConfigPlus,
+                                                DestinationConfig destinationConfig,
+                                                MetricOutputMapByTimeAndThreshold<MultiVectorOutput> output )
+    {
+        // Build charts
+        try
+        {
+            MetricOutputMetadata meta = output.getMetadata();
+
+            GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destinationConfig, meta.getMetricID() );
+
+            final Map<Object, ChartEngine> engines =
+                    ChartEngineFactory.buildMultiVectorOutputChartEngine( projectConfigPlus.getProjectConfig(),
+                                                                          output,
+                                                                          DATA_FACTORY,
+                                                                          helper.getOutputType(),
+                                                                          helper.getTemplateResourceName(),
+                                                                          helper.getGraphicsString() );
+
+            // Build the outputs
+            for ( final Entry<Object, ChartEngine> nextEntry : engines.entrySet() )
+            {
+                // Build the output file name
+                Path outputImage = null;
+                Object append = nextEntry.getKey();
+                if ( append instanceof TimeWindow )
                 {
-                    // Build the output file name
-                    Path outputImage = null;
-                    Object append = nextEntry.getKey();
-                    if ( append instanceof TimeWindow )
-                    {
-                        outputImage = ConfigHelper.getOutputPathToWrite( destinationConfig,
-                                                                         meta,
-                                                                         (TimeWindow) append );
-                    }
-                    else if ( append instanceof Threshold )
-                    {
-                        outputImage = ConfigHelper.getOutputPathToWrite( destinationConfig,
-                                                                         meta,
-                                                                         (Threshold) append );
-                    }
-
-                    PNGWriter.writeChart( outputImage, nextEntry.getValue(), destinationConfig );
+                    outputImage = ConfigHelper.getOutputPathToWrite( destinationConfig,
+                                                                     meta,
+                                                                     (TimeWindow) append );
                 }
+                else if ( append instanceof Threshold )
+                {
+                    outputImage = ConfigHelper.getOutputPathToWrite( destinationConfig,
+                                                                     meta,
+                                                                     (Threshold) append );
+                }
+
+                PNGWriter.writeChart( outputImage, nextEntry.getValue(), destinationConfig );
             }
-            catch ( ChartEngineException | IOException e )
-            {
-                throw new PNGWriteException( "Error while generating multi-vector charts: ", e );
-            }
+        }
+        catch ( ChartEngineException | IOException e )
+        {
+            throw new PNGWriteException( "Error while generating multi-vector charts: ", e );
         }
 
     }

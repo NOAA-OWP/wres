@@ -20,12 +20,15 @@ import wres.config.ProjectConfigException;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.ProjectConfig;
+import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.Threshold;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
+import wres.datamodel.outputs.MapKey;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
+import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.io.config.ConfigHelper;
 
@@ -38,7 +41,7 @@ import wres.io.config.ConfigHelper;
  */
 
 public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
-        implements Consumer<MetricOutputMapByTimeAndThreshold<MultiVectorOutput>>
+        implements Consumer<MetricOutputMultiMapByTimeAndThreshold<MultiVectorOutput>>
 {
 
     /**
@@ -64,7 +67,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
      */
 
     @Override
-    public void accept( final MetricOutputMapByTimeAndThreshold<MultiVectorOutput> output )
+    public void accept( final MetricOutputMultiMapByTimeAndThreshold<MultiVectorOutput> output )
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing diagram outputs." );
 
@@ -78,32 +81,13 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
             // Formatter
             Format formatter = ConfigHelper.getDecimalFormatter( destinationConfig );
 
-            // Obtain the output type configuration with any override for ALL_VALID metrics
-            OutputTypeSelection diagramType = ConfigHelper.getOutputTypeSelection( projectConfig, destinationConfig );
-
-            // Obtain the output type with any local override for this metric
-            OutputTypeSelection useType =
-                    ConfigHelper.getOutputTypeSelection( projectConfig,
-                                                         diagramType,
-                                                         output.getMetadata().getMetricID() );
-
-            StringJoiner headerRow = new StringJoiner( "," );
-            headerRow.merge( HEADER_DEFAULT );
-
             // Default, per time-window
             try
             {
-                if ( useType == OutputTypeSelection.DEFAULT || useType == OutputTypeSelection.LEAD_THRESHOLD )
-                {
-
-                    writeOneDiagramOutputTypePerTimeWindow( destinationConfig, output, headerRow, formatter );
-
-                }
-                // Per threshold
-                else if ( useType == OutputTypeSelection.THRESHOLD_LEAD )
-                {
-                    writeOneDiagramOutputTypePerThreshold( destinationConfig, output, headerRow, formatter );
-                }
+                CommaSeparatedDiagramWriter.writeOneDiagramOutputType( projectConfig,
+                                                                       destinationConfig,
+                                                                       output,
+                                                                       formatter );
             }
             catch ( IOException e )
             {
@@ -111,6 +95,54 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
             }
         }
 
+    }
+
+    /**
+     * Writes all output for one diagram type.
+     *
+     * @param projectConfig the project configuration
+     * @param destinationConfig the destination configuration    
+     * @param output the diagram output
+     * @param formatter optional formatter, can be null
+     * @throws IOException if the output cannot be written
+     */
+
+    private static void writeOneDiagramOutputType( ProjectConfig projectConfig,
+                                                   DestinationConfig destinationConfig,
+                                                   MetricOutputMultiMapByTimeAndThreshold<MultiVectorOutput> output,
+                                                   Format formatter )
+            throws IOException
+    {
+        // Obtain the output type configuration with any override for ALL_VALID metrics
+        OutputTypeSelection diagramType = ConfigHelper.getOutputTypeSelection( projectConfig, destinationConfig );
+
+        // Loop across diagrams
+        for ( Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<MultiVectorOutput>> m : output.entrySet() )
+        {
+            // Obtain the output type with any local override for this metric
+            OutputTypeSelection useType =
+                    ConfigHelper.getOutputTypeSelection( projectConfig, diagramType, m.getKey().getKey() );
+
+            StringJoiner headerRow = new StringJoiner( "," );
+            headerRow.merge( HEADER_DEFAULT );
+
+            // Default, per time-window
+            if ( useType == OutputTypeSelection.DEFAULT || useType == OutputTypeSelection.LEAD_THRESHOLD )
+            {
+                CommaSeparatedDiagramWriter.writeOneDiagramOutputTypePerTimeWindow( destinationConfig,
+                                                                                    m.getValue(),
+                                                                                    headerRow,
+                                                                                    formatter );
+            }
+            // Per threshold
+            else if ( useType == OutputTypeSelection.THRESHOLD_LEAD )
+            {
+                CommaSeparatedDiagramWriter.writeOneDiagramOutputTypePerThreshold( destinationConfig,
+                                                                                   m.getValue(),
+                                                                                   headerRow,
+                                                                                   formatter );
+            }
+        }
     }
 
     /**
@@ -167,10 +199,11 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
         {
             MetricOutputMetadata meta = output.getMetadata();
             MetricOutputMapByTimeAndThreshold<MultiVectorOutput> next = output.filterByThreshold( threshold );
-            List<RowCompareByLeft> rows = getRowsForOneDiagram( next, formatter );
+            List<RowCompareByLeft> rows = CommaSeparatedDiagramWriter.getRowsForOneDiagram( next, formatter );
 
             // Add the header row
-            rows.add( RowCompareByLeft.of( HEADER_INDEX, getDiagramHeader( next, headerRow ) ) );
+            rows.add( RowCompareByLeft.of( HEADER_INDEX,
+                                           CommaSeparatedDiagramWriter.getDiagramHeader( next, headerRow ) ) );
 
             // Write the output
             Path outputPath = ConfigHelper.getOutputPathToWrite( destinationConfig, meta, threshold );
@@ -202,7 +235,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
             for ( Threshold threshold : output.setOfThresholdKey() )
             {
                 Pair<TimeWindow, Threshold> key = Pair.of( timeWindow, threshold );
-                addRowsForOneDiagramAtOneTimeWindowAndThreshold( output, key, merge );
+                CommaSeparatedDiagramWriter.addRowsForOneDiagramAtOneTimeWindowAndThreshold( output, key, merge );
             }
             // Add the merged rows
             for ( List<Double> next : merge.values() )
@@ -250,7 +283,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
             for ( int rowIndex = 0; rowIndex < maxRows; rowIndex++ )
             {
                 // Add the row
-                List<Double> row = getOneRowForOneDiagram( next, rowIndex );
+                List<Double> row = CommaSeparatedDiagramWriter.getOneRowForOneDiagram( next, rowIndex );
                 if ( merge.containsKey( rowIndex ) )
                 {
                     merge.get( rowIndex ).addAll( row );

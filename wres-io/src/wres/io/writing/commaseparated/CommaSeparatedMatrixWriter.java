@@ -5,6 +5,7 @@ import java.nio.file.Path;
 import java.text.Format;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.function.Consumer;
@@ -16,11 +17,14 @@ import wres.config.ProjectConfigException;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.ProjectConfig;
+import wres.datamodel.MetricConstants;
 import wres.datamodel.Threshold;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
+import wres.datamodel.outputs.MapKey;
 import wres.datamodel.outputs.MatrixOutput;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
+import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
 import wres.io.config.ConfigHelper;
 
 /**
@@ -32,7 +36,7 @@ import wres.io.config.ConfigHelper;
  */
 
 public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
-        implements Consumer<MetricOutputMapByTimeAndThreshold<MatrixOutput>>
+        implements Consumer<MetricOutputMultiMapByTimeAndThreshold<MatrixOutput>>
 {
 
     /**
@@ -58,7 +62,7 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
      */
 
     @Override
-    public void accept( final MetricOutputMapByTimeAndThreshold<MatrixOutput> output )
+    public void accept( final MetricOutputMultiMapByTimeAndThreshold<MatrixOutput> output )
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing box plot outputs." );
 
@@ -72,32 +76,13 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
             // Formatter
             Format formatter = ConfigHelper.getDecimalFormatter( destinationConfig );
 
-            // Obtain the output type configuration with any override for ALL_VALID metrics
-            OutputTypeSelection diagramType = ConfigHelper.getOutputTypeSelection( projectConfig, destinationConfig );
-
-            // Obtain the output type with any local override for this metric
-            OutputTypeSelection useType =
-                    ConfigHelper.getOutputTypeSelection( projectConfig,
-                                                         diagramType,
-                                                         output.getMetadata().getMetricID() );
-
-            StringJoiner headerRow = new StringJoiner( "," );
-            headerRow.merge( HEADER_DEFAULT );
-
             // Default, per time-window
             try
             {
-                if ( useType == OutputTypeSelection.DEFAULT || useType == OutputTypeSelection.LEAD_THRESHOLD )
-                {
-
-                    writeOneMatrixOutputTypePerTimeWindow( destinationConfig, output, headerRow, formatter );
-
-                }
-                // Per threshold
-                else if ( useType == OutputTypeSelection.THRESHOLD_LEAD )
-                {
-                    writeOneMatrixOutputTypePerThreshold( destinationConfig, output, headerRow, formatter );
-                }
+                CommaSeparatedMatrixWriter.writeOneMatrixOutputType( projectConfig,
+                                                                     destinationConfig,
+                                                                     output,
+                                                                     formatter );
             }
             catch ( IOException e )
             {
@@ -105,7 +90,54 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
             }
 
         }
+    }
 
+    /**
+     * Writes all output for one matrix type.
+     *
+     * @param projectConfig the project configuration
+     * @param destinationConfig the destination configuration    
+     * @param output the matrix output
+     * @param formatter optional formatter, can be null
+     * @throws IOException if the output cannot be written
+     */
+
+    private static void writeOneMatrixOutputType( ProjectConfig projectConfig,
+                                                  DestinationConfig destinationConfig,
+                                                  MetricOutputMultiMapByTimeAndThreshold<MatrixOutput> output,
+                                                  Format formatter )
+            throws IOException
+    {
+        // Obtain the output type configuration with any override for ALL_VALID metrics
+        OutputTypeSelection diagramType = ConfigHelper.getOutputTypeSelection( projectConfig, destinationConfig );
+
+        // Loop across diagrams
+        for ( Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<MatrixOutput>> m : output.entrySet() )
+        {
+            // Obtain the output type with any local override for this metric
+            OutputTypeSelection useType =
+                    ConfigHelper.getOutputTypeSelection( projectConfig, diagramType, m.getKey().getKey() );
+
+            StringJoiner headerRow = new StringJoiner( "," );
+            headerRow.merge( HEADER_DEFAULT );
+
+            // Default, per time-window
+            if ( useType == OutputTypeSelection.DEFAULT || useType == OutputTypeSelection.LEAD_THRESHOLD )
+            {
+                CommaSeparatedMatrixWriter.writeOneMatrixOutputTypePerTimeWindow( destinationConfig,
+                                                                                  m.getValue(),
+                                                                                  headerRow,
+                                                                                  formatter );
+            }
+            // Per threshold
+            else if ( useType == OutputTypeSelection.THRESHOLD_LEAD )
+            {
+                CommaSeparatedMatrixWriter.writeOneMatrixOutputTypePerThreshold( destinationConfig,
+                                                                                 m.getValue(),
+                                                                                 headerRow,
+                                                                                 formatter );
+            }
+        }
     }
 
     /**
@@ -129,11 +161,11 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
         {
             MetricOutputMetadata meta = output.getMetadata();
             MetricOutputMapByTimeAndThreshold<MatrixOutput> next = output.filterByTime( timeWindow );
-            List<RowCompareByLeft> rows = getRowsForOneMatrixOutput( next, formatter );
+            List<RowCompareByLeft> rows = CommaSeparatedMatrixWriter.getRowsForOneMatrixOutput( next, formatter );
 
             // Add the header row
             rows.add( RowCompareByLeft.of( HEADER_INDEX,
-                                           getMatrixOutputHeader( next, headerRow ) ) );
+                                           CommaSeparatedMatrixWriter.getMatrixOutputHeader( next, headerRow ) ) );
 
             // Write the output
             Path outputPath = ConfigHelper.getOutputPathToWrite( destinationConfig, meta, timeWindow );
@@ -163,11 +195,11 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
         {
             MetricOutputMetadata meta = output.getMetadata();
             MetricOutputMapByTimeAndThreshold<MatrixOutput> next = output.filterByThreshold( threshold );
-            List<RowCompareByLeft> rows = getRowsForOneMatrixOutput( next, formatter );
+            List<RowCompareByLeft> rows = CommaSeparatedMatrixWriter.getRowsForOneMatrixOutput( next, formatter );
 
             // Add the header row
             rows.add( RowCompareByLeft.of( HEADER_INDEX,
-                                           getMatrixOutputHeader( next, headerRow ) ) );
+                                           CommaSeparatedMatrixWriter.getMatrixOutputHeader( next, headerRow ) ) );
 
             // Write the output
             Path outputPath = ConfigHelper.getOutputPathToWrite( destinationConfig, meta, threshold );
@@ -228,7 +260,6 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
     /**
      * Returns the results for one matrix output.
      *
-     * @param metricName the score name
      * @param output the matrix output
      * @param formatter optional formatter, can be null
      * @return the rows to write

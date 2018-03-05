@@ -123,7 +123,8 @@ public class CommaSeparatedPairedWriterTest extends CommaSeparatedWriterTest
         ProjectConfig projectConfig = getMockedProjectConfig( feature );
 
         // Begin the actual test now that we have constructed dependencies.
-        output.getPairedOutput().values().forEach( CommaSeparatedPairedWriter.of( projectConfig ) );
+        CommaSeparatedPairedWriter<Instant,Duration> writer = CommaSeparatedPairedWriter.of( projectConfig ); 
+        writer.accept( output.getPairedOutput() );
 
         // read the file, verify it has what we wanted:
         Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ),

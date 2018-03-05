@@ -131,6 +131,7 @@ abstract class PNGWriter
          * @param projectConfigPlus the project configuration
          * @param destConfig the destination configuration
          * @param metricId the metric identifier
+         * @return a graphics helper
          */
 
         static GraphicsHelper of( ProjectConfigPlus projectConfigPlus,
@@ -248,7 +249,9 @@ abstract class PNGWriter
     }
     
     /**
-     * Prevent construction.
+     * Hidden constructor.
+     * 
+     * @param projectConfigPlus the project configuration
      */
 
     PNGWriter( ProjectConfigPlus projectConfigPlus )

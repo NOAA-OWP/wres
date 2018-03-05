@@ -23,7 +23,9 @@ import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.Threshold;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
+import wres.datamodel.outputs.MapKey;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
+import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
 import wres.datamodel.outputs.ScoreOutput;
 import wres.io.config.ConfigHelper;
 
@@ -37,7 +39,7 @@ import wres.io.config.ConfigHelper;
  */
 
 public class CommaSeparatedScoreWriter<T extends ScoreOutput<?, T>> extends CommaSeparatedWriter
-        implements Consumer<MetricOutputMapByTimeAndThreshold<T>>
+        implements Consumer<MetricOutputMultiMapByTimeAndThreshold<T>>
 {
 
     /**
@@ -65,7 +67,7 @@ public class CommaSeparatedScoreWriter<T extends ScoreOutput<?, T>> extends Comm
      */
 
     @Override
-    public void accept( final MetricOutputMapByTimeAndThreshold<T> output )
+    public void accept( final MetricOutputMultiMapByTimeAndThreshold<T> output )
     {
         Objects.requireNonNull( output, "Specify non-null input data when writing box plot outputs." );
 
@@ -89,30 +91,55 @@ public class CommaSeparatedScoreWriter<T extends ScoreOutput<?, T>> extends Comm
                 formatter = ConfigHelper.getDecimalFormatter( destinationConfig );
             }
 
-            // Write the output
-            MetricOutputMetadata meta = output.getMetadata();
-
-            StringJoiner headerRow = new StringJoiner( "," );
-            headerRow.merge( HEADER_DEFAULT );
-            List<RowCompareByLeft> rows =
-                    getRowsForOneScore( meta.getMetricID(), output, headerRow, formatter );
-
-            // Add the header row
-            rows.add( RowCompareByLeft.of( HEADER_INDEX, headerRow ) );
-
             // Write per time-window
             try
             {
-                Path outputPath = ConfigHelper.getOutputPathToWrite( destinationConfig, meta );
-
-                CommaSeparatedWriter.writeTabularOutputToFile( rows, outputPath );
+                CommaSeparatedScoreWriter.writeOneScoreOutputType( destinationConfig, output, formatter );
             }
             catch ( IOException e )
             {
                 throw new CommaSeparatedWriteException( "While writing comma separated output: ", e );
             }
+            
         }
 
+    }
+
+    /**
+     * Writes all output for one score type.
+     *
+     * @param <T> the score component type
+     * @param destinationConfig the destination configuration    
+     * @param output the score output to iterate through
+     * @param formatter optional formatter, can be null
+     * @throws IOException if the output cannot be written
+     */
+
+    private static <T extends ScoreOutput<?, T>> void writeOneScoreOutputType( DestinationConfig destinationConfig,
+                                                                               MetricOutputMultiMapByTimeAndThreshold<T> output,
+                                                                               Format formatter )
+            throws IOException
+    {
+        // Loop across scores
+        for ( Map.Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<T>> m : output.entrySet() )
+        {
+            StringJoiner headerRow = new StringJoiner( "," );
+            headerRow.merge( HEADER_DEFAULT );
+            List<RowCompareByLeft> rows =
+                    CommaSeparatedScoreWriter.getRowsForOneScore( m.getKey().getKey(),
+                                                                  m.getValue(),
+                                                                  headerRow,
+                                                                  formatter );
+
+            // Add the header row
+            rows.add( RowCompareByLeft.of( HEADER_INDEX, headerRow ) );
+
+            // Write the output
+            MetricOutputMetadata meta = m.getValue().getMetadata();
+            Path outputPath = ConfigHelper.getOutputPathToWrite( destinationConfig, meta );
+
+            CommaSeparatedScoreWriter.writeTabularOutputToFile( rows, outputPath );
+        }
     }
 
     /**
@@ -149,7 +176,7 @@ public class CommaSeparatedScoreWriter<T extends ScoreOutput<?, T>> extends Comm
             {
                 name = name + HEADER_DELIMITER + e.getKey().toString();
             }
-            addRowsForOneScoreComponent( name, e.getValue(), headerRow, returnMe, formatter );
+            CommaSeparatedScoreWriter.addRowsForOneScoreComponent( name, e.getValue(), headerRow, returnMe, formatter );
         }
         return returnMe;
     }
