@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
@@ -17,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.FeaturePlus;
+import wres.config.ProjectConfigException;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.Feature;
@@ -73,6 +75,7 @@ class ProcessorHelper
      * @param thresholdExecutor the {@link ExecutorService} for processing thresholds
      * @param metricExecutor the {@link ExecutorService} for processing metrics
      * @throws IOException when an issue occurs during ingest
+     * @throws ProjectConfigException if the project configuration is invalid
      * @throws WresProcessingException when an issue occurs during processing
      */
 
@@ -80,7 +83,7 @@ class ProcessorHelper
                                       final ExecutorService pairExecutor,
                                       final ExecutorService thresholdExecutor,
                                       final ExecutorService metricExecutor )
-            throws IOException
+            throws IOException, ProjectConfigException
     {
 
         final ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
@@ -112,8 +115,10 @@ class ProcessorHelper
         List<Feature> successfulFeatures = new ArrayList<>();
         List<Feature> missingDataFeatures = new ArrayList<>();
 
-        // Read any threshold source in the configuration
-        Map<FeaturePlus, Set<Threshold>> thresholds = ConfigHelper.readThresholdsFromProjectConfig( projectConfig );
+        // Read external thresholds from the configuration, per feature
+        // Compare on locationId only. TODO: improve the representation of features
+        final Map<FeaturePlus, Set<Threshold>> thresholds = new TreeMap<>( FeaturePlus::compareByLocationId );
+        thresholds.putAll( ConfigHelper.readThresholdsFromProjectConfig( projectConfig ) );
 
         // Reduce our triad of executors to one object
         ExecutorServices executors = new ExecutorServices( pairExecutor,

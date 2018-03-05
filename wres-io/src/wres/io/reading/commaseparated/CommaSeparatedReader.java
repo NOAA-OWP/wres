@@ -76,24 +76,24 @@ public class CommaSeparatedReader
             // No: add the first row
             else
             {
-                readAllThresholdsForOneFeature( returnMe,
-                                                isProbability,
-                                                condition,
-                                                labels,
-                                                firstLine,
-                                                missingValue );
+                CommaSeparatedReader.readAllThresholdsForOneFeature( returnMe,
+                                                                     isProbability,
+                                                                     condition,
+                                                                     labels,
+                                                                     firstLine,
+                                                                     missingValue );
             }
 
             // Process each feature
             String nextLine;
             while ( Objects.nonNull( nextLine = input.readLine() ) )
             {
-                readAllThresholdsForOneFeature( returnMe,
-                                                isProbability,
-                                                condition,
-                                                labels,
-                                                nextLine,
-                                                missingValue );
+                CommaSeparatedReader.readAllThresholdsForOneFeature( returnMe,
+                                                                     isProbability,
+                                                                     condition,
+                                                                     labels,
+                                                                     nextLine,
+                                                                     missingValue );
 
             }
         }
@@ -138,11 +138,11 @@ public class CommaSeparatedReader
             // Feature maps on locationId only              
             Feature feature = new Feature( null, null, null, next[0], null, null, null, null, null, null );
             FeaturePlus nextFeature = FeaturePlus.of( feature );
-            mutate.put( nextFeature, getThresholds( Arrays.copyOfRange( next, 1, next.length ),
-                                                    labels,
-                                                    isProbability,
-                                                    condition,
-                                                    missingValue ) );
+            mutate.put( nextFeature, CommaSeparatedReader.getThresholds( Arrays.copyOfRange( next, 1, next.length ),
+                                                                         labels,
+                                                                         isProbability,
+                                                                         condition,
+                                                                         missingValue ) );
         }
     }
 

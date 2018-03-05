@@ -18,6 +18,7 @@ import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.ProjectConfigException;
 import wres.config.Validation;
 import wres.config.generated.ProjectConfig;
 import wres.io.config.ProjectConfigPlus;
@@ -118,7 +119,7 @@ public class Control implements Function<String[], Integer>
 
             return 0;
         }
-        catch ( WresProcessingException | IOException e )
+        catch ( WresProcessingException | IOException | ProjectConfigException e )
         {
 
             LOGGER.error( "Could not complete project execution:", e );
