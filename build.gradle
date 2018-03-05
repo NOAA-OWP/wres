@@ -399,6 +399,20 @@ project(':wres-thredds-facade')
         compile 'org.eclipse.jetty:apache-jsp:9.4.8.v20171121'
         compile 'org.eclipse.jetty:apache-jstl:9.4.8.v20171121'
 
+        compile('edu.ucar:cdm:4.6.11')
+        {
+            // because we are getting a later version from diff group:
+            exclude group: 'c3p0', module: 'c3p0'
+
+            // because these shouldn't be on compile classpath:
+            exclude group: 'ch.qos.logback', module: 'logback-classic'
+            exclude group: 'ch.qos.logback', module: 'logback-core'
+
+            // because we probably don't need these extras and they pull a lot:
+            exclude group: 'edu.ucar', module: 'httpservices'
+            exclude group: 'com.amazonaws', module: 'aws-java-sdk-s3'
+        }
+
         // THREDDS war itself:
         runtime 'edu.ucar:tds:4.6.11'
 
