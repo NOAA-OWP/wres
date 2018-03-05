@@ -13,7 +13,7 @@ then
 fi
 systests_dir=$1
 #scenario_dirs=$2
-#echo "$systests_dir $scenario_dirs"
+echo "$systests_dir $scenario_dirs"
 
 if [ ! -d $systests_dir ]
 then
@@ -43,14 +43,21 @@ do
 		cd $scenario_dir/output
 		if [ -f sorted_pairs.csv ]
 		then
-			($MetricsScriptDir/scripts/checkSorted.bash sorted_pairs.csv > checkedSorted_pairs.csv) 2> error.txt
-			theDiff=`diff -q sorted_pairs.csv checkedSorted_pairs.csv`
-			if [ -z "$theDiff" ]
+			if [ -f checkedSorted_pairs.csv ]
 			then
-				echo "There are no extra column in sorted_pairs.csv"
 				rm -v checkedSorted_pairs.csv
 			fi
-			#touch error.txt
+			is400=`echo $scenario_dir | grep scenario4`
+			if [ -n "$is400" ]
+			then
+				($MetricsScriptDir/scripts/checkSorted.bash sorted_pairs.csv > checkedSorted_pairs.csv) 2> error.txt
+				theDiff=`diff -q sorted_pairs.csv checkedSorted_pairs.csv`
+				if [ -z "$theDiff" ]
+				then
+					echo "There are no extra column in sorted_pairs.csv"
+					rm -v checkedSorted_pairs.csv
+				fi
+			fi
 			pwd
 			if [ -f testMetricsResults.txt ]
 			then # remove the old results file
@@ -58,7 +65,7 @@ do
 			fi
 			$MetricsScriptDir/scripts/createMetricsTest.bash
 			rm -v temp1.txt header.txt metricsValues.txt fileValues.txt joinFiles.txt
-			if [ ! -s error.txt ]
+			if [ -f error.txt -a ! -s error.txt ]
 			then # remove it if is an empty file (no error occured)
 				rm -v error.txt
 			fi
