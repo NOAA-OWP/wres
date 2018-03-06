@@ -253,6 +253,7 @@ public final class Operations {
      * @param start The time (in milliseconds) at which the WRES was executed
      * @param duration The length of time (in milliseconds) that the WRES
      *                 executed in
+     * @param failed Whether or not the execution failed
      * @param error Any error that caused the WRES to crash
      */
     public static void logExecution( String[] arguments,
