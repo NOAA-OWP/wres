@@ -110,7 +110,10 @@ class PoolingForecastScripter extends Scripter
         }
         else
         {
-            int leadModifier = this.getProgress() + this.getLeadOffset() + 1;
+            int leadModifier = this.getProgress();
+            //leadModifier *= this.getProjectDetails().getScale().getFrequency();
+            leadModifier += this.getLeadOffset();
+            leadModifier += 1;
 
             this.add( "(F.lead - ", leadModifier, ") % " );
             this.add( TimeHelper.unitsToLeadUnits( this.getProjectDetails()
@@ -172,7 +175,7 @@ class PoolingForecastScripter extends Scripter
 
     private int getLeadOffset() throws IOException
     {
-        Integer offset  = null;
+        Integer offset;
         try
         {
             offset =

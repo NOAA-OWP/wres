@@ -309,6 +309,13 @@ public final class Operations {
             String username = SystemSettings.getUserName();
             Timestamp startTimestamp = new Timestamp( start );
             String runTime = duration + " MILLISECONDS";
+            String wresVersion = "Development";
+
+            if (Operations.class.getPackage() != null && Operations.class.getPackage().getImplementationVersion() != null)
+            {
+                wresVersion = Operations.class.getPackage().getImplementationVersion();
+            }
+
 
             // For any arguments that happen to be regular files, read the
             // contents of the first file into the "project" field. Maybe there
@@ -356,7 +363,7 @@ public final class Operations {
             script.addLine(")");
             script.addLine("VALUES (");
             script.addTab().addLine("?,");
-            script.addTab().addLine("'',");
+            script.addTab().addLine("?,");
             script.addTab().addLine("?,");
             script.addTab().addLine("?,");
             script.addTab().addLine("?,");
@@ -367,6 +374,7 @@ public final class Operations {
             script.addLine(");");
 
             script.execute( String.join(" ", arguments),
+                          wresVersion,
                           project,
                           username,
                           address,

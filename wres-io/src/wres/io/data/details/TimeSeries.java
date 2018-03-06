@@ -254,6 +254,7 @@ public final class TimeSeries
                 script.addLine(") INHERITS (wres.ForecastValue);");
                 script.addLine("ALTER TABLE ", name, " ALTER COLUMN lead SET STATISTICS 2000;");
                 script.addLine("ALTER TABLE ", name, " ALTER COLUMN timeseries_id SET STATISTICS 2000;");
+                script.addLine("ALTER TABLE ", name, " OWNER TO wres;");
 
                 synchronized (PARTITION_LOCK)
                 {
