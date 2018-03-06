@@ -1287,7 +1287,8 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
      *     overhead at runtime, or the number of threads that will be
      *     retrieving data all at once.
      * </p>
-     * @return
+     * @return The number of Time Series' to return in one window
+     * @throws SQLException Thrown if the number could not be computed in the database
      */
     public Integer getNumberOfSeriesToRetrieve() throws SQLException
     {
@@ -2534,6 +2535,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
      *     If we have forecasts such as:
      * </p>
      * <table>
+     *     <caption>Forecast Dates</caption>
      *     <tr>
      *         <td>1985-01-01 12:00:00</td>
      *     </tr>
@@ -2566,7 +2568,8 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
      *                     type of data to use
      * @param feature The location to find the lag for
      * @return The number of lead hours between forecasts for a feature
-     * @throws SQLException
+     * @throws SQLException Thrown if the ID for the variable could not be evaluated
+     * @throws SQLException Thrown if the lag could not be computed in the database
      */
     public Integer getForecastLag(DataSourceConfig sourceConfig, Feature feature) throws SQLException
     {
