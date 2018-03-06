@@ -1638,7 +1638,7 @@ public final class Database {
 		StringBuilder builder = new StringBuilder();
 
 		builder.append("DROP SCHEMA partitions CASCADE;").append(NEWLINE);
-		builder.append("CREATE SCHEMA partitions;").append(NEWLINE);
+		builder.append("CREATE SCHEMA partitions AUTHORIZATION wres;").append(NEWLINE);
 		builder.append("TRUNCATE wres.ForecastSource;").append(NEWLINE);
 		builder.append("TRUNCATE wres.ForecastValue;").append(NEWLINE);
 		builder.append("TRUNCATE wres.Observation;").append(NEWLINE);
