@@ -191,6 +191,59 @@ class TimeSeriesHelper
     }
 
     /**
+     * Sorts the input in time order.
+     * 
+     * @param input the unsorted input
+     * @return the sorted input in time order
+     * @throws MetricInputException if the input is null or any items in the list are null
+     */
+
+    static <T> List<Event<List<Event<T>>>> sort( List<Event<List<Event<T>>>> input )
+    {
+        if ( Objects.isNull( input ) )
+        {
+            throw new MetricInputException( "Specify a non-null list of pairs to sort." );
+        }
+        List<Event<List<Event<T>>>> returnMe = new ArrayList<>();
+        for ( Event<List<Event<T>>> nextSeries : input )
+        {
+            if ( Objects.isNull( nextSeries ) )
+            {
+                throw new MetricInputException( "Cannot sort a time-series with one or more null time-series." );
+            }
+            List<Event<T>> nextList = new ArrayList<>();
+            nextList.addAll( nextSeries.getValue() );
+            if ( nextList.stream().anyMatch( Objects::isNull ) )
+            {
+                throw new MetricInputException( "Cannot sort a time-series with one or more null events." );
+            }
+            // Sort by inner time
+            nextList.sort( TimeSeriesHelper::compareByTime );
+            
+            returnMe.add( Event.of( nextSeries.getTime(), nextList ) );
+        }
+        
+        // Sort by outer time
+        returnMe.sort( TimeSeriesHelper::compareByTime );
+        
+        return returnMe;
+    }    
+    
+    /**
+     * Compares two events by time.
+     * 
+     * @param left the left event
+     * @param right the right event
+     * @return a negative integer, zero, or a positive integer as the left event is less than, equal to, or greater 
+     *            than the right event.
+     */
+    
+    private static <T> int compareByTime( Event<T> left, Event<T> right )
+    {
+        return left.getTime().compareTo( right.getTime() );
+    }    
+    
+    /**
      * Prevent construction.
      */
 

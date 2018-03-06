@@ -11,19 +11,13 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Enumeration;
 import java.util.List;
 import java.util.Set;
-import java.util.StringJoiner;
 import java.util.TreeSet;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import javax.xml.stream.XMLStreamException;
-import javax.xml.transform.TransformerException;
-
-import com.google.common.graph.Network;
 import org.slf4j.LoggerFactory;
 
 import wres.config.generated.Feature;
@@ -243,6 +237,7 @@ public final class Operations {
     /**
      * Updates the statistics and removes all dead rows from the database
      * @return Whether or not the operation was a success
+     * @throws SQLException if the orphaned data could not be removed or the refreshing of statistics fails
      */
     public static boolean refreshDatabase() throws SQLException
     {

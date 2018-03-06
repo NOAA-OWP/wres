@@ -78,17 +78,29 @@ public final class SafeTimeSeriesOfPairsTest
         assertTrue( "Expected a regular time-series with a duration of '" + benchmark
                     + "'.",
                     ts.getRegularDuration().equals( benchmark ) );
+        
         //Add more data and test again
         first.add( Event.of( Instant.parse( "1985-01-03T00:00:00Z" ), metIn.pairOf( 2, 2 ) ) );
         first.add( Event.of( Instant.parse( "1985-01-04T00:00:00Z" ), metIn.pairOf( 3, 3 ) ) );
         first.add( Event.of( Instant.parse( "1985-01-05T00:00:00Z" ), metIn.pairOf( 4, 4 ) ) );
+        
+        SafeTimeSeriesOfSingleValuedPairsBuilder c = new SafeTimeSeriesOfSingleValuedPairsBuilder();
+        TimeSeriesOfSingleValuedPairs tsSecond =
+                (TimeSeriesOfSingleValuedPairs) c.addTimeSeriesData( firstBasisTime, first )
+                                                 .setMetadata( meta )
+                                                 .build();
         assertTrue( "Expected a regular time-series with a duration of '" + benchmark
-                    + "'.",
-                    b.build().getRegularDuration().equals( benchmark ) );
+                    + "'.", tsSecond.getRegularDuration().equals( benchmark ) );
+        
         //Add an irregular timestep and check for null output
         first.add( Event.of( Instant.parse( "1985-01-07T00:00:00Z" ), metIn.pairOf( 4, 4 ) ) );
+        SafeTimeSeriesOfSingleValuedPairsBuilder d = new SafeTimeSeriesOfSingleValuedPairsBuilder();
+        TimeSeriesOfSingleValuedPairs tsThird =
+                (TimeSeriesOfSingleValuedPairs) d.addTimeSeriesData( firstBasisTime, first )
+                                                 .setMetadata( meta )
+                                                 .build();      
         assertTrue( "Expected an irregular time-series.",
-                    Objects.isNull( b.build().getRegularDuration() ) );
+                    Objects.isNull( tsThird.getRegularDuration() ) );
     }
 
     /**
@@ -293,7 +305,6 @@ public final class SafeTimeSeriesOfPairsTest
         }
         catch ( MetricInputException e )
         {
-            e.printStackTrace();
         }
         //Construct with null input for baseline
         try
@@ -311,7 +322,6 @@ public final class SafeTimeSeriesOfPairsTest
         }
         catch ( MetricInputException e )
         {
-            e.printStackTrace();
         }
     }
 

@@ -139,6 +139,12 @@
         <xs:attribute name="label" type="xs:string" />
     </xs:complexType>
 
+    <xs:simpleType name="thresholdFormat">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="csv" />
+        </xs:restriction>
+    </xs:simpleType>
+
     <!-- An enum to specify if the left, right, or baseline has been chosen. -->
     <xs:simpleType name="leftOrRightOrBaseline">
         <xs:restriction base="xs:string">
@@ -190,7 +196,7 @@
                     <xs:complexType>
                         <xs:simpleContent>
                             <xs:extension base="xs:anyURI">
-                                <xs:attribute name="format" type="format" />
+                                <xs:attribute name="format" type="thresholdFormat" use="required" />
                                 <xs:attribute name="unit" type="xs:string" default="" />
                                 <xs:attribute name="missingValue" type="xs:string" default="-999.0" />
                             </xs:extension>
@@ -332,7 +338,9 @@
 
     <xs:simpleType name="destinationType">
         <xs:restriction base="xs:string">
-            <xs:enumeration value="netCDF" />
+	    <xs:enumeration value="csv" />
+            <xs:enumeration value="png" />
+            <xs:enumeration value="netcdf" />
             <xs:enumeration value="numeric" />
             <xs:enumeration value="graphic" />
             <xs:enumeration value="pairs" />

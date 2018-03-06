@@ -17,8 +17,11 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -29,6 +32,7 @@ import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,18 +50,26 @@ import wres.config.generated.Format;
 import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
+import wres.config.generated.MetricsConfig;
 import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.PoolingWindowConfig;
+import wres.config.generated.ProbabilityOrValue;
 import wres.config.generated.ProjectConfig;
+import wres.config.generated.ProjectConfig.Outputs;
+import wres.config.generated.ThresholdFormat;
+import wres.config.generated.ThresholdOperator;
+import wres.config.generated.ThresholdsConfig;
 import wres.config.generated.TimeScaleConfig;
 import wres.config.generated.TimeWindowMode;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Threshold;
+import wres.datamodel.Threshold.Operator;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
 import wres.io.data.caching.Features;
 import wres.io.data.details.ProjectDetails;
+import wres.io.reading.commaseparated.CommaSeparatedReader;
 import wres.io.utilities.Database;
 import wres.util.Strings;
 import wres.util.TimeHelper;
@@ -1506,17 +1518,156 @@ public class ConfigHelper
      * 
      * @param projectConfig the project configuration
      * @return the thresholds associated with each feature obtained from a source in the project configuration
-     * @throws IOException if the source could not be read
+     * @throws ProjectConfigException if the source could not be read
      */
 
     public static Map<FeaturePlus, Set<Threshold>> readThresholdsFromProjectConfig( ProjectConfig projectConfig )
-            throws IOException
+            throws ProjectConfigException
     {
+        Objects.requireNonNull( projectConfig, "Provide non-null project configuration with external thresholds." );
+
         Map<FeaturePlus, Set<Threshold>> returnMe = new TreeMap<>();
 
-        //TODO: complete the reading when the project configuration is agreed 
+        // Obtain and read thresholds
+        MetricsConfig metrics = projectConfig.getMetrics();
+        if ( Objects.nonNull( metrics ) && !metrics.getThresholds().isEmpty() )
+        {
+            // Obtain the set of external thresholds to read
+            Set<ThresholdsConfig> external = metrics.getThresholds()
+                                                    .stream()
+                                                    .filter( t -> t.getCommaSeparatedValuesOrSource() instanceof ThresholdsConfig.Source )
+                                                    .collect( Collectors.toSet() );
+
+            // Iterate the external sources and read them all into the map
+            for ( ThresholdsConfig next : external )
+            {
+                returnMe.putAll( ConfigHelper.readOneThresholdFromProjectConfig( projectConfig, next ) );
+            }
+
+        }
+
+        return Collections.unmodifiableMap( returnMe );
+    }
+
+    /**
+     * Reads a {@link ThresholdConfig} and returns a corresponding {@link Set} of {@link Threshold} 
+     * by {@link FeaturePlus}.
+     * 
+     * @param projectConfig the project configuration
+     * @param threshold the threshold configuration
+     * @return a map of thresholds by feature
+     * @throws ProjectConfigException if the threshold could not be read 
+     */
+
+    private static Map<FeaturePlus, Set<Threshold>> readOneThresholdFromProjectConfig( ProjectConfig projectConfig,
+                                                                                       ThresholdsConfig threshold )
+            throws ProjectConfigException
+    {
+
+        Map<FeaturePlus, Set<Threshold>> returnMe = new TreeMap<>();
+
+        ThresholdsConfig.Source nextSource = (ThresholdsConfig.Source) threshold.getCommaSeparatedValuesOrSource();
+
+        // Pre-validate path
+        if ( Objects.isNull( nextSource.getValue() ) )
+        {
+            throw new ProjectConfigException( threshold, "Specify a non-null path to read for the external "
+                                                    + "source of thresholds in project '"
+                                                    + projectConfig.getLabel()
+                                                    + "'." );
+        }
+        // Validate format
+        if ( nextSource.getFormat() != ThresholdFormat.CSV )
+        {
+            throw new ProjectConfigException( threshold,
+                                              "Unsupported source format for thresholds '"
+                                                    + nextSource.getFormat() + "'" );
+        }
+
+        // Default to probability
+        boolean isProbability =
+                Objects.isNull( threshold.getType() ) || threshold.getType() == ProbabilityOrValue.PROBABILITY;
+
+        // Missing value?
+        Double missing = null;
+
+        if ( Objects.nonNull( nextSource.getMissingValue() ) )
+        {
+            missing = Double.parseDouble( nextSource.getMissingValue() );
+        }
+
+        //Path
+        Path commaSeparated = Paths.get( nextSource.getValue() );
+
+        // Condition: default to greater
+        Operator operator = ConfigHelper.fromThresholdOperator( threshold.getOperator() );
+
+        try
+        {
+            returnMe.putAll( CommaSeparatedReader.readThresholds( commaSeparated,
+                                                                  isProbability,
+                                                                  operator,
+                                                                  missing ) );
+        }
+        catch ( IOException e )
+        {
+            throw new ProjectConfigException( threshold,
+                                              "Failed to read the comman separated thresholds "
+                                                    + "from '" + commaSeparated + "'.",
+                                              e );
+        }
 
         return returnMe;
+    }
+    
+    /**
+     * Maps between threshold operators in {@link ThresholdOperator} and those in {@link Operator}. The default is
+     * {@link Operator#GREATER} when the input is null.
+     * 
+     * @param configName the input {@link ThresholdOperator}
+     * @return the corresponding {@link Operator}.
+     */
+
+    private static Operator fromThresholdOperator( ThresholdOperator configName )
+    {
+        if ( Objects.isNull( configName ) )
+        {
+            return Operator.GREATER;
+        }
+        switch ( configName )
+        {
+            case EQUAL_TO:
+                return Operator.EQUAL;
+            case LESS_THAN:
+                return Operator.LESS;
+            case LESS_THAN_OR_EQUAL_TO:
+                return Operator.LESS_EQUAL;
+            case GREATER_THAN_OR_EQUAL_TO:
+                return Operator.GREATER_EQUAL;
+            default: return Operator.GREATER;
+        }
+    }    
+    
+    /**
+     * Returns a list of output formats in the input configuration that can be mutated incrementally.
+     * 
+     * @param projectConfig the project configuration
+     * @return the output formats in the configuration that can be mutated incrementally or the empty set
+     */
+
+    public static Set<DestinationType> getIncrementalFormats( ProjectConfig projectConfig )
+    {
+        Outputs output = projectConfig.getOutputs();
+
+        // The only incremental type currently supported is DestinationType.NETCDF
+        if ( Objects.nonNull( output )
+             && output.getDestination().stream().anyMatch( type -> type.getType() == DestinationType.NETCDF ) )
+        {
+            Collections.unmodifiableSet( new HashSet<>( Arrays.asList( DestinationType.NETCDF ) ) );
+        }
+
+        // Return empty set
+        return Collections.emptySet();
     }
 
 }
