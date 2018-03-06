@@ -90,7 +90,8 @@ final class NetCDFReader {
 						LOGGER.info("\t\t\t{}", attribute.getValue(i).toString());
 					}
 				}
-				
+
+				/* Method getAnnotations seems deprecated in cdm 5
 				Map<String, Object> annotations = var.getAnnotations();
 				
 				if (annotations.size() > 0)
@@ -105,7 +106,8 @@ final class NetCDFReader {
 						System.out.println(annotations.get(key));
 					}
 				}
-				
+
+				*/
 				System.out.println("");
 				if (var.getDimensions().size() > 0) {
                     int[] origin = new int[var.getDimensions().size()];
