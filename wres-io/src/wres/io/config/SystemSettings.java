@@ -332,7 +332,16 @@ public final class SystemSettings extends XMLReader
 
 	public static String getUserName()
     {
-        return instance.databaseConfiguration.getUsername();
+        String name = instance.databaseConfiguration.getUsername();
+
+        // If the user is using the default user name, pull their actual user
+        // name, not their database user name
+        if (name.equals( "wres_user" ))
+        {
+            name = System.getProperty( "user.name" );
+        }
+
+        return name;
     }
 
     public static String getRawConfiguration()
