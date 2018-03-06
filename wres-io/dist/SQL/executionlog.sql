@@ -1,7 +1,5 @@
 ﻿-- Table: public.executionlog
 
-DROP TABLE IF EXISTS public.executionlog;
-
 CREATE TABLE IF NOT EXISTS public.executionlog
 (
   log_id serial,

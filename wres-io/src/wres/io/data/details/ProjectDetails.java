@@ -44,6 +44,7 @@ import wres.io.data.caching.Features;
 import wres.io.data.caching.Variables;
 import wres.io.utilities.DataSet;
 import wres.io.utilities.Database;
+import wres.io.utilities.LRUMap;
 import wres.io.utilities.NoDataException;
 import wres.io.utilities.ScriptBuilder;
 import wres.io.utilities.ScriptGenerator;
@@ -96,7 +97,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     /**
      *  Stores the last possible lead time for each feature
      */
-    private final Map<Feature, Integer> lastLeads = new ConcurrentHashMap<>(  );
+    private final Map<Feature, Integer> lastLeads = new LRUMap<>( 20 );
 
     /**
      * Stores the lead hour offset for each person
@@ -110,9 +111,13 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     private final Map<Feature, Integer> leadOffsets = new ConcurrentSkipListMap<>( ConfigHelper.getFeatureComparator() );
 
     /**
-     * Stores the earliest possible observation data for each feature
+     * Stores the earliest possible observation date for each feature
      */
-    private final Map<Feature, String> initialObservationDates = new ConcurrentHashMap<>(  );
+    private final Map<Feature, String> initialObservationDates = new LRUMap<>( 20 );
+
+    private final Map<Feature, String> initialForecastDates = new LRUMap<>(20);
+
+    private final Map<Feature, Integer> forecastLag = new LRUMap<>(20);
 
     /**
      * Stores the number of basis times pools for each feature
@@ -124,7 +129,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
      * on x different sets of issue times
      * </p>
      */
-    private final Map<Feature, Integer> poolCounts = new ConcurrentHashMap<>(  );
+    private final Map<Feature, Integer> poolCounts = new LRUMap<>( 20 );
 
     /**
      * The set of all features pertaining to the project
@@ -145,6 +150,11 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
      * The ID for the variable for the baseline
      */
     private Integer baselineVariableID = null;
+
+    /**
+     * Details the number of time series to pull at once when gathering by time series
+     */
+    private Integer numberOfSeriesToRetrieve = null;
 
     /**
      * Indicates whether or not this project was inserted on upon this
@@ -674,44 +684,6 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
             unit = this.getBaseline().getVariable().getUnit();
         }
         return unit;
-    }
-
-    /**
-     * @return The standardized lead time to offset the left handed data by
-     */
-    public long getLeftTimeShift()
-    {
-        long shift = 0;
-
-        if (this.getLeft().getTimeShift() != null)
-        {
-            shift = TimeHelper.unitsToLeadUnits( this.getLeft().getTimeShift()
-                                                     .getUnit()
-                                                     .value(),
-                                                 this.getLeft().getTimeShift().getWidth()
-            );
-        }
-
-        return shift;
-    }
-
-    /**
-     * @return The standardized lead time to offset the right handed data by
-     */
-    public long getRightTimeShift()
-    {
-        long shift = 0;
-
-        if (this.getRight().getTimeShift() != null)
-        {
-            shift = TimeHelper.unitsToLeadUnits( this.getRight().getTimeShift()
-                                                     .getUnit()
-                                                     .value(),
-                                                 this.getRight().getTimeShift().getWidth()
-            );
-        }
-
-        return shift;
     }
 
     /**
@@ -1294,6 +1266,96 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         }
 
         return this.calculateLeads;
+    }
+
+    /**
+     * Determines the number of time series that would be prudent to retrieve
+     * from the database at once
+     * <p>
+     *     If small data sets are involved, pulling many series at once is a
+     *     good idea. If a large dataset is involved, that may end in retrievals
+     *     gathering several megabytes of data per series. If many series are all
+     *     loaded within the same task and many tasks are running at once, it
+     *     could end up greatly increasing the memory footprint and execution
+     *     time of the application.
+     * </p>
+     * <p>
+     *     This value isn't precise and therefore doesn't need to make a huge
+     *     effort in doing so. The application can generate a rough estimate of
+     *     the size of the data set that will be retrieved, but it cannot
+     *     factor in overhead such as IO time on the database server, object
+     *     overhead at runtime, or the number of threads that will be
+     *     retrieving data all at once.
+     * </p>
+     * @return
+     */
+    public Integer getNumberOfSeriesToRetrieve() throws SQLException
+    {
+        if (this.numberOfSeriesToRetrieve == null)
+        {
+
+            ScriptBuilder script = new ScriptBuilder();
+            script.addLine(
+                    "SELECT (((COUNT(E.ensemble_id) * 8 + 20 * -- This determines the size of a single row" );
+            script.add( "(" )
+                  .addTab()
+                  .addLine( "-- This determines the number of expected rows" );
+            script.addTab().addLine( "SELECT COUNT(*)" );
+            script.addTab().addLine( "FROM wres.ForecastValue FV" );
+            script.addTab().addLine( "INNER JOIN (" );
+            script.addTab( 2 ).addLine( "SELECT TS.timeseries_id" );
+            script.addTab( 2 ).addLine( "FROM wres.TimeSeries TS" );
+            script.addTab( 2 ).addLine( "INNER JOIN wres.ForecastSource FS" );
+            script.addTab( 3 )
+                  .addLine( "ON FS.forecast_id = TS.timeseries_id" );
+            script.addTab( 2 ).addLine( "INNER JOIN wres.ProjectSource PS" );
+            script.addTab( 3 ).addLine( "ON PS.source_id = FS.source_id" );
+            script.addTab( 2 )
+                  .addLine( "WHERE PS.project_id = ", this.getId() );
+            script.addTab( 3 )
+                  .addLine( "AND PS.member = ", ProjectDetails.RIGHT_MEMBER );
+            script.addTab( 2 ).addLine( "LIMIT 1" );
+            script.addTab().addLine( ") AS TS" );
+            script.addTab( 2 )
+                  .addLine( "ON TS.timeseries_id = FV.timeseries_id" );
+            script.add( ")) / 1000)::int AS size" )
+                  .addTab()
+                  .addLine(
+                          "-- We divide by 1000 to convert the number to kilobyte scale" );
+            script.addLine(
+                    "-- We select from ensemble because the number of ensembles affects" );
+            script.addLine(
+                    "-- the number of values returned in the resultant array" );
+            script.addLine( "FROM wres.Ensemble E" );
+            script.addLine( "WHERE EXISTS (" );
+            script.addTab().addLine( "SELECT 1" );
+            script.addTab().addLine( "FROM wres.TimeSeries TS" );
+            script.addTab().addLine( "INNER JOIN wres.ForecastSource FS" );
+            script.addTab( 2 )
+                  .addLine( "ON FS.forecast_id = TS.timeseries_id" );
+            script.addTab().addLine( "INNER JOIN wres.ProjectSource PS" );
+            script.addTab( 2 ).addLine( "ON PS.source_id = FS.source_id" );
+            script.addTab().addLine( "WHERE PS.project_id = ", this.getId() );
+            script.addTab( 2 )
+                  .addLine( "AND PS.member = ", ProjectDetails.RIGHT_MEMBER );
+            script.addTab( 2 ).addLine( "AND TS.ensemble_id = E.ensemble_id" );
+            script.addLine( ");" );
+
+            int timeSeriesSize = script.retrieve( "size" );
+
+            // We're going to limit the size of a time series group to 1MB
+            final int sizeCap = 1000;
+
+            // The number of series to retrieve will either be 1 or the number
+            // of time series that may be retrieved and still fit under the cap.
+            // Using Math.max ensures that we'll pull at least one value at a time.
+            // If a single time series has an estimated size of 1186KB, we'll
+            // only retrieve one time series at a time. If the estimated size is
+            // 400KB, we'll bring in two at a time.
+            this.numberOfSeriesToRetrieve = Math.max(1, sizeCap / timeSeriesSize);
+        }
+
+        return this.numberOfSeriesToRetrieve;
     }
 
     /**
@@ -2353,7 +2415,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     /**
      * @return the minimum value specified or a default of Integer.MIN_VALUE
      */
-    public Integer getMinimumLeadHour()
+    public int getMinimumLeadHour()
     {
         int result = Integer.MIN_VALUE;
 
@@ -2375,7 +2437,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     /**
      * @return the maximum value specified or a default of Integer.MAX_VALUE
      */
-    private int getMaximumLeadHour()
+    public int getMaximumLeadHour()
     {
         int result = Integer.MAX_VALUE;
 
@@ -2392,6 +2454,16 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         }
 
         return result;
+    }
+
+    public int getMaximumLeadHourForFeature(Feature feature)
+    {
+        if (this.getMaximumLeadHour() < Integer.MAX_VALUE)
+        {
+            return this.getMaximumLeadHour();
+        }
+
+        return 0;
     }
 
     /**
@@ -2425,12 +2497,122 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
                                                                               feature );
                 this.initialObservationDates.put(
                         feature,
-                        "'" + Database.getResult( script, "zero_date" ) + "'"
+                        Database.getResult( script, "zero_date" )
                 );
             }
         }
 
         return this.initialObservationDates.get( feature);
+    }
+
+    public String getInitialForecastDate( DataSourceConfig sourceConfig, Feature feature) throws SQLException
+    {
+        synchronized ( this.initialForecastDates )
+        {
+            if (!this.initialForecastDates.containsKey( feature ))
+            {
+                String script = ScriptGenerator.generateInitialForecastDateScript(
+                        this,
+                        sourceConfig,
+                        feature
+                );
+
+                this.initialForecastDates.put(
+                        feature,
+                        Database.getResult( script, "zero_date" )
+                );
+            }
+
+            return this.initialForecastDates.get(feature);
+        }
+    }
+
+    /**
+     * Gets and stores the largest leap between two different forecasts in
+     * forecast order, measured in the standard lead hour unit
+     * <p>
+     *     If we have forecasts such as:
+     * </p>
+     * <table>
+     *     <tr>
+     *         <td>1985-01-01 12:00:00</td>
+     *     </tr>
+     *     <tr>
+     *         <td>1985-01-02 12:00:00</td>
+     *     </tr>
+     *     <tr>
+     *         <td>1985-01-03 12:00:00</td>
+     *     </tr>
+     *     <tr>
+     *         <td>1985-01-05 12:00:00</td>
+     *     </tr>
+     *     <tr>
+     *         <td>1985-01-06 12:00:00</td>
+     *     </tr>
+     *     <tr>
+     *         <td>1985-01-09 12:00:00</td>
+     *     </tr>
+     *     <tr>
+     *         <td>1985-01-10 12:00:00</td>
+     *     </tr>
+     * </table>
+     * <p>
+     *     We'll find that the greatest gap between two forecasts is three days.
+     *     When we go to select data spanning across initialization dates, the
+     *     smallest and safest distance is this maximum. If a smaller span is
+     *     chosen, you run the risk of generating windows with no data.
+     * </p>
+     * @param sourceConfig The datasource configuration that dictates what
+     *                     type of data to use
+     * @param feature The location to find the lag for
+     * @return The number of lead hours between forecasts for a feature
+     * @throws SQLException
+     */
+    public Integer getForecastLag(DataSourceConfig sourceConfig, Feature feature) throws SQLException
+    {
+        synchronized (this.forecastLag)
+        {
+            if (!this.forecastLag.containsKey( feature ))
+            {
+                ScriptBuilder script = new ScriptBuilder();
+                script.addLine("WITH initialization_lag AS");
+                script.addLine("(");
+                script.addTab().addLine("SELECT (");
+                script.addTab(  2  ).addLine("EXTRACT (");
+                script.addTab(   3   ).addLine( "epoch FROM AGE (");
+                script.addTab(    4    ).addLine( "TS.initialization_date,");
+                script.addTab(    4    ).addLine( "(");
+                script.addTab(     5     ).addLine("LAG(TS.initialization_date) OVER (ORDER BY TS.initialization_date)");
+                script.addTab(    4    ).addLine( ")");
+                script.addTab(   3   ).addLine(")");
+                script.addTab(  2  ).addLine(") / 3600)::int AS lag");
+                script.addTab().addLine("FROM wres.TimeSeries TS");
+                script.addTab().add("WHERE ");
+                script.addLine(ConfigHelper.getVariablePositionClause(
+                        feature,
+                        Variables.getVariableID( sourceConfig ),
+                        "TS" )
+                );
+                script.addTab(  2  ).addLine("AND EXISTS (");
+                script.addTab(   3   ).addLine("SELECT 1");
+                script.addTab(   3   ).addLine("FROM wres.ForecastSource FS");
+                script.addTab(   3   ).addLine("INNER JOIN wres.ProjectSource PS");
+                script.addTab(    4    ).addLine("ON PS.source_id = FS.source_id");
+                script.addTab(   3   ).addLine("WHERE PS.project_id = ", this.getId());
+                script.addTab(    4    ).addLine("AND PS.member = ", this.getInputName( sourceConfig ));
+                script.addTab(    4    ).addLine("AND FS.forecast_id = TS.timeseries_id");
+                script.addTab(  2  ).addLine(")");
+                script.addTab().addLine("ORDER BY TS.initialization_date");
+                script.addLine(")");
+                script.addLine("SELECT MAX(IL.lag) AS typical_gap");
+                script.addLine("FROM initialization_lag IL;");
+
+                this.forecastLag.put( feature, script.retrieve( "typical_lag" ) );
+            }
+
+
+            return this.forecastLag.get( feature );
+        }
     }
 
     /**

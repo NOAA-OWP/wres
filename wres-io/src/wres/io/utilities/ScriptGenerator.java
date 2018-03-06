@@ -325,7 +325,7 @@ public final class ScriptGenerator
 
         StringBuilder script = new StringBuilder(  );
 
-        script.append( "SELECT MIN(O.observation_time)::text AS zero_date" ).append(NEWLINE);
+        script.append( "SELECT '''' || MIN(O.observation_time)::text || '''' AS zero_date" ).append(NEWLINE);
         script.append("FROM wres.Observation O").append(NEWLINE);
         script.append("WHERE ")
               .append(ConfigHelper.getVariablePositionClause( feature,
@@ -373,6 +373,45 @@ public final class ScriptGenerator
         }
 
         script.append( ";" );
+
+        return script.toString();
+    }
+
+    public static String generateInitialForecastDateScript( ProjectDetails projectDetails,
+                                                            DataSourceConfig forecastConfig,
+                                                            Feature feature)
+            throws SQLException
+    {
+        ScriptBuilder script = new ScriptBuilder(  );
+
+        script.addLine("SELECT '''' || MIN(TS.initialization_date)::text || '''' AS zero_date" );
+        script.addLine("FROM wres.TimeSeries TS");
+        script.addLine("WHERE ", ConfigHelper.getVariablePositionClause( feature, Variables.getVariableID( forecastConfig ) , "TS"));
+        script.addTab().addLine("AND EXISTS (");
+        script.addTab(  2  ).addLine("SELECT 1");
+        script.addTab(  2  ).addLine("FROM wres.ProjectSource PS");
+        script.addTab(  2  ).addLine("INNER JOIN wres.ForecastSource FS");
+        script.addTab(   3   ).addLine( "ON FS.source_id = PS.source_id");
+        script.addTab(  2  ).addLine("WHERE PS.project_id = ", projectDetails.getId());
+        script.addTab(   3   ).addLine( "AND PS.member = ", projectDetails.getInputName( forecastConfig ));
+        script.addTab(   3   ).addLine( "AND FS.forecast_id = TS.timeseries_id");
+        script.addTab(  2  ).add(")");
+
+        if (projectDetails.getEarliestIssueDate() != null)
+        {
+            script.addLine();
+            script.addTab(  2  );
+            script.add("AND TS.initialization_date >= '", projectDetails.getEarliestIssueDate(), "'");
+        }
+
+        if (projectDetails.getLatestIssueDate() != null)
+        {
+            script.addLine();
+            script.addTab(  2  );
+            script.add("AND TS.initialization_date <= '", projectDetails.getLatestIssueDate(), "'");
+        }
+
+        script.add( ";" );
 
         return script.toString();
     }

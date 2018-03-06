@@ -109,6 +109,7 @@ public class Main {
             Operations.logExecution( args,
                                      startTime,
                                      duration,
+                                     exitCode.get() == MainFunctions.FAILURE,
                                      Main.combineExceptions() );
         }
         catch ( Exception e )
@@ -119,6 +120,7 @@ public class Main {
             Operations.logExecution( args,
                                      startTime,
                                      duration,
+                                     exitCode.get() == MainFunctions.FAILURE,
                                      Main.combineExceptions( ) );
         }
         watch.stop();
