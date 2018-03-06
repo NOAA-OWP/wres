@@ -1,6 +1,7 @@
 package wres.engine.statistics.metric.config;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
@@ -350,23 +351,18 @@ public final class MetricConfigHelper
             {
                 operator = from( next.getOperator() );
             }
-            
             // Must be internally sourced: thresholds with global scope should be provided directly 
             Object values = next.getCommaSeparatedValuesOrSource();
-            if( values instanceof ThresholdsConfig.Source )
+            if ( values instanceof String )
             {
-                throw new MetricConfigurationException( "Externally sourced thresholds detected: these thresholds "
-                        + "are supported when they have global scope (i.e. apply to all metrics), but they must be "
-                        + "supplied directly." );
+                // Default to ProbabilityOrValue.PROBABILITY if null
+                returnMe.addAll( getThresholdsFromCommaSeparatedValues( dataFactory,
+                                                                        values.toString(),
+                                                                        operator,
+                                                                        next.getType() != ProbabilityOrValue.VALUE ) );
             }
-            
-            // Default to ProbabilityOrValue.PROBABILITY if null
-            returnMe.addAll( getThresholdsFromCommaSeparatedValues( dataFactory,
-                                                                    values.toString(),
-                                                                    operator,
-                                                                    next.getType() != ProbabilityOrValue.VALUE ) );
         }
-        return returnMe;
+        return Collections.unmodifiableSet( returnMe );
     }
 
     /**
