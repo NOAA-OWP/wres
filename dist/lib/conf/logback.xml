@@ -49,6 +49,11 @@
         <level value="warn" />
     </logger>
 
+    <!-- Quiet the cdm hdf5 library until it is quieter by default -->
+    <logger name="ucar.nc2.iosp.hdf5">
+      <level value="error" />
+    </logger>
+
     <!-- Allow -Dwres.logLevel to set logging level, otherwise info. -->
     <root level="${wres.logLevel:-info}">
         <appender-ref ref="STDOUT" />
