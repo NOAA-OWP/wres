@@ -263,6 +263,7 @@ public final class Operations {
     public static void logExecution( String[] arguments,
                                      long start,
                                      long duration,
+                                     boolean failed,
                                      String error)
     {
         String address = "Unknown";
@@ -312,7 +313,6 @@ public final class Operations {
             String username = SystemSettings.getUserName();
             Timestamp startTimestamp = new Timestamp( start );
             String runTime = duration + " MILLISECONDS";
-            boolean failed = Strings.hasValue(error);
 
             // For any arguments that happen to be regular files, read the
             // contents of the first file into the "project" field. Maybe there

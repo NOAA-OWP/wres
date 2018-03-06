@@ -7,6 +7,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import wres.io.data.details.CachedDetail;
+import wres.io.utilities.LRUMap;
 
 /**
  * An collection of details about concepts stored within the database
@@ -26,19 +27,12 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
     {
         if (keyIndex == null)
         {
-            keyIndex = new LinkedHashMap<U, Integer>(getMaxDetails(), 0.75F, true) {
-
-                @Override
-                protected boolean removeEldestEntry (java.util.Map.Entry<U, Integer> eldest) {
-                    boolean remove = size() > getMaxDetails();
-
-                    if (details != null && remove) {
-                        details.remove(eldest.getValue());
-                    }
-
-                    return remove;
-                }
-            };
+        	keyIndex = new LRUMap<>( this.getMaxDetails(), eldest -> {
+        		if (this.details != null)
+				{
+					details.remove( eldest.getValue() );
+				}
+			} );
         }
 
         return this.keyIndex;
