@@ -25,7 +25,7 @@
             <frequency>6</frequency>
             <unit>hours</unit>
         </desiredTimeScale>
-        <!--<issuedDatesPoolingWindow>
+        <issuedDatesPoolingWindow>
             <period>21</period>
             <frequency>14</frequency>
             <unit>days</unit>
@@ -34,7 +34,7 @@
             <period>6</period>
             <frequency>12</frequency>
             <unit>hours</unit>
-        </leadTimesPoolingWindow>-->
+        </leadTimesPoolingWindow>
     </pair>
 
     <metrics>
