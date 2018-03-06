@@ -111,7 +111,7 @@ class PoolingForecastScripter extends Scripter
         else
         {
             int leadModifier = this.getProgress();
-            leadModifier *= this.getProjectDetails().getScale().getFrequency();
+            //leadModifier *= this.getProjectDetails().getScale().getFrequency();
             leadModifier += this.getLeadOffset();
             leadModifier += 1;
 
