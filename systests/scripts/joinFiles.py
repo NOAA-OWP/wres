@@ -26,12 +26,12 @@ while 1:
 		rfline2 = round(fline2, 6)
 		# get the difference
 		theDiff = rflastField - rfline2
-		#theDiff = flastField - fline2
 		# get the absolute value
-		#atheDiff = abs(theDiff)
+		atheDiff = abs(theDiff)
 		#if atheDiff > 1.0:
 		# if they are not the same
-		if rflastField != rfline2:
+		# if rflastField != rfline2:
+		if atheDiff > 0.000001:
 			file3.writelines([line1, " <--- Metrics value comparison ----> ", line2, " ---- the difference is  ", str(theDiff), "\n"])
 		else:
 			file3.writelines([line1, " <--- Metrics value comparison ----> ", line2, "\n"])
