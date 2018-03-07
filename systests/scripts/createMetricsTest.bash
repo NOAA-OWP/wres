@@ -5,15 +5,29 @@
 # Author: Raymond.Chui@***REMOVED***
 # Created: Feb., 2018
 
-if [ ! -f sorted_pairs.csv ]
+#if [ ! -f sorted_pairs.csv ]
+#then
+#	echo "file sorted_pairs.csv doesn't exist."
+#	exit
+#fi
+if [ $# -gt 0 ]
 then
-	echo "file sorted_pairs.csv doesn't exist."
-	exit
+	ID=$1
+	listFile="$ID"_dirListing.txt
+	sortedFile="$ID"_sorted_pairs.csv
+	resultFile="ID"_testMetricsResults
+else
+	listFile=dirListing.txt
+	sortedFile=sorted_pairs.csv
+	resultFile=testMetricsResults
 fi
+
 
 #CSV_FILES=`ls *.csv | grep -v pairs`
 #CSV_FILES=`grep .csv dirListing.txt | grep -v pairs`
-CSV_FILES=`grep .csv dirListing.txt | grep -v pairs | egrep -v '(CONTINGENCY_TABLE|FREQUENCY_BIAS|PEIRCE_SKILL_SCORE|QUANTILE_QUANTILE_DIAGRAM|HEFS_RELIABILITY_DIAGRAM|HEFS_BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE|HEFS_RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM|HEFS_RANK_HISTOGRAM|HEFS_BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE|HEFS_BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE)'`
+#CSV_FILES=`grep .csv dirListing.txt | grep -v pairs | egrep -v '(CONTINGENCY_TABLE|FREQUENCY_BIAS|PEIRCE_SKILL_SCORE|QUANTILE_QUANTILE_DIAGRAM|HEFS_RELIABILITY_DIAGRAM|HEFS_BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE|HEFS_RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM|HEFS_RANK_HISTOGRAM|HEFS_BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE|HEFS_BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE)'`
+#CSV_FILES=`grep .csv $listFile | grep -v pairs | egrep -v '(CONTINGENCY_TABLE|FREQUENCY_BIAS|PEIRCE_SKILL_SCORE|QUANTILE_QUANTILE_DIAGRAM|HEFS_RELIABILITY_DIAGRAM|HEFS_BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE|HEFS_RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM|HEFS_RANK_HISTOGRAM|HEFS_BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE|HEFS_BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE)'`
+CSV_FILES=`grep .csv $listFile | grep -v pairs | egrep -v '(CONTINGENCY_TABLE|FREQUENCY_BIAS|PEIRCE_SKILL_SCORE|DIAGRAM|ERRORS_BY_OBSERVED_VALUE|ERRORS_BY_FORECAST_VALUE|CONTINUOUS_RANKED_PROBABILITY|HISTOGRAM)'`
 echo "csv files = $CSV_FILES"
 for CSV_FILE in $CSV_FILES
 do
@@ -25,8 +39,8 @@ do
 	# start at column 5
 	column=5
 	errorFile="$CSV_FILE"_error.txt
-	touch $errorFile
-	#cat /dev/null > $errorFile
+	#touch $errorFile
+	cat /dev/null > $errorFile
 
 	while [ $column -le $numberOfColumns ]
 	do
@@ -44,11 +58,14 @@ do
 		then
 			#Rscript ../../rsrc/CheckMetrics.R sorted_pairs.csv "$ename" $value 2>&1 | tee -a testMetricsResults.txt
 			#(Rscript ../../rsrc/CheckMetrics.R sorted_pairs.csv "$ename" $value > temp1.txt) 2>> $errorFile
-			if [ -f checkedSorted_pairs.csv ]
+			#if [ -f checkedSorted_pairs.csv ]
+			if [ -f $sortedFile ]
 			then
-				(Rscript ../../rsrc/CheckMetrics.R checkedSorted_pairs.csv "$ename" $value > temp1.txt) 2>> $errorFile
-			else
-				(Rscript ../../rsrc/CheckMetrics.R sorted_pairs.csv "$ename" $value > temp1.txt) 2>> $errorFile
+				#(Rscript ../../rsrc/CheckMetrics.R "$ID"_sorted_pairs.csv "$ename" $value > temp1.txt) 2>> $errorFile
+				(Rscript ../../rsrc/CheckMetrics.R $sortedFile "$ename" $value > temp1.txt) 2>> $errorFile
+				#(Rscript ../../rsrc/CheckMetrics.R checkedSorted_pairs.csv "$ename" $value > temp1.txt) 2>> $errorFile
+			#else
+			#	(Rscript ../../rsrc/CheckMetrics.R sorted_pairs.csv "$ename" $value > temp1.txt) 2>> $errorFile
 			fi
 			#(Rscript ../../rsrc/CheckMetrics.R sorted_pairs.csv "$ename" $value > temp1.txt) 2>> $errorFile
 			head -6 temp1.txt > header.txt
@@ -76,12 +93,13 @@ do
 		cat header.txt >> joinFiles.txt
 		../../scripts/joinFiles.py # join metricsValues.txt and fileValues.txt append to joinFiles.txt
 		#cat joinFiles.txt >> testMetricsResults.txt
-		cat joinFiles.txt | tee -a testMetricsResults.txt
-		echo "" | tee -a testMetricsResults.txt
+		#cat joinFiles.txt | tee -a testMetricsResults.txt
+		cat joinFiles.txt | tee -a $resultFile 
+		echo "" | tee -a $resultFile 
 		# next column
 		column=`expr $column + 1`
 	done
-	if [ ! -s $errorFile ]
+	if [ ! -s $errorFile ] # if error file size is not empty, remove it
 	then
 		rm -v $errorFile
 	fi

@@ -37,7 +37,7 @@ for pairsFileName in $(ls output | grep pairs\.csv | grep -v sorted); do
       sort -t, -k1d,1 -k4n,4 -k2n,2 output/$pairsFileName > output/sorted_$pairsFileName
       
       #diff --brief output/sorted_pairs.csv benchmarks/sorted_pairs.csv 2>&1 | tee diff_sorted_pairs.txt # output the diffs with benchmarks
-      if [ -f benchmarks/sorted_$pairsFileName -a -f output/$pairsFileName ] # if both files exist
+      if [ -f benchmarks/sorted_$pairsFileName -a -f output/sorted_$pairsFileName ] # if both files exist
       then
       	diff --brief output/sorted_$pairsFileName benchmarks/sorted_$pairsFileName  | tee /dev/stderr
       fi
@@ -49,4 +49,15 @@ for pairsFileName in $(ls output | grep pairs\.csv | grep -v sorted); do
 	echo "$echoPrefix Not comparing pairs File with benchmark: benchmarks/sorted_$pairsFileName not found."
   fi
 
+done
+if [ -f output/dirListing.txt -a -f benchmarks/dirListing.txt ]
+then
+	diff -q output/dirListing.txt benchmarks/dirListing.txt
+fi
+for csvFile in $(ls output | grep csv | grep -v pairs)
+do
+	if [ -f output/$csvFile -a -f benchmarks/$csvFile ]
+	then
+		diff -q output/$csvFile benchmarks/$csvFile
+	fi
 done
