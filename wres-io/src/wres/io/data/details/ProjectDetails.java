@@ -14,7 +14,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -31,6 +30,7 @@ import wres.config.generated.DestinationType;
 import wres.config.generated.DurationUnit;
 import wres.config.generated.EnsembleCondition;
 import wres.config.generated.Feature;
+import wres.config.generated.MetricsConfig;
 import wres.config.generated.PairConfig;
 import wres.config.generated.PoolingWindowConfig;
 import wres.config.generated.ProbabilityOrValue;
@@ -2619,30 +2619,25 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     }
 
     /**
+     * Return <code>true</code> if the project uses probability thresholds, otherwise <code>false</code>.
+     * 
      * @return Whether or not the project uses probability thresholds
      */
     public boolean usesProbabilityThresholds()
     {
-        // Probability thresholds are the default when the type is null
-        
-        // Check internally sourced thresholds
-        boolean hasProbabilityThreshold = this.projectConfig.getMetrics()
-                                                            .getThresholds()
-                                                            .stream()
-                                                            .anyMatch( a -> Objects.isNull( a.getType() )
-                                                                            || a.getType() == ProbabilityOrValue.PROBABILITY );
-
-        // Check metric-local thresholds
-        if ( !hasProbabilityThreshold )
+        // Iterate metrics configuration
+        for ( MetricsConfig next : this.projectConfig.getMetrics() )
         {
-            hasProbabilityThreshold = Collections.exists( this.projectConfig.getMetrics().getMetric(),
-                                                          config -> config.getThresholds()
-                                                                          .stream()
-                                                                          .anyMatch( a -> Objects.isNull( a.getType() )
-                                                                                          || a.getType() == ProbabilityOrValue.PROBABILITY ) );
+            // Check thresholds           
+            if ( next.getThresholds()
+                     .stream()
+                     .anyMatch( a -> Objects.isNull( a.getType() )
+                                     || a.getType() == ProbabilityOrValue.PROBABILITY ) )
+            {
+                return true;
+            }
         }
-
-        return hasProbabilityThreshold;
+        return false;
     }
 
     @Override

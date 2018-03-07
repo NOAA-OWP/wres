@@ -16,6 +16,7 @@ import ohd.hseb.charter.datasource.XYChartDataSourceException;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
+import wres.config.generated.MetricsConfig;
 import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
@@ -169,11 +170,6 @@ abstract class PNGWriter
             String templateResourceName = destConfig.getGraphical().getTemplate();
             if ( Objects.nonNull( nextConfig ) )
             {
-                // Local type parameter
-                if ( Objects.nonNull( nextConfig.getOutputType() ) )
-                {
-                    outputType = nextConfig.getOutputType();
-                }
 
                 // Override template name with metric specific name.
                 if ( Objects.nonNull( nextConfig.getTemplateResourceName() ) )
@@ -238,13 +234,17 @@ abstract class PNGWriter
             }
             
             // Find the corresponding configuration
-            final Optional<MetricConfig> returnMe = config.getMetrics()
-                                                          .getMetric()
-                                                          .stream()
-                                                          .filter( a -> metric.name().equals( a.getName().name() ) )
-                                                          .findFirst();
+            for( MetricsConfig next : config.getMetrics() )
+            {
+                Optional<MetricConfig> test =
+                        next.getMetric().stream().filter( a -> metric.name().equals( a.getName().name() ) ).findFirst();
+                if( test.isPresent() )
+                {
+                    return test.get();
+                }
+            }
             
-            return returnMe.isPresent() ? returnMe.get() : null;
+            return null;
         } 
     }
     

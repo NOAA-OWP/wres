@@ -281,25 +281,6 @@
     </xs:complexType>
 
     <!-- Base type for a metric -->
-    <xs:complexType name="abstractMetric">
-
-        <!-- for class naming using xjc-->
-        <xs:annotation>
-            <xs:appinfo>
-                <jaxb:class name="AbstractMetricConfig" />
-            </xs:appinfo>
-        </xs:annotation>
-
-        <xs:sequence>
-            <xs:element name="name" type="metricConfigName" />
-            <xs:element name="outputType" type="outputTypeSelection" minOccurs="0" />
-            <xs:element name="templateResourceName" type="xs:anyURI" minOccurs="0" />
-        </xs:sequence>
-
-        <xs:attribute name="label" type="xs:string" />
-    </xs:complexType>
-
-    <!-- Metrics that accept thresholds -->
     <xs:complexType name="metric">
 
         <!-- for class naming using xjc-->
@@ -308,13 +289,13 @@
                 <jaxb:class name="MetricConfig" />
             </xs:appinfo>
         </xs:annotation>
-        <xs:complexContent>
-            <xs:extension base="abstractMetric">
-                <xs:sequence>
-                    <xs:element name="thresholds" type="thresholds" minOccurs="0" maxOccurs="unbounded" />
-                 </xs:sequence>
-            </xs:extension>
-        </xs:complexContent>
+
+        <xs:sequence>
+            <xs:element name="name" type="metricConfigName" />
+            <xs:element name="templateResourceName" type="xs:anyURI" minOccurs="0" />
+        </xs:sequence>
+
+        <xs:attribute name="label" type="xs:string" />
     </xs:complexType>
 
     <!-- Metrics that consume time-series and may have summary statistics associated with them -->
@@ -328,7 +309,7 @@
         </xs:annotation>
 
         <xs:complexContent>
-            <xs:extension base="abstractMetric">
+            <xs:extension base="metric">
                 <xs:sequence>
                     <xs:element name="summaryStatistics" type="summaryStatistics" minOccurs="0" maxOccurs="1"/>
                 </xs:sequence>
@@ -604,7 +585,7 @@
 
                 <xs:element name="pair" type="pair"/>
 
-                <xs:element name="metrics" type="metrics" />
+                <xs:element name="metrics" type="metrics" minOccurs ="1" maxOccurs="unbounded"/>
 
                 <xs:element name="outputs">
                     <xs:complexType>

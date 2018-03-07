@@ -114,15 +114,12 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
         // Loop across diagrams
         for ( Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<MatrixOutput>> m : output.entrySet() )
         {
-            // Obtain the output type with any local override for this metric
-            OutputTypeSelection useType =
-                    ConfigHelper.getOutputTypeSelection( projectConfig, diagramType, m.getKey().getKey() );
-
+            
             StringJoiner headerRow = new StringJoiner( "," );
             headerRow.merge( HEADER_DEFAULT );
 
             // Default, per time-window
-            if ( useType == OutputTypeSelection.DEFAULT || useType == OutputTypeSelection.LEAD_THRESHOLD )
+            if ( diagramType == OutputTypeSelection.DEFAULT || diagramType == OutputTypeSelection.LEAD_THRESHOLD )
             {
                 CommaSeparatedMatrixWriter.writeOneMatrixOutputTypePerTimeWindow( destinationConfig,
                                                                                   m.getValue(),
@@ -130,7 +127,7 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
                                                                                   formatter );
             }
             // Per threshold
-            else if ( useType == OutputTypeSelection.THRESHOLD_LEAD )
+            else if ( diagramType == OutputTypeSelection.THRESHOLD_LEAD )
             {
                 CommaSeparatedMatrixWriter.writeOneMatrixOutputTypePerThreshold( destinationConfig,
                                                                                  m.getValue(),

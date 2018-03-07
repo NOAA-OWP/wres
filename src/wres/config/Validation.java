@@ -30,6 +30,7 @@ import wres.config.generated.Feature;
 import wres.config.generated.Format;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
+import wres.config.generated.MetricsConfig;
 import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.PairConfig;
 import wres.config.generated.PoolingWindowConfig;
@@ -172,10 +173,10 @@ public class Validation
         Objects.requireNonNull( projectConfigPlus, NON_NULL );
 
         // Validate that metric configuration is internally consistent
-        boolean result = Validation.isMetricConfigInternallyConsistent( projectConfigPlus );
+        boolean result = Validation.isAllMetricsConfigInternallyConsistent( projectConfigPlus );
 
         // Check that each named metric is consistent with the other configuration
-        result = result && Validation.areMetricsConsistentWithOtherConfig( projectConfigPlus );
+        result = result && Validation.isAllMetricsConfigConsistentWithOtherConfig( projectConfigPlus );
 
         return result;
     }    
@@ -205,33 +206,60 @@ public class Validation
      * @throws NullPointerException when projectConfigPlus is null
      */
 
-    private static boolean isMetricConfigInternallyConsistent( ProjectConfigPlus projectConfigPlus )
+    private static boolean isAllMetricsConfigInternallyConsistent( ProjectConfigPlus projectConfigPlus )
     {
         Objects.requireNonNull( projectConfigPlus, NON_NULL );
 
-        // Must define one of metric or timeSeriesMetric
-        List<MetricConfig> metrics = projectConfigPlus.getProjectConfig().getMetrics().getMetric();
-        List<TimeSeriesMetricConfig> timeSeriesMetrics =
-                projectConfigPlus.getProjectConfig().getMetrics().getTimeSeriesMetric();
-        if( metrics.isEmpty() && timeSeriesMetrics.isEmpty() )
+        // Assume valid
+        boolean returnMe = true;
+        
+        // Check all metrics config
+        for ( MetricsConfig next : projectConfigPlus.getProjectConfig().getMetrics() )
+        {
+            if ( !Validation.isOneMetricsConfigInternallyConsistent( projectConfigPlus, next ) )
+            {
+                returnMe = false;
+            }
+        }
+        return returnMe;
+    }    
+
+    /**
+     * Checks that the metric configuration is internally consistent.
+     * 
+     * @param projectConfigPlus the project configuration
+     * @param metrics the metrics configuration
+     * @return true if the metric configuration is internally consistent, false otherwise
+     * @throws NullPointerException when projectConfigPlus is null
+     */
+
+    private static boolean isOneMetricsConfigInternallyConsistent( ProjectConfigPlus projectConfigPlus,
+                                                                   MetricsConfig metrics )
+    {
+        Objects.requireNonNull( metrics, NON_NULL );
+
+        // Assume valid
+        boolean returnMe = true;
+        
+        // Must define one of metric or timeSeriesMetric per metrics
+
+        List<MetricConfig> metricConfig = metrics.getMetric();
+        List<TimeSeriesMetricConfig> timeSeriesMetrics = metrics.getTimeSeriesMetric();
+        if ( metricConfig.isEmpty() && timeSeriesMetrics.isEmpty() )
         {
             if ( LOGGER.isWarnEnabled() )
             {
                 LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
                              + " No metrics are listed for calculation: add a regular metric or time-series metric.",
                              projectConfigPlus,
-                             projectConfigPlus.getProjectConfig()
-                                              .getMetrics()
-                                              .sourceLocation()
-                                              .getLineNumber(),
-                             projectConfigPlus.getProjectConfig()
-                                              .getMetrics()
-                                              .sourceLocation()
-                                              .getColumnNumber() );
+                             metrics.sourceLocation()
+                                    .getLineNumber(),
+                             metrics.sourceLocation()
+                                    .getColumnNumber() );
             }
-            return false;
+            returnMe = false;
         }
-        
+
         // Currently, timeSeriesMetric require single-valued forecasts
         if ( !timeSeriesMetrics.isEmpty()
              && projectConfigPlus.getProjectConfig()
@@ -242,20 +270,18 @@ public class Validation
             LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
                          + " Currently, time-series metrics can only be applied to single-valued forecasts.",
                          projectConfigPlus,
-                         projectConfigPlus.getProjectConfig().getMetrics()
-                                          .sourceLocation()
-                                          .getLineNumber(),
-                         projectConfigPlus.getProjectConfig()
-                                          .getMetrics()
-                                          .sourceLocation()
-                                          .getColumnNumber() );            
+                         metrics.sourceLocation()
+                                .getLineNumber(),
+                         metrics
+                                .sourceLocation()
+                                .getColumnNumber() );
         }
-        
+
         // Cannot define specific metrics together with all valid        
-        for ( MetricConfig next : metrics )
+        for ( MetricConfig next : metricConfig )
         {
             //Unnamed metric
-            if ( MetricConfigName.ALL_VALID == next.getName() && metrics.size() > 1 )
+            if ( MetricConfigName.ALL_VALID == next.getName() && metricConfig.size() > 1 )
             {
                 if ( LOGGER.isWarnEnabled() )
                 {
@@ -265,29 +291,59 @@ public class Validation
                                  next.sourceLocation().getLineNumber(),
                                  next.sourceLocation().getColumnNumber() );
                 }
-                return false;
+                returnMe = false;
             }
         }
-        return true;
+        return returnMe;
     }
 
+    /**
+     * Checks that the metric configuration is internally consistent.
+     * 
+     * @param projectConfigPlus the project configuration
+     * @return true if the metric configuration is internally consistent, false otherwise
+     * @throws NullPointerException when projectConfigPlus is null
+     */
+
+    private static boolean isAllMetricsConfigConsistentWithOtherConfig( ProjectConfigPlus projectConfigPlus )
+    {
+        Objects.requireNonNull( projectConfigPlus, NON_NULL );
+
+        // Assume valid
+        boolean returnMe = true;
+        
+        // Check all metrics config
+        for ( MetricsConfig next : projectConfigPlus.getProjectConfig().getMetrics() )
+        {
+            if ( !Validation.isOneMetricsConfigConsistentWithOtherConfig( projectConfigPlus, next ) )
+            {
+                returnMe = false;
+            }
+        }
+        return returnMe;
+    } 
+    
+    
     /**
      * Checks that the metric configuration is consistent with the other configuration.
      *
      * @param projectConfigPlus the project configuration
-     * @return true if the metric name is valid
+     * @param metrics the metrics configuration 
+     * @return true if the metric is consistent with other configuration
      * @throws NullPointerException when projectConfigPlus is null
      */
 
-    private static boolean areMetricsConsistentWithOtherConfig( ProjectConfigPlus projectConfigPlus )
+    private static boolean isOneMetricsConfigConsistentWithOtherConfig( ProjectConfigPlus projectConfigPlus,
+                                                                        MetricsConfig metrics )
     {
         Objects.requireNonNull( projectConfigPlus, NON_NULL );
 
+        // Assume valid
         boolean result = true;
 
         ProjectConfig config = projectConfigPlus.getProjectConfig();
-        List<MetricConfig> metrics = config.getMetrics().getMetric();
-        for ( MetricConfig next : metrics )
+        List<MetricConfig> metricConfig = metrics.getMetric();
+        for ( MetricConfig next : metricConfig )
         {
             // Named metric
             if ( Objects.nonNull( next.getName() ) && MetricConfigName.ALL_VALID != next.getName() )
@@ -335,7 +391,7 @@ public class Validation
                     LOGGER.error( "In file {}, a metric named {} was requested, but is not recognized by the system.",
                                   projectConfigPlus.getPath(),
                                   next.getName() );
-                    return false;
+                    result = false;
                 }
             }
         }

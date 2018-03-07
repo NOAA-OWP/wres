@@ -117,7 +117,13 @@ class ProcessorHelper
 
         // Read external thresholds from the configuration, per feature
         // Compare on locationId only. TODO: improve the representation of features
-        final Map<FeaturePlus, Set<Threshold>> thresholds = new TreeMap<>( FeaturePlus::compareByLocationId );
+        // TODO: MUST move this threshold reading to wres-metrics as this is project internals related to metrics, 
+        // not API stuff. However, there are two barriers: 1) it involves file IO, which
+        // should not happen in metrics; and 2) it requires a consistent, system-wide, definition of features
+        // because external thresholds are read for multiple features. Both would be solved if we had an internal
+        // representation of a full project configuration that was passed around the system after ingest.
+        // The current approach is deeply unsatisfying.
+        final Map<FeaturePlus, List<Set<Threshold>>> thresholds = new TreeMap<>( FeaturePlus::compareByLocationId );
         thresholds.putAll( ConfigHelper.readThresholdsFromProjectConfig( projectConfig ) );
 
         // Reduce our triad of executors to one object
@@ -240,7 +246,7 @@ class ProcessorHelper
      */
 
     private static FeatureProcessingResult processFeature( final Feature feature,
-                                                           final Set<Threshold> thresholds,
+                                                           final List<Set<Threshold>> thresholds,
                                                            final ProjectConfigPlus projectConfigPlus,
                                                            final ProjectDetails projectDetails,
                                                            final ExecutorServices executors )
