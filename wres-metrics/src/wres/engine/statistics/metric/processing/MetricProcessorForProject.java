@@ -1,5 +1,6 @@
 package wres.engine.statistics.metric.processing;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -41,7 +42,7 @@ public class MetricProcessorForProject
      * 
      * @param metricFactory an instance of a metric factory
      * @param projectConfig the project configuration
-     * @param canonicalThresholds an optional set of canonical thresholds to process, may be null
+     * @param canonicalThresholds an optional set of canonical thresholds (one per metric group), may be null
      * @param thresholdExecutor an executor service for processing thresholds
      * @param metricExecutor an executor service for processing metrics
      * @throws MetricProcessorException if the metric processor could not be built
@@ -49,7 +50,7 @@ public class MetricProcessorForProject
 
     public MetricProcessorForProject( final MetricFactory metricFactory,
                                       final ProjectConfig projectConfig,
-                                      final Set<Threshold> canonicalThresholds,
+                                      final List<Set<Threshold>> canonicalThresholds,
                                       final ExecutorService thresholdExecutor,
                                       final ExecutorService metricExecutor )
             throws MetricProcessorException
@@ -109,14 +110,14 @@ public class MetricProcessorForProject
             throw new MetricProcessorException( "This metric processor was not built to consume ensemble pairs." );
         }
         return ensembleProcessor;
-    }   
-    
+    }
+
     /**
      * Returns <code>true</code> if the processor contains cached output, otherwise <code>false</code>.
      * 
      * @return true if the processor contains cached output, otherwise false.
      */
-    
+
     public boolean hasCachedMetricOutput()
     {
         if ( Objects.nonNull( singleValuedProcessor ) )
@@ -126,16 +127,16 @@ public class MetricProcessorForProject
         else
         {
             return ensembleProcessor.hasCachedMetricOutput();
-        }        
+        }
     }
-    
+
     /**
      * Returns the set of {@link MetricOutputGroup} that will be cached across successive executions of a 
      * {@link MetricProcessor}.
      * 
      * @return the output types to cache
      */
-    
+
     public Set<MetricOutputGroup> getCachedMetricOutputTypes()
     {
         if ( Objects.nonNull( singleValuedProcessor ) )
@@ -145,16 +146,16 @@ public class MetricProcessorForProject
         else
         {
             return ensembleProcessor.getMetricOutputToCache();
-        } 
+        }
     }
-    
+
     /**
      * Returns the cached metric output or null if {@link #hasCachedMetricOutput()} returns <code>false</code>.
      * 
      * @return the cached output or null
      * @throws MetricOutputAccessException if the metric output could not be accessed
      */
-    
+
     public MetricOutputForProjectByTimeAndThreshold getCachedMetricOutput() throws MetricOutputAccessException
     {
         if ( Objects.nonNull( singleValuedProcessor ) )

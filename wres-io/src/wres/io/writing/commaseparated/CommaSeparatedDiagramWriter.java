@@ -113,21 +113,18 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
                                                    Format formatter )
             throws IOException
     {
-        // Obtain the output type configuration with any override for ALL_VALID metrics
+        // Obtain the output type configuration
         OutputTypeSelection diagramType = ConfigHelper.getOutputTypeSelection( projectConfig, destinationConfig );
 
         // Loop across diagrams
         for ( Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<MultiVectorOutput>> m : output.entrySet() )
         {
-            // Obtain the output type with any local override for this metric
-            OutputTypeSelection useType =
-                    ConfigHelper.getOutputTypeSelection( projectConfig, diagramType, m.getKey().getKey() );
 
             StringJoiner headerRow = new StringJoiner( "," );
             headerRow.merge( HEADER_DEFAULT );
 
             // Default, per time-window
-            if ( useType == OutputTypeSelection.DEFAULT || useType == OutputTypeSelection.LEAD_THRESHOLD )
+            if ( diagramType == OutputTypeSelection.DEFAULT || diagramType == OutputTypeSelection.LEAD_THRESHOLD )
             {
                 CommaSeparatedDiagramWriter.writeOneDiagramOutputTypePerTimeWindow( destinationConfig,
                                                                                     m.getValue(),
@@ -135,7 +132,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
                                                                                     formatter );
             }
             // Per threshold
-            else if ( useType == OutputTypeSelection.THRESHOLD_LEAD )
+            else if ( diagramType == OutputTypeSelection.THRESHOLD_LEAD )
             {
                 CommaSeparatedDiagramWriter.writeOneDiagramOutputTypePerThreshold( destinationConfig,
                                                                                    m.getValue(),

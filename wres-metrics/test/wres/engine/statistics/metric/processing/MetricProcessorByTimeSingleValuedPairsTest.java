@@ -8,6 +8,7 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -304,12 +305,12 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                 MetricFactory.getInstance( metIn )
                              .ofMetricProcessorByTimeSingleValuedPairs( config,
                                                                         MetricOutputGroup.values() );
+        
         //Check for the expected number of metrics
         assertTrue( "Unexpected number of metrics.",
                     processor.metrics.size() == MetricInputGroup.SINGLE_VALUED.getMetrics().size()
                                                 + MetricInputGroup.DICHOTOMOUS.getMetrics().size() );
     }
-
 
     /**
      * Tests the construction of a {@link MetricProcessorByTimeSingleValuedPairs} and application of
@@ -483,8 +484,8 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/test2ApplyThresholds.xml";
 
         // Define the canonical thresholds to use
-        Set<Threshold> canonical = new HashSet<>();
-        canonical.add( metIn.ofThreshold( 0.5, Operator.GREATER_EQUAL) );
+        List<Set<Threshold>> canonical = new ArrayList<>();
+        canonical.add( new HashSet<>( Arrays.asList( metIn.ofThreshold( 0.5, Operator.GREATER_EQUAL) ) ) );
         
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =

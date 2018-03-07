@@ -20,10 +20,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -89,6 +90,12 @@ public class ConfigHelper
                                                            + " the project configuration. Example: <destination>"
                                                            + "<path>c:/Users/myname/wres_output/</path>"
                                                            + "</destination>";
+
+    /**
+     * String for null configuration error.
+     */
+    
+    private static final String NULL_CONFIGURATION_ERROR = "The project configuration cannot be null.";
 
     private ConfigHelper()
     {
@@ -1168,14 +1175,17 @@ public class ConfigHelper
     {
         Objects.requireNonNull( projectConfig, "Specify a non-null metric configuration as input." );
         Objects.requireNonNull( metricName, "Specify a non-null metric name as input." );
-        for ( MetricConfig next : projectConfig.getMetrics().getMetric() )
+        
+        for ( MetricsConfig next : projectConfig.getMetrics() )
         {
-            // Match
-            if ( next.getName().equals( metricName ) )
+            Optional<MetricConfig> nextConfig =
+                    next.getMetric().stream().filter( metric -> metric.getName().equals( metricName ) ).findFirst();
+            if( nextConfig.isPresent() )
             {
-                return next;
+                return nextConfig.get();
             }
         }
+
         return null;
     }
 
@@ -1229,7 +1239,7 @@ public class ConfigHelper
     public static OutputTypeSelection getOutputTypeSelection( ProjectConfig projectConfig,
                                                               DestinationConfig destinationConfig )
     {
-        Objects.requireNonNull( projectConfig, "Specify non-null project configuration." );
+        Objects.requireNonNull( projectConfig, NULL_CONFIGURATION_ERROR );
         
         Objects.requireNonNull( destinationConfig, "Specify non-null destination configuration." );
         
@@ -1239,69 +1249,8 @@ public class ConfigHelper
             returnMe = destinationConfig.getOutputType();
         }
 
-        // Obtain any override configuration
-        if ( Objects.nonNull( projectConfig.getMetrics() ) )
-        {
-            Optional<MetricConfig> first = projectConfig.getMetrics()
-                                                        .getMetric()
-                                                        .stream()
-                                                        .filter( config -> config.getName() == MetricConfigName.ALL_VALID )
-                                                        .findFirst();
-            if( first.isPresent() && Objects.nonNull( first.get().getOutputType() ) )
-            {
-                returnMe = first.get().getOutputType();
-            }
-        }
-
         return returnMe;
-    }       
-    
-    /**
-     * Returns the default {@link OutputTypeSelection} or an override if an {@link OutputTypeSelection} exists for the
-     * specified {@link MetricConstants} whose {@link MetricConstants#name()} matches a {@link MetricConfigName#name()} 
-     * in the {@link ProjectConfig} supplied.
-     * 
-     * @param projectConfig the project configuration to search for overrides
-     * @param defaultSelection the default selection
-     * @param overrideMetric the named metric to search for an override
-     * @return the default or an override
-     * @throws NullPointerException if any input is null
-     */
-
-    public static OutputTypeSelection getOutputTypeSelection( ProjectConfig projectConfig,
-                                                              OutputTypeSelection defaultSelection,
-                                                              MetricConstants overrideMetric )
-    {
-        Objects.requireNonNull( projectConfig, "Specify non-null project configuration." );
-        
-        Objects.requireNonNull( defaultSelection, "Specify a non-null default selection." );
-        
-        Objects.requireNonNull( overrideMetric, "Specify a non-null override metric." );
-        
-        OutputTypeSelection useType = defaultSelection;
-        
-        // Look for potential overrides
-        Map<MetricConfigName, MetricConfig> override = new EnumMap<>( MetricConfigName.class );
-        if( Objects.nonNull( projectConfig.getMetrics() ) )
-        {
-            projectConfig.getMetrics().getMetric().forEach( config -> override.put( config.getName(), config ) );
-        }
-        
-        // Is an override present? Find the first MetricConfigName.name() that matches MetricConstants.name()
-        Optional<MetricConfigName> match =
-                override.keySet()
-                        .stream()
-                        .filter( configName -> configName.name().equals( overrideMetric.name() ) )
-                        .findFirst();
-
-        // Set the type to an override type
-        if ( match.isPresent() && Objects.nonNull( override.get( match.get() ).getOutputType() ) )
-        {
-            useType = override.get( match.get() ).getOutputType();
-        }
-        
-        return useType;
-    }
+    }           
 
     /**
      * <p>Returns the variable identifier from the project configuration. The identifier is one of the following in 
@@ -1514,36 +1463,55 @@ public class ConfigHelper
     /**
      * Reads a source of thresholds from the input configuration and returns a map containing a set of 
      * {@link Threshold} for each {@link FeaturePlus} in the source. If no source is provided, an empty map is
-     * returned.
+     * returned. The list contains as many sets of thresholds as groups of metric configuration.
      * 
      * @param projectConfig the project configuration
      * @return the thresholds associated with each feature obtained from a source in the project configuration
      * @throws ProjectConfigException if the source could not be read
      */
 
-    public static Map<FeaturePlus, Set<Threshold>> readThresholdsFromProjectConfig( ProjectConfig projectConfig )
+    public static Map<FeaturePlus, List<Set<Threshold>>> readThresholdsFromProjectConfig( ProjectConfig projectConfig )
             throws ProjectConfigException
     {
-        Objects.requireNonNull( projectConfig, "Provide non-null project configuration with external thresholds." );
+        Objects.requireNonNull( projectConfig, NULL_CONFIGURATION_ERROR );
 
-        Map<FeaturePlus, Set<Threshold>> returnMe = new TreeMap<>();
+        Map<FeaturePlus, List<Set<Threshold>>> returnMe = new TreeMap<>();
 
         // Obtain and read thresholds
-        MetricsConfig metrics = projectConfig.getMetrics();
-        if ( Objects.nonNull( metrics ) && !metrics.getThresholds().isEmpty() )
+        List<MetricsConfig> metrics = projectConfig.getMetrics();
+        for ( MetricsConfig nextGroup : metrics )
         {
-            // Obtain the set of external thresholds to read
-            Set<ThresholdsConfig> external = metrics.getThresholds()
-                                                    .stream()
-                                                    .filter( t -> t.getCommaSeparatedValuesOrSource() instanceof ThresholdsConfig.Source )
-                                                    .collect( Collectors.toSet() );
 
+            // Obtain the set of external thresholds to read
+            Set<ThresholdsConfig> external = nextGroup.getThresholds()
+                                                      .stream()
+                                                      .filter( t -> t.getCommaSeparatedValuesOrSource() instanceof ThresholdsConfig.Source )
+                                                      .collect( Collectors.toSet() );
+            
+            Map<FeaturePlus, Set<Threshold>> thresholdsForThisConfigGroup = new HashMap<>();
+            
             // Iterate the external sources and read them all into the map
             for ( ThresholdsConfig next : external )
             {
-                returnMe.putAll( ConfigHelper.readOneThresholdFromProjectConfig( projectConfig, next ) );
-            }
+                Map<FeaturePlus, Set<Threshold>> thresholdsByFeature =
+                        ConfigHelper.readOneThresholdFromProjectConfig( projectConfig, next );
 
+                // Add or append
+                for ( Entry<FeaturePlus, Set<Threshold>> nextEntry : thresholdsByFeature.entrySet() )
+                {
+                    // Append
+                    if ( thresholdsForThisConfigGroup.containsKey( nextEntry.getKey() ) )
+                    {
+                        thresholdsForThisConfigGroup.get( nextEntry.getKey() ).addAll( nextEntry.getValue() );
+                    }
+                    // add
+                    else
+                    {
+                        thresholdsForThisConfigGroup.put( nextEntry.getKey(), nextEntry.getValue() );
+                    }
+                }
+            }
+            addThresholdsForOneMetricConfigGroup( returnMe, thresholdsForThisConfigGroup );
         }
 
         return Collections.unmodifiableMap( returnMe );
@@ -1564,6 +1532,10 @@ public class ConfigHelper
             throws ProjectConfigException
     {
 
+        Objects.requireNonNull( projectConfig, NULL_CONFIGURATION_ERROR );
+        
+        Objects.requireNonNull( threshold, "Specify non-null threshold configuration." );
+        
         Map<FeaturePlus, Set<Threshold>> returnMe = new TreeMap<>();
 
         ThresholdsConfig.Source nextSource = (ThresholdsConfig.Source) threshold.getCommaSeparatedValuesOrSource();
@@ -1621,6 +1593,63 @@ public class ConfigHelper
     }
     
     /**
+     * Mutates the first map, adding the thresholds from the second map for corresponding {@link FeaturePlus}.
+     * 
+     * @param first the first map
+     * @param second the second map
+     * @throws NullPointerException if either input is null
+     */
+
+    private static void addThresholdsForOneMetricConfigGroup( Map<FeaturePlus, List<Set<Threshold>>> first,
+                                                              Map<FeaturePlus, Set<Threshold>> second )
+    {
+
+        Objects.requireNonNull( first, "Specify a non-null first map of thresholds." );
+
+        Objects.requireNonNull( second, "Specify a non-null second map of thresholds." );
+
+        // Empty first
+        if ( first.isEmpty() )
+        {
+            second.forEach( ( key, value ) -> {
+                List<Set<Threshold>> addList = new ArrayList<>();
+                addList.add( value );
+                first.put( key, addList );
+            } );
+            return;
+        }
+
+        // Non-empty first
+        for ( Entry<FeaturePlus, Set<Threshold>> nextEntry : second.entrySet() )
+        {
+            // Feature exists: add to existing list
+            if ( first.containsKey( nextEntry.getKey() ) )
+            {
+                first.get( nextEntry.getKey() ).add( nextEntry.getValue() );
+            }
+            // New feature: add a new list
+            else
+            {
+                List<Set<Threshold>> addList = new ArrayList<>();
+
+                // New feature must have as many empty sets as the maximum number of 
+                // threshold sets already associated with other features, because each feature must
+                // have precisely the same number of threshold sets as configuration blocks
+                Optional<Integer> empties = first.values().stream().map( List::size ).max( Integer::compare );
+                if ( empties.isPresent() )
+                {
+                    for ( int i = 0; i < empties.get(); i++ )
+                    {
+                        addList.add( Collections.emptySet() );
+                    }
+                }
+                addList.add( nextEntry.getValue() );
+                first.put( nextEntry.getKey(), addList );
+            }
+        }
+    }
+    
+    /**
      * Maps between threshold operators in {@link ThresholdOperator} and those in {@link Operator}. The default is
      * {@link Operator#GREATER} when the input is null.
      * 
@@ -1653,10 +1682,13 @@ public class ConfigHelper
      * 
      * @param projectConfig the project configuration
      * @return the output formats in the configuration that can be mutated incrementally or the empty set
+     * @throws NullPointerException if the input is null
      */
 
     public static Set<DestinationType> getIncrementalFormats( ProjectConfig projectConfig )
     {
+        Objects.requireNonNull( projectConfig, NULL_CONFIGURATION_ERROR );
+        
         Outputs output = projectConfig.getOutputs();
 
         // The only incremental type currently supported is DestinationType.NETCDF
@@ -1669,5 +1701,20 @@ public class ConfigHelper
         // Return empty set
         return Collections.emptySet();
     }
+    
+    /**
+     * Returns <code>true</code> if the input configuration has time-series metrics, otherwise <code>false</code>.
+     * 
+     * @param projectConfig the project configuration
+     * @return true if the input configuration has time-series metrics, otherwise false
+     */
+    
+    public static boolean hasTimeSeriesMetrics( ProjectConfig projectConfig )
+    {
+        Objects.requireNonNull( projectConfig, NULL_CONFIGURATION_ERROR );
+        
+        return projectConfig.getMetrics().stream().anyMatch( next -> !next.getTimeSeriesMetric().isEmpty() );
+    }  
+    
 
 }

@@ -135,14 +135,16 @@ public final class MetricProcessorTest
                 MetricFactory.getInstance( metIn )
                              .ofMetricProcessorByTimeSingleValuedPairs( config,
                                                                         MetricOutputGroup.values() );
+
         //Check that score metrics are defined 
         assertTrue( "Expected metrics for '" + MetricOutputGroup.DOUBLE_SCORE
                     + "'.",
                     processor.hasMetrics( MetricOutputGroup.DOUBLE_SCORE ) );
+
         //Check that no non-score metrics are defined
         for ( MetricOutputGroup next : MetricOutputGroup.values() )
         {
-            if ( !next.equals( MetricOutputGroup.DOUBLE_SCORE ) )
+            if ( next != MetricOutputGroup.DOUBLE_SCORE )
             {
                 assertFalse( "Did not expect metrics for '" + next
                              + "'.",
@@ -164,7 +166,7 @@ public final class MetricProcessorTest
         //Check that no non-score metrics are defined
         for ( MetricOutputGroup next : MetricOutputGroup.values() )
         {
-            if ( !next.equals( MetricOutputGroup.DOUBLE_SCORE ) )
+            if ( next != MetricOutputGroup.DOUBLE_SCORE )
             {
                 assertFalse( "Did not expect metrics for '" + next
                              + "'.",
@@ -196,35 +198,33 @@ public final class MetricProcessorTest
                 MetricFactory.getInstance( metIn )
                              .ofMetricProcessorByTimeSingleValuedPairs( config,
                                                                         MetricOutputGroup.values() );
-        Threshold firstTest = metIn.ofThreshold( 0.83, Operator.GREATER );
+        Threshold firstTest = metIn.ofThreshold( 0.5, Operator.GREATER );
         Set<MetricConstants> firstSet =
                 processor.doNotComputeTheseMetricsForThisThreshold( MetricInputGroup.SINGLE_VALUED,
                                                                     MetricOutputGroup.DOUBLE_SCORE,
                                                                     firstTest );
         assertTrue( "Unexpected set of metrics to ignore for threshold '" + firstTest
                     + "'",
-                    firstSet.equals( new HashSet<>( Arrays.asList( MetricConstants.ROOT_MEAN_SQUARE_ERROR,
+                    firstSet.equals( new HashSet<>( Arrays.asList( MetricConstants.MEAN_SQUARE_ERROR,
                                                                    MetricConstants.MEAN_ABSOLUTE_ERROR ) ) ) );
-        Threshold secondTest = metIn.ofThreshold( 0.8, Operator.GREATER );
+        Threshold secondTest = metIn.ofThreshold( 0.75, Operator.GREATER );
         Set<MetricConstants> secondSet =
                 processor.doNotComputeTheseMetricsForThisThreshold( MetricInputGroup.SINGLE_VALUED,
                                                                     MetricOutputGroup.DOUBLE_SCORE,
                                                                     secondTest );
         assertTrue( "Unexpected set of metrics to ignore for threshold '" + secondTest
                     + "'",
-                    secondSet.equals( new HashSet<>( Arrays.asList( MetricConstants.MEAN_ERROR,
-                                                                    MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
-                                                                    MetricConstants.MEAN_SQUARE_ERROR,
-                                                                    MetricConstants.MEAN_ABSOLUTE_ERROR ) ) ) );
-        Threshold thirdTest = metIn.ofThreshold( 0.5, Operator.GREATER );
+                    secondSet.equals( new HashSet<>( Arrays.asList( ) ) ) );
+        Threshold thirdTest = metIn.ofThreshold( 0.83, Operator.GREATER );
         Set<MetricConstants> thirdSet =
                 processor.doNotComputeTheseMetricsForThisThreshold( MetricInputGroup.SINGLE_VALUED,
                                                                     MetricOutputGroup.DOUBLE_SCORE,
                                                                     thirdTest );
         assertTrue( "Unexpected set of metrics to ignore for threshold '" + thirdTest
                     + "'",
-                    thirdSet.equals( new HashSet<>( Arrays.asList( MetricConstants.MEAN_ABSOLUTE_ERROR ) ) ) );
-        Threshold fourthTest = metIn.ofThreshold( 0.83, Operator.GREATER_EQUAL );
+                    thirdSet.equals( new HashSet<>( Arrays.asList( MetricConstants.MEAN_SQUARE_ERROR,
+                                                                   MetricConstants.MEAN_ABSOLUTE_ERROR) ) ) );
+        Threshold fourthTest = metIn.ofThreshold( 0.9, Operator.GREATER );
         Set<MetricConstants> fourthSet =
                 processor.doNotComputeTheseMetricsForThisThreshold( MetricInputGroup.SINGLE_VALUED,
                                                                     MetricOutputGroup.DOUBLE_SCORE,
@@ -233,7 +233,6 @@ public final class MetricProcessorTest
                     + "'",
                     fourthSet.equals( new HashSet<>( Arrays.asList( MetricConstants.MEAN_ERROR,
                                                                     MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
-                                                                    MetricConstants.MEAN_SQUARE_ERROR,
                                                                     MetricConstants.ROOT_MEAN_SQUARE_ERROR ) ) ) );
     }
 
@@ -260,41 +259,43 @@ public final class MetricProcessorTest
                 MetricFactory.getInstance( metIn )
                              .ofMetricProcessorByTimeEnsemblePairs( config,
                                                                     MetricOutputGroup.values() );
-        Threshold firstTest = metIn.ofProbabilityThreshold( 0.75, Operator.GREATER_EQUAL );
+        Threshold firstTest = metIn.ofProbabilityThreshold( 0.1, Operator.GREATER );
         Set<MetricConstants> firstSet =
                 processor.doNotComputeTheseMetricsForThisThreshold( MetricInputGroup.SINGLE_VALUED,
                                                                     MetricOutputGroup.DOUBLE_SCORE,
                                                                     firstTest );
         assertTrue( "Unexpected set of metrics to ignore for threshold '" + firstTest
                     + "'",
-                    firstSet.equals( new HashSet<>( Arrays.asList( MetricConstants.MEAN_ERROR ) ) ) );
-        Threshold secondTest = metIn.ofProbabilityThreshold( 0.8, Operator.GREATER_EQUAL );
+                    firstSet.equals( new HashSet<>( Arrays.asList( MetricConstants.MEAN_ERROR,
+                                                                   MetricConstants.MEAN_SQUARE_ERROR ) ) ) );
+        
+        Threshold secondTest = metIn.ofProbabilityThreshold( 0.25, Operator.GREATER );
         Set<MetricConstants> secondSet =
                 processor.doNotComputeTheseMetricsForThisThreshold( MetricInputGroup.SINGLE_VALUED,
                                                                     MetricOutputGroup.DOUBLE_SCORE,
                                                                     secondTest );
         assertTrue( "Unexpected set of metrics to ignore for threshold '" + secondTest
                     + "'",
-                    secondSet.equals( new HashSet<>( Arrays.asList( MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE,
-                                                                    MetricConstants.SAMPLE_SIZE ) ) ) );
-        Threshold thirdTest = metIn.ofProbabilityThreshold( 0.7, Operator.GREATER );
+                    secondSet.equals( new HashSet<>( Arrays.asList( MetricConstants.MEAN_ERROR,
+                                                                    MetricConstants.MEAN_SQUARE_ERROR ) ) ) );
+        
+        Threshold thirdTest = metIn.ofProbabilityThreshold( 0.5, Operator.GREATER );
         Set<MetricConstants> thirdSet =
                 processor.doNotComputeTheseMetricsForThisThreshold( MetricInputGroup.DISCRETE_PROBABILITY,
                                                                     MetricOutputGroup.DOUBLE_SCORE,
                                                                     thirdTest );
         assertTrue( "Unexpected set of metrics to ignore for threshold '" + thirdTest
                     + "'",
-                    thirdSet.equals( new HashSet<>( Arrays.asList( MetricConstants.BRIER_SKILL_SCORE,
-                                                                   MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE ) ) ) );
-        Threshold fourthTest = metIn.ofProbabilityThreshold( 0.73, Operator.GREATER_EQUAL );
+                    thirdSet.equals( new HashSet<>( Arrays.asList( MetricConstants.BRIER_SKILL_SCORE ) ) ) );
+        
+        Threshold fourthTest = metIn.ofProbabilityThreshold( 0.925, Operator.GREATER );
         Set<MetricConstants> fourthSet =
                 processor.doNotComputeTheseMetricsForThisThreshold( MetricInputGroup.ENSEMBLE,
                                                                     MetricOutputGroup.DOUBLE_SCORE,
                                                                     fourthTest );
         assertTrue( "Unexpected set of metrics to ignore for threshold '" + fourthTest
                     + "'",
-                    fourthSet.equals( new HashSet<>( Arrays.asList( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
-                                                                    MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE ) ) ) );
+                    fourthSet.equals( new HashSet<>( Arrays.asList( ) ) ) );
     }
 
 
