@@ -70,7 +70,7 @@ public abstract class ChartEngineFactory
      */
     public enum ChartType
     {
-        ANY( null ),
+        UNIQUE( null ),
         LEAD_THRESHOLD( OutputTypeSelection.LEAD_THRESHOLD ),
         THRESHOLD_LEAD( OutputTypeSelection.THRESHOLD_LEAD ),
         POOLING_WINDOW( null ), //OutputTypeSelection.POOLING_WINDOW will go away.
@@ -117,19 +117,19 @@ public abstract class ChartEngineFactory
      * Provides the default {@link ChartType} for a given {@link MetricOutputGroup}.
      * That chart type can then be used in the other maps to determine the default template file name.
      * Thus, the values from this map must be kept consistent with the template maps.
-     * Any chart type selection of {@link ChartType#ANY} indicates that the chart type doesn't matter for that metric
+     * Any chart type selection of {@link ChartType#UNIQUE} indicates that the chart type doesn't matter for that metric
      * group, likely because the chart type is fixed for all metrics in that metric group.
      */
     private static EnumMap<MetricOutputGroup, ChartType> metricOutputGroupToDefaultChartTypeMap =
             new EnumMap<>( MetricOutputGroup.class );
     static
     {
-        metricOutputGroupToDefaultChartTypeMap.put( MetricOutputGroup.BOXPLOT, ChartType.ANY );
+        metricOutputGroupToDefaultChartTypeMap.put( MetricOutputGroup.BOXPLOT, ChartType.UNIQUE );
         metricOutputGroupToDefaultChartTypeMap.put( MetricOutputGroup.DOUBLE_SCORE, ChartType.LEAD_THRESHOLD );
-        metricOutputGroupToDefaultChartTypeMap.put( MetricOutputGroup.DURATION_SCORE, ChartType.ANY );
-        metricOutputGroupToDefaultChartTypeMap.put( MetricOutputGroup.MATRIX, ChartType.ANY );
+        metricOutputGroupToDefaultChartTypeMap.put( MetricOutputGroup.DURATION_SCORE, ChartType.UNIQUE );
+        metricOutputGroupToDefaultChartTypeMap.put( MetricOutputGroup.MATRIX, ChartType.UNIQUE );
         metricOutputGroupToDefaultChartTypeMap.put( MetricOutputGroup.MULTIVECTOR, ChartType.LEAD_THRESHOLD );
-        metricOutputGroupToDefaultChartTypeMap.put( MetricOutputGroup.PAIRED, ChartType.ANY );
+        metricOutputGroupToDefaultChartTypeMap.put( MetricOutputGroup.PAIRED, ChartType.UNIQUE );
     }
 
     /**
