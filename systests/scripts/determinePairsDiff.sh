@@ -21,6 +21,13 @@ then
 	cd $test_dir
 fi
 
+# Comparing the dirListing.txt file.
+if [ -f output/dirListing.txt -a -f benchmarks/dirListing.txt ]
+then
+        echo "$echoPrefix Comparing listing with benchmark expected contents: diff -q output/dirListing.txt benchmarks/dirListing.txt"
+        diff -q output/dirListing.txt benchmarks/dirListing.txt | tee /dev/stderr
+fi
+
 # For all files with "pairs.csv" in their name (could include pairs.csv or baseline_pairs.csv), but 
 # without sorted in their names (in case an old sorted_pairs.csv is floating around), do...
 for pairsFileName in $(ls output | grep pairs\.csv | grep -v sorted); do
@@ -50,14 +57,13 @@ for pairsFileName in $(ls output | grep pairs\.csv | grep -v sorted); do
   fi
 
 done
-if [ -f output/dirListing.txt -a -f benchmarks/dirListing.txt ]
-then
-	diff -q output/dirListing.txt benchmarks/dirListing.txt
-fi
+
+# Comparing metric otuput .csv files that exist in both benchmarks and outputs.
+echo "$echoPrefix Comparing output .csv files..."
 for csvFile in $(ls output | grep csv | grep -v pairs)
 do
 	if [ -f output/$csvFile -a -f benchmarks/$csvFile ]
 	then
-		diff -q output/$csvFile benchmarks/$csvFile
+		diff -q output/$csvFile benchmarks/$csvFile | tee /dev/stderr
 	fi
 done
