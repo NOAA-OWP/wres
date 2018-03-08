@@ -2,6 +2,7 @@ package wres.io.writing.netcdf;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map.Entry;
@@ -9,7 +10,11 @@ import java.util.Objects;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ucar.ma2.Array;
+import ucar.ma2.ArrayDouble;
+import ucar.ma2.ArrayInt;
 import ucar.ma2.DataType;
+import ucar.ma2.InvalidRangeException;
 import ucar.nc2.Attribute;
 import ucar.nc2.Dimension;
 import ucar.nc2.NetcdfFileWriter;
@@ -22,7 +27,6 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MapKey;
-import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
 import wres.io.writing.WriteException;
@@ -123,6 +127,8 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
         {
             // This is the metric to write
             MetricConstants myMetricToWrite = e.getKey().getKey();
+
+            LOGGER.debug( "Metric to write {}", myMetricToWrite );
             
             // Right now, the following is the only information you have about the geospatial index
             // to which the output corresponds. Clearly, more information will be required, 
@@ -148,14 +154,21 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
             {
                 try
                 {
-                    LOGGER.info( "Writing to netCDF..." );
-                    Variable ncVariable = writer.findVariable( myMetricToWrite.toString() );
+                    String variableName = myMetricToWrite.toString()
+                                                         .replace( ' ', '_');
+                    LOGGER.debug( "Writing to netCDF..." );
+                    Variable ncVariable = writer.findVariable( variableName );
 
                     if ( ncVariable != null )
                     {
+                        LOGGER.debug( "ncVariable was not null." );
                         NetcdfDoubleScoreWriter.writeMetric( writer,
                                                              myMetricToWrite,
                                                              e.getValue() );
+                    }
+                    else
+                    {
+                        LOGGER.debug( "ncVariable WAS null." );
                     }
 
                     // Flush probably not necessary, but helpful for debugging
@@ -292,7 +305,6 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
             throw new IllegalStateException( "The writer must be in define mode" );
         }
 
-        Dimension poolDimension = writer.addUnlimitedDimension( "pool" );
         Dimension featureDimension = writer.addDimension( null,
                                                           "station",
                                                           featureCount );
@@ -339,23 +351,14 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
         Attribute leadSecondsUnits = new Attribute( "units", "seconds" );
         timeVariable.addAttribute( leadSecondsUnits );
 
-        List<Dimension> poolDimensions = new ArrayList<>( 6 );
-        poolDimensions.add( poolDimension );
-        poolDimensions.add( timeDimension );
-        poolDimensions.add( timeDimension );
-        poolDimensions.add( thresholdDimension );
-        poolDimensions.add( leadSecondsDimension );
-        poolDimensions.add( leadSecondsDimension );
-        List<Dimension> shareablePoolDimensions =
-                Collections.unmodifiableList( poolDimensions );
-        Variable poolVariable = writer.addVariable( null,
-                                                    "pool_id",
-                                                    DataType.INT,
-                                                    shareablePoolDimensions );
 
-        List<Dimension> scoreDimensions = new ArrayList<>( 2 );
-        scoreDimensions.add( poolDimension );
+        List<Dimension> scoreDimensions = new ArrayList<>( 6 );
         scoreDimensions.add( featureDimension );
+        scoreDimensions.add( thresholdDimension );
+        scoreDimensions.add( timeDimension );
+        scoreDimensions.add( timeDimension );
+        scoreDimensions.add( leadSecondsDimension );
+        scoreDimensions.add( leadSecondsDimension );
         List<Dimension> shareableScoreDimensions =
                 Collections.unmodifiableList( scoreDimensions );
 
@@ -406,13 +409,89 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
     private static void writeMetric( NetcdfFileWriter writer,
                                      MetricConstants id,
                                      MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> output )
+            throws IOException
     {
-        Variable ncVariable = writer.findVariable( id.toString() );
+        // NetCDF will replace spaces with underscores in variable names.
+        String variableName = id.toString().replace( ' ', '_' );
+        Variable ncVariable = writer.findVariable( variableName );
 
         if ( ncVariable == null )
         {
             throw new IllegalArgumentException( "Must set up NetCDF file to have variable " + id.toString() );
         }
+
+        // Set up features (aka 'stations' in fews-speak)
+        Variable features = writer.findVariable( "station_id" );
+        int[] featureIds = { 1 };
+        Array ncFeatureIds = ArrayInt.D1.makeFromJavaArray( featureIds );
+
+        try
+        {
+            writer.write( features, ncFeatureIds );
+        }
+        catch ( InvalidRangeException ire )
+        {
+            throw new IOException( "Failed to write to variable "
+                                   + features + " in NetCDF file "
+                                   + writer, ire );
+        }
+
+        // Set up times (can be used for basis time or lead time)
+        Variable times = writer.findVariable( "time" );
+        int[] timeValues = { 1520520000, 1520530000 };
+        Array ncTimeValues = ArrayInt.D1.makeFromJavaArray( timeValues );
+
+        try
+        {
+            writer.write( times, ncTimeValues );
+        }
+        catch ( InvalidRangeException ire )
+        {
+            throw new IOException( "Failed to write to variable "
+                                   + features + " in NetCDF file "
+                                   + writer, ire );
+        }
+
+
+        // Set up lead seconds (nonsense for now)
+        Variable leadSeconds = writer.findVariable( "lead_seconds" );
+        int[] leadSecondsValues = { 3600 };
+        Array ncleadSecondsValues = ArrayInt.D1.makeFromJavaArray( leadSecondsValues );
+
+        try
+        {
+            writer.write( leadSeconds, ncleadSecondsValues );
+        }
+        catch ( InvalidRangeException ire )
+        {
+            throw new IOException( "Failed to write to variable "
+                                   + features + " in NetCDF file "
+                                   + writer + " using raw data "
+                                   + Arrays.toString( leadSecondsValues )
+                                   + " and nc data "
+                                   + ncleadSecondsValues, ire );
+        }
+
+
+        // Set up some values to write to variable passed in. (nonsense for now)
+        int[][][][][][] valuesToWrite = { { { { { { 505 } } } } } };
+        Array ncValuesToWrite = ArrayInt.D6.makeFromJavaArray( valuesToWrite );
+
+        try
+        {
+            writer.write( ncVariable, ncValuesToWrite );
+        }
+        catch ( InvalidRangeException ire )
+        {
+            throw new IOException( "Failed to write to variable "
+                                   + features + " in NetCDF file "
+                                   + writer + " using raw data "
+                                   + Arrays.deepToString( valuesToWrite )
+                                   + " and nc data "
+                                   + ncValuesToWrite , ire );
+        }
+
+        writer.flush();
 
     }
 }
