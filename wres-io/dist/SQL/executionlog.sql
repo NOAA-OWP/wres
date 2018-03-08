@@ -1,4 +1,4 @@
-﻿-- Table: public.executionlog
+-- Table: public.executionlog
 
 CREATE TABLE IF NOT EXISTS public.executionlog
 (
