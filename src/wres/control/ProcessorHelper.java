@@ -19,7 +19,6 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.FeaturePlus;
 import wres.config.ProjectConfigException;
-import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
@@ -398,35 +397,6 @@ class ProcessorHelper
         //Either all done OR one completes exceptionally
         return CompletableFuture.anyOf( allDone, oneExceptional );
     }
-
-    /**
-     * Returns true if the given config has one or more of given output type.
-     * @param config the config to search
-     * @param type the type of output to look for
-     * @return true if the output type is present, false otherwise
-     */
-
-    static boolean configNeedsThisTypeOfOutput( ProjectConfig config,
-                                                DestinationType type )
-    {
-        if ( config.getOutputs() == null
-             || config.getOutputs().getDestination() == null )
-        {
-            LOGGER.debug( "No destinations specified for config {}", config );
-            return false;
-        }
-
-        for ( DestinationConfig d : config.getOutputs().getDestination() )
-        {
-            if ( d.getType().equals( type ) )
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
 
     /**
      * Look at a chain of exceptions, returns true if ANY is a NoDataException
