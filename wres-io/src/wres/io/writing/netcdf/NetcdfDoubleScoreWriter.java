@@ -11,7 +11,6 @@ import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ucar.ma2.Array;
-import ucar.ma2.ArrayDouble;
 import ucar.ma2.ArrayInt;
 import ucar.ma2.DataType;
 import ucar.ma2.InvalidRangeException;
@@ -329,6 +328,16 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
         Attribute featureNameAttribute = new Attribute( "long_name", "Station id" );
         featureVariable.addAttribute( featureNameAttribute );
 
+        List<Dimension> thresholdDimensions = new ArrayList<>( 1 );
+        thresholdDimensions.add( thresholdDimension );
+        List<Dimension> shareableThresholdDimensions =
+                Collections.unmodifiableList( thresholdDimensions );
+        Variable thresholdVariable = writer.addVariable( null,
+                                                         "threshold",
+                                                         DataType.CHAR,
+                                                         shareableFeatureDimensions );
+
+        // TODO: no LONG supported by NetCDF 3, use minutes since epoch? UINT seconds since first basis time in output?
         List<Dimension> timeDimensions = new ArrayList<>( 1 );
         timeDimensions.add( timeDimension );
         List<Dimension> shareableTimeDimensions =
@@ -413,7 +422,9 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
     {
         // NetCDF will replace spaces with underscores in variable names.
         String variableName = id.toString().replace( ' ', '_' );
-        Variable ncVariable = writer.findVariable( variableName );
+        Variable ncVariable =
+                NetcdfDoubleScoreWriter.getVariableOrDie( writer,
+                                                          variableName );
 
         if ( ncVariable == null )
         {
@@ -421,7 +432,8 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
         }
 
         // Set up features (aka 'stations' in fews-speak)
-        Variable features = writer.findVariable( "station_id" );
+        Variable features = NetcdfDoubleScoreWriter.getVariableOrDie( writer,
+                                                                      "station_id" );
         int[] featureIds = { 1 };
         Array ncFeatureIds = ArrayInt.D1.makeFromJavaArray( featureIds );
 
@@ -436,8 +448,40 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                                    + writer, ire );
         }
 
-        // Set up times (can be used for basis time or lead time)
-        Variable times = writer.findVariable( "time" );
+        if ( LOGGER.isDebugEnabled() )
+        {
+            writer.flush();
+        }
+
+        // Set up thresholds (nonsense for now)
+        Variable thresholds =
+                NetcdfDoubleScoreWriter.getVariableOrDie( writer, "threshold" );
+
+        char[] thresholdsValues = { 'A' };
+        Array ncThresholdsValues = ArrayInt.D1.makeFromJavaArray( thresholdsValues );
+
+        try
+        {
+            writer.write( thresholds, ncThresholdsValues );
+        }
+        catch ( InvalidRangeException ire )
+        {
+            throw new IOException( "Failed to write to variable "
+                                   + features + " in NetCDF file "
+                                   + writer + " using raw data "
+                                   + Arrays.toString( thresholdsValues )
+                                   + " and nc data "
+                                   + ncThresholdsValues, ire );
+        }
+
+        if ( LOGGER.isDebugEnabled() )
+        {
+            writer.flush();
+        }
+
+        // Set up times (can be used for basis time or valid time)
+        Variable times =
+                NetcdfDoubleScoreWriter.getVariableOrDie( writer, "time" );
         int[] timeValues = { 1520520000, 1520530000 };
         Array ncTimeValues = ArrayInt.D1.makeFromJavaArray( timeValues );
 
@@ -454,7 +498,8 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
 
 
         // Set up lead seconds (nonsense for now)
-        Variable leadSeconds = writer.findVariable( "lead_seconds" );
+        Variable leadSeconds =
+                NetcdfDoubleScoreWriter.getVariableOrDie( writer, "lead_seconds" );
         int[] leadSecondsValues = { 3600 };
         Array ncleadSecondsValues = ArrayInt.D1.makeFromJavaArray( leadSecondsValues );
 
@@ -473,25 +518,163 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
         }
 
 
-        // Set up some values to write to variable passed in. (nonsense for now)
-        int[][][][][][] valuesToWrite = { { { { { { 505 } } } } } };
-        Array ncValuesToWrite = ArrayInt.D6.makeFromJavaArray( valuesToWrite );
-
-        try
+        if ( LOGGER.isDebugEnabled() )
         {
-            writer.write( ncVariable, ncValuesToWrite );
-        }
-        catch ( InvalidRangeException ire )
-        {
-            throw new IOException( "Failed to write to variable "
-                                   + features + " in NetCDF file "
-                                   + writer + " using raw data "
-                                   + Arrays.deepToString( valuesToWrite )
-                                   + " and nc data "
-                                   + ncValuesToWrite , ire );
+            writer.flush();
         }
 
-        writer.flush();
+        // Get the index to write to. How do I interrogate what's there!?
+        int[] shape = ncVariable.getShape();
 
+        LOGGER.debug( "Shape of {} is {}", ncVariable, shape );
+
+        // I guess we just have to "know" this, which is OK since we set it up
+        // above, but is kind of brittle.
+        // 0 is station
+        // 1 is threshold
+        // 2 is time
+        // 3 is time
+        // 4 is lead seconds
+        // 5 is lead seconds
+        final int STATION_INDEX = 0;
+        final int THRESHOLD_INDEX = 1;
+        final int START_TIME_INDEX = 2;
+        final int END_TIME_INDEX = 3;
+        final int START_LEAD_SECONDS_INDEX = 4;
+        final int END_LEAD_SECONDS_INDEX = 5;
+
+        // I guess we need to read these to know which one to write to
+        Array allStations = features.read();
+        Array allThresholds = thresholds.read();
+        Array allTimes = times.read();
+        Array allLeadSeconds = leadSeconds.read();
+
+        // Behold the most horrifying nested loop!
+        for ( int featureIndex = 0; featureIndex < shape[STATION_INDEX]; featureIndex++ )
+        {
+            int currentStation = allStations.getInt( featureIndex );
+
+            // We only enter the nested loop when station matches, and so on...
+            for ( int thresholdIndex = 0;
+                  currentStation == 1 && thresholdIndex < shape[THRESHOLD_INDEX];
+                  thresholdIndex++ )
+            {
+                char currentThreshold = allThresholds.getChar( thresholdIndex );
+
+                for ( int startTimeIndex = 0;
+                      currentThreshold == 'A' && startTimeIndex < shape[START_TIME_INDEX];
+                      startTimeIndex++ )
+                {
+                    int currentStartTime = allTimes.getInt( startTimeIndex );
+
+                    for ( int endTimeIndex = 0;
+                          currentStartTime == 1520520000
+                          && endTimeIndex < shape[END_TIME_INDEX];
+                          endTimeIndex++ )
+                    {
+                        int currentEndTime = allTimes.getInt( endTimeIndex );
+
+                        for ( int startLeadIndex = 0;
+                              currentEndTime == 1520530000
+                              && startLeadIndex < shape[START_LEAD_SECONDS_INDEX];
+                              startLeadIndex++ )
+                        {
+                            int currentStartLeadSeconds =
+                                    allLeadSeconds.getInt( startLeadIndex );
+
+                            for ( int endLeadIndex = 0;
+                                  currentStartLeadSeconds == 3600
+                                  && endLeadIndex < shape[END_LEAD_SECONDS_INDEX];
+                                  endLeadIndex++ )
+                            {
+                                int currentEndLeadSeconds =
+                                        allLeadSeconds.getInt( endLeadIndex );
+
+                                if ( currentEndLeadSeconds == 3600 )
+                                {
+                                    LOGGER.debug( "Found the spot to write! {}, {}, {}, {}, {}, {}",
+                                                  featureIndex,
+                                                  thresholdIndex,
+                                                  startTimeIndex,
+                                                  endTimeIndex,
+                                                  startLeadIndex,
+                                                  endLeadIndex );
+                                    int[] locationToWrite =
+                                            { featureIndex, thresholdIndex,
+                                              startTimeIndex, endTimeIndex,
+                                              startLeadIndex, endLeadIndex };
+                                    double[][][][][][] valueToWrite = {{{{{{ 505.0 }}}}}};
+                                    Array ncValueToWrite = Array.makeFromJavaArray( valueToWrite );
+
+                                    try
+                                    {
+                                        writer.write( ncVariable,
+                                                      locationToWrite,
+                                                      ncValueToWrite );
+                                    }
+                                    catch ( InvalidRangeException ire )
+                                    {
+                                        throw new IOException(
+                                                "Failed to write to variable "
+                                                + features + " in NetCDF file "
+                                                + writer + " using raw data "
+                                                + Arrays.deepToString( valueToWrite )
+                                                + " and nc data "
+                                                + ncValueToWrite , ire );
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if ( LOGGER.isDebugEnabled() )
+        {
+            writer.flush();
+        }
     }
+
+    /**
+     * Somewhat meaningful exception to throw when Variable is not found.
+     */
+    private static class VariableNotFoundException extends IllegalStateException
+    {
+        public VariableNotFoundException( String message )
+        {
+            super( message );
+        }
+    }
+
+
+    /**
+     * Get a variable from a NetcdfFileWriter or throw a meaningful exception
+     * @param writer the opened writer to look inside
+     * @param variableName the variable name to look for
+     * @return the Variable (non-null)
+     * @throws VariableNotFoundException when the variable is not found
+     * @throws NullPointerException when either writer or variableName are null
+     */
+    private static Variable getVariableOrDie( NetcdfFileWriter writer,
+                                              String variableName )
+    {
+        Objects.requireNonNull( writer );
+        Objects.requireNonNull( variableName );
+
+        Variable variable = writer.findVariable( variableName );
+
+        if ( variable == null )
+        {
+            String message = "Could not find the variable " + variableName
+                             + " in NetCDF file " + writer
+                             + ", here are the  available variables: "
+                             + System.lineSeparator()
+                             + writer.getNetcdfFile().getVariables();
+            throw new VariableNotFoundException( message );
+        }
+
+        return variable;
+    }
+
 }
