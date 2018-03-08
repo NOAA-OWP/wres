@@ -43,7 +43,8 @@ do
 		cd $scenario_dir/output
 		if [ -f sorted_pairs.csv -a -f dirListing.txt ]
 		then
-			is400=`echo $scenario_dir | egrep '(scenario4|scenario5)'`
+			#is400=`echo $scenario_dir | egrep '(scenario4|scenario5)'`
+			is400=`echo $scenario_dir | egrep '(scenario4)'`
 			if [ -n "$is400" ]
 			then
 				$MetricsScriptDir/scripts/prepaireFiles.bash
