@@ -155,10 +155,11 @@
     </xs:simpleType>
 
     <!-- An enum to specify if a threshold is a probability or real value. -->
-    <xs:simpleType name="probabilityOrValue">
+    <xs:simpleType name="thresholdType">
         <xs:restriction base="xs:string">
             <xs:enumeration value="probability" />
             <xs:enumeration value="value" />
+	    <xs:enumeration value="probability classifier" />
         </xs:restriction>
     </xs:simpleType>
 
@@ -185,8 +186,8 @@
 
         <!-- A threshold contains a type, applyTo and operator and EITHER an external source OR an internal commaSeparatedValues. -->
         <xs:sequence>
-	    <xs:element name="type" type="probabilityOrValue" default="probability" minOccurs="0" maxOccurs="1"/>
-            <xs:element name="applyTo" type="leftOrRightOrBaseline" default="left" minOccurs="0" maxOccurs="1"/>
+	    <xs:element name="type" type="thresholdType" default="probability" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="applyTo" type="leftOrRightOrBaseline" minOccurs="0" maxOccurs="1"/>
             <!-- Choice of using an internal source or an external source -->
             <xs:choice>
                 <!-- Internal source -->
