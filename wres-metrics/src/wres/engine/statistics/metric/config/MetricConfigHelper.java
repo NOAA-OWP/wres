@@ -18,10 +18,10 @@ import wres.config.generated.MetricConfigName;
 import wres.config.generated.MetricsConfig;
 import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.PoolingWindowConfig;
-import wres.config.generated.ProbabilityOrValue;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.SummaryStatisticsName;
 import wres.config.generated.ThresholdOperator;
+import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
 import wres.config.generated.TimeSeriesMetricConfig;
 import wres.datamodel.DataFactory;
@@ -323,7 +323,7 @@ public final class MetricConfigHelper
                 returnMe.addAll( getThresholdsFromCommaSeparatedValues( dataFactory,
                                                                         values.toString(),
                                                                         operator,
-                                                                        next.getType() != ProbabilityOrValue.VALUE ) );
+                                                                        next.getType() != ThresholdType.VALUE ) );
             }
         }
         return Collections.unmodifiableSet( returnMe );

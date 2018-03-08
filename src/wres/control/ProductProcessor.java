@@ -325,6 +325,10 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
     /**
      * Builds a set of consumers for writing files in Portable Network Graphics (PNG) format.
      * 
+     * TODO: remove the dependence of this class on ProjectConfigPlus via the graphics strings required by 
+     * the consumers built in this method. Instead, pass on ProjectConfig together with graphics strings or an 
+     * alternative representation of project configuration. The ProjectConfigPlus is not intended for sharing.
+     * 
      * @throws ProjectConfigException if the project configuration is invalid for writing
      */
 

@@ -5,7 +5,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-import wres.config.generated.ProbabilityOrValue;
+import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
 
 /**
@@ -49,12 +49,14 @@ public class ProjectConfigs
             for ( String value : values )
             {
                 Double doubleValue = Double.parseDouble( value );
-                
+
                 // Validate
-                if ( v.getType() == ProbabilityOrValue.PROBABILITY && ( doubleValue < 0.0 || doubleValue > 1.0 ) )
+                if ( ( v.getType() == ThresholdType.PROBABILITY
+                       || v.getType() == ThresholdType.PROBABILITY_CLASSIFIER )
+                     && ( doubleValue < 0.0 || doubleValue > 1.0 ) )
                 {
                     String message = "Please set probabilities to values"
-                                     + "between 0.0 and 1.0.";
+                                     + " between 0.0 and 1.0.";
                     throw new ProjectConfigException( v, message );
                 }
 

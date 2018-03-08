@@ -54,11 +54,11 @@ import wres.config.generated.MetricConfigName;
 import wres.config.generated.MetricsConfig;
 import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.PoolingWindowConfig;
-import wres.config.generated.ProbabilityOrValue;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Outputs;
 import wres.config.generated.ThresholdFormat;
 import wres.config.generated.ThresholdOperator;
+import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
 import wres.config.generated.TimeScaleConfig;
 import wres.config.generated.TimeWindowMode;
@@ -1558,7 +1558,7 @@ public class ConfigHelper
 
         // Default to probability
         boolean isProbability =
-                Objects.isNull( threshold.getType() ) || threshold.getType() == ProbabilityOrValue.PROBABILITY;
+                Objects.isNull( threshold.getType() ) || threshold.getType() == ThresholdType.PROBABILITY;
 
         // Missing value?
         Double missing = null;

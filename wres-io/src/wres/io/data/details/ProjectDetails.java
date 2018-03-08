@@ -33,8 +33,8 @@ import wres.config.generated.Feature;
 import wres.config.generated.MetricsConfig;
 import wres.config.generated.PairConfig;
 import wres.config.generated.PoolingWindowConfig;
-import wres.config.generated.ProbabilityOrValue;
 import wres.config.generated.ProjectConfig;
+import wres.config.generated.ThresholdType;
 import wres.config.generated.TimeScaleConfig;
 import wres.config.generated.TimeScaleFunction;
 import wres.config.generated.TimeWindowMode;
@@ -2632,7 +2632,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
             if ( next.getThresholds()
                      .stream()
                      .anyMatch( a -> Objects.isNull( a.getType() )
-                                     || a.getType() == ProbabilityOrValue.PROBABILITY ) )
+                                     || a.getType() == ThresholdType.PROBABILITY ) )
             {
                 return true;
             }
