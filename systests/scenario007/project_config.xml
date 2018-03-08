@@ -6,12 +6,12 @@
         <left label="">
             <type>observations</type>
             <source format="PI-XML">../data/DRRC2QINE.xml</source>
-            <variable>QINE</variable>
+            <variable label="discharge1">QINE</variable>
         </left>
         <right label="HEFS">
             <type>ensemble forecasts</type>
             <source format="PI-XML">../data/drrc2ForecastsOneMonth/</source>
-            <variable>SQIN</variable>
+            <variable label="discharge2">SQIN</variable>
         </right>
     </inputs>
 

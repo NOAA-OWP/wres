@@ -170,22 +170,22 @@ for scenarioName in $*; do
     #List the contents of the output directory and compare with contents in benchmark.
     echo "$echoPrefix Listing the output contents: ls *.csv *.png > dirListing.txt"
     ls *.csv *.png > dirListing.txt 2>/dev/null 
-    if [ -f ../$benchDirName/dirListing.txt ]; then
-        echo "$echoPrefix Comparing listing with benchmark expected contents: diff dirListing.txt  ../$benchDirName/dirListing.txt"  
-        diff --brief dirListing.txt ../$benchDirName/dirListing.txt | tee /dev/stderr
-    else 
-        echo "$echoPrefix No benchmark directory listing to compare against.  Cannot compare expected output listing." | tee /dev/stderr
-    fi
+#    if [ -f ../$benchDirName/dirListing.txt ]; then
+#        echo "$echoPrefix Comparing listing with benchmark expected contents: diff dirListing.txt  ../$benchDirName/dirListing.txt"  
+#        diff --brief dirListing.txt ../$benchDirName/dirListing.txt | tee /dev/stderr
+#    else 
+#        echo "$echoPrefix No benchmark directory listing to compare against.  Cannot compare expected output listing." | tee /dev/stderr
+#    fi
 
     #Compare all csv files except for *pairs* files.
-    echo "$echoPrefix Comparing output .csv files..."
+#    echo "$echoPrefix Comparing output .csv files..."
     #for fileName in $(ls *.csv | grep -v "pairs"); do
-    for fileName in $(grep .csv dirListing.txt | grep -v "pairs"); do
-	if [ -f $fileName -a -f ../$benchDirName/$fileNmae ] # if file name also in benchmarks/
-	then
-        	diff --brief $fileName ../$benchDirName/$fileName | tee /dev/stderr
-	fi
-    done
+#    for fileName in $(grep .csv dirListing.txt | grep -v "pairs"); do
+#	if [ -f $fileName -a -f ../$benchDirName/$fileNmae ] # if file name also in benchmarks/
+#	then
+#        	diff --brief $fileName ../$benchDirName/$fileName | tee /dev/stderr
+#	fi
+#    done
 
     #Compare files by calling the script.
     cd $executeDir
