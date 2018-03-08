@@ -1,4 +1,4 @@
-﻿-- View: wres.VariableByFeature
+-- View: wres.VariableByFeature
 -- Displays variables and the locations linked to them
 
 CREATE OR REPLACE VIEW wres.VariableByFeature AS
