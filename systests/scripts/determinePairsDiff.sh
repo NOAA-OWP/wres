@@ -58,14 +58,17 @@ for pairsFileName in $(ls output | grep pairs\.csv | grep -v sorted); do
 done
 
 # Comparing metric otuput .csv files that exist in both benchmarks and outputs.
-echo "$echoPrefix Comparing output .csv files..."
+echo "$echoPrefix Comparing output .csv files with benchmarks if the benchmark version exists..."
 for csvFile in $(ls output | grep csv | grep -v pairs)
 do
 	if [ -f output/$csvFile -a -f benchmarks/$csvFile ]
 	then
 		diff -q output/$csvFile benchmarks/$csvFile | tee /dev/stderr
-	elif [ ! -f benchmarks/$csvFile ]
-	then
-		echo "File benchmarks/$csvFile not found."
 	fi
+        # Hank, 3/9: I'm commenting this out.  I don't think we need to see when a csv file is not benchmarked.
+        # If its not benchmarked, then we made a conscious decisioon not to check it.
+        #elif [ ! -f benchmarks/$csvFile ]
+	#then
+                # echo "File benchmarks/$csvFile not found."
+	#fi
 done
