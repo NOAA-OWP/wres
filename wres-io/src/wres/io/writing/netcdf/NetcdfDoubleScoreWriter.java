@@ -11,8 +11,10 @@ import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ucar.ma2.Array;
+import ucar.ma2.ArrayChar;
 import ucar.ma2.ArrayDouble;
 import ucar.ma2.ArrayInt;
+import ucar.ma2.ArrayString;
 import ucar.ma2.DataType;
 import ucar.ma2.InvalidRangeException;
 import ucar.nc2.Attribute;
@@ -46,6 +48,9 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
 
     /** The _FillValue and missing_value to use when writing. */
     private static final double FILL_AND_NO_DATA_VALUE = Double.NaN;
+
+    /** The length of strings to use for string variables in the file. */
+    private static final int STRING_LENGTH = 128;
 
     /**
      * List of output files to write.
@@ -329,7 +334,7 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
         // NetCDF 3 uses a second dimension for string variables (char[])
         Dimension stringDimension = writer.addDimension( null,
                                                          "string",
-                                                         128 );
+                                                         STRING_LENGTH );
 
         List<Dimension> featureDimensions = new ArrayList<>( 1 );
         featureDimensions.add( featureDimension );
@@ -508,8 +513,10 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
         Variable thresholds =
                 NetcdfDoubleScoreWriter.getVariableOrDie( writer, "threshold" );
 
-        char[][] thresholdsValues = { "Some kind of threshold".toCharArray() };
-        Array ncThresholdsValues = ArrayInt.D2.makeFromJavaArray( thresholdsValues );
+        char[][] thresholdsValues = { "Some kind of threshold".toCharArray(),
+                "Another kind of threshold".toCharArray() };
+        // Doesn't quite work, curious: (Also kind of scary that ArrayInt.D2 worked...)
+        Array ncThresholdsValues = ArrayChar.D1.makeFromJavaArray( thresholdsValues );
 
         try
         {
@@ -610,12 +617,28 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                   currentStation == 1 && thresholdIndex < shape[THRESHOLD_INDEX];
                   thresholdIndex++ )
             {
-                char currentThreshold = allThresholds.getChar( thresholdIndex );
+
+                char[] currentThreshold = new char[128];
 
                 // Need to read all the chars from threshold, 2d...
+                for ( int charIndex = 0; charIndex < STRING_LENGTH; charIndex++ )
+                {
+                    int position = STRING_LENGTH * thresholdIndex + charIndex;
+                    currentThreshold[charIndex] = allThresholds.getChar( position );
+                    LOGGER.debug( "currentThreshold: {}", currentThreshold );
+                    if ( currentThreshold[charIndex] == 0x0 )
+                    {
+                        break;
+                    }
+                }
+
+                String actualCurrentThreshold = String.valueOf( currentThreshold )
+                                                      .trim(); // remove 0s.
+                LOGGER.debug( "actualCurrentThreshold: {}", actualCurrentThreshold );
 
                 for ( int startTimeIndex = 0;
-                      currentThreshold == 'A' && startTimeIndex < shape[START_TIME_INDEX];
+                      actualCurrentThreshold.equals( "Some kind of threshold" )
+                      && startTimeIndex < shape[START_TIME_INDEX];
                       startTimeIndex++ )
                 {
                     int currentStartTime = allTimes.getInt( startTimeIndex );
