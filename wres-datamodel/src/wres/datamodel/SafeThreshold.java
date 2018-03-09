@@ -48,6 +48,12 @@ class SafeThreshold implements Threshold
 
     private final String label;
 
+    /**
+     * Identifies whether the threshold is used in a decision context.
+     */
+    
+    private boolean isDecisionType;
+    
     @Override
     public Double getThreshold()
     {
@@ -91,18 +97,28 @@ class SafeThreshold implements Threshold
     }
 
     @Override
+    public boolean isDecisionType()
+    {
+        return isDecisionType;
+    }    
+    
+    @Override
     public boolean equals( final Object o )
     {
         if ( ! ( o instanceof SafeThreshold ) )
         {
             return false;
         }
+        
         final SafeThreshold in = (SafeThreshold) o;
         boolean returnMe =
                 hasOrdinaryValues() == in.hasOrdinaryValues()
                            && hasProbabilityValues() == in.hasProbabilityValues()
                            && hasLabel() == in.hasLabel()
                            && getCondition().equals( in.getCondition() );
+        
+        returnMe = returnMe && isDecisionType() == in.isDecisionType();
+        
         if ( hasOrdinaryValues() )
         {
             returnMe = returnMe && getThreshold().equals( in.getThreshold() );
@@ -111,6 +127,7 @@ class SafeThreshold implements Threshold
                 returnMe = returnMe && getThresholdUpper().equals( in.getThresholdUpper() );
             }
         }
+        
         if ( hasProbabilityValues() )
         {
             returnMe = returnMe && getThresholdProbability().equals( in.getThresholdProbability() );
@@ -119,10 +136,12 @@ class SafeThreshold implements Threshold
                 returnMe = returnMe && getThresholdUpperProbability().equals( in.getThresholdUpperProbability() );
             }
         }
+        
         if ( hasLabel() )
         {
             returnMe = returnMe && getLabel().equals( in.getLabel() );
         }
+        
         return returnMe;
     }
 
@@ -151,6 +170,7 @@ class SafeThreshold implements Threshold
         {
             returnMe = returnMe * 37 + label.hashCode();
         }
+        returnMe = returnMe * 37 + Boolean.hashCode( isDecisionType );
         return returnMe;
     }
 
@@ -227,8 +247,16 @@ class SafeThreshold implements Threshold
     public int compareTo( final Threshold o )
     {
         Objects.requireNonNull( o, "Specify a non-null threshold for comparison" );
+        
+        //Compare decision type
+        int returnMe = Boolean.compare( this.isDecisionType(), o.isDecisionType() );
+        if ( returnMe != 0 )
+        {
+            return returnMe;
+        }
+        
         //Compare condition
-        int returnMe = condition.compareTo( o.getCondition() );
+        returnMe = this.getCondition().compareTo( o.getCondition() );
         if ( returnMe != 0 )
         {
             return returnMe;
@@ -262,7 +290,7 @@ class SafeThreshold implements Threshold
         //Compare labels
         if ( hasLabel() )
         {
-            returnMe = getLabel().compareTo( o.getLabel() );
+            returnMe = this.getLabel().compareTo( o.getLabel() );
             if ( returnMe != 0 )
             {
                 return returnMe;
@@ -370,6 +398,12 @@ class SafeThreshold implements Threshold
         private Double probabilityUpper;
 
         /**
+         * Identifies whether the threshold is used in a decision context.
+         */
+        
+        private boolean isDecisionType;
+        
+        /**
          * The threshold label or null.
          */
 
@@ -452,6 +486,19 @@ class SafeThreshold implements Threshold
             this.label = label;
             return this;
         }
+        
+        /**
+         * Sets the decision type.
+         * 
+         * @param isDecisionType is true to clarify that the threshold is intended for use in a decision context
+         * @return the builder
+         */
+
+        ThresholdBuilder setDecisionType( boolean isDecisionType )
+        {
+            this.isDecisionType = isDecisionType;
+            return this;
+        }
 
         /**
          * Return the {@link Threshold}
@@ -479,6 +526,7 @@ class SafeThreshold implements Threshold
         this.probability = builder.probability;
         this.probabilityUpper = builder.probabilityUpper;
         this.label = builder.label;
+        this.isDecisionType = builder.isDecisionType;
 
         //Bounds checks
         Objects.requireNonNull( condition, "Specify a non-null condition." );
@@ -553,28 +601,22 @@ class SafeThreshold implements Threshold
             throw new IllegalArgumentException( "The upper threshold must be greater than the lower threshold: ["
                                                 + threshold + "," + thresholdUpper + "]." );
         }
-        if ( Objects.nonNull( probability ) )
+        // Upper bound is less than or equal to lower bound
+        if ( Objects.nonNull( probability ) && probabilityUpper <= probability )
         {
-            // Upper bound is less than or equal to lower bound
-            if ( probabilityUpper <= probability )
-            {
-                throw new IllegalArgumentException( "The upper threshold probability must be greater than the "
-                                                    + "lower threshold probability: ["
-                                                    + probability
-                                                    + ","
-                                                    + probabilityUpper
-                                                    + "]." );
-            }
-
+            throw new IllegalArgumentException( "The upper threshold probability must be greater than the "
+                                                + "lower threshold probability: ["
+                                                + probability
+                                                + ","
+                                                + probabilityUpper
+                                                + "]." );
         }
         // Upper bound is finite and invalid
-        if ( Objects.nonNull( probabilityUpper ) )
+        if ( Objects.nonNull( probabilityUpper ) && !probabilityUpper.equals( Double.POSITIVE_INFINITY )
+             && probabilityUpper > 1.0 )
         {
-            if ( !probabilityUpper.equals( Double.POSITIVE_INFINITY ) && probabilityUpper > 1.0 )
-            {
-                throw new IllegalArgumentException( "The upper threshold probability is out of bounds [0,1]: "
-                                                    + probabilityUpper );
-            }
+            throw new IllegalArgumentException( "The upper threshold probability is out of bounds [0,1]: "
+                                                + probabilityUpper );
         }
 
     }
@@ -615,14 +657,14 @@ class SafeThreshold implements Threshold
     private int compareOrdinaryValues( final Threshold o )
     {
         //Compare ordinary values
-        int returnMe = Double.compare( threshold, o.getThreshold() );
+        int returnMe = Double.compare( this.getThreshold(), o.getThreshold() );
         if ( returnMe != 0 )
         {
             return returnMe;
         }
-        if ( hasBetweenCondition() )
+        if ( this.hasBetweenCondition() )
         {
-            returnMe = Double.compare( thresholdUpper, o.getThresholdUpper() );
+            returnMe = Double.compare( this.getThresholdUpper(), o.getThresholdUpper() );
             if ( returnMe != 0 )
             {
                 return returnMe;
@@ -641,14 +683,14 @@ class SafeThreshold implements Threshold
     private int compareProbabilityValues( final Threshold o )
     {
         //Compare probability values
-        int returnMe = Double.compare( probability, o.getThresholdProbability() );
+        int returnMe = Double.compare( this.getThresholdProbability(), o.getThresholdProbability() );
         if ( returnMe != 0 )
         {
             return returnMe;
         }
-        if ( hasBetweenCondition() )
+        if ( this.hasBetweenCondition() )
         {
-            returnMe = Double.compare( probabilityUpper, o.getThresholdUpperProbability() );
+            returnMe = Double.compare( this.getThresholdUpperProbability(), o.getThresholdUpperProbability() );
             if ( returnMe != 0 )
             {
                 return returnMe;
@@ -675,25 +717,25 @@ class SafeThreshold implements Threshold
     {
         Objects.requireNonNull( o, "Specify a non-null threshold for comparison" );
         //Check for equal status of the values available
-        if ( hasOrdinaryValues() != o.hasOrdinaryValues() )
+        if ( this.hasOrdinaryValues() != o.hasOrdinaryValues() )
         {
-            if ( hasOrdinaryValues() )
+            if ( this.hasOrdinaryValues() )
             {
                 return 1;
             }
             return -1;
         }
-        if ( hasProbabilityValues() != o.hasProbabilityValues() )
+        if ( this.hasProbabilityValues() != o.hasProbabilityValues() )
         {
-            if ( hasProbabilityValues() )
+            if ( this.hasProbabilityValues() )
             {
                 return 1;
             }
             return -1;
         }
-        if ( hasLabel() != o.hasLabel() )
+        if ( this.hasLabel() != o.hasLabel() )
         {
-            if ( hasLabel() )
+            if ( this.hasLabel() )
             {
                 return 1;
             }
@@ -702,4 +744,5 @@ class SafeThreshold implements Threshold
 
         return 0;
     }
+
 }

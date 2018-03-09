@@ -19,6 +19,7 @@ import java.util.concurrent.Executors;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
+import wres.config.generated.MetricConfigName;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
@@ -483,9 +484,20 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         final DataFactory metIn = DefaultDataFactory.getInstance();
         String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/test2ApplyThresholds.xml";
 
-        // Define the canonical thresholds to use
-        List<Set<Threshold>> canonical = new ArrayList<>();
-        canonical.add( new HashSet<>( Arrays.asList( metIn.ofThreshold( 0.5, Operator.GREATER_EQUAL) ) ) );
+        // Define the external thresholds to use
+        Map<MetricConfigName,Set<Threshold>> canonical = new HashMap<>();
+ 
+        Set<Threshold> thresholds = new HashSet<>( Arrays.asList( metIn.ofThreshold( 0.5, Operator.GREATER_EQUAL) ) );
+        canonical.put( MetricConfigName.MEAN_ERROR, thresholds );
+        canonical.put( MetricConfigName.PEARSON_CORRELATION_COEFFICIENT, thresholds );
+        canonical.put( MetricConfigName.MEAN_ABSOLUTE_ERROR, thresholds );
+        canonical.put( MetricConfigName.MEAN_SQUARE_ERROR, thresholds );
+        canonical.put( MetricConfigName.BIAS_FRACTION, thresholds );
+        canonical.put( MetricConfigName.COEFFICIENT_OF_DETERMINATION, thresholds );
+        canonical.put( MetricConfigName.ROOT_MEAN_SQUARE_ERROR, thresholds );
+        canonical.put( MetricConfigName.THREAT_SCORE, thresholds );
+        canonical.put( MetricConfigName.CONTINGENCY_TABLE, thresholds );
+        canonical.put( MetricConfigName.QUANTILE_QUANTILE_DIAGRAM, thresholds );
         
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
@@ -496,7 +508,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         SingleValuedPairs pairs = MetricTestDataFactory.getSingleValuedPairsFour();
         final MetadataFactory metFac = metIn.getMetadataFactory();
         
-        // Generate results for 10 nominal lead times
+        // Generate results for 20 nominal lead times
         for ( int i = 1; i < 11; i++ )
         {
             final TimeWindow window = TimeWindow.of( Instant.MIN,

@@ -4,14 +4,20 @@ import java.util.Objects;
 import java.util.function.Predicate;
 
 /**
- * Stores a threshold value and associated logical condition. A threshold may comprise one or two threshold values. If
+ * <p>Stores a threshold value and associated logical condition. A threshold may comprise one or two threshold values. If
  * the threshold comprises two values, {@link #getCondition()} must return {@link Operator#BETWEEN} and
  * {@link #getThresholdUpper()} must return a non-null value. The reverse is also true, i.e. if the condition is
  * {@link Operator#BETWEEN}, {@link #getThresholdUpper()} must return null. The threshold may comprise ordinary 
- * threshold values and/or probability values. When both are defined, the threshold is a "quantile".
+ * threshold values and/or probability values. When both are defined, the threshold is a "quantile".</p>
+ * 
+ * <p>Additionally, a threshold may be identified as applying in a decision context, where {@link #isDecisionType()}
+ * returns <code>true</code>. Fundamentally, this does not change the  behavior of a {@link Threshold}. However, 
+ * a {@link Threshold} may be used classify data (whether to subset data or define an event) or to make binary 
+ * decisions from data. Frequently, both applications of {@link Threshold} appear in the same (or similar) context, 
+ * and a {@link Threshold} is, therefore, usefully discriminated by type.</p>
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
+ * @version 0.2
  * @since 0.1
  */
 
@@ -159,8 +165,8 @@ public interface Threshold extends Comparable<Threshold>, Predicate<Double>
     String getLabel();
 
     /**
-     * Returns true if the threshold condition corresponds to a {@link Operator#BETWEEN} condition and, hence, that
-     * {@link #getThresholdUpper()} returns a non-null threshold value.
+     * Returns <code>true</code> if the {@link Threshold} condition corresponds to a {@link Operator#BETWEEN} condition and, 
+     * hence, that {@link #getThresholdUpper()} returns a non-null threshold value.
      * 
      * @return true if the condition is a {@link Operator#BETWEEN} condition, false otherwise.
      */
@@ -168,7 +174,8 @@ public interface Threshold extends Comparable<Threshold>, Predicate<Double>
     boolean hasBetweenCondition();
 
     /**
-     * Returns true if {@link Double#isFinite(double)} returns true for all threshold values, false otherwise.
+     * Returns <code>true</code> if {@link Double#isFinite(double)} returns <code>true</code> for all threshold values,
+     * otherwise <code>false</code>.
      * 
      * @return true if the threshold is finite, false otherwise
      */
@@ -176,15 +183,28 @@ public interface Threshold extends Comparable<Threshold>, Predicate<Double>
     boolean isFinite();
 
     /**
-     * Returns a string representation of the threshold that does not contain spaces or other special characters.
+     * Returns <code>true</code> if the {@link Threshold} is intended for use in a decision context, otherwise 
+     * <code>false</code>. This is used to discriminate between {@link Threshold} intended to classify data and 
+     * {@link Threshold} intended for decision making, which frequently appear together in the same or nearby 
+     * context. It does not alter the behavior of a {@link Threshold}, only the context in which it applies.
      * 
-     * @return a string representation without spaces or special characters
+     * @return true if the threshold is intended to make decisions, otherwise false
+     */
+    
+    boolean isDecisionType();
+    
+    /**
+     * Returns a string representation of the {@link Threshold} that contains only alphanumeric characters A-Z, a-z, 
+     * and 0-9 and, additionally, the underscore character to separate between elements, and the period character as
+     * a decimal separator.
+     * 
+     * @return a safe string representation
      */
 
     String toStringSafe();
 
     /**
-     * Returns a string representation of the threshold.
+     * Returns a string representation of the {@link Threshold}.
      * 
      * @return a string representation
      */

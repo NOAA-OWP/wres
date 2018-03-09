@@ -161,7 +161,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
      * 
      * @param dataFactory the data factory
      * @param config the project configuration
-     * @param canonicalThresholds an optional set of canonical thresholds (one per metric group), may be null
+     * @param externalThresholds an optional set of external thresholds (one per metric), may be null
      * @param thresholdExecutor an optional {@link ExecutorService} for executing thresholds. Defaults to the 
      *            {@link ForkJoinPool#commonPool()}
      * @param metricExecutor an optional {@link ExecutorService} for executing metrics. Defaults to the 
@@ -174,13 +174,13 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
 
     public MetricProcessorByTimeSingleValuedPairs( final DataFactory dataFactory,
                                                    final ProjectConfig config,
-                                                   final List<Set<Threshold>> canonicalThresholds,
+                                                   final Map<MetricConfigName,Set<Threshold>> externalThresholds,
                                                    final ExecutorService thresholdExecutor,
                                                    final ExecutorService metricExecutor,
                                                    final MetricOutputGroup... mergeList )
             throws MetricConfigurationException, MetricParameterException
     {
-        super( dataFactory, config, canonicalThresholds, thresholdExecutor, metricExecutor, mergeList );
+        super( dataFactory, config, externalThresholds, thresholdExecutor, metricExecutor, mergeList );
         //Construct the metrics
         //Dichotomous scores
         if ( hasMetrics( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.DOUBLE_SCORE ) )
