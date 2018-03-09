@@ -21,6 +21,7 @@ import wres.config.FeaturePlus;
 import wres.config.ProjectConfigException;
 import wres.config.generated.DestinationType;
 import wres.config.generated.Feature;
+import wres.config.generated.MetricConfigName;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
@@ -122,8 +123,9 @@ class ProcessorHelper
         // because external thresholds are read for multiple features. Both would be solved if we had an internal
         // representation of a full project configuration that was passed around the system after ingest.
         // The current approach is deeply unsatisfying.
-        final Map<FeaturePlus, List<Set<Threshold>>> thresholds = new TreeMap<>( FeaturePlus::compareByLocationId );
-        thresholds.putAll( ConfigHelper.readThresholdsFromProjectConfig( projectConfig ) );
+        final Map<FeaturePlus, Map<MetricConfigName, Set<Threshold>>> thresholds =
+                new TreeMap<>( FeaturePlus::compareByLocationId );
+        thresholds.putAll( ConfigHelper.readExternalThresholdsFromProjectConfig( projectConfig ) );
 
         // Reduce our triad of executors to one object
         ExecutorServices executors = new ExecutorServices( pairExecutor,
@@ -245,7 +247,7 @@ class ProcessorHelper
      */
 
     private static FeatureProcessingResult processFeature( final Feature feature,
-                                                           final List<Set<Threshold>> thresholds,
+                                                           final Map<MetricConfigName, Set<Threshold>> thresholds,
                                                            final ProjectConfigPlus projectConfigPlus,
                                                            final ProjectDetails projectDetails,
                                                            final ExecutorServices executors )

@@ -1461,21 +1461,22 @@ public class ConfigHelper
     }   
     
     /**
-     * Reads a source of thresholds from the input configuration and returns a map containing a set of 
+     * Reads all external sources of thresholds from the input configuration and returns a map containing a set of 
      * {@link Threshold} for each {@link FeaturePlus} in the source. If no source is provided, an empty map is
-     * returned. The list contains as many sets of thresholds as groups of metric configuration.
+     * returned. The map stores each set of thresholds within an inner map, by metric identifier.
      * 
      * @param projectConfig the project configuration
      * @return the thresholds associated with each feature obtained from a source in the project configuration
      * @throws ProjectConfigException if the source could not be read
      */
 
-    public static Map<FeaturePlus, List<Set<Threshold>>> readThresholdsFromProjectConfig( ProjectConfig projectConfig )
-            throws ProjectConfigException
+    public static Map<FeaturePlus, Map<MetricConfigName,Set<Threshold>>>
+            readExternalThresholdsFromProjectConfig( ProjectConfig projectConfig )
+                    throws ProjectConfigException
     {
         Objects.requireNonNull( projectConfig, NULL_CONFIGURATION_ERROR );
 
-        Map<FeaturePlus, List<Set<Threshold>>> returnMe = new TreeMap<>();
+        Map<FeaturePlus, Map<MetricConfigName,Set<Threshold>>> returnMe = new HashMap<>();
 
         // Obtain and read thresholds
         List<MetricsConfig> metrics = projectConfig.getMetrics();
@@ -1487,53 +1488,32 @@ public class ConfigHelper
                                                       .stream()
                                                       .filter( t -> t.getCommaSeparatedValuesOrSource() instanceof ThresholdsConfig.Source )
                                                       .collect( Collectors.toSet() );
-            
-            Map<FeaturePlus, Set<Threshold>> thresholdsForThisConfigGroup = new HashMap<>();
-            
+
             // Iterate the external sources and read them all into the map
             for ( ThresholdsConfig next : external )
             {
-                Map<FeaturePlus, Set<Threshold>> thresholdsByFeature =
-                        ConfigHelper.readOneThresholdFromProjectConfig( projectConfig, next );
-
                 // Add or append
-                for ( Entry<FeaturePlus, Set<Threshold>> nextEntry : thresholdsByFeature.entrySet() )
-                {
-                    // Append
-                    if ( thresholdsForThisConfigGroup.containsKey( nextEntry.getKey() ) )
-                    {
-                        thresholdsForThisConfigGroup.get( nextEntry.getKey() ).addAll( nextEntry.getValue() );
-                    }
-                    // add
-                    else
-                    {
-                        thresholdsForThisConfigGroup.put( nextEntry.getKey(), nextEntry.getValue() );
-                    }
-                }
+                addThresholdsForOneMetricConfigGroup( returnMe, nextGroup, next );
             }
-            addThresholdsForOneMetricConfigGroup( returnMe, thresholdsForThisConfigGroup );
+            
         }
 
-        return Collections.unmodifiableMap( returnMe );
+        return ConfigHelper.ofUnmodifiableMap( returnMe );
     }
 
     /**
      * Reads a {@link ThresholdConfig} and returns a corresponding {@link Set} of {@link Threshold} 
      * by {@link FeaturePlus}.
      * 
-     * @param projectConfig the project configuration
      * @param threshold the threshold configuration
      * @return a map of thresholds by feature
      * @throws ProjectConfigException if the threshold could not be read 
      */
 
-    private static Map<FeaturePlus, Set<Threshold>> readOneThresholdFromProjectConfig( ProjectConfig projectConfig,
-                                                                                       ThresholdsConfig threshold )
+    private static Map<FeaturePlus, Set<Threshold>> readOneThresholdFromProjectConfig( ThresholdsConfig threshold )
             throws ProjectConfigException
     {
 
-        Objects.requireNonNull( projectConfig, NULL_CONFIGURATION_ERROR );
-        
         Objects.requireNonNull( threshold, "Specify non-null threshold configuration." );
         
         Map<FeaturePlus, Set<Threshold>> returnMe = new TreeMap<>();
@@ -1544,9 +1524,7 @@ public class ConfigHelper
         if ( Objects.isNull( nextSource.getValue() ) )
         {
             throw new ProjectConfigException( threshold, "Specify a non-null path to read for the external "
-                                                    + "source of thresholds in project '"
-                                                    + projectConfig.getLabel()
-                                                    + "'." );
+                                                    + "source of thresholds." );
         }
         // Validate format
         if ( nextSource.getFormat() != ThresholdFormat.CSV )
@@ -1593,58 +1571,59 @@ public class ConfigHelper
     }
     
     /**
-     * Mutates the first map, adding the thresholds from the second map for corresponding {@link FeaturePlus}.
+     * Mutates a map of thresholds, adding the thresholds for one metric configuration group.
      * 
-     * @param first the first map
+     * @param mutate the map of results to mutate
      * @param second the second map
-     * @throws NullPointerException if either input is null
+     * @throws ProjectConfigException 
+     * @throws NullPointerException if any input is null
      */
 
-    private static void addThresholdsForOneMetricConfigGroup( Map<FeaturePlus, List<Set<Threshold>>> first,
-                                                              Map<FeaturePlus, Set<Threshold>> second )
+    private static void
+            addThresholdsForOneMetricConfigGroup( Map<FeaturePlus, Map<MetricConfigName, Set<Threshold>>> mutate,
+                                                  MetricsConfig group,
+                                                  ThresholdsConfig thresholds )
+                    throws ProjectConfigException
     {
 
-        Objects.requireNonNull( first, "Specify a non-null first map of thresholds." );
+        Objects.requireNonNull( mutate, "Specify a non-null map of thresholds to mutate." );
 
-        Objects.requireNonNull( second, "Specify a non-null second map of thresholds." );
+        Objects.requireNonNull( group, "Specify a non-null configuration group." );
 
-        // Empty first
-        if ( first.isEmpty() )
+        Objects.requireNonNull( group, "Specify non-null threshold configuration." );
+
+        // Obtain the thresholds
+        Map<FeaturePlus, Set<Threshold>> thresholdsByFeature =
+                ConfigHelper.readOneThresholdFromProjectConfig( thresholds );
+        
+        // Iterate the thresholds
+        for ( Entry<FeaturePlus, Set<Threshold>> nextEntry : thresholdsByFeature.entrySet() )
         {
-            second.forEach( ( key, value ) -> {
-                List<Set<Threshold>> addList = new ArrayList<>();
-                addList.add( value );
-                first.put( key, addList );
-            } );
-            return;
-        }
-
-        // Non-empty first
-        for ( Entry<FeaturePlus, Set<Threshold>> nextEntry : second.entrySet() )
-        {
-            // Feature exists: add to existing list
-            if ( first.containsKey( nextEntry.getKey() ) )
-            {
-                first.get( nextEntry.getKey() ).add( nextEntry.getValue() );
-            }
-            // New feature: add a new list
-            else
-            {
-                List<Set<Threshold>> addList = new ArrayList<>();
-
-                // New feature must have as many empty sets as the maximum number of 
-                // threshold sets already associated with other features, because each feature must
-                // have precisely the same number of threshold sets as configuration blocks
-                Optional<Integer> empties = first.values().stream().map( List::size ).max( Integer::compare );
-                if ( empties.isPresent() )
+            // Iterate the metrics
+            for( MetricConfig nextMetric : group.getMetric() )
+            {              
+                // Feature exists in the uber map: mutate it
+                if ( mutate.containsKey( nextEntry.getKey() ) )
                 {
-                    for ( int i = 0; i < empties.get(); i++ )
+                    Map<MetricConfigName,Set<Threshold>> nextMap = mutate.get( nextEntry.getKey() );
+                    // Metric exists, mutate it
+                    if( nextMap.containsKey( nextMetric.getName() ) )
                     {
-                        addList.add( Collections.emptySet() );
+                        nextMap.get( nextMetric.getName() ).addAll( nextEntry.getValue() );
                     }
+                    // Metric does not exist, add it
+                    else
+                    {
+                        nextMap.put( nextMetric.getName(), nextEntry.getValue() );
+                    }                   
                 }
-                addList.add( nextEntry.getValue() );
-                first.put( nextEntry.getKey(), addList );
+                // New feature: add a new map
+                else
+                {
+                    Map<MetricConfigName,Set<Threshold>> nextMap = new HashMap<>();
+                    nextMap.put( nextMetric.getName(), nextEntry.getValue() );
+                    mutate.put( nextEntry.getKey(), nextMap );
+                }   
             }
         }
     }
@@ -1715,6 +1694,32 @@ public class ConfigHelper
         
         return projectConfig.getMetrics().stream().anyMatch( next -> !next.getTimeSeriesMetric().isEmpty() );
     }  
+    
+    /**
+     * Renders a map of collections unmodifiable. All collections in the container are rendered unmodifiable.
+     * 
+     * @param <S> the outer key type
+     * @param <T> the inner key type
+     * @param <U> the inner stored type
+     * @param mutable the possibly mutable input
+     * @return the unmodifiable map
+     */
+
+    private static <S, T, U> Map<S, Map<T, Set<U>>> ofUnmodifiableMap( Map<S, Map<T, Set<U>>> mutable )
+    {
+        Objects.requireNonNull( mutable, "Specify non-null input to render unmodifiable." );
+
+        Map<S, Map<T, Set<U>>> returnMe = new HashMap<>();
+
+        for ( Entry<S, Map<T, Set<U>>> outerEntry : mutable.entrySet() )
+        {
+            Map<T, Set<U>> nextMap = new HashMap<>();
+            outerEntry.getValue().forEach( ( key, value ) -> nextMap.put( key, Collections.unmodifiableSet( value ) ) );
+            returnMe.put( outerEntry.getKey(), Collections.unmodifiableMap( nextMap ) );
+        }
+
+        return Collections.unmodifiableMap( returnMe );
+    }
     
 
 }

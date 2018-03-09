@@ -271,6 +271,16 @@ public final class SafeThresholdTest
 
         assertFalse( "Expected unequal values.", sixteenth.compareTo( eighteenth ) == 0 );
 
+        // Unequal decision types
+        Threshold nineteenth =
+                new ThresholdBuilder().setThresholdProbability( 0.0 )
+                                      .setThresholdProbabilityUpper( 0.8 )
+                                      .setCondition( Operator.BETWEEN )
+                                      .setDecisionType( true )
+                                      .build();
+        
+        assertFalse( "Expected unequal values.", eighteenth.compareTo( nineteenth ) == 0 );
+        
         //Nullity
         //Check nullity contract
         try
@@ -406,6 +416,17 @@ public final class SafeThresholdTest
         assertFalse( "Expected unequal thresholds.", noProbs.equals( withProbs ) );
         assertFalse( "Expected unequal thresholds.", noProbs.equals( withLabel ) );
 
+        // Unequal decision types
+        
+        // Unequal decision types
+        Threshold decisionType = new ThresholdBuilder().setThreshold( 0.0 )
+                                                       .setThresholdUpper( 0.5 )
+                                                       .setCondition( Operator.BETWEEN )
+                                                       .setLabel( "A" )
+                                                       .setDecisionType( true )
+                                                       .build();
+        
+        assertFalse( "Expected unequal thresholds.", bothRealNoProbs.equals( decisionType ) );
     }
 
     /**

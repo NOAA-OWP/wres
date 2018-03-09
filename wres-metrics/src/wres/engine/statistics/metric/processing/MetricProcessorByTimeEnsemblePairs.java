@@ -2,7 +2,6 @@ package wres.engine.statistics.metric.processing;
 
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -15,6 +14,7 @@ import java.util.function.Function;
 
 import org.apache.commons.lang3.tuple.Pair;
 
+import wres.config.generated.MetricConfigName;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
@@ -42,6 +42,7 @@ import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricCollection;
 import wres.engine.statistics.metric.MetricParameterException;
+import wres.engine.statistics.metric.config.MetricConfigHelper;
 import wres.engine.statistics.metric.config.MetricConfigurationException;
 import wres.engine.statistics.metric.processing.MetricProcessorByTime.MetricFuturesByTime.MetricFuturesByTimeBuilder;
 
@@ -104,6 +105,13 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
      */
 
     private final BiFunction<PairOfDoubleAndVectorOfDoubles, Threshold, PairOfDoubles> toDiscreteProbabilities;
+        
+    /**
+     * Set of probability classifiers that are used to transform discrete probabilities into dichotomous outcomes.
+     * There is one set of classifiers for each metric.
+     */
+
+    private final Map<MetricConstants,Set<Threshold>> probabilityClassifiers;    
 
     @Override
     public MetricOutputForProjectByTimeAndThreshold apply( EnsemblePairs input )
@@ -169,7 +177,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
      * 
      * @param dataFactory the data factory
      * @param config the project configuration
-     * @param canonicalThresholds an optional set of canonical thresholds (one per metric group), may be null
+     * @param externalThresholds an optional set of external thresholds (one per metric), may be null
      * @param thresholdExecutor an optional {@link ExecutorService} for executing thresholds. Defaults to the 
      *            {@link ForkJoinPool#commonPool()}
      * @param metricExecutor an optional {@link ExecutorService} for executing metrics. Defaults to the 
@@ -182,13 +190,13 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
 
     public MetricProcessorByTimeEnsemblePairs( final DataFactory dataFactory,
                                                final ProjectConfig config,
-                                               final List<Set<Threshold>> canonicalThresholds,
+                                               final Map<MetricConfigName,Set<Threshold>> externalThresholds,
                                                final ExecutorService thresholdExecutor,
                                                final ExecutorService metricExecutor,
                                                final MetricOutputGroup... mergeList )
             throws MetricConfigurationException, MetricParameterException
     {
-        super( dataFactory, config, canonicalThresholds, thresholdExecutor, metricExecutor, mergeList );
+        super( dataFactory, config, externalThresholds, thresholdExecutor, metricExecutor, mergeList );
 
         //Construct the metrics
         //Discrete probability input, vector output
@@ -261,6 +269,11 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
 
         //Construct the default mapper from ensembles to probabilities: this is not currently configurable
         toDiscreteProbabilities = dataFactory.getSlicer()::transformPair;
+        
+        //Set any classifiers for discrete probabilities to dichotomous outcomes
+        probabilityClassifiers =
+                MetricConfigHelper.getProbabilityClassifiers( config, dataFactory, externalThresholds );
+
     }
 
     @Override

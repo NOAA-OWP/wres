@@ -264,6 +264,7 @@ public final class MetricProcessorTest
                 processor.doNotComputeTheseMetricsForThisThreshold( MetricInputGroup.SINGLE_VALUED,
                                                                     MetricOutputGroup.DOUBLE_SCORE,
                                                                     firstTest );
+
         assertTrue( "Unexpected set of metrics to ignore for threshold '" + firstTest
                     + "'",
                     firstSet.equals( new HashSet<>( Arrays.asList( MetricConstants.MEAN_ERROR,
