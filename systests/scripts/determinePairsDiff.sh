@@ -64,7 +64,7 @@ do
 	if [ -f output/$csvFile -a -f benchmarks/$csvFile ]
 	then
 		diff -q output/$csvFile benchmarks/$csvFile | tee /dev/stderr
-	elif [ ! -f -f benchmarks/$csvFile ]
+	elif [ ! -f benchmarks/$csvFile ]
 	then
 		echo "File benchmarks/$csvFile not found."
 	fi
