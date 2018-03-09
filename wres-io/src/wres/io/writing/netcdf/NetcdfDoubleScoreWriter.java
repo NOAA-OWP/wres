@@ -44,6 +44,8 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
     /** The file name prefix to use if project name is not specified */
     private static final String DEFAULT_FILE_NAME = "WRES_SCORE_METRICS";
 
+    /** The _FillValue and missing_value to use when writing. */
+    private static final double FILL_AND_NO_DATA_VALUE = Double.NaN;
 
     /**
      * List of output files to write.
@@ -392,7 +394,7 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                                                           DataType.DOUBLE,
                                                           shareableScoreDimensions );
             NetcdfDoubleScoreWriter.addNoDataAttributesDouble( metricVariable,
-                                                               -999.0 );
+                                                               FILL_AND_NO_DATA_VALUE );
         }
 
     }
