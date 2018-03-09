@@ -11,6 +11,7 @@ import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ucar.ma2.Array;
+import ucar.ma2.ArrayDouble;
 import ucar.ma2.ArrayInt;
 import ucar.ma2.DataType;
 import ucar.ma2.InvalidRangeException;
@@ -170,8 +171,10 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                         LOGGER.debug( "ncVariable WAS null." );
                     }
 
-                    // Flush probably not necessary, but helpful for debugging
-                    writer.flush();
+                    if ( LOGGER.isDebugEnabled() )
+                    {
+                        writer.flush();
+                    }
                 }
                 catch ( IOException ioe )
                 {
@@ -264,8 +267,12 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                                                                    thresholdCount,
                                                                    metrics );
                 writer.create();
-                // Flush may not be needed, but helpful for debugging.
-                writer.flush();
+
+                if ( LOGGER.isDebugEnabled() )
+                {
+                    writer.flush();
+                }
+
                 fileWriters.add( writer );
             }
         }
@@ -301,7 +308,7 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
 
         if ( !writer.isDefineMode() )
         {
-            throw new IllegalStateException( "The writer must be in define mode" );
+            throw new IllegalStateException( "The writer must be in define mode." );
         }
 
         Dimension featureDimension = writer.addDimension( null,
@@ -378,10 +385,46 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                                                           metricName,
                                                           DataType.DOUBLE,
                                                           shareableScoreDimensions );
+            NetcdfDoubleScoreWriter.addNoDataAttributesDouble( metricVariable,
+                                                               -999.0 );
         }
 
     }
 
+    /**
+     * Sets up common "no data" or "fill value" attributes according to CF
+     * conventions:
+     * http://cfconventions.org/Data/cf-conventions/cf-conventions-1.7/cf-conventions.html#missing-data
+     * Expected to be called exactly once per variable (not idempotent)
+     * @param variable the variable to set the nodata value on, to mutate the
+     *                 underlying NetCDF file
+     * @param noDataValue the "fill value" or "no data value" to use
+     * @throws NullPointerException when any arg is null
+     * @throws IllegalArgumentException when noDataValue is set to 0.0
+     * @throws IllegalStateException when writer not in define mode
+     */
+    private static void addNoDataAttributesDouble( Variable variable,
+                                                   double noDataValue )
+    {
+        Objects.requireNonNull( variable );
+
+        if ( Double.compare( noDataValue, 0.0 ) == 0 )
+        {
+            throw new IllegalArgumentException( "Specify a noDataValue other than 0.0" );
+        }
+
+        // Transform the simple double into what nc expects (0-dimensional array?)
+        double[] noDataValues = { noDataValue };
+        Array ncNoDataValues = ArrayDouble.D0.makeFromJavaArray( noDataValues );
+
+        Attribute firstAttribute = new Attribute( "_FillValue", DataType.DOUBLE );
+        firstAttribute.setValues( ncNoDataValues );
+        variable.addAttribute( firstAttribute );
+
+        Attribute secondAttribute = new Attribute( "missing_value", DataType.DOUBLE );
+        secondAttribute.setValues( ncNoDataValues );
+        variable.addAttribute( secondAttribute );
+    }
 
     /**
      * Returns the count of output files required.
