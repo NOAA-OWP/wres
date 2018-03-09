@@ -324,6 +324,11 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                                                             "threshold",
                                                             thresholdCount );
 
+        // NetCDF 3 uses a second dimension for string variables (char[])
+        Dimension stringDimension = writer.addDimension( null,
+                                                         "string",
+                                                         128 );
+
         List<Dimension> featureDimensions = new ArrayList<>( 1 );
         featureDimensions.add( featureDimension );
         List<Dimension> shareableFeatureDimensions =
@@ -337,12 +342,13 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
 
         List<Dimension> thresholdDimensions = new ArrayList<>( 1 );
         thresholdDimensions.add( thresholdDimension );
+        thresholdDimensions.add( stringDimension );
         List<Dimension> shareableThresholdDimensions =
                 Collections.unmodifiableList( thresholdDimensions );
         Variable thresholdVariable = writer.addVariable( null,
                                                          "threshold",
                                                          DataType.CHAR,
-                                                         shareableFeatureDimensions );
+                                                         shareableThresholdDimensions );
 
         // TODO: no LONG supported by NetCDF 3, use minutes since epoch? UINT seconds since first basis time in output?
         List<Dimension> timeDimensions = new ArrayList<>( 1 );
@@ -500,8 +506,8 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
         Variable thresholds =
                 NetcdfDoubleScoreWriter.getVariableOrDie( writer, "threshold" );
 
-        char[] thresholdsValues = { 'A' };
-        Array ncThresholdsValues = ArrayInt.D1.makeFromJavaArray( thresholdsValues );
+        char[][] thresholdsValues = { "Some kind of threshold".toCharArray() };
+        Array ncThresholdsValues = ArrayInt.D2.makeFromJavaArray( thresholdsValues );
 
         try
         {
@@ -603,6 +609,8 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                   thresholdIndex++ )
             {
                 char currentThreshold = allThresholds.getChar( thresholdIndex );
+
+                // Need to read all the chars from threshold, 2d...
 
                 for ( int startTimeIndex = 0;
                       currentThreshold == 'A' && startTimeIndex < shape[START_TIME_INDEX];
