@@ -681,9 +681,11 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
 
                     // Derive compound threshold from outerThreshold and innerThreshold
                     Threshold compound = null;
+                    // Thresholds compound = Thresholds.of( outerThreshold, innerThreshold );
                     
                     Pair<TimeWindow, Threshold> nextKey = Pair.of( timeWindow, compound );
-
+                    // Pair<TimeWindow, Thresholds> nextKey = Pair.of( timeWindow, compound );
+                    
                     //Define a mapper to convert the discrete probability pairs to dichotomous pairs
                     Function<PairOfDoubles, PairOfBooleans> mapper =
                             pair -> dataFactory.pairOf( innerThreshold.test( pair.getItemOne() ),
