@@ -10,12 +10,6 @@ import java.util.function.Predicate;
  * {@link Operator#BETWEEN}, {@link #getThresholdUpper()} must return null. The threshold may comprise ordinary 
  * threshold values and/or probability values. When both are defined, the threshold is a "quantile".</p>
  * 
- * <p>Additionally, a threshold may be identified as applying in a decision context, where {@link #isDecisionType()}
- * returns <code>true</code>. Fundamentally, this does not change the  behavior of a {@link Threshold}. However, 
- * a {@link Threshold} may be used classify data (whether to subset data or define an event) or to make binary 
- * decisions from data. Frequently, both applications of {@link Threshold} appear in the same (or similar) context, 
- * and a {@link Threshold} is, therefore, usefully discriminated by type.</p>
- * 
  * @author james.brown@hydrosolved.com
  * @version 0.2
  * @since 0.1
@@ -181,17 +175,6 @@ public interface Threshold extends Comparable<Threshold>, Predicate<Double>
      */
 
     boolean isFinite();
-
-    /**
-     * Returns <code>true</code> if the {@link Threshold} is intended for use in a decision context, otherwise 
-     * <code>false</code>. This is used to discriminate between {@link Threshold} intended to classify data and 
-     * {@link Threshold} intended for decision making, which frequently appear together in the same or nearby 
-     * context. It does not alter the behavior of a {@link Threshold}, only the context in which it applies.
-     * 
-     * @return true if the threshold is intended to make decisions, otherwise false
-     */
-    
-    boolean isDecisionType();
     
     /**
      * Returns a string representation of the {@link Threshold} that contains only alphanumeric characters A-Z, a-z, 

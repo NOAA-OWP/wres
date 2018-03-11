@@ -47,12 +47,6 @@ class SafeThreshold implements Threshold
      */
 
     private final String label;
-
-    /**
-     * Identifies whether the threshold is used in a decision context.
-     */
-    
-    private boolean isDecisionType;
     
     @Override
     public Double getThreshold()
@@ -95,12 +89,6 @@ class SafeThreshold implements Threshold
     {
         return condition.equals( Operator.BETWEEN );
     }
-
-    @Override
-    public boolean isDecisionType()
-    {
-        return isDecisionType;
-    }    
     
     @Override
     public boolean equals( final Object o )
@@ -116,8 +104,6 @@ class SafeThreshold implements Threshold
                            && hasProbabilityValues() == in.hasProbabilityValues()
                            && hasLabel() == in.hasLabel()
                            && getCondition().equals( in.getCondition() );
-        
-        returnMe = returnMe && isDecisionType() == in.isDecisionType();
         
         if ( hasOrdinaryValues() )
         {
@@ -170,7 +156,7 @@ class SafeThreshold implements Threshold
         {
             returnMe = returnMe * 37 + label.hashCode();
         }
-        returnMe = returnMe * 37 + Boolean.hashCode( isDecisionType );
+
         return returnMe;
     }
 
@@ -247,16 +233,9 @@ class SafeThreshold implements Threshold
     public int compareTo( final Threshold o )
     {
         Objects.requireNonNull( o, "Specify a non-null threshold for comparison" );
-        
-        //Compare decision type
-        int returnMe = Boolean.compare( this.isDecisionType(), o.isDecisionType() );
-        if ( returnMe != 0 )
-        {
-            return returnMe;
-        }
-        
+
         //Compare condition
-        returnMe = this.getCondition().compareTo( o.getCondition() );
+        int returnMe = this.getCondition().compareTo( o.getCondition() );
         if ( returnMe != 0 )
         {
             return returnMe;
@@ -396,12 +375,6 @@ class SafeThreshold implements Threshold
          */
 
         private Double probabilityUpper;
-
-        /**
-         * Identifies whether the threshold is used in a decision context.
-         */
-        
-        private boolean isDecisionType;
         
         /**
          * The threshold label or null.
@@ -486,19 +459,6 @@ class SafeThreshold implements Threshold
             this.label = label;
             return this;
         }
-        
-        /**
-         * Sets the decision type.
-         * 
-         * @param isDecisionType is true to clarify that the threshold is intended for use in a decision context
-         * @return the builder
-         */
-
-        ThresholdBuilder setDecisionType( boolean isDecisionType )
-        {
-            this.isDecisionType = isDecisionType;
-            return this;
-        }
 
         /**
          * Return the {@link Threshold}
@@ -526,8 +486,7 @@ class SafeThreshold implements Threshold
         this.probability = builder.probability;
         this.probabilityUpper = builder.probabilityUpper;
         this.label = builder.label;
-        this.isDecisionType = builder.isDecisionType;
-
+        
         //Bounds checks
         Objects.requireNonNull( condition, "Specify a non-null condition." );
         //Do not allow only an upper threshold or all null thresholds
