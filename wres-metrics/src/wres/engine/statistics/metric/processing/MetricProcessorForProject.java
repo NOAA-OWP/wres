@@ -9,7 +9,7 @@ import wres.config.generated.DatasourceType;
 import wres.config.generated.MetricConfigName;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.datamodel.Threshold;
+import wres.datamodel.ThresholdsByType;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.outputs.MetricOutputAccessException;
@@ -51,7 +51,7 @@ public class MetricProcessorForProject
 
     public MetricProcessorForProject( final MetricFactory metricFactory,
                                       final ProjectConfig projectConfig,
-                                      final Map<MetricConfigName,Set<Threshold>> externalThresholds,
+                                      final Map<MetricConfigName,ThresholdsByType> externalThresholds,
                                       final ExecutorService thresholdExecutor,
                                       final ExecutorService metricExecutor )
             throws MetricProcessorException

@@ -26,6 +26,7 @@ import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.Slicer;
 import wres.datamodel.Threshold;
 import wres.datamodel.Threshold.Operator;
+import wres.datamodel.ThresholdsByType;
 import wres.datamodel.inputs.InsufficientDataException;
 import wres.datamodel.inputs.MetricInputSliceException;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
@@ -34,16 +35,12 @@ import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.DurationScoreOutput;
-import wres.datamodel.outputs.MatrixOutput;
-import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.MetricOutputAccessException;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMapByMetric;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.PairedOutput;
-import wres.datamodel.outputs.ScoreOutput;
 import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricCollection;
@@ -66,20 +63,6 @@ import wres.engine.statistics.metric.timeseries.TimeToPeakErrorStatistics;
 
 public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTime<SingleValuedPairs>
 {
-
-    /**
-     * A {@link MetricCollection} of {@link Metric} that consume {@link DichotomousPairs} and produce
-     * {@link ScoreOutput}.
-     */
-
-    private final MetricCollection<DichotomousPairs, MatrixOutput, DoubleScoreOutput> dichotomousScalar;
-
-    /**
-     * A {@link MetricCollection} of {@link Metric} that consume {@link DichotomousPairs} and produce
-     * {@link MatrixOutput}.
-     */
-
-    private final MetricCollection<DichotomousPairs, MatrixOutput, MatrixOutput> dichotomousMatrix;
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume {@link TimeSeriesOfSingleValuedPairs} and produce
@@ -174,40 +157,16 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
 
     public MetricProcessorByTimeSingleValuedPairs( final DataFactory dataFactory,
                                                    final ProjectConfig config,
-                                                   final Map<MetricConfigName,Set<Threshold>> externalThresholds,
+                                                   final Map<MetricConfigName, ThresholdsByType> externalThresholds,
                                                    final ExecutorService thresholdExecutor,
                                                    final ExecutorService metricExecutor,
                                                    final MetricOutputGroup... mergeList )
             throws MetricConfigurationException, MetricParameterException
     {
         super( dataFactory, config, externalThresholds, thresholdExecutor, metricExecutor, mergeList );
+
         //Construct the metrics
-        //Dichotomous scores
-        if ( hasMetrics( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.DOUBLE_SCORE ) )
-        {
-            dichotomousScalar =
-                    metricFactory.ofDichotomousScoreCollection( metricExecutor,
-                                                                getSelectedMetrics( metrics,
-                                                                                    MetricInputGroup.DICHOTOMOUS,
-                                                                                    MetricOutputGroup.DOUBLE_SCORE ) );
-        }
-        else
-        {
-            dichotomousScalar = null;
-        }
-        // Contingency table
-        if ( hasMetrics( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.MATRIX ) )
-        {
-            dichotomousMatrix =
-                    metricFactory.ofDichotomousMatrixCollection( metricExecutor,
-                                                                 getSelectedMetrics( metrics,
-                                                                                     MetricInputGroup.DICHOTOMOUS,
-                                                                                     MetricOutputGroup.MATRIX ) );
-        }
-        else
-        {
-            dichotomousMatrix = null;
-        }
+
         //Time-series 
         if ( hasMetrics( MetricInputGroup.SINGLE_VALUED_TIME_SERIES, MetricOutputGroup.PAIRED ) )
         {
@@ -304,14 +263,12 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
 
     /**
      * Processes a set of metric futures that consume {@link DichotomousPairs}, which are mapped from the input
-     * pairs, {@link SingleValuedPairs}, using a configured mapping function. Skips any thresholds for which
-     * {@link Double#isFinite(double)} returns <code>false</code> on the threshold value(s).
+     * pairs, {@link SingleValuedPairs}, using a configured mapping function.
      * 
      * @param timeWindow the time window
      * @param input the input pairs
      * @param futures the metric futures
      * @throws MetricCalculationException if the metrics cannot be computed
-     * @throws InsufficientDataException if there is insufficient data to compute any metrics
      */
 
     private void processDichotomousPairs( TimeWindow timeWindow,
@@ -320,56 +277,68 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
     {
         if ( hasMetrics( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.DOUBLE_SCORE ) )
         {
-            processDichotomousPairs( timeWindow, input, futures, MetricOutputGroup.DOUBLE_SCORE );
+            processDichotomousPairsByThreshold( timeWindow, input, futures, MetricOutputGroup.DOUBLE_SCORE );
         }
         if ( hasMetrics( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.MATRIX ) )
         {
-            processDichotomousPairs( timeWindow, input, futures, MetricOutputGroup.MATRIX );
+            processDichotomousPairsByThreshold( timeWindow, input, futures, MetricOutputGroup.MATRIX );
         }
     }
 
     /**
      * Processes a set of metric futures that consume {@link DichotomousPairs}, which are mapped from the input pairs,
-     * {@link SingleValuedPairs}, using a configured mapping function. Skips any thresholds for which
-     * {@link Double#isFinite(double)} returns <code>false</code> on the threshold value(s).
+     * {@link SingleValuedPairs}, using a configured mapping function. 
      * 
      * @param timeWindow the time window
      * @param input the input pairs
      * @param futures the metric futures
      * @param outGroup the metric output type
      * @throws MetricCalculationException if the metrics cannot be computed
-     * @throws InsufficientDataException if there is insufficient data to compute any metrics
      */
 
-    private void processDichotomousPairs( TimeWindow timeWindow,
-                                          SingleValuedPairs input,
-                                          MetricFuturesByTimeBuilder futures,
-                                          MetricOutputGroup outGroup )
+    private void processDichotomousPairsByThreshold( TimeWindow timeWindow,
+                                                     SingleValuedPairs input,
+                                                     MetricFuturesByTimeBuilder futures,
+                                                     MetricOutputGroup outGroup )
     {
         //Process thresholds
-        Set<Threshold> global = getThresholds( MetricInputGroup.DICHOTOMOUS, outGroup );
-        double[] sorted = getSortedClimatology( input, global );
+        Set<Threshold> union =
+                getUnionOfThresholdsForThisGroup( this.thresholdsByMetric, MetricInputGroup.DICHOTOMOUS, outGroup );
+        double[] sorted = getSortedClimatology( input, union );
         Map<Threshold, MetricCalculationException> failures = new HashMap<>();
-        global.forEach( threshold -> {
-            Threshold useMe = getThreshold( threshold, sorted );
-            Set<MetricConstants> ignoreTheseMetricsForThisThreshold =
-                    doNotComputeTheseMetricsForThisThreshold( MetricInputGroup.DICHOTOMOUS,
+        union.forEach( threshold -> {
+
+            Threshold useMe = addQuantilesToThreshold( threshold, sorted );
+            Set<MetricConstants> ignoreTheseMetrics =
+                    doNotComputeTheseMetricsForThisThreshold( this.thresholdsByMetric,
+                                                              MetricInputGroup.DICHOTOMOUS,
                                                               outGroup,
                                                               threshold );
-            MetricCalculationException result =
-                    processDichotomousThreshold( timeWindow,
-                                                 input,
-                                                 futures,
-                                                 outGroup,
-                                                 useMe,
-                                                 ignoreTheseMetricsForThisThreshold );
-            if ( Objects.nonNull( result ) )
+            try
             {
-                failures.put( useMe, result );
+                //Define a mapper to convert the single-valued pairs to dichotomous pairs
+                Function<PairOfDoubles, PairOfBooleans> mapper =
+                        pair -> dataFactory.pairOf( useMe.test( pair.getItemOne() ),
+                                                    useMe.test( pair.getItemTwo() ) );
+                //Transform the pairs
+                DichotomousPairs transformed = dataFactory.getSlicer().transformPairs( input, mapper );
+
+                processDichotomousPairs( Pair.of( timeWindow, useMe ),
+                                         transformed,
+                                         futures,
+                                         outGroup,
+                                         ignoreTheseMetrics );
+
             }
+            //Insufficient data for one threshold: log, but allow
+            catch ( InsufficientDataException e )
+            {
+                failures.put( useMe, new MetricCalculationException( e.getMessage(), e ) );
+            }
+
         } );
         //Handle any failures
-        logThresholdFailures( failures, global.size(), input.getMetadata(), MetricInputGroup.DICHOTOMOUS );
+        logThresholdFailures( failures, union.size(), input.getMetadata(), MetricInputGroup.DICHOTOMOUS );
     }
 
     /**
@@ -379,7 +348,6 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
      * @param input the input pairs
      * @param futures the metric futures
      * @throws MetricCalculationException if the metrics cannot be computed
-     * @throws InsufficientDataException if there is insufficient data to compute any metrics
      */
 
     private void processTimeSeriesPairs( TimeWindow timeWindow,
@@ -394,86 +362,6 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
         futures.addPairedOutput( Pair.of( timeWindow,
                                           dataFactory.ofThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER ) ),
                                  output );
-    }
-
-    /**
-     * Processes one threshold for metrics that consume {@link DichotomousPairs}, which are mapped from the input pairs,
-     * {@link SingleValuedPairs}, using a configured mapping function. 
-     * 
-     * @param timeWindow the time window
-     * @param input the input pairs
-     * @param futures the metric futures
-     * @param outGroup the metric output type
-     * @param threshold the threshold
-     * @param ignoreTheseMetricsForThisThreshold a set of metrics within the prescribed group that should be 
-     *            ignored for this threshold
-     * @return a MetricCalculationException for information if the threshold cannot be computed
-     */
-
-    private MetricCalculationException processDichotomousThreshold( TimeWindow timeWindow,
-                                                                    SingleValuedPairs input,
-                                                                    MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
-                                                                    MetricOutputGroup outGroup,
-                                                                    Threshold threshold,
-                                                                    Set<MetricConstants> ignoreTheseMetricsForThisThreshold )
-    {
-        MetricCalculationException returnMe = null;
-        try
-        {
-            if ( outGroup == MetricOutputGroup.DOUBLE_SCORE )
-            {
-                futures.addDoubleScoreOutput( Pair.of( timeWindow, threshold ),
-                                              processDichotomousThreshold( threshold,
-                                                                           input,
-                                                                           dichotomousScalar,
-                                                                           ignoreTheseMetricsForThisThreshold ) );
-            }
-            else if ( outGroup == MetricOutputGroup.MATRIX )
-            {
-                futures.addMatrixOutput( Pair.of( timeWindow, threshold ),
-                                         processDichotomousThreshold( threshold,
-                                                                      input,
-                                                                      dichotomousMatrix,
-                                                                      ignoreTheseMetricsForThisThreshold ) );
-            }
-        }
-        //Insufficient data for one threshold: log, but allow
-        catch ( MetricInputSliceException e )
-        {
-            returnMe = new MetricCalculationException( e.getMessage(), e );
-        }
-        return returnMe;
-    }
-
-    /**
-     * Builds a metric future for a {@link MetricCollection} that consumes {@link DichotomousPairs} at a specific lead
-     * time and {@link Threshold}.
-     * 
-     * @param <T> the type of {@link MetricOutput}
-     * @param threshold the threshold
-     * @param pairs the pairs
-     * @param collection the metric collection
-     * @param ignoreTheseMetricsForThisThreshold a set of metrics within the prescribed group that should be 
-     *            ignored for this threshold
-     * @return true if the future was added successfully
-     * @throws MetricInputSliceException if the pairs contain insufficient data to compute the metrics
-     */
-
-    private <T extends MetricOutput<?>> Future<MetricOutputMapByMetric<T>>
-            processDichotomousThreshold( Threshold threshold,
-                                         SingleValuedPairs pairs,
-                                         MetricCollection<DichotomousPairs, MatrixOutput, T> collection,
-                                         Set<MetricConstants> ignoreTheseMetricsForThisThreshold )
-                    throws MetricInputSliceException
-    {
-        //Define a mapper to convert the single-valued pairs to dichotomous pairs
-        Function<PairOfDoubles, PairOfBooleans> mapper =
-                pair -> dataFactory.pairOf( threshold.test( pair.getItemOne() ),
-                                            threshold.test( pair.getItemTwo() ) );
-        //Slice the pairs
-        DichotomousPairs transformed = dataFactory.getSlicer().transformPairs( pairs, mapper );
-        return CompletableFuture.supplyAsync( () -> collection.apply( transformed, ignoreTheseMetricsForThisThreshold ),
-                                              thresholdExecutor );
     }
 
 }

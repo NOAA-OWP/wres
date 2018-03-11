@@ -29,11 +29,14 @@ import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.Threshold;
 import wres.datamodel.Threshold.Operator;
+import wres.datamodel.ThresholdsByType;
 import wres.datamodel.inputs.MetricInput;
+import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.PairedInput;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.outputs.DoubleScoreOutput;
+import wres.datamodel.outputs.MatrixOutput;
 import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.MetricOutputAccessException;
 import wres.datamodel.outputs.MetricOutputForProject;
@@ -139,6 +142,20 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
      */
 
     final MetricCollection<SingleValuedPairs, MultiVectorOutput, MultiVectorOutput> singleValuedMultiVector;
+
+    /**
+     * A {@link MetricCollection} of {@link Metric} that consume {@link DichotomousPairs} and produce
+     * {@link ScoreOutput}.
+     */
+
+    final MetricCollection<DichotomousPairs, MatrixOutput, DoubleScoreOutput> dichotomousScalar;
+
+    /**
+     * A {@link MetricCollection} of {@link Metric} that consume {@link DichotomousPairs} and produce
+     * {@link MatrixOutput}.
+     */
+
+    final MetricCollection<DichotomousPairs, MatrixOutput, MatrixOutput> dichotomousMatrix;
 
     /**
      * The set of metrics associated with the verification project.
@@ -344,7 +361,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
 
     MetricProcessor( final DataFactory dataFactory,
                      final ProjectConfig config,
-                     final Map<MetricConfigName, Set<Threshold>> externalThresholds,
+                     final Map<MetricConfigName, ThresholdsByType> externalThresholds,
                      final ExecutorService thresholdExecutor,
                      final ExecutorService metricExecutor,
                      final MetricOutputGroup... mergeList )
@@ -383,6 +400,33 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         else
         {
             singleValuedMultiVector = null;
+        }
+
+        //Dichotomous scores
+        if ( hasMetrics( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.DOUBLE_SCORE ) )
+        {
+            dichotomousScalar =
+                    metricFactory.ofDichotomousScoreCollection( metricExecutor,
+                                                                getSelectedMetrics( metrics,
+                                                                                    MetricInputGroup.DICHOTOMOUS,
+                                                                                    MetricOutputGroup.DOUBLE_SCORE ) );
+        }
+        else
+        {
+            dichotomousScalar = null;
+        }
+        // Contingency table
+        if ( hasMetrics( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.MATRIX ) )
+        {
+            dichotomousMatrix =
+                    metricFactory.ofDichotomousMatrixCollection( metricExecutor,
+                                                                 getSelectedMetrics( metrics,
+                                                                                     MetricInputGroup.DICHOTOMOUS,
+                                                                                     MetricOutputGroup.MATRIX ) );
+        }
+        else
+        {
+            dichotomousMatrix = null;
         }
 
         //Set the thresholds: canonical --> metric-local overrides --> global        
@@ -469,15 +513,15 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
     }
 
     /**
-     * Sets the quantile values associated with the input threshold if the threshold contains probability values.
+     * Adds the quantile values to the input threshold if the threshold contains probability values.
      * 
      * @param threshold the input threshold
      * @param sorted a sorted set of values from which to determine the quantiles
-     * @return the threshold
+     * @return the threshold with quantiles added, if required
      * @throws MetricCalculationException if the sorted array is null and quantiles are required
      */
 
-    Threshold getThreshold( Threshold threshold, double[] sorted )
+    Threshold addQuantilesToThreshold( Threshold threshold, double[] sorted )
     {
         Threshold useMe = threshold;
 
@@ -503,18 +547,21 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
      * {@link #doNotComputeTheseMetricsForThisThreshold(wres.datamodel.MetricConstants.MetricInputGroup, 
      * wres.datamodel.MetricConstants.MetricOutputGroup, wres.datamodel.Threshold)}
      * 
+     * @param the thresholds for which the union is required
      * @param inGroup the input group
      * @param outGroup the output group
      * @return the thresholds to process 
      * @throws MetricCalculationException if no thresholds exist
      */
 
-    Set<Threshold> getThresholds( MetricInputGroup inGroup, MetricOutputGroup outGroup )
+    Set<Threshold> getUnionOfThresholdsForThisGroup( Map<MetricConstants, Set<Threshold>> thresholds,
+                                                     MetricInputGroup inGroup,
+                                                     MetricOutputGroup outGroup )
     {
         Set<Threshold> returnMe = new HashSet<>();
 
         // Add all thresholds
-        thresholdsByMetric.forEach( ( key, value ) -> {
+        thresholds.forEach( ( key, value ) -> {
             if ( key.isInGroup( inGroup, outGroup ) )
             {
                 returnMe.addAll( value );
@@ -531,13 +578,14 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
                                                   + "'." );
         }
 
-        return returnMe;
+        return Collections.unmodifiableSet( returnMe );
     }
 
     /**
      * Returns a list of metrics for the prescribed {@link MetricInputGroup} and {@link MetricOutputGroup} that 
      * should not be computed for the specified {@link Threshold}. 
-     * 
+     *
+     * @param the union of thresholds that should be checked
      * @param inGroup the input group
      * @param outGroup the output group
      * @param threshold the threshold
@@ -545,7 +593,8 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
      * @throws NullPointerException if any input is null
      */
 
-    Set<MetricConstants> doNotComputeTheseMetricsForThisThreshold( MetricInputGroup inGroup,
+    Set<MetricConstants> doNotComputeTheseMetricsForThisThreshold( Map<MetricConstants, Set<Threshold>> union,
+                                                                   MetricInputGroup inGroup,
                                                                    MetricOutputGroup outGroup,
                                                                    Threshold threshold )
     {
@@ -559,7 +608,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         Set<MetricConstants> ignoreTheseMetrics = new HashSet<>();
 
         // Find the metrics within the specified group to which the input threshold does not apply
-        thresholdsByMetric.forEach( ( metric, thresholds ) -> {
+        union.forEach( ( metric, thresholds ) -> {
 
             // In group?
             if ( metric.isInGroup( inGroup, outGroup ) && !thresholds.contains( threshold ) )
@@ -584,7 +633,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
 
     private void setThresholds( ProjectConfig config,
                                 Map<MetricConstants, Set<Threshold>> mutate,
-                                Map<MetricConfigName, Set<Threshold>> externalThresholds )
+                                Map<MetricConfigName, ThresholdsByType> externalThresholds )
             throws MetricConfigurationException
     {
 
@@ -623,7 +672,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
     private void addThresholdsForOneConfigurationGroup( ProjectConfig config,
                                                         Map<MetricConstants, Set<Threshold>> mutate,
                                                         MetricsConfig metrics,
-                                                        Map<MetricConfigName, Set<Threshold>> externalThresholds )
+                                                        Map<MetricConfigName, ThresholdsByType> externalThresholds )
             throws MetricConfigurationException
     {
 
@@ -703,7 +752,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
                                             Set<Threshold> thresholdsWithAllData,
                                             Set<Threshold> thresholdsWithoutAllData,
                                             Set<Threshold> thresholdsWithAllDataOnly,
-                                            Map<MetricConfigName, Set<Threshold>> externalThresholds )
+                                            Map<MetricConfigName, ThresholdsByType> externalThresholds )
             throws MetricConfigurationException
     {
 
@@ -718,6 +767,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
 
         Objects.requireNonNull( mutate, MISSING_THRESHOLDS_ERROR );
 
+        // Ensemble
         if ( metric.isInGroup( MetricInputGroup.ENSEMBLE ) )
         {
             addThresholdsForEnsembleInput( metric,
@@ -726,6 +776,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
                                            thresholdsWithAllDataOnly,
                                            externalThresholds );
         }
+        // Single-valued
         else if ( metric.isInGroup( MetricInputGroup.SINGLE_VALUED ) )
         {
             addThresholdsForSingleValuedInput( metric,
@@ -734,6 +785,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
                                                thresholdsWithAllDataOnly,
                                                externalThresholds );
         }
+        // Discrete probability and categorical
         else
         {
             if ( !mutate.containsKey( metric ) )
@@ -767,7 +819,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
                                                 Map<MetricConstants, Set<Threshold>> mutate,
                                                 Set<Threshold> thresholdsWithAllData,
                                                 Set<Threshold> thresholdsWithAllDataOnly,
-                                                Map<MetricConfigName, Set<Threshold>> externalThresholds )
+                                                Map<MetricConfigName, ThresholdsByType> externalThresholds )
             throws MetricConfigurationException
     {
         // Validate
@@ -825,7 +877,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
                                                     Map<MetricConstants, Set<Threshold>> mutate,
                                                     Set<Threshold> thresholdsWithAllData,
                                                     Set<Threshold> thresholdsWithAllDataOnly,
-                                                    Map<MetricConfigName, Set<Threshold>> externalThresholds )
+                                                    Map<MetricConfigName, ThresholdsByType> externalThresholds )
             throws MetricConfigurationException
     {
         // Validate
@@ -878,18 +930,41 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
 
     private void addExternalThresholdsForOneMetric( MetricConstants metric,
                                                     Map<MetricConstants, Set<Threshold>> mutate,
-                                                    Map<MetricConfigName, Set<Threshold>> externalThresholds )
+                                                    Map<MetricConfigName, ThresholdsByType> externalThresholds )
             throws MetricConfigurationException
     {
         Objects.requireNonNull( metric, MISSING_METRIC_ERROR );
 
         Objects.requireNonNull( mutate, MISSING_THRESHOLDS_ERROR );
 
+        MetricConfigName name = MetricConfigHelper.from( metric );
+        
         if ( Objects.nonNull( externalThresholds )
-             && externalThresholds.containsKey( MetricConfigHelper.from( metric ) ) )
+             && externalThresholds.containsKey( name ) )
         {
-            mutate.get( metric )
-                  .addAll( externalThresholds.get( MetricConfigHelper.from( metric ) ) );
+            ThresholdsByType external = externalThresholds.get( name );
+            
+            Set<Threshold> addMe = new HashSet<>();
+            
+            // Probability type
+            if ( external.contains( ThresholdsByType.ThresholdType.PROBABILITY ) )
+            {
+                addMe.addAll( external.getThresholdsByType( ThresholdsByType.ThresholdType.PROBABILITY ) );
+            }
+            
+            // Value type
+            if ( external.contains( ThresholdsByType.ThresholdType.VALUE ) )
+            {
+                addMe.addAll( external.getThresholdsByType( ThresholdsByType.ThresholdType.VALUE ) );
+            }
+            
+            // Add existing if available
+            if( mutate.containsKey( metric ) )
+            {
+                addMe.addAll( mutate.get( metric ) );
+            }
+            
+            mutate.put( metric, Collections.unmodifiableSet( addMe ) );
         }
     }
 

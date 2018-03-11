@@ -200,7 +200,8 @@ public final class MetricProcessorTest
                                                                         MetricOutputGroup.values() );
         Threshold firstTest = metIn.ofThreshold( 0.5, Operator.GREATER );
         Set<MetricConstants> firstSet =
-                processor.doNotComputeTheseMetricsForThisThreshold( MetricInputGroup.SINGLE_VALUED,
+                processor.doNotComputeTheseMetricsForThisThreshold( processor.thresholdsByMetric,
+                                                                    MetricInputGroup.SINGLE_VALUED,
                                                                     MetricOutputGroup.DOUBLE_SCORE,
                                                                     firstTest );
         assertTrue( "Unexpected set of metrics to ignore for threshold '" + firstTest
@@ -209,7 +210,8 @@ public final class MetricProcessorTest
                                                                    MetricConstants.MEAN_ABSOLUTE_ERROR ) ) ) );
         Threshold secondTest = metIn.ofThreshold( 0.75, Operator.GREATER );
         Set<MetricConstants> secondSet =
-                processor.doNotComputeTheseMetricsForThisThreshold( MetricInputGroup.SINGLE_VALUED,
+                processor.doNotComputeTheseMetricsForThisThreshold( processor.thresholdsByMetric,
+                                                                    MetricInputGroup.SINGLE_VALUED,
                                                                     MetricOutputGroup.DOUBLE_SCORE,
                                                                     secondTest );
         assertTrue( "Unexpected set of metrics to ignore for threshold '" + secondTest
@@ -217,7 +219,8 @@ public final class MetricProcessorTest
                     secondSet.equals( new HashSet<>( Arrays.asList( ) ) ) );
         Threshold thirdTest = metIn.ofThreshold( 0.83, Operator.GREATER );
         Set<MetricConstants> thirdSet =
-                processor.doNotComputeTheseMetricsForThisThreshold( MetricInputGroup.SINGLE_VALUED,
+                processor.doNotComputeTheseMetricsForThisThreshold( processor.thresholdsByMetric,
+                                                                    MetricInputGroup.SINGLE_VALUED,
                                                                     MetricOutputGroup.DOUBLE_SCORE,
                                                                     thirdTest );
         assertTrue( "Unexpected set of metrics to ignore for threshold '" + thirdTest
@@ -226,7 +229,8 @@ public final class MetricProcessorTest
                                                                    MetricConstants.MEAN_ABSOLUTE_ERROR) ) ) );
         Threshold fourthTest = metIn.ofThreshold( 0.9, Operator.GREATER );
         Set<MetricConstants> fourthSet =
-                processor.doNotComputeTheseMetricsForThisThreshold( MetricInputGroup.SINGLE_VALUED,
+                processor.doNotComputeTheseMetricsForThisThreshold( processor.thresholdsByMetric,
+                                                                    MetricInputGroup.SINGLE_VALUED,
                                                                     MetricOutputGroup.DOUBLE_SCORE,
                                                                     fourthTest );
         assertTrue( "Unexpected set of metrics to ignore for threshold '" + fourthTest
@@ -261,7 +265,8 @@ public final class MetricProcessorTest
                                                                     MetricOutputGroup.values() );
         Threshold firstTest = metIn.ofProbabilityThreshold( 0.1, Operator.GREATER );
         Set<MetricConstants> firstSet =
-                processor.doNotComputeTheseMetricsForThisThreshold( MetricInputGroup.SINGLE_VALUED,
+                processor.doNotComputeTheseMetricsForThisThreshold( processor.thresholdsByMetric,
+                                                                    MetricInputGroup.SINGLE_VALUED,
                                                                     MetricOutputGroup.DOUBLE_SCORE,
                                                                     firstTest );
 
@@ -272,7 +277,8 @@ public final class MetricProcessorTest
         
         Threshold secondTest = metIn.ofProbabilityThreshold( 0.25, Operator.GREATER );
         Set<MetricConstants> secondSet =
-                processor.doNotComputeTheseMetricsForThisThreshold( MetricInputGroup.SINGLE_VALUED,
+                processor.doNotComputeTheseMetricsForThisThreshold( processor.thresholdsByMetric,
+                                                                    MetricInputGroup.SINGLE_VALUED,
                                                                     MetricOutputGroup.DOUBLE_SCORE,
                                                                     secondTest );
         assertTrue( "Unexpected set of metrics to ignore for threshold '" + secondTest
@@ -282,7 +288,8 @@ public final class MetricProcessorTest
         
         Threshold thirdTest = metIn.ofProbabilityThreshold( 0.5, Operator.GREATER );
         Set<MetricConstants> thirdSet =
-                processor.doNotComputeTheseMetricsForThisThreshold( MetricInputGroup.DISCRETE_PROBABILITY,
+                processor.doNotComputeTheseMetricsForThisThreshold( processor.thresholdsByMetric,
+                                                                    MetricInputGroup.DISCRETE_PROBABILITY,
                                                                     MetricOutputGroup.DOUBLE_SCORE,
                                                                     thirdTest );
         assertTrue( "Unexpected set of metrics to ignore for threshold '" + thirdTest
@@ -291,7 +298,8 @@ public final class MetricProcessorTest
         
         Threshold fourthTest = metIn.ofProbabilityThreshold( 0.925, Operator.GREATER );
         Set<MetricConstants> fourthSet =
-                processor.doNotComputeTheseMetricsForThisThreshold( MetricInputGroup.ENSEMBLE,
+                processor.doNotComputeTheseMetricsForThisThreshold( processor.thresholdsByMetric,
+                                                                    MetricInputGroup.ENSEMBLE,
                                                                     MetricOutputGroup.DOUBLE_SCORE,
                                                                     fourthTest );
         assertTrue( "Unexpected set of metrics to ignore for threshold '" + fourthTest

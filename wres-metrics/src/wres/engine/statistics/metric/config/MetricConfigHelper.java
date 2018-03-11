@@ -31,6 +31,7 @@ import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.Threshold;
 import wres.datamodel.Threshold.Operator;
+import wres.datamodel.ThresholdsByType;
 
 /**
  * A helper class for interpreting and using the {@link ProjectConfig} in the context of verification metrics.
@@ -48,14 +49,14 @@ public final class MetricConfigHelper
      */
 
     public static final String NULL_CONFIGURATION_ERROR = "Specify non-null project configuration.";
-    
-    
+
+
     /**
      * Null configuration error.
      */
 
-    public static final String NULL_DATA_FACTORY_ERROR = "Specify a non-null data factory.";    
-    
+    public static final String NULL_DATA_FACTORY_ERROR = "Specify a non-null data factory.";
+
     /**
      * Map between names
      */
@@ -86,9 +87,9 @@ public final class MetricConfigHelper
                                                     + "check that the input configuration has been facet-validated against the list of metrics "
                                                     + "supported by the system configuration." );
         }
-        
+
         buildMap();
-        
+
         //All valid metrics
         if ( configName.equals( MetricConfigName.ALL_VALID ) )
         {
@@ -101,7 +102,7 @@ public final class MetricConfigHelper
         }
         return NAME_MAP.get( configName );
     }
-    
+
     /**
      * Returns the {@link MetricConfigName} that corresponds to the {@link MetricConstants}. Cannot map the
      * {@link MetricConfigName#ALL_VALID}. Throws an exception if no mapping is available. 
@@ -117,21 +118,21 @@ public final class MetricConfigHelper
         {
             throw new MetricConfigurationException( "Unable to map a null input identifier to a named metric." );
         }
-        
+
         buildMap();
-        
-        for( Entry<MetricConfigName,MetricConstants> next : NAME_MAP.entrySet() )
+
+        for ( Entry<MetricConfigName, MetricConstants> next : NAME_MAP.entrySet() )
         {
-            if( next.getValue() == metricName )
+            if ( next.getValue() == metricName )
             {
                 return next.getKey();
             }
         }
-        
+
         throw new MetricConfigurationException( " Unable to find a configured metric that corresponds to an "
-                + "identifier of '" + metricName + "'." );
-    }    
-    
+                                                + "identifier of '" + metricName + "'." );
+    }
+
     /**
      * Returns the {@link MetricConstants} that corresponds to the {@link SummaryStatisticsName} or null if the input is
      * {@link SummaryStatisticsName#ALL_VALID}. Throws an exception if no such mapping is available. 
@@ -352,13 +353,13 @@ public final class MetricConfigHelper
         for ( ThresholdsConfig next : thresholds )
         {
             Operator operator = Operator.GREATER;
-            
+
             // Operator specified
             if ( Objects.nonNull( next.getOperator() ) )
             {
                 operator = from( next.getOperator() );
             }
-            
+
             // Must be internally sourced: thresholds with global scope should be provided directly 
             Object values = next.getCommaSeparatedValuesOrSource();
 
@@ -393,7 +394,7 @@ public final class MetricConfigHelper
 
     public static Map<MetricConstants, Set<Threshold>> getProbabilityClassifiers( ProjectConfig config,
                                                                                   DataFactory dataFactory,
-                                                                                  Map<MetricConfigName, Set<Threshold>> external )
+                                                                                  Map<MetricConfigName, ThresholdsByType> external )
             throws MetricConfigurationException
     {
 
@@ -405,7 +406,7 @@ public final class MetricConfigHelper
         Map<MetricConstants, Set<Threshold>> returnMe = new EnumMap<>( MetricConstants.class );
 
         // Iterate through the metric configuration groups, adding thresholds
-        for( MetricsConfig nextGroup : config.getMetrics() )
+        for ( MetricsConfig nextGroup : config.getMetrics() )
         {
             MetricConfigHelper.addProbabilityClassifiers( config,
                                                           returnMe,
@@ -833,7 +834,7 @@ public final class MetricConfigHelper
 
         return Collections.unmodifiableSet( returnMe );
     }
-    
+
     /**
      * Mutates the input map of thresholds, adding probability classifiers for the specified metric configuration.
      * 
@@ -850,7 +851,7 @@ public final class MetricConfigHelper
                                                    Map<MetricConstants, Set<Threshold>> returnMe,
                                                    MetricsConfig metrics,
                                                    DataFactory dataFactory,
-                                                   Map<MetricConfigName, Set<Threshold>> external )
+                                                   Map<MetricConfigName, ThresholdsByType> external )
             throws MetricConfigurationException
     {
 
@@ -868,24 +869,24 @@ public final class MetricConfigHelper
 
         // Filter by input type
         Set<MetricConstants> metricsToAdd = new HashSet<>();
-        
+
         // Add ALL_VALID metrics
         if ( metrics.getMetric().stream().anyMatch( name -> name.getName() == MetricConfigName.ALL_VALID ) )
         {
-            metricsToAdd.addAll( MetricConfigHelper.getAllValidMetricsFromConfig( config ) );           
+            metricsToAdd.addAll( MetricConfigHelper.getAllValidMetricsFromConfig( config ) );
         }
         // Add named metrics
         else
         {
-            for( MetricConfig nextMetric : metrics.getMetric() )
+            for ( MetricConfig nextMetric : metrics.getMetric() )
             {
-                metricsToAdd.add( MetricConfigHelper.from( nextMetric.getName() ) );            
+                metricsToAdd.add( MetricConfigHelper.from( nextMetric.getName() ) );
             }
         }
-        
+
         // Filter everything except dichotomous
-        metricsToAdd.removeIf( a -> ! a.isInGroup( MetricInputGroup.DICHOTOMOUS ) );
-        
+        metricsToAdd.removeIf( a -> !a.isInGroup( MetricInputGroup.DICHOTOMOUS ) );
+
         // Add or append
         for ( MetricConstants nextMetric : metricsToAdd )
         {
@@ -898,13 +899,17 @@ public final class MetricConfigHelper
                 returnMe.put( nextMetric, thresholds );
             }
             // Add external thresholds
-            if( Objects.nonNull( external ) && external.containsKey( from( nextMetric ) ) )
+            MetricConfigName name = from( nextMetric );
+            if ( Objects.nonNull( external ) && external.containsKey( name )
+                 && external.get( name ).contains( ThresholdsByType.ThresholdType.PROBABILITY_CLASSIFIER ) )
             {
-                returnMe.get( nextMetric ).addAll( external.get( from( nextMetric ) ) );
+                returnMe.get( nextMetric )
+                        .addAll( external.get( name )
+                                         .getThresholdsByType( ThresholdsByType.ThresholdType.PROBABILITY_CLASSIFIER ) );
             }
         }
 
-    }    
+    }
 
     /**
      * Builds the mapping between the {@link MetricConstants} and the {@link MetricConfigName} 

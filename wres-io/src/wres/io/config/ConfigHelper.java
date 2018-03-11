@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -65,6 +66,7 @@ import wres.config.generated.TimeWindowMode;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Threshold;
 import wres.datamodel.Threshold.Operator;
+import wres.datamodel.ThresholdsByType;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
@@ -1470,13 +1472,13 @@ public class ConfigHelper
      * @throws ProjectConfigException if the source could not be read
      */
 
-    public static Map<FeaturePlus, Map<MetricConfigName,Set<Threshold>>>
+    public static Map<FeaturePlus, Map<MetricConfigName,ThresholdsByType>>
             readExternalThresholdsFromProjectConfig( ProjectConfig projectConfig )
                     throws ProjectConfigException
     {
         Objects.requireNonNull( projectConfig, NULL_CONFIGURATION_ERROR );
 
-        Map<FeaturePlus, Map<MetricConfigName,Set<Threshold>>> returnMe = new HashMap<>();
+        Map<FeaturePlus, Map<MetricConfigName,ThresholdsByType>> returnMe = new HashMap<>();
 
         // Obtain and read thresholds
         List<MetricsConfig> metrics = projectConfig.getMetrics();
@@ -1510,13 +1512,13 @@ public class ConfigHelper
      * @throws ProjectConfigException if the threshold could not be read 
      */
 
-    private static Map<FeaturePlus, Set<Threshold>> readOneThresholdFromProjectConfig( ThresholdsConfig threshold )
+    private static Map<FeaturePlus, ThresholdsByType> readOneThresholdFromProjectConfig( ThresholdsConfig threshold )
             throws ProjectConfigException
     {
 
         Objects.requireNonNull( threshold, "Specify non-null threshold configuration." );
-        
-        Map<FeaturePlus, Set<Threshold>> returnMe = new TreeMap<>();
+
+        Map<FeaturePlus, ThresholdsByType> returnMe = new TreeMap<>();
 
         ThresholdsConfig.Source nextSource = (ThresholdsConfig.Source) threshold.getCommaSeparatedValuesOrSource();
 
@@ -1524,14 +1526,14 @@ public class ConfigHelper
         if ( Objects.isNull( nextSource.getValue() ) )
         {
             throw new ProjectConfigException( threshold, "Specify a non-null path to read for the external "
-                                                    + "source of thresholds." );
+                                                         + "source of thresholds." );
         }
         // Validate format
         if ( nextSource.getFormat() != ThresholdFormat.CSV )
         {
             throw new ProjectConfigException( threshold,
                                               "Unsupported source format for thresholds '"
-                                                    + nextSource.getFormat() + "'" );
+                                                         + nextSource.getFormat() + "'" );
         }
 
         // Default to probability
@@ -1554,16 +1556,36 @@ public class ConfigHelper
 
         try
         {
-            returnMe.putAll( CommaSeparatedReader.readThresholds( commaSeparated,
-                                                                  isProbability,
-                                                                  operator,
-                                                                  missing ) );
+            Map<FeaturePlus, Set<Threshold>> read = CommaSeparatedReader.readThresholds( commaSeparated,
+                                                                                         isProbability,
+                                                                                         operator,
+                                                                                         missing );
+            // Establish the threshold type
+            final ThresholdsByType.ThresholdType type;
+            if ( threshold.getType() == ThresholdType.PROBABILITY )
+            {
+                type = ThresholdsByType.ThresholdType.PROBABILITY;
+            }
+            else if ( threshold.getType() == ThresholdType.VALUE )
+            {
+                type = ThresholdsByType.ThresholdType.VALUE;
+            }
+            else if ( threshold.getType() == ThresholdType.PROBABILITY_CLASSIFIER )
+            {
+                type = ThresholdsByType.ThresholdType.PROBABILITY_CLASSIFIER;
+            }
+            else
+            {
+                throw new ProjectConfigException( threshold, "Unexpected identifier for threshold type." );
+            }
+            // Add to map
+            read.forEach( ( key, value ) -> returnMe.put( key, ThresholdsByType.of( type, value ) ) );
         }
         catch ( IOException e )
         {
             throw new ProjectConfigException( threshold,
                                               "Failed to read the comman separated thresholds "
-                                                    + "from '" + commaSeparated + "'.",
+                                                         + "from '" + commaSeparated + "'.",
                                               e );
         }
 
@@ -1580,7 +1602,7 @@ public class ConfigHelper
      */
 
     private static void
-            addThresholdsForOneMetricConfigGroup( Map<FeaturePlus, Map<MetricConfigName, Set<Threshold>>> mutate,
+            addThresholdsForOneMetricConfigGroup( Map<FeaturePlus, Map<MetricConfigName, ThresholdsByType>> mutate,
                                                   MetricsConfig group,
                                                   ThresholdsConfig thresholds )
                     throws ProjectConfigException
@@ -1593,11 +1615,11 @@ public class ConfigHelper
         Objects.requireNonNull( group, "Specify non-null threshold configuration." );
 
         // Obtain the thresholds
-        Map<FeaturePlus, Set<Threshold>> thresholdsByFeature =
+        Map<FeaturePlus, ThresholdsByType> thresholdsByFeature =
                 ConfigHelper.readOneThresholdFromProjectConfig( thresholds );
         
         // Iterate the thresholds
-        for ( Entry<FeaturePlus, Set<Threshold>> nextEntry : thresholdsByFeature.entrySet() )
+        for ( Entry<FeaturePlus, ThresholdsByType> nextEntry : thresholdsByFeature.entrySet() )
         {
             // Iterate the metrics
             for( MetricConfig nextMetric : group.getMetric() )
@@ -1605,11 +1627,12 @@ public class ConfigHelper
                 // Feature exists in the uber map: mutate it
                 if ( mutate.containsKey( nextEntry.getKey() ) )
                 {
-                    Map<MetricConfigName,Set<Threshold>> nextMap = mutate.get( nextEntry.getKey() );
-                    // Metric exists, mutate it
+                    Map<MetricConfigName,ThresholdsByType> nextMap = mutate.get( nextEntry.getKey() );
+                    // Metric exists, replace thresholds for that metric with union thresholds
                     if( nextMap.containsKey( nextMetric.getName() ) )
                     {
-                        nextMap.get( nextMetric.getName() ).addAll( nextEntry.getValue() );
+                        ThresholdsByType union = nextMap.get( nextMetric.getName() ).union( nextEntry.getValue() );
+                        nextMap.put( nextMetric.getName(), union );
                     }
                     // Metric does not exist, add it
                     else
@@ -1620,7 +1643,7 @@ public class ConfigHelper
                 // New feature: add a new map
                 else
                 {
-                    Map<MetricConfigName,Set<Threshold>> nextMap = new HashMap<>();
+                    Map<MetricConfigName,ThresholdsByType> nextMap = new EnumMap<>( MetricConfigName.class );
                     nextMap.put( nextMetric.getName(), nextEntry.getValue() );
                     mutate.put( nextEntry.getKey(), nextMap );
                 }   
@@ -1705,16 +1728,15 @@ public class ConfigHelper
      * @return the unmodifiable map
      */
 
-    private static <S, T, U> Map<S, Map<T, Set<U>>> ofUnmodifiableMap( Map<S, Map<T, Set<U>>> mutable )
+    private static <S, T, U> Map<S, Map<T, U>> ofUnmodifiableMap( Map<S, Map<T, U>> mutable )
     {
         Objects.requireNonNull( mutable, "Specify non-null input to render unmodifiable." );
 
-        Map<S, Map<T, Set<U>>> returnMe = new HashMap<>();
+        Map<S, Map<T, U>> returnMe = new HashMap<>();
 
-        for ( Entry<S, Map<T, Set<U>>> outerEntry : mutable.entrySet() )
+        for ( Entry<S, Map<T, U>> outerEntry : mutable.entrySet() )
         {
-            Map<T, Set<U>> nextMap = new HashMap<>();
-            outerEntry.getValue().forEach( ( key, value ) -> nextMap.put( key, Collections.unmodifiableSet( value ) ) );
+            Map<T, U> nextMap = new HashMap<>( outerEntry.getValue() );
             returnMe.put( outerEntry.getKey(), Collections.unmodifiableMap( nextMap ) );
         }
 

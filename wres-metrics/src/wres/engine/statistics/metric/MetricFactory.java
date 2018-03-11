@@ -16,7 +16,7 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
-import wres.datamodel.Threshold;
+import wres.datamodel.ThresholdsByType;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
@@ -207,7 +207,7 @@ public class MetricFactory
      */
 
     public MetricProcessorForProject getMetricProcessorForProject( final ProjectConfig projectConfig,
-                                                                   final Map<MetricConfigName, Set<Threshold>> externalThresholds,
+                                                                   final Map<MetricConfigName, ThresholdsByType> externalThresholds,
                                                                    final ExecutorService thresholdExecutor,
                                                                    final ExecutorService metricExecutor )
             throws MetricProcessorException
@@ -288,7 +288,7 @@ public class MetricFactory
 
     public MetricProcessorByTime<SingleValuedPairs>
             ofMetricProcessorByTimeSingleValuedPairs( final ProjectConfig config,
-                                                      final Map<MetricConfigName, Set<Threshold>> externalThresholds,
+                                                      final Map<MetricConfigName, ThresholdsByType> externalThresholds,
                                                       final MetricOutputGroup... mergeList )
                     throws MetricProcessorException
     {
@@ -316,7 +316,7 @@ public class MetricFactory
 
     public MetricProcessorByTime<EnsemblePairs>
             ofMetricProcessorByTimeEnsemblePairs( final ProjectConfig config,
-                                                  final Map<MetricConfigName, Set<Threshold>> externalThresholds,
+                                                  final Map<MetricConfigName, ThresholdsByType> externalThresholds,
                                                   final MetricOutputGroup... mergeList )
                     throws MetricProcessorException
     {
@@ -345,7 +345,7 @@ public class MetricFactory
 
     public MetricProcessorByTime<SingleValuedPairs>
             ofMetricProcessorByTimeSingleValuedPairs( final ProjectConfig config,
-                                                      final Map<MetricConfigName, Set<Threshold>> externalThresholds,
+                                                      final Map<MetricConfigName, ThresholdsByType> externalThresholds,
                                                       final ExecutorService thresholdExecutor,
                                                       final ExecutorService metricExecutor )
                     throws MetricProcessorException
@@ -381,7 +381,7 @@ public class MetricFactory
      */
 
     public MetricProcessorByTime<EnsemblePairs> ofMetricProcessorByTimeEnsemblePairs( final ProjectConfig config,
-                                                                                      final Map<MetricConfigName, Set<Threshold>> externalThresholds,
+                                                                                      final Map<MetricConfigName, ThresholdsByType> externalThresholds,
                                                                                       final ExecutorService thresholdExecutor,
                                                                                       final ExecutorService metricExecutor )
             throws MetricProcessorException
@@ -419,7 +419,7 @@ public class MetricFactory
 
     public MetricProcessorByTime<SingleValuedPairs>
             ofMetricProcessorByTimeSingleValuedPairs( final ProjectConfig config,
-                                                      final Map<MetricConfigName, Set<Threshold>> externalThresholds,
+                                                      final Map<MetricConfigName, ThresholdsByType> externalThresholds,
                                                       final ExecutorService thresholdExecutor,
                                                       final ExecutorService metricExecutor,
                                                       final MetricOutputGroup... mergeList )
@@ -462,7 +462,7 @@ public class MetricFactory
      */
 
     public MetricProcessorByTime<EnsemblePairs> ofMetricProcessorByTimeEnsemblePairs( final ProjectConfig config,
-                                                                                      final Map<MetricConfigName, Set<Threshold>> externalThresholds,
+                                                                                      final Map<MetricConfigName, ThresholdsByType> externalThresholds,
                                                                                       final ExecutorService thresholdExecutor,
                                                                                       final ExecutorService metricExecutor,
                                                                                       final MetricOutputGroup... mergeList )
