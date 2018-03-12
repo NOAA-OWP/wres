@@ -476,7 +476,7 @@ public final class SafeThresholdTest
                                                   .setCondition( Operator.GREATER )
                                                   .build();
 
-        assertTrue( "Unexpected inequality in string representations.", oneProb.toString().equals( "> 0.0" ) );
+        assertTrue( "Unexpected inequality in string representations.", oneProb.toString().equals( "Pr > 0.0" ) );
 
         // Pair of probability thresholds
         Threshold twoProb = new ThresholdBuilder()
@@ -486,7 +486,7 @@ public final class SafeThresholdTest
                                                   .build();
 
         assertTrue( "Unexpected inequality in string representations.",
-                    twoProb.toString().equals( ">= 0.0 && < 0.5" ) );
+                    twoProb.toString().equals( "Pr >= 0.0 && < 0.5" ) );
 
         // Pair of value thresholds
         Threshold twoVal = new ThresholdBuilder()
@@ -512,32 +512,32 @@ public final class SafeThresholdTest
 
         // Test additional conditions
         Threshold less = new ThresholdBuilder()
-                                               .setThresholdProbability( 0.0 )
+                                               .setThresholdProbability( 0.5 )
                                                .setCondition( Operator.LESS )
                                                .build();
 
-        assertTrue( "Unexpected inequality in string representations.", less.toString().equals( "< 0.0" ) );
+        assertTrue( "Unexpected inequality in string representations.", less.toString().equals( "Pr < 0.5" ) );
 
         Threshold lessEqual = new ThresholdBuilder()
-                                                    .setThresholdProbability( 0.0 )
+                                                    .setThresholdProbability( 0.5 )
                                                     .setCondition( Operator.LESS_EQUAL )
                                                     .build();
 
-        assertTrue( "Unexpected inequality in string representations.", lessEqual.toString().equals( "<= 0.0" ) );
+        assertTrue( "Unexpected inequality in string representations.", lessEqual.toString().equals( "Pr <= 0.5" ) );
 
         Threshold greaterEqual = new ThresholdBuilder()
-                                                       .setThresholdProbability( 0.0 )
+                                                       .setThresholdProbability( 0.5 )
                                                        .setCondition( Operator.GREATER_EQUAL )
                                                        .build();
 
-        assertTrue( "Unexpected inequality in string representations.", greaterEqual.toString().equals( ">= 0.0" ) );
+        assertTrue( "Unexpected inequality in string representations.", greaterEqual.toString().equals( "Pr >= 0.5" ) );
 
         Threshold equal = new ThresholdBuilder()
-                                                .setThresholdProbability( 0.0 )
+                                                .setThresholdProbability( 0.5 )
                                                 .setCondition( Operator.EQUAL )
                                                 .build();
 
-        assertTrue( "Unexpected inequality in string representations.", equal.toString().equals( "= 0.0" ) );
+        assertTrue( "Unexpected inequality in string representations.", equal.toString().equals( "Pr = 0.5" ) );
 
     }
 

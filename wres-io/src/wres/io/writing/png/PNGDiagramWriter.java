@@ -13,7 +13,7 @@ import ohd.hseb.charter.ChartEngineException;
 import wres.config.ProjectConfigException;
 import wres.config.generated.DestinationConfig;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.Threshold;
+import wres.datamodel.Thresholds;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.MapKey;
@@ -122,11 +122,11 @@ public class PNGDiagramWriter extends PNGWriter
                                                                      meta,
                                                                      (TimeWindow) append );
                 }
-                else if ( append instanceof Threshold )
+                else if ( append instanceof Thresholds )
                 {
                     outputImage = ConfigHelper.getOutputPathToWrite( destinationConfig,
                                                                      meta,
-                                                                     (Threshold) append );
+                                                                     (Thresholds) append );
                 }
 
                 PNGWriter.writeChart( outputImage, nextEntry.getValue(), destinationConfig );

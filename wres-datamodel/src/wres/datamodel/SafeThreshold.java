@@ -176,6 +176,8 @@ class SafeThreshold implements Threshold
         }
 
         final String c = getConditionID();
+        
+        // Quantile
         if ( hasOrdinaryValues() && hasProbabilityValues() )
         {
             String common = " [Pr = ";
@@ -193,6 +195,7 @@ class SafeThreshold implements Threshold
             }
             return c + threshold + common + probability + "]" + append;
         }
+        // Real value only
         else if ( hasOrdinaryValues() )
         {
             if ( hasBetweenCondition() )
@@ -201,13 +204,14 @@ class SafeThreshold implements Threshold
             }
             return c + threshold + append;
         }
+        // Probability only
         else
         {
             if ( hasBetweenCondition() )
             {
-                return ">= " + probability + " && < " + probabilityUpper + append;
+                return "Pr >= " + probability + " && < " + probabilityUpper + append;
             }
-            return c + probability + append;
+            return "Pr "+ c + probability + append;
         }
     }
 
@@ -221,6 +225,7 @@ class SafeThreshold implements Threshold
         safe = safe.replaceAll( ">", "GT" );
         safe = safe.replaceAll( "<", "LT" );
         safe = safe.replaceAll( "Pr = ", "Pr=" );
+        safe = safe.replaceAll( "Pr ", "Pr_" );
         safe = safe.replaceAll( " ", "_" );
         safe = safe.replace( "[", "" );
         safe = safe.replace( "]", "" );

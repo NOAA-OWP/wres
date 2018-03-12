@@ -26,6 +26,7 @@ import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.Slicer;
 import wres.datamodel.Threshold;
 import wres.datamodel.Threshold.Operator;
+import wres.datamodel.Thresholds;
 import wres.datamodel.ThresholdsByType;
 import wres.datamodel.inputs.InsufficientDataException;
 import wres.datamodel.inputs.MetricInputSliceException;
@@ -171,7 +172,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
         if ( hasMetrics( MetricInputGroup.SINGLE_VALUED_TIME_SERIES, MetricOutputGroup.PAIRED ) )
         {
             timeSeries = metricFactory.ofSingleValuedTimeSeriesCollection( metricExecutor,
-                                                                           getSelectedMetrics( metrics,
+                                                                           getMetrics( metrics,
                                                                                                MetricInputGroup.SINGLE_VALUED_TIME_SERIES,
                                                                                                MetricOutputGroup.PAIRED ) );
             //Summary statistics, currently done for time-to-peak only
@@ -241,8 +242,9 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                     getCachedMetricOutputInternal().getPairedOutput().get( MetricConstants.TIME_TO_PEAK_ERROR );
             PairedOutput<Instant, Duration> union = dataFactory.unionOf( output.values() );
             TimeWindow unionWindow = union.getMetadata().getTimeWindow();
-            Pair<TimeWindow, Threshold> key =
-                    Pair.of( unionWindow, dataFactory.ofThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER ) );
+            Pair<TimeWindow, Thresholds> key =
+                    Pair.of( unionWindow,
+                             Thresholds.of( dataFactory.ofThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER ) ) );
             //Build the future result
             Supplier<MetricOutputMapByMetric<DurationScoreOutput>> supplier = () -> {
                 DurationScoreOutput result = timeToPeakErrorStats.aggregate( union );
@@ -305,7 +307,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
         Set<Threshold> union =
                 getUnionOfThresholdsForThisGroup( this.thresholdsByMetric, MetricInputGroup.DICHOTOMOUS, outGroup );
         double[] sorted = getSortedClimatology( input, union );
-        Map<Threshold, MetricCalculationException> failures = new HashMap<>();
+        Map<Thresholds, MetricCalculationException> failures = new HashMap<>();
         union.forEach( threshold -> {
 
             Threshold useMe = addQuantilesToThreshold( threshold, sorted );
@@ -323,7 +325,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                 //Transform the pairs
                 DichotomousPairs transformed = dataFactory.getSlicer().transformPairs( input, mapper );
 
-                processDichotomousPairs( Pair.of( timeWindow, useMe ),
+                processDichotomousPairs( Pair.of( timeWindow, Thresholds.of( useMe ) ),
                                          transformed,
                                          futures,
                                          outGroup,
@@ -333,7 +335,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
             //Insufficient data for one threshold: log, but allow
             catch ( InsufficientDataException e )
             {
-                failures.put( useMe, new MetricCalculationException( e.getMessage(), e ) );
+                failures.put( Thresholds.of( useMe ), new MetricCalculationException( e.getMessage(), e ) );
             }
 
         } );
@@ -360,7 +362,8 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                                                thresholdExecutor );
         //Add the future result to the store
         futures.addPairedOutput( Pair.of( timeWindow,
-                                          dataFactory.ofThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER ) ),
+                                          Thresholds.of( dataFactory.ofThreshold( Double.NEGATIVE_INFINITY,
+                                                                                  Operator.GREATER ) ) ),
                                  output );
     }
 

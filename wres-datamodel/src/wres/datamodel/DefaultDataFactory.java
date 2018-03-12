@@ -349,7 +349,7 @@ public class DefaultDataFactory implements DataFactory
 
     @Override
     public <T extends MetricOutput<?>> MetricOutputMapByTimeAndThreshold<T>
-            ofMap( final Map<Pair<TimeWindow, Threshold>, T> input )
+            ofMap( final Map<Pair<TimeWindow, Thresholds>, T> input )
     {
         Objects.requireNonNull( input, "Specify a non-null map of inputs by lead time and threshold." );
         final SafeMetricOutputMapByTimeAndThreshold.Builder<T> builder =
@@ -360,7 +360,7 @@ public class DefaultDataFactory implements DataFactory
 
     @Override
     public <T extends MetricOutput<?>> MetricOutputMultiMapByTimeAndThreshold<T>
-            ofMultiMap( final Map<Pair<TimeWindow, Threshold>, List<MetricOutputMapByMetric<T>>> input )
+            ofMultiMap( final Map<Pair<TimeWindow, Thresholds>, List<MetricOutputMapByMetric<T>>> input )
     {
         Objects.requireNonNull( input, "Specify a non-null map of inputs by threshold." );
         final SafeMetricOutputMultiMapByTimeAndThresholdBuilder<T> builder =

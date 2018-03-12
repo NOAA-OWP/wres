@@ -26,8 +26,8 @@ import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.Threshold;
 import wres.datamodel.Threshold.Operator;
+import wres.datamodel.Thresholds;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.metadata.MetadataFactory;
@@ -117,8 +117,9 @@ public class CommaSeparatedBoxPlotWriterTest extends CommaSeparatedWriterTest
 
 
         // Fake lead time and threshold
-        Pair<TimeWindow, Threshold> mapKeyByLeadThreshold =
-                Pair.of( timeOne, outputFactory.ofThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER ) );
+        Pair<TimeWindow, Thresholds> mapKeyByLeadThreshold =
+                Pair.of( timeOne,
+                         Thresholds.of( outputFactory.ofThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER ) ) );
 
         outputBuilder.addBoxPlotOutput( mapKeyByLeadThreshold,
                                         outputMapByMetricFuture );
@@ -130,7 +131,7 @@ public class CommaSeparatedBoxPlotWriterTest extends CommaSeparatedWriterTest
         ProjectConfig projectConfig = getMockedProjectConfig( feature );
 
         // Begin the actual test now that we have constructed dependencies.
-        CommaSeparatedBoxPlotWriter.of( projectConfig ).accept( output.getBoxPlotOutput() );        
+        CommaSeparatedBoxPlotWriter.of( projectConfig ).accept( output.getBoxPlotOutput() );
 
         // read the file, verify it has what we wanted:
         Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ),

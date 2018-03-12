@@ -25,8 +25,8 @@ import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.Threshold;
 import wres.datamodel.Threshold.Operator;
+import wres.datamodel.Thresholds;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
@@ -111,8 +111,9 @@ public class CommaSeparatedMatrixWriterTest extends CommaSeparatedWriterTest
 
 
         // Fake lead time and threshold
-        Pair<TimeWindow, Threshold> mapKeyByLeadThreshold =
-                Pair.of( timeOne, outputFactory.ofThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER ) );
+        Pair<TimeWindow, Thresholds> mapKeyByLeadThreshold =
+                Pair.of( timeOne,
+                         Thresholds.of( outputFactory.ofThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER ) ) );
 
         outputBuilder.addMatrixOutput( mapKeyByLeadThreshold,
                                        outputMapByMetricFuture );
@@ -124,7 +125,7 @@ public class CommaSeparatedMatrixWriterTest extends CommaSeparatedWriterTest
         ProjectConfig projectConfig = getMockedProjectConfig( feature );
 
         // Begin the actual test now that we have constructed dependencies.
-        CommaSeparatedMatrixWriter.of( projectConfig ).accept( output.getMatrixOutput() ); 
+        CommaSeparatedMatrixWriter.of( projectConfig ).accept( output.getMatrixOutput() );
 
         // read the file, verify it has what we wanted:
         Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ),

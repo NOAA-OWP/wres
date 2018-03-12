@@ -357,25 +357,31 @@ public final class MetricConfigHelper
             // Operator specified
             if ( Objects.nonNull( next.getOperator() ) )
             {
-                operator = from( next.getOperator() );
+                operator = MetricConfigHelper.from( next.getOperator() );
             }
 
             // Must be internally sourced: thresholds with global scope should be provided directly 
             Object values = next.getCommaSeparatedValuesOrSource();
 
-            // Default to ThresholdType.PROBABILITY if null
-            ThresholdType type = next.getType();
+            // Default to ThresholdType.PROBABILITY
+            ThresholdType type = ThresholdType.PROBABILITY;
+            if ( Objects.nonNull( next.getType() ) )
+            {
+                type = next.getType();
+            }
+            
+            // String = internal sourced
             if ( values instanceof String
                  && ( types.length == 0
-                      || Objects.isNull( type )
                       || Arrays.asList( types ).contains( type ) ) )
             {
-                returnMe.addAll( getThresholdsFromCommaSeparatedValues( dataFactory,
-                                                                        values.toString(),
-                                                                        operator,
-                                                                        type != ThresholdType.VALUE ) );
+                returnMe.addAll( MetricConfigHelper.getThresholdsFromCommaSeparatedValues( dataFactory,
+                                                                                           values.toString(),
+                                                                                           operator,
+                                                                                           type != ThresholdType.VALUE ) );
             }
         }
+        
         return Collections.unmodifiableSet( returnMe );
     }
 
@@ -590,7 +596,31 @@ public final class MetricConfigHelper
     {
         Objects.requireNonNull( config, NULL_CONFIGURATION_ERROR );
 
-        return config.getMetrics().stream().anyMatch( next -> !next.getThresholds().isEmpty() );
+        return config.getMetrics().stream().anyMatch( nextGroup -> hasThresholds( nextGroup, null ) );
+    }
+
+    /**
+     * Returns <code>true</code> if the project configuration contains thresholds, <code>false</code> otherwise.
+     * 
+     * @param config the project configuration
+     * @param type an optional threshold type, may be null
+     * @return true if the configuration contains thresholds, otherwise false
+     * @throws NullPointerException if the input is null
+     */
+
+    public static boolean hasThresholds( MetricsConfig config, ThresholdType type )
+    {
+        Objects.requireNonNull( config, NULL_CONFIGURATION_ERROR );
+
+        // No type condition
+        if ( Objects.isNull( type ) )
+        {
+            // Has some thresholds
+            return !config.getThresholds().isEmpty();
+        }
+
+        // Has some thresholds of a specified type
+        return config.getThresholds().stream().anyMatch( testType -> testType.getType() == type );
     }
 
     /**

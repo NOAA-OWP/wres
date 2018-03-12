@@ -66,6 +66,7 @@ import wres.config.generated.TimeWindowMode;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Threshold;
 import wres.datamodel.Threshold.Operator;
+import wres.datamodel.Thresholds;
 import wres.datamodel.ThresholdsByType;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
@@ -1354,7 +1355,7 @@ public class ConfigHelper
 
     /**
      * Returns a path to write from a combination of the {@link DestinationConfig}, the {@link MetricOutputMetadata} 
-     * associated with the results and a {@link Threshold}.
+     * associated with the results and a {@link Thresholds}.
      * 
      * @param destinationConfig the destination configuration
      * @param meta the metadata
@@ -1366,20 +1367,29 @@ public class ConfigHelper
 
     public static Path getOutputPathToWrite( DestinationConfig destinationConfig,
                                              MetricOutputMetadata meta,
-                                             Threshold threshold )
+                                             Thresholds threshold )
             throws IOException
     {
         Objects.requireNonNull( meta, "Enter non-null metadata to establish a path for writing." );
 
         Objects.requireNonNull( threshold, "Enter non-null threshold to establish a path for writing." );
 
-        String append = "";
+        String thresholdString = threshold.toStringSafe();
         // Finite threshold has a dimension
-        if( threshold.isFinite() )
+        // Currently, if the second threshold exists, it is a probability  without a real value attached
+        if( threshold.first().isFinite() )
         {
-            append = "_"+meta.getInputDimension();
+            String append = "_"+meta.getInputDimension();
+            if( threshold.hasTwo() )
+            {
+                thresholdString = thresholdString.replace( "_&_", append + "_&_" );
+            }
+            else
+            {
+                thresholdString = thresholdString + append;
+            }
         }
-        return getOutputPathToWrite( destinationConfig, meta, threshold.toStringSafe() + append );
+        return getOutputPathToWrite( destinationConfig, meta, thresholdString );
     }
 
     /**
