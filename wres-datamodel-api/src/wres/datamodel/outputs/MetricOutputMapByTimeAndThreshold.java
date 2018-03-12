@@ -2,6 +2,7 @@ package wres.datamodel.outputs;
 
 import java.util.Set;
 
+import wres.datamodel.Threshold;
 import wres.datamodel.Thresholds;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
@@ -86,6 +87,22 @@ public interface MetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>>
      */
 
     Set<TimeWindow> setOfTimeWindowKeyByLeadTime();
+    
+    /**
+     * Returns all {@link Threshold} stored against {@link Thresholds#first()} for each entry in the map.
+     * 
+     * @return the set of thresholds in the first position of the threshold composition
+     */
+
+    Set<Threshold> setOfThresholdOne();    
+    
+    /**
+     * Returns all {@link Threshold} stored against {@link Thresholds#second()} for each entry in the map.
+     * 
+     * @return the set of thresholds in the second position of the threshold composition, such as the empty set
+     */
+
+    Set<Threshold> setOfThresholdTwo();      
 
     /**
      * Filters the map by the {@link TimeWindow#getEarliestLeadTime()} and {@link TimeWindow#getLatestLeadTime()} in
@@ -96,7 +113,29 @@ public interface MetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>>
      * @throws MetricOutputException if the map could not be filtered
      */
 
-    MetricOutputMapByTimeAndThreshold<T> filterByLeadTime( TimeWindow window );
+    MetricOutputMapByTimeAndThreshold<T> filterByLeadTime( TimeWindow window );   
+    
+    /**
+     * Returns a sub-map of entries whose {@link Thresholds} contain a {@link Thresholds#first()} that matches the 
+     * specified {@link Threshold}. 
+     * 
+     * @param threshold the threshold on which to filter
+     * @return the submap
+     * @throws MetricOutputException if the map could not be filtered
+     */
+
+    MetricOutputMapByTimeAndThreshold<T> filterByThresholdOne( final Threshold threshold );
+    
+    /**
+     * Returns a sub-map of entries whose {@link Thresholds} contain a {@link Thresholds#second()} that matches the 
+     * specified {@link Threshold}.  
+     * 
+     * @param threshold the threshold on which to filter
+     * @return the submap
+     * @throws MetricOutputException if the map could not be filtered
+     */
+
+    MetricOutputMapByTimeAndThreshold<T> filterByThresholdTwo( final Threshold threshold );        
 
     /**
      * Returns the {@link MetricOutputMetadata} associated with all {@link MetricOutput} in the store. This may contain

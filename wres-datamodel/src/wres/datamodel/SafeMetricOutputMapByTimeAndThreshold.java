@@ -136,6 +136,25 @@ class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implement
              .forEach( ( key, value ) -> returnMe.add( value.get( 0 ).getLeft() ) );
         return returnMe;
     }
+    
+
+    @Override
+    public Set<Threshold> setOfThresholdOne()
+    {
+        return Collections.unmodifiableSet( store.keySet()
+                                                 .stream()
+                                                 .map( next -> next.getValue().first() )
+                                                 .collect( Collectors.toSet() ) );
+    }
+
+    @Override
+    public Set<Threshold> setOfThresholdTwo()
+    {
+        return Collections.unmodifiableSet( store.keySet()
+                                            .stream()
+                                            .map( next -> next.getValue().second() )
+                                            .collect( Collectors.toSet() ) );
+    }
 
     @Override
     public int size()
@@ -252,6 +271,48 @@ class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implement
         if ( b.store.isEmpty() )
         {
             throw new MetricOutputException( "No metric outputs match the specified criteria on forecast lead time." );
+        }
+        return b.build();
+    }
+    
+    @Override
+    public MetricOutputMapByTimeAndThreshold<T> filterByThresholdOne( Threshold threshold )
+    {
+        if ( Objects.isNull( threshold ) )
+        {
+            throw new MetricOutputException( "Specify a non-null threshold by which to slice the map." );
+        }
+        final Builder<T> b = new Builder<>();
+        store.forEach( ( key, value ) -> {
+            if ( threshold.equals( key.getRight().first() ) )
+            {
+                b.put( key, value );
+            }
+        } );
+        if ( b.store.isEmpty() )
+        {
+            throw new MetricOutputException( "No metric outputs match the specified threshold." );
+        }
+        return b.build();
+    }
+
+    @Override
+    public MetricOutputMapByTimeAndThreshold<T> filterByThresholdTwo( Threshold threshold )
+    {
+        if ( Objects.isNull( threshold ) )
+        {
+            throw new MetricOutputException( "Specify a non-null threshold by which to slice the map." );
+        }
+        final Builder<T> b = new Builder<>();
+        store.forEach( ( key, value ) -> {
+            if ( threshold.equals( key.getRight().second() ) )
+            {
+                b.put( key, value );
+            }
+        } );
+        if ( b.store.isEmpty() )
+        {
+            throw new MetricOutputException( "No metric outputs match the specified threshold." );
         }
         return b.build();
     }
