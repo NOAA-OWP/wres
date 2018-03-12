@@ -347,7 +347,7 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
         Attribute featureNameAttribute = new Attribute( "long_name", "Station id" );
         featureVariable.addAttribute( featureNameAttribute );
 
-        List<Dimension> thresholdDimensions = new ArrayList<>( 1 );
+        List<Dimension> thresholdDimensions = new ArrayList<>( 2 );
         thresholdDimensions.add( thresholdDimension );
         thresholdDimensions.add( stringDimension );
         List<Dimension> shareableThresholdDimensions =
@@ -512,11 +512,11 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
         // Set up thresholds (nonsense for now)
         Variable thresholds =
                 NetcdfDoubleScoreWriter.getVariableOrDie( writer, "threshold" );
-
-        char[][] thresholdsValues = { "Some kind of threshold".toCharArray(),
-                "Another kind of threshold".toCharArray() };
+        char[][] thresholdsValues = {
+                Arrays.copyOf( "Some kind of threshold".toCharArray(), STRING_LENGTH ),
+                Arrays.copyOf( "Another kind of threshold".toCharArray(), STRING_LENGTH ) };
         // Doesn't quite work, curious: (Also kind of scary that ArrayInt.D2 worked...)
-        Array ncThresholdsValues = ArrayChar.D1.makeFromJavaArray( thresholdsValues );
+        Array ncThresholdsValues = ArrayChar.D2.makeFromJavaArray( thresholdsValues );
 
         try
         {
@@ -525,9 +525,9 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
         catch ( InvalidRangeException ire )
         {
             throw new IOException( "Failed to write to variable "
-                                   + features + " in NetCDF file "
+                                   + thresholds + " in NetCDF file "
                                    + writer + " using raw data "
-                                   + Arrays.toString( thresholdsValues )
+                                   + Arrays.deepToString( thresholdsValues )
                                    + " and nc data "
                                    + ncThresholdsValues, ire );
         }
@@ -550,7 +550,7 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
         catch ( InvalidRangeException ire )
         {
             throw new IOException( "Failed to write to variable "
-                                   + features + " in NetCDF file "
+                                   + times + " in NetCDF file "
                                    + writer, ire );
         }
 
@@ -568,7 +568,7 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
         catch ( InvalidRangeException ire )
         {
             throw new IOException( "Failed to write to variable "
-                                   + features + " in NetCDF file "
+                                   + leadSeconds + " in NetCDF file "
                                    + writer + " using raw data "
                                    + Arrays.toString( leadSecondsValues )
                                    + " and nc data "
@@ -692,7 +692,7 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                                     {
                                         throw new IOException(
                                                 "Failed to write to variable "
-                                                + features + " in NetCDF file "
+                                                + ncVariable + " in NetCDF file "
                                                 + writer + " using raw data "
                                                 + Arrays.deepToString( valueToWrite )
                                                 + " and nc data "

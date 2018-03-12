@@ -392,7 +392,7 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
                                                                   1,
                                                                   2,
                                                                   1,
-                                                                  1,
+                                                                  2,
                                                                   metricNames ) );
         }
     }
