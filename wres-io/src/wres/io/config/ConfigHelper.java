@@ -1505,7 +1505,7 @@ public class ConfigHelper
             for ( ThresholdsConfig next : external )
             {
                 // Add or append
-                addThresholdsForOneMetricConfigGroup( returnMe, nextGroup, next );
+                addExternalThresholdsForOneMetricConfigGroup( returnMe, nextGroup, next );
             }
             
         }
@@ -1514,7 +1514,7 @@ public class ConfigHelper
     }
 
     /**
-     * Reads a {@link ThresholdConfig} and returns a corresponding {@link Set} of {@link Threshold} 
+     * Reads a {@link ThresholdConfig} and returns a corresponding {@link Set} of external {@link Threshold} 
      * by {@link FeaturePlus}.
      * 
      * @param threshold the threshold configuration
@@ -1522,8 +1522,9 @@ public class ConfigHelper
      * @throws ProjectConfigException if the threshold could not be read 
      */
 
-    private static Map<FeaturePlus, ThresholdsByType> readOneThresholdFromProjectConfig( ThresholdsConfig threshold )
-            throws ProjectConfigException
+    private static Map<FeaturePlus, ThresholdsByType>
+            readOneExternalThresholdFromProjectConfig( ThresholdsConfig threshold )
+                    throws ProjectConfigException
     {
 
         Objects.requireNonNull( threshold, "Specify non-null threshold configuration." );
@@ -1572,7 +1573,8 @@ public class ConfigHelper
                                                                                          missing );
             // Establish the threshold type
             final ThresholdsByType.ThresholdType type;
-            if ( threshold.getType() == ThresholdType.PROBABILITY )
+            // Default to probability
+            if ( Objects.isNull( threshold.getType() ) || threshold.getType() == ThresholdType.PROBABILITY )
             {
                 type = ThresholdsByType.ThresholdType.PROBABILITY;
             }
@@ -1601,7 +1603,7 @@ public class ConfigHelper
 
         return returnMe;
     }
-    
+
     /**
      * Mutates a map of thresholds, adding the thresholds for one metric configuration group.
      * 
@@ -1612,9 +1614,9 @@ public class ConfigHelper
      */
 
     private static void
-            addThresholdsForOneMetricConfigGroup( Map<FeaturePlus, Map<MetricConfigName, ThresholdsByType>> mutate,
-                                                  MetricsConfig group,
-                                                  ThresholdsConfig thresholds )
+            addExternalThresholdsForOneMetricConfigGroup( Map<FeaturePlus, Map<MetricConfigName, ThresholdsByType>> mutate,
+                                                          MetricsConfig group,
+                                                          ThresholdsConfig thresholds )
                     throws ProjectConfigException
     {
 
@@ -1626,20 +1628,20 @@ public class ConfigHelper
 
         // Obtain the thresholds
         Map<FeaturePlus, ThresholdsByType> thresholdsByFeature =
-                ConfigHelper.readOneThresholdFromProjectConfig( thresholds );
-        
+                ConfigHelper.readOneExternalThresholdFromProjectConfig( thresholds );
+
         // Iterate the thresholds
         for ( Entry<FeaturePlus, ThresholdsByType> nextEntry : thresholdsByFeature.entrySet() )
         {
             // Iterate the metrics
-            for( MetricConfig nextMetric : group.getMetric() )
-            {              
+            for ( MetricConfig nextMetric : group.getMetric() )
+            {
                 // Feature exists in the uber map: mutate it
                 if ( mutate.containsKey( nextEntry.getKey() ) )
                 {
-                    Map<MetricConfigName,ThresholdsByType> nextMap = mutate.get( nextEntry.getKey() );
+                    Map<MetricConfigName, ThresholdsByType> nextMap = mutate.get( nextEntry.getKey() );
                     // Metric exists, replace thresholds for that metric with union thresholds
-                    if( nextMap.containsKey( nextMetric.getName() ) )
+                    if ( nextMap.containsKey( nextMetric.getName() ) )
                     {
                         ThresholdsByType union = nextMap.get( nextMetric.getName() ).union( nextEntry.getValue() );
                         nextMap.put( nextMetric.getName(), union );
@@ -1648,15 +1650,15 @@ public class ConfigHelper
                     else
                     {
                         nextMap.put( nextMetric.getName(), nextEntry.getValue() );
-                    }                   
+                    }
                 }
                 // New feature: add a new map
                 else
                 {
-                    Map<MetricConfigName,ThresholdsByType> nextMap = new EnumMap<>( MetricConfigName.class );
+                    Map<MetricConfigName, ThresholdsByType> nextMap = new EnumMap<>( MetricConfigName.class );
                     nextMap.put( nextMetric.getName(), nextEntry.getValue() );
                     mutate.put( nextEntry.getKey(), nextMap );
-                }   
+                }
             }
         }
     }
