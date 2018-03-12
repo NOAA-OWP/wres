@@ -158,7 +158,7 @@ public final class DefaultThresholdsTest
         Thresholds secondTestString = Thresholds.of( FACTORY.ofQuantileThreshold( 23.0, 0.2, Operator.GREATER ),
                                                FACTORY.ofProbabilityThreshold( 0.1, Operator.GREATER ) );
 
-        assertTrue( "> 23.0 [Pr = 0.2] & Pr > 0.1".equals( secondTestString.toString() ) );
+        assertTrue( "> 23.0 [Pr = 0.2] AND Pr > 0.1".equals( secondTestString.toString() ) );
     }
     
     /**
@@ -170,12 +170,12 @@ public final class DefaultThresholdsTest
     {       
         Thresholds testString = Thresholds.of( FACTORY.ofQuantileThreshold( 27.0, 0.5, Operator.GREATER_EQUAL ) );
 
-        assertTrue( "GTE_27.0_Pr=0.5".equals( testString.toStringSafe() ) );
+        assertTrue( "GTE_27.0_Pr_EQ_0.5".equals( testString.toStringSafe() ) );
         
         Thresholds secondTestString = Thresholds.of( FACTORY.ofQuantileThreshold( 23.0, 0.2, Operator.GREATER ),
                                                FACTORY.ofProbabilityThreshold( 0.1, Operator.GREATER ) );
 
-        assertTrue( "GT_23.0_Pr=0.2_&_Pr_GT_0.1".equals( secondTestString.toStringSafe() ) );
+        assertTrue( "GT_23.0_Pr_EQ_0.2_AND_Pr_GT_0.1".equals( secondTestString.toStringSafe() ) );
     }
 
     /**

@@ -119,7 +119,7 @@ public interface Thresholds extends Comparable<Thresholds>
             {
                 if ( hasTwo() )
                 {
-                    return first.toString() + " & " + second.toString();
+                    return first.toString() + " AND " + second.toString();
                 }
                 return first.toString();
             }
@@ -129,7 +129,7 @@ public interface Thresholds extends Comparable<Thresholds>
             {
                 if ( hasTwo() )
                 {
-                    return first.toStringSafe() + "_&_" + second.toStringSafe();
+                    return first.toStringSafe() + "_AND_" + second.toStringSafe();
                 }
                 return first.toStringSafe();
             }
