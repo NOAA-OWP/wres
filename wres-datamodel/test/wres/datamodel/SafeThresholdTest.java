@@ -486,7 +486,7 @@ public final class SafeThresholdTest
                                                   .build();
 
         assertTrue( "Unexpected inequality in string representations.",
-                    twoProb.toString().equals( "Pr >= 0.0 && < 0.5" ) );
+                    twoProb.toString().equals( "Pr >= 0.0 AND < 0.5" ) );
 
         // Pair of value thresholds
         Threshold twoVal = new ThresholdBuilder()
@@ -496,7 +496,7 @@ public final class SafeThresholdTest
                                                  .build();
 
         assertTrue( "Unexpected inequality in string representations.",
-                    twoVal.toString().equals( ">= 0.0 && < 0.5" ) );
+                    twoVal.toString().equals( ">= 0.0 AND < 0.5" ) );
 
         // All components
         Threshold threshold = new ThresholdBuilder().setThreshold( 0.0 )
@@ -508,7 +508,7 @@ public final class SafeThresholdTest
                                                     .build();
 
         assertTrue( "Unexpected inequality in string representations.",
-                    threshold.toString().equals( ">= 0.0 [Pr = 0.0] && < 0.5 [Pr = 0.7] (a threshold)" ) );
+                    threshold.toString().equals( ">= 0.0 [Pr = 0.0] AND < 0.5 [Pr = 0.7] (a threshold)" ) );
 
         // Test additional conditions
         Threshold less = new ThresholdBuilder()
@@ -558,7 +558,7 @@ public final class SafeThresholdTest
                                                     .build();
 
         assertTrue( "Unexpected inequality in string representations.",
-                    threshold.toStringSafe().equals( "GTE_0.0_Pr=0.0_&&_LT_0.5_Pr=0.7_a_threshold" ) );
+                    threshold.toStringSafe().equals( "GTE_0.0_Pr_EQ_0.0_AND_LT_0.5_Pr_EQ_0.7_a_threshold" ) );
 
     }
 

@@ -186,7 +186,7 @@ class SafeThreshold implements Threshold
                 return ">= " + threshold
                        + common
                        + probability
-                       + "] && < "
+                       + "] AND < "
                        + thresholdUpper
                        + common
                        + probabilityUpper
@@ -200,7 +200,7 @@ class SafeThreshold implements Threshold
         {
             if ( hasBetweenCondition() )
             {
-                return ">= " + threshold + " && < " + thresholdUpper + append;
+                return ">= " + threshold + " AND < " + thresholdUpper + append;
             }
             return c + threshold + append;
         }
@@ -209,7 +209,7 @@ class SafeThreshold implements Threshold
         {
             if ( hasBetweenCondition() )
             {
-                return "Pr >= " + probability + " && < " + probabilityUpper + append;
+                return "Pr >= " + probability + " AND < " + probabilityUpper + append;
             }
             return "Pr "+ c + probability + append;
         }
@@ -224,7 +224,7 @@ class SafeThreshold implements Threshold
         safe = safe.replaceAll( "<=", "LTE" );
         safe = safe.replaceAll( ">", "GT" );
         safe = safe.replaceAll( "<", "LT" );
-        safe = safe.replaceAll( "Pr = ", "Pr=" );
+        safe = safe.replaceAll( "=", "EQ" );
         safe = safe.replaceAll( "Pr ", "Pr_" );
         safe = safe.replaceAll( " ", "_" );
         safe = safe.replace( "[", "" );
