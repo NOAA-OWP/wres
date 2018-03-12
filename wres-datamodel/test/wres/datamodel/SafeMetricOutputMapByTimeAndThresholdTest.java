@@ -5,6 +5,7 @@ import static org.junit.Assert.assertTrue;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -12,6 +13,7 @@ import java.util.TreeSet;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
+import wres.datamodel.SafeMetricOutputMapByTimeAndThreshold.Builder;
 import wres.datamodel.Threshold.Operator;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
@@ -36,7 +38,7 @@ public final class SafeMetricOutputMapByTimeAndThresholdTest
      */
 
     @Test
-    public void test1ConstructAndFilter()
+    public void testFilterByTimeAndFilterByThreshold()
     {
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
         final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> results =
@@ -125,7 +127,7 @@ public final class SafeMetricOutputMapByTimeAndThresholdTest
      */
 
     @Test
-    public void test2ConstructAndFilter()
+    public void testSetOfTimeWindowKeyByLeadTime()
     {
         DataFactory outputFactory = DefaultDataFactory.getInstance();
         MetadataFactory metaFac = outputFactory.getMetadataFactory();
@@ -174,5 +176,226 @@ public final class SafeMetricOutputMapByTimeAndThresholdTest
         assertTrue( "Unexpected windows in filtered dataset.",
                     test.setOfTimeWindowKeyByLeadTime().equals( benchmarkTimes ) );
     }
+
+    /**
+     * Constructs a {@link SafeMetricOutputMapByTimeAndThreshold} and tests the 
+     * {@link SafeMetricOutputMapByTimeAndThreshold#setOfThresholdOne()} for equality against a benchmark.
+     */
+
+    @Test
+    public void testSetOfThresholdOne()
+    {
+        final DataFactory outF = DefaultDataFactory.getInstance();
+        final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> results =
+                DataModelTestDataFactory.getScalarMetricOutputMapByLeadThresholdOne();
+
+        Set<Threshold> benchmark = new HashSet<>();
+        benchmark.add( outF.ofQuantileThreshold( 3588.66667, 0.6, Operator.GREATER ) );
+        benchmark.add( outF.ofQuantileThreshold( 1996.4, 0.4, Operator.GREATER ) );
+        benchmark.add( outF.ofQuantileThreshold( 2707.5, 0.5, Operator.GREATER ) );
+        benchmark.add( outF.ofQuantileThreshold( 12641.14286, 0.94, Operator.GREATER ) );
+        benchmark.add( outF.ofQuantileThreshold( 11819.66667, 0.93, Operator.GREATER ) );
+        benchmark.add( outF.ofQuantileThreshold( 13685.0, 0.95, Operator.GREATER ) );
+        benchmark.add( outF.ofQuantileThreshold( 4749.0, 0.7, Operator.GREATER ) );
+        benchmark.add( outF.ofQuantileThreshold( 10944.0, 0.92, Operator.GREATER ) );
+        benchmark.add( outF.ofQuantileThreshold( 858.04, 0.1, Operator.GREATER ) );
+        benchmark.add( outF.ofQuantileThreshold( 9647.0, 0.9, Operator.GREATER ) );
+        benchmark.add( outF.ofQuantileThreshold( 560.26, 0.01, Operator.GREATER ) );
+        benchmark.add( outF.ofQuantileThreshold( 26648.0, 0.99, Operator.GREATER ) );
+        benchmark.add( outF.ofQuantileThreshold( 1513.25, 0.3, Operator.GREATER ) );
+        benchmark.add( outF.ofQuantileThreshold( 713.6, 0.05, Operator.GREATER ) );
+        benchmark.add( outF.ofQuantileThreshold( 6315.33333, 0.8, Operator.GREATER ) );
+        benchmark.add( outF.ofQuantileThreshold( 18122.0, 0.97, Operator.GREATER ) );
+        benchmark.add( outF.ofQuantileThreshold( 1147.05263, 0.2, Operator.GREATER ) );
+        benchmark.add( outF.ofQuantileThreshold( 15278.4, 0.96, Operator.GREATER ) );
+        benchmark.add( outF.ofQuantileThreshold( 22448.0, 0.98, Operator.GREATER ) );
+        benchmark.add( outF.ofQuantileThreshold( Double.NEGATIVE_INFINITY,
+                                                 Double.NEGATIVE_INFINITY,
+                                                 Operator.GREATER ) );
+        benchmark.add( outF.ofQuantileThreshold( 531.88, 0.005, Operator.GREATER ) );
+        benchmark.add( outF.ofQuantileThreshold( 10261.71429, 0.91, Operator.GREATER ) );
+
+        assertTrue( "Unexpected set of thresholds.", results.setOfThresholdOne().equals( benchmark ) );
+
+    }
+
+    /**
+     * Constructs a {@link SafeMetricOutputMapByTimeAndThreshold} and slices the map by 
+     * {@link SafeMetricOutputMapByTimeAndThreshold#filterByThresholdOne(Threshold)}, testing for equality against a
+     * benchmark.
+     */
+
+    @Test
+    public void testFilterByThresholdOne()
+    {
+        final DataFactory outputFactory = DefaultDataFactory.getInstance();
+        final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> results =
+                DataModelTestDataFactory.getScalarMetricOutputMapByLeadThresholdOne();
+
+        //Acquire a submap by threshold = 531.88 and lead time = 42
+        final TimeWindow timeWindow = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                     Instant.parse( "2010-12-31T11:59:59Z" ),
+                                                     ReferenceTime.VALID_TIME,
+                                                     Duration.ofHours( 42 ) );
+        final Threshold q = outputFactory.ofQuantileThreshold( 531.88, 0.005, Operator.GREATER );
+        final Pair<TimeWindow, Thresholds> testKeyOne = Pair.of( timeWindow, Thresholds.of( q ) );
+        final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> subMap =
+                results.filterByTime( timeWindow ).filterByThresholdOne( q );
+
+        //Check the results
+        final double actualOne = subMap.get( testKeyOne ).getData();
+        final double expectedOne = 0.026543876961751534;
+        assertTrue( "Unexpected output from data slice [" + actualOne
+                    + ","
+                    + expectedOne
+                    + "].",
+                    Double.compare( actualOne, expectedOne ) == 0 );
+
+        //Slice by threshold = 531.88
+        final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> subMap2 = results.filterByThresholdOne( q );
+
+        //Acquire a submap by threshold = all data and lead time = 714
+        final TimeWindow timeWindowTwo = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                        Instant.parse( "2010-12-31T11:59:59Z" ),
+                                                        ReferenceTime.VALID_TIME,
+                                                        Duration.ofHours( 714 ) );
+
+
+        final Thresholds q2 = Thresholds.of( outputFactory.ofQuantileThreshold( Double.NEGATIVE_INFINITY,
+                                                                                Double.NEGATIVE_INFINITY,
+                                                                                Operator.GREATER ) );
+        final Pair<TimeWindow, Thresholds> testKeyTwo = Pair.of( timeWindowTwo, q2 );
+
+        //Slice by threshold = all data
+        final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> subMap3 = results.filterByTime( timeWindowTwo )
+                                                                                    .filterByThreshold( q2 );
+
+        final double actualTwo = subMap3.get( testKeyTwo ).getData();
+        final double expectedTwo = 0.005999378857020621;
+
+        assertTrue( "Unexpected output from data slice [" + actualTwo
+                    + ","
+                    + expectedTwo
+                    + "].",
+                    Double.compare( actualTwo, expectedTwo ) == 0 );
+        assertTrue( "Unexpected output size from data slice [" + subMap2.size()
+                    + ","
+                    + 29
+                    + "].",
+                    subMap2.size() == 29 );
+        assertTrue( "Expected quantile thresholds in store.", subMap.hasQuantileThresholds() );
+
+    }
+
+    /**
+     * Constructs a {@link SafeMetricOutputMapByTimeAndThreshold} and tests the 
+     * {@link SafeMetricOutputMapByTimeAndThreshold#setOfThresholdTwo()} for equality against a benchmark.
+     */
+
+    @Test
+    public void testSetOfThresholdTwo()
+    {
+        final DataFactory outF = DefaultDataFactory.getInstance();
+        final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> results =
+                DataModelTestDataFactory.getScalarMetricOutputMapByLeadThresholdTwo();
+
+        Set<Threshold> benchmark = new HashSet<>();
+        benchmark.add( outF.ofThreshold( 5.0, Operator.GREATER ) );
+        benchmark.add( outF.ofThreshold( 6.0, Operator.GREATER ) );
+
+        assertTrue( "Unexpected set of thresholds.", results.setOfThresholdTwo().equals( benchmark ) );
+
+    }
+    
+    /**
+     * Constructs a {@link SafeMetricOutputMapByTimeAndThreshold} and slices the map by 
+     * {@link SafeMetricOutputMapByTimeAndThreshold#filterByThresholdTwo(Threshold)}, testing for equality against a
+     * benchmark.
+     */
+
+    @Test
+    public void testFilterByThresholdTwo()
+    {
+        DataFactory outF = DefaultDataFactory.getInstance();
+        MetadataFactory metaF = DefaultMetadataFactory.getInstance();
+        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> results =
+                DataModelTestDataFactory.getScalarMetricOutputMapByLeadThresholdTwo();
+
+        // Filter first
+        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> filteredOne =
+                results.filterByThresholdTwo( outF.ofThreshold( 5.0, Operator.GREATER ) );
+        
+        Builder<DoubleScoreOutput> benchmarkOne = new SafeMetricOutputMapByTimeAndThreshold.Builder<>();
+
+        //Metadata
+        MetricOutputMetadata meta = metaF.getOutputMetadata( 1000,
+                                                             metaF.getDimension(),
+                                                             metaF.getDimension( "CMS" ),
+                                                             MetricConstants.MEAN_ABSOLUTE_ERROR,
+                                                             MetricConstants.MAIN,
+                                                             metaF.getDatasetIdentifier( "DRRC2",
+                                                                                         "SQIN",
+                                                                                         "HEFS",
+                                                                                         "ESP" ) );
+
+        int[] leadTimes = new int[] { 1, 2, 3, 4, 5 };
+
+        //Iterate through the lead times
+        for ( int leadTime : leadTimes )
+        {
+            final TimeWindow timeWindow = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                         Instant.parse( "2010-12-31T11:59:59Z" ),
+                                                         ReferenceTime.VALID_TIME,
+                                                         Duration.ofHours( leadTime ) );
+
+            // Add first result
+            Thresholds first = Thresholds.of( outF.ofQuantileThreshold( 1.0, 0.1, Operator.GREATER ),
+                                              outF.ofThreshold( 5.0, Operator.GREATER ) );
+
+            DoubleScoreOutput firstValue = outF.ofDoubleScoreOutput( 66.0, meta );
+
+            benchmarkOne.put( Pair.of( timeWindow, first ), firstValue );
+
+
+            // Add second result
+            Thresholds second = Thresholds.of( outF.ofQuantileThreshold( 2.0, 0.2, Operator.GREATER ),
+                                               outF.ofThreshold( 5.0, Operator.GREATER ) );
+
+            DoubleScoreOutput secondValue = outF.ofDoubleScoreOutput( 67.0, meta );
+
+            benchmarkOne.put( Pair.of( timeWindow, second ), secondValue );
+
+        }
+   
+        assertTrue( "Unexpected filtered result.", filteredOne.equals( benchmarkOne.build() ) );
+        
+        // Filter second        
+        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> filteredTwo =
+                results.filterByThresholdTwo( outF.ofThreshold( 6.0, Operator.GREATER ) );
+        
+        Builder<DoubleScoreOutput> benchmarkTwo = new SafeMetricOutputMapByTimeAndThreshold.Builder<>();
+
+        //Iterate through the lead times
+        for ( int leadTime : leadTimes )
+        {
+            final TimeWindow timeWindow = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                         Instant.parse( "2010-12-31T11:59:59Z" ),
+                                                         ReferenceTime.VALID_TIME,
+                                                         Duration.ofHours( leadTime ) );
+
+            // Add first result
+            Thresholds first = Thresholds.of( outF.ofQuantileThreshold( 3.0, 0.3, Operator.GREATER ),
+                                              outF.ofThreshold( 6.0, Operator.GREATER ) );
+
+
+            DoubleScoreOutput thirdValue = outF.ofDoubleScoreOutput( 68.0, meta );
+
+            benchmarkTwo.put( Pair.of( timeWindow, first ), thirdValue );
+
+        }
+   
+        assertTrue( "Unexpected filtered result.", filteredTwo.equals( benchmarkTwo.build() ) );
+
+    }    
 
 }
