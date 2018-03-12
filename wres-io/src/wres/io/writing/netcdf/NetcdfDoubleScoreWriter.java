@@ -273,6 +273,7 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                                                     destinationConfig.getPath()
                                                     + "/" + projectName
                                                     + ".nc" );
+                writer.addGlobalAttribute( "Conventions", "CF-1.6" );
                 NetcdfDoubleScoreWriter.setDimensionsAndVariables( config,
                                                                    writer,
                                                                    featureCount,
@@ -356,15 +357,28 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                 new Attribute( "long_name", "Station id" );
         featureVariable.addAttribute( featureNameAttribute );
 
-        List<Dimension> thresholdDimensions = new ArrayList<>( 2 );
+        List<Dimension> thresholdDimensions = new ArrayList<>( 1 );
         thresholdDimensions.add( thresholdDimension );
-        thresholdDimensions.add( stringDimension );
         List<Dimension> shareableThresholdDimensions =
                 Collections.unmodifiableList( thresholdDimensions );
         Variable thresholdVariable = writer.addVariable( null,
                                                          "threshold",
-                                                         DataType.CHAR,
+                                                         DataType.DOUBLE,
                                                          shareableThresholdDimensions );
+
+        Attribute thresholdCoordinatesAttribute =
+                new Attribute( "coordinates", "threshold_name" );
+        thresholdVariable.addAttribute( thresholdCoordinatesAttribute );
+
+        List<Dimension> thresholdNameDimensions = new ArrayList<>( 2 );
+        thresholdNameDimensions.add( thresholdDimension );
+        thresholdNameDimensions.add( stringDimension );
+        List<Dimension> shareableThresholdNameDimensions =
+                Collections.unmodifiableList( thresholdNameDimensions );
+        Variable thresholdNameVariable = writer.addVariable( null,
+                                                         "threshold_name",
+                                                         DataType.CHAR,
+                                                         shareableThresholdNameDimensions );
 
         // TODO: no LONG supported by NetCDF 3, use minutes since epoch? UINT seconds since first basis time in output?
         List<Dimension> timeDimensions = new ArrayList<>( 1 );
@@ -375,6 +389,9 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                                                     "time",
                                                     DataType.INT,
                                                     shareableTimeDimensions );
+
+        // https://www.unidata.ucar.edu/software/udunits/CHANGE_LOG implies
+        // that since udunits 2.0.1 released in 2008, rfc3339 dates work.
         Attribute timeUnitsAttribute =
                 new Attribute( "units", "seconds since 1970-01-01T00:00:00Z" );
         timeVariable.addAttribute( timeUnitsAttribute );
@@ -525,30 +542,55 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
             writer.flush();
         }
 
+
         // Set up thresholds (nonsense for now)
         Variable thresholds =
                 NetcdfDoubleScoreWriter.getVariableOrDie( writer, "threshold" );
-        char[][] thresholdsValues = {
-                Arrays.copyOf( "Some kind of threshold".toCharArray(),
-                               STRING_LENGTH ),
-                Arrays.copyOf( "Another kind of threshold".toCharArray(),
-                               STRING_LENGTH ) };
-        // Doesn't quite work, curious: (Also kind of scary that ArrayInt.D2 worked...)
-        Array ncThresholdsValues =
-                ArrayChar.D2.makeFromJavaArray( thresholdsValues );
+
+        // Works only when the inner char[]s are exactly STRING_LENGTH long?
+        double[] thresholdsValues = { 0.41, 0.93 };
+        Array ncthresholdsValues =
+                ArrayDouble.D1.makeFromJavaArray( thresholdsValues );
 
         try
         {
-            writer.write( thresholds, ncThresholdsValues );
+            writer.write( thresholds, ncthresholdsValues );
         }
         catch ( InvalidRangeException ire )
         {
             throw new IOException( "Failed to write to variable "
                                    + thresholds + " in NetCDF file "
                                    + writer + " using raw data "
-                                   + Arrays.deepToString( thresholdsValues )
+                                   + Arrays.toString( thresholdsValues )
                                    + " and nc data "
-                                   + ncThresholdsValues, ire );
+                                   + ncthresholdsValues, ire );
+        }
+
+        // Set up thresholds (nonsense for now)
+        Variable thresholdNames =
+                NetcdfDoubleScoreWriter.getVariableOrDie( writer, "threshold_name" );
+
+        // Works only when the inner char[]s are exactly STRING_LENGTH long?
+        char[][] thresholdNamesValues = {
+                Arrays.copyOf( "Some kind of threshold".toCharArray(),
+                               STRING_LENGTH ),
+                Arrays.copyOf( "Another kind of threshold".toCharArray(),
+                               STRING_LENGTH ) };
+        Array ncThresholdNamesValues =
+                ArrayChar.D2.makeFromJavaArray( thresholdNamesValues );
+
+        try
+        {
+            writer.write( thresholdNames, ncThresholdNamesValues );
+        }
+        catch ( InvalidRangeException ire )
+        {
+            throw new IOException( "Failed to write to variable "
+                                   + thresholdNames + " in NetCDF file "
+                                   + writer + " using raw data "
+                                   + Arrays.deepToString( thresholdNamesValues )
+                                   + " and nc data "
+                                   + ncThresholdNamesValues, ire );
         }
 
         if ( LOGGER.isDebugEnabled() )
@@ -578,7 +620,7 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
         Variable leadSeconds =
                 NetcdfDoubleScoreWriter.getVariableOrDie( writer,
                                                           "lead_seconds" );
-        int[] leadSecondsValues = { 3600 };
+        int[] leadSecondsValues = { 3600, 7200 };
         Array ncleadSecondsValues =
                 ArrayInt.D1.makeFromJavaArray( leadSecondsValues );
 
@@ -604,7 +646,7 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
 
         WresNetcdfVariables coordinateVariables =
                 new WresNetcdfVariables( features,
-                                         thresholds,
+                                         thresholdNames,
                                          times,
                                          leadSeconds );
 
@@ -677,7 +719,7 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                   thresholdIndex++ )
             {
 
-                char[] currentThreshold = new char[128];
+                char[] currentThreshold = new char[STRING_LENGTH];
 
                 // Need to read all the chars from threshold, 2d...
                 for ( int charIndex = 0; charIndex < STRING_LENGTH; charIndex++ )
@@ -739,6 +781,49 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                                               startTimeIndex, endTimeIndex,
                                               startLeadIndex, endLeadIndex };
                                     double[][][][][][] valueToWrite = {{{{{{ 505.0 }}}}}};
+                                    Array ncValueToWrite = Array.makeFromJavaArray( valueToWrite );
+
+                                    try
+                                    {
+                                        writer.write( ncVariable,
+                                                      locationToWrite,
+                                                      ncValueToWrite );
+                                    }
+                                    catch ( InvalidRangeException ire )
+                                    {
+                                        throw new IOException(
+                                                "Failed to write to variable "
+                                                + ncVariable + " in NetCDF file "
+                                                + writer + " using raw data "
+                                                + Arrays.deepToString( valueToWrite )
+                                                + " and nc data "
+                                                + ncValueToWrite , ire );
+                                    }
+                                }
+                            }
+
+                            for ( int endLeadIndex = 0;
+                                  currentStartLeadSeconds == 7200
+                                  && endLeadIndex < shape[END_LEAD_SECONDS_INDEX];
+                                  endLeadIndex++ )
+                            {
+                                int currentEndLeadSeconds =
+                                        allLeadSeconds.getInt( endLeadIndex );
+
+                                if ( currentEndLeadSeconds == 7200 )
+                                {
+                                    LOGGER.debug( "Found another spot to write! {}, {}, {}, {}, {}, {}",
+                                                  featureIndex,
+                                                  thresholdIndex,
+                                                  startTimeIndex,
+                                                  endTimeIndex,
+                                                  startLeadIndex,
+                                                  endLeadIndex );
+                                    int[] locationToWrite =
+                                            { featureIndex, thresholdIndex,
+                                                    startTimeIndex, endTimeIndex,
+                                                    startLeadIndex, endLeadIndex };
+                                    double[][][][][][] valueToWrite = {{{{{{ 705.0 }}}}}};
                                     Array ncValueToWrite = Array.makeFromJavaArray( valueToWrite );
 
                                     try

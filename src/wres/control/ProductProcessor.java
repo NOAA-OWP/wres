@@ -391,7 +391,7 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
                                       NetcdfDoubleScoreWriter.of( this.getProjectConfig(),
                                                                   1,
                                                                   2,
-                                                                  1,
+                                                                  2,
                                                                   2,
                                                                   metricNames ) );
         }
