@@ -41,7 +41,8 @@ import wres.io.writing.WriterHelper;
 public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>, AutoCloseable
 {
     /** The Logger */
-    private static final Logger LOGGER = LoggerFactory.getLogger( NetcdfDoubleScoreWriter.class );
+    private static final Logger LOGGER =
+            LoggerFactory.getLogger( NetcdfDoubleScoreWriter.class );
 
     /** The file name prefix to use if project name is not specified */
     private static final String DEFAULT_FILE_NAME = "WRES_SCORE_METRICS";
@@ -90,7 +91,7 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
 
     /**
      * Returns a writer of {@link DoubleScoreOutput}.
-     * 
+     *
      * @param projectConfig the project configuration
      * @return a writer
      * @param featureCount the count of features to write (netCDF lib needs it)
@@ -121,7 +122,7 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
 
     /**
      * Consumes a map of {@link DoubleScoreOutput} into a NetCDF file.
-     * 
+     *
      * @param output the score output for one metric at several time windows and thresholds
      */
 
@@ -130,13 +131,14 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
     {
 
         // Iterate through the metrics
-        for ( final Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>> e : output.entrySet() )
+        for ( final Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>> e : output
+                .entrySet() )
         {
             // This is the metric to write
             MetricConstants myMetricToWrite = e.getKey().getKey();
 
             LOGGER.debug( "Metric to write {}", myMetricToWrite );
-            
+
             // Right now, the following is the only information you have about the geospatial index
             // to which the output corresponds. Clearly, more information will be required, 
             // such as the geospatial coordinates, (lat,long), or grid cell index, (row,column).
@@ -148,7 +150,10 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
             // FeaturePlus is currently defined, i.e. verbosely. Whatever we use, it 
             // must override equals and probably implement Comparable too.
 
-            String myGeospatialIndexToWrite = e.getValue().getMetadata().getIdentifier().getGeospatialID();
+            String myGeospatialIndexToWrite = e.getValue()
+                                               .getMetadata()
+                                               .getIdentifier()
+                                               .getGeospatialID();
 
             // There are M metrics in the input. For each metric, the output is stored by TimeWindow (N) 
             // and Threshold (O). In principle, a DoubleScoreOutput  may contain several score components (P), 
@@ -162,7 +167,7 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                 try
                 {
                     String variableName = myMetricToWrite.toString()
-                                                         .replace( ' ', '_');
+                                                         .replace( ' ', '_' );
                     LOGGER.debug( "Writing to netCDF..." );
                     Variable ncVariable = writer.findVariable( variableName );
 
@@ -258,14 +263,16 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
             projectName = NetcdfDoubleScoreWriter.DEFAULT_FILE_NAME;
         }
 
-        for ( DestinationConfig destinationConfig : config.getOutputs().getDestination() )
+        for ( DestinationConfig destinationConfig : config.getOutputs()
+                                                          .getDestination() )
         {
             if ( destinationConfig.getType().equals( DestinationType.NETCDF ) )
             {
                 NetcdfFileWriter writer =
                         NetcdfFileWriter.createNew( NetcdfFileWriter.Version.netcdf3,
                                                     destinationConfig.getPath()
-                                                    + "/" + projectName + ".nc" );
+                                                    + "/" + projectName
+                                                    + ".nc" );
                 NetcdfDoubleScoreWriter.setDimensionsAndVariables( config,
                                                                    writer,
                                                                    featureCount,
@@ -315,7 +322,8 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
 
         if ( !writer.isDefineMode() )
         {
-            throw new IllegalStateException( "The writer must be in define mode." );
+            throw new IllegalStateException(
+                    "The writer must be in define mode." );
         }
 
         Dimension featureDimension = writer.addDimension( null,
@@ -344,7 +352,8 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                                                        "station_id",
                                                        DataType.INT,
                                                        shareableFeatureDimensions );
-        Attribute featureNameAttribute = new Attribute( "long_name", "Station id" );
+        Attribute featureNameAttribute =
+                new Attribute( "long_name", "Station id" );
         featureVariable.addAttribute( featureNameAttribute );
 
         List<Dimension> thresholdDimensions = new ArrayList<>( 2 );
@@ -366,7 +375,8 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                                                     "time",
                                                     DataType.INT,
                                                     shareableTimeDimensions );
-        Attribute timeUnitsAttribute = new Attribute( "units", "seconds since 1970-01-01T00:00:00Z" );
+        Attribute timeUnitsAttribute =
+                new Attribute( "units", "seconds since 1970-01-01T00:00:00Z" );
         timeVariable.addAttribute( timeUnitsAttribute );
 
         List<Dimension> leadSecondsDimensions = new ArrayList<>( 1 );
@@ -423,18 +433,21 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
 
         if ( Double.compare( noDataValue, 0.0 ) == 0 )
         {
-            throw new IllegalArgumentException( "Specify a noDataValue other than 0.0" );
+            throw new IllegalArgumentException(
+                    "Specify a noDataValue other than 0.0" );
         }
 
         // Transform the simple double into what nc expects (0-dimensional array?)
         double[] noDataValues = { noDataValue };
         Array ncNoDataValues = ArrayDouble.D0.makeFromJavaArray( noDataValues );
 
-        Attribute firstAttribute = new Attribute( "_FillValue", DataType.DOUBLE );
+        Attribute firstAttribute =
+                new Attribute( "_FillValue", DataType.DOUBLE );
         firstAttribute.setValues( ncNoDataValues );
         variable.addAttribute( firstAttribute );
 
-        Attribute secondAttribute = new Attribute( "missing_value", DataType.DOUBLE );
+        Attribute secondAttribute =
+                new Attribute( "missing_value", DataType.DOUBLE );
         secondAttribute.setValues( ncNoDataValues );
         variable.addAttribute( secondAttribute );
     }
@@ -453,7 +466,8 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
 
         int countOfNetcdfOutputs = 0;
 
-        for ( DestinationConfig destinationConfig : config.getOutputs().getDestination() )
+        for ( DestinationConfig destinationConfig : config.getOutputs()
+                                                          .getDestination() )
         {
             if ( destinationConfig.getType().equals( DestinationType.NETCDF ) )
             {
@@ -484,7 +498,9 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
 
         if ( ncVariable == null )
         {
-            throw new IllegalArgumentException( "Must set up NetCDF file to have variable " + id.toString() );
+            throw new IllegalArgumentException(
+                    "Must set up NetCDF file to have variable "
+                    + id.toString() );
         }
 
         // Set up features (aka 'stations' in fews-speak)
@@ -513,10 +529,13 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
         Variable thresholds =
                 NetcdfDoubleScoreWriter.getVariableOrDie( writer, "threshold" );
         char[][] thresholdsValues = {
-                Arrays.copyOf( "Some kind of threshold".toCharArray(), STRING_LENGTH ),
-                Arrays.copyOf( "Another kind of threshold".toCharArray(), STRING_LENGTH ) };
+                Arrays.copyOf( "Some kind of threshold".toCharArray(),
+                               STRING_LENGTH ),
+                Arrays.copyOf( "Another kind of threshold".toCharArray(),
+                               STRING_LENGTH ) };
         // Doesn't quite work, curious: (Also kind of scary that ArrayInt.D2 worked...)
-        Array ncThresholdsValues = ArrayChar.D2.makeFromJavaArray( thresholdsValues );
+        Array ncThresholdsValues =
+                ArrayChar.D2.makeFromJavaArray( thresholdsValues );
 
         try
         {
@@ -557,9 +576,11 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
 
         // Set up lead seconds (nonsense for now)
         Variable leadSeconds =
-                NetcdfDoubleScoreWriter.getVariableOrDie( writer, "lead_seconds" );
+                NetcdfDoubleScoreWriter.getVariableOrDie( writer,
+                                                          "lead_seconds" );
         int[] leadSecondsValues = { 3600 };
-        Array ncleadSecondsValues = ArrayInt.D1.makeFromJavaArray( leadSecondsValues );
+        Array ncleadSecondsValues =
+                ArrayInt.D1.makeFromJavaArray( leadSecondsValues );
 
         try
         {
@@ -581,7 +602,41 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
             writer.flush();
         }
 
-        // Get the index to write to. How do I interrogate what's there!?
+        WresNetcdfVariables coordinateVariables =
+                new WresNetcdfVariables( features,
+                                         thresholds,
+                                         times,
+                                         leadSeconds );
+
+        NetcdfDoubleScoreWriter.writeSingleValue( writer,
+                                                  coordinateVariables,
+                                                  ncVariable,
+                                                  output );
+    }
+
+
+    /**
+     * Write a value to a netCDF file.
+     * @param writer the writer to use
+     * @param coordinateVariables the coordinate variables already found in writer
+     * @param ncVariable the variable to write to (found in writer)
+     * @param output TODO: make this more specific than the whole bucket.
+     * @throws IOException when writing goes wrong
+     * @throws NullPointerException when any arg is null
+     */
+
+    private static void writeSingleValue( NetcdfFileWriter writer,
+                                          WresNetcdfVariables coordinateVariables,
+                                          Variable ncVariable,
+                                          MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> output )
+            throws IOException
+    {
+        Objects.requireNonNull( writer );
+        Objects.requireNonNull( coordinateVariables );
+        Objects.requireNonNull( ncVariable );
+        Objects.requireNonNull( output );
+
+        // Get the index to write to.
         int[] shape = ncVariable.getShape();
 
         LOGGER.debug( "Shape of {} is {}", ncVariable, shape );
@@ -602,10 +657,14 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
         final int END_LEAD_SECONDS_INDEX = 5;
 
         // I guess we need to read these to know which one to write to
-        Array allStations = features.read();
-        Array allThresholds = thresholds.read();
-        Array allTimes = times.read();
-        Array allLeadSeconds = leadSeconds.read();
+        Array allStations = coordinateVariables.getFeatures()
+                                               .read();
+        Array allThresholds = coordinateVariables.getThresholds()
+                                                 .read();
+        Array allTimes = coordinateVariables.getTimes()
+                                            .read();
+        Array allLeadSeconds = coordinateVariables.getLeadSeconds()
+                                                  .read();
 
         // Behold the most horrifying nested loop!
         for ( int featureIndex = 0; featureIndex < shape[STATION_INDEX]; featureIndex++ )
@@ -753,4 +812,42 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
         return variable;
     }
 
+    private static class WresNetcdfVariables
+    {
+        private final Variable features;
+        private final Variable thresholds;
+        private final Variable times;
+        private final Variable leadSeconds;
+
+        WresNetcdfVariables( Variable features,
+                             Variable thresholds,
+                             Variable times,
+                             Variable leadSeconds )
+        {
+            this.features = features;
+            this.thresholds = thresholds;
+            this.times = times;
+            this.leadSeconds = leadSeconds;
+        }
+
+        Variable getFeatures()
+        {
+            return this.features;
+        }
+
+        Variable getThresholds()
+        {
+            return this.thresholds;
+        }
+
+        Variable getTimes()
+        {
+            return this.times;
+        }
+
+        Variable getLeadSeconds()
+        {
+            return this.leadSeconds;
+        }
+    }
 }
