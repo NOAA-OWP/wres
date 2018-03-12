@@ -2,13 +2,13 @@ package wres.datamodel.outputs;
 
 import java.util.Set;
 
-import wres.datamodel.Threshold;
+import wres.datamodel.Thresholds;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
 
 /**
  * A sorted map of {@link MetricOutput} associated with a single metric. The results are stored by {@link TimeWindow}
- * and {@link Threshold}.
+ * and {@link Thresholds}.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
@@ -16,7 +16,7 @@ import wres.datamodel.metadata.TimeWindow;
  */
 
 public interface MetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>>
-        extends MetricOutputMapWithBiKey<TimeWindow, Threshold, T>
+        extends MetricOutputMapWithBiKey<TimeWindow, Thresholds, T>
 {
 
     /**
@@ -40,7 +40,7 @@ public interface MetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>>
      * @throws MetricOutputException if the map could not be filtered
      */
 
-    default MetricOutputMapByTimeAndThreshold<T> filterByThreshold( final Threshold threshold )
+    default MetricOutputMapByTimeAndThreshold<T> filterByThreshold( final Thresholds threshold )
     {
         return (MetricOutputMapByTimeAndThreshold<T>) filterBySecondKey( threshold );
     }
@@ -57,12 +57,12 @@ public interface MetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>>
     }
 
     /**
-     * Return the {@link Threshold} keys.
+     * Return the {@link Thresholds} keys.
      * 
      * @return a view of the threshold keys
      */
 
-    default Set<Threshold> setOfThresholdKey()
+    default Set<Thresholds> setOfThresholdKey()
     {
         return setOfSecondKey();
     }
@@ -75,7 +75,8 @@ public interface MetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>>
 
     default boolean hasQuantileThresholds()
     {
-        return setOfThresholdKey().stream().anyMatch( Threshold::isQuantile );
+        return setOfThresholdKey().stream().anyMatch( next -> next.first().isQuantile()
+                                                              || ( next.hasTwo() && next.second().isQuantile() ) );
     }
 
     /**

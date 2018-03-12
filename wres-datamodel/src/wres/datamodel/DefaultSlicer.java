@@ -294,13 +294,13 @@ class DefaultSlicer implements Slicer
             filterByMetricComponent( MetricOutputMapByTimeAndThreshold<T> input )
     {
         Objects.requireNonNull( input, NULL_INPUT );
-        Map<MetricConstants, Map<Pair<TimeWindow, Threshold>, T>> sourceMap =
+        Map<MetricConstants, Map<Pair<TimeWindow, Thresholds>, T>> sourceMap =
                 new EnumMap<>( MetricConstants.class );
         input.forEach( ( key, value ) -> {
             Set<MetricConstants> components = value.getComponents();
             for ( MetricConstants next : components )
             {
-                Map<Pair<TimeWindow, Threshold>, T> nextMap = null;
+                Map<Pair<TimeWindow, Thresholds>, T> nextMap = null;
                 if ( sourceMap.containsKey( next ) )
                 {
                     nextMap = sourceMap.get( next );

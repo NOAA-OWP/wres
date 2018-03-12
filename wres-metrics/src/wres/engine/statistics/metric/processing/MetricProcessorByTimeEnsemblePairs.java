@@ -23,6 +23,7 @@ import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.Slicer;
 import wres.datamodel.Threshold;
+import wres.datamodel.Thresholds;
 import wres.datamodel.ThresholdsByType;
 import wres.datamodel.inputs.InsufficientDataException;
 import wres.datamodel.inputs.MetricInputSliceException;
@@ -212,9 +213,9 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         {
             discreteProbabilityScore =
                     metricFactory.ofDiscreteProbabilityScoreCollection( metricExecutor,
-                                                                        getSelectedMetrics( metrics,
-                                                                                            MetricInputGroup.DISCRETE_PROBABILITY,
-                                                                                            MetricOutputGroup.DOUBLE_SCORE ) );
+                                                                        getMetrics( metrics,
+                                                                                    MetricInputGroup.DISCRETE_PROBABILITY,
+                                                                                    MetricOutputGroup.DOUBLE_SCORE ) );
         }
         else
         {
@@ -225,9 +226,9 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         {
             discreteProbabilityMultiVector =
                     metricFactory.ofDiscreteProbabilityMultiVectorCollection( metricExecutor,
-                                                                              getSelectedMetrics( metrics,
-                                                                                                  MetricInputGroup.DISCRETE_PROBABILITY,
-                                                                                                  MetricOutputGroup.MULTIVECTOR ) );
+                                                                              getMetrics( metrics,
+                                                                                          MetricInputGroup.DISCRETE_PROBABILITY,
+                                                                                          MetricOutputGroup.MULTIVECTOR ) );
         }
         else
         {
@@ -237,9 +238,9 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.DOUBLE_SCORE ) )
         {
             ensembleScore = metricFactory.ofEnsembleScoreCollection( metricExecutor,
-                                                                     getSelectedMetrics( metrics,
-                                                                                         MetricInputGroup.ENSEMBLE,
-                                                                                         MetricOutputGroup.DOUBLE_SCORE ) );
+                                                                     getMetrics( metrics,
+                                                                                 MetricInputGroup.ENSEMBLE,
+                                                                                 MetricOutputGroup.DOUBLE_SCORE ) );
         }
         else
         {
@@ -250,9 +251,9 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.MULTIVECTOR ) )
         {
             ensembleMultiVector = metricFactory.ofEnsembleMultiVectorCollection( metricExecutor,
-                                                                                 getSelectedMetrics( metrics,
-                                                                                                     MetricInputGroup.ENSEMBLE,
-                                                                                                     MetricOutputGroup.MULTIVECTOR ) );
+                                                                                 getMetrics( metrics,
+                                                                                             MetricInputGroup.ENSEMBLE,
+                                                                                             MetricOutputGroup.MULTIVECTOR ) );
         }
         else
         {
@@ -262,9 +263,9 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.BOXPLOT ) )
         {
             ensembleBoxPlot = metricFactory.ofEnsembleBoxPlotCollection( metricExecutor,
-                                                                         getSelectedMetrics( metrics,
-                                                                                             MetricInputGroup.ENSEMBLE,
-                                                                                             MetricOutputGroup.BOXPLOT ) );
+                                                                         getMetrics( metrics,
+                                                                                     MetricInputGroup.ENSEMBLE,
+                                                                                     MetricOutputGroup.BOXPLOT ) );
         }
         else
         {
@@ -282,31 +283,65 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         probabilityClassifiers =
                 MetricConfigHelper.getProbabilityClassifiers( config, dataFactory, externalThresholds );
 
+        // Finalize validation now all required parameters are available
+        // This is also called by the constructor of the superclass, but local parameters must be validated too
+        validate( config );
     }
 
     @Override
     void validate( ProjectConfig config ) throws MetricConfigurationException
     {
-        if ( hasMetrics( MetricInputGroup.DICHOTOMOUS ) )
+        Objects.requireNonNull( config, MetricConfigHelper.NULL_CONFIGURATION_ERROR );
+
+        // This method checks local parameters, so ensure they have been set.
+        // If null, this is being called by the superclass constructor, not the local constructor
+        if ( Objects.nonNull( probabilityClassifiers ) )
         {
-            throw new MetricConfigurationException( "Cannot configure dichotomous metrics for ensemble inputs: correct "
-                                                    + "the configuration labelled '" + config.getLabel() + "'." );
-        }
-        if ( hasMetrics( MetricInputGroup.MULTICATEGORY ) )
-        {
-            throw new MetricConfigurationException( "Cannot configure multicategory metrics for ensemble inputs: "
-                                                    + "correct the configuration labelled '"
-                                                    + config.getLabel()
-                                                    + "'." );
-        }
-        //Ensemble input, vector output
-        if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.DOUBLE_SCORE )
-             && metrics.contains( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE )
-             && Objects.isNull( config.getInputs().getBaseline() ) )
-        {
-            throw new MetricConfigurationException( "Specify a non-null baseline from which to generate the '"
-                                                    + MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE.name()
-                                                    + "'." );
+
+            // All groups that contain dichotomous and multicategory metrics must 
+            // have thresholds of type ThresholdType.PROBABILITY_CLASSIFIER
+            // Check that the relevant parameters have been set first
+
+            // Dichotomous
+            if ( this.hasMetrics( MetricInputGroup.DICHOTOMOUS ) )
+            {
+                MetricConstants[] check = this.getMetrics( this.metrics, MetricInputGroup.DICHOTOMOUS, null );
+
+                if ( !Arrays.stream( check ).allMatch( next -> probabilityClassifiers.containsKey( next )
+                                                               && !probabilityClassifiers.get( next ).isEmpty() ) )
+                {
+                    throw new MetricConfigurationException( "In order to configure dichotomous metrics for ensemble "
+                                                            + "inputs, every metric group that contains dichotomous "
+                                                            + "metrics must also contain thresholds for classifying "
+                                                            + "the forecast probabilities into occurrences and "
+                                                            + "non-occurrences." );
+                }
+            }
+            
+            // Multicategory
+            if ( this.hasMetrics( MetricInputGroup.MULTICATEGORY ) )
+            {
+                MetricConstants[] check = this.getMetrics( this.metrics, MetricInputGroup.MULTICATEGORY, null );
+                if ( !Arrays.stream( check ).allMatch( next -> probabilityClassifiers.containsKey( next )
+                                                               && !probabilityClassifiers.get( next ).isEmpty() ) )
+                {
+                    throw new MetricConfigurationException( "In order to configure multicategory metrics for ensemble "
+                                                            + "inputs, every metric group that contains dichotomous "
+                                                            + "metrics must also contain thresholds for classifying "
+                                                            + "the forecast probabilities into occurrences and "
+                                                            + "non-occurrences." );
+                }
+            }
+
+            //Ensemble input, vector output
+            if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.DOUBLE_SCORE )
+                 && this.metrics.contains( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE )
+                 && Objects.isNull( config.getInputs().getBaseline() ) )
+            {
+                throw new MetricConfigurationException( "Specify a non-null baseline from which to generate the '"
+                                                        + MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE.name()
+                                                        + "'." );
+            }
         }
     }
 
@@ -365,7 +400,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         Set<Threshold> union =
                 getUnionOfThresholdsForThisGroup( this.thresholdsByMetric, MetricInputGroup.ENSEMBLE, outGroup );
         double[] sorted = getSortedClimatology( input, union );
-        Map<Threshold, MetricCalculationException> failures = new HashMap<>();
+        Map<Thresholds, MetricCalculationException> failures = new HashMap<>();
         union.forEach( threshold -> {
             Set<MetricConstants> ignoreTheseMetrics =
                     doNotComputeTheseMetricsForThisThreshold( this.thresholdsByMetric,
@@ -385,7 +420,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                     pairs = dataFactory.getSlicer().filterByLeft( input, useMe );
                 }
 
-                processEnsemblePairs( Pair.of( timeWindow, useMe ),
+                processEnsemblePairs( Pair.of( timeWindow, Thresholds.of( useMe ) ),
                                       pairs,
                                       futures,
                                       outGroup,
@@ -395,7 +430,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
             //Insufficient data for one threshold: log, but allow
             catch ( MetricInputSliceException | InsufficientDataException e )
             {
-                failures.put( useMe, new MetricCalculationException( e.getMessage(), e ) );
+                failures.put( Thresholds.of( useMe ), new MetricCalculationException( e.getMessage(), e ) );
             }
         } );
         //Handle any failures
@@ -413,7 +448,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
      * @param ignoreTheseMetrics a set of metrics within the prescribed group that should be ignored
      */
 
-    private void processEnsemblePairs( Pair<TimeWindow, Threshold> key,
+    private void processEnsemblePairs( Pair<TimeWindow, Thresholds> key,
                                        EnsemblePairs input,
                                        MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
                                        MetricOutputGroup outGroup,
@@ -509,7 +544,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                                                                  MetricInputGroup.DISCRETE_PROBABILITY,
                                                                  outGroup );
         double[] sorted = getSortedClimatology( input, union );
-        Map<Threshold, MetricCalculationException> failures = new HashMap<>();
+        Map<Thresholds, MetricCalculationException> failures = new HashMap<>();
         union.forEach( threshold -> {
             Set<MetricConstants> ignoreTheseMetrics =
                     doNotComputeTheseMetricsForThisThreshold( this.thresholdsByMetric,
@@ -528,7 +563,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                                                                                    useMe,
                                                                                    toDiscreteProbabilities );
 
-                processDiscreteProbabilityPairs( Pair.of( timeWindow, useMe ),
+                processDiscreteProbabilityPairs( Pair.of( timeWindow, Thresholds.of( useMe ) ),
                                                  transformed,
                                                  futures,
                                                  outGroup,
@@ -538,7 +573,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
             //Insufficient data for one threshold: log, but allow
             catch ( InsufficientDataException e )
             {
-                failures.put( useMe, new MetricCalculationException( e.getMessage(), e ) );
+                failures.put( Thresholds.of( useMe ), new MetricCalculationException( e.getMessage(), e ) );
             }
 
         } );
@@ -561,7 +596,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
      * @param ignoreTheseMetrics a set of metrics within the prescribed group that should be ignored
      */
 
-    private void processDiscreteProbabilityPairs( Pair<TimeWindow, Threshold> key,
+    private void processDiscreteProbabilityPairs( Pair<TimeWindow, Thresholds> key,
                                                   DiscreteProbabilityPairs input,
                                                   MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
                                                   MetricOutputGroup outGroup,
@@ -642,14 +677,14 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         Set<Threshold> union =
                 getUnionOfThresholdsForThisGroup( this.thresholdsByMetric, MetricInputGroup.DICHOTOMOUS, outGroup );
         double[] sorted = getSortedClimatology( input, union );
-        Map<Threshold, MetricCalculationException> failures = new HashMap<>();
+        Map<Thresholds, MetricCalculationException> failures = new HashMap<>();
         union.forEach( threshold -> {
             Set<MetricConstants> ignoreTheseMetrics =
                     doNotComputeTheseMetricsForThisThreshold( this.thresholdsByMetric,
                                                               MetricInputGroup.DICHOTOMOUS,
                                                               outGroup,
                                                               threshold );
-
+            
             // Add quantiles to threshold
             Threshold outerThreshold = addQuantilesToThreshold( threshold, sorted );
 
@@ -672,7 +707,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                             doNotComputeTheseMetricsForThisThreshold( this.probabilityClassifiers,
                                                                       MetricInputGroup.DICHOTOMOUS,
                                                                       outGroup,
-                                                                      threshold );
+                                                                      innerThreshold );
 
                     // Union of metrics to ignore, either because the threshold is not required or
                     // because the classifier is not required
@@ -680,12 +715,10 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                     unionToIgnore.addAll( innerIgnoreTheseMetrics );
 
                     // Derive compound threshold from outerThreshold and innerThreshold
-                    Threshold compound = null;
-                    // Thresholds compound = Thresholds.of( outerThreshold, innerThreshold );
-                    
-                    Pair<TimeWindow, Threshold> nextKey = Pair.of( timeWindow, compound );
-                    // Pair<TimeWindow, Thresholds> nextKey = Pair.of( timeWindow, compound );
-                    
+                    Thresholds compound = Thresholds.of( outerThreshold, innerThreshold );
+
+                    Pair<TimeWindow, Thresholds> nextKey = Pair.of( timeWindow, compound );
+
                     //Define a mapper to convert the discrete probability pairs to dichotomous pairs
                     Function<PairOfDoubles, PairOfBooleans> mapper =
                             pair -> dataFactory.pairOf( innerThreshold.test( pair.getItemOne() ),
@@ -699,7 +732,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
             //Insufficient data for one threshold: log, but allow
             catch ( InsufficientDataException e )
             {
-                failures.put( outerThreshold, new MetricCalculationException( e.getMessage(), e ) );
+                failures.put( Thresholds.of( outerThreshold ), new MetricCalculationException( e.getMessage(), e ) );
             }
 
         } );

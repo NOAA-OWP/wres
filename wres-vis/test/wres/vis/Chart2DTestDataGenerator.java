@@ -29,6 +29,7 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.Threshold;
 import wres.datamodel.Threshold.Operator;
+import wres.datamodel.Thresholds;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.metadata.MetadataFactory;
@@ -64,9 +65,9 @@ public abstract class Chart2DTestDataGenerator
                                  { 0.95, 13685.0 }, { 0.99, 26648.0 } };
         for ( final double[] next : allow )
         {
-            combine.add( full.filterByThreshold( outputFactory.ofQuantileThreshold( next[1],
-                                                                                    next[0],
-                                                                                    Operator.GREATER ) ) );
+            combine.add( full.filterByThreshold( Thresholds.of( outputFactory.ofQuantileThreshold( next[1],
+                                                                                                   next[0],
+                                                                                                   Operator.GREATER ) ) ) );
         }
         return outputFactory.combine( combine );
     }
@@ -107,7 +108,7 @@ public abstract class Chart2DTestDataGenerator
     {
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
         final MetadataFactory metaFactory = outputFactory.getMetadataFactory();
-        final Map<Pair<TimeWindow, Threshold>, DoubleScoreOutput> rawData = new TreeMap<>();
+        final Map<Pair<TimeWindow, Thresholds>, DoubleScoreOutput> rawData = new TreeMap<>();
 
         //Create the input file
         final File resultFile = new File( "testinput/chart2DTest/getMetricOutputMapByLeadThreshold.xml" );
@@ -148,7 +149,7 @@ public abstract class Chart2DTestDataGenerator
                                                    Instant.MAX,
                                                    ReferenceTime.VALID_TIME,
                                                    Duration.ofHours( ( long ) leadTime ) );
-                final Pair<TimeWindow, Threshold> key = Pair.of( window, q );
+                final Pair<TimeWindow, Thresholds> key = Pair.of( window, Thresholds.of( q ) );
 
                 //Build the scalar result
                 final MetricResult result = t.getResult( f );
@@ -175,7 +176,7 @@ public abstract class Chart2DTestDataGenerator
     {
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
         final MetadataFactory metaFactory = outputFactory.getMetadataFactory();
-        final Map<Pair<TimeWindow, Threshold>, DoubleScoreOutput> rawData = new TreeMap<>();
+        final Map<Pair<TimeWindow, Thresholds>, DoubleScoreOutput> rawData = new TreeMap<>();
 
         //Create the input file
         final File resultFile = new File( "testinput/chart2DTest/getMetricOutputMapByLeadThreshold.xml" );
@@ -215,7 +216,7 @@ public abstract class Chart2DTestDataGenerator
                                                    Instant.MAX,
                                                    ReferenceTime.VALID_TIME,
                                                    Duration.ofHours( ( long ) leadTime ) );
-                final Pair<TimeWindow, Threshold> key = Pair.of( window, q );
+                final Pair<TimeWindow, Thresholds> key = Pair.of( window, Thresholds.of( q ) );
 
                 //Build the scalar result
                 final MetricResult result = t.getResult( f );
@@ -243,7 +244,7 @@ public abstract class Chart2DTestDataGenerator
     {
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
         final MetadataFactory metaFactory = outputFactory.getMetadataFactory();
-        final Map<Pair<TimeWindow, Threshold>, MultiVectorOutput> rawData = new TreeMap<>();
+        final Map<Pair<TimeWindow, Thresholds>, MultiVectorOutput> rawData = new TreeMap<>();
         //Read only selected quantiles
         final List<Threshold> allowed = new ArrayList<>();
         final double[][] allow =
@@ -304,7 +305,7 @@ public abstract class Chart2DTestDataGenerator
                                                        Instant.MAX,
                                                        ReferenceTime.VALID_TIME,
                                                        Duration.ofHours( ( long ) leadTime ) );
-                    final Pair<TimeWindow, Threshold> key = Pair.of( window, q );
+                    final Pair<TimeWindow, Thresholds> key = Pair.of( window, Thresholds.of( q ) );
 
                     //Build the result
                     final MetricResult result = t.getResult( f );
@@ -359,7 +360,7 @@ public abstract class Chart2DTestDataGenerator
     {
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
         final MetadataFactory metaFactory = outputFactory.getMetadataFactory();
-        final Map<Pair<TimeWindow, Threshold>, MultiVectorOutput> rawData = new TreeMap<>();
+        final Map<Pair<TimeWindow, Thresholds>, MultiVectorOutput> rawData = new TreeMap<>();
         //Read only selected quantiles
         final List<Threshold> allowed = new ArrayList<>();
         final double[][] allow =
@@ -410,7 +411,7 @@ public abstract class Chart2DTestDataGenerator
                                                        Instant.MAX,
                                                        ReferenceTime.VALID_TIME,
                                                        Duration.ofHours( ( long ) leadTime ) );
-                    final Pair<TimeWindow, Threshold> key = Pair.of( window, q );
+                    final Pair<TimeWindow, Thresholds> key = Pair.of( window, Thresholds.of( q ) );
 
                     //Build the result
                     final MetricResult result = t.getResult( f );
@@ -457,7 +458,7 @@ public abstract class Chart2DTestDataGenerator
     {
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
         final MetadataFactory metaFactory = outputFactory.getMetadataFactory();
-        final Map<Pair<TimeWindow, Threshold>, MultiVectorOutput> rawData = new TreeMap<>();
+        final Map<Pair<TimeWindow, Thresholds>, MultiVectorOutput> rawData = new TreeMap<>();
 
         //Create the input file
         final File resultFile = new File( "testinput/chart2DTest/getRankHistogramByLeadThreshold.xml" );
@@ -504,7 +505,7 @@ public abstract class Chart2DTestDataGenerator
                                                    Instant.MAX,
                                                    ReferenceTime.VALID_TIME,
                                                    Duration.ofHours( ( long ) leadTime ) );
-                final Pair<TimeWindow, Threshold> key = Pair.of( window, q );
+                final Pair<TimeWindow, Thresholds> key = Pair.of( window, Thresholds.of( q ) );
 
                 //Build the result
                 final MetricResult result = t.getResult( f );
@@ -549,7 +550,7 @@ public abstract class Chart2DTestDataGenerator
     {
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
         final MetadataFactory metaFactory = outputFactory.getMetadataFactory();
-        final Map<Pair<TimeWindow, Threshold>, MultiVectorOutput> rawData = new TreeMap<>();
+        final Map<Pair<TimeWindow, Thresholds>, MultiVectorOutput> rawData = new TreeMap<>();
 
         //Create the input file
         final File resultFile = new File( "testinput/chart2DTest/getQQDiagramByLeadThreshold.xml" );
@@ -588,7 +589,7 @@ public abstract class Chart2DTestDataGenerator
                                                Instant.parse( "2015-12-31T11:59:59Z" ),
                                                ReferenceTime.VALID_TIME,
                                                Duration.ofHours( ( long ) leadTime ) );
-            final Pair<TimeWindow, Threshold> key = Pair.of( window, threshold );
+            final Pair<TimeWindow, Thresholds> key = Pair.of( window, Thresholds.of( threshold ) );
             final DoubleMatrix2DResult t = ( DoubleMatrix2DResult ) data.getResult( leadTime );
             final double[][] qq = t.getResult().toArray();
 
@@ -619,7 +620,7 @@ public abstract class Chart2DTestDataGenerator
     {
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
         final MetadataFactory metaFactory = outputFactory.getMetadataFactory();
-        final Map<Pair<TimeWindow, Threshold>, BoxPlotOutput> rawData = new TreeMap<>();
+        final Map<Pair<TimeWindow, Thresholds>, BoxPlotOutput> rawData = new TreeMap<>();
 
         //Create the input file
         final File resultFile = new File( "testinput/chart2DTest/getBoxPlotErrorsByObservedAndLeadThreshold.xml" );
@@ -650,7 +651,7 @@ public abstract class Chart2DTestDataGenerator
                                                Instant.MAX,
                                                ReferenceTime.VALID_TIME,
                                                Duration.ofHours( ( long ) leadTime ) );
-            final Pair<TimeWindow, Threshold> key = Pair.of( window, threshold );
+            final Pair<TimeWindow, Thresholds> key = Pair.of( window, Thresholds.of(  threshold ) );
             final DoubleMatrix2DResult t = ( DoubleMatrix2DResult ) data.getResult( leadTime );
             final double[][] bp = t.getResult().toArray();
             //Thresholds in the first row
@@ -691,7 +692,7 @@ public abstract class Chart2DTestDataGenerator
     {
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
         final MetadataFactory metaFactory = outputFactory.getMetadataFactory();
-        final Map<Pair<TimeWindow, Threshold>, BoxPlotOutput> rawData = new TreeMap<>();
+        final Map<Pair<TimeWindow, Thresholds>, BoxPlotOutput> rawData = new TreeMap<>();
 
         //Create the input file
         final File resultFile = new File( "testinput/chart2DTest/getBoxPlotErrorsByForecastAndLeadThreshold.xml" );
@@ -722,7 +723,7 @@ public abstract class Chart2DTestDataGenerator
                                                Instant.MAX,
                                                ReferenceTime.VALID_TIME,
                                                Duration.ofHours( ( long ) leadTime ) );
-            final Pair<TimeWindow, Threshold> key = Pair.of( window, threshold );
+            final Pair<TimeWindow, Thresholds> key = Pair.of( window, Thresholds.of( threshold ) );
             final DoubleMatrix2DResult t = ( DoubleMatrix2DResult ) data.getResult( leadTime );
             final double[][] bp = t.getResult().toArray();
             //Thresholds in the first row
@@ -760,7 +761,7 @@ public abstract class Chart2DTestDataGenerator
     {
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
         final MetadataFactory metaFactory = outputFactory.getMetadataFactory();
-        final Map<Pair<TimeWindow, Threshold>, DoubleScoreOutput> rawData = new TreeMap<>();
+        final Map<Pair<TimeWindow, Thresholds>, DoubleScoreOutput> rawData = new TreeMap<>();
 
         // Create the metric output metadata: add fake sample sizes as these are not available in the test input file
         final MetricOutputMetadata meta = metaFactory.getOutputMetadata( 90,
@@ -802,7 +803,7 @@ public abstract class Chart2DTestDataGenerator
             DoubleScoreOutput sixHourOutput =
                     outputFactory.ofDoubleScoreOutput( sixHourOutputs[i],
                                                        metaFactory.getOutputMetadata( meta, sixHourWindow ) );
-            rawData.put( Pair.of( sixHourWindow, threshold ), sixHourOutput );
+            rawData.put( Pair.of( sixHourWindow, Thresholds.of( threshold ) ), sixHourOutput );
             //Add the 12h data
             TimeWindow twelveHourWindow = TimeWindow.of( begin,
                                                          end,
@@ -811,7 +812,7 @@ public abstract class Chart2DTestDataGenerator
             DoubleScoreOutput twelveHourOutput =
                     outputFactory.ofDoubleScoreOutput( twelveHourOutputs[i],
                                                        metaFactory.getOutputMetadata( meta, twelveHourWindow ) );
-            rawData.put( Pair.of( twelveHourWindow, threshold ), twelveHourOutput );
+            rawData.put( Pair.of( twelveHourWindow, Thresholds.of( threshold ) ), twelveHourOutput );
             //Add the 18h data
             TimeWindow eighteenHourWindow = TimeWindow.of( begin,
                                                            end,
@@ -820,7 +821,7 @@ public abstract class Chart2DTestDataGenerator
             DoubleScoreOutput eighteenHourOutput =
                     outputFactory.ofDoubleScoreOutput( eighteenHourOutputs[i],
                                                        metaFactory.getOutputMetadata( meta, eighteenHourWindow ) );
-            rawData.put( Pair.of( eighteenHourWindow, threshold ), eighteenHourOutput );
+            rawData.put( Pair.of( eighteenHourWindow, Thresholds.of( threshold ) ), eighteenHourOutput );
             //Add the 24h data
             TimeWindow twentyFourHourWindow = TimeWindow.of( begin,
                                                              end,
@@ -829,7 +830,7 @@ public abstract class Chart2DTestDataGenerator
             DoubleScoreOutput twentyFourHourOutput =
                     outputFactory.ofDoubleScoreOutput( twentyFourHourOutputs[i],
                                                        metaFactory.getOutputMetadata( meta, twentyFourHourWindow ) );
-            rawData.put( Pair.of( twentyFourHourWindow, threshold ), twentyFourHourOutput );
+            rawData.put( Pair.of( twentyFourHourWindow, Thresholds.of( threshold ) ), twentyFourHourOutput );
         }
 
         return outputFactory.ofMap( rawData );
@@ -845,7 +846,7 @@ public abstract class Chart2DTestDataGenerator
     {
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
         final MetadataFactory metaFactory = outputFactory.getMetadataFactory();
-        final Map<Pair<TimeWindow, Threshold>, DoubleScoreOutput> rawData = new TreeMap<>();
+        final Map<Pair<TimeWindow, Thresholds>, DoubleScoreOutput> rawData = new TreeMap<>();
 
         // Create the metric output metadata: add fake sample sizes as these are not available in the test input file
         final MetricOutputMetadata meta = metaFactory.getOutputMetadata( 18,
@@ -892,7 +893,7 @@ public abstract class Chart2DTestDataGenerator
                                                  ReferenceTime.ISSUE_TIME,
                                                  Duration.ofHours( 0 ),
                                                  Duration.ofHours( 18 ) ),
-                                  threshold ),
+                                  Thresholds.of( threshold ) ),
                          outputFactory.ofDoubleScoreOutput( scores[i], meta ) );
         }
         return outputFactory.ofMap( rawData );
@@ -940,8 +941,8 @@ public abstract class Chart2DTestDataGenerator
                                                                                              "HEFS" ),
                                                                window );
         // Build and return
-        Map<Pair<TimeWindow, Threshold>, PairedOutput<Instant, Duration>> rawData = new TreeMap<>();
-        rawData.put( Pair.of( window, outF.ofThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER ) ),
+        Map<Pair<TimeWindow, Thresholds>, PairedOutput<Instant, Duration>> rawData = new TreeMap<>();
+        rawData.put( Pair.of( window, Thresholds.of( outF.ofThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER ) ) ),
                      outF.ofPairedOutput( input, meta ) );
         return outF.ofMap( rawData );
     }
@@ -989,8 +990,8 @@ public abstract class Chart2DTestDataGenerator
                                                                                              "Streamflow",
                                                                                              "HEFS" ),
                                                                window );
-        Map<Pair<TimeWindow, Threshold>, DurationScoreOutput> rawData = new TreeMap<>();
-        rawData.put( Pair.of( window, outF.ofThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER ) ),
+        Map<Pair<TimeWindow, Thresholds>, DurationScoreOutput> rawData = new TreeMap<>();
+        rawData.put( Pair.of( window, Thresholds.of( outF.ofThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER ) ) ),
                      outF.ofDurationScoreOutput( returnMe, meta ) );
         return outF.ofMap( rawData );
     }

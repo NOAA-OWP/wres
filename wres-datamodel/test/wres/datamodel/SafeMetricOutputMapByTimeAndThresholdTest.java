@@ -47,8 +47,8 @@ public final class SafeMetricOutputMapByTimeAndThresholdTest
                                                      Instant.parse( "2010-12-31T11:59:59Z" ),
                                                      ReferenceTime.VALID_TIME,
                                                      Duration.ofHours( 42 ) );
-        final Threshold q = outputFactory.ofQuantileThreshold( 531.88, 0.005, Operator.GREATER );
-        final Pair<TimeWindow, Threshold> testKeyOne = Pair.of( timeWindow, q );
+        final Thresholds q = Thresholds.of( outputFactory.ofQuantileThreshold( 531.88, 0.005, Operator.GREATER ) );
+        final Pair<TimeWindow, Thresholds> testKeyOne = Pair.of( timeWindow, q );
         final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> subMap =
                 results.filterByTime( timeWindow ).filterByThreshold( q );
 
@@ -71,10 +71,10 @@ public final class SafeMetricOutputMapByTimeAndThresholdTest
                                                         Duration.ofHours( 714 ) );
 
 
-        final Threshold q2 = outputFactory.ofQuantileThreshold( Double.NEGATIVE_INFINITY,
-                                                                 Double.NEGATIVE_INFINITY,
-                                                                 Operator.GREATER );
-        final Pair<TimeWindow, Threshold> testKeyTwo = Pair.of( timeWindowTwo, q2 );
+        final Thresholds q2 = Thresholds.of( outputFactory.ofQuantileThreshold( Double.NEGATIVE_INFINITY,
+                                                                                Double.NEGATIVE_INFINITY,
+                                                                                Operator.GREATER ) );
+        final Pair<TimeWindow, Thresholds> testKeyTwo = Pair.of( timeWindowTwo, q2 );
 
         //Slice by threshold = all data
         final MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> subMap3 = results.filterByTime( timeWindowTwo )
@@ -134,8 +134,8 @@ public final class SafeMetricOutputMapByTimeAndThresholdTest
                                                                      metaFac.getDimension(),
                                                                      MetricConstants.COEFFICIENT_OF_DETERMINATION,
                                                                      MetricConstants.MAIN );
-        Map<Pair<TimeWindow, Threshold>, DoubleScoreOutput> testMap = new HashMap<>();
-        Threshold threshold = outputFactory.ofThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER );
+        Map<Pair<TimeWindow, Thresholds>, DoubleScoreOutput> testMap = new HashMap<>();
+        Thresholds threshold = Thresholds.of( outputFactory.ofThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER ) );
         testMap.put( Pair.of( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                              Instant.parse( "1985-01-02T00:00:00Z" ),
                                              ReferenceTime.ISSUE_TIME,

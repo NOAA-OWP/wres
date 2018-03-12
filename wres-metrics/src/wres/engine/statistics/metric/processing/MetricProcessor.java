@@ -267,7 +267,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
 
     public boolean hasMetrics( MetricInputGroup inGroup, MetricOutputGroup outGroup )
     {
-        return getSelectedMetrics( metrics, inGroup, outGroup ).length > 0;
+        return getMetrics( metrics, inGroup, outGroup ).length > 0;
     }
 
     /**
@@ -317,6 +317,9 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
 
     /**
      * Validates the configuration and throws a {@link MetricConfigurationException} if the configuration is invalid.
+     * When validating parameters that are set locally, ensure that: 1) this method is called on completion of the 
+     * subclass constructor; and 2) that it checks for the presence of local parameters, because this method is 
+     * initially called within the superclass constructor, i.e. before any local parameters have been set.
      * 
      * @param config the configuration to validate
      * @throws MetricConfigurationException if the configuration is invalid
@@ -381,9 +384,9 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         {
             singleValuedScore =
                     metricFactory.ofSingleValuedScoreCollection( metricExecutor,
-                                                                 getSelectedMetrics( metrics,
-                                                                                     MetricInputGroup.SINGLE_VALUED,
-                                                                                     MetricOutputGroup.DOUBLE_SCORE ) );
+                                                                 getMetrics( metrics,
+                                                                             MetricInputGroup.SINGLE_VALUED,
+                                                                             MetricOutputGroup.DOUBLE_SCORE ) );
         }
         else
         {
@@ -393,9 +396,9 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         {
             singleValuedMultiVector =
                     metricFactory.ofSingleValuedMultiVectorCollection( metricExecutor,
-                                                                       getSelectedMetrics( metrics,
-                                                                                           MetricInputGroup.SINGLE_VALUED,
-                                                                                           MetricOutputGroup.MULTIVECTOR ) );
+                                                                       getMetrics( metrics,
+                                                                                   MetricInputGroup.SINGLE_VALUED,
+                                                                                   MetricOutputGroup.MULTIVECTOR ) );
         }
         else
         {
@@ -407,9 +410,9 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         {
             dichotomousScalar =
                     metricFactory.ofDichotomousScoreCollection( metricExecutor,
-                                                                getSelectedMetrics( metrics,
-                                                                                    MetricInputGroup.DICHOTOMOUS,
-                                                                                    MetricOutputGroup.DOUBLE_SCORE ) );
+                                                                getMetrics( metrics,
+                                                                            MetricInputGroup.DICHOTOMOUS,
+                                                                            MetricOutputGroup.DOUBLE_SCORE ) );
         }
         else
         {
@@ -420,9 +423,9 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         {
             dichotomousMatrix =
                     metricFactory.ofDichotomousMatrixCollection( metricExecutor,
-                                                                 getSelectedMetrics( metrics,
-                                                                                     MetricInputGroup.DICHOTOMOUS,
-                                                                                     MetricOutputGroup.MATRIX ) );
+                                                                 getMetrics( metrics,
+                                                                             MetricInputGroup.DICHOTOMOUS,
+                                                                             MetricOutputGroup.MATRIX ) );
         }
         else
         {
@@ -468,22 +471,31 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
      * in order to avoid duplication, since the {@link MetricConstants#SAMPLE_SIZE} belongs to both groups.
      * 
      * @param input the input constants
-     * @param inGroup the {@link MetricInputGroup}
-     * @param outGroup the {@link MetricOutputGroup}
+     * @param inGroup the {@link MetricInputGroup}, may be null
+     * @param outGroup the {@link MetricOutputGroup}, may be null
      * @return a set of {@link MetricConstants} for a specified {@link MetricInputGroup} and {@link MetricOutputGroup}
-     *         or an empty array
+     *         or an empty array if both inputs are defined and no corresponding metrics are present
      */
 
-    MetricConstants[] getSelectedMetrics( Set<MetricConstants> input,
-                                          MetricInputGroup inGroup,
-                                          MetricOutputGroup outGroup )
+    MetricConstants[] getMetrics( Set<MetricConstants> input,
+                                  MetricInputGroup inGroup,
+                                  MetricOutputGroup outGroup )
     {
         Objects.requireNonNull( input, "Specify a non-null array of metric identifiers from which to select metrics." );
 
-        //Find the matching metrics 
-        Set<MetricConstants> metrics = MetricConstants.getMetrics( inGroup, outGroup );
-        metrics.removeIf( a -> !input.contains( a ) );
+        // Unconditional set
+        Set<MetricConstants> metrics = new HashSet<>( input );
 
+        // Remove metrics not in the input group
+        if ( Objects.nonNull( inGroup ) )
+        {
+            metrics.removeIf( a -> !a.isInGroup( inGroup ) );
+        }
+        // REmove metrics not in the output group
+        if ( Objects.nonNull( outGroup ) )
+        {
+            metrics.removeIf( a -> !a.isInGroup( outGroup ) );
+        }
         //Remove duplicate sample size
         if ( inGroup == MetricInputGroup.ENSEMBLE && hasMetrics( MetricInputGroup.SINGLE_VALUED ) )
         {
@@ -938,32 +950,32 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         Objects.requireNonNull( mutate, MISSING_THRESHOLDS_ERROR );
 
         MetricConfigName name = MetricConfigHelper.from( metric );
-        
+
         if ( Objects.nonNull( externalThresholds )
              && externalThresholds.containsKey( name ) )
         {
             ThresholdsByType external = externalThresholds.get( name );
-            
+
             Set<Threshold> addMe = new HashSet<>();
-            
+
             // Probability type
             if ( external.contains( ThresholdsByType.ThresholdType.PROBABILITY ) )
             {
                 addMe.addAll( external.getThresholdsByType( ThresholdsByType.ThresholdType.PROBABILITY ) );
             }
-            
+
             // Value type
             if ( external.contains( ThresholdsByType.ThresholdType.VALUE ) )
             {
                 addMe.addAll( external.getThresholdsByType( ThresholdsByType.ThresholdType.VALUE ) );
             }
-            
+
             // Add existing if available
-            if( mutate.containsKey( metric ) )
+            if ( mutate.containsKey( metric ) )
             {
                 addMe.addAll( mutate.get( metric ) );
             }
-            
+
             mutate.put( metric, Collections.unmodifiableSet( addMe ) );
         }
     }

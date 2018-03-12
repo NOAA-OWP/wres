@@ -26,6 +26,7 @@ import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Threshold;
+import wres.datamodel.Thresholds;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
@@ -108,7 +109,7 @@ public class CommaSeparatedPairedWriterTest extends CommaSeparatedWriterTest
                 CompletableFuture.completedFuture( fakeOutputData );
 
         // Fake lead time and threshold
-        Pair<TimeWindow, Threshold> mapKeyByLeadThreshold =
+        Pair<TimeWindow, Thresholds> mapKeyByLeadThreshold =
                 outputFactory.ofMapKeyByTimeThreshold( timeOne,
                                                        Double.NEGATIVE_INFINITY,
                                                        Threshold.Operator.GREATER );
@@ -123,7 +124,7 @@ public class CommaSeparatedPairedWriterTest extends CommaSeparatedWriterTest
         ProjectConfig projectConfig = getMockedProjectConfig( feature );
 
         // Begin the actual test now that we have constructed dependencies.
-        CommaSeparatedPairedWriter<Instant,Duration> writer = CommaSeparatedPairedWriter.of( projectConfig ); 
+        CommaSeparatedPairedWriter<Instant, Duration> writer = CommaSeparatedPairedWriter.of( projectConfig );
         writer.accept( output.getPairedOutput() );
 
         // read the file, verify it has what we wanted:

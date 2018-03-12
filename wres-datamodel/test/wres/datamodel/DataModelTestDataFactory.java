@@ -94,10 +94,10 @@ public final class DataModelTestDataFactory
                     final DoubleProcedureParameter f = (DoubleProcedureParameter) e.next().getKey();
                     final double[] constants = f.getParValReal().getConstants();
                     final double[] probConstants = f.getParVal().getConstants();
-                    final Threshold q = outputFactory.ofQuantileThreshold( constants[0],
+                    final Thresholds q = Thresholds.of(outputFactory.ofQuantileThreshold( constants[0],
                                                                             probConstants[0],
-                                                                            Operator.GREATER );
-                    final Pair<TimeWindow, Threshold> key = Pair.of( timeWindow, q );
+                                                                            Operator.GREATER ) );
+                    final Pair<TimeWindow, Thresholds> key = Pair.of( timeWindow, q );
 
                     //Build the scalar result
                     final MetricResult result = t.getResult( f );
@@ -170,10 +170,10 @@ public final class DataModelTestDataFactory
                     final DoubleProcedureParameter f = (DoubleProcedureParameter) e.next().getKey();
                     final double[] constants = f.getParValReal().getConstants();
                     final double[] probConstants = f.getParVal().getConstants();
-                    final Threshold q = outputFactory.ofQuantileThreshold( constants[0],
+                    final Thresholds q = Thresholds.of( outputFactory.ofQuantileThreshold( constants[0],
                                                                             probConstants[0],
-                                                                            Operator.GREATER );
-                    final Pair<TimeWindow, Threshold> key = Pair.of( timeWindow, q );
+                                                                            Operator.GREATER ) );
+                    final Pair<TimeWindow, Thresholds> key = Pair.of( timeWindow, q );
 
                     //Build the scalar result
                     final MetricResult result = t.getResult( f );

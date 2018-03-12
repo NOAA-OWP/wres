@@ -1,6 +1,7 @@
 package wres.datamodel;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Objects;
 import java.util.Set;
@@ -492,9 +493,37 @@ public enum MetricConstants
         Set<MetricConstants> all = EnumSet.allOf( MetricConstants.class );
         all.removeIf( a -> Objects.isNull( a.inGroup ) || !Arrays.asList( a.inGroup ).contains( inGroup )
                            || a.outGroup != outGroup );
-        return all;
+        return Collections.unmodifiableSet( all );
     }
+    
+    /**
+     * Returns all {@link MetricConstants} associated with the specified {@link MetricInputGroup}.
+     * 
+     * @param inGroup the {@link MetricInputGroup}
+     * @return the {@link MetricConstants} associated with the current {@link MetricInputGroup}
+     */
 
+    public static Set<MetricConstants> getMetrics( MetricInputGroup inGroup )
+    {
+        Set<MetricConstants> all = EnumSet.allOf( MetricConstants.class );
+        all.removeIf( a -> Objects.isNull( a.inGroup ) || !Arrays.asList( a.inGroup ).contains( inGroup ) );
+        return Collections.unmodifiableSet( all );
+    }    
+
+    /**
+     * Returns all {@link MetricConstants} associated with the specified {@link MetricOutputGroup}.
+     * 
+     * @param outGroup the {@link MetricOutputGroup}
+     * @return the {@link MetricConstants} associated with the current {@link MetricOutputGroup}
+     */
+
+    public static Set<MetricConstants> getMetrics( MetricOutputGroup outGroup )
+    {
+        Set<MetricConstants> all = EnumSet.allOf( MetricConstants.class );
+        all.removeIf( a -> Objects.isNull( a.outGroup ) || a.outGroup != outGroup );
+        return Collections.unmodifiableSet( all );
+    }    
+    
     /**
      * Returns a string representation.
      * 

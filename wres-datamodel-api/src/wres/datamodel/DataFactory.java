@@ -63,7 +63,7 @@ public interface DataFactory
 
     /**
      * Convenience method that returns a {@link Pair} to map a {@link MetricOutput} by {@link TimeWindow} and
-     * {@link Threshold}.
+     * {@link Thresholds}.
      * 
      * @param timeWindow the time window
      * @param threshold the threshold value
@@ -71,16 +71,16 @@ public interface DataFactory
      * @return a map key
      */
 
-    default Pair<TimeWindow, Threshold> ofMapKeyByTimeThreshold( TimeWindow timeWindow,
+    default Pair<TimeWindow, Thresholds> ofMapKeyByTimeThreshold( TimeWindow timeWindow,
                                                                   Double threshold,
                                                                   Operator condition )
     {
-        return Pair.of( timeWindow, ofThreshold( threshold, condition ) );
+        return Pair.of( timeWindow, Thresholds.of( this.ofThreshold( threshold, condition ) ) );
     }
 
     /**
      * Convenience method that returns a {@link Pair} to map a {@link MetricOutput} by {@link TimeWindow} and
-     * {@link Threshold}.
+     * {@link Thresholds}.
      * 
      * @param timeWindow the time window
      * @param threshold the threshold value or lower bound of a {@link Operator#BETWEEN} condition
@@ -89,12 +89,12 @@ public interface DataFactory
      * @return a map key
      */
 
-    default Pair<TimeWindow, Threshold> ofMapKeyByTimeThreshold( TimeWindow timeWindow,
+    default Pair<TimeWindow, Thresholds> ofMapKeyByTimeThreshold( TimeWindow timeWindow,
                                                                   Double threshold,
                                                                   Double thresholdUpper,
                                                                   Operator condition )
     {
-        return Pair.of( timeWindow, ofThreshold( threshold, thresholdUpper, condition ) );
+        return Pair.of( timeWindow, Thresholds.of( this.ofThreshold( threshold, thresholdUpper, condition ) ) );
     }
 
     /**
@@ -188,7 +188,7 @@ public interface DataFactory
     {
         return ofQuantileThreshold( threshold, null, probability, null, condition, null );
     }
-    
+
     /**
      * Returns {@link Threshold} from the specified input.
      * 
@@ -233,7 +233,7 @@ public interface DataFactory
                                            String label )
     {
         return ofQuantileThreshold( threshold, null, probability, null, condition, label );
-    }    
+    }
 
     /**
      * Return a {@link MatrixOutput}.
@@ -1069,11 +1069,11 @@ public interface DataFactory
      */
 
     <T extends MetricOutput<?>> MetricOutputMapByTimeAndThreshold<T>
-            ofMap( Map<Pair<TimeWindow, Threshold>, T> input );
+            ofMap( Map<Pair<TimeWindow, Thresholds>, T> input );
 
     /**
      * Returns a {@link MetricOutputMultiMapByTimeAndThreshold} from a map of inputs by {@link TimeWindow} and 
-     * {@link Threshold}.
+     * {@link Thresholds}.
      * 
      * @param <T> the type of output
      * @param input the input map of metric outputs by time window and threshold
@@ -1082,7 +1082,7 @@ public interface DataFactory
      */
 
     <T extends MetricOutput<?>> MetricOutputMultiMapByTimeAndThreshold<T>
-            ofMultiMap( Map<Pair<TimeWindow, Threshold>, List<MetricOutputMapByMetric<T>>> input );
+            ofMultiMap( Map<Pair<TimeWindow, Thresholds>, List<MetricOutputMapByMetric<T>>> input );
 
     /**
      * Returns a builder for a {@link MetricOutputMultiMapByTimeAndThreshold} that allows for the incremental addition of
