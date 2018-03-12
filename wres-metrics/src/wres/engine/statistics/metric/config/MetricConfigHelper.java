@@ -594,10 +594,25 @@ public final class MetricConfigHelper
 
     public static boolean hasThresholds( ProjectConfig config )
     {
+        return MetricConfigHelper.hasThresholds( config, null );
+    }
+    
+    /**
+     * Returns <code>true</code> if the project configuration contains thresholds of the specified type or for 
+     * all types (null), <code>false</code> otherwise.
+     * 
+     * @param config the project configuration
+     * @param type the optional threshold type, may be null for all types
+     * @return true if the configuration contains thresholds, otherwise false
+     * @throws NullPointerException if the input is null
+     */
+
+    public static boolean hasThresholds( ProjectConfig config, ThresholdType type )
+    {
         Objects.requireNonNull( config, NULL_CONFIGURATION_ERROR );
 
-        return config.getMetrics().stream().anyMatch( nextGroup -> hasThresholds( nextGroup, null ) );
-    }
+        return config.getMetrics().stream().anyMatch( nextGroup -> hasThresholds( nextGroup, type ) );
+    }    
 
     /**
      * Returns <code>true</code> if the project configuration contains thresholds, <code>false</code> otherwise.
@@ -772,6 +787,12 @@ public final class MetricConfigHelper
         if ( MetricConfigHelper.hasThresholds( config ) )
         {
             returnMe.addAll( MetricInputGroup.DISCRETE_PROBABILITY.getMetrics() );
+        }
+        
+        // Allow dichotomous metrics when probability classifiers are defined
+        if ( MetricConfigHelper.hasThresholds( config, ThresholdType.PROBABILITY_CLASSIFIER ) )
+        {
+            returnMe.addAll( MetricInputGroup.DICHOTOMOUS.getMetrics() );
         }
 
         return removeMetricsDisallowedByOtherConfig( config, returnMe );
