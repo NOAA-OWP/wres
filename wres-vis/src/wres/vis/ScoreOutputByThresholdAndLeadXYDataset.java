@@ -52,7 +52,7 @@ public class ScoreOutputByThresholdAndLeadXYDataset extends
         final List<MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>> data = new ArrayList<>();
         for(final TimeWindow lead: rawData.setOfTimeWindowKey())
         {
-            data.add(rawData.filterByTime(lead));
+            data.add( rawData.filterByTime( lead ) );
         }
         setPlotData(data);
     }

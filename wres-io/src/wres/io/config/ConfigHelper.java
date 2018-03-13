@@ -1328,8 +1328,8 @@ public class ConfigHelper
                                              MetricOutputMetadata meta )
             throws IOException
     {
-        return getOutputPathToWrite( destinationConfig, meta, (String) null );
-    }   
+        return ConfigHelper.getOutputPathToWrite( destinationConfig, meta, (String) null );
+    }    
     
     /**
      * Returns a path to write from a combination of the {@link DestinationConfig}, the {@link MetricOutputMetadata} 
@@ -1350,7 +1350,9 @@ public class ConfigHelper
     {
         Objects.requireNonNull( destinationConfig, "Enter non-null time window to establish a path for writing." );
 
-        return getOutputPathToWrite( destinationConfig, meta, timeWindow.getLatestLeadTimeInHours() + "_HOUR" );
+        return ConfigHelper.getOutputPathToWrite( destinationConfig,
+                                                  meta,
+                                                  timeWindow.getLatestLeadTimeInHours() + "_HOUR" );
     }
 
     /**
@@ -1405,7 +1407,7 @@ public class ConfigHelper
      * @throws IOException if the path cannot be produced
      */
 
-    private static Path getOutputPathToWrite( DestinationConfig destinationConfig,
+    public static Path getOutputPathToWrite( DestinationConfig destinationConfig,
                                               MetricOutputMetadata meta,
                                               String append )
             throws IOException
