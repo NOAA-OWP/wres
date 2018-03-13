@@ -4,9 +4,14 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,7 +19,6 @@ import ucar.ma2.Array;
 import ucar.ma2.ArrayChar;
 import ucar.ma2.ArrayDouble;
 import ucar.ma2.ArrayInt;
-import ucar.ma2.ArrayString;
 import ucar.ma2.DataType;
 import ucar.ma2.InvalidRangeException;
 import ucar.nc2.Attribute;
@@ -36,6 +40,7 @@ import wres.io.writing.WriterHelper;
 
 /**
  * Consumes {@link DoubleScoreOutput} and writes one or more NetCDF files.
+ * Only one expected to be used per project execution (as of 2018-03-13)
  */
 
 public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>, AutoCloseable
@@ -48,10 +53,22 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
     private static final String DEFAULT_FILE_NAME = "WRES_SCORE_METRICS";
 
     /** The _FillValue and missing_value to use when writing. */
-    private static final double FILL_AND_NO_DATA_VALUE = Double.NaN;
+    private static final double DOUBLE_FILL_VALUE = Double.NaN;
+
+    /** The _FillValue and missing_value to use when writing. */
+    private static final int INT_FILL_VALUE = Integer.MIN_VALUE;
 
     /** The length of strings to use for string variables in the file. */
     private static final int STRING_LENGTH = 128;
+
+    /** The locks to synchronize on when reading/writing the netCDF file */
+    private final Map<NetcdfFileWriter,Object> locks;
+
+    /** Arbitrary station_id to increment for new stations */
+    private final AtomicInteger stationId;
+
+    /** Map from feature description to the arbitrary integer assigned */
+    private final ConcurrentMap<String,Integer> stations;
 
     /**
      * List of output files to write.
@@ -86,6 +103,17 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                                                               leadCount,
                                                               thresholdCount,
                                                               metrics );
+        this.locks = new HashMap<>( this.files.size() );
+
+        for ( NetcdfFileWriter writer : this.files )
+        {
+            this.locks.put( writer, new Object() );
+        }
+
+        this.stationId = new AtomicInteger( 0 );
+        this.stations = new ConcurrentHashMap<>( 1 );
+
+        LOGGER.debug( "NetcdfDoubleScoreWriter was constructed!" );
     }
 
 
@@ -174,9 +202,9 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                     if ( ncVariable != null )
                     {
                         LOGGER.debug( "ncVariable was not null." );
-                        NetcdfDoubleScoreWriter.writeMetric( writer,
-                                                             myMetricToWrite,
-                                                             e.getValue() );
+                        this.writeMetric( writer,
+                                          myMetricToWrite,
+                                          e.getValue() );
                     }
                     else
                     {
@@ -214,13 +242,88 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
 
     /**
      * Get the list of underlying files this writer is responsible for.
-     * It is not anticipated to become public or protected or package-private.
+     * Method not anticipated to become public or protected or package-private.
      * @return the netcdf files
      */
 
     private List<NetcdfFileWriter> getFiles()
     {
         return this.files;
+    }
+
+
+    /**
+     * Get the map of writers to lock objects.
+     * Method not anticipated to become public or protected or package-private.
+     * @return the map of writers to locks
+     */
+
+    private Map<NetcdfFileWriter,Object> getLocks()
+    {
+        return this.locks;
+    }
+
+
+    /**
+     * Get the atomic integer used to generate arbitrary ids.
+     * Method not anticipated to become public or protected or package-private.
+     * @return the atomic integer
+     */
+
+    private AtomicInteger getStationId()
+    {
+        return this.stationId;
+    }
+
+
+    /**
+     * Get the map of stations to arbitrary netCDF identifiers.
+     * Method not anticipated to become public or protected or package-private.
+     * @return the map of stations to ints
+     */
+
+    private ConcurrentMap<String,Integer> getStations()
+    {
+        return this.stations;
+    }
+
+
+    /**
+     * Ask for a station id from a feature/station description, adding when
+     * it is not already present in our map of stations to ids.
+     * Method can be removed when we use something more durable than generated
+     * id.
+     * @param stationOrFeatureDescription a unique name for the feature
+     * @return the int id to use for writing to netCDF file
+     * @throws NullPointerException when any arg is null
+     */
+
+    private int getOrAddStation( String stationOrFeatureDescription )
+    {
+        Objects.requireNonNull( stationOrFeatureDescription );
+
+        if ( this.getStations().containsKey( stationOrFeatureDescription ) )
+        {
+            return this.getStations()
+                       .get( stationOrFeatureDescription );
+        }
+
+        int possiblyNewValue = this.getStationId().incrementAndGet();
+
+        Integer result = this.getStations()
+                             .putIfAbsent( stationOrFeatureDescription, possiblyNewValue );
+
+        if ( result == null )
+        {
+            // Successfully put this new value
+            return possiblyNewValue;
+        }
+        else
+        {
+            // Value was already present, drop our int if it hasn't moved on.
+            this.getStationId().compareAndSet( possiblyNewValue, possiblyNewValue - 1 );
+            return result;
+        }
     }
 
 
@@ -353,6 +456,8 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                                                        "station_id",
                                                        DataType.INT,
                                                        shareableFeatureDimensions );
+        NetcdfDoubleScoreWriter.addNoDataAttributesInt( featureVariable,
+                                                        INT_FILL_VALUE );
         Attribute featureNameAttribute =
                 new Attribute( "long_name", "Station id" );
         featureVariable.addAttribute( featureNameAttribute );
@@ -365,7 +470,8 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                                                          "threshold",
                                                          DataType.DOUBLE,
                                                          shareableThresholdDimensions );
-
+        NetcdfDoubleScoreWriter.addNoDataAttributesDouble( thresholdVariable,
+                                                           DOUBLE_FILL_VALUE );
         Attribute thresholdCoordinatesAttribute =
                 new Attribute( "coordinates", "threshold_name" );
         thresholdVariable.addAttribute( thresholdCoordinatesAttribute );
@@ -389,7 +495,8 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                                                     "time",
                                                     DataType.INT,
                                                     shareableTimeDimensions );
-
+        NetcdfDoubleScoreWriter.addNoDataAttributesInt( timeVariable,
+                                                        INT_FILL_VALUE );
         // https://www.unidata.ucar.edu/software/udunits/CHANGE_LOG implies
         // that since udunits 2.0.1 released in 2008, rfc3339 dates work.
         Attribute timeUnitsAttribute =
@@ -404,6 +511,8 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                                                            "lead_seconds",
                                                            DataType.INT,
                                                            shareableLeadSecondsDimensions );
+        NetcdfDoubleScoreWriter.addNoDataAttributesInt( leadSecondsVariable,
+                                                        INT_FILL_VALUE );
         Attribute leadSecondsUnits = new Attribute( "units", "seconds" );
         leadSecondsVariable.addAttribute( leadSecondsUnits );
 
@@ -426,10 +535,11 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                                                           DataType.DOUBLE,
                                                           shareableScoreDimensions );
             NetcdfDoubleScoreWriter.addNoDataAttributesDouble( metricVariable,
-                                                               FILL_AND_NO_DATA_VALUE );
+                                                               DOUBLE_FILL_VALUE );
         }
 
     }
+
 
     /**
      * Sets up common "no data" or "fill value" attributes according to CF
@@ -443,6 +553,7 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
      * @throws IllegalArgumentException when noDataValue is set to 0.0
      * @throws IllegalStateException when writer not in define mode
      */
+
     private static void addNoDataAttributesDouble( Variable variable,
                                                    double noDataValue )
     {
@@ -465,6 +576,46 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
 
         Attribute secondAttribute =
                 new Attribute( "missing_value", DataType.DOUBLE );
+        secondAttribute.setValues( ncNoDataValues );
+        variable.addAttribute( secondAttribute );
+    }
+
+
+    /**
+     * Sets up common "no data" or "fill value" attributes according to CF
+     * conventions:
+     * http://cfconventions.org/Data/cf-conventions/cf-conventions-1.7/cf-conventions.html#missing-data
+     * Expected to be called exactly once per variable (not idempotent)
+     * @param variable the variable to set the nodata value on, to mutate the
+     *                 underlying NetCDF file
+     * @param noDataValue the "fill value" or "no data value" to use
+     * @throws NullPointerException when any arg is null
+     * @throws IllegalArgumentException when noDataValue is set to 0
+     * @throws IllegalStateException when writer not in define mode
+     */
+
+    private static void addNoDataAttributesInt( Variable variable,
+                                                int noDataValue )
+    {
+        Objects.requireNonNull( variable );
+
+        if ( noDataValue == 0 )
+        {
+            throw new IllegalArgumentException(
+                    "Specify a noDataValue other than 0.0" );
+        }
+
+        // Transform the simple double into what nc expects (0-dimensional array?)
+        int[] noDataValues = { noDataValue };
+        Array ncNoDataValues = ArrayInt.D0.makeFromJavaArray( noDataValues );
+
+        Attribute firstAttribute =
+                new Attribute( "_FillValue", DataType.INT );
+        firstAttribute.setValues( ncNoDataValues );
+        variable.addAttribute( firstAttribute );
+
+        Attribute secondAttribute =
+                new Attribute( "missing_value", DataType.INT );
         secondAttribute.setValues( ncNoDataValues );
         variable.addAttribute( secondAttribute );
     }
@@ -502,9 +653,9 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
      * @param output the metric output map of double score outputs
      * of the writer.
      */
-    private static void writeMetric( NetcdfFileWriter writer,
-                                     MetricConstants id,
-                                     MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> output )
+    private void writeMetric( NetcdfFileWriter writer,
+                              MetricConstants id,
+                              MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> output )
             throws IOException
     {
         // NetCDF will replace spaces with underscores in variable names.
@@ -523,19 +674,23 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
         // Set up features (aka 'stations' in fews-speak)
         Variable features = NetcdfDoubleScoreWriter.getVariableOrDie( writer,
                                                                       "station_id" );
-        int[] featureIds = { 1 };
-        Array ncFeatureIds = ArrayInt.D1.makeFromJavaArray( featureIds );
+        String featureName = output.getMetadata()
+                                   .getIdentifier()
+                                   .getGeospatialID();
+        if ( LOGGER.isDebugEnabled() )
+        {
+            LOGGER.debug( "Map before: {}, this: {}", this.getStations(), this );
+        }
 
-        try
+        int featureId = this.getOrAddStation( featureName );
+
+        if ( LOGGER.isDebugEnabled() )
         {
-            writer.write( features, ncFeatureIds );
+            LOGGER.debug( "Feature aka station: {}, resolved id: {}, map: {}",
+                          featureName, featureId, getStations() );
         }
-        catch ( InvalidRangeException ire )
-        {
-            throw new IOException( "Failed to write to variable "
-                                   + features + " in NetCDF file "
-                                   + writer, ire );
-        }
+
+        this.getOrAddIntValueToVariable( writer, features, featureId );
 
         if ( LOGGER.isDebugEnabled() )
         {
@@ -650,10 +805,10 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                                          times,
                                          leadSeconds );
 
-        NetcdfDoubleScoreWriter.writeSingleValue( writer,
-                                                  coordinateVariables,
-                                                  ncVariable,
-                                                  output );
+        this.writeSingleValue( writer,
+                               coordinateVariables,
+                               ncVariable,
+                               output );
     }
 
 
@@ -667,10 +822,10 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
      * @throws NullPointerException when any arg is null
      */
 
-    private static void writeSingleValue( NetcdfFileWriter writer,
-                                          WresNetcdfVariables coordinateVariables,
-                                          Variable ncVariable,
-                                          MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> output )
+    private void writeSingleValue( NetcdfFileWriter writer,
+                                   WresNetcdfVariables coordinateVariables,
+                                   Variable ncVariable,
+                                   MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> output )
             throws IOException
     {
         Objects.requireNonNull( writer );
@@ -726,7 +881,6 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                 {
                     int position = STRING_LENGTH * thresholdIndex + charIndex;
                     currentThreshold[charIndex] = allThresholds.getChar( position );
-                    LOGGER.debug( "currentThreshold: {}", currentThreshold );
                     if ( currentThreshold[charIndex] == 0x0 )
                     {
                         break;
@@ -876,6 +1030,7 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
      * @throws VariableNotFoundException when the variable is not found
      * @throws NullPointerException when either writer or variableName are null
      */
+
     private static Variable getVariableOrDie( NetcdfFileWriter writer,
                                               String variableName )
     {
@@ -895,6 +1050,93 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
         }
 
         return variable;
+    }
+
+
+    /**
+     * Retrieve or add-and-retrieve value from 1D int variable. Idempotent.
+     * @param writer the writer that variable is part of, not in define mode
+     * @param variable the variable to find value in (or add to if not present)
+     * @param value the value to search for within the variable
+     * @return the index of the value within the variable
+     * @throws IllegalArgumentException when variable is not rank 1 INT
+     * @throws IllegalStateException when writer is in define mode
+     * @throws IOException when something goes wrong with writing
+     * @throws NullPointerException when variable is null
+     */
+    private int getOrAddIntValueToVariable( NetcdfFileWriter writer,
+                                            Variable variable,
+                                            int value )
+            throws IOException
+    {
+        Objects.requireNonNull( variable );
+
+        if ( !variable.getDataType().equals( DataType.INT )
+             || variable.getRank() != 1 )
+        {
+            throw new IllegalArgumentException( "Method requires rank 1 INT variable" );
+        }
+
+        if ( writer.isDefineMode() )
+        {
+            throw new IllegalStateException( "Writer must not be in define mode." );
+        }
+
+        int indexToUse = INT_FILL_VALUE;
+        boolean found = false;
+
+        synchronized ( this.getLocks().get( writer ) )
+        {
+            Array existingValues = variable.read();
+
+            for ( int i = 0; i < existingValues.getSize(); i++ )
+            {
+                if ( existingValues.getInt( i ) == value )
+                {
+                    // The value was found, return the index.
+                    return i;
+                }
+                else if ( existingValues.getInt( i ) == INT_FILL_VALUE )
+                {
+                    // The value was not found, but this is an empty spot,
+                    // so use the current spot.
+                    indexToUse = i;
+                    found = true;
+                    break;
+                }
+                // Keep searching for the value.
+            }
+
+            if ( !found )
+            {
+                // We did not find what we were looking for...
+                throw new IllegalStateException( "Could not find a way to "
+                                                 + "write value " + value );
+            }
+
+            // The value was not found, add and return the index.
+            int[] index = { indexToUse };
+            int[] rawToWrite = { value };
+
+            // (Should this be D0 or D1? Does it matter?)
+            Array ncToWrite = ArrayInt.D1.makeFromJavaArray( rawToWrite );
+
+            try
+            {
+                writer.write( variable, index, ncToWrite );
+            }
+            catch ( InvalidRangeException ire )
+            {
+                throw new IOException( "Failed to write to variable "
+                                       + variable + " in NetCDF file "
+                                       + writer + " using raw data "
+                                       + Arrays.toString( rawToWrite )
+                                       + " and nc data "
+                                       + ncToWrite, ire );
+            }
+
+            return indexToUse;
+        }
     }
 
     private static class WresNetcdfVariables
