@@ -1711,7 +1711,7 @@ public class ConfigHelper
         if ( Objects.nonNull( output )
              && output.getDestination().stream().anyMatch( type -> type.getType() == DestinationType.NETCDF ) )
         {
-            Collections.unmodifiableSet( new HashSet<>( Arrays.asList( DestinationType.NETCDF ) ) );
+            return Collections.unmodifiableSet( new HashSet<>( Arrays.asList( DestinationType.NETCDF ) ) );
         }
 
         // Return empty set
