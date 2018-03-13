@@ -152,6 +152,7 @@ class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implement
     {
         return Collections.unmodifiableSet( store.keySet()
                                             .stream()
+                                            .filter( next -> next.getRight().hasTwo() )
                                             .map( next -> next.getValue().second() )
                                             .collect( Collectors.toSet() ) );
     }

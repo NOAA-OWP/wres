@@ -261,8 +261,18 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
     {
         final MetricOutputMetadata meta = displayedPlotInput.getMetadata();
 
-        addArgument( "legendTitle", "Lead Time" );
+        // Augment the plot title when the input dataset contains a secondary threshold/classifier
+        // Create a string from the set of secondary thresholds
+        String supplementary = "";
+        if( !displayedPlotInput.setOfThresholdTwo().isEmpty() )
+        {
+            String set = displayedPlotInput.setOfThresholdTwo().toString();
+            supplementary = " with occurrences defined as " + set;
+        }
+        addArgument( "plotTitleSupplementary", supplementary );
+        addArgument( "legendTitle",  "Lead Time" );
         addArgument( "legendUnitsText", " [hours]" );
+        
         if ( threshold != null )
         {
             addArgument( "diagramInstanceDescription",

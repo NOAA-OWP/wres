@@ -4,6 +4,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -284,6 +285,10 @@ public final class SafeMetricOutputMapByTimeAndThresholdTest
                     + "].",
                     subMap2.size() == 29 );
         assertTrue( "Expected quantile thresholds in store.", subMap.hasQuantileThresholds() );
+        
+        // Check the empty set for the second threshold
+        assertTrue( "Expected the empty set when filtering on the second threshold.",
+                    Collections.emptySet().equals( results.setOfThresholdTwo() ) );
 
     }
 
