@@ -405,7 +405,7 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                                                            DataType.INT,
                                                            shareableLeadSecondsDimensions );
         Attribute leadSecondsUnits = new Attribute( "units", "seconds" );
-        timeVariable.addAttribute( leadSecondsUnits );
+        leadSecondsVariable.addAttribute( leadSecondsUnits );
 
 
         List<Dimension> scoreDimensions = new ArrayList<>( 6 );
