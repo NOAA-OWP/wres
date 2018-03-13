@@ -101,7 +101,7 @@ public class PNGDoubleScoreWriter extends PNGWriter
 
             GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destinationConfig, meta.getMetricID() );
 
-            // As many outputs as outputs as secondary thresholds if secondary thresholds are defined
+            // As many outputs as secondary thresholds if secondary thresholds are defined
             // and the output type is OutputTypeSelection.THRESHOLD_LEAD.
             List<MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>> allOutputs = new ArrayList<>();
             if ( destinationConfig.getOutputType() == OutputTypeSelection.THRESHOLD_LEAD
@@ -126,7 +126,7 @@ public class PNGDoubleScoreWriter extends PNGWriter
                                                                         helper.getTemplateResourceName(),
                                                                         helper.getGraphicsString() );
 
-                String append = "";
+                String append = null;
                 // Secondary threshold? If yes, only, one as this was sliced above
                 if ( !nextOutput.setOfThresholdTwo().isEmpty() )
                 {
