@@ -77,6 +77,7 @@ import wres.io.reading.commaseparated.CommaSeparatedReader;
 import wres.io.utilities.Database;
 import wres.io.writing.SharedWriters;
 import wres.io.writing.SharedWriters.SharedWritersBuilder;
+import wres.io.writing.WriterHelper;
 import wres.io.writing.netcdf.NetcdfDoubleScoreWriter;
 import wres.util.Strings;
 import wres.util.TimeHelper;
@@ -1745,10 +1746,9 @@ public class ConfigHelper
     /**
      * Returns a set of writers to be shared across instances of writing. Returns a {@link SharedWriters} that 
      * contains one writer for each supported incremental data format and type. 
-     * 
-     * TODO: do not throw multiple checked exceptions, it encourages bad practice in callers. Instead, wrap at a 
-     * lower level.
-     * 
+     *
+     * TODO: find the right level for ProjectConfigException to be handled
+     *
      * @param projectConfig the project configuration
      * @return a pool of shared writers
      * @throws IOException if one or more writers could not be created
@@ -1759,6 +1759,7 @@ public class ConfigHelper
             throws IOException, ProjectConfigException
     {
         Objects.requireNonNull( projectConfig, NULL_CONFIGURATION_ERROR );
+        WriterHelper.validateProjectForWriting( projectConfig );
 
         SharedWritersBuilder builder = new SharedWritersBuilder();
 
@@ -1777,15 +1778,27 @@ public class ConfigHelper
      * 
      * TODO: receiver should not throw multiple checked exceptions, as it encourages bad practice in callers. Have
      * the receiver wrap the checked exceptions in a local checked type, which should be rethrown here.
-     * 
+     * JFB: throwing multiple checked exceptions is far better than throwing
+     * a single ambiguous blanket exception *if* the multiple checked exceptions
+     * are honestly thrown and the thrower cannot be the decider of action to
+     * take in situation A (exception A) vs situation B (exception B). It may
+     * take some work to find the method in which the distinction can be handled
+     * appropriately, but we should be more tolerant of multiple exceptions if
+     * that is the honest situation. Agree that ideally each method can only
+     * fail in a one way such that the single throws is followed. But
+     * to encourage a blanket rule of "always wrap checked exceptions" can
+     * defeat the purpose of having distinct exceptions if we are not careful.
+     * The worst example of that kind of wrapping is "throws Exception"
+     * or "catch (Exception)". The purpose of throwing distinct exceptions is
+     * to allow the caller to decide what to do.
+     *
      * @param projectConfig the project configuration
      * @return a writer
      * @throws IOException if one or more writers could not be created
-     * @throws ProjectConfigException if the project configuration is invalid
      */    
     
     public static NetcdfDoubleScoreWriter getNetcdfDoubleScoreWriter( ProjectConfig projectConfig )
-            throws ProjectConfigException, IOException
+            throws IOException
     {
         Objects.requireNonNull( projectConfig, NULL_CONFIGURATION_ERROR );
 

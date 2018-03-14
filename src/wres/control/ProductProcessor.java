@@ -344,6 +344,9 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
      * TODO: remove the dependence of this class on ProjectConfigPlus via the graphics strings required by 
      * the consumers built in this method. Instead, pass on ProjectConfig together with graphics strings or an 
      * alternative representation of project configuration. The ProjectConfigPlus is not intended for sharing.
+     * JFB: On reconsideration, the ProjectConfigPlus was precisely intended
+     * for sharing with the graphics generator. So whatever is needed to pass
+     * the ProjectConfigPlus to the graphics generator is needed and should stay.
      * 
      * @throws ProjectConfigException if the project configuration is invalid for writing
      */
@@ -387,12 +390,11 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
      * Builds a set of consumers for writing NetCDF output.
      * 
      * @param sharedWriters an optional set of shared writers to use when consuming NetCDF
-     * @throws ProjectConfigException if the project configuration is invalid for writing
      * @throws IOException when creation or mutation of netcdf files fails
      */
 
     private void buildNetCDFConsumers( SharedWriters sharedWriters )
-            throws ProjectConfigException, IOException
+            throws IOException
     {
         // Build the consumers conditionally
 
