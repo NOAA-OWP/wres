@@ -342,6 +342,8 @@ project(':wres-config')
 
     dependencies
     {
+        compile 'org.slf4j:slf4j-api:1.7.25'
+
         // To know about @Location
         compile 'com.sun.xml.bind:jaxb-core:2.2.11'
         runtime 'org.eclipse.persistence:org.eclipse.persistence.moxy:2.6.4'

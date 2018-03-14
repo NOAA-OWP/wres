@@ -13,6 +13,8 @@ import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
 import ohd.hseb.charter.ChartTools;
 import ohd.hseb.charter.datasource.XYChartDataSourceException;
+
+import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
@@ -23,7 +25,6 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.io.config.ConfigHelper;
-import wres.io.config.ProjectConfigPlus;
 import wres.io.config.SystemSettings;
 
 /**

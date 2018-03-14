@@ -44,7 +44,6 @@ import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.engine.statistics.metric.config.MetricConfigHelper;
 import wres.engine.statistics.metric.config.MetricConfigurationException;
 import wres.io.config.ConfigHelper;
-import wres.io.config.ProjectConfigPlus;
 import wres.util.Strings;
 
 

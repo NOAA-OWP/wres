@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.ProjectConfigException;
+import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.ProjectConfig;
@@ -32,7 +33,6 @@ import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.PairedOutput;
 import wres.io.config.ConfigHelper;
-import wres.io.config.ProjectConfigPlus;
 import wres.io.writing.SharedWriters;
 import wres.io.writing.commaseparated.CommaSeparatedBoxPlotWriter;
 import wres.io.writing.commaseparated.CommaSeparatedDiagramWriter;

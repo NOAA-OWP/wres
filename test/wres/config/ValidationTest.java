@@ -13,7 +13,6 @@ import org.xml.sax.Locator;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Format;
-import wres.io.config.ProjectConfigPlus;
 
 public class ValidationTest
 {

@@ -3,10 +3,10 @@ package wres.control;
 import java.util.Map;
 import java.util.Set;
 
+import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
-import wres.io.config.ProjectConfigPlus;
 
 /**
  * Represents a project that has been "resolved", i.e. any kind of translation

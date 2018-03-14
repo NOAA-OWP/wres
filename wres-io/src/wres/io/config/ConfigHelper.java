@@ -41,6 +41,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.FeaturePlus;
 import wres.config.ProjectConfigException;
+import wres.config.ProjectConfigPlus;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.DateCondition;
