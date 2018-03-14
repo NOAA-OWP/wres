@@ -37,6 +37,8 @@ distributions
                 include 'smalldata/**'
 		include 'scripts/*'
 		exclude 'scenario*/output'
+		exclude 'scenario407/thresholds.csv'
+		exclude 'scenario408/thresholds.csv'
             }
         }
     }
