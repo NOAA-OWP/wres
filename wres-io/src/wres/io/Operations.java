@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.slf4j.LoggerFactory;
 
+import wres.config.FeaturePlus;
 import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.Executor;
@@ -390,21 +391,21 @@ public final class Operations {
     }
 
     /**
-     * Creates a set of {@link wres.config.generated.Feature Features} to
+     * Creates a set of {@link wres.config.FeaturePlus Features} to
      * evaluate statistics for
      * @param projectDetails The object that holds details on what a project
      *                       should do
-     * @return A set of {@link wres.config.generated.Feature Features}
+     * @return A set of {@link wres.config.FeaturePlus Features}
      * @throws SQLException Thrown if information about the features could not
      * be retrieved from the database
      * @throws IOException Thrown if IO operations prevented the set from being
      * created
      */
-    public static Set<Feature> decomposeFeatures( ProjectDetails projectDetails )
+    public static Set<FeaturePlus> decomposeFeatures( ProjectDetails projectDetails )
 
             throws SQLException, IOException
     {
-        Set<Feature> atomicFeatures = new TreeSet<>( Comparator.comparing(
+        Set<FeaturePlus> atomicFeatures = new TreeSet<>( Comparator.comparing(
                 ConfigHelper::getFeatureDescription ));
 
         for (FeatureDetails details : projectDetails.getFeatures())
@@ -414,7 +415,8 @@ public final class Operations {
 
             if ( projectDetails.getLeadOffset( feature ) != null)
             {
-                atomicFeatures.add(details.toFeature());
+                Feature resolvedFeature = details.toFeature();
+                atomicFeatures.add( FeaturePlus.of ( resolvedFeature ));
             }
             else
             {

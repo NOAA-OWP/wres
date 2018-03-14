@@ -15,6 +15,7 @@ import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.FeaturePlus;
 import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationConfig;
@@ -74,17 +75,12 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
 
     private static final String NULL_OUTPUT_STRING = "Specify non-null outputs for product generation.";
 
-    /**
-     * The project configuration.
-     */
-
-    private final ProjectConfig projectConfig;
 
     /**
-     * The augmented project configuration.
+     * The resolved project configuration.
      */
 
-    private final ProjectConfigPlus projectConfigPlus;
+    private final ResolvedProject resolvedProject;
 
     /**
      * Only writes when the condition is true.
@@ -136,62 +132,61 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
 
     /**
      * Build a product processor that writes unconditionally
-     * 
-     * @param projectConfigPlus the project configuration
+     *
+     * @param resolvedProject the resolved project
      * @throws NullPointerException if any of the inputs are null
      * @throws WresProcessingException if the project is invalid for writing
      */
 
-    ProductProcessor( final ProjectConfigPlus projectConfigPlus )
+    ProductProcessor( final ResolvedProject resolvedProject )
     {
         // Write unconditionally
-        this( projectConfigPlus, ( x, y ) -> true );
+        this( resolvedProject, ( x, y ) -> true );
     }
 
     /**
      * Build a product processor that writes conditionally.
-     * 
-     * @param projectConfigPlus the project configuration
+     *
+     * @param resolvedProject the resolved project
      * @param writeWhenTrue the condition under which outputs should be written
      * @throws NullPointerException if any of the inputs are null
      * @throws WresProcessingException if the project is invalid for writing
      */
 
-    ProductProcessor( final ProjectConfigPlus projectConfigPlus,
+    ProductProcessor( final ResolvedProject resolvedProject,
                       final BiPredicate<MetricOutputGroup, DestinationType> writeWhenTrue )
     {
-        this( projectConfigPlus, writeWhenTrue, null);
+        this( resolvedProject, writeWhenTrue, null);
     }    
 
     /**
      * Build a product processor that writes conditionally.
      * 
-     * @param projectConfigPlus the project configuration
+     * @param resolvedProject the resolved project
      * @param writeWhenTrue the condition under which outputs should be written
      * @param sharedWriters an optional set of shared writers to consume outputs
      * @throws NullPointerException if any of the inputs are null
      * @throws WresProcessingException if the project is invalid for writing
      */
 
-    ProductProcessor( final ProjectConfigPlus projectConfigPlus,
+    ProductProcessor( final ResolvedProject resolvedProject,
                       final BiPredicate<MetricOutputGroup, DestinationType> writeWhenTrue,
                       final SharedWriters sharedWriters )
     {
-        Objects.requireNonNull( projectConfigPlus,
+        Objects.requireNonNull( resolvedProject,
                                 "Specify a non-null configuration for the results processor." );
 
         Objects.requireNonNull( writeWhenTrue, "Specify a non-null condition to ignore." );
 
-        this.projectConfigPlus = projectConfigPlus;
-
-        this.projectConfig = this.projectConfigPlus.getProjectConfig();
+        this.resolvedProject = resolvedProject;
 
         this.writeWhenTrue = writeWhenTrue;
 
         // Register output consumers
         try
         {
-            buildConsumers( sharedWriters );
+            buildConsumers( sharedWriters,
+                            resolvedProject.getDecomposedFeatures() );
         }
         catch ( ProjectConfigException | IOException e )
         {
@@ -267,7 +262,9 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
      * @throws ProjectConfigException if the project configuration is invalid for writing
      */
 
-    private void buildConsumers( SharedWriters sharedWriters ) throws ProjectConfigException, IOException
+    private void buildConsumers( SharedWriters sharedWriters,
+                                 Set<FeaturePlus> resolvedFeatures )
+            throws ProjectConfigException, IOException
     {
         // There is one consumer per project for each type, because consumers are built
         // with projects, not destinations. The consumers must iterate destinations.
@@ -275,7 +272,8 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
         // Register consumers for the NetCDF output type
         if ( configNeedsThisTypeOfOutput( DestinationType.NETCDF ) )
         {
-            buildNetCDFConsumers( sharedWriters );
+            buildNetCDFConsumers( sharedWriters,
+                                  resolvedFeatures );
         }
 
         // Register consumers for the CSV output type
@@ -300,6 +298,8 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
 
     private void buildCommaSeparatedConsumers() throws ProjectConfigException
     {
+        ProjectConfig projectConfig = this.getProjectConfig();
+
         // Build the consumers conditionally
         if ( writeWhenTrue.test( MetricOutputGroup.MULTIVECTOR, DestinationType.CSV ) )
         {
@@ -353,6 +353,8 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
 
     private void buildPortableNetworkGraphicsConsumers() throws ProjectConfigException
     {
+        ProjectConfigPlus projectConfigPlus = this.getProjectConfigPlus();
+
         // Build the consumers conditionally
         if ( writeWhenTrue.test( MetricOutputGroup.MULTIVECTOR, DestinationType.PNG ) )
         {
@@ -393,7 +395,8 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
      * @throws IOException when creation or mutation of netcdf files fails
      */
 
-    private void buildNetCDFConsumers( SharedWriters sharedWriters )
+    private void buildNetCDFConsumers( SharedWriters sharedWriters,
+                                       Set<FeaturePlus> features )
             throws IOException
     {
         // Build the consumers conditionally
@@ -412,7 +415,8 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
             else
             {
                 doubleScoreConsumers.put( DestinationType.NETCDF,
-                                          ConfigHelper.getNetcdfDoubleScoreWriter( this.projectConfig ) );
+                                          ConfigHelper.getNetcdfDoubleScoreWriter( this.getProjectConfig(),
+                                                                                   features ) );
             }
         }
     }
@@ -628,6 +632,7 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
 
     private boolean configNeedsThisTypeOfOutput( DestinationType type )
     {
+        ProjectConfig projectConfig = this.getProjectConfig();
         Outputs output = projectConfig.getOutputs();
         if ( Objects.isNull( output ) || output.getDestination().isEmpty() )
         {
@@ -687,11 +692,31 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
 
 
     /**
+     * @return the resolved project
+     */
+
+    private ResolvedProject getResolvedProject()
+    {
+        return this.resolvedProject;
+    }
+
+    /**
+     * @return the project config with more (2nd order project config)
+     */
+
+    private ProjectConfigPlus getProjectConfigPlus()
+    {
+        return this.getResolvedProject()
+                   .getProjectConfigPlus();
+    }
+
+    /**
      * @return the project config
      */
 
     private ProjectConfig getProjectConfig()
     {
-        return this.projectConfig;
+        return this.getResolvedProject()
+                   .getProjectConfig();
     }
 }

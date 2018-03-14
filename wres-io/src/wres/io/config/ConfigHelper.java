@@ -629,6 +629,11 @@ public class ConfigHelper
         return description;
     }
 
+    public static String getFeatureDescription( FeaturePlus featurePlus )
+    {
+        return ConfigHelper.getFeatureDescription( featurePlus.getFeature() );
+    }
+
 
     /**
      * Get a comma separated description of a list of features.
@@ -1756,7 +1761,8 @@ public class ConfigHelper
      * @throws ProjectConfigException if the project configuration is invalid
      */
 
-    public static SharedWriters getSharedWriters( ProjectConfig projectConfig )
+    public static SharedWriters getSharedWriters( ProjectConfig projectConfig,
+                                                  Set<FeaturePlus> resolvedFeatures )
             throws IOException, ProjectConfigException
     {
         Objects.requireNonNull( projectConfig, NULL_CONFIGURATION_ERROR );
@@ -1768,7 +1774,8 @@ public class ConfigHelper
         if ( ConfigHelper.getIncrementalFormats( projectConfig ).contains( DestinationType.NETCDF ) )
         {
             // Set the writer
-            builder.setNetcdfDoublescoreWriter( ConfigHelper.getNetcdfDoubleScoreWriter( projectConfig ) );
+            builder.setNetcdfDoublescoreWriter( ConfigHelper.getNetcdfDoubleScoreWriter( projectConfig,
+                                                                                         resolvedFeatures ) );
         }
 
         return builder.build();
@@ -1798,7 +1805,9 @@ public class ConfigHelper
      * @throws IOException if one or more writers could not be created
      */    
     
-    public static NetcdfDoubleScoreWriter getNetcdfDoubleScoreWriter( ProjectConfig projectConfig )
+    public static NetcdfDoubleScoreWriter
+    getNetcdfDoubleScoreWriter( ProjectConfig projectConfig,
+                                Set<FeaturePlus> resolvedFeatures )
             throws IOException
     {
         Objects.requireNonNull( projectConfig, NULL_CONFIGURATION_ERROR );
@@ -1811,7 +1820,7 @@ public class ConfigHelper
                 Collections.unmodifiableList( metricNames );
 
         NetcdfDoubleScoreWriter writer = NetcdfDoubleScoreWriter.of( projectConfig,
-                                                                     1,
+                                                                     resolvedFeatures.size(),
                                                                      2,
                                                                      2,
                                                                      2,

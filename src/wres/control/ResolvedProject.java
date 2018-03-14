@@ -3,6 +3,7 @@ package wres.control;
 import java.util.Map;
 import java.util.Set;
 
+import wres.config.FeaturePlus;
 import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.Feature;
@@ -23,11 +24,11 @@ import wres.config.generated.ProjectConfig;
 class ResolvedProject
 {
     private final ProjectConfigPlus projectConfigPlus;
-    private final Set<Feature> decomposedFeatures;
+    private final Set<FeaturePlus> decomposedFeatures;
     private final String projectIdentifier;
 
     private ResolvedProject( ProjectConfigPlus projectConfigPlus,
-                             Set<Feature> decomposedFeatures,
+                             Set<FeaturePlus> decomposedFeatures,
                              String projectIdentifier )
     {
         this.projectConfigPlus = projectConfigPlus;
@@ -35,9 +36,9 @@ class ResolvedProject
         this.projectIdentifier = projectIdentifier;
     }
 
-    ResolvedProject of( ProjectConfigPlus projectConfigPlus,
-                        Set<Feature> decomposedFeatures,
-                        String projectIdentifier )
+    static ResolvedProject of( ProjectConfigPlus projectConfigPlus,
+                               Set<FeaturePlus> decomposedFeatures,
+                               String projectIdentifier )
     {
         return new ResolvedProject( projectConfigPlus,
                                     decomposedFeatures,
@@ -45,11 +46,10 @@ class ResolvedProject
     }
 
     /**
-     * This is just here to emphasize that we intentionally do not directly
-     * expose ProjectConfigPlus
+     * Get the supplemented ProjectConfig, the ProjectConfigPlus
      * @return the ProjectConfigPlus
      */
-    private ProjectConfigPlus getProjectConfigPlus()
+    ProjectConfigPlus getProjectConfigPlus()
     {
         return this.projectConfigPlus;
     }
@@ -75,7 +75,7 @@ class ResolvedProject
      * @return a Set of features resolved from the project
      */
 
-    Set<Feature> getDecomposedFeatures()
+    Set<FeaturePlus> getDecomposedFeatures()
     {
         return this.decomposedFeatures;
     }
