@@ -3,11 +3,8 @@ package wres.control;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -34,13 +31,14 @@ import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.PairedOutput;
+import wres.io.config.ConfigHelper;
 import wres.io.config.ProjectConfigPlus;
+import wres.io.writing.SharedWriters;
 import wres.io.writing.commaseparated.CommaSeparatedBoxPlotWriter;
 import wres.io.writing.commaseparated.CommaSeparatedDiagramWriter;
 import wres.io.writing.commaseparated.CommaSeparatedMatrixWriter;
 import wres.io.writing.commaseparated.CommaSeparatedPairedWriter;
 import wres.io.writing.commaseparated.CommaSeparatedScoreWriter;
-import wres.io.writing.netcdf.NetcdfDoubleScoreWriter;
 import wres.io.writing.png.PNGBoxPlotWriter;
 import wres.io.writing.png.PNGDiagramWriter;
 import wres.io.writing.png.PNGDoubleScoreWriter;
@@ -162,6 +160,23 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
     ProductProcessor( final ProjectConfigPlus projectConfigPlus,
                       final BiPredicate<MetricOutputGroup, DestinationType> writeWhenTrue )
     {
+        this( projectConfigPlus, writeWhenTrue, null);
+    }    
+
+    /**
+     * Build a product processor that writes conditionally.
+     * 
+     * @param projectConfigPlus the project configuration
+     * @param writeWhenTrue the condition under which outputs should be written
+     * @param sharedWriters an optional set of shared writers to consume outputs
+     * @throws NullPointerException if any of the inputs are null
+     * @throws WresProcessingException if the project is invalid for writing
+     */
+
+    ProductProcessor( final ProjectConfigPlus projectConfigPlus,
+                      final BiPredicate<MetricOutputGroup, DestinationType> writeWhenTrue,
+                      final SharedWriters sharedWriters )
+    {
         Objects.requireNonNull( projectConfigPlus,
                                 "Specify a non-null configuration for the results processor." );
 
@@ -176,7 +191,7 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
         // Register output consumers
         try
         {
-            buildConsumers();
+            buildConsumers( sharedWriters );
         }
         catch ( ProjectConfigException | IOException e )
         {
@@ -248,10 +263,11 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
      * 
      * <p>Edit this method as new consumer types are supported by the project configuration.</p>
      * 
+     * @param sharedWriters an optional set of shared writers
      * @throws ProjectConfigException if the project configuration is invalid for writing
      */
 
-    private void buildConsumers() throws ProjectConfigException, IOException
+    private void buildConsumers( SharedWriters sharedWriters ) throws ProjectConfigException, IOException
     {
         // There is one consumer per project for each type, because consumers are built
         // with projects, not destinations. The consumers must iterate destinations.
@@ -259,7 +275,7 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
         // Register consumers for the NetCDF output type
         if ( configNeedsThisTypeOfOutput( DestinationType.NETCDF ) )
         {
-            buildNetCDFConsumers();
+            buildNetCDFConsumers( sharedWriters );
         }
 
         // Register consumers for the CSV output type
@@ -370,11 +386,12 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
     /**
      * Builds a set of consumers for writing NetCDF output.
      * 
+     * @param sharedWriters an optional set of shared writers to use when consuming NetCDF
      * @throws ProjectConfigException if the project configuration is invalid for writing
      * @throws IOException when creation or mutation of netcdf files fails
      */
 
-    private void buildNetCDFConsumers()
+    private void buildNetCDFConsumers( SharedWriters sharedWriters )
             throws ProjectConfigException, IOException
     {
         // Build the consumers conditionally
@@ -382,18 +399,19 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
         // Register consumers for the NetCDF output type
         if ( writeWhenTrue.test( MetricOutputGroup.DOUBLE_SCORE, DestinationType.NETCDF ) )
         {
-            List<String> metricNames = new ArrayList<>( 2 );
-            metricNames.add( "MEAN_ERROR" );
-            metricNames.add( "SAMPLE_SIZE" );
-            List<String> shareableMetricNames =
-                    Collections.unmodifiableList( metricNames );
-            doubleScoreConsumers.put( DestinationType.NETCDF,
-                                      NetcdfDoubleScoreWriter.of( this.getProjectConfig(),
-                                                                  1,
-                                                                  2,
-                                                                  2,
-                                                                  2,
-                                                                  metricNames ) );
+            // Use a shared writer
+            if ( Objects.nonNull( sharedWriters )
+                 && sharedWriters.contains( MetricOutputGroup.DOUBLE_SCORE, DestinationType.NETCDF ) )
+            {
+                doubleScoreConsumers.put( DestinationType.NETCDF,
+                                          sharedWriters.getNetcdfDoubleScoreWriter() );
+            }
+            // Build a writer
+            else
+            {
+                doubleScoreConsumers.put( DestinationType.NETCDF,
+                                          ConfigHelper.getNetcdfDoubleScoreWriter( this.projectConfig ) );
+            }
         }
     }
 
