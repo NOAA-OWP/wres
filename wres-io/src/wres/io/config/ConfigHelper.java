@@ -1773,7 +1773,7 @@ public class ConfigHelper
     }
 
     /**
-     * Builds a {@link NetcdfDoublescoreWriter} for the specified {@link ProjectConfig}.
+     * Builds a {@link NetcdfDoubleScoreWriter} for the specified {@link ProjectConfig}.
      * 
      * TODO: receiver should not throw multiple checked exceptions, as it encourages bad practice in callers. Have
      * the receiver wrap the checked exceptions in a local checked type, which should be rethrown here.
