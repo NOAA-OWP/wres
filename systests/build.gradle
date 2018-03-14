@@ -36,9 +36,9 @@ distributions
                 include 'scenario*/benchmarks/**'
                 include 'smalldata/**'
 		include 'scripts/*'
+                include 'scenario*/*.csv'
+                include 'sceanrio*/*.xml'
 		exclude 'scenario*/output'
-		exclude 'scenario407/thresholds.csv'
-		exclude 'scenario408/thresholds.csv'
             }
         }
     }
