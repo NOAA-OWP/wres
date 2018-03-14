@@ -1,5 +1,6 @@
 package wres.control;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
@@ -7,7 +8,9 @@ import wres.config.FeaturePlus;
 import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.Feature;
+import wres.config.generated.MetricConfigName;
 import wres.config.generated.ProjectConfig;
+import wres.datamodel.ThresholdsByType;
 
 /**
  * Represents a project that has been "resolved", i.e. any kind of translation
@@ -26,23 +29,29 @@ class ResolvedProject
     private final ProjectConfigPlus projectConfigPlus;
     private final Set<FeaturePlus> decomposedFeatures;
     private final String projectIdentifier;
+    private final Map<FeaturePlus, Map<MetricConfigName, ThresholdsByType>> thresholds;
 
     private ResolvedProject( ProjectConfigPlus projectConfigPlus,
                              Set<FeaturePlus> decomposedFeatures,
-                             String projectIdentifier )
+                             String projectIdentifier,
+                             Map<FeaturePlus, Map<MetricConfigName, ThresholdsByType>> thresholds )
     {
         this.projectConfigPlus = projectConfigPlus;
-        this.decomposedFeatures = decomposedFeatures;
+        this.decomposedFeatures = Collections.unmodifiableSet( decomposedFeatures );
         this.projectIdentifier = projectIdentifier;
+        this.thresholds = Collections.unmodifiableMap( thresholds );
     }
 
     static ResolvedProject of( ProjectConfigPlus projectConfigPlus,
                                Set<FeaturePlus> decomposedFeatures,
-                               String projectIdentifier )
+                               String projectIdentifier,
+                               Map<FeaturePlus, Map<MetricConfigName, ThresholdsByType>> thresholds )
     {
         return new ResolvedProject( projectConfigPlus,
                                     decomposedFeatures,
-                                    projectIdentifier );
+                                    projectIdentifier,
+                                    thresholds );
+
     }
 
     /**
@@ -114,5 +123,12 @@ class ResolvedProject
     {
         return this.getProjectConfigPlus()
                    .getGraphicsStrings();
+    }
+
+
+    Map<MetricConfigName, ThresholdsByType>
+    getThresholdForFeature( FeaturePlus featurePlus )
+    {
+        return this.thresholds.get( featurePlus );
     }
 }

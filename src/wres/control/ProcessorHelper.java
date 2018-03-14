@@ -134,7 +134,8 @@ class ProcessorHelper
 
         ResolvedProject resolvedProject = ResolvedProject.of( projectConfigPlus,
                                                               decomposedFeatures,
-                                                              null );
+                                                              null,
+                                                              thresholds );
 
         // Reduce our triad of executors to one object
         ExecutorServices executors = new ExecutorServices( pairExecutor,
@@ -158,7 +159,6 @@ class ProcessorHelper
 
             FeatureProcessingResult result =
                     processFeature( feature,
-                                    thresholds.get( feature ),
                                     resolvedProject,
                                     projectDetails,
                                     executors,
@@ -252,8 +252,6 @@ class ProcessorHelper
      * the ProjectConfigPlus to the graphics generator is needed and should stay.
      *
      * @param feature the feature to process
-     * @param thresholds an optional set of (canonical) thresholds for which
-     *                   results are required, may be null
      * @param resolvedProject the resolved project
      * @param projectDetails the project details to use
      * @param executors the executors for pairs, thresholds, and metrics
@@ -263,7 +261,6 @@ class ProcessorHelper
      */
 
     private static FeatureProcessingResult processFeature( final FeaturePlus feature,
-                                                           final Map<MetricConfigName, ThresholdsByType> thresholds,
                                                            final ResolvedProject resolvedProject,
                                                            final ProjectDetails projectDetails,
                                                            final ExecutorServices executors,
@@ -271,6 +268,8 @@ class ProcessorHelper
     {
 
         final ProjectConfig projectConfig = resolvedProject.getProjectConfig();
+        final Map<MetricConfigName, ThresholdsByType> thresholds =
+                resolvedProject.getThresholdForFeature( feature );
 
         final String featureDescription = ConfigHelper.getFeatureDescription( feature );
         final String errorMessage = "While processing feature " + featureDescription;
