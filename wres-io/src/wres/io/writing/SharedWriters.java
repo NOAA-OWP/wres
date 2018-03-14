@@ -88,7 +88,7 @@ public class SharedWriters
         }
         
         /**
-         * Return an instance of a {@link SharedWriter}.
+         * Return an instance of a {@link SharedWriters}.
          * 
          * @return a container for sharing writers
          */
