@@ -26,17 +26,16 @@ import ucar.nc2.Dimension;
 import ucar.nc2.NetcdfFileWriter;
 import ucar.nc2.Variable;
 
-import wres.config.ProjectConfigException;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.Thresholds;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MapKey;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
 import wres.io.writing.WriteException;
-import wres.io.writing.WriterHelper;
 
 /**
  * Consumes {@link DoubleScoreOutput} and writes one or more NetCDF files.
@@ -85,7 +84,6 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
      * @param leadCount the count of leads to write (netCDF lib needs it)
      * @param thresholdCount the count of thresholds to write (netCDF lib needs it)
      * @param metrics the metric names to write (netCDF lib needs it)
-     * @throws ProjectConfigException if the project configuration is not valid for writing
      */
 
     private NetcdfDoubleScoreWriter( ProjectConfig projectConfig,
@@ -94,9 +92,8 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                                      int leadCount,
                                      int thresholdCount,
                                      List<String> metrics )
-            throws ProjectConfigException, IOException
+            throws IOException
     {
-        WriterHelper.validateProjectForWriting( projectConfig );
         this.files = NetcdfDoubleScoreWriter.initializeFiles( projectConfig,
                                                               featureCount,
                                                               timeStepCount,
@@ -118,7 +115,9 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
 
 
     /**
-     * Returns a writer of {@link DoubleScoreOutput}.
+     * Returns a writer of {@link DoubleScoreOutput}. Assumes that the project
+     * configuration has already been validated, so that validation is the
+     * caller's responsibility.
      *
      * @param projectConfig the project configuration
      * @return a writer
@@ -127,7 +126,6 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
      * @param leadCount the count of lead times to write (netCDF lib needs it)
      * @param thresholdCount the count of thresholds to write (netCDF lib needs it)
      * @param metrics the metric names to write (netCDF lib needs it)
-     * @throws ProjectConfigException if the project configuration is not valid for writing
      * @throws IOException when creation or mutation of the netcdf file fails
      */
 
@@ -137,7 +135,7 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                                               int leadCount,
                                               int thresholdCount,
                                               List<String> metrics )
-            throws ProjectConfigException, IOException
+            throws IOException
     {
         return new NetcdfDoubleScoreWriter( projectConfig,
                                             featureCount,
@@ -690,7 +688,7 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                           featureName, featureId, getStations() );
         }
 
-        this.getOrAddIntValueToVariable( writer, features, featureId );
+        this.getOrAddValueToVariable( writer, features, featureId );
 
         if ( LOGGER.isDebugEnabled() )
         {
@@ -698,27 +696,36 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
         }
 
 
-        // Set up thresholds (nonsense for now)
+        // Set up thresholds
         Variable thresholds =
                 NetcdfDoubleScoreWriter.getVariableOrDie( writer, "threshold" );
 
-        // Works only when the inner char[]s are exactly STRING_LENGTH long?
-        double[] thresholdsValues = { 0.41, 0.93 };
-        Array ncthresholdsValues =
-                ArrayDouble.D1.makeFromJavaArray( thresholdsValues );
-
-        try
+        for ( Thresholds t : output.setOfThresholdKey() )
         {
-            writer.write( thresholds, ncthresholdsValues );
-        }
-        catch ( InvalidRangeException ire )
-        {
-            throw new IOException( "Failed to write to variable "
-                                   + thresholds + " in NetCDF file "
-                                   + writer + " using raw data "
-                                   + Arrays.toString( thresholdsValues )
-                                   + " and nc data "
-                                   + ncthresholdsValues, ire );
+            if ( t.first().hasProbabilityValues() )
+            {
+                this.getOrAddValueToVariable( writer,
+                                              thresholds,
+                                              t.first().getThresholdProbability() );
+            }
+            else
+            {
+                this.getOrAddValueToVariable( writer,
+                                              thresholds,
+                                              t.first().getThreshold() );
+            }
+            if ( t.hasTwo() && t.second().hasProbabilityValues() )
+            {
+                this.getOrAddValueToVariable( writer,
+                                              thresholds,
+                                              t.second().getThresholdProbability() );
+            }
+            else if ( t.hasTwo() )
+            {
+                this.getOrAddValueToVariable( writer,
+                                              thresholds,
+                                              t.second().getThreshold() );
+            }
         }
 
         // Set up thresholds (nonsense for now)
@@ -1064,9 +1071,9 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
      * @throws IOException when something goes wrong with writing
      * @throws NullPointerException when variable is null
      */
-    private int getOrAddIntValueToVariable( NetcdfFileWriter writer,
-                                            Variable variable,
-                                            int value )
+    private int getOrAddValueToVariable( NetcdfFileWriter writer,
+                                         Variable variable,
+                                         int value )
             throws IOException
     {
         Objects.requireNonNull( variable );
@@ -1111,7 +1118,11 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
             {
                 // We did not find what we were looking for...
                 throw new IllegalStateException( "Could not find a way to "
-                                                 + "write value " + value );
+                                                 + "write value " + value
+                                                 + " after searching through "
+                                                 + existingValues.getSize()
+                                                 + " values in variable "
+                                                 + variable );
             }
 
             // The value was not found, add and return the index.
@@ -1120,6 +1131,96 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
 
             // (Should this be D0 or D1? Does it matter?)
             Array ncToWrite = ArrayInt.D1.makeFromJavaArray( rawToWrite );
+
+            try
+            {
+                writer.write( variable, index, ncToWrite );
+            }
+            catch ( InvalidRangeException ire )
+            {
+                throw new IOException( "Failed to write to variable "
+                                       + variable + " in NetCDF file "
+                                       + writer + " using raw data "
+                                       + Arrays.toString( rawToWrite )
+                                       + " and nc data "
+                                       + ncToWrite, ire );
+            }
+
+            return indexToUse;
+        }
+    }
+
+
+    /**
+     * Retrieve or add-and-retrieve value from 1D double variable. Idempotent.
+     * @param writer the writer that variable is part of, not in define mode
+     * @param variable the variable to find value in (or add to if not present)
+     * @param value the value to search for within the variable
+     * @return the index of the value within the variable
+     * @throws IOException when something goes wrong with writing
+     * @throws IllegalArgumentException when variable is not rank 1 DOUBLE
+     * @throws IllegalStateException when writer is in define mode
+     * @throws NullPointerException when variable is null
+     */
+    private int getOrAddValueToVariable( NetcdfFileWriter writer,
+                                         Variable variable,
+                                         double value )
+            throws IOException
+    {
+        Objects.requireNonNull( variable );
+
+        if ( !variable.getDataType().equals( DataType.DOUBLE )
+             || variable.getRank() != 1 )
+        {
+            throw new IllegalArgumentException( "Method requires rank 1 DOUBLE variable" );
+        }
+
+        if ( writer.isDefineMode() )
+        {
+            throw new IllegalStateException( "Writer must not be in define mode." );
+        }
+
+        int indexToUse = INT_FILL_VALUE;
+        boolean found = false;
+
+        synchronized ( this.getLocks().get( writer ) )
+        {
+            Array existingValues = variable.read();
+
+            for ( int i = 0; i < existingValues.getSize(); i++ )
+            {
+                if ( existingValues.getDouble( i ) == value )
+                {
+                    // The value was found, return the index.
+                    return i;
+                }
+                else if ( existingValues.getDouble( i ) == DOUBLE_FILL_VALUE )
+                {
+                    // The value was not found, but this is an empty spot,
+                    // so use the current spot.
+                    indexToUse = i;
+                    found = true;
+                    break;
+                }
+                // Keep searching for the value.
+            }
+
+            if ( !found )
+            {
+                // We did not find what we were looking for...
+                throw new IllegalStateException( "Could not find a way to "
+                                                 + "write value " + value
+                                                 + " after searching through "
+                                                 + existingValues.getSize()
+                                                 + " values in variable "
+                                                 + variable );
+            }
+
+            // The value was not found, add and return the index.
+            int[] index = { indexToUse };
+            double[] rawToWrite = { value };
+
+            Array ncToWrite = ArrayDouble.D1.makeFromJavaArray( rawToWrite );
 
             try
             {
