@@ -40,6 +40,7 @@ import wres.io.data.details.ProjectDetails;
 import wres.io.retrieval.InputGenerator;
 import wres.io.retrieval.IterationFailedException;
 import wres.io.utilities.NoDataException;
+import wres.io.writing.SharedWriters;
 import wres.util.ProgressMonitor;
 
 /**
@@ -127,6 +128,9 @@ class ProcessorHelper
                 new TreeMap<>( FeaturePlus::compareByLocationId );
         thresholds.putAll( ConfigHelper.readExternalThresholdsFromProjectConfig( projectConfig ) );
 
+        // Build any writers of incremental formats that are shared across features
+        SharedWriters sharedWriters = ConfigHelper.getSharedWriters( projectConfig );
+        
         // Reduce our triad of executors to one object
         ExecutorServices executors = new ExecutorServices( pairExecutor,
                                                            thresholdExecutor,
@@ -152,7 +156,8 @@ class ProcessorHelper
                                     thresholds.get( FeaturePlus.of( feature ) ),
                                     projectConfigPlus,
                                     projectDetails,
-                                    executors );
+                                    executors,
+                                    sharedWriters );
 
             if ( result.hadData() )
             {
@@ -236,12 +241,15 @@ class ProcessorHelper
      * Processes a {@link ProjectConfigPlus} for a specific {@link Feature} using a prescribed {@link ExecutorService}
      * for each of the pairs, thresholds and metrics.
      * 
+     * TODO: please eliminate projectConfigPlus from the params and use projectDetails to source the project config.
+     * 
      * @param feature the feature to process
      * @param thresholds an optional set of (canonical) thresholds for which
      *                   results are required, may be null
      * @param projectConfigPlus the project configuration
      * @param projectDetails the project details to use
      * @param executors the executors for pairs, thresholds, and metrics
+     * @param sharedWriters writers that are shared across features 
      * @throws WresProcessingException when an error occurs during processing
      * @return a feature result
      */
@@ -250,7 +258,8 @@ class ProcessorHelper
                                                            final Map<MetricConfigName, ThresholdsByType> thresholds,
                                                            final ProjectConfigPlus projectConfigPlus,
                                                            final ProjectDetails projectDetails,
-                                                           final ExecutorServices executors )
+                                                           final ExecutorServices executors,
+                                                           final SharedWriters sharedWriters )
     {
 
         final ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
@@ -301,7 +310,8 @@ class ProcessorHelper
                         CompletableFuture.supplyAsync( new PairsByTimeWindowProcessor( nextInput, processor ),
                                                        executors.getPairExecutor() )
                                          .thenAcceptAsync( new ProductProcessor( projectConfigPlus,
-                                                                                 onlyWriteTheseTypes ),
+                                                                                 onlyWriteTheseTypes,
+                                                                                 sharedWriters ),
                                                            executors.getPairExecutor() )
                                          .thenAccept( aVoid -> ProgressMonitor.completeStep() );
 
@@ -354,7 +364,8 @@ class ProcessorHelper
                                             && !ConfigHelper.getIncrementalFormats( projectConfig ).contains( format );
                 ProductProcessor endOfPipeline =
                         new ProductProcessor( projectConfigPlus,
-                                              nowWriteTheseTypes );
+                                              nowWriteTheseTypes,
+                                              sharedWriters );
 
                 // Generate output
                 endOfPipeline.accept( processor.getCachedMetricOutput() );
