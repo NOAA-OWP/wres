@@ -11,6 +11,7 @@ import java.util.Set;
 
 import org.junit.Test;
 
+import wres.config.ProjectConfigPlus;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
@@ -26,7 +27,6 @@ import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.config.MetricConfigurationException;
-import wres.io.config.ProjectConfigPlus;
 
 /**
  * Tests the {@link MetricProcessor}.

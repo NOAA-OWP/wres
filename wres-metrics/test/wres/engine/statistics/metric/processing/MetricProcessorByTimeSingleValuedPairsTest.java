@@ -19,6 +19,7 @@ import java.util.concurrent.Executors;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
+import wres.config.ProjectConfigPlus;
 import wres.config.generated.MetricConfigName;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
@@ -50,7 +51,6 @@ import wres.datamodel.outputs.PairedOutput;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricTestDataFactory;
-import wres.io.config.ProjectConfigPlus;
 
 /**
  * Tests the {@link MetricProcessorByTimeSingleValuedPairs}.

@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.FeaturePlus;
 import wres.config.ProjectConfigException;
+import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationType;
 import wres.config.generated.Feature;
 import wres.config.generated.MetricConfigName;
@@ -35,7 +36,6 @@ import wres.engine.statistics.metric.processing.MetricProcessorException;
 import wres.engine.statistics.metric.processing.MetricProcessorForProject;
 import wres.io.Operations;
 import wres.io.config.ConfigHelper;
-import wres.io.config.ProjectConfigPlus;
 import wres.io.data.details.ProjectDetails;
 import wres.io.retrieval.InputGenerator;
 import wres.io.retrieval.IterationFailedException;
