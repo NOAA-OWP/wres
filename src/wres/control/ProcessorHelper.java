@@ -242,7 +242,10 @@ class ProcessorHelper
      * for each of the pairs, thresholds and metrics.
      * 
      * TODO: please eliminate projectConfigPlus from the params and use projectDetails to source the project config.
-     * 
+     * JFB: On reconsideration, the ProjectConfigPlus was precisely intended
+     * for sharing with the graphics generator. So whatever is needed to pass
+     * the ProjectConfigPlus to the graphics generator is needed and should stay.
+     *
      * @param feature the feature to process
      * @param thresholds an optional set of (canonical) thresholds for which
      *                   results are required, may be null
