@@ -1,15 +1,19 @@
 package wres.control;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import wres.config.FeaturePlus;
 import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationConfig;
-import wres.config.generated.Feature;
 import wres.config.generated.MetricConfigName;
 import wres.config.generated.ProjectConfig;
+import wres.datamodel.Threshold;
 import wres.datamodel.ThresholdsByType;
 
 /**
@@ -26,6 +30,9 @@ import wres.datamodel.ThresholdsByType;
  */
 class ResolvedProject
 {
+    private static final Logger LOGGER
+            = LoggerFactory.getLogger( ResolvedProject.class );
+
     private final ProjectConfigPlus projectConfigPlus;
     private final Set<FeaturePlus> decomposedFeatures;
     private final String projectIdentifier;
@@ -125,10 +132,45 @@ class ResolvedProject
                    .getGraphicsStrings();
     }
 
+    private Map<FeaturePlus, Map<MetricConfigName, ThresholdsByType>> getThresholds()
+    {
+        return thresholds;
+    }
 
     Map<MetricConfigName, ThresholdsByType>
     getThresholdForFeature( FeaturePlus featurePlus )
     {
-        return this.thresholds.get( featurePlus );
+        return this.getThresholds().get( featurePlus );
+    }
+
+    int getThresholdCount()
+    {
+        Set<Threshold> thresholds = new HashSet<>();
+
+        // Dive through the threshold hierarchy to find what we
+        // are looking for. TODO: find a better way of getting this info.
+        for ( Map.Entry<FeaturePlus, Map<MetricConfigName, ThresholdsByType>> outerThresholds
+                : this.getThresholds().entrySet() )
+        {
+            for ( Map.Entry<MetricConfigName, ThresholdsByType> middleThresholds
+                  : outerThresholds.getValue().entrySet() )
+            {
+                for ( ThresholdsByType.ThresholdType innerThresholds
+                        : middleThresholds.getValue().getStoredTypes() )
+                {
+                    thresholds.addAll( middleThresholds.getValue()
+                                                       .getThresholdsByType( innerThresholds ) );
+                }
+            }
+        }
+
+        LOGGER.debug( "Thresholds found: {}", thresholds );
+        // There is an additional implicit "All Data" threshold, so add one.
+        return thresholds.size() + 1;
+    }
+
+    int getFeatureCount()
+    {
+        return this.getDecomposedFeatures().size();
     }
 }

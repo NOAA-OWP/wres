@@ -13,6 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import ohd.hseb.charter.ChartEngineException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ucar.ma2.Array;
@@ -437,6 +438,7 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
         Dimension leadSecondsDimension = writer.addDimension( null,
                                                               "lead_seconds",
                                                               leadCount );
+
         Dimension thresholdDimension = writer.addDimension( null,
                                                             "threshold",
                                                             thresholdCount );
@@ -454,8 +456,8 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                                                        "station_id",
                                                        DataType.INT,
                                                        shareableFeatureDimensions );
-        NetcdfDoubleScoreWriter.addNoDataAttributesInt( featureVariable,
-                                                        INT_FILL_VALUE );
+        NetcdfDoubleScoreWriter.addNoDataAttributes( featureVariable,
+                                                     INT_FILL_VALUE );
         Attribute featureNameAttribute =
                 new Attribute( "long_name", "Station id" );
         featureVariable.addAttribute( featureNameAttribute );
@@ -468,8 +470,8 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                                                          "threshold",
                                                          DataType.DOUBLE,
                                                          shareableThresholdDimensions );
-        NetcdfDoubleScoreWriter.addNoDataAttributesDouble( thresholdVariable,
-                                                           DOUBLE_FILL_VALUE );
+        NetcdfDoubleScoreWriter.addNoDataAttributes( thresholdVariable,
+                                                     DOUBLE_FILL_VALUE );
         Attribute thresholdCoordinatesAttribute =
                 new Attribute( "coordinates", "threshold_name" );
         thresholdVariable.addAttribute( thresholdCoordinatesAttribute );
@@ -493,8 +495,8 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                                                     "time",
                                                     DataType.INT,
                                                     shareableTimeDimensions );
-        NetcdfDoubleScoreWriter.addNoDataAttributesInt( timeVariable,
-                                                        INT_FILL_VALUE );
+        NetcdfDoubleScoreWriter.addNoDataAttributes( timeVariable,
+                                                     INT_FILL_VALUE );
         // https://www.unidata.ucar.edu/software/udunits/CHANGE_LOG implies
         // that since udunits 2.0.1 released in 2008, rfc3339 dates work.
         Attribute timeUnitsAttribute =
@@ -509,8 +511,8 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                                                            "lead_seconds",
                                                            DataType.INT,
                                                            shareableLeadSecondsDimensions );
-        NetcdfDoubleScoreWriter.addNoDataAttributesInt( leadSecondsVariable,
-                                                        INT_FILL_VALUE );
+        NetcdfDoubleScoreWriter.addNoDataAttributes( leadSecondsVariable,
+                                                     INT_FILL_VALUE );
         Attribute leadSecondsUnits = new Attribute( "units", "seconds" );
         leadSecondsVariable.addAttribute( leadSecondsUnits );
 
@@ -532,10 +534,9 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                                                           metricName,
                                                           DataType.DOUBLE,
                                                           shareableScoreDimensions );
-            NetcdfDoubleScoreWriter.addNoDataAttributesDouble( metricVariable,
-                                                               DOUBLE_FILL_VALUE );
+            NetcdfDoubleScoreWriter.addNoDataAttributes( metricVariable,
+                                                         DOUBLE_FILL_VALUE );
         }
-
     }
 
 
@@ -552,10 +553,15 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
      * @throws IllegalStateException when writer not in define mode
      */
 
-    private static void addNoDataAttributesDouble( Variable variable,
-                                                   double noDataValue )
+    private static void addNoDataAttributes( Variable variable,
+                                             double noDataValue )
     {
         Objects.requireNonNull( variable );
+
+        if ( variable.getDataType() != DataType.DOUBLE )
+        {
+            throw new IllegalArgumentException( "Specify a variable of type DOUBLE when passing double as second arg" );
+        }
 
         if ( Double.compare( noDataValue, 0.0 ) == 0 )
         {
@@ -592,10 +598,15 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
      * @throws IllegalStateException when writer not in define mode
      */
 
-    private static void addNoDataAttributesInt( Variable variable,
+    private static void addNoDataAttributes( Variable variable,
                                                 int noDataValue )
     {
         Objects.requireNonNull( variable );
+
+        if ( variable.getDataType() != DataType.INT )
+        {
+            throw new IllegalArgumentException( "Specify a variable of type INT when passing int as second arg" );
+        }
 
         if ( noDataValue == 0 )
         {
@@ -700,59 +711,47 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
         Variable thresholds =
                 NetcdfDoubleScoreWriter.getVariableOrDie( writer, "threshold" );
 
+        // Set up thresholds names
+        Variable thresholdNames =
+                NetcdfDoubleScoreWriter.getVariableOrDie( writer, "threshold_name" );
+
         for ( Thresholds t : output.setOfThresholdKey() )
         {
+            // TODO Threshold should let me know which one was chosen by user,
+            // that way no need to go through all these four states.
             if ( t.first().hasProbabilityValues() )
             {
+                LOGGER.debug( "threshold first has probability values" );
                 this.getOrAddValueToVariable( writer,
                                               thresholds,
                                               t.first().getThresholdProbability() );
             }
             else
             {
+                LOGGER.debug( "threshold first has no probability values" );
                 this.getOrAddValueToVariable( writer,
                                               thresholds,
                                               t.first().getThreshold() );
             }
+
             if ( t.hasTwo() && t.second().hasProbabilityValues() )
             {
+                LOGGER.debug( "threshold second has probability values" );
                 this.getOrAddValueToVariable( writer,
                                               thresholds,
                                               t.second().getThresholdProbability() );
             }
             else if ( t.hasTwo() )
             {
+                LOGGER.debug( "threshold second has no probability values" );
                 this.getOrAddValueToVariable( writer,
                                               thresholds,
                                               t.second().getThreshold() );
             }
-        }
 
-        // Set up thresholds (nonsense for now)
-        Variable thresholdNames =
-                NetcdfDoubleScoreWriter.getVariableOrDie( writer, "threshold_name" );
-
-        // Works only when the inner char[]s are exactly STRING_LENGTH long?
-        char[][] thresholdNamesValues = {
-                Arrays.copyOf( "Some kind of threshold".toCharArray(),
-                               STRING_LENGTH ),
-                Arrays.copyOf( "Another kind of threshold".toCharArray(),
-                               STRING_LENGTH ) };
-        Array ncThresholdNamesValues =
-                ArrayChar.D2.makeFromJavaArray( thresholdNamesValues );
-
-        try
-        {
-            writer.write( thresholdNames, ncThresholdNamesValues );
-        }
-        catch ( InvalidRangeException ire )
-        {
-            throw new IOException( "Failed to write to variable "
-                                   + thresholdNames + " in NetCDF file "
-                                   + writer + " using raw data "
-                                   + Arrays.deepToString( thresholdNamesValues )
-                                   + " and nc data "
-                                   + ncThresholdNamesValues, ire );
+            this.getOrAddValueToVariable( writer,
+                                          thresholdNames,
+                                          t.toString() );
         }
 
         if ( LOGGER.isDebugEnabled() )
@@ -1071,6 +1070,7 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
      * @throws IOException when something goes wrong with writing
      * @throws NullPointerException when variable is null
      */
+
     private int getOrAddValueToVariable( NetcdfFileWriter writer,
                                          Variable variable,
                                          int value )
@@ -1162,6 +1162,7 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
      * @throws IllegalStateException when writer is in define mode
      * @throws NullPointerException when variable is null
      */
+
     private int getOrAddValueToVariable( NetcdfFileWriter writer,
                                          Variable variable,
                                          double value )
@@ -1180,6 +1181,9 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
             throw new IllegalStateException( "Writer must not be in define mode." );
         }
 
+        LOGGER.debug( "getOrAddValueToVariable called with double value: {}, writer: {}, variable: {}",
+                      value, writer, variable );
+
         int indexToUse = INT_FILL_VALUE;
         boolean found = false;
 
@@ -1189,20 +1193,35 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
 
             for ( int i = 0; i < existingValues.getSize(); i++ )
             {
-                if ( existingValues.getDouble( i ) == value )
+                double valueAtI = existingValues.getDouble( i );
+
+                LOGGER.debug( "double value found at index {}: {}",
+                              i,
+                              valueAtI );
+
+                if ( Double.compare( valueAtI, value ) == 0 )
                 {
+                    LOGGER.debug( "Found existing value matches at index {}",
+                                  i );
                     // The value was found, return the index.
                     return i;
                 }
-                else if ( existingValues.getDouble( i ) == DOUBLE_FILL_VALUE )
+                else if ( Double.compare( valueAtI, DOUBLE_FILL_VALUE ) == 0 )
                 {
+                    LOGGER.debug( "Found a double fill value at index {}", i );
                     // The value was not found, but this is an empty spot,
                     // so use the current spot.
                     indexToUse = i;
                     found = true;
                     break;
                 }
-                // Keep searching for the value.
+                else
+                {
+                    // Keep searching for the value.
+                    LOGGER.debug( "Continuing to search for value {} after index {}",
+                                  value, i );
+
+                }
             }
 
             if ( !found )
@@ -1237,6 +1256,136 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
             }
 
             return indexToUse;
+        }
+    }
+
+
+    /**
+     * Retrieve or add-and-retrieve value from 1D double variable. Idempotent.
+     * @param writer the writer that variable is part of, not in define mode
+     * @param variable the variable to find value in (or add to if not present)
+     * @param value the value to search for within the variable
+     * @return the index of the value within the variable
+     * @throws IOException when something goes wrong with writing
+     * @throws IllegalArgumentException when variable is not rank 1 DOUBLE
+     * @throws IllegalStateException when writer is in define mode
+     * @throws NullPointerException when variable is null
+     */
+
+    private int getOrAddValueToVariable( NetcdfFileWriter writer,
+                                         Variable variable,
+                                         String value )
+            throws IOException
+    {
+        Objects.requireNonNull( variable );
+
+        if ( !variable.getDataType().equals( DataType.CHAR )
+             || variable.getRank() != 2 )
+        {
+            throw new IllegalArgumentException( "Method requires rank 2 CHAR variable" );
+        }
+
+        if ( writer.isDefineMode() )
+        {
+            throw new IllegalStateException( "Writer must not be in define mode." );
+        }
+
+        LOGGER.debug( "getOrAddValueToVariable called with String value: {}, writer: {}, variable: {}",
+                      value, writer, variable );
+
+        int stringIndex = -1;
+        boolean found = false;
+
+        synchronized ( this.getLocks().get( writer ) )
+        {
+            Array existingValues = variable.read();
+
+            // Size of existingValues will be total char count, we want one
+            // char[] at a time, so divide by STRING_LENGTH.
+            for ( stringIndex = 0;
+                  stringIndex < existingValues.getSize() / STRING_LENGTH;
+                  stringIndex++ )
+            {
+                char[] valueAtI = new char[STRING_LENGTH];
+
+                // Save the inner indices for use outside the loops
+                int charIndex = 0;
+                int flatIndex = 0;
+
+                // Get a single string-like char[]
+                for ( charIndex = 0; charIndex < STRING_LENGTH; charIndex++ )
+                {
+                    flatIndex = stringIndex * STRING_LENGTH + charIndex;
+                    valueAtI[charIndex] = existingValues.getChar( flatIndex );
+
+                    if ( Character.compare( valueAtI[charIndex], '\0' ) == 0)
+                    {
+                        break;
+                    }
+                }
+
+                String resolvedValueAtI = String.valueOf( valueAtI )
+                                                .trim();
+
+                LOGGER.debug( "String value found at index {},{} flat {}: {}",
+                              stringIndex, charIndex, flatIndex, resolvedValueAtI );
+
+                if ( resolvedValueAtI.equals( value ) )
+                {
+                    LOGGER.debug( "Found existing value matches at index {},{} flat {}",
+                                  stringIndex, charIndex, flatIndex);
+                    // The value was found, return the string index.
+                    return stringIndex;
+                }
+                else if ( resolvedValueAtI.equals( "" ) )
+                {
+                    LOGGER.debug( "Found an empty String value at index {},{} flat {}",
+                                  stringIndex, charIndex, flatIndex );
+                    // Use the stringIndex, 0
+                    found = true;
+                    break;
+                }
+                else
+                {
+                    // Keep searching for the value.
+                    LOGGER.debug( "Continuing to search for value {} after index {},{}",
+                                  value, stringIndex, charIndex );
+
+                }
+            }
+
+            if ( !found )
+            {
+                // We did not find what we were looking for...
+                throw new IllegalStateException( "Could not find a way to "
+                                                 + "write value " + value
+                                                 + " after searching through "
+                                                 + existingValues.getSize()
+                                                 + " values in variable "
+                                                 + variable );
+            }
+
+            // The value was not found, add and return the index.
+            int[] index = { stringIndex, 0 };
+            char[][] rawToWrite = { Arrays.copyOf( value.toCharArray(), STRING_LENGTH ) };
+
+            Array ncToWrite = ArrayChar.D2.makeFromJavaArray( rawToWrite );
+
+            try
+            {
+                writer.write( variable, index, ncToWrite );
+            }
+            catch ( InvalidRangeException ire )
+            {
+                throw new IOException( "Failed to write to variable "
+                                       + variable + " in NetCDF file "
+                                       + writer + " using raw data "
+                                       + Arrays.toString( rawToWrite )
+                                       + " and nc data "
+                                       + ncToWrite, ire );
+            }
+
+            return stringIndex;
         }
     }
 

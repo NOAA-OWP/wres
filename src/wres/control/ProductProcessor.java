@@ -185,8 +185,8 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
         // Register output consumers
         try
         {
-            buildConsumers( sharedWriters,
-                            resolvedProject.getDecomposedFeatures() );
+            // implicitly passing resolvedProject via shared state
+            buildConsumers( sharedWriters );
         }
         catch ( ProjectConfigException | IOException e )
         {
@@ -262,8 +262,7 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
      * @throws ProjectConfigException if the project configuration is invalid for writing
      */
 
-    private void buildConsumers( SharedWriters sharedWriters,
-                                 Set<FeaturePlus> resolvedFeatures )
+    private void buildConsumers( SharedWriters sharedWriters )
             throws ProjectConfigException, IOException
     {
         // There is one consumer per project for each type, because consumers are built
@@ -272,8 +271,8 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
         // Register consumers for the NetCDF output type
         if ( configNeedsThisTypeOfOutput( DestinationType.NETCDF ) )
         {
-            buildNetCDFConsumers( sharedWriters,
-                                  resolvedFeatures );
+            // implicitly passing resolvedProject via shared state
+            buildNetCDFConsumers( sharedWriters );
         }
 
         // Register consumers for the CSV output type
@@ -340,14 +339,7 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
 
     /**
      * Builds a set of consumers for writing files in Portable Network Graphics (PNG) format.
-     * 
-     * TODO: remove the dependence of this class on ProjectConfigPlus via the graphics strings required by 
-     * the consumers built in this method. Instead, pass on ProjectConfig together with graphics strings or an 
-     * alternative representation of project configuration. The ProjectConfigPlus is not intended for sharing.
-     * JFB: On reconsideration, the ProjectConfigPlus was precisely intended
-     * for sharing with the graphics generator. So whatever is needed to pass
-     * the ProjectConfigPlus to the graphics generator is needed and should stay.
-     * 
+     *
      * @throws ProjectConfigException if the project configuration is invalid for writing
      */
 
@@ -395,11 +387,16 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
      * @throws IOException when creation or mutation of netcdf files fails
      */
 
-    private void buildNetCDFConsumers( SharedWriters sharedWriters,
-                                       Set<FeaturePlus> features )
+    private void buildNetCDFConsumers( SharedWriters sharedWriters )
             throws IOException
     {
         // Build the consumers conditionally
+        int featureCount = this.getResolvedProject().getFeatureCount();
+        // TODO: resolve the actual timeStepCount of a project
+        int timeStepCount = 2;
+        // TODO: resolve the actual leadCount of a project
+        int leadCount = 2;
+        int thresholdCount = this.getResolvedProject().getThresholdCount();
 
         // Register consumers for the NetCDF output type
         if ( writeWhenTrue.test( MetricOutputGroup.DOUBLE_SCORE, DestinationType.NETCDF ) )
@@ -416,7 +413,10 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
             {
                 doubleScoreConsumers.put( DestinationType.NETCDF,
                                           ConfigHelper.getNetcdfDoubleScoreWriter( this.getProjectConfig(),
-                                                                                   features ) );
+                                                                                   featureCount,
+                                                                                   timeStepCount,
+                                                                                   leadCount,
+                                                                                   thresholdCount ) );
             }
         }
     }
