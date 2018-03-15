@@ -23,6 +23,7 @@ import wres.datamodel.Threshold;
 import wres.datamodel.Threshold.Operator;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
@@ -191,6 +192,8 @@ public final class MetricProcessorTest
             throws IOException, MetricConfigurationException, MetricParameterException, MetricProcessorException
     {
         final DataFactory metIn = DefaultDataFactory.getInstance();
+        final MetadataFactory metFac = metIn.getMetadataFactory();
+        
         //Single-valued case
         String configPathSingleValued = "testinput/metricProcessorTest/test4SingleValued.xml";
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathSingleValued ) ).getProjectConfig();
@@ -198,7 +201,7 @@ public final class MetricProcessorTest
                 MetricFactory.getInstance( metIn )
                              .ofMetricProcessorByTimeSingleValuedPairs( config,
                                                                         MetricOutputGroup.values() );
-        Threshold firstTest = metIn.ofThreshold( 0.5, Operator.GREATER );
+        Threshold firstTest = metIn.ofThreshold( 0.5, Operator.GREATER, metFac.getDimension( "CMS" ) );
         Set<MetricConstants> firstSet =
                 processor.doNotComputeTheseMetricsForThisThreshold( processor.thresholdsByMetric,
                                                                     MetricInputGroup.SINGLE_VALUED,
@@ -208,7 +211,7 @@ public final class MetricProcessorTest
                     + "'",
                     firstSet.equals( new HashSet<>( Arrays.asList( MetricConstants.MEAN_SQUARE_ERROR,
                                                                    MetricConstants.MEAN_ABSOLUTE_ERROR ) ) ) );
-        Threshold secondTest = metIn.ofThreshold( 0.75, Operator.GREATER );
+        Threshold secondTest = metIn.ofThreshold( 0.75, Operator.GREATER, metFac.getDimension( "CMS" ) );
         Set<MetricConstants> secondSet =
                 processor.doNotComputeTheseMetricsForThisThreshold( processor.thresholdsByMetric,
                                                                     MetricInputGroup.SINGLE_VALUED,
@@ -217,7 +220,7 @@ public final class MetricProcessorTest
         assertTrue( "Unexpected set of metrics to ignore for threshold '" + secondTest
                     + "'",
                     secondSet.equals( new HashSet<>( Arrays.asList( ) ) ) );
-        Threshold thirdTest = metIn.ofThreshold( 0.83, Operator.GREATER );
+        Threshold thirdTest = metIn.ofThreshold( 0.83, Operator.GREATER, metFac.getDimension( "CMS" ) );
         Set<MetricConstants> thirdSet =
                 processor.doNotComputeTheseMetricsForThisThreshold( processor.thresholdsByMetric,
                                                                     MetricInputGroup.SINGLE_VALUED,
@@ -227,7 +230,7 @@ public final class MetricProcessorTest
                     + "'",
                     thirdSet.equals( new HashSet<>( Arrays.asList( MetricConstants.MEAN_SQUARE_ERROR,
                                                                    MetricConstants.MEAN_ABSOLUTE_ERROR) ) ) );
-        Threshold fourthTest = metIn.ofThreshold( 0.9, Operator.GREATER );
+        Threshold fourthTest = metIn.ofThreshold( 0.9, Operator.GREATER, metFac.getDimension( "CMS" ) );
         Set<MetricConstants> fourthSet =
                 processor.doNotComputeTheseMetricsForThisThreshold( processor.thresholdsByMetric,
                                                                     MetricInputGroup.SINGLE_VALUED,
@@ -256,6 +259,7 @@ public final class MetricProcessorTest
             throws IOException, MetricConfigurationException, MetricParameterException, MetricProcessorException
     {
         final DataFactory metIn = DefaultDataFactory.getInstance();
+        
         //Single-valued case
         String configPathSingleValued = "testinput/metricProcessorTest/test5Ensemble.xml";
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathSingleValued ) ).getProjectConfig();

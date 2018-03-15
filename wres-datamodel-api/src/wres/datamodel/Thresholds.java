@@ -46,6 +46,15 @@ public interface Thresholds extends Comparable<Thresholds>
      */
 
     String toStringSafe();
+    
+    /**
+     * Returns a string representation of the {@link Thresholds} without any units. This is useful when forming string
+     * representions of a collection of {@link Threshold} and abstracting the common units to a higher level.
+     * 
+     * @return a string without any units
+     */
+
+    String toStringWithoutUnits();
 
     /**
      * Returns an instance with one {@link Threshold}.
@@ -122,6 +131,16 @@ public interface Thresholds extends Comparable<Thresholds>
                     return first.toString() + " AND " + second.toString();
                 }
                 return first.toString();
+            }           
+
+            @Override
+            public String toStringWithoutUnits()
+            {
+                if ( hasTwo() )
+                {
+                    return first.toStringWithoutUnits() + " AND " + second.toStringWithoutUnits();
+                }
+                return first.toStringWithoutUnits();
             }
 
             @Override

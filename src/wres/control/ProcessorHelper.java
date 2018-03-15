@@ -117,13 +117,10 @@ class ProcessorHelper
         List<Feature> missingDataFeatures = new ArrayList<>();
 
         // Read external thresholds from the configuration, per feature
-        // Compare on locationId only. TODO: improve the representation of features
-        // TODO: MUST move this threshold reading to wres-metrics as this is project internals related to metrics, 
-        // not API stuff. However, there are two barriers: 1) it involves file IO, which
-        // should not happen in metrics; and 2) it requires a consistent, system-wide, definition of features
-        // because external thresholds are read for multiple features. Both would be solved if we had an internal
-        // representation of a full project configuration that was passed around the system after ingest.
-        // The current approach is deeply unsatisfying.
+        // Compare on locationId only. TODO: consider how better to transmit these thresholds
+        // to wres-metrics, given that they are resolved by project configuration that is
+        // passed separately to wres-metrics. Options include moving MetricProcessor* to 
+        // wres-control, since they make processing decisions, or passing ResolvedProject onwards
         final Map<FeaturePlus, Map<MetricConfigName, ThresholdsByType>> thresholds =
                 new TreeMap<>( FeaturePlus::compareByLocationId );
         thresholds.putAll( ConfigHelper.readExternalThresholdsFromProjectConfig( projectConfig ) );

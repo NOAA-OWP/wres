@@ -26,6 +26,7 @@ import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
 import wres.config.generated.TimeSeriesMetricConfig;
 import wres.datamodel.DataFactory;
+import wres.datamodel.Dimension;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
@@ -330,6 +331,7 @@ public final class MetricConfigHelper
      * Transforms a list of {@link ThresholdsConfig} to a set of {@link Threshold}.
      * 
      * @param thresholds the thresholds configuration
+     * @param units optional units for non-probability thresholds
      * @param dataFactory the data factory with which to build thresholds
      * @param types an optional list of threshold types to read
      * @return a set of thresholds (possibly empty)
@@ -339,6 +341,7 @@ public final class MetricConfigHelper
      */
 
     public static Set<Threshold> fromInternalThresholdsConfig( List<ThresholdsConfig> thresholds,
+                                                               Dimension units,
                                                                DataFactory dataFactory,
                                                                ThresholdType... types )
             throws MetricConfigurationException
@@ -348,7 +351,7 @@ public final class MetricConfigHelper
         Objects.requireNonNull( dataFactory, NULL_DATA_FACTORY_ERROR );
 
         Set<Threshold> returnMe = new HashSet<>();
-
+        
         // Iterate and transform
         for ( ThresholdsConfig next : thresholds )
         {
@@ -369,7 +372,7 @@ public final class MetricConfigHelper
             {
                 type = next.getType();
             }
-            
+
             // String = internal sourced
             if ( values instanceof String
                  && ( types.length == 0
@@ -378,10 +381,11 @@ public final class MetricConfigHelper
                 returnMe.addAll( MetricConfigHelper.getThresholdsFromCommaSeparatedValues( dataFactory,
                                                                                            values.toString(),
                                                                                            operator,
-                                                                                           type != ThresholdType.VALUE ) );
+                                                                                           type != ThresholdType.VALUE,
+                                                                                           units ) );
             }
         }
-        
+
         return Collections.unmodifiableSet( returnMe );
     }
 
@@ -526,6 +530,7 @@ public final class MetricConfigHelper
      * @param inputString the comma-separated input string
      * @param oper the operator
      * @param areProbs is true to generate probability thresholds, false for ordinary thresholds
+     * @param units the optional units in which non-probability thresholds are expressed
      * @return the thresholds
      * @throws MetricConfigurationException if the thresholds are configured incorrectly
      * @throws NullPointerException if the input is null
@@ -534,7 +539,8 @@ public final class MetricConfigHelper
     public static Set<Threshold> getThresholdsFromCommaSeparatedValues( DataFactory dataFactory,
                                                                         String inputString,
                                                                         Operator oper,
-                                                                        boolean areProbs )
+                                                                        boolean areProbs,
+                                                                        Dimension units )
             throws MetricConfigurationException
     {
         Objects.requireNonNull( dataFactory, NULL_DATA_FACTORY_ERROR );
@@ -560,11 +566,14 @@ public final class MetricConfigHelper
             {
                 if ( areProbs )
                 {
-                    returnMe.add( dataFactory.ofProbabilityThreshold( addMe.get( i ), addMe.get( i + 1 ), oper ) );
+                    returnMe.add( dataFactory.ofProbabilityThreshold( addMe.get( i ),
+                                                                      addMe.get( i + 1 ),
+                                                                      oper,
+                                                                      units ) );
                 }
                 else
                 {
-                    returnMe.add( dataFactory.ofThreshold( addMe.get( i ), addMe.get( i + 1 ), oper ) );
+                    returnMe.add( dataFactory.ofThreshold( addMe.get( i ), addMe.get( i + 1 ), oper, units ) );
                 }
             }
         }
@@ -573,11 +582,13 @@ public final class MetricConfigHelper
         {
             if ( areProbs )
             {
-                addMe.forEach( threshold -> returnMe.add( dataFactory.ofProbabilityThreshold( threshold, oper ) ) );
+                addMe.forEach( threshold -> returnMe.add( dataFactory.ofProbabilityThreshold( threshold,
+                                                                                              oper,
+                                                                                              units ) ) );
             }
             else
             {
-                addMe.forEach( threshold -> returnMe.add( dataFactory.ofThreshold( threshold, oper ) ) );
+                addMe.forEach( threshold -> returnMe.add( dataFactory.ofThreshold( threshold, oper, units ) ) );
             }
         }
 
@@ -596,7 +607,7 @@ public final class MetricConfigHelper
     {
         return MetricConfigHelper.hasThresholds( config, null );
     }
-    
+
     /**
      * Returns <code>true</code> if the project configuration contains thresholds of the specified type or for 
      * all types (null), <code>false</code> otherwise.
@@ -612,7 +623,7 @@ public final class MetricConfigHelper
         Objects.requireNonNull( config, NULL_CONFIGURATION_ERROR );
 
         return config.getMetrics().stream().anyMatch( nextGroup -> hasThresholds( nextGroup, type ) );
-    }    
+    }
 
     /**
      * Returns <code>true</code> if the project configuration contains thresholds, <code>false</code> otherwise.
@@ -788,7 +799,7 @@ public final class MetricConfigHelper
         {
             returnMe.addAll( MetricInputGroup.DISCRETE_PROBABILITY.getMetrics() );
         }
-        
+
         // Allow dichotomous metrics when probability classifiers are defined
         if ( MetricConfigHelper.hasThresholds( config, ThresholdType.PROBABILITY_CLASSIFIER ) )
         {
@@ -915,6 +926,7 @@ public final class MetricConfigHelper
 
         Set<Threshold> thresholds =
                 fromInternalThresholdsConfig( metrics.getThresholds(),
+                                              null,
                                               dataFactory,
                                               ThresholdType.PROBABILITY_CLASSIFIER );
 
