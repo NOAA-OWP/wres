@@ -24,6 +24,7 @@ import wres.config.generated.ProjectConfig;
 import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
 import wres.datamodel.DataFactory;
+import wres.datamodel.Dimension;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
@@ -706,16 +707,25 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         // Add internal thresholds
         if ( !metrics.getThresholds().isEmpty() )
         {
+
+            // Obtain any units
+            Dimension units = null;
+            if( Objects.nonNull( config.getPair() ) && Objects.nonNull( config.getPair().getUnit() ) )
+            {
+                units = dataFactory.getMetadataFactory().getDimension( config.getPair().getUnit() );
+            }
+            
             // Only read types that are valid in this context
             Set<Threshold> thresholds =
                     MetricConfigHelper.fromInternalThresholdsConfig( metrics.getThresholds(),
+                                                                     units,
                                                                      dataFactory,
                                                                      ThresholdType.PROBABILITY,
                                                                      ThresholdType.VALUE );
             thresholdsWithoutAllData.addAll( thresholds );
             thresholdsWithAllData.addAll( thresholds );
         }
-
+        
         // Iterate through the metrics
         for ( MetricConfig next : metrics.getMetric() )
         {

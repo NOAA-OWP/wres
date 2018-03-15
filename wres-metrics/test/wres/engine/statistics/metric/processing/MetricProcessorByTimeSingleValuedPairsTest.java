@@ -186,7 +186,8 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                          ReferenceTime.VALID_TIME,
                                                          Duration.ofHours( 1 ) );
         Pair<TimeWindow, Thresholds> key =
-                Pair.of( expectedWindow, Thresholds.of( metIn.ofThreshold( 1.0, Operator.GREATER ) ) );
+                Pair.of( expectedWindow,
+                         Thresholds.of( metIn.ofThreshold( 1.0, Operator.GREATER, metFac.getDimension( "CMS" ) ) ) );
         assertTrue( "Unexpected results for the contingency table.",
                     expected.equals( processor.getCachedMetricOutput()
                                               .getMatrixOutput()
