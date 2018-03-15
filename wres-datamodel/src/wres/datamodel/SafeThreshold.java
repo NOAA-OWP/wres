@@ -117,37 +117,7 @@ class SafeThreshold implements Threshold
                          && getCondition().equals( in.getCondition() )
                          && hasUnits() == in.hasUnits();
 
-        boolean returnMe = first && second;
-
-        if ( hasOrdinaryValues() )
-        {
-            returnMe = returnMe && getThreshold().equals( in.getThreshold() );
-            if ( hasBetweenCondition() )
-            {
-                returnMe = returnMe && getThresholdUpper().equals( in.getThresholdUpper() );
-            }
-        }
-
-        if ( hasProbabilityValues() )
-        {
-            returnMe = returnMe && getThresholdProbability().equals( in.getThresholdProbability() );
-            if ( hasBetweenCondition() )
-            {
-                returnMe = returnMe && getThresholdUpperProbability().equals( in.getThresholdUpperProbability() );
-            }
-        }
-
-        if ( hasLabel() )
-        {
-            returnMe = returnMe && getLabel().equals( in.getLabel() );
-        }
-
-        if ( hasUnits() )
-        {
-            returnMe = returnMe && getUnits().equals( in.getUnits() );
-        }
-
-        return returnMe;
+        return first && second && areOptionalStatesEqual( in );
     }
 
     @Override
@@ -779,5 +749,48 @@ class SafeThreshold implements Threshold
         }
         return 0;
     }
+    
+    /**
+     * Returns <code>true</code> if the optional elements of a threshold are equal, otherwise <code>false</code>.
+     * 
+     * @param in the threshold to test
+     * @return true if the optional elements are equal
+     */
+    
+    private boolean areOptionalStatesEqual( SafeThreshold in )
+    {
+        boolean returnMe = true;
+        
+        if ( hasOrdinaryValues() )
+        {
+            returnMe = getThreshold().equals( in.getThreshold() );
+            if ( hasBetweenCondition() )
+            {
+                returnMe = returnMe && getThresholdUpper().equals( in.getThresholdUpper() );
+            }
+        }
+
+        if ( hasProbabilityValues() )
+        {
+            returnMe = returnMe && getThresholdProbability().equals( in.getThresholdProbability() );
+            if ( hasBetweenCondition() )
+            {
+                returnMe = returnMe && getThresholdUpperProbability().equals( in.getThresholdUpperProbability() );
+            }
+        }
+
+        if ( hasLabel() )
+        {
+            returnMe = returnMe && getLabel().equals( in.getLabel() );
+        }
+
+        if ( hasUnits() )
+        {
+            returnMe = returnMe && getUnits().equals( in.getUnits() );
+        }
+        
+        return returnMe;
+    }
+    
 
 }

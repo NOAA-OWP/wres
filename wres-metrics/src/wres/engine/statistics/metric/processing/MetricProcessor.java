@@ -30,6 +30,7 @@ import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.Threshold;
 import wres.datamodel.Threshold.Operator;
+import wres.datamodel.Threshold.ThresholdComposition;
 import wres.datamodel.ThresholdsByType;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
@@ -526,7 +527,9 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
     }
 
     /**
-     * Adds the quantile values to the input threshold if the threshold contains probability values.
+     * Adds the quantile values to the input threshold if the threshold contains probability values. This method is
+     * lenient with regard to the input type, returning the input threshold if it is not a 
+     * {@link ThresholdComposition#PROBABILITY} type.
      * 
      * @param threshold the input threshold
      * @param sorted a sorted set of values from which to determine the quantiles
@@ -536,22 +539,20 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
 
     Threshold addQuantilesToThreshold( Threshold threshold, double[] sorted )
     {
-        Threshold useMe = threshold;
-
-        //Quantile required: need to determine real-value from probability
-        if ( threshold.hasProbabilityValues() )
+        if ( threshold.getType() != ThresholdComposition.PROBABILITY )
         {
-            if ( Objects.isNull( sorted ) )
-            {
-                throw new MetricCalculationException( "Unable to determine quantile threshold from probability "
-                                                      + "threshold: no climatological observations were available in "
-                                                      + "the input." );
-            }
-            useMe = dataFactory.getSlicer().getQuantileFromProbability( useMe,
-                                                                        sorted,
-                                                                        DECIMALS );
+            return threshold;
         }
-        return useMe;
+        if ( Objects.isNull( sorted ) )
+        {
+            throw new MetricCalculationException( "Unable to determine quantile threshold from probability "
+                                                  + "threshold: no climatological observations were available in "
+                                                  + "the input." );
+        }
+
+        return dataFactory.getSlicer().getQuantileFromProbability( threshold,
+                                                                   sorted,
+                                                                   DECIMALS );
     }
 
     /**
