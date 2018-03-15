@@ -1195,20 +1195,20 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
             {
                 double valueAtI = existingValues.getDouble( i );
 
-                LOGGER.debug( "double value found at index {}: {}",
+                LOGGER.trace( "double value found at index {}: {}",
                               i,
                               valueAtI );
 
                 if ( Double.compare( valueAtI, value ) == 0 )
                 {
-                    LOGGER.debug( "Found existing value matches at index {}",
+                    LOGGER.trace( "Found existing value matches at index {}",
                                   i );
                     // The value was found, return the index.
                     return i;
                 }
                 else if ( Double.compare( valueAtI, DOUBLE_FILL_VALUE ) == 0 )
                 {
-                    LOGGER.debug( "Found a double fill value at index {}", i );
+                    LOGGER.trace( "Found a double fill value at index {}", i );
                     // The value was not found, but this is an empty spot,
                     // so use the current spot.
                     indexToUse = i;
@@ -1218,7 +1218,7 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                 else
                 {
                     // Keep searching for the value.
-                    LOGGER.debug( "Continuing to search for value {} after index {}",
+                    LOGGER.trace( "Continuing to search for value {} after index {}",
                                   value, i );
 
                 }
@@ -1308,14 +1308,10 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
             {
                 char[] valueAtI = new char[STRING_LENGTH];
 
-                // Save the inner indices for use outside the loops
-                int charIndex = 0;
-                int flatIndex = 0;
-
                 // Get a single string-like char[]
-                for ( charIndex = 0; charIndex < STRING_LENGTH; charIndex++ )
+                for ( int charIndex = 0; charIndex < STRING_LENGTH; charIndex++ )
                 {
-                    flatIndex = stringIndex * STRING_LENGTH + charIndex;
+                    int flatIndex = stringIndex * STRING_LENGTH + charIndex;
                     valueAtI[charIndex] = existingValues.getChar( flatIndex );
 
                     if ( Character.compare( valueAtI[charIndex], '\0' ) == 0)
@@ -1327,20 +1323,20 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                 String resolvedValueAtI = String.valueOf( valueAtI )
                                                 .trim();
 
-                LOGGER.debug( "String value found at index {},{} flat {}: {}",
-                              stringIndex, charIndex, flatIndex, resolvedValueAtI );
+                LOGGER.trace( "String value found at index {}: {}",
+                              stringIndex, resolvedValueAtI );
 
                 if ( resolvedValueAtI.equals( value ) )
                 {
-                    LOGGER.debug( "Found existing value matches at index {},{} flat {}",
-                                  stringIndex, charIndex, flatIndex);
+                    LOGGER.trace( "Found existing value matches at index {}",
+                                  stringIndex );
                     // The value was found, return the string index.
                     return stringIndex;
                 }
                 else if ( resolvedValueAtI.equals( "" ) )
                 {
-                    LOGGER.debug( "Found an empty String value at index {},{} flat {}",
-                                  stringIndex, charIndex, flatIndex );
+                    LOGGER.trace( "Found an empty String value at index {}",
+                                  stringIndex  );
                     // Use the stringIndex, 0
                     found = true;
                     break;
@@ -1348,9 +1344,8 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                 else
                 {
                     // Keep searching for the value.
-                    LOGGER.debug( "Continuing to search for value {} after index {},{}",
-                                  value, stringIndex, charIndex );
-
+                    LOGGER.trace( "Continuing to search for value {} after index {}",
+                                  value, stringIndex );
                 }
             }
 
