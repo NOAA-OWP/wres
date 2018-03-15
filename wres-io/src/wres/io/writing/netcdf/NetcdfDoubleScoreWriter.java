@@ -128,6 +128,7 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
      * @param thresholdCount the count of thresholds to write (netCDF lib needs it)
      * @param metrics the metric names to write (netCDF lib needs it)
      * @throws IOException when creation or mutation of the netcdf file fails
+     * @throws NullPointerException when any non-primitive arg is null
      */
 
     public static NetcdfDoubleScoreWriter of( ProjectConfig projectConfig,
@@ -138,6 +139,9 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                                               List<String> metrics )
             throws IOException
     {
+        Objects.requireNonNull( projectConfig );
+        Objects.requireNonNull( metrics );
+
         return new NetcdfDoubleScoreWriter( projectConfig,
                                             featureCount,
                                             timeStepCount,
@@ -156,6 +160,7 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
     @Override
     public void accept( MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> output )
     {
+        Objects.requireNonNull( output );
 
         // Iterate through the metrics
         for ( final Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>> e : output
@@ -336,7 +341,7 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
      * @param metrics the metric names to write (netCDF lib needs it)
      * @return the list of files (possibly empty)
      * @throws IOException when something goes wrong when creating or writing
-     * @throws NullPointerException when ProjectConfig is null
+     * @throws NullPointerException when any non-primitive arg is null
      */
 
     private static List<NetcdfFileWriter> initializeFiles( ProjectConfig config,
@@ -348,6 +353,8 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
             throws IOException
     {
         Objects.requireNonNull( config );
+        Objects.requireNonNull( metrics );
+
         int count = NetcdfDoubleScoreWriter.countNetcdfOutputFiles( config );
         List<NetcdfFileWriter> fileWriters = new ArrayList<>( count );
 
@@ -409,7 +416,7 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
      * @param thresholdCount the count of thresholds to write (netCDF lib needs it)
      * @param metrics the metric names to write (netCDF lib needs it)
      * @throws IllegalStateException when writer is not in define mode
-     * @throws NullPointerException when any arg is null
+     * @throws NullPointerException when any non-primitive arg is null
      */
 
     private static void setDimensionsAndVariables( ProjectConfig config,
@@ -422,6 +429,7 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
     {
         Objects.requireNonNull( config );
         Objects.requireNonNull( writer );
+        Objects.requireNonNull( metrics );
 
         if ( !writer.isDefineMode() )
         {
@@ -548,7 +556,7 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
      * @param variable the variable to set the nodata value on, to mutate the
      *                 underlying NetCDF file
      * @param noDataValue the "fill value" or "no data value" to use
-     * @throws NullPointerException when any arg is null
+     * @throws NullPointerException when any non-primitive arg is null
      * @throws IllegalArgumentException when noDataValue is set to 0.0
      * @throws IllegalStateException when writer not in define mode
      */
@@ -593,13 +601,13 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
      * @param variable the variable to set the nodata value on, to mutate the
      *                 underlying NetCDF file
      * @param noDataValue the "fill value" or "no data value" to use
-     * @throws NullPointerException when any arg is null
+     * @throws NullPointerException when any non-primitive arg is null
      * @throws IllegalArgumentException when noDataValue is set to 0
      * @throws IllegalStateException when writer not in define mode
      */
 
     private static void addNoDataAttributes( Variable variable,
-                                                int noDataValue )
+                                             int noDataValue )
     {
         Objects.requireNonNull( variable );
 
@@ -629,17 +637,18 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
         variable.addAttribute( secondAttribute );
     }
 
+
     /**
      * Returns the count of output files required.
      *
      * @param config the project configuration
      * @return the number of files required
+     * @throws NullPointerException when any arg is null
      */
 
     private static int countNetcdfOutputFiles( ProjectConfig config )
     {
         Objects.requireNonNull( config );
-
 
         int countOfNetcdfOutputs = 0;
 
@@ -655,18 +664,25 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
         return countOfNetcdfOutputs;
     }
 
+
     /**
      * Write the values for a collected metric to a netcdf file
      * @param writer the writer to write with
      * @param id the name/id of the metric
      * @param output the metric output map of double score outputs
      * of the writer.
+     * @throws NullPointerException when any arg is null
      */
+
     private void writeMetric( NetcdfFileWriter writer,
                               MetricConstants id,
                               MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> output )
             throws IOException
     {
+        Objects.requireNonNull( writer );
+        Objects.requireNonNull( id );
+        Objects.requireNonNull( output );
+
         // NetCDF will replace spaces with underscores in variable names.
         String variableName = id.toString().replace( ' ', '_' );
         Variable ncVariable =
@@ -1068,7 +1084,7 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
      * @throws IllegalArgumentException when variable is not rank 1 INT
      * @throws IllegalStateException when writer is in define mode
      * @throws IOException when something goes wrong with writing
-     * @throws NullPointerException when variable is null
+     * @throws NullPointerException when any non-primitive arg is null
      */
 
     private int getOrAddValueToVariable( NetcdfFileWriter writer,
@@ -1076,6 +1092,7 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                                          int value )
             throws IOException
     {
+        Objects.requireNonNull( writer );
         Objects.requireNonNull( variable );
 
         if ( !variable.getDataType().equals( DataType.INT )
@@ -1160,7 +1177,7 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
      * @throws IOException when something goes wrong with writing
      * @throws IllegalArgumentException when variable is not rank 1 DOUBLE
      * @throws IllegalStateException when writer is in define mode
-     * @throws NullPointerException when variable is null
+     * @throws NullPointerException when any non-primitive arg is null
      */
 
     private int getOrAddValueToVariable( NetcdfFileWriter writer,
@@ -1168,6 +1185,7 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                                          double value )
             throws IOException
     {
+        Objects.requireNonNull( writer );
         Objects.requireNonNull( variable );
 
         if ( !variable.getDataType().equals( DataType.DOUBLE )
@@ -1269,7 +1287,7 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
      * @throws IOException when something goes wrong with writing
      * @throws IllegalArgumentException when variable is not rank 1 DOUBLE
      * @throws IllegalStateException when writer is in define mode
-     * @throws NullPointerException when variable is null
+     * @throws NullPointerException when any arg is null
      */
 
     private int getOrAddValueToVariable( NetcdfFileWriter writer,
@@ -1277,7 +1295,9 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                                          String value )
             throws IOException
     {
+        Objects.requireNonNull( writer );
         Objects.requireNonNull( variable );
+        Objects.requireNonNull( value );
 
         if ( !variable.getDataType().equals( DataType.CHAR )
              || variable.getRank() != 2 )
