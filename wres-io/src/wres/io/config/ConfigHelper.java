@@ -64,6 +64,9 @@ import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
 import wres.config.generated.TimeScaleConfig;
 import wres.config.generated.TimeWindowMode;
+import wres.datamodel.DataFactory;
+import wres.datamodel.DefaultDataFactory;
+import wres.datamodel.Dimension;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Threshold;
 import wres.datamodel.Threshold.Operator;
@@ -1415,22 +1418,7 @@ public class ConfigHelper
 
         Objects.requireNonNull( threshold, "Enter non-null threshold to establish a path for writing." );
 
-        String thresholdString = threshold.toStringSafe();
-        // Finite threshold has a dimension
-        // Currently, if the second threshold exists, it is a probability  without a real value attached
-        if ( threshold.first().isFinite() )
-        {
-            String append = "_" + meta.getInputDimension();
-            if ( threshold.hasTwo() )
-            {
-                thresholdString = thresholdString.replace( "_&_", append + "_&_" );
-            }
-            else
-            {
-                thresholdString = thresholdString + append;
-            }
-        }
-        return getOutputPathToWrite( destinationConfig, meta, thresholdString );
+        return getOutputPathToWrite( destinationConfig, meta, threshold.toStringSafe() );
     }
 
     /**
@@ -1533,6 +1521,15 @@ public class ConfigHelper
 
         // Obtain and read thresholds
         List<MetricsConfig> metrics = projectConfig.getMetrics();
+        
+        // Obtain any units for non-probability thresholds
+        Dimension units = null;
+        if( Objects.nonNull( projectConfig.getPair() ) && Objects.nonNull( projectConfig.getPair().getUnit() ) )
+        {
+            DataFactory dataFactory = DefaultDataFactory.getInstance();
+            units = dataFactory.getMetadataFactory().getDimension( projectConfig.getPair().getUnit() );
+        }
+        
         for ( MetricsConfig nextGroup : metrics )
         {
 
@@ -1546,7 +1543,7 @@ public class ConfigHelper
             for ( ThresholdsConfig next : external )
             {
                 // Add or append
-                addExternalThresholdsForOneMetricConfigGroup( returnMe, nextGroup, next );
+                addExternalThresholdsForOneMetricConfigGroup( returnMe, nextGroup, next, units );
             }
 
         }
@@ -1559,12 +1556,13 @@ public class ConfigHelper
      * by {@link FeaturePlus}.
      * 
      * @param threshold the threshold configuration
+     * @param units the optional units associated with the threshold values
      * @return a map of thresholds by feature
      * @throws ProjectConfigException if the threshold could not be read 
      */
 
     private static Map<FeaturePlus, ThresholdsByType>
-            readOneExternalThresholdFromProjectConfig( ThresholdsConfig threshold )
+            readOneExternalThresholdFromProjectConfig( ThresholdsConfig threshold, Dimension units )
                     throws ProjectConfigException
     {
 
@@ -1611,7 +1609,9 @@ public class ConfigHelper
             Map<FeaturePlus, Set<Threshold>> read = CommaSeparatedReader.readThresholds( commaSeparated,
                                                                                          isProbability,
                                                                                          operator,
-                                                                                         missing );
+                                                                                         missing,
+                                                                                         units );
+
             // Establish the threshold type
             final ThresholdsByType.ThresholdType type;
             // Default to probability
@@ -1650,6 +1650,7 @@ public class ConfigHelper
      * 
      * @param mutate the map of results to mutate
      * @param second the second map
+     * @param units the optional units associated with the threshold values
      * @throws ProjectConfigException 
      * @throws NullPointerException if any input is null
      */
@@ -1657,7 +1658,8 @@ public class ConfigHelper
     private static void
             addExternalThresholdsForOneMetricConfigGroup( Map<FeaturePlus, Map<MetricConfigName, ThresholdsByType>> mutate,
                                                           MetricsConfig group,
-                                                          ThresholdsConfig thresholds )
+                                                          ThresholdsConfig thresholds,
+                                                          Dimension units )
                     throws ProjectConfigException
     {
 
@@ -1669,7 +1671,7 @@ public class ConfigHelper
 
         // Obtain the thresholds
         Map<FeaturePlus, ThresholdsByType> thresholdsByFeature =
-                ConfigHelper.readOneExternalThresholdFromProjectConfig( thresholds );
+                ConfigHelper.readOneExternalThresholdFromProjectConfig( thresholds, units );
 
         // Iterate the thresholds
         for ( Entry<FeaturePlus, ThresholdsByType> nextEntry : thresholdsByFeature.entrySet() )
@@ -1779,6 +1781,10 @@ public class ConfigHelper
      * TODO: find the right level for ProjectConfigException to be handled
      *
      * @param projectConfig the project configuration
+     * @param featureCount the number of features
+     * @param timeStepCount the number of time steps
+     * @param leadCount the number of lead times
+     * @param thresholdCount the number of thresholds
      * @return a pool of shared writers
      * @throws IOException if one or more writers could not be created
      * @throws ProjectConfigException if the project configuration is invalid
@@ -1815,6 +1821,10 @@ public class ConfigHelper
      * Builds a {@link NetcdfDoubleScoreWriter} for the specified {@link ProjectConfig}.
      *
      * @param projectConfig the project configuration
+     * @param featureCount the number of features
+     * @param timeStepCount the number of time steps
+     * @param leadCount the number of lead times
+     * @param thresholdCount the number of thresholds
      * @return a writer
      * @throws IOException if one or more writers could not be created
      */

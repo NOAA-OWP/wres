@@ -512,42 +512,51 @@ public class DefaultDataFactory implements DataFactory
     }
 
     @Override
-    public Threshold ofThreshold( final Double threshold, final Double thresholdUpper, final Operator condition, String label )
+    public Threshold ofThreshold( final Double threshold,
+                                  final Double thresholdUpper,
+                                  final Operator condition,
+                                  final String label,
+                                  final Dimension units )
     {
         return new SafeThreshold.ThresholdBuilder().setThreshold( threshold )
                                                    .setThresholdUpper( thresholdUpper )
                                                    .setCondition( condition )
-                                                   .setLabel( label)
+                                                   .setLabel( label )
+                                                   .setUnits( units )
                                                    .build();
     }
 
     @Override
     public Threshold ofProbabilityThreshold( final Double threshold,
-                                              final Double thresholdUpper,
-                                              final Operator condition,
-                                              final String label )
+                                             final Double thresholdUpper,
+                                             final Operator condition,
+                                             final String label,
+                                             final Dimension units)
     {
         return new SafeThreshold.ThresholdBuilder().setThresholdProbability( threshold )
                                                    .setThresholdProbabilityUpper( thresholdUpper )
                                                    .setCondition( condition )
-                                                   .setLabel( label)
+                                                   .setLabel( label )
+                                                   .setUnits( units )
                                                    .build();
     }
 
     @Override
     public Threshold ofQuantileThreshold( final Double threshold,
-                                           final Double thresholdUpper,
-                                           final Double probability,
-                                           final Double probabilityUpper,
-                                           final Operator condition,
-                                           final String label )
+                                          final Double thresholdUpper,
+                                          final Double probability,
+                                          final Double probabilityUpper,
+                                          final Operator condition,
+                                          final String label,
+                                          final Dimension units )
     {
         return new SafeThreshold.ThresholdBuilder().setThreshold( threshold )
                                                    .setThresholdUpper( thresholdUpper )
                                                    .setThresholdProbability( probability )
                                                    .setThresholdProbabilityUpper( probabilityUpper )
                                                    .setCondition( condition )
-                                                   .setLabel( label)
+                                                   .setLabel( label )
+                                                   .setUnits( units )
                                                    .build();
     }
 

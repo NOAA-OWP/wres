@@ -34,7 +34,7 @@ public class ScoreOutputByLeadAndThresholdXYDataset extends
         int seriesIndex = 0;
         for(final Thresholds key: input.setOfThresholdKey())
         {
-            setOverrideLegendName(seriesIndex, key.toString());
+            setOverrideLegendName(seriesIndex, key.toStringWithoutUnits());
             seriesIndex++;
         }
     }

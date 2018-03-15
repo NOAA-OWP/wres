@@ -159,7 +159,8 @@ public abstract class XYChartDataSourceFactory
                 {
                     Long time = entry.getKey().getLeft().getLatestLeadTimeInHours();
                     Thresholds threshold = entry.getKey().getRight();
-                    TimeSeries next = new TimeSeries( time + ", " + threshold, FixedMillisecond.class );
+                    TimeSeries next =
+                            new TimeSeries( time + ", " + threshold.toStringWithoutUnits(), FixedMillisecond.class );
                     for ( Pair<Instant, Duration> oneValue : entry.getValue() )
                     {
                         next.add( new FixedMillisecond( oneValue.getLeft().toEpochMilli() ),
@@ -286,7 +287,7 @@ public abstract class XYChartDataSourceFactory
                     // Filter by threshold
                     for ( Thresholds nextThreshold : input.setOfThresholdKey() )
                     {
-                        // Slice the data by threshold.  The resulting data will still contain potentiall
+                        // Slice the data by threshold.  The resulting data will still contain potentially
                         // multiple issued time pooling windows.
                         MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> finalSlice =
                                 slice.filterByThreshold( nextThreshold );
@@ -301,7 +302,9 @@ public abstract class XYChartDataSourceFactory
                                       + nextTime.getLatestLeadTime().toHours()
                                       + "]";
                         }
-                        TimeSeries next = new TimeSeries( leadKey + ", " + nextThreshold, FixedMillisecond.class );
+                        TimeSeries next = new TimeSeries( leadKey + ", "
+                                                          + nextThreshold.toStringWithoutUnits(),
+                                                          FixedMillisecond.class );
                         
                         // Loop through the slice, forming a time series from the issued time pooling windows
                         // and corresponding values.

@@ -259,7 +259,6 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
     public void addThresholdLeadArguments( MetricOutputMapByTimeAndThreshold<?> displayedPlotInput,
                                            Thresholds threshold )
     {
-        final MetricOutputMetadata meta = displayedPlotInput.getMetadata();
 
         // Augment the plot title when the input dataset contains a secondary threshold/classifier
         // Create a string from the set of secondary thresholds
@@ -276,10 +275,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
         if ( threshold != null )
         {
             addArgument( "diagramInstanceDescription",
-                         "for Threshold " + threshold.toString()
-                                                       + " ("
-                                                       + meta.getInputDimension()
-                                                       + ")" );
+                         "for Threshold " + threshold.toString() );
             addArgument( "plotTitleVariable", "Lead Times" );
         }
     }

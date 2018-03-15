@@ -16,8 +16,10 @@ import wres.config.FeaturePlus;
 import wres.config.generated.Feature;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
+import wres.datamodel.Dimension;
 import wres.datamodel.Threshold;
 import wres.datamodel.Threshold.Operator;
+import wres.datamodel.metadata.MetadataFactory;
 
 /**
  * Tests the {@link CommaSeparatedReader}.
@@ -43,7 +45,7 @@ public class CommaSeparatedReaderTest
         Path commaSeparated = Paths.get( "testinput/commaseparated/testProbabilityThresholdsWithLabels.csv" );
 
         Map<FeaturePlus, Set<Threshold>> actual =
-                CommaSeparatedReader.readThresholds( commaSeparated, true, Operator.GREATER, null );
+                CommaSeparatedReader.readThresholds( commaSeparated, true, Operator.GREATER, null, null );
 
         DataFactory factory = DefaultDataFactory.getInstance();
 
@@ -83,8 +85,12 @@ public class CommaSeparatedReaderTest
     {
         Path commaSeparated = Paths.get( "testinput/commaseparated/testValueThresholdsWithLabels.csv" );
 
+        
+        MetadataFactory meta = DefaultDataFactory.getInstance().getMetadataFactory();
+        Dimension dim = meta.getDimension( "CMS" );
+        
         Map<FeaturePlus, Set<Threshold>> actual =
-                CommaSeparatedReader.readThresholds( commaSeparated, false, Operator.GREATER, null );
+                CommaSeparatedReader.readThresholds( commaSeparated, false, Operator.GREATER, null, dim );
 
         DataFactory factory = DefaultDataFactory.getInstance();
 
@@ -92,17 +98,17 @@ public class CommaSeparatedReaderTest
         Map<FeaturePlus, Set<Threshold>> expected = new TreeMap<>();
 
         Set<Threshold> first = new TreeSet<>();
-        first.add( factory.ofThreshold( 3.0, Operator.GREATER, "E" ) );
-        first.add( factory.ofThreshold( 7.0, Operator.GREATER, "F" ) );
-        first.add( factory.ofThreshold( 15.0, Operator.GREATER, "G" ) );
+        first.add( factory.ofThreshold( 3.0, Operator.GREATER, "E", dim ) );
+        first.add( factory.ofThreshold( 7.0, Operator.GREATER, "F", dim ) );
+        first.add( factory.ofThreshold( 15.0, Operator.GREATER, "G", dim ) );
 
         Feature firstFeature = new Feature( null, null, null, "DRRC2", null, null, null, null, null, null );
         expected.put( FeaturePlus.of( firstFeature ), first );
 
         Set<Threshold> second = new TreeSet<>();
-        second.add( factory.ofThreshold( 23.0, Operator.GREATER, "E" ) );
-        second.add( factory.ofThreshold( 12.0, Operator.GREATER, "F" ) );
-        second.add( factory.ofThreshold( 99.7, Operator.GREATER, "G" ) );
+        second.add( factory.ofThreshold( 23.0, Operator.GREATER, "E", dim ) );
+        second.add( factory.ofThreshold( 12.0, Operator.GREATER, "F", dim ) );
+        second.add( factory.ofThreshold( 99.7, Operator.GREATER, "G", dim ) );
 
         Feature secondFeature = new Feature( null, null, null, "DOLC2", null, null, null, null, null, null );
         expected.put( FeaturePlus.of( secondFeature ), second );
@@ -125,7 +131,7 @@ public class CommaSeparatedReaderTest
         Path commaSeparated = Paths.get( "testinput/commaseparated/testProbabilityThresholdsWithoutLabels.csv" );
 
         Map<FeaturePlus, Set<Threshold>> actual =
-                CommaSeparatedReader.readThresholds( commaSeparated, true, Operator.GREATER, null );
+                CommaSeparatedReader.readThresholds( commaSeparated, true, Operator.GREATER, null, null );
 
         DataFactory factory = DefaultDataFactory.getInstance();
 
@@ -166,7 +172,7 @@ public class CommaSeparatedReaderTest
         Path commaSeparated = Paths.get( "testinput/commaseparated/testValueThresholdsWithoutLabels.csv" );
 
         Map<FeaturePlus, Set<Threshold>> actual =
-                CommaSeparatedReader.readThresholds( commaSeparated, false, Operator.GREATER, null );
+                CommaSeparatedReader.readThresholds( commaSeparated, false, Operator.GREATER, null, null );
 
         DataFactory factory = DefaultDataFactory.getInstance();
 
@@ -207,7 +213,7 @@ public class CommaSeparatedReaderTest
         Path commaSeparated = Paths.get( "testinput/commaseparated/testValueThresholdsWithoutLabelsWithMissings.csv" );
 
         Map<FeaturePlus, Set<Threshold>> actual =
-                CommaSeparatedReader.readThresholds( commaSeparated, false, Operator.GREATER, -999.0 );
+                CommaSeparatedReader.readThresholds( commaSeparated, false, Operator.GREATER, -999.0, null );
 
         DataFactory factory = DefaultDataFactory.getInstance();
 
