@@ -174,8 +174,7 @@ public interface Threshold extends Comparable<Threshold>, Predicate<Double>
     }
     
     /**
-     * Returns the threshold value, which may comprise the lower bound of a {@link Operator#BETWEEN}, or null if no
-     * threshold value is defined.
+     * Returns the threshold value or null if no threshold value is defined.
      * 
      * @return the threshold value or null
      */
@@ -208,8 +207,7 @@ public interface Threshold extends Comparable<Threshold>, Predicate<Double>
     Double getThresholdUpper();
 
     /**
-     * Returns the probability associated with the {@link #getThreshold()}, which may comprise the lower bound of a
-     * {@link Operator#BETWEEN}, or null if no probability is defined.
+     * Returns the probability associated with the {@link #getThreshold()} or null.
      * 
      * @return a probability or null
      */
@@ -217,7 +215,7 @@ public interface Threshold extends Comparable<Threshold>, Predicate<Double>
     Double getThresholdProbability();
 
     /**
-     * Returns the probability associated with the {@link #getThresholdUpper()} or null if no upper bound is defined.
+     * Returns the probability associated with the {@link #getThresholdUpper()} or null.
      * 
      * @return the upper threshold probability or null
      */
@@ -233,8 +231,7 @@ public interface Threshold extends Comparable<Threshold>, Predicate<Double>
     String getLabel();
 
     /**
-     * Returns <code>true</code> if the {@link Threshold} condition corresponds to a {@link Operator#BETWEEN} condition and, 
-     * hence, that {@link #getThresholdUpper()} returns a non-null threshold value.
+     * Returns <code>true</code> if the {@link Threshold} condition corresponds to a {@link Operator#BETWEEN} condition.
      * 
      * @return true if the condition is a {@link Operator#BETWEEN} condition, false otherwise.
      */

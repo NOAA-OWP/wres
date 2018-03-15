@@ -970,16 +970,10 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
             Set<Threshold> addMe = new HashSet<>();
 
             // Probability type
-            if ( external.contains( ThresholdsByType.ThresholdType.PROBABILITY ) )
-            {
-                addMe.addAll( external.getThresholdsByType( ThresholdsByType.ThresholdType.PROBABILITY ) );
-            }
+            addMe.addAll( external.getThresholdsByType( ThresholdsByType.ThresholdType.PROBABILITY ) );
 
             // Value type
-            if ( external.contains( ThresholdsByType.ThresholdType.VALUE ) )
-            {
-                addMe.addAll( external.getThresholdsByType( ThresholdsByType.ThresholdType.VALUE ) );
-            }
+            addMe.addAll( external.getThresholdsByType( ThresholdsByType.ThresholdType.VALUE ) );
 
             // Add existing if available
             if ( mutate.containsKey( metric ) )

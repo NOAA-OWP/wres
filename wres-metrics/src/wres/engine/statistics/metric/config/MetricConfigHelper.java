@@ -924,12 +924,13 @@ public final class MetricConfigHelper
 
         Objects.requireNonNull( dataFactory, NULL_DATA_FACTORY_ERROR );
 
-        Set<Threshold> thresholds =
-                fromInternalThresholdsConfig( metrics.getThresholds(),
-                                              null,
-                                              dataFactory,
-                                              ThresholdType.PROBABILITY_CLASSIFIER );
+        Set<Threshold> thresholds = new HashSet<>();
 
+        thresholds.addAll( fromInternalThresholdsConfig( metrics.getThresholds(),
+                                                         null,
+                                                         dataFactory,
+                                                         ThresholdType.PROBABILITY_CLASSIFIER ) );
+        
         // Filter by input type
         Set<MetricConstants> metricsToAdd = new HashSet<>();
 
@@ -963,8 +964,7 @@ public final class MetricConfigHelper
             }
             // Add external thresholds
             MetricConfigName name = from( nextMetric );
-            if ( Objects.nonNull( external ) && external.containsKey( name )
-                 && external.get( name ).contains( ThresholdsByType.ThresholdType.PROBABILITY_CLASSIFIER ) )
+            if ( Objects.nonNull( external ) && external.containsKey( name ) )
             {
                 returnMe.get( nextMetric )
                         .addAll( external.get( name )
