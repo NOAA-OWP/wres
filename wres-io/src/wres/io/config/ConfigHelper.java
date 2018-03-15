@@ -83,6 +83,27 @@ import wres.io.writing.netcdf.NetcdfDoubleScoreWriter;
 import wres.util.Strings;
 import wres.util.TimeHelper;
 
+/**
+ * The purpose of io's ConfigHelper is to help the io module translate raw
+ * user-specified configuration elements into a reduced form, a more
+ * actionable or meaningful form such as a SQL script, or to extract specific
+ * elements from a particular config element, or other purposes that are common
+ * to the io module.
+ *
+ * The general form of a helper method appropriate for ConfigHelper has a
+ * ProjectConfig as the first argument and some other element(s) or hint(s) as
+ * additional args. These are not hard-and-fast-rules. But the original purpose
+ * was to help the io module avoid tedious repetition of common interpretations
+ * of the raw user-specified configuration.
+ *
+ * Candidates for removal to a wres-config helper are those that purely operate
+ * on, use, and return objects of classes that are specified in the wres-config
+ * or JDK.
+ *
+ * Candidates that should stay are those returning SQL statements or are
+ * currently useful only to the wres-io module.
+ */
+
 public class ConfigHelper
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( ConfigHelper.class );
@@ -111,6 +132,7 @@ public class ConfigHelper
     }
 
     // TODO: Move to Project Details
+    // ... or wres-config if useful outside of wres-io
     public static boolean usesUSGSData( ProjectConfig projectConfig )
     {
         for ( DataSourceConfig.Source source : projectConfig.getInputs().getLeft().getSource() )
@@ -146,6 +168,7 @@ public class ConfigHelper
     }
 
     // TODO: Move to Project Details
+    // ... or wres-config if useful outside of wres-io
     public static boolean usesNetCDFData( ProjectConfig projectConfig )
     {
         for ( DataSourceConfig.Source source : projectConfig.getInputs().getLeft().getSource() )
@@ -1762,7 +1785,10 @@ public class ConfigHelper
      */
 
     public static SharedWriters getSharedWriters( ProjectConfig projectConfig,
-                                                  Set<FeaturePlus> resolvedFeatures )
+                                                  int featureCount,
+                                                  int timeStepCount,
+                                                  int leadCount,
+                                                  int thresholdCount )
             throws IOException, ProjectConfigException
     {
         Objects.requireNonNull( projectConfig, NULL_CONFIGURATION_ERROR );
@@ -1774,8 +1800,12 @@ public class ConfigHelper
         if ( ConfigHelper.getIncrementalFormats( projectConfig ).contains( DestinationType.NETCDF ) )
         {
             // Set the writer
-            builder.setNetcdfDoublescoreWriter( ConfigHelper.getNetcdfDoubleScoreWriter( projectConfig,
-                                                                                         resolvedFeatures ) );
+            builder.setNetcdfDoublescoreWriter(
+                    ConfigHelper.getNetcdfDoubleScoreWriter( projectConfig,
+                                                             featureCount,
+                                                             timeStepCount,
+                                                             leadCount,
+                                                             thresholdCount ) );
         }
 
         return builder.build();
@@ -1783,31 +1813,18 @@ public class ConfigHelper
 
     /**
      * Builds a {@link NetcdfDoubleScoreWriter} for the specified {@link ProjectConfig}.
-     * 
-     * TODO: receiver should not throw multiple checked exceptions, as it encourages bad practice in callers. Have
-     * the receiver wrap the checked exceptions in a local checked type, which should be rethrown here.
-     * JFB: throwing multiple checked exceptions is far better than throwing
-     * a single ambiguous blanket exception *if* the multiple checked exceptions
-     * are honestly thrown and the thrower cannot be the decider of action to
-     * take in situation A (exception A) vs situation B (exception B). It may
-     * take some work to find the method in which the distinction can be handled
-     * appropriately, but we should be more tolerant of multiple exceptions if
-     * that is the honest situation. Agree that ideally each method can only
-     * fail in a one way such that the single throws is followed. But
-     * to encourage a blanket rule of "always wrap checked exceptions" can
-     * defeat the purpose of having distinct exceptions if we are not careful.
-     * The worst example of that kind of wrapping is "throws Exception"
-     * or "catch (Exception)". The purpose of throwing distinct exceptions is
-     * to allow the caller to decide what to do.
      *
      * @param projectConfig the project configuration
      * @return a writer
      * @throws IOException if one or more writers could not be created
-     */    
-    
+     */
+
     public static NetcdfDoubleScoreWriter
     getNetcdfDoubleScoreWriter( ProjectConfig projectConfig,
-                                Set<FeaturePlus> resolvedFeatures )
+                                int featureCount,
+                                int timeStepCount,
+                                int leadCount,
+                                int thresholdCount )
             throws IOException
     {
         Objects.requireNonNull( projectConfig, NULL_CONFIGURATION_ERROR );
@@ -1820,14 +1837,14 @@ public class ConfigHelper
                 Collections.unmodifiableList( metricNames );
 
         NetcdfDoubleScoreWriter writer = NetcdfDoubleScoreWriter.of( projectConfig,
-                                                                     resolvedFeatures.size(),
-                                                                     2,
-                                                                     2,
-                                                                     2,
+                                                                     featureCount,
+                                                                     timeStepCount,
+                                                                     leadCount,
+                                                                     thresholdCount,
                                                                      shareableMetricNames );
         return writer;
-    }   
-    
+    }
+
     /**
      * Renders a map of collections unmodifiable. All collections in the container are rendered unmodifiable.
      * 

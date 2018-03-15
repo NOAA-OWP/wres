@@ -128,14 +128,18 @@ class ProcessorHelper
                 new TreeMap<>( FeaturePlus::compareByLocationId );
         thresholds.putAll( ConfigHelper.readExternalThresholdsFromProjectConfig( projectConfig ) );
 
-        // Build any writers of incremental formats that are shared across features
-        SharedWriters sharedWriters = ConfigHelper.getSharedWriters( projectConfig,
-                                                                     decomposedFeatures );
 
         ResolvedProject resolvedProject = ResolvedProject.of( projectConfigPlus,
                                                               decomposedFeatures,
                                                               null,
                                                               thresholds );
+
+        // Build any writers of incremental formats that are shared across features
+        SharedWriters sharedWriters = ConfigHelper.getSharedWriters( projectConfig,
+                                                                     resolvedProject.getFeatureCount(),
+                                                                     2,
+                                                                     2,
+                                                                     resolvedProject.getThresholdCount() );
 
         // Reduce our triad of executors to one object
         ExecutorServices executors = new ExecutorServices( pairExecutor,
