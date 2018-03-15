@@ -9,6 +9,7 @@ import org.junit.Test;
 
 import wres.datamodel.SafeThreshold.ThresholdBuilder;
 import wres.datamodel.Threshold.Operator;
+import wres.datamodel.metadata.MetadataFactory;
 
 /**
  * Tests the {@link SafeThreshold}. 
@@ -103,7 +104,9 @@ public final class SafeThresholdTest
 
         assertEquals( "Expected equal hash codes.", eleventh.hashCode(), twelfth.hashCode() );
 
-        // All attributes defined
+        // All attributes defined   
+        MetadataFactory fac = DefaultDataFactory.getInstance().getMetadataFactory();
+
         Threshold thirteenth =
                 new ThresholdBuilder().setThreshold( 0.0 )
                                       .setThresholdUpper( 0.1 )
@@ -111,6 +114,7 @@ public final class SafeThresholdTest
                                       .setThresholdProbabilityUpper( 0.2 )
                                       .setCondition( Operator.BETWEEN )
                                       .setLabel( "a label" )
+                                      .setUnits( fac.getDimension( "CMS" ) )
                                       .build();
         Threshold fourteenth =
                 new ThresholdBuilder().setThreshold( 0.0 )
@@ -119,6 +123,7 @@ public final class SafeThresholdTest
                                       .setThresholdProbabilityUpper( 0.2 )
                                       .setCondition( Operator.BETWEEN )
                                       .setLabel( "a label" )
+                                      .setUnits( fac.getDimension( "CMS" ) )
                                       .build();
 
         assertEquals( "Expected equal hash codes.", thirteenth.hashCode(), fourteenth.hashCode() );
@@ -271,6 +276,50 @@ public final class SafeThresholdTest
 
         assertFalse( "Expected unequal values.", sixteenth.compareTo( eighteenth ) == 0 );
 
+        // Add units        
+        MetadataFactory fac = DefaultDataFactory.getInstance().getMetadataFactory();
+
+        Threshold nineteenth =
+                new ThresholdBuilder().setThreshold( 23.0 )
+                                      .setThresholdProbability( 0.2 )
+                                      .setThresholdUpper( 57.0 )
+                                      .setThresholdProbabilityUpper( 0.8 )
+                                      .setCondition( Operator.BETWEEN )
+                                      .setUnits( fac.getDimension( "CMS" ) )
+                                      .build();
+
+        Threshold twentieth =
+                new ThresholdBuilder().setThreshold( 23.0 )
+                                      .setThresholdProbability( 0.2 )
+                                      .setThresholdUpper( 57.0 )
+                                      .setThresholdProbabilityUpper( 0.8 )
+                                      .setCondition( Operator.BETWEEN )
+                                      .setUnits( fac.getDimension( "CMS" ) )
+                                      .build();
+
+        assertFalse( "Expected unequal values.", sixteenth.compareTo( nineteenth ) == 0 );
+
+        assertTrue( "Expected equal values.", nineteenth.compareTo( twentieth ) == 0 );
+
+        // One has units, the other not
+        Threshold twentyFirst =
+                new ThresholdBuilder().setThresholdProbability( 0.1 )
+                                      .setCondition( Operator.GREATER )
+                                      .setUnits( fac.getDimension( "CMS" ) )
+                                      .build();
+
+        assertFalse( "Expected unequal values.", eighth.compareTo( twentyFirst ) == 0 );
+        assertFalse( "Expected unequal values.", twentyFirst.compareTo( eighth ) == 0 );
+
+        // Different units
+        Threshold twentySecond =
+                new ThresholdBuilder().setThresholdProbability( 0.1 )
+                                      .setCondition( Operator.GREATER )
+                                      .setUnits( fac.getDimension( "CFS" ) )
+                                      .build();
+
+        assertFalse( "Expected unequal values.", twentyFirst.compareTo( twentySecond ) == 0 );
+
         //Nullity
         //Check nullity contract
         try
@@ -406,6 +455,39 @@ public final class SafeThresholdTest
         assertFalse( "Expected unequal thresholds.", noProbs.equals( withProbs ) );
         assertFalse( "Expected unequal thresholds.", noProbs.equals( withLabel ) );
 
+        // Add units        
+        MetadataFactory fac = DefaultDataFactory.getInstance().getMetadataFactory();
+
+        // Differences on units
+        Threshold cfs =
+                new ThresholdBuilder().setThreshold( 23.0 )
+                                      .setThresholdProbability( 0.2 )
+                                      .setThresholdUpper( 57.0 )
+                                      .setThresholdProbabilityUpper( 0.8 )
+                                      .setCondition( Operator.BETWEEN )
+                                      .setUnits( fac.getDimension( "CFS" ) )
+                                      .build();
+
+        Threshold cms =
+                new ThresholdBuilder().setThreshold( 23.0 )
+                                      .setThresholdProbability( 0.2 )
+                                      .setThresholdUpper( 57.0 )
+                                      .setThresholdProbabilityUpper( 0.8 )
+                                      .setCondition( Operator.BETWEEN )
+                                      .setUnits( fac.getDimension( "CMS" ) )
+                                      .build();
+
+        Threshold noUnits =
+                new ThresholdBuilder().setThreshold( 23.0 )
+                                      .setThresholdProbability( 0.2 )
+                                      .setThresholdUpper( 57.0 )
+                                      .setThresholdProbabilityUpper( 0.8 )
+                                      .setCondition( Operator.BETWEEN )
+                                      .build();
+
+        assertFalse( "Expected unequal units.", cfs.equals( cms ) );
+        assertTrue( "Expected equal units.", cfs.equals( cfs ) );
+        assertFalse( "Expected unequal units.", cfs.equals( noUnits ) );
     }
 
     /**
@@ -439,6 +521,8 @@ public final class SafeThresholdTest
     @Test
     public void testToString()
     {
+        MetadataFactory fac = DefaultDataFactory.getInstance().getMetadataFactory();
+        
         // All data
         Threshold allData = new ThresholdBuilder().setThreshold( Double.NEGATIVE_INFINITY )
                                                   .setCondition( Operator.GREATER )
@@ -456,10 +540,11 @@ public final class SafeThresholdTest
         // One value threshold, no label
         Threshold oneValPlusLabel = new ThresholdBuilder().setThreshold( 0.0 )
                                                           .setCondition( Operator.GREATER )
+                                                          .setUnits( fac.getDimension( "CMS" ) )
                                                           .build();
 
         assertTrue( "Unexpected inequality in string representations.",
-                    oneValPlusLabel.toString().equals( "> 0.0" ) );
+                    oneValPlusLabel.toString().equals( "> 0.0 CMS" ) );
 
         // One probability and value threshold
         Threshold oneValOneProb = new ThresholdBuilder().setThreshold( 0.0 )
@@ -505,10 +590,11 @@ public final class SafeThresholdTest
                                                     .setThresholdProbabilityUpper( 0.7 )
                                                     .setCondition( Operator.BETWEEN )
                                                     .setLabel( "a threshold" )
+                                                    .setUnits( fac.getDimension( "CMS" ) )
                                                     .build();
 
         assertTrue( "Unexpected inequality in string representations.",
-                    threshold.toString().equals( ">= 0.0 [Pr = 0.0] AND < 0.5 [Pr = 0.7] (a threshold)" ) );
+                    threshold.toString().equals( ">= 0.0 CMS [Pr = 0.0] AND < 0.5 CMS [Pr = 0.7] (a threshold)" ) );
 
         // Test additional conditions
         Threshold less = new ThresholdBuilder()
@@ -560,6 +646,31 @@ public final class SafeThresholdTest
         assertTrue( "Unexpected inequality in string representations.",
                     threshold.toStringSafe().equals( "GTE_0.0_Pr_EQ_0.0_AND_LT_0.5_Pr_EQ_0.7_a_threshold" ) );
 
+    }
+
+    /**
+     * Tests the {@link SafeThreshold#toStringWithoutUnits()}.
+     */
+
+    @Test
+    public void testToStringWithoutUnits()
+    {
+        // All components
+        MetadataFactory fac = DefaultDataFactory.getInstance().getMetadataFactory();
+        Threshold threshold = new ThresholdBuilder().setThreshold( 0.0 )
+                                                    .setThresholdUpper( 0.5 )
+                                                    .setThresholdProbability( 0.0 )
+                                                    .setThresholdProbabilityUpper( 0.7 )
+                                                    .setCondition( Operator.BETWEEN )
+                                                    .setLabel( "a threshold" )
+                                                    .setUnits( fac.getDimension( "CMS" ) )
+                                                    .build();
+
+        assertTrue( "Unexpected inequality in string representations.",
+                    threshold.toString().equals( ">= 0.0 CMS [Pr = 0.0] AND < 0.5 CMS [Pr = 0.7] (a threshold)" ) );
+
+        assertTrue( "Unexpected inequality in string representations.",
+                    threshold.toStringWithoutUnits().equals( ">= 0.0 [Pr = 0.0] AND < 0.5 [Pr = 0.7] (a threshold)" ) );
     }
 
     /**

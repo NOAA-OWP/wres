@@ -492,7 +492,8 @@ class DefaultSlicer implements Slicer
                                             threshold.getThresholdProbability(),
                                             threshold.getThresholdUpperProbability(),
                                             threshold.getCondition(),
-                                            threshold.getLabel() );
+                                            threshold.getLabel(),
+                                            threshold.getUnits() );
     }
 
     /**

@@ -109,6 +109,18 @@ public interface Threshold extends Comparable<Threshold>, Predicate<Double>
     }
 
     /**
+     * Returns <code>true</code> if {@link #getUnits()} returns a non-null {@link Dimension}, 
+     * otherwise <code>false</code>.
+     * 
+     * @return true if the threshold units are defined, false otherwise
+     */
+
+    default boolean hasUnits()
+    {
+        return Objects.nonNull( getUnits() );
+    }
+
+    /**
      * Returns the threshold value, which may comprise the lower bound of a {@link Operator#BETWEEN}, or null if no
      * threshold value is defined.
      * 
@@ -116,7 +128,16 @@ public interface Threshold extends Comparable<Threshold>, Predicate<Double>
      */
 
     Double getThreshold();
+    
+    /**
+     * Returns the units associated with the {@link Threshold} or null. Always returns null when 
+     * {@link #hasOrdinaryValues()} returns <code>false</code>.
+     * 
+     * @return the units or null
+     */
 
+    Dimension getUnits();
+    
     /**
      * Returns the logical condition associated with the threshold.
      * 
@@ -185,7 +206,16 @@ public interface Threshold extends Comparable<Threshold>, Predicate<Double>
      */
 
     String toStringSafe();
+    
+    /**
+     * Returns a string representation of the {@link Threshold} without any units. This is useful when forming string
+     * representions of a collection of {@link Threshold} and abstracting the common units to a higher level.
+     * 
+     * @return a string without any units
+     */
 
+    String toStringWithoutUnits();
+    
     /**
      * Returns a string representation of the {@link Threshold}.
      * 

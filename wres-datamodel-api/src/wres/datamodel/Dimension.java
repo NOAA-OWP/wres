@@ -11,7 +11,7 @@ import wres.datamodel.outputs.MetricOutput;
  * @since 0.1
  */
 
-public interface Dimension
+public interface Dimension extends Comparable<Dimension>
 {
 
     /**
