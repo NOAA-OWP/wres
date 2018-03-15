@@ -1,6 +1,7 @@
 package wres.datamodel;
 
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -101,7 +102,7 @@ public interface ThresholdsByType
         
         Objects.requireNonNull( thresholds, "Specify a non-null set of thresholds." );
         
-        Map<ThresholdType, Set<Threshold>> thresholdsByType = new HashMap<>();
+        Map<ThresholdType, Set<Threshold>> thresholdsByType = new EnumMap<>( ThresholdType.class );
         
         thresholdsByType.put( type, thresholds );
         
@@ -159,7 +160,7 @@ public interface ThresholdsByType
                 {
                     return Collections.unmodifiableSet( thresholdsByType.get( type ) );
                 }
-                return null;
+                return Collections.emptySet();
             }
 
             @Override
@@ -182,7 +183,8 @@ public interface ThresholdsByType
                 Objects.requireNonNull( thresholdsByType, "Specify non-null thresholds from which to "
                         + "obtain the union." );
                 
-                Map<ThresholdType,Set<Threshold>> union = new HashMap<>( this.thresholdsByType );
+                Map<ThresholdType,Set<Threshold>> union = new EnumMap<>( ThresholdType.class );
+                union.putAll( this.thresholdsByType );
                 
                 for( ThresholdType next : thresholds.getStoredTypes() )
                 {

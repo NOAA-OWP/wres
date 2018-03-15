@@ -538,31 +538,36 @@ class SafeThreshold implements Threshold
 
         //Bounds checks
         Objects.requireNonNull( condition, "Specify a non-null condition." );
+        
         //Do not allow only an upper threshold or all null thresholds
         if ( !hasOrdinaryValues() && !hasProbabilityValues() )
         {
             throw new IllegalArgumentException( "Specify one or more values for the threshold." );
         }
+        
         //Check the probability
         if ( Objects.nonNull( probability ) && !probability.equals( Double.NEGATIVE_INFINITY )
              && ( probability < 0.0 || probability > 1.0 ) )
         {
             throw new IllegalArgumentException( "The threshold probability is out of bounds [0,1]: " + probability );
         }
+        
         //Check a two-sided threshold
         if ( hasBetweenCondition() )
         {
             validateTwoSidedThreshold();
         }
+        
         //Check a one-sided threshold
         else
         {
             validateOneSidedThreshold();
         }
+        
         //Check for no label when setting threshold as "all data"
         if ( !isFinite() && hasLabel() )
         {
-            throw new IllegalArgumentException( "Cannot set a label for a non-finite threshold, as the label is "
+            throw new IllegalArgumentException( "Cannot set a label for an infinite threshold, as the label is "
                                                 + "reserved." );
         }
     }

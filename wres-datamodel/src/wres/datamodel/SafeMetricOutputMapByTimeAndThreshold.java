@@ -42,6 +42,12 @@ class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implement
     private static final String NEWLINE = System.lineSeparator();
 
     /**
+     * Null threshold.
+     */
+    
+    private static final String NULL_THRESHOLD_ERROR = "Specify a non-null threshold by which to slice the map.";
+    
+    /**
      * Metadata.
      */
 
@@ -217,7 +223,7 @@ class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implement
     {
         if ( Objects.isNull( first ) )
         {
-            throw new MetricOutputException( "Specify a non-null threshold by which to slice the map." );
+            throw new MetricOutputException( NULL_THRESHOLD_ERROR );
         }
         final Builder<T> b = new Builder<>();
         store.forEach( ( key, value ) -> {
@@ -238,7 +244,7 @@ class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implement
     {
         if ( Objects.isNull( second ) )
         {
-            throw new MetricOutputException( "Specify a non-null threshold by which to slice the map." );
+            throw new MetricOutputException( NULL_THRESHOLD_ERROR );
         }
         final Builder<T> b = new Builder<>();
         store.forEach( ( key, value ) -> {
@@ -281,7 +287,7 @@ class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implement
     {
         if ( Objects.isNull( threshold ) )
         {
-            throw new MetricOutputException( "Specify a non-null threshold by which to slice the map." );
+            throw new MetricOutputException( NULL_THRESHOLD_ERROR );
         }
         final Builder<T> b = new Builder<>();
         store.forEach( ( key, value ) -> {
@@ -302,7 +308,7 @@ class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implement
     {
         if ( Objects.isNull( threshold ) )
         {
-            throw new MetricOutputException( "Specify a non-null threshold by which to slice the map." );
+            throw new MetricOutputException( NULL_THRESHOLD_ERROR );
         }
         final Builder<T> b = new Builder<>();
         store.forEach( ( key, value ) -> {

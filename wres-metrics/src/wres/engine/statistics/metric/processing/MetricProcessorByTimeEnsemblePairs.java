@@ -297,41 +297,8 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         // If null, this is being called by the superclass constructor, not the local constructor
         if ( Objects.nonNull( probabilityClassifiers ) )
         {
-
-            // All groups that contain dichotomous and multicategory metrics must 
-            // have thresholds of type ThresholdType.PROBABILITY_CLASSIFIER
-            // Check that the relevant parameters have been set first
-
-            // Dichotomous
-            if ( this.hasMetrics( MetricInputGroup.DICHOTOMOUS ) )
-            {
-                MetricConstants[] check = this.getMetrics( this.metrics, MetricInputGroup.DICHOTOMOUS, null );
-
-                if ( !Arrays.stream( check ).allMatch( next -> probabilityClassifiers.containsKey( next )
-                                                               && !probabilityClassifiers.get( next ).isEmpty() ) )
-                {
-                    throw new MetricConfigurationException( "In order to configure dichotomous metrics for ensemble "
-                                                            + "inputs, every metric group that contains dichotomous "
-                                                            + "metrics must also contain thresholds for classifying "
-                                                            + "the forecast probabilities into occurrences and "
-                                                            + "non-occurrences." );
-                }
-            }
             
-            // Multicategory
-            if ( this.hasMetrics( MetricInputGroup.MULTICATEGORY ) )
-            {
-                MetricConstants[] check = this.getMetrics( this.metrics, MetricInputGroup.MULTICATEGORY, null );
-                if ( !Arrays.stream( check ).allMatch( next -> probabilityClassifiers.containsKey( next )
-                                                               && !probabilityClassifiers.get( next ).isEmpty() ) )
-                {
-                    throw new MetricConfigurationException( "In order to configure multicategory metrics for ensemble "
-                                                            + "inputs, every metric group that contains dichotomous "
-                                                            + "metrics must also contain thresholds for classifying "
-                                                            + "the forecast probabilities into occurrences and "
-                                                            + "non-occurrences." );
-                }
-            }
+            validateCategoricalState();
 
             //Ensemble input, vector output
             if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.DOUBLE_SCORE )
@@ -742,6 +709,50 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                               input.getMetadata(),
                               MetricInputGroup.DISCRETE_PROBABILITY );
     }
+       
+    /**
+     * Validates the current state for categorical metrics.
+     * 
+     * @throws MetricConfigurationException
+     */
+    
+    private void validateCategoricalState() throws MetricConfigurationException
+    {
 
+        // All groups that contain dichotomous and multicategory metrics must 
+        // have thresholds of type ThresholdType.PROBABILITY_CLASSIFIER
+        // Check that the relevant parameters have been set first
+
+        // Dichotomous
+        if ( this.hasMetrics( MetricInputGroup.DICHOTOMOUS ) )
+        {
+            MetricConstants[] check = this.getMetrics( this.metrics, MetricInputGroup.DICHOTOMOUS, null );
+
+            if ( !Arrays.stream( check ).allMatch( next -> probabilityClassifiers.containsKey( next )
+                                                           && !probabilityClassifiers.get( next ).isEmpty() ) )
+            {
+                throw new MetricConfigurationException( "In order to configure dichotomous metrics for ensemble "
+                                                        + "inputs, every metric group that contains dichotomous "
+                                                        + "metrics must also contain thresholds for classifying "
+                                                        + "the forecast probabilities into occurrences and "
+                                                        + "non-occurrences." );
+            }
+        }
+
+        // Multicategory
+        if ( this.hasMetrics( MetricInputGroup.MULTICATEGORY ) )
+        {
+            MetricConstants[] check = this.getMetrics( this.metrics, MetricInputGroup.MULTICATEGORY, null );
+            if ( !Arrays.stream( check ).allMatch( next -> probabilityClassifiers.containsKey( next )
+                                                           && !probabilityClassifiers.get( next ).isEmpty() ) )
+            {
+                throw new MetricConfigurationException( "In order to configure multicategory metrics for ensemble "
+                                                        + "inputs, every metric group that contains dichotomous "
+                                                        + "metrics must also contain thresholds for classifying "
+                                                        + "the forecast probabilities into occurrences and "
+                                                        + "non-occurrences." );
+            }
+        }
+    }
 
 }
