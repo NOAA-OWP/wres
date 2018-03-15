@@ -61,6 +61,40 @@ public interface Threshold extends Comparable<Threshold>, Predicate<Double>
 
         BETWEEN
     }
+    
+    /**
+     * An enumeration of the composition of a {@link Threshold}.
+     */
+    
+    public enum ThresholdComposition
+    {
+        
+        /**
+         * A {@link Threshold} that comprises one or two probability values only. A {@link Threshold} has two 
+         * probability values if {@link Threshold#hasBetweenCondition()} returns <code>true</code>, otherwise only 
+         * one value, namely {@link Threshold#getThresholdProbability()}.
+         */
+        
+        PROBABILITY,
+        
+        /**
+         * A {@link Threshold} that comprises one or two real values only. A {@link Threshold} has two 
+         * real values if {@link Threshold#hasBetweenCondition()} returns <code>true</code>, otherwise only one 
+         * value, namely {@link Threshold#getThreshold()}.
+         */
+        
+        VALUE,
+        
+        /**
+         * A {@link Threshold} that comprises both real values and probability values. It contains the same number of 
+         * each. A {@link Threshold} has two values for each if {@link Threshold#hasBetweenCondition()} returns 
+         * <code>true</code>, otherwise one value for each, namely {@link Threshold#getThresholdProbability()} 
+         * and {@link Threshold#getThreshold()}.
+         */
+        
+        QUANTILE;      
+        
+    }    
 
     /**
      * Returns <code>true</code> if the threshold contains one or more ordinary (non-probability) values, otherwise
@@ -120,6 +154,25 @@ public interface Threshold extends Comparable<Threshold>, Predicate<Double>
         return Objects.nonNull( getUnits() );
     }
 
+    /**
+     * Returns the {@link ThresholdComposition}.
+     * 
+     * @return the threshold type
+     */
+    
+    default ThresholdComposition getType()
+    {
+        if( this.isQuantile() )
+        {
+            return ThresholdComposition.QUANTILE;
+        }
+        if( this.hasProbabilityValues() )
+        {
+            return ThresholdComposition.PROBABILITY;
+        }
+        return ThresholdComposition.VALUE;
+    }
+    
     /**
      * Returns the threshold value, which may comprise the lower bound of a {@link Operator#BETWEEN}, or null if no
      * threshold value is defined.
