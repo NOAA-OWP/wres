@@ -443,4 +443,34 @@ public final class Operations {
     }
 
 
+    /**
+     * Get the count of leads for a project
+     * TODO: optimize
+     * @param projectIdentifier the code/hash of a project (not row id)
+     * @return the count of distinct leads found across all forecasts in project
+     */
+
+    public static long getLeadCountsForProject( String projectIdentifier )
+            throws SQLException
+    {
+        final String NEWLINE = System.lineSeparator();
+        final String LABEL = "total_leads";
+        String query = "SELECT count( distinct( FV.lead ) ) AS "
+                       + LABEL + NEWLINE
+                       + "FROM wres.TimeSeries TS" + NEWLINE
+                       + "INNER JOIN wres.ForecastValue FV" + NEWLINE
+                       + "    ON TS.timeseries_id = FV.timeseries_id" + NEWLINE
+                       + "WHERE EXISTS (" + NEWLINE
+                       + "        SELECT 1" + NEWLINE
+                       + "        FROM wres.ProjectSource PS" + NEWLINE
+                       + "        INNER JOIN wres.ForecastSource FS" + NEWLINE
+                       + "            ON FS.source_id = PS.source_id" + NEWLINE
+                       + "        INNER JOIN wres.Project P" + NEWLINE
+                       + "            ON P.project_id = PS.project_id" + NEWLINE
+                       + "        WHERE P.input_code = "
+                       + projectIdentifier + NEWLINE
+                       + "            AND FS.forecast_id = TS.timeseries_id" + NEWLINE
+                       + "    );";
+        return (long) Database.getResult( query, LABEL );
+    }
 }

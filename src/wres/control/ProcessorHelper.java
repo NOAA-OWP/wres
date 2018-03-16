@@ -127,6 +127,31 @@ class ProcessorHelper
                 new TreeMap<>( FeaturePlus::compareByLocationId );
         thresholds.putAll( ConfigHelper.readExternalThresholdsFromProjectConfig( projectConfig ) );
 
+        // The project code - ideally project hash
+        String projectIdentifier = String.valueOf( projectDetails.getKey() );
+
+        // Need to get lead counts when netcdf is specified
+        long leadCount = 0;
+
+        if ( ConfigHelper.getIncrementalFormats( projectConfig )
+                         .contains( DestinationType.NETCDF ) )
+        {
+            try
+            {
+                leadCount = Operations.getLeadCountsForProject( projectIdentifier );
+            }
+            catch ( SQLException se )
+            {
+                throw new IOException( "Unable to get lead counts.", se );
+            }
+
+            if ( leadCount > Integer.MAX_VALUE )
+            {
+                throw new IOException( "Cannot use more than "
+                                       + Integer.MAX_VALUE
+                                       + " lead times in a netCDF file." );
+            }
+        }
 
         ResolvedProject resolvedProject = ResolvedProject.of( projectConfigPlus,
                                                               decomposedFeatures,
@@ -137,7 +162,7 @@ class ProcessorHelper
         SharedWriters sharedWriters = ConfigHelper.getSharedWriters( projectConfig,
                                                                      resolvedProject.getFeatureCount(),
                                                                      2,
-                                                                     2,
+                                                                     (int) leadCount,
                                                                      resolvedProject.getThresholdCount(),
                                                                      resolvedProject.getDoubleScoreMetrics() );
 
