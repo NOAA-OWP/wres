@@ -38,7 +38,7 @@ ls -d scenario0* scenario1* scenario2* scenario3* scenario4* scenario5* scenario
 startsec=$(date +%s)
 
 # The tests to perform are entered manually on this line.
-./runtest.sh scenario0* scenario1* scenario2* scenario3* scenario4* scenario5* scenario6* >> $logFileName
+./runtest.sh scenario0* scenario1* scenario2* scenario3* scenario4* scenario5* scenario6* scenario8* >> $logFileName
 
 endsec=$(date +%s)
 
