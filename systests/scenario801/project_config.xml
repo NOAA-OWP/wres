@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- See Redmine ticket #45344 -->
+
+<project name="scenario801">
+
+    <inputs>
+        <left label="">
+            <type>observations</type>
+            <source format="PI-XML">../data/CKLN6_STG.xml</source>
+            <variable label = "STAGE">STG</variable>
+        </left>
+        <right label="HEFS" >
+            <type>ensemble forecasts</type>
+            <source format="PI-XML">../data/CKLN6_HEFS_STG_forecasts.tgz</source>
+            <variable label = "STAGE">SSTG</variable>
+        </right>
+    </inputs>
+
+    <pair label="Pairs by location and lead time"> 
+        <unit>FT</unit>
+        <leadHours minimum="48" maximum="144" />
+        <desiredTimeScale>
+            <function>max</function>
+            <period>96</period>
+            <unit>hours</unit>
+        </desiredTimeScale>
+    </pair>
+
+    <metrics>
+        <thresholds>
+            <type>value</type>
+            <source missingValue = "-999" format = "csv">thresholds.csv</source>
+        </thresholds>
+        <thresholds>
+            <type>probability classifier</type>
+            <commaSeparatedValues>0.1,0.3,0.5,0.7,0.9</commaSeparatedValues>
+        </thresholds>
+        <metric><name>contingency table</name></metric>     
+    </metrics>
+    <outputs>
+        <destination type="numeric" decimalFormat="0.000000">
+            <path>output/</path>
+            <outputType>threshold lead</outputType>
+        </destination>
+        <destination type="pairs" decimalFormat="0.000000">
+            <path>output/</path>
+        </destination>
+        <destination type="graphic">
+            <path>output/</path>
+            <outputType>threshold lead</outputType>
+            <graphical width="800" height="600">
+            </graphical>
+        </destination>
+    </outputs>
+
+</project>
