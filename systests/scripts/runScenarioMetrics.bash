@@ -41,29 +41,43 @@ do
 	if [ -d $scenario_dir/output ]
 	then
 		cd $scenario_dir/output
-		if [ -f sorted_pairs.csv ]
+		if [ -f sorted_pairs.csv -a -f dirListing.txt ]
 		then
-			if [ -f checkedSorted_pairs.csv ]
-			then
-				rm -v checkedSorted_pairs.csv
-			fi
-			is400=`echo $scenario_dir | grep scenario4`
+			#is400=`echo $scenario_dir | egrep '(scenario4|scenario5)'`
+			is400=`echo $scenario_dir | egrep '(scenario4)'`
 			if [ -n "$is400" ]
 			then
-				($MetricsScriptDir/scripts/checkSorted.bash sorted_pairs.csv > checkedSorted_pairs.csv) 2> error.txt
-				theDiff=`diff -q sorted_pairs.csv checkedSorted_pairs.csv`
-				if [ -z "$theDiff" ]
-				then
-					echo "There are no extra column in sorted_pairs.csv"
-					rm -v checkedSorted_pairs.csv
-				fi
+				$MetricsScriptDir/scripts/prepaireFiles.bash
 			fi
+			#if [ -f checkedSorted_pairs.csv ]
+			#then
+			#	rm -v checkedSorted_pairs.csv
+			#fi
+			#is400=`echo $scenario_dir | grep scenario4`
+			#if [ -n "$is400" ]
+			#then
+			#	($MetricsScriptDir/scripts/checkSorted.bash sorted_pairs.csv > checkedSorted_pairs.csv) 2> error.txt
+			#	theDiff=`diff -q sorted_pairs.csv checkedSorted_pairs.csv`
+			#	if [ -z "$theDiff" ]
+			#	then
+			#		echo "There are no extra column in sorted_pairs.csv"
+			#		rm -v checkedSorted_pairs.csv
+			#	fi
+			#fi
 			pwd
-			if [ -f testMetricsResults.txt ]
-			then # remove the old results file
-				rm -v testMetricsResults.txt
+			#if [ -f testMetricsResults.txt ]
+			#then # remove the old results file
+			#	rm -v testMetricsResults.txt
+			#fi
+			if [ -f IDFile.txt ]
+			then
+				for ID in `cat IDFile.txt`
+				do
+					$MetricsScriptDir/scripts/createMetricsTest.bash $ID
+				done
+			else
+				$MetricsScriptDir/scripts/createMetricsTest.bash
 			fi
-			$MetricsScriptDir/scripts/createMetricsTest.bash
 			rm -v temp1.txt header.txt metricsValues.txt fileValues.txt joinFiles.txt
 			if [ -f error.txt -a ! -s error.txt ]
 			then # remove it if is an empty file (no error occured)

@@ -276,6 +276,14 @@ public class DefaultMetadataFactory implements MetadataFactory
             {
                 return getDimension();
             }
+
+            @Override
+            public int compareTo( Dimension o )
+            {
+                Objects.requireNonNull( o, "Specify a non-null dimension to compare with this dimension." );
+                
+                return dimension.compareTo( o.getDimension() );
+            }
         }
         return new DimensionImpl(dimension);
     }

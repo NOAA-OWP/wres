@@ -1,4 +1,4 @@
-﻿-- View: wres.forecasts
+-- View: wres.forecasts
 
 -- DROP VIEW wres.forecasts;
 

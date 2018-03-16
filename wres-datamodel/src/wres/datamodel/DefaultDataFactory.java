@@ -97,6 +97,12 @@ public class DefaultDataFactory implements DataFactory
     }
 
     @Override
+    public OneOrTwoDoubles ofOneOrTwoDoubles( Double first, Double second )
+    {
+        return SafeOneOrTwoDoubles.of( first, second );
+    }
+    
+    @Override
     public DichotomousPairs ofDichotomousPairs( List<VectorOfBooleans> pairs,
                                                 List<VectorOfBooleans> basePairs,
                                                 Metadata mainMeta,
@@ -349,7 +355,7 @@ public class DefaultDataFactory implements DataFactory
 
     @Override
     public <T extends MetricOutput<?>> MetricOutputMapByTimeAndThreshold<T>
-            ofMap( final Map<Pair<TimeWindow, Threshold>, T> input )
+            ofMap( final Map<Pair<TimeWindow, OneOrTwoThresholds>, T> input )
     {
         Objects.requireNonNull( input, "Specify a non-null map of inputs by lead time and threshold." );
         final SafeMetricOutputMapByTimeAndThreshold.Builder<T> builder =
@@ -360,7 +366,7 @@ public class DefaultDataFactory implements DataFactory
 
     @Override
     public <T extends MetricOutput<?>> MetricOutputMultiMapByTimeAndThreshold<T>
-            ofMultiMap( final Map<Pair<TimeWindow, Threshold>, List<MetricOutputMapByMetric<T>>> input )
+            ofMultiMap( final Map<Pair<TimeWindow, OneOrTwoThresholds>, List<MetricOutputMapByMetric<T>>> input )
     {
         Objects.requireNonNull( input, "Specify a non-null map of inputs by threshold." );
         final SafeMetricOutputMultiMapByTimeAndThresholdBuilder<T> builder =
@@ -512,42 +518,43 @@ public class DefaultDataFactory implements DataFactory
     }
 
     @Override
-    public Threshold ofThreshold( final Double threshold, final Double thresholdUpper, final Operator condition, String label )
+    public Threshold ofThreshold( final OneOrTwoDoubles values,
+                                  final Operator condition,
+                                  final String label,
+                                  final Dimension units )
     {
-        return new SafeThreshold.ThresholdBuilder().setThreshold( threshold )
-                                                   .setThresholdUpper( thresholdUpper )
+        return new SafeThreshold.ThresholdBuilder().setValues( values )
                                                    .setCondition( condition )
-                                                   .setLabel( label)
+                                                   .setLabel( label )
+                                                   .setUnits( units )
                                                    .build();
     }
 
     @Override
-    public Threshold ofProbabilityThreshold( final Double threshold,
-                                              final Double thresholdUpper,
-                                              final Operator condition,
-                                              final String label )
+    public Threshold ofProbabilityThreshold( final OneOrTwoDoubles probabilities,
+                                             final Operator condition,
+                                             final String label,
+                                             final Dimension units )
     {
-        return new SafeThreshold.ThresholdBuilder().setThresholdProbability( threshold )
-                                                   .setThresholdProbabilityUpper( thresholdUpper )
+        return new SafeThreshold.ThresholdBuilder().setProbabilities( probabilities )
                                                    .setCondition( condition )
-                                                   .setLabel( label)
+                                                   .setLabel( label )
+                                                   .setUnits( units )
                                                    .build();
     }
 
     @Override
-    public Threshold ofQuantileThreshold( final Double threshold,
-                                           final Double thresholdUpper,
-                                           final Double probability,
-                                           final Double probabilityUpper,
-                                           final Operator condition,
-                                           final String label )
+    public Threshold ofQuantileThreshold( final OneOrTwoDoubles values,
+                                          final OneOrTwoDoubles probabilities,
+                                          final Operator condition,
+                                          final String label,
+                                          final Dimension units )
     {
-        return new SafeThreshold.ThresholdBuilder().setThreshold( threshold )
-                                                   .setThresholdUpper( thresholdUpper )
-                                                   .setThresholdProbability( probability )
-                                                   .setThresholdProbabilityUpper( probabilityUpper )
+        return new SafeThreshold.ThresholdBuilder().setValues( values )
+                                                   .setProbabilities( probabilities )
                                                    .setCondition( condition )
-                                                   .setLabel( label)
+                                                   .setLabel( label )
+                                                   .setUnits( units )
                                                    .build();
     }
 

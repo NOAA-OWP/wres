@@ -94,10 +94,11 @@ public final class DataModelTestDataFactory
                     final DoubleProcedureParameter f = (DoubleProcedureParameter) e.next().getKey();
                     final double[] constants = f.getParValReal().getConstants();
                     final double[] probConstants = f.getParVal().getConstants();
-                    final Threshold q = outputFactory.ofQuantileThreshold( constants[0],
-                                                                            probConstants[0],
-                                                                            Operator.GREATER );
-                    final Pair<TimeWindow, Threshold> key = Pair.of( timeWindow, q );
+                    final OneOrTwoThresholds q =
+                            OneOrTwoThresholds.of( outputFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( constants[0] ),
+                                                                              SafeOneOrTwoDoubles.of( probConstants[0] ),
+                                                                              Operator.GREATER ) );
+                    final Pair<TimeWindow, OneOrTwoThresholds> key = Pair.of( timeWindow, q );
 
                     //Build the scalar result
                     final MetricResult result = t.getResult( f );
@@ -115,6 +116,81 @@ public final class DataModelTestDataFactory
         {
             Assert.fail( "Test failed : " + e.getMessage() );
         }
+        return builder.build();
+    }
+
+    /**
+     * Returns a {@link MetricOutputMapByTimeAndThreshold} of {@link ScoreOutput} comprising the MAE for selected
+     * thresholds and forecast lead times using fake data.
+     * 
+     * @return an output map of verification scores
+     */
+
+    public static MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> getScalarMetricOutputMapByLeadThresholdTwo()
+    {
+        DataFactory outF = DefaultDataFactory.getInstance();
+        MetadataFactory metaFactory = outF.getMetadataFactory();
+        Builder<DoubleScoreOutput> builder = new SafeMetricOutputMapByTimeAndThreshold.Builder<>();
+
+        //Fake metadata
+        MetricOutputMetadata meta = metaFactory.getOutputMetadata( 1000,
+                                                                   metaFactory.getDimension(),
+                                                                   metaFactory.getDimension( "CMS" ),
+                                                                   MetricConstants.MEAN_ABSOLUTE_ERROR,
+                                                                   MetricConstants.MAIN,
+                                                                   metaFactory.getDatasetIdentifier( "DRRC2",
+                                                                                                     "SQIN",
+                                                                                                     "HEFS",
+                                                                                                     "ESP" ) );
+
+        int[] leadTimes = new int[] { 1, 2, 3, 4, 5 };
+
+        //Iterate through the lead times
+        for ( int leadTime : leadTimes )
+        {
+            final TimeWindow timeWindow = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                         Instant.parse( "2010-12-31T11:59:59Z" ),
+                                                         ReferenceTime.VALID_TIME,
+                                                         Duration.ofHours( leadTime ) );
+
+            // Add first result
+            OneOrTwoThresholds first =
+                    OneOrTwoThresholds.of( outF.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 1.0 ),
+                                                             SafeOneOrTwoDoubles.of( 0.1 ),
+                                                             Operator.GREATER ),
+                                   outF.ofThreshold( SafeOneOrTwoDoubles.of( 5.0 ), Operator.GREATER ) );
+
+            DoubleScoreOutput firstValue = outF.ofDoubleScoreOutput( 66.0, meta );
+
+            builder.put( Pair.of( timeWindow, first ), firstValue );
+
+
+            // Add second result
+            OneOrTwoThresholds second =
+                    OneOrTwoThresholds.of( outF.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 2.0 ),
+                                                             SafeOneOrTwoDoubles.of( 0.2 ),
+                                                             Operator.GREATER ),
+                                   outF.ofThreshold( SafeOneOrTwoDoubles.of( 5.0 ), Operator.GREATER ) );
+
+            DoubleScoreOutput secondValue = outF.ofDoubleScoreOutput( 67.0, meta );
+
+            builder.put( Pair.of( timeWindow, second ), secondValue );
+
+
+            // Add third result
+            OneOrTwoThresholds third =
+                    OneOrTwoThresholds.of( outF.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 3.0 ),
+                                                             SafeOneOrTwoDoubles.of( 0.3 ),
+                                                             Operator.GREATER ),
+                                   outF.ofThreshold( SafeOneOrTwoDoubles.of( 6.0 ), Operator.GREATER ) );
+
+
+            DoubleScoreOutput thirdValue = outF.ofDoubleScoreOutput( 68.0, meta );
+
+            builder.put( Pair.of( timeWindow, third ), thirdValue );
+
+        }
+
         return builder.build();
     }
 
@@ -170,10 +246,11 @@ public final class DataModelTestDataFactory
                     final DoubleProcedureParameter f = (DoubleProcedureParameter) e.next().getKey();
                     final double[] constants = f.getParValReal().getConstants();
                     final double[] probConstants = f.getParVal().getConstants();
-                    final Threshold q = outputFactory.ofQuantileThreshold( constants[0],
-                                                                            probConstants[0],
-                                                                            Operator.GREATER );
-                    final Pair<TimeWindow, Threshold> key = Pair.of( timeWindow, q );
+                    final OneOrTwoThresholds q =
+                            OneOrTwoThresholds.of( outputFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( constants[0] ),
+                                                                              SafeOneOrTwoDoubles.of( probConstants[0] ),
+                                                                              Operator.GREATER ) );
+                    final Pair<TimeWindow, OneOrTwoThresholds> key = Pair.of( timeWindow, q );
 
                     //Build the scalar result
                     final MetricResult result = t.getResult( f );
@@ -230,8 +307,10 @@ public final class DataModelTestDataFactory
                                                      ReferenceTime.VALID_TIME,
                                                      Duration.ofHours( 1 ) );
         //Fake lead time and threshold
-        builder.addDoubleScoreOutput( factory.ofMapKeyByTimeThreshold( timeWindow, 23.0, Operator.GREATER ),
-                                CompletableFuture.completedFuture( in ) );
+        builder.addDoubleScoreOutput( factory.ofMapKeyByTimeThreshold( timeWindow,
+                                                                       SafeOneOrTwoDoubles.of( 23.0 ),
+                                                                       Operator.GREATER ),
+                                      CompletableFuture.completedFuture( in ) );
 
         //Return data
         return builder.build();

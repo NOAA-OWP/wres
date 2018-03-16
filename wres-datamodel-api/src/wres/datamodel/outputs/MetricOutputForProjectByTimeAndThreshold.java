@@ -7,13 +7,13 @@ import java.util.concurrent.Future;
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.datamodel.Threshold;
+import wres.datamodel.OneOrTwoThresholds;
 import wres.datamodel.metadata.TimeWindow;
 
 /**
  * <p>
  * A high-level store of {@link MetricOutput} associated with a verification project. The outputs are stored by 
- * {@link TimeWindow} and {@link Threshold} in a {@link MetricOutputMultiMapByTimeAndThreshold}. The 
+ * {@link TimeWindow} and {@link OneOrTwoThresholds} in a {@link MetricOutputMultiMapByTimeAndThreshold}. The 
  * {@link MetricOutputMultiMapByTimeAndThreshold} are further grouped by {@link MetricOutputGroup}, which denotes the 
  * atomic type of output stored by the container. For example, the {@link MetricOutputGroup#DOUBLE_SCORE} maps to 
  * {@link DoubleScoreOutput}.
@@ -106,7 +106,7 @@ public interface MetricOutputForProjectByTimeAndThreshold
          * @return the builder
          */
 
-        default MetricOutputForProjectByTimeAndThresholdBuilder addDoubleScoreOutput( Pair<TimeWindow, Threshold> key,
+        default MetricOutputForProjectByTimeAndThresholdBuilder addDoubleScoreOutput( Pair<TimeWindow, OneOrTwoThresholds> key,
                                                                                       Future<MetricOutputMapByMetric<DoubleScoreOutput>> result )
         {
             addDoubleScoreOutput( key.getLeft(), key.getRight(), result );
@@ -122,7 +122,7 @@ public interface MetricOutputForProjectByTimeAndThreshold
          * @return the builder
          */
 
-        default MetricOutputForProjectByTimeAndThresholdBuilder addDurationScoreOutput( Pair<TimeWindow, Threshold> key,
+        default MetricOutputForProjectByTimeAndThresholdBuilder addDurationScoreOutput( Pair<TimeWindow, OneOrTwoThresholds> key,
                                                                                         Future<MetricOutputMapByMetric<DurationScoreOutput>> result )
         {
             addDurationScoreOutput( key.getLeft(), key.getRight(), result );
@@ -139,7 +139,7 @@ public interface MetricOutputForProjectByTimeAndThreshold
          */
 
         default MetricOutputForProjectByTimeAndThresholdBuilder
-                addMultiVectorOutput( Pair<TimeWindow, Threshold> key,
+                addMultiVectorOutput( Pair<TimeWindow, OneOrTwoThresholds> key,
                                       Future<MetricOutputMapByMetric<MultiVectorOutput>> result )
         {
             addMultiVectorOutput( key.getLeft(), key.getRight(), result );
@@ -155,7 +155,7 @@ public interface MetricOutputForProjectByTimeAndThreshold
          * @return the builder
          */
 
-        default MetricOutputForProjectByTimeAndThresholdBuilder addMatrixOutput( Pair<TimeWindow, Threshold> key,
+        default MetricOutputForProjectByTimeAndThresholdBuilder addMatrixOutput( Pair<TimeWindow, OneOrTwoThresholds> key,
                                                                                  Future<MetricOutputMapByMetric<MatrixOutput>> result )
         {
             addMatrixOutput( key.getLeft(), key.getRight(), result );
@@ -171,7 +171,7 @@ public interface MetricOutputForProjectByTimeAndThreshold
          * @return the builder
          */
 
-        default MetricOutputForProjectByTimeAndThresholdBuilder addBoxPlotOutput( Pair<TimeWindow, Threshold> key,
+        default MetricOutputForProjectByTimeAndThresholdBuilder addBoxPlotOutput( Pair<TimeWindow, OneOrTwoThresholds> key,
                                                                                   Future<MetricOutputMapByMetric<BoxPlotOutput>> result )
         {
             addBoxPlotOutput( key.getLeft(), key.getRight(), result );
@@ -187,7 +187,7 @@ public interface MetricOutputForProjectByTimeAndThreshold
          * @return the builder
          */
 
-        default MetricOutputForProjectByTimeAndThresholdBuilder addPairedOutput( Pair<TimeWindow, Threshold> key,
+        default MetricOutputForProjectByTimeAndThresholdBuilder addPairedOutput( Pair<TimeWindow, OneOrTwoThresholds> key,
                                                                                  Future<MetricOutputMapByMetric<PairedOutput<Instant, Duration>>> result )
         {
             addPairedOutput( key.getLeft(), key.getRight(), result );
@@ -205,7 +205,7 @@ public interface MetricOutputForProjectByTimeAndThreshold
          */
 
         MetricOutputForProjectByTimeAndThresholdBuilder addDoubleScoreOutput( TimeWindow timeWindow,
-                                                                              Threshold threshold,
+                                                                              OneOrTwoThresholds threshold,
                                                                               Future<MetricOutputMapByMetric<DoubleScoreOutput>> result );
 
         /**
@@ -219,7 +219,7 @@ public interface MetricOutputForProjectByTimeAndThreshold
          */
 
         MetricOutputForProjectByTimeAndThresholdBuilder addDurationScoreOutput( TimeWindow timeWindow,
-                                                                                Threshold threshold,
+                                                                                OneOrTwoThresholds threshold,
                                                                                 Future<MetricOutputMapByMetric<DurationScoreOutput>> result );
 
         /**
@@ -233,7 +233,7 @@ public interface MetricOutputForProjectByTimeAndThreshold
          */
 
         MetricOutputForProjectByTimeAndThresholdBuilder addMultiVectorOutput( TimeWindow timeWindow,
-                                                                              Threshold threshold,
+                                                                              OneOrTwoThresholds threshold,
                                                                               Future<MetricOutputMapByMetric<MultiVectorOutput>> result );
 
         /**
@@ -247,7 +247,7 @@ public interface MetricOutputForProjectByTimeAndThreshold
          */
 
         MetricOutputForProjectByTimeAndThresholdBuilder addMatrixOutput( TimeWindow timeWindow,
-                                                                         Threshold threshold,
+                                                                         OneOrTwoThresholds threshold,
                                                                          Future<MetricOutputMapByMetric<MatrixOutput>> result );
 
         /**
@@ -261,7 +261,7 @@ public interface MetricOutputForProjectByTimeAndThreshold
          */
 
         MetricOutputForProjectByTimeAndThresholdBuilder addBoxPlotOutput( TimeWindow timeWindow,
-                                                                          Threshold threshold,
+                                                                          OneOrTwoThresholds threshold,
                                                                           Future<MetricOutputMapByMetric<BoxPlotOutput>> result );
 
         /**
@@ -275,7 +275,7 @@ public interface MetricOutputForProjectByTimeAndThreshold
          */
 
         MetricOutputForProjectByTimeAndThresholdBuilder addPairedOutput( TimeWindow timeWindow,
-                                                                         Threshold threshold,
+                                                                         OneOrTwoThresholds threshold,
                                                                          Future<MetricOutputMapByMetric<PairedOutput<Instant, Duration>>> result );
 
         /**

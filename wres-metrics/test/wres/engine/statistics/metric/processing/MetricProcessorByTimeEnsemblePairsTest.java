@@ -8,6 +8,7 @@ import java.nio.file.Paths;
 
 import org.junit.Test;
 
+import wres.config.ProjectConfigPlus;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
@@ -22,7 +23,6 @@ import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricTestDataFactory;
-import wres.io.config.ProjectConfigPlus;
 
 /**
  * Tests the {@link MetricProcessorByTimeEnsemblePairs}.

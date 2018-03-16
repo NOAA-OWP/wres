@@ -87,7 +87,7 @@ public class MultiVectorOutputDiagramXYDataset extends WRESAbstractXYDataset<Met
         } 
         else
         {
-            return getPlotData().getKey(series).getRight().toString();
+            return getPlotData().getKey(series).getRight().toStringWithoutUnits();
         } 
     }
 

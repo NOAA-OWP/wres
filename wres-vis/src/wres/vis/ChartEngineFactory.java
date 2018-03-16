@@ -41,7 +41,7 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.datamodel.Threshold;
+import wres.datamodel.OneOrTwoThresholds;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
@@ -70,7 +70,7 @@ public abstract class ChartEngineFactory
      */
     public enum ChartType
     {
-        ANY( null ),
+        UNIQUE( null ),
         LEAD_THRESHOLD( OutputTypeSelection.LEAD_THRESHOLD ),
         THRESHOLD_LEAD( OutputTypeSelection.THRESHOLD_LEAD ),
         POOLING_WINDOW( null ), //OutputTypeSelection.POOLING_WINDOW will go away.
@@ -117,19 +117,19 @@ public abstract class ChartEngineFactory
      * Provides the default {@link ChartType} for a given {@link MetricOutputGroup}.
      * That chart type can then be used in the other maps to determine the default template file name.
      * Thus, the values from this map must be kept consistent with the template maps.
-     * Any chart type selection of {@link ChartType#ANY} indicates that the chart type doesn't matter for that metric
+     * Any chart type selection of {@link ChartType#UNIQUE} indicates that the chart type doesn't matter for that metric
      * group, likely because the chart type is fixed for all metrics in that metric group.
      */
     private static EnumMap<MetricOutputGroup, ChartType> metricOutputGroupToDefaultChartTypeMap =
             new EnumMap<>( MetricOutputGroup.class );
     static
     {
-        metricOutputGroupToDefaultChartTypeMap.put( MetricOutputGroup.BOXPLOT, ChartType.ANY );
+        metricOutputGroupToDefaultChartTypeMap.put( MetricOutputGroup.BOXPLOT, ChartType.UNIQUE );
         metricOutputGroupToDefaultChartTypeMap.put( MetricOutputGroup.DOUBLE_SCORE, ChartType.LEAD_THRESHOLD );
-        metricOutputGroupToDefaultChartTypeMap.put( MetricOutputGroup.DURATION_SCORE, ChartType.ANY );
-        metricOutputGroupToDefaultChartTypeMap.put( MetricOutputGroup.MATRIX, ChartType.ANY );
+        metricOutputGroupToDefaultChartTypeMap.put( MetricOutputGroup.DURATION_SCORE, ChartType.UNIQUE );
+        metricOutputGroupToDefaultChartTypeMap.put( MetricOutputGroup.MATRIX, ChartType.UNIQUE );
         metricOutputGroupToDefaultChartTypeMap.put( MetricOutputGroup.MULTIVECTOR, ChartType.LEAD_THRESHOLD );
-        metricOutputGroupToDefaultChartTypeMap.put( MetricOutputGroup.PAIRED, ChartType.ANY );
+        metricOutputGroupToDefaultChartTypeMap.put( MetricOutputGroup.PAIRED, ChartType.UNIQUE );
     }
 
     /**
@@ -241,7 +241,7 @@ public abstract class ChartEngineFactory
         else if ( usedPlotType == OutputTypeSelection.THRESHOLD_LEAD )
         {
             inputSlice =
-                    input.filterByThreshold( (Threshold) inputKeyInstance );
+                    input.filterByThreshold( (OneOrTwoThresholds) inputKeyInstance );
         }
         else
         {
@@ -269,7 +269,7 @@ public abstract class ChartEngineFactory
         }
         else if ( usedPlotType == ChartType.THRESHOLD_LEAD )
         {
-            args.addThresholdLeadArguments( inputSlice, (Threshold) inputKeyInstance );
+            args.addThresholdLeadArguments( inputSlice, (OneOrTwoThresholds) inputKeyInstance );
         }
         else
         {
@@ -619,7 +619,7 @@ public abstract class ChartEngineFactory
      */
     private static WRESChartEngine
             processBoxPlotErrorsDiagram(
-                                         Pair<TimeWindow, Threshold> inputKeyInstance,
+                                         Pair<TimeWindow, OneOrTwoThresholds> inputKeyInstance,
                                          final MetricOutputMapByTimeAndThreshold<BoxPlotOutput> input,
                                          String templateName,
                                          String overrideParametersStr )
@@ -663,14 +663,14 @@ public abstract class ChartEngineFactory
      * @return Map where the keys are instances of {@link Pair} with the two keys being an integer and a threshold.
      * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
      */
-    public static ConcurrentMap<Pair<TimeWindow, Threshold>, ChartEngine>
+    public static ConcurrentMap<Pair<TimeWindow, OneOrTwoThresholds>, ChartEngine>
             buildBoxPlotChartEngine( final ProjectConfig config, 
                                      final MetricOutputMapByTimeAndThreshold<BoxPlotOutput> input,
                                      final String userSpecifiedTemplateResourceName,
                                      final String overrideParametersStr )
                     throws ChartEngineException
     {
-        final ConcurrentMap<Pair<TimeWindow, Threshold>, ChartEngine> results = new ConcurrentSkipListMap<>();
+        final ConcurrentMap<Pair<TimeWindow, OneOrTwoThresholds>, ChartEngine> results = new ConcurrentSkipListMap<>();
 
         //Determine the output type, converting DEFAULT accordingly, and template name.
         ChartType usedPlotType = determineChartType( config, input, null );
@@ -682,10 +682,10 @@ public abstract class ChartEngineFactory
         }
 
         //Determine the key set for the loop below based on if this is a lead time first and threshold first plot type.
-        Set<Pair<TimeWindow, Threshold>> keySetValues = input.keySet();
+        Set<Pair<TimeWindow, OneOrTwoThresholds>> keySetValues = input.keySet();
 
         //For each lead time, do the following....
-        for ( final Pair<TimeWindow, Threshold> keyInstance : keySetValues )
+        for ( final Pair<TimeWindow, OneOrTwoThresholds> keyInstance : keySetValues )
         {
             if ( input.getMetadata().getMetricID() == MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE
                  || input.getMetadata().getMetricID() == MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE )

@@ -155,10 +155,11 @@
     </xs:simpleType>
 
     <!-- An enum to specify if a threshold is a probability or real value. -->
-    <xs:simpleType name="probabilityOrValue">
+    <xs:simpleType name="thresholdType">
         <xs:restriction base="xs:string">
             <xs:enumeration value="probability" />
             <xs:enumeration value="value" />
+	    <xs:enumeration value="probability classifier" />
         </xs:restriction>
     </xs:simpleType>
 
@@ -185,8 +186,8 @@
 
         <!-- A threshold contains a type, applyTo and operator and EITHER an external source OR an internal commaSeparatedValues. -->
         <xs:sequence>
-	    <xs:element name="type" type="probabilityOrValue" default="probability" minOccurs="0" maxOccurs="1"/>
-            <xs:element name="applyTo" type="leftOrRightOrBaseline" default="left" minOccurs="0" maxOccurs="1"/>
+	    <xs:element name="type" type="thresholdType" default="probability" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="applyTo" type="leftOrRightOrBaseline" minOccurs="0" maxOccurs="1"/>
             <!-- Choice of using an internal source or an external source -->
             <xs:choice>
                 <!-- Internal source -->
@@ -281,25 +282,6 @@
     </xs:complexType>
 
     <!-- Base type for a metric -->
-    <xs:complexType name="abstractMetric">
-
-        <!-- for class naming using xjc-->
-        <xs:annotation>
-            <xs:appinfo>
-                <jaxb:class name="AbstractMetricConfig" />
-            </xs:appinfo>
-        </xs:annotation>
-
-        <xs:sequence>
-            <xs:element name="name" type="metricConfigName" />
-            <xs:element name="outputType" type="outputTypeSelection" minOccurs="0" />
-            <xs:element name="templateResourceName" type="xs:anyURI" minOccurs="0" />
-        </xs:sequence>
-
-        <xs:attribute name="label" type="xs:string" />
-    </xs:complexType>
-
-    <!-- Metrics that accept thresholds -->
     <xs:complexType name="metric">
 
         <!-- for class naming using xjc-->
@@ -308,13 +290,13 @@
                 <jaxb:class name="MetricConfig" />
             </xs:appinfo>
         </xs:annotation>
-        <xs:complexContent>
-            <xs:extension base="abstractMetric">
-                <xs:sequence>
-                    <xs:element name="thresholds" type="thresholds" minOccurs="0" maxOccurs="unbounded" />
-                 </xs:sequence>
-            </xs:extension>
-        </xs:complexContent>
+
+        <xs:sequence>
+            <xs:element name="name" type="metricConfigName" />
+            <xs:element name="templateResourceName" type="xs:anyURI" minOccurs="0" />
+        </xs:sequence>
+
+        <xs:attribute name="label" type="xs:string" />
     </xs:complexType>
 
     <!-- Metrics that consume time-series and may have summary statistics associated with them -->
@@ -328,7 +310,7 @@
         </xs:annotation>
 
         <xs:complexContent>
-            <xs:extension base="abstractMetric">
+            <xs:extension base="metric">
                 <xs:sequence>
                     <xs:element name="summaryStatistics" type="summaryStatistics" minOccurs="0" maxOccurs="1"/>
                 </xs:sequence>
@@ -604,7 +586,7 @@
 
                 <xs:element name="pair" type="pair"/>
 
-                <xs:element name="metrics" type="metrics" />
+                <xs:element name="metrics" type="metrics" minOccurs ="1" maxOccurs="unbounded"/>
 
                 <xs:element name="outputs">
                     <xs:complexType>

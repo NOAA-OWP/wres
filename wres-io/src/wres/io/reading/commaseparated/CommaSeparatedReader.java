@@ -16,6 +16,7 @@ import wres.config.FeaturePlus;
 import wres.config.generated.Feature;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
+import wres.datamodel.Dimension;
 import wres.datamodel.Threshold;
 import wres.datamodel.Threshold.Operator;
 
@@ -38,6 +39,7 @@ public class CommaSeparatedReader
      * @param isProbability is true to read probability thresholds
      * @param condition the threshold condition
      * @param missingValue an optional missing value identifier to ignore (may be null)
+     * @param units the optional units associated with the threshold values
      * @return a map of thresholds by feature
      * @throws IOException if the source cannot be read or contains unexpected input
      * @throws NullPointerException if the source is null or the condition is null
@@ -47,7 +49,8 @@ public class CommaSeparatedReader
     public static Map<FeaturePlus, Set<Threshold>> readThresholds( Path commaSeparated,
                                                                    boolean isProbability,
                                                                    Operator condition,
-                                                                   Double missingValue )
+                                                                   Double missingValue,
+                                                                   Dimension units )
             throws IOException
     {
         Objects.requireNonNull( commaSeparated, "Specify a non-null source of comma separated thresholds to read." );
@@ -81,7 +84,8 @@ public class CommaSeparatedReader
                                                                      condition,
                                                                      labels,
                                                                      firstLine,
-                                                                     missingValue );
+                                                                     missingValue,
+                                                                     units );
             }
 
             // Process each feature
@@ -93,7 +97,8 @@ public class CommaSeparatedReader
                                                                      condition,
                                                                      labels,
                                                                      nextLine,
-                                                                     missingValue );
+                                                                     missingValue,
+                                                                     units );
 
             }
         }
@@ -114,6 +119,7 @@ public class CommaSeparatedReader
      * @param labels the optional labels (may be null)
      * @param nextInputFeature the next set of thresholds to process
      * @param missingValue an optional missing value identifier to ignore (may be null)
+     * @param units the optional units associated with the threshold values
      * @throws IllegalArgumentException if the number of labels is inconsistent with the number of thresholds or
      *            the threshold content is inconsistent with the specified type of threshold
      */
@@ -123,7 +129,8 @@ public class CommaSeparatedReader
                                                         Operator condition,
                                                         String[] labels,
                                                         String nextInputFeature,
-                                                        Double missingValue )
+                                                        Double missingValue,
+                                                        Dimension units )
             throws IOException
     {
         // Ignore empty lines
@@ -142,7 +149,8 @@ public class CommaSeparatedReader
                                                                          labels,
                                                                          isProbability,
                                                                          condition,
-                                                                         missingValue ) );
+                                                                         missingValue,
+                                                                         units ) );
         }
     }
 
@@ -154,6 +162,7 @@ public class CommaSeparatedReader
      * @param isProbability is true to build probability thresholds, false for value thresholds
      * @param condition the threshold condition
      * @param missingValue an optional missing value identifier to ignore (may be null)
+     * @param units the optional units associated with the threshold values
      * @throws NullPointerException if the input or condition is null
      * @throws IllegalArgumentException if the threshold content is inconsistent with the type of threshold     
      * @throws NumberFormatException if the strings cannot be parsed to numbers                  
@@ -163,7 +172,8 @@ public class CommaSeparatedReader
                                                  String[] labels,
                                                  boolean isProbability,
                                                  Operator condition,
-                                                 Double missingValue )
+                                                 Double missingValue,
+                                                 Dimension units )
     {
         Objects.requireNonNull( input, "Specify non-null input in order to obtain the thresholds." );
 
@@ -192,14 +202,18 @@ public class CommaSeparatedReader
                 // Probability thresholds
                 if ( isProbability )
                 {
-                    returnMe.add( factory.ofProbabilityThreshold( threshold,
+                    returnMe.add( factory.ofProbabilityThreshold( factory.ofOneOrTwoDoubles( threshold ),
                                                                   condition,
-                                                                  iterateLabels[i] ) );
+                                                                  iterateLabels[i],
+                                                                  units ) );
                 }
                 // Ordinary thresholds
                 else
                 {
-                    returnMe.add( factory.ofThreshold( threshold, condition, iterateLabels[i] ) );
+                    returnMe.add( factory.ofThreshold( factory.ofOneOrTwoDoubles( threshold ),
+                                                       condition,
+                                                       iterateLabels[i],
+                                                       units ) );
                 }
             }
         }

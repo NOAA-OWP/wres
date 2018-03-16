@@ -18,7 +18,7 @@ import wres.config.generated.DestinationConfig;
 import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.Threshold;
+import wres.datamodel.OneOrTwoThresholds;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.MapKey;
@@ -114,15 +114,12 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
         // Loop across diagrams
         for ( Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<MatrixOutput>> m : output.entrySet() )
         {
-            // Obtain the output type with any local override for this metric
-            OutputTypeSelection useType =
-                    ConfigHelper.getOutputTypeSelection( projectConfig, diagramType, m.getKey().getKey() );
-
+            
             StringJoiner headerRow = new StringJoiner( "," );
             headerRow.merge( HEADER_DEFAULT );
 
             // Default, per time-window
-            if ( useType == OutputTypeSelection.DEFAULT || useType == OutputTypeSelection.LEAD_THRESHOLD )
+            if ( diagramType == OutputTypeSelection.DEFAULT || diagramType == OutputTypeSelection.LEAD_THRESHOLD )
             {
                 CommaSeparatedMatrixWriter.writeOneMatrixOutputTypePerTimeWindow( destinationConfig,
                                                                                   m.getValue(),
@@ -130,7 +127,7 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
                                                                                   formatter );
             }
             // Per threshold
-            else if ( useType == OutputTypeSelection.THRESHOLD_LEAD )
+            else if ( diagramType == OutputTypeSelection.THRESHOLD_LEAD )
             {
                 CommaSeparatedMatrixWriter.writeOneMatrixOutputTypePerThreshold( destinationConfig,
                                                                                  m.getValue(),
@@ -191,7 +188,7 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
             throws IOException
     {
         // Loop across thresholds
-        for ( Threshold threshold : output.setOfThresholdKey() )
+        for ( OneOrTwoThresholds threshold : output.setOfThresholdKey() )
         {
             MetricOutputMetadata meta = output.getMetadata();
             MetricOutputMapByTimeAndThreshold<MatrixOutput> next = output.filterByThreshold( threshold );
@@ -242,7 +239,7 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
         }
 
         //Add the metric name, dimension, and threshold for each column-vector
-        for ( Threshold nextThreshold : output.setOfThresholdKey() )
+        for ( OneOrTwoThresholds nextThreshold : output.setOfThresholdKey() )
         {
             for ( String nextDimension : dimensions )
             {
@@ -277,9 +274,9 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
         {
             // Loop across the thresholds, merging results when multiple thresholds occur
             List<Double> merge = new ArrayList<>();
-            for ( Threshold threshold : output.setOfThresholdKey() )
+            for ( OneOrTwoThresholds threshold : output.setOfThresholdKey() )
             {
-                Pair<TimeWindow, Threshold> key = Pair.of( timeWindow, threshold );
+                Pair<TimeWindow, OneOrTwoThresholds> key = Pair.of( timeWindow, threshold );
                 if ( output.containsKey( key ) )
                 {
                     MatrixOutput next = output.get( key );

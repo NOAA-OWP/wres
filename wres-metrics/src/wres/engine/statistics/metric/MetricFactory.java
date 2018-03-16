@@ -10,12 +10,13 @@ import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 
+import wres.config.generated.MetricConfigName;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
-import wres.datamodel.Threshold;
+import wres.datamodel.ThresholdsByType;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
@@ -198,7 +199,7 @@ public class MetricFactory
      * Returns a {@link MetricProcessorForProject} for the specified project configuration.
      * 
      * @param projectConfig the project configuration
-     * @param canonicalThresholds an optional set of canonical thresholds to process, may be null
+     * @param externalThresholds an optional set of external thresholds (one per metric), may be null
      * @param thresholdExecutor an executor service for processing thresholds
      * @param metricExecutor an executor service for processing metrics
      * @return a metric processor
@@ -206,14 +207,14 @@ public class MetricFactory
      */
 
     public MetricProcessorForProject getMetricProcessorForProject( final ProjectConfig projectConfig,
-                                                                   final Set<Threshold> canonicalThresholds,
+                                                                   final Map<MetricConfigName, ThresholdsByType> externalThresholds,
                                                                    final ExecutorService thresholdExecutor,
                                                                    final ExecutorService metricExecutor )
             throws MetricProcessorException
     {
         return new MetricProcessorForProject( this,
                                               projectConfig,
-                                              canonicalThresholds,
+                                              externalThresholds,
                                               thresholdExecutor,
                                               metricExecutor );
     }
@@ -268,8 +269,8 @@ public class MetricFactory
                                                      ForkJoinPool.commonPool(),
                                                      ForkJoinPool.commonPool(),
                                                      mergeList );
-    }    
-    
+    }
+
     /**
      * <p>Returns an instance of a {@link MetricProcessor} for processing {@link SingleValuedPairs}. Optionally, retain 
      * and merge the results associated with specific {@link MetricOutputGroup} across successive calls to
@@ -279,7 +280,7 @@ public class MetricFactory
      * <p>Uses the {@link ForkJoinPool#commonPool()} for execution.</p>
      * 
      * @param config the project configuration
-     * @param canonicalThresholds an optional set of canonical thresholds to process, may be null
+     * @param externalThresholds an optional set of external thresholds (one per metric), may be null
      * @param mergeList an optional list of {@link MetricOutputGroup} for which results should be retained and merged
      * @return the {@link MetricProcessorByTime}
      * @throws MetricProcessorException if the metric processor could not be built
@@ -287,12 +288,12 @@ public class MetricFactory
 
     public MetricProcessorByTime<SingleValuedPairs>
             ofMetricProcessorByTimeSingleValuedPairs( final ProjectConfig config,
-                                                      final Set<Threshold> canonicalThresholds,
+                                                      final Map<MetricConfigName, ThresholdsByType> externalThresholds,
                                                       final MetricOutputGroup... mergeList )
                     throws MetricProcessorException
     {
         return ofMetricProcessorByTimeSingleValuedPairs( config,
-                                                         canonicalThresholds,
+                                                         externalThresholds,
                                                          ForkJoinPool.commonPool(),
                                                          ForkJoinPool.commonPool(),
                                                          mergeList );
@@ -307,7 +308,7 @@ public class MetricFactory
      * <p>Uses the {@link ForkJoinPool#commonPool()} for execution.</p>
      * 
      * @param config the project configuration
-     * @param canonicalThresholds an optional set of canonical thresholds to process, may be null
+     * @param externalThresholds an optional set of external thresholds (one per metric), may be null
      * @param mergeList an optional list of {@link MetricOutputGroup} for which results should be retained and merged
      * @return the {@link MetricProcessorByTime}
      * @throws MetricProcessorException if the metric processor could not be built
@@ -315,12 +316,12 @@ public class MetricFactory
 
     public MetricProcessorByTime<EnsemblePairs>
             ofMetricProcessorByTimeEnsemblePairs( final ProjectConfig config,
-                                                  final Set<Threshold> canonicalThresholds,
+                                                  final Map<MetricConfigName, ThresholdsByType> externalThresholds,
                                                   final MetricOutputGroup... mergeList )
                     throws MetricProcessorException
     {
         return ofMetricProcessorByTimeEnsemblePairs( config,
-                                                     canonicalThresholds,
+                                                     externalThresholds,
                                                      ForkJoinPool.commonPool(),
                                                      ForkJoinPool.commonPool(),
                                                      mergeList );
@@ -333,7 +334,7 @@ public class MetricFactory
      * {@link MetricProcessor#apply(Object)} will return the merged results from all prior calls.
      * 
      * @param config the project configuration
-     * @param canonicalThresholds an optional set of canonical thresholds to process, may be null
+     * @param externalThresholds an optional set of external thresholds (one per metric), may be null
      * @param thresholdExecutor an optional {@link ExecutorService} for executing thresholds. Defaults to the 
      *            {@link ForkJoinPool#commonPool()}
      * @param metricExecutor an optional {@link ExecutorService} for executing metrics. Defaults to the 
@@ -344,7 +345,7 @@ public class MetricFactory
 
     public MetricProcessorByTime<SingleValuedPairs>
             ofMetricProcessorByTimeSingleValuedPairs( final ProjectConfig config,
-                                                      final Set<Threshold> canonicalThresholds,
+                                                      final Map<MetricConfigName, ThresholdsByType> externalThresholds,
                                                       final ExecutorService thresholdExecutor,
                                                       final ExecutorService metricExecutor )
                     throws MetricProcessorException
@@ -352,7 +353,7 @@ public class MetricFactory
         try
         {
             return ofMetricProcessorByTimeSingleValuedPairs( config,
-                                                             canonicalThresholds,
+                                                             externalThresholds,
                                                              thresholdExecutor,
                                                              metricExecutor,
                                                              getCacheListFromProjectConfig( config ) );
@@ -370,7 +371,7 @@ public class MetricFactory
      * {@link MetricProcessor#apply(Object)} will return the merged results from all prior calls.
      * 
      * @param config the project configuration
-     * @param canonicalThresholds an optional set of canonical thresholds to process, may be null
+     * @param externalThresholds an optional set of external thresholds (one per metric), may be null
      * @param thresholdExecutor an optional {@link ExecutorService} for executing thresholds. Defaults to the 
      *            {@link ForkJoinPool#commonPool()}
      * @param metricExecutor an optional {@link ExecutorService} for executing metrics. Defaults to the 
@@ -380,7 +381,7 @@ public class MetricFactory
      */
 
     public MetricProcessorByTime<EnsemblePairs> ofMetricProcessorByTimeEnsemblePairs( final ProjectConfig config,
-                                                                                      final Set<Threshold> canonicalThresholds,
+                                                                                      final Map<MetricConfigName, ThresholdsByType> externalThresholds,
                                                                                       final ExecutorService thresholdExecutor,
                                                                                       final ExecutorService metricExecutor )
             throws MetricProcessorException
@@ -388,7 +389,7 @@ public class MetricFactory
         try
         {
             return ofMetricProcessorByTimeEnsemblePairs( config,
-                                                         canonicalThresholds,
+                                                         externalThresholds,
                                                          thresholdExecutor,
                                                          metricExecutor,
                                                          getCacheListFromProjectConfig( config ) );
@@ -406,7 +407,7 @@ public class MetricFactory
      * {@link MetricProcessor#apply(Object)} will return the merged results from all prior calls.
      * 
      * @param config the project configuration
-     * @param canonicalThresholds an optional set of canonical thresholds to process, may be null
+     * @param externalThresholds an optional set of external thresholds (one per metric), may be null
      * @param thresholdExecutor an optional {@link ExecutorService} for executing thresholds. Defaults to the 
      *            {@link ForkJoinPool#commonPool()}
      * @param metricExecutor an optional {@link ExecutorService} for executing metrics. Defaults to the 
@@ -418,7 +419,7 @@ public class MetricFactory
 
     public MetricProcessorByTime<SingleValuedPairs>
             ofMetricProcessorByTimeSingleValuedPairs( final ProjectConfig config,
-                                                      final Set<Threshold> canonicalThresholds,
+                                                      final Map<MetricConfigName, ThresholdsByType> externalThresholds,
                                                       final ExecutorService thresholdExecutor,
                                                       final ExecutorService metricExecutor,
                                                       final MetricOutputGroup... mergeList )
@@ -428,7 +429,7 @@ public class MetricFactory
         {
             return new MetricProcessorByTimeSingleValuedPairs( outputFactory,
                                                                config,
-                                                               canonicalThresholds,
+                                                               externalThresholds,
                                                                thresholdExecutor,
                                                                metricExecutor,
                                                                mergeList );
@@ -450,7 +451,7 @@ public class MetricFactory
      * {@link MetricProcessor#apply(Object)} will return the merged results from all prior calls.
      * 
      * @param config the project configuration
-     * @param canonicalThresholds an optional set of canonical thresholds to process, may be null
+     * @param externalThresholds an optional set of external thresholds (one per metric), may be null
      * @param thresholdExecutor an optional {@link ExecutorService} for executing thresholds. Defaults to the 
      *            {@link ForkJoinPool#commonPool()}
      * @param metricExecutor an optional {@link ExecutorService} for executing metrics. Defaults to the 
@@ -461,7 +462,7 @@ public class MetricFactory
      */
 
     public MetricProcessorByTime<EnsemblePairs> ofMetricProcessorByTimeEnsemblePairs( final ProjectConfig config,
-                                                                                      final Set<Threshold> canonicalThresholds,
+                                                                                      final Map<MetricConfigName, ThresholdsByType> externalThresholds,
                                                                                       final ExecutorService thresholdExecutor,
                                                                                       final ExecutorService metricExecutor,
                                                                                       final MetricOutputGroup... mergeList )
@@ -471,7 +472,7 @@ public class MetricFactory
         {
             return new MetricProcessorByTimeEnsemblePairs( outputFactory,
                                                            config,
-                                                           canonicalThresholds,
+                                                           externalThresholds,
                                                            thresholdExecutor,
                                                            metricExecutor,
                                                            mergeList );

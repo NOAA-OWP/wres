@@ -24,7 +24,7 @@ import ohd.hseb.charter.parameters.DataSourceDrawingParameters;
 import ohd.hseb.charter.parameters.SeriesDrawingParameters;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.Threshold;
+import wres.datamodel.OneOrTwoThresholds;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
@@ -155,11 +155,12 @@ public abstract class XYChartDataSourceFactory
                 TimeSeriesCollection returnMe = new TimeSeriesCollection();
 
                 // Filter by lead time and then by threshold
-                for ( Entry<Pair<TimeWindow, Threshold>, PairedOutput<Instant, Duration>> entry : input.entrySet() )
+                for ( Entry<Pair<TimeWindow, OneOrTwoThresholds>, PairedOutput<Instant, Duration>> entry : input.entrySet() )
                 {
                     Long time = entry.getKey().getLeft().getLatestLeadTimeInHours();
-                    Threshold threshold = entry.getKey().getRight();
-                    TimeSeries next = new TimeSeries( time + ", " + threshold, FixedMillisecond.class );
+                    OneOrTwoThresholds threshold = entry.getKey().getRight();
+                    TimeSeries next =
+                            new TimeSeries( time + ", " + threshold.toStringWithoutUnits(), FixedMillisecond.class );
                     for ( Pair<Instant, Duration> oneValue : entry.getValue() )
                     {
                         next.add( new FixedMillisecond( oneValue.getLeft().toEpochMilli() ),
@@ -284,14 +285,14 @@ public abstract class XYChartDataSourceFactory
                             input.filterByLeadTime( nextTime );
                     
                     // Filter by threshold
-                    for ( Threshold nextThreshold : input.setOfThresholdKey() )
+                    for ( OneOrTwoThresholds nextThreshold : input.setOfThresholdKey() )
                     {
-                        // Slice the data by threshold.  The resulting data will still contain potentiall
+                        // Slice the data by threshold.  The resulting data will still contain potentially
                         // multiple issued time pooling windows.
                         MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> finalSlice =
                                 slice.filterByThreshold( nextThreshold );
                         
-                        // Create the time series with a label determiend by whether the lead time is a 
+                        // Create the time series with a label determined by whether the lead time is a 
                         // single value or window.
                         String leadKey = Long.toString( nextTime.getLatestLeadTime().toHours() );
                         if ( !nextTime.getEarliestLeadTime().equals( nextTime.getLatestLeadTime() ) )
@@ -301,11 +302,13 @@ public abstract class XYChartDataSourceFactory
                                       + nextTime.getLatestLeadTime().toHours()
                                       + "]";
                         }
-                        TimeSeries next = new TimeSeries( leadKey + ", " + nextThreshold, FixedMillisecond.class );
+                        TimeSeries next = new TimeSeries( leadKey + ", "
+                                                          + nextThreshold.toStringWithoutUnits(),
+                                                          FixedMillisecond.class );
                         
                         // Loop through the slice, forming a time series from the issued time pooling windows
                         // and corresponding values.
-                        for ( Pair<TimeWindow, Threshold> key : finalSlice.keySet() )
+                        for ( Pair<TimeWindow, OneOrTwoThresholds> key : finalSlice.keySet() )
                         {
                             next.add( new FixedMillisecond( key.getLeft().getMidPointTime().toEpochMilli() ),
                                       finalSlice.get( key ).getData() );
@@ -420,7 +423,7 @@ public abstract class XYChartDataSourceFactory
         boolean populateCategories = false;
 
         //Build the categories and category values to be passed into the categorical source.
-        for ( Entry<Pair<TimeWindow, Threshold>, DurationScoreOutput> entry : input.entrySet() )
+        for ( Entry<Pair<TimeWindow, OneOrTwoThresholds>, DurationScoreOutput> entry : input.entrySet() )
         {
             if ( xCategories == null )
             {
