@@ -26,7 +26,7 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.Threshold;
-import wres.datamodel.Thresholds;
+import wres.datamodel.OneOrTwoThresholds;
 import wres.datamodel.ThresholdsByType;
 import wres.datamodel.inputs.InsufficientDataException;
 import wres.datamodel.inputs.MetricInput;
@@ -139,42 +139,42 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
          * {@link DoubleScoreOutput} results.
          */
 
-        private final ConcurrentMap<Pair<TimeWindow, Thresholds>, List<Future<MetricOutputMapByMetric<DoubleScoreOutput>>>> doubleScore =
+        private final ConcurrentMap<Pair<TimeWindow, OneOrTwoThresholds>, List<Future<MetricOutputMapByMetric<DoubleScoreOutput>>>> doubleScore =
                 new ConcurrentHashMap<>();
 
         /**
          * {@link DurationScoreOutput} results.
          */
 
-        private final ConcurrentMap<Pair<TimeWindow, Thresholds>, List<Future<MetricOutputMapByMetric<DurationScoreOutput>>>> durationScore =
+        private final ConcurrentMap<Pair<TimeWindow, OneOrTwoThresholds>, List<Future<MetricOutputMapByMetric<DurationScoreOutput>>>> durationScore =
                 new ConcurrentHashMap<>();
 
         /**
          * {@link MultiVectorOutput} results.
          */
 
-        private final ConcurrentMap<Pair<TimeWindow, Thresholds>, List<Future<MetricOutputMapByMetric<MultiVectorOutput>>>> multiVector =
+        private final ConcurrentMap<Pair<TimeWindow, OneOrTwoThresholds>, List<Future<MetricOutputMapByMetric<MultiVectorOutput>>>> multiVector =
                 new ConcurrentHashMap<>();
 
         /**
          * {@link BoxPlotOutput} results.
          */
 
-        private final ConcurrentMap<Pair<TimeWindow, Thresholds>, List<Future<MetricOutputMapByMetric<BoxPlotOutput>>>> boxplot =
+        private final ConcurrentMap<Pair<TimeWindow, OneOrTwoThresholds>, List<Future<MetricOutputMapByMetric<BoxPlotOutput>>>> boxplot =
                 new ConcurrentHashMap<>();
 
         /**
          * {@link PairedOutput} results.
          */
 
-        private final ConcurrentMap<Pair<TimeWindow, Thresholds>, List<Future<MetricOutputMapByMetric<PairedOutput<Instant, Duration>>>>> paired =
+        private final ConcurrentMap<Pair<TimeWindow, OneOrTwoThresholds>, List<Future<MetricOutputMapByMetric<PairedOutput<Instant, Duration>>>>> paired =
                 new ConcurrentHashMap<>();
 
         /**
          * {@link MatrixOutput} results.
          */
 
-        private final ConcurrentMap<Pair<TimeWindow, Thresholds>, List<Future<MetricOutputMapByMetric<MatrixOutput>>>> matrix =
+        private final ConcurrentMap<Pair<TimeWindow, OneOrTwoThresholds>, List<Future<MetricOutputMapByMetric<MatrixOutput>>>> matrix =
                 new ConcurrentHashMap<>();
 
         /**
@@ -228,42 +228,42 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
              * {@link DoubleScoreOutput} results.
              */
 
-            private final ConcurrentMap<Pair<TimeWindow, Thresholds>, List<Future<MetricOutputMapByMetric<DoubleScoreOutput>>>> doubleScore =
+            private final ConcurrentMap<Pair<TimeWindow, OneOrTwoThresholds>, List<Future<MetricOutputMapByMetric<DoubleScoreOutput>>>> doubleScore =
                     new ConcurrentHashMap<>();
 
             /**
              * {@link DurationScoreOutput} results.
              */
 
-            private final ConcurrentMap<Pair<TimeWindow, Thresholds>, List<Future<MetricOutputMapByMetric<DurationScoreOutput>>>> durationScore =
+            private final ConcurrentMap<Pair<TimeWindow, OneOrTwoThresholds>, List<Future<MetricOutputMapByMetric<DurationScoreOutput>>>> durationScore =
                     new ConcurrentHashMap<>();
 
             /**
              * {@link MultiVectorOutput} results.
              */
 
-            private final ConcurrentMap<Pair<TimeWindow, Thresholds>, List<Future<MetricOutputMapByMetric<MultiVectorOutput>>>> multiVector =
+            private final ConcurrentMap<Pair<TimeWindow, OneOrTwoThresholds>, List<Future<MetricOutputMapByMetric<MultiVectorOutput>>>> multiVector =
                     new ConcurrentHashMap<>();
 
             /**
              * {@link BoxPlotOutput} results.
              */
 
-            private final ConcurrentMap<Pair<TimeWindow, Thresholds>, List<Future<MetricOutputMapByMetric<BoxPlotOutput>>>> boxplot =
+            private final ConcurrentMap<Pair<TimeWindow, OneOrTwoThresholds>, List<Future<MetricOutputMapByMetric<BoxPlotOutput>>>> boxplot =
                     new ConcurrentHashMap<>();
 
             /**
              * {@link PairedOutput} results.
              */
 
-            private final ConcurrentMap<Pair<TimeWindow, Thresholds>, List<Future<MetricOutputMapByMetric<PairedOutput<Instant, Duration>>>>> paired =
+            private final ConcurrentMap<Pair<TimeWindow, OneOrTwoThresholds>, List<Future<MetricOutputMapByMetric<PairedOutput<Instant, Duration>>>>> paired =
                     new ConcurrentHashMap<>();
 
             /**
              * {@link MatrixOutput} results.
              */
 
-            private final ConcurrentMap<Pair<TimeWindow, Thresholds>, List<Future<MetricOutputMapByMetric<MatrixOutput>>>> matrix =
+            private final ConcurrentMap<Pair<TimeWindow, OneOrTwoThresholds>, List<Future<MetricOutputMapByMetric<MatrixOutput>>>> matrix =
                     new ConcurrentHashMap<>();
 
             /**
@@ -287,7 +287,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
              * @return the builder
              */
 
-            MetricFuturesByTimeBuilder addDoubleScoreOutput( Pair<TimeWindow, Thresholds> key,
+            MetricFuturesByTimeBuilder addDoubleScoreOutput( Pair<TimeWindow, OneOrTwoThresholds> key,
                                                              Future<MetricOutputMapByMetric<DoubleScoreOutput>> value )
             {
                 List<Future<MetricOutputMapByMetric<DoubleScoreOutput>>> result =
@@ -307,7 +307,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
              * @return the builder
              */
 
-            MetricFuturesByTimeBuilder addDurationScoreOutput( Pair<TimeWindow, Thresholds> key,
+            MetricFuturesByTimeBuilder addDurationScoreOutput( Pair<TimeWindow, OneOrTwoThresholds> key,
                                                                Future<MetricOutputMapByMetric<DurationScoreOutput>> value )
             {
                 List<Future<MetricOutputMapByMetric<DurationScoreOutput>>> result =
@@ -327,7 +327,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
              * @return the builder
              */
 
-            MetricFuturesByTimeBuilder addMultiVectorOutput( Pair<TimeWindow, Thresholds> key,
+            MetricFuturesByTimeBuilder addMultiVectorOutput( Pair<TimeWindow, OneOrTwoThresholds> key,
                                                              Future<MetricOutputMapByMetric<MultiVectorOutput>> value )
             {
                 List<Future<MetricOutputMapByMetric<MultiVectorOutput>>> result =
@@ -347,7 +347,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
              * @return the builder
              */
 
-            MetricFuturesByTimeBuilder addBoxPlotOutput( Pair<TimeWindow, Thresholds> key,
+            MetricFuturesByTimeBuilder addBoxPlotOutput( Pair<TimeWindow, OneOrTwoThresholds> key,
                                                          Future<MetricOutputMapByMetric<BoxPlotOutput>> value )
             {
                 List<Future<MetricOutputMapByMetric<BoxPlotOutput>>> result =
@@ -367,7 +367,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
              * @return the builder
              */
 
-            MetricFuturesByTimeBuilder addPairedOutput( Pair<TimeWindow, Thresholds> key,
+            MetricFuturesByTimeBuilder addPairedOutput( Pair<TimeWindow, OneOrTwoThresholds> key,
                                                         Future<MetricOutputMapByMetric<PairedOutput<Instant, Duration>>> value )
             {
                 List<Future<MetricOutputMapByMetric<PairedOutput<Instant, Duration>>>> result =
@@ -387,7 +387,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
              * @return the builder
              */
 
-            MetricFuturesByTimeBuilder addMatrixOutput( Pair<TimeWindow, Thresholds> key,
+            MetricFuturesByTimeBuilder addMatrixOutput( Pair<TimeWindow, OneOrTwoThresholds> key,
                                                         Future<MetricOutputMapByMetric<MatrixOutput>> value )
             {
                 List<Future<MetricOutputMapByMetric<MatrixOutput>>> result =
@@ -513,7 +513,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
      * @param ignoreTheseMetrics a set of metrics within the prescribed group that should be ignored
      */
 
-    void processDichotomousPairs( Pair<TimeWindow, Thresholds> key,
+    void processDichotomousPairs( Pair<TimeWindow, OneOrTwoThresholds> key,
                                   DichotomousPairs input,
                                   MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
                                   MetricOutputGroup outGroup,
@@ -545,7 +545,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
      *            focus messaging
      */
 
-    static void logThresholdFailures( Map<Thresholds, MetricCalculationException> failures,
+    static void logThresholdFailures( Map<OneOrTwoThresholds, MetricCalculationException> failures,
                                       int thresholdCount,
                                       Metadata meta,
                                       MetricInputGroup inGroup )
@@ -612,7 +612,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
         Set<Threshold> union =
                 getUnionOfThresholdsForThisGroup( this.thresholdsByMetric, MetricInputGroup.SINGLE_VALUED, outGroup );
         double[] sorted = getSortedClimatology( input, union );
-        Map<Thresholds, MetricCalculationException> failures = new HashMap<>();
+        Map<OneOrTwoThresholds, MetricCalculationException> failures = new HashMap<>();
         union.forEach( threshold -> {
             Set<MetricConstants> ignoreTheseMetrics =
                     doNotComputeTheseMetricsForThisThreshold( this.thresholdsByMetric,
@@ -632,7 +632,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
                     pairs = dataFactory.getSlicer().filterByLeft( input, useMe );
 
                 }
-                processSingleValuedPairs( Pair.of( timeWindow, Thresholds.of( useMe ) ),
+                processSingleValuedPairs( Pair.of( timeWindow, OneOrTwoThresholds.of( useMe ) ),
                                           pairs,
                                           futures,
                                           outGroup,
@@ -642,7 +642,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
             //Insufficient data for one threshold: log, but allow
             catch ( MetricInputSliceException | InsufficientDataException e )
             {
-                failures.put( Thresholds.of( useMe ), new MetricCalculationException( e.getMessage(), e ) );
+                failures.put( OneOrTwoThresholds.of( useMe ), new MetricCalculationException( e.getMessage(), e ) );
             }
 
         } );
@@ -661,7 +661,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
      * @param ignoreTheseMetrics a set of metrics within the prescribed group that should be ignored
      */
 
-    private void processSingleValuedPairs( Pair<TimeWindow, Thresholds> key,
+    private void processSingleValuedPairs( Pair<TimeWindow, OneOrTwoThresholds> key,
                                            SingleValuedPairs input,
                                            MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
                                            MetricOutputGroup outGroup,

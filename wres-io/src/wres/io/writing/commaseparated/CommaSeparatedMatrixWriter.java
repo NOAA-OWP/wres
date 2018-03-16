@@ -18,7 +18,7 @@ import wres.config.generated.DestinationConfig;
 import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.Thresholds;
+import wres.datamodel.OneOrTwoThresholds;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.MapKey;
@@ -188,7 +188,7 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
             throws IOException
     {
         // Loop across thresholds
-        for ( Thresholds threshold : output.setOfThresholdKey() )
+        for ( OneOrTwoThresholds threshold : output.setOfThresholdKey() )
         {
             MetricOutputMetadata meta = output.getMetadata();
             MetricOutputMapByTimeAndThreshold<MatrixOutput> next = output.filterByThreshold( threshold );
@@ -239,7 +239,7 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
         }
 
         //Add the metric name, dimension, and threshold for each column-vector
-        for ( Thresholds nextThreshold : output.setOfThresholdKey() )
+        for ( OneOrTwoThresholds nextThreshold : output.setOfThresholdKey() )
         {
             for ( String nextDimension : dimensions )
             {
@@ -274,9 +274,9 @@ public class CommaSeparatedMatrixWriter extends CommaSeparatedWriter
         {
             // Loop across the thresholds, merging results when multiple thresholds occur
             List<Double> merge = new ArrayList<>();
-            for ( Thresholds threshold : output.setOfThresholdKey() )
+            for ( OneOrTwoThresholds threshold : output.setOfThresholdKey() )
             {
-                Pair<TimeWindow, Thresholds> key = Pair.of( timeWindow, threshold );
+                Pair<TimeWindow, OneOrTwoThresholds> key = Pair.of( timeWindow, threshold );
                 if ( output.containsKey( key ) )
                 {
                     MatrixOutput next = output.get( key );

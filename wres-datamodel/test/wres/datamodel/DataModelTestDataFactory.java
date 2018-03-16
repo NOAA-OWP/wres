@@ -94,10 +94,11 @@ public final class DataModelTestDataFactory
                     final DoubleProcedureParameter f = (DoubleProcedureParameter) e.next().getKey();
                     final double[] constants = f.getParValReal().getConstants();
                     final double[] probConstants = f.getParVal().getConstants();
-                    final Thresholds q = Thresholds.of(outputFactory.ofQuantileThreshold( constants[0],
-                                                                            probConstants[0],
-                                                                            Operator.GREATER ) );
-                    final Pair<TimeWindow, Thresholds> key = Pair.of( timeWindow, q );
+                    final OneOrTwoThresholds q =
+                            OneOrTwoThresholds.of( outputFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( constants[0] ),
+                                                                              SafeOneOrTwoDoubles.of( probConstants[0] ),
+                                                                              Operator.GREATER ) );
+                    final Pair<TimeWindow, OneOrTwoThresholds> key = Pair.of( timeWindow, q );
 
                     //Build the scalar result
                     final MetricResult result = t.getResult( f );
@@ -153,8 +154,11 @@ public final class DataModelTestDataFactory
                                                          Duration.ofHours( leadTime ) );
 
             // Add first result
-            Thresholds first = Thresholds.of( outF.ofQuantileThreshold( 1.0, 0.1, Operator.GREATER ),
-                                              outF.ofThreshold( 5.0, Operator.GREATER ) );
+            OneOrTwoThresholds first =
+                    OneOrTwoThresholds.of( outF.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 1.0 ),
+                                                             SafeOneOrTwoDoubles.of( 0.1 ),
+                                                             Operator.GREATER ),
+                                   outF.ofThreshold( SafeOneOrTwoDoubles.of( 5.0 ), Operator.GREATER ) );
 
             DoubleScoreOutput firstValue = outF.ofDoubleScoreOutput( 66.0, meta );
 
@@ -162,8 +166,11 @@ public final class DataModelTestDataFactory
 
 
             // Add second result
-            Thresholds second = Thresholds.of( outF.ofQuantileThreshold( 2.0, 0.2, Operator.GREATER ),
-                                               outF.ofThreshold( 5.0, Operator.GREATER ) );
+            OneOrTwoThresholds second =
+                    OneOrTwoThresholds.of( outF.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 2.0 ),
+                                                             SafeOneOrTwoDoubles.of( 0.2 ),
+                                                             Operator.GREATER ),
+                                   outF.ofThreshold( SafeOneOrTwoDoubles.of( 5.0 ), Operator.GREATER ) );
 
             DoubleScoreOutput secondValue = outF.ofDoubleScoreOutput( 67.0, meta );
 
@@ -171,8 +178,11 @@ public final class DataModelTestDataFactory
 
 
             // Add third result
-            Thresholds third = Thresholds.of( outF.ofQuantileThreshold( 3.0, 0.3, Operator.GREATER ),
-                                              outF.ofThreshold( 6.0, Operator.GREATER ) );
+            OneOrTwoThresholds third =
+                    OneOrTwoThresholds.of( outF.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 3.0 ),
+                                                             SafeOneOrTwoDoubles.of( 0.3 ),
+                                                             Operator.GREATER ),
+                                   outF.ofThreshold( SafeOneOrTwoDoubles.of( 6.0 ), Operator.GREATER ) );
 
 
             DoubleScoreOutput thirdValue = outF.ofDoubleScoreOutput( 68.0, meta );
@@ -236,10 +246,11 @@ public final class DataModelTestDataFactory
                     final DoubleProcedureParameter f = (DoubleProcedureParameter) e.next().getKey();
                     final double[] constants = f.getParValReal().getConstants();
                     final double[] probConstants = f.getParVal().getConstants();
-                    final Thresholds q = Thresholds.of( outputFactory.ofQuantileThreshold( constants[0],
-                                                                            probConstants[0],
-                                                                            Operator.GREATER ) );
-                    final Pair<TimeWindow, Thresholds> key = Pair.of( timeWindow, q );
+                    final OneOrTwoThresholds q =
+                            OneOrTwoThresholds.of( outputFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( constants[0] ),
+                                                                              SafeOneOrTwoDoubles.of( probConstants[0] ),
+                                                                              Operator.GREATER ) );
+                    final Pair<TimeWindow, OneOrTwoThresholds> key = Pair.of( timeWindow, q );
 
                     //Build the scalar result
                     final MetricResult result = t.getResult( f );
@@ -296,8 +307,10 @@ public final class DataModelTestDataFactory
                                                      ReferenceTime.VALID_TIME,
                                                      Duration.ofHours( 1 ) );
         //Fake lead time and threshold
-        builder.addDoubleScoreOutput( factory.ofMapKeyByTimeThreshold( timeWindow, 23.0, Operator.GREATER ),
-                                CompletableFuture.completedFuture( in ) );
+        builder.addDoubleScoreOutput( factory.ofMapKeyByTimeThreshold( timeWindow,
+                                                                       SafeOneOrTwoDoubles.of( 23.0 ),
+                                                                       Operator.GREATER ),
+                                      CompletableFuture.completedFuture( in ) );
 
         //Return data
         return builder.build();

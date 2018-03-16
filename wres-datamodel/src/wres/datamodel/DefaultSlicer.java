@@ -295,13 +295,13 @@ class DefaultSlicer implements Slicer
             filterByMetricComponent( MetricOutputMapByTimeAndThreshold<T> input )
     {
         Objects.requireNonNull( input, NULL_INPUT );
-        Map<MetricConstants, Map<Pair<TimeWindow, Thresholds>, T>> sourceMap =
+        Map<MetricConstants, Map<Pair<TimeWindow, OneOrTwoThresholds>, T>> sourceMap =
                 new EnumMap<>( MetricConstants.class );
         input.forEach( ( key, value ) -> {
             Set<MetricConstants> components = value.getComponents();
             for ( MetricConstants next : components )
             {
-                Map<Pair<TimeWindow, Thresholds>, T> nextMap = null;
+                Map<Pair<TimeWindow, OneOrTwoThresholds>, T> nextMap = null;
                 if ( sourceMap.containsKey( next ) )
                 {
                     nextMap = sourceMap.get( next );
@@ -476,7 +476,7 @@ class DefaultSlicer implements Slicer
             throw new IllegalArgumentException( "Cannot compute the quantile from empty input." );
         }
         DoubleUnaryOperator qF = getQuantileFunction( sorted );
-        Double first = qF.applyAsDouble( threshold.getThresholdProbability() );
+        Double first = qF.applyAsDouble( threshold.getProbabilities().first() );
         if ( Objects.nonNull( digits ) )
         {
             first = round().apply( first, digits );
@@ -484,16 +484,14 @@ class DefaultSlicer implements Slicer
         Double second = null;
         if ( threshold.hasBetweenCondition() )
         {
-            second = qF.applyAsDouble( threshold.getThresholdUpperProbability() );
+            second = qF.applyAsDouble( threshold.getProbabilities().second() );
             if ( Objects.nonNull( digits ) )
             {
                 second = round().apply( second, digits );
             }
         }
-        return dataFac.ofQuantileThreshold( first,
-                                            second,
-                                            threshold.getThresholdProbability(),
-                                            threshold.getThresholdUpperProbability(),
+        return dataFac.ofQuantileThreshold( SafeOneOrTwoDoubles.of( first, second ),
+                                            threshold.getProbabilities(),
                                             threshold.getCondition(),
                                             threshold.getLabel(),
                                             threshold.getUnits() );

@@ -65,7 +65,7 @@ import wres.engine.statistics.metric.config.MetricConfigurationException;
  * <li>That a global set of {@link Threshold} is defined for all {@link Metric} within a {@link ProjectConfig} and hence
  * {@link MetricCollection}. Using metric-specific thresholds will require additional logic to disaggregate a
  * {@link MetricCollection} into {@link Metric} for which common thresholds are defined.</li>
- * <li>If the {@link Threshold#hasProbabilityValues()}, the corresponding quantiles are derived from the 
+ * <li>If the {@link Threshold#hasProbabilities()}, the corresponding quantiles are derived from the 
  * observations associated with the {@link MetricInput} at runtime, i.e. upon calling
  * {@link #apply(Object)}</li>
  * </ol>
@@ -463,7 +463,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
 
     boolean hasProbabilityThreshold( Set<Threshold> check )
     {
-        return check.stream().anyMatch( Threshold::hasProbabilityValues );
+        return check.stream().anyMatch( Threshold::hasProbabilities );
     }
 
     /**
@@ -701,7 +701,8 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         Set<Threshold> thresholdsWithAllDataOnly = new HashSet<>();
 
         // Add a threshold for "all data" by default
-        Threshold allData = dataFactory.ofThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER );
+        Threshold allData =
+                dataFactory.ofThreshold( dataFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ), Operator.GREATER );
         thresholdsWithAllData.add( allData );
         thresholdsWithAllDataOnly.add( allData );
 
@@ -711,11 +712,11 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
 
             // Obtain any units
             Dimension units = null;
-            if( Objects.nonNull( config.getPair() ) && Objects.nonNull( config.getPair().getUnit() ) )
+            if ( Objects.nonNull( config.getPair() ) && Objects.nonNull( config.getPair().getUnit() ) )
             {
                 units = dataFactory.getMetadataFactory().getDimension( config.getPair().getUnit() );
             }
-            
+
             // Only read types that are valid in this context
             Set<Threshold> thresholds =
                     MetricConfigHelper.fromInternalThresholdsConfig( metrics.getThresholds(),
@@ -726,7 +727,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
             thresholdsWithoutAllData.addAll( thresholds );
             thresholdsWithAllData.addAll( thresholds );
         }
-        
+
         // Iterate through the metrics
         for ( MetricConfig next : metrics.getMetric() )
         {

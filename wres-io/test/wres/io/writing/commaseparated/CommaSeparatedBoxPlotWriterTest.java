@@ -27,7 +27,7 @@ import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.Threshold.Operator;
-import wres.datamodel.Thresholds;
+import wres.datamodel.OneOrTwoThresholds;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.metadata.MetadataFactory;
@@ -117,9 +117,10 @@ public class CommaSeparatedBoxPlotWriterTest extends CommaSeparatedWriterTest
 
 
         // Fake lead time and threshold
-        Pair<TimeWindow, Thresholds> mapKeyByLeadThreshold =
+        Pair<TimeWindow, OneOrTwoThresholds> mapKeyByLeadThreshold =
                 Pair.of( timeOne,
-                         Thresholds.of( outputFactory.ofThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER ) ) );
+                         OneOrTwoThresholds.of( outputFactory.ofThreshold( outputFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
+                                                                   Operator.GREATER ) ) );
 
         outputBuilder.addBoxPlotOutput( mapKeyByLeadThreshold,
                                         outputMapByMetricFuture );

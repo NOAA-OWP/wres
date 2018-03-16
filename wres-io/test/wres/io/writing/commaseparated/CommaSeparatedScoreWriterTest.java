@@ -28,7 +28,7 @@ import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Threshold;
-import wres.datamodel.Thresholds;
+import wres.datamodel.OneOrTwoThresholds;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
@@ -119,9 +119,9 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTest
                 CompletableFuture.completedFuture( fakeOutputData );
 
         // Fake lead time and threshold
-        Pair<TimeWindow, Thresholds> mapKeyByLeadThreshold =
+        Pair<TimeWindow, OneOrTwoThresholds> mapKeyByLeadThreshold =
                 outputFactory.ofMapKeyByTimeThreshold( timeOne,
-                                                       Double.NEGATIVE_INFINITY,
+                                                       outputFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
                                                        Threshold.Operator.GREATER );
 
         outputBuilder.addDoubleScoreOutput( mapKeyByLeadThreshold,
@@ -134,8 +134,8 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTest
         ProjectConfig projectConfig = getMockedProjectConfig( feature );
 
         // Begin the actual test now that we have constructed dependencies.
-        CommaSeparatedScoreWriter<DoubleScoreOutput> writer = CommaSeparatedScoreWriter.of( projectConfig ); 
-        writer.accept( output.getDoubleScoreOutput() ); 
+        CommaSeparatedScoreWriter<DoubleScoreOutput> writer = CommaSeparatedScoreWriter.of( projectConfig );
+        writer.accept( output.getDoubleScoreOutput() );
 
         // read the file, verify it has what we wanted:
         Path pathToFirstFile = Paths.get( System.getProperty( "java.io.tmpdir" ),
@@ -238,9 +238,9 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTest
                 CompletableFuture.completedFuture( fakeOutputData );
 
         // Fake lead time and threshold
-        Pair<TimeWindow, Thresholds> mapKeyByLeadThreshold =
+        Pair<TimeWindow, OneOrTwoThresholds> mapKeyByLeadThreshold =
                 outputFactory.ofMapKeyByTimeThreshold( timeOne,
-                                                       Double.NEGATIVE_INFINITY,
+                                                       outputFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
                                                        Threshold.Operator.GREATER );
 
         outputBuilder.addDurationScoreOutput( mapKeyByLeadThreshold,
@@ -253,8 +253,8 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTest
         ProjectConfig projectConfig = getMockedProjectConfig( feature );
 
         // Begin the actual test now that we have constructed dependencies.
-        CommaSeparatedScoreWriter<DurationScoreOutput> writer = CommaSeparatedScoreWriter.of( projectConfig ); 
-        writer.accept( output.getDurationScoreOutput() ); 
+        CommaSeparatedScoreWriter<DurationScoreOutput> writer = CommaSeparatedScoreWriter.of( projectConfig );
+        writer.accept( output.getDurationScoreOutput() );
 
         // read the file, verify it has what we wanted:
         Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ),

@@ -23,7 +23,7 @@ import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.Slicer;
 import wres.datamodel.Threshold;
-import wres.datamodel.Thresholds;
+import wres.datamodel.OneOrTwoThresholds;
 import wres.datamodel.ThresholdsByType;
 import wres.datamodel.inputs.InsufficientDataException;
 import wres.datamodel.inputs.MetricInputSliceException;
@@ -367,7 +367,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         Set<Threshold> union =
                 getUnionOfThresholdsForThisGroup( this.thresholdsByMetric, MetricInputGroup.ENSEMBLE, outGroup );
         double[] sorted = getSortedClimatology( input, union );
-        Map<Thresholds, MetricCalculationException> failures = new HashMap<>();
+        Map<OneOrTwoThresholds, MetricCalculationException> failures = new HashMap<>();
         union.forEach( threshold -> {
             Set<MetricConstants> ignoreTheseMetrics =
                     doNotComputeTheseMetricsForThisThreshold( this.thresholdsByMetric,
@@ -387,7 +387,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                     pairs = dataFactory.getSlicer().filterByLeft( input, useMe );
                 }
 
-                processEnsemblePairs( Pair.of( timeWindow, Thresholds.of( useMe ) ),
+                processEnsemblePairs( Pair.of( timeWindow, OneOrTwoThresholds.of( useMe ) ),
                                       pairs,
                                       futures,
                                       outGroup,
@@ -397,7 +397,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
             //Insufficient data for one threshold: log, but allow
             catch ( MetricInputSliceException | InsufficientDataException e )
             {
-                failures.put( Thresholds.of( useMe ), new MetricCalculationException( e.getMessage(), e ) );
+                failures.put( OneOrTwoThresholds.of( useMe ), new MetricCalculationException( e.getMessage(), e ) );
             }
         } );
         //Handle any failures
@@ -415,7 +415,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
      * @param ignoreTheseMetrics a set of metrics within the prescribed group that should be ignored
      */
 
-    private void processEnsemblePairs( Pair<TimeWindow, Thresholds> key,
+    private void processEnsemblePairs( Pair<TimeWindow, OneOrTwoThresholds> key,
                                        EnsemblePairs input,
                                        MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
                                        MetricOutputGroup outGroup,
@@ -511,7 +511,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                                                                  MetricInputGroup.DISCRETE_PROBABILITY,
                                                                  outGroup );
         double[] sorted = getSortedClimatology( input, union );
-        Map<Thresholds, MetricCalculationException> failures = new HashMap<>();
+        Map<OneOrTwoThresholds, MetricCalculationException> failures = new HashMap<>();
         union.forEach( threshold -> {
             Set<MetricConstants> ignoreTheseMetrics =
                     doNotComputeTheseMetricsForThisThreshold( this.thresholdsByMetric,
@@ -530,7 +530,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                                                                                    useMe,
                                                                                    toDiscreteProbabilities );
 
-                processDiscreteProbabilityPairs( Pair.of( timeWindow, Thresholds.of( useMe ) ),
+                processDiscreteProbabilityPairs( Pair.of( timeWindow, OneOrTwoThresholds.of( useMe ) ),
                                                  transformed,
                                                  futures,
                                                  outGroup,
@@ -540,7 +540,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
             //Insufficient data for one threshold: log, but allow
             catch ( InsufficientDataException e )
             {
-                failures.put( Thresholds.of( useMe ), new MetricCalculationException( e.getMessage(), e ) );
+                failures.put( OneOrTwoThresholds.of( useMe ), new MetricCalculationException( e.getMessage(), e ) );
             }
 
         } );
@@ -563,7 +563,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
      * @param ignoreTheseMetrics a set of metrics within the prescribed group that should be ignored
      */
 
-    private void processDiscreteProbabilityPairs( Pair<TimeWindow, Thresholds> key,
+    private void processDiscreteProbabilityPairs( Pair<TimeWindow, OneOrTwoThresholds> key,
                                                   DiscreteProbabilityPairs input,
                                                   MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
                                                   MetricOutputGroup outGroup,
@@ -644,7 +644,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         Set<Threshold> union =
                 getUnionOfThresholdsForThisGroup( this.thresholdsByMetric, MetricInputGroup.DICHOTOMOUS, outGroup );
         double[] sorted = getSortedClimatology( input, union );
-        Map<Thresholds, MetricCalculationException> failures = new HashMap<>();
+        Map<OneOrTwoThresholds, MetricCalculationException> failures = new HashMap<>();
         union.forEach( threshold -> {
             Set<MetricConstants> ignoreTheseMetrics =
                     doNotComputeTheseMetricsForThisThreshold( this.thresholdsByMetric,
@@ -682,9 +682,9 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                     unionToIgnore.addAll( innerIgnoreTheseMetrics );
 
                     // Derive compound threshold from outerThreshold and innerThreshold
-                    Thresholds compound = Thresholds.of( outerThreshold, innerThreshold );
+                    OneOrTwoThresholds compound = OneOrTwoThresholds.of( outerThreshold, innerThreshold );
 
-                    Pair<TimeWindow, Thresholds> nextKey = Pair.of( timeWindow, compound );
+                    Pair<TimeWindow, OneOrTwoThresholds> nextKey = Pair.of( timeWindow, compound );
 
                     //Define a mapper to convert the discrete probability pairs to dichotomous pairs
                     Function<PairOfDoubles, PairOfBooleans> mapper =
@@ -699,7 +699,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
             //Insufficient data for one threshold: log, but allow
             catch ( InsufficientDataException e )
             {
-                failures.put( Thresholds.of( outerThreshold ), new MetricCalculationException( e.getMessage(), e ) );
+                failures.put( OneOrTwoThresholds.of( outerThreshold ), new MetricCalculationException( e.getMessage(), e ) );
             }
 
         } );

@@ -97,7 +97,7 @@ public class CommaSeparatedReader
                                                                      condition,
                                                                      labels,
                                                                      nextLine,
-                                                                     missingValue, 
+                                                                     missingValue,
                                                                      units );
 
             }
@@ -202,15 +202,18 @@ public class CommaSeparatedReader
                 // Probability thresholds
                 if ( isProbability )
                 {
-                    returnMe.add( factory.ofProbabilityThreshold( threshold,
+                    returnMe.add( factory.ofProbabilityThreshold( factory.ofOneOrTwoDoubles( threshold ),
                                                                   condition,
                                                                   iterateLabels[i],
-                                                                  units) );
+                                                                  units ) );
                 }
                 // Ordinary thresholds
                 else
                 {
-                    returnMe.add( factory.ofThreshold( threshold, condition, iterateLabels[i], units ) );
+                    returnMe.add( factory.ofThreshold( factory.ofOneOrTwoDoubles( threshold ),
+                                                       condition,
+                                                       iterateLabels[i],
+                                                       units ) );
                 }
             }
         }

@@ -49,42 +49,42 @@ class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForPro
      * Thread safe map for {@link DoubleScoreOutput}.
      */
 
-    private final ConcurrentMap<Pair<TimeWindow, Thresholds>, List<Future<MetricOutputMapByMetric<DoubleScoreOutput>>>> doubleScore =
+    private final ConcurrentMap<Pair<TimeWindow, OneOrTwoThresholds>, List<Future<MetricOutputMapByMetric<DoubleScoreOutput>>>> doubleScore =
             new ConcurrentHashMap<>();
     
     /**
      * Thread safe map for {@link DurationScoreOutput}.
      */
 
-    private final ConcurrentMap<Pair<TimeWindow, Thresholds>, List<Future<MetricOutputMapByMetric<DurationScoreOutput>>>> durationScore =
+    private final ConcurrentMap<Pair<TimeWindow, OneOrTwoThresholds>, List<Future<MetricOutputMapByMetric<DurationScoreOutput>>>> durationScore =
             new ConcurrentHashMap<>();    
 
     /**
      * Thread safe map for {@link MultiVectorOutput}.
      */
 
-    private final ConcurrentMap<Pair<TimeWindow, Thresholds>, List<Future<MetricOutputMapByMetric<MultiVectorOutput>>>> multiVector =
+    private final ConcurrentMap<Pair<TimeWindow, OneOrTwoThresholds>, List<Future<MetricOutputMapByMetric<MultiVectorOutput>>>> multiVector =
             new ConcurrentHashMap<>();
 
     /**
      * Thread safe map for {@link MatrixOutput}.
      */
 
-    private final ConcurrentMap<Pair<TimeWindow, Thresholds>, List<Future<MetricOutputMapByMetric<MatrixOutput>>>> matrix =
+    private final ConcurrentMap<Pair<TimeWindow, OneOrTwoThresholds>, List<Future<MetricOutputMapByMetric<MatrixOutput>>>> matrix =
             new ConcurrentHashMap<>();
 
     /**
      * Thread safe map for {@link BoxPlotOutput}.
      */
 
-    private final ConcurrentMap<Pair<TimeWindow, Thresholds>, List<Future<MetricOutputMapByMetric<BoxPlotOutput>>>> boxplot =
+    private final ConcurrentMap<Pair<TimeWindow, OneOrTwoThresholds>, List<Future<MetricOutputMapByMetric<BoxPlotOutput>>>> boxplot =
             new ConcurrentHashMap<>();
 
     /**
      * Thread safe map for {@link PairedOutput}.
      */
 
-    private final ConcurrentMap<Pair<TimeWindow, Thresholds>, List<Future<MetricOutputMapByMetric<PairedOutput<Instant, Duration>>>>> paired =
+    private final ConcurrentMap<Pair<TimeWindow, OneOrTwoThresholds>, List<Future<MetricOutputMapByMetric<PairedOutput<Instant, Duration>>>>> paired =
             new ConcurrentHashMap<>();
 
     @Override
@@ -232,47 +232,47 @@ class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForPro
          * Thread safe map for {@link DoubleScoreOutput}.
          */
 
-        private final ConcurrentMap<Pair<TimeWindow, Thresholds>, List<Future<MetricOutputMapByMetric<DoubleScoreOutput>>>> doubleScoreInternal =
+        private final ConcurrentMap<Pair<TimeWindow, OneOrTwoThresholds>, List<Future<MetricOutputMapByMetric<DoubleScoreOutput>>>> doubleScoreInternal =
                 new ConcurrentHashMap<>();
 
         /**
          * Thread safe map for {@link DurationScoreOutput}.
          */
 
-        private final ConcurrentMap<Pair<TimeWindow, Thresholds>, List<Future<MetricOutputMapByMetric<DurationScoreOutput>>>> durationScoreInternal =
+        private final ConcurrentMap<Pair<TimeWindow, OneOrTwoThresholds>, List<Future<MetricOutputMapByMetric<DurationScoreOutput>>>> durationScoreInternal =
                 new ConcurrentHashMap<>();
 
         /**
          * Thread safe map for {@link MultiVectorOutput}.
          */
 
-        private final ConcurrentMap<Pair<TimeWindow, Thresholds>, List<Future<MetricOutputMapByMetric<MultiVectorOutput>>>> multiVectorInternal =
+        private final ConcurrentMap<Pair<TimeWindow, OneOrTwoThresholds>, List<Future<MetricOutputMapByMetric<MultiVectorOutput>>>> multiVectorInternal =
                 new ConcurrentHashMap<>();
 
         /**
          * Thread safe map for {@link MatrixOutput}.
          */
 
-        private final ConcurrentMap<Pair<TimeWindow, Thresholds>, List<Future<MetricOutputMapByMetric<MatrixOutput>>>> matrixInternal =
+        private final ConcurrentMap<Pair<TimeWindow, OneOrTwoThresholds>, List<Future<MetricOutputMapByMetric<MatrixOutput>>>> matrixInternal =
                 new ConcurrentHashMap<>();
 
         /**
          * Thread safe map for {@link BoxPlotOutput}.
          */
 
-        private final ConcurrentMap<Pair<TimeWindow, Thresholds>, List<Future<MetricOutputMapByMetric<BoxPlotOutput>>>> boxplotInternal =
+        private final ConcurrentMap<Pair<TimeWindow, OneOrTwoThresholds>, List<Future<MetricOutputMapByMetric<BoxPlotOutput>>>> boxplotInternal =
                 new ConcurrentHashMap<>();
 
         /**
          * Thread safe map for {@link PairedOutput}.
          */
 
-        private final ConcurrentMap<Pair<TimeWindow, Thresholds>, List<Future<MetricOutputMapByMetric<PairedOutput<Instant, Duration>>>>> pairedInternal =
+        private final ConcurrentMap<Pair<TimeWindow, OneOrTwoThresholds>, List<Future<MetricOutputMapByMetric<PairedOutput<Instant, Duration>>>>> pairedInternal =
                 new ConcurrentHashMap<>();
 
         @Override
         public MetricOutputForProjectByTimeAndThresholdBuilder addDoubleScoreOutput( TimeWindow timeWindow,
-                                                                                     Thresholds threshold,
+                                                                                     OneOrTwoThresholds threshold,
                                                                                      Future<MetricOutputMapByMetric<DoubleScoreOutput>> result )
         {
             List<Future<MetricOutputMapByMetric<DoubleScoreOutput>>> existing =
@@ -287,7 +287,7 @@ class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForPro
 
         @Override
         public MetricOutputForProjectByTimeAndThresholdBuilder addDurationScoreOutput( TimeWindow timeWindow,
-                                                                                       Thresholds threshold,
+                                                                                       OneOrTwoThresholds threshold,
                                                                                        Future<MetricOutputMapByMetric<DurationScoreOutput>> result )
         {
             List<Future<MetricOutputMapByMetric<DurationScoreOutput>>> existing =
@@ -302,7 +302,7 @@ class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForPro
 
         @Override
         public MetricOutputForProjectByTimeAndThresholdBuilder addMultiVectorOutput( TimeWindow timeWindow,
-                                                                                     Thresholds threshold,
+                                                                                     OneOrTwoThresholds threshold,
                                                                                      Future<MetricOutputMapByMetric<MultiVectorOutput>> result )
         {
             List<Future<MetricOutputMapByMetric<MultiVectorOutput>>> existing =
@@ -317,7 +317,7 @@ class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForPro
 
         @Override
         public MetricOutputForProjectByTimeAndThresholdBuilder addMatrixOutput( TimeWindow timeWindow,
-                                                                                Thresholds threshold,
+                                                                                OneOrTwoThresholds threshold,
                                                                                 Future<MetricOutputMapByMetric<MatrixOutput>> result )
         {
             List<Future<MetricOutputMapByMetric<MatrixOutput>>> existing =
@@ -332,7 +332,7 @@ class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForPro
 
         @Override
         public MetricOutputForProjectByTimeAndThresholdBuilder addBoxPlotOutput( TimeWindow timeWindow,
-                                                                                 Thresholds threshold,
+                                                                                 OneOrTwoThresholds threshold,
                                                                                  Future<MetricOutputMapByMetric<BoxPlotOutput>> result )
         {
             List<Future<MetricOutputMapByMetric<BoxPlotOutput>>> existing =
@@ -347,7 +347,7 @@ class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForPro
 
         @Override
         public MetricOutputForProjectByTimeAndThresholdBuilder addPairedOutput( TimeWindow timeWindow,
-                                                                                Thresholds threshold,
+                                                                                OneOrTwoThresholds threshold,
                                                                                 Future<MetricOutputMapByMetric<PairedOutput<Instant, Duration>>> result )
         {
             List<Future<MetricOutputMapByMetric<PairedOutput<Instant, Duration>>>> existing =
@@ -396,7 +396,7 @@ class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForPro
     {
         DataFactory d = DefaultDataFactory.getInstance();
         addMe.forEach( ( key, value ) -> {
-            Map<Pair<TimeWindow, Thresholds>, MetricOutput<?>> map = new TreeMap<>();
+            Map<Pair<TimeWindow, OneOrTwoThresholds>, MetricOutput<?>> map = new TreeMap<>();
             value.forEach( map::put );
             builder.put( key, d.ofMap( map ) );
         } );
@@ -414,7 +414,7 @@ class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForPro
      */
 
     private <T extends MetricOutput<?>> MetricOutputMultiMapByTimeAndThreshold<T> unwrap( MetricOutputGroup outGroup,
-                                                                                          Map<Pair<TimeWindow, Thresholds>, List<Future<MetricOutputMapByMetric<T>>>> wrapped )
+                                                                                          Map<Pair<TimeWindow, OneOrTwoThresholds>, List<Future<MetricOutputMapByMetric<T>>>> wrapped )
             throws MetricOutputAccessException
     {
         if ( wrapped.isEmpty() )
@@ -422,8 +422,8 @@ class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForPro
             return null;
         }
         DataFactory d = DefaultDataFactory.getInstance();
-        Map<Pair<TimeWindow, Thresholds>, List<MetricOutputMapByMetric<T>>> unwrapped = new HashMap<>();
-        for ( Map.Entry<Pair<TimeWindow, Thresholds>, List<Future<MetricOutputMapByMetric<T>>>> next : wrapped.entrySet() )
+        Map<Pair<TimeWindow, OneOrTwoThresholds>, List<MetricOutputMapByMetric<T>>> unwrapped = new HashMap<>();
+        for ( Map.Entry<Pair<TimeWindow, OneOrTwoThresholds>, List<Future<MetricOutputMapByMetric<T>>>> next : wrapped.entrySet() )
         {
             try
             {

@@ -103,9 +103,9 @@ public interface Threshold extends Comparable<Threshold>, Predicate<Double>
      * @return true if ordinary values are defined, false otherwise
      */
 
-    default boolean hasOrdinaryValues()
+    default boolean hasValues()
     {
-        return Objects.nonNull( getThreshold() ) || Objects.nonNull( getThresholdUpper() );
+        return Objects.nonNull( this.getValues() );
     }
 
     /**
@@ -114,9 +114,9 @@ public interface Threshold extends Comparable<Threshold>, Predicate<Double>
      * @return true if probability values are defined, false otherwise
      */
 
-    default boolean hasProbabilityValues()
+    default boolean hasProbabilities()
     {
-        return Objects.nonNull( getThresholdProbability() ) || Objects.nonNull( getThresholdUpperProbability() );
+        return Objects.nonNull( this.getProbabilities() );
     }
 
     /**
@@ -127,19 +127,19 @@ public interface Threshold extends Comparable<Threshold>, Predicate<Double>
 
     default boolean hasLabel()
     {
-        return Objects.nonNull( getLabel() );
+        return Objects.nonNull( this.getLabel() );
     }
 
     /**
-     * Returns <code>true</code> if the threshold is a quantile; that is, when {@link #hasOrdinaryValues()} and 
-     * {@link #hasProbabilityValues()} both return <code>true</code>.
+     * Returns <code>true</code> if the threshold is a quantile; that is, when {@link #hasValues()} and 
+     * {@link #hasProbabilities()} both return <code>true</code>.
      * 
      * @return true if the threshold is a quantile, false otherwise
      */
 
     default boolean isQuantile()
     {
-        return hasOrdinaryValues() && hasProbabilityValues();
+        return this.hasValues() && this.hasProbabilities();
     }
 
     /**
@@ -151,7 +151,7 @@ public interface Threshold extends Comparable<Threshold>, Predicate<Double>
 
     default boolean hasUnits()
     {
-        return Objects.nonNull( getUnits() );
+        return Objects.nonNull( this.getUnits() );
     }
 
     /**
@@ -166,7 +166,7 @@ public interface Threshold extends Comparable<Threshold>, Predicate<Double>
         {
             return ThresholdComposition.QUANTILE;
         }
-        if( this.hasProbabilityValues() )
+        if( this.hasProbabilities() )
         {
             return ThresholdComposition.PROBABILITY;
         }
@@ -174,16 +174,26 @@ public interface Threshold extends Comparable<Threshold>, Predicate<Double>
     }
     
     /**
-     * Returns the threshold value or null if no threshold value is defined.
+     * Returns the threshold values or null if no threshold values are defined. If no threshold values are defined,
+     * {@link #getProbabilities()} always returns non-null.
      * 
-     * @return the threshold value or null
+     * @return the threshold values or null
      */
-
-    Double getThreshold();
+    
+    OneOrTwoDoubles getValues();
     
     /**
+     * Returns the probability values or null if no probability values are defined. If no probability values are 
+     * defined, {@link #getValues()} always returns non-null.
+     * 
+     * @return the threshold values or null
+     */
+    
+    OneOrTwoDoubles getProbabilities();    
+
+    /**
      * Returns the units associated with the {@link Threshold} or null. Always returns null when 
-     * {@link #hasOrdinaryValues()} returns <code>false</code>.
+     * {@link #hasValues()} returns <code>false</code>.
      * 
      * @return the units or null
      */
@@ -198,6 +208,14 @@ public interface Threshold extends Comparable<Threshold>, Predicate<Double>
 
     Operator getCondition();
 
+    /**
+     * Returns the threshold value or null if no threshold value is defined.
+     * 
+     * @return the threshold value or null
+     */
+
+    Double getThreshold();
+    
     /**
      * Returns the upper bound of a {@link Operator#BETWEEN} condition or null.
      * 

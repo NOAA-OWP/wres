@@ -73,20 +73,20 @@ public final class DefaultDataFactoryTest
     public void pairOfTest()
     {
         //Reference the constant member for a concrete instance of the factory
-        final PairOfDoubles tuple = metIn.pairOf(1.0, 2.0);
-        assertNotNull(tuple);
-        assertEquals(tuple.getItemOne(), 1.0, THRESHOLD);
-        assertEquals(tuple.getItemTwo(), 2.0, THRESHOLD);
+        final PairOfDoubles tuple = metIn.pairOf( 1.0, 2.0 );
+        assertNotNull( tuple );
+        assertEquals( tuple.getItemOne(), 1.0, THRESHOLD );
+        assertEquals( tuple.getItemTwo(), 2.0, THRESHOLD );
     }
 
     @Test
     public void vectorOfDoublesTest()
     {
-        final double[] arrOne = {1.0, 2.0};
-        final VectorOfDoubles doubleVecOne = metIn.vectorOf(arrOne);
+        final double[] arrOne = { 1.0, 2.0 };
+        final VectorOfDoubles doubleVecOne = metIn.vectorOf( arrOne );
         assertNotNull( doubleVecOne );
-        assertEquals(doubleVecOne.getDoubles()[0], 1.0, THRESHOLD);
-        assertEquals(doubleVecOne.getDoubles()[1], 2.0, THRESHOLD);
+        assertEquals( doubleVecOne.getDoubles()[0], 1.0, THRESHOLD );
+        assertEquals( doubleVecOne.getDoubles()[1], 2.0, THRESHOLD );
     }
 
     @Test
@@ -96,89 +96,89 @@ public final class DefaultDataFactoryTest
         final VectorOfDoubles doubleVecOne = metIn.vectorOf( arrOne );
         arrOne[0] = 3.0;
         arrOne[1] = 4.0;
-        assertNotNull(doubleVecOne);
-        assertEquals(doubleVecOne.getDoubles()[0], 1.0, THRESHOLD);
-        assertEquals(doubleVecOne.getDoubles()[1], 2.0, THRESHOLD);
+        assertNotNull( doubleVecOne );
+        assertEquals( doubleVecOne.getDoubles()[0], 1.0, THRESHOLD );
+        assertEquals( doubleVecOne.getDoubles()[1], 2.0, THRESHOLD );
     }
 
     @Test
     public void pairOfVectorsTest()
     {
-        final double[] arrOne = {1.0, 2.0, 3.0};
-        final double[] arrTwo = {4.0, 5.0};
-        final Pair<VectorOfDoubles, VectorOfDoubles> pair = metIn.pairOf( arrOne, arrTwo);
-        assertNotNull(pair);
-        assertEquals(pair.getLeft().getDoubles()[0], 1.0, THRESHOLD);
-        assertEquals(pair.getLeft().getDoubles()[1], 2.0, THRESHOLD);
-        assertEquals(pair.getLeft().getDoubles()[2], 3.0, THRESHOLD);
-        assertEquals(pair.getRight().getDoubles()[0], 4.0, THRESHOLD);
-        assertEquals(pair.getRight().getDoubles()[1], 5.0, THRESHOLD);
+        final double[] arrOne = { 1.0, 2.0, 3.0 };
+        final double[] arrTwo = { 4.0, 5.0 };
+        final Pair<VectorOfDoubles, VectorOfDoubles> pair = metIn.pairOf( arrOne, arrTwo );
+        assertNotNull( pair );
+        assertEquals( pair.getLeft().getDoubles()[0], 1.0, THRESHOLD );
+        assertEquals( pair.getLeft().getDoubles()[1], 2.0, THRESHOLD );
+        assertEquals( pair.getLeft().getDoubles()[2], 3.0, THRESHOLD );
+        assertEquals( pair.getRight().getDoubles()[0], 4.0, THRESHOLD );
+        assertEquals( pair.getRight().getDoubles()[1], 5.0, THRESHOLD );
     }
 
     @Test
     public void pairOfDoubleAndVectorOfDoublesTest()
     {
-        final double[] arrOne = {2.0, 3.0};
-        final PairOfDoubleAndVectorOfDoubles tuple = metIn.pairOf(1.0, arrOne);
-        assertNotNull(tuple);
-        assertEquals(tuple.getItemOne(), 1.0, THRESHOLD);
-        assertEquals(tuple.getItemTwo()[0], 2.0, THRESHOLD);
-        assertEquals(tuple.getItemTwo()[1], 3.0, THRESHOLD);
+        final double[] arrOne = { 2.0, 3.0 };
+        final PairOfDoubleAndVectorOfDoubles tuple = metIn.pairOf( 1.0, arrOne );
+        assertNotNull( tuple );
+        assertEquals( tuple.getItemOne(), 1.0, THRESHOLD );
+        assertEquals( tuple.getItemTwo()[0], 2.0, THRESHOLD );
+        assertEquals( tuple.getItemTwo()[1], 3.0, THRESHOLD );
         // check that toString() does not throw exception and is not null
-        assertNotNull(tuple.toString());
+        assertNotNull( tuple.toString() );
     }
 
     @Test
     public void pairOfDoubleAndVectorOfDoublesMutationTest()
     {
-        final double[] arrOne = {2.0, 3.0};
-        final PairOfDoubleAndVectorOfDoubles tuple = metIn.pairOf(1.0, arrOne);
+        final double[] arrOne = { 2.0, 3.0 };
+        final PairOfDoubleAndVectorOfDoubles tuple = metIn.pairOf( 1.0, arrOne );
         arrOne[0] = 4.0;
         arrOne[1] = 5.0;
         assertNotNull( tuple );
-        assertEquals(tuple.getItemOne(), 1.0, THRESHOLD);
-        assertEquals(tuple.getItemTwo()[0], 2.0, THRESHOLD);
-        assertEquals(tuple.getItemTwo()[1], 3.0, THRESHOLD);
+        assertEquals( tuple.getItemOne(), 1.0, THRESHOLD );
+        assertEquals( tuple.getItemTwo()[0], 2.0, THRESHOLD );
+        assertEquals( tuple.getItemTwo()[1], 3.0, THRESHOLD );
     }
 
     @Test
     public void pairOfDoubleAndVectorOfDoublesUsingBoxedMutationTest()
     {
-        final Double[] arrOne = {2.0, 3.0};
-        final PairOfDoubleAndVectorOfDoubles tuple = metIn.pairOf(1.0, arrOne);
-        assertNotNull(tuple);
+        final Double[] arrOne = { 2.0, 3.0 };
+        final PairOfDoubleAndVectorOfDoubles tuple = metIn.pairOf( 1.0, arrOne );
+        assertNotNull( tuple );
 
         // mutate the original array
         arrOne[0] = 4.0;
         arrOne[1] = 5.0;
 
-        assertEquals(tuple.getItemOne(), 1.0, THRESHOLD);
-        assertEquals(tuple.getItemTwo()[0], 2.0, THRESHOLD);
-        assertEquals(tuple.getItemTwo()[1], 3.0, THRESHOLD);
+        assertEquals( tuple.getItemOne(), 1.0, THRESHOLD );
+        assertEquals( tuple.getItemTwo()[0], 2.0, THRESHOLD );
+        assertEquals( tuple.getItemTwo()[1], 3.0, THRESHOLD );
         // check that toString() does not throw exception and is not null
-        assertNotNull(tuple.toString());
+        assertNotNull( tuple.toString() );
     }
 
     @Test
     public void vectorOfBooleanTest()
     {
-        final boolean[] arrOne = {false, true};
-        final VectorOfBooleans vec = metIn.vectorOf(arrOne);
-        assertEquals(vec.getBooleans()[0], false);
-        assertEquals(vec.getBooleans()[1], true);
+        final boolean[] arrOne = { false, true };
+        final VectorOfBooleans vec = metIn.vectorOf( arrOne );
+        assertEquals( vec.getBooleans()[0], false );
+        assertEquals( vec.getBooleans()[1], true );
     }
 
     @Test
     public void vectorOfBooleanMutationTest()
     {
-        final boolean[] arrOne = {false, true};
-        final VectorOfBooleans vec = metIn.vectorOf(arrOne);
+        final boolean[] arrOne = { false, true };
+        final VectorOfBooleans vec = metIn.vectorOf( arrOne );
         // mutate the values in the original array
         arrOne[0] = true;
         arrOne[1] = false;
         // despite mutation, we should get the same result back
-        assertEquals(vec.getBooleans()[0], false);
-        assertEquals(vec.getBooleans()[1], true);
+        assertEquals( vec.getBooleans()[0], false );
+        assertEquals( vec.getBooleans()[1], true );
     }
 
     @Test
@@ -186,9 +186,9 @@ public final class DefaultDataFactoryTest
     {
         final boolean one = true;
         final boolean two = false;
-        final PairOfBooleans bools = metIn.pairOf(one, two);
-        assertEquals(true, bools.getItemOne());
-        assertEquals(false, bools.getItemTwo());
+        final PairOfBooleans bools = metIn.pairOf( one, two );
+        assertEquals( true, bools.getItemOne() );
+        assertEquals( false, bools.getItemTwo() );
     }
 
     @Test
@@ -196,27 +196,27 @@ public final class DefaultDataFactoryTest
     {
         boolean one = true;
         boolean two = false;
-        final PairOfBooleans bools = metIn.pairOf(one, two);
+        final PairOfBooleans bools = metIn.pairOf( one, two );
         one = false;
         two = true;
-        assertEquals(true, bools.getItemOne());
-        assertEquals(false, bools.getItemTwo());
+        assertEquals( true, bools.getItemOne() );
+        assertEquals( false, bools.getItemTwo() );
     }
 
     @Test
     public void pairOfDoubleAndVectorOfDoubleToStringTest()
     {
-        double[] arr = {123456.0, 78910.0, 111213.0};
-        PairOfDoubleAndVectorOfDoubles p = metIn.pairOf(141516.0, arr);
+        double[] arr = { 123456.0, 78910.0, 111213.0 };
+        PairOfDoubleAndVectorOfDoubles p = metIn.pairOf( 141516.0, arr );
         String result = p.toString();
-        assertTrue("12345 expected to show up in toString: " + result,
-                    result.contains("12345"));
-        assertTrue("7891 expected to show up in toString: " + result,
-                    result.contains("7891"));
-        assertTrue("11121 expected to show up in toString: " + result,
-                    result.contains("11121"));
-        assertTrue("14151 expected to show up in toString: " + result,
-                    result.contains("14151"));
+        assertTrue( "12345 expected to show up in toString: " + result,
+                    result.contains( "12345" ) );
+        assertTrue( "7891 expected to show up in toString: " + result,
+                    result.contains( "7891" ) );
+        assertTrue( "11121 expected to show up in toString: " + result,
+                    result.contains( "11121" ) );
+        assertTrue( "14151 expected to show up in toString: " + result,
+                    result.contains( "14151" ) );
     }
 
     /**
@@ -230,11 +230,13 @@ public final class DefaultDataFactoryTest
         Pair<TimeWindow, Threshold> first = Pair.of( metIn.ofTimeWindow( Instant.MIN,
                                                                          Instant.MAX,
                                                                          ReferenceTime.ISSUE_TIME ),
-                                                     metIn.ofThreshold( 1.0, Operator.GREATER ) );
+                                                     metIn.ofThreshold( SafeOneOrTwoDoubles.of( 1.0 ),
+                                                                        Operator.GREATER ) );
         Pair<TimeWindow, Threshold> second = Pair.of( metIn.ofTimeWindow( Instant.MIN,
                                                                           Instant.MAX,
                                                                           ReferenceTime.ISSUE_TIME ),
-                                                      metIn.ofThreshold( 1.0, Operator.GREATER ) );
+                                                      metIn.ofThreshold( SafeOneOrTwoDoubles.of( 1.0 ),
+                                                                         Operator.GREATER ) );
         assertTrue( "Expected equality.",
                     first.compareTo( second ) == 0 && second.compareTo( first ) == 0 && first.equals( second ) );
         //Test inequality and anticommutativity 
@@ -242,7 +244,8 @@ public final class DefaultDataFactoryTest
         Pair<TimeWindow, Threshold> third = Pair.of( metIn.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                                          Instant.MAX,
                                                                          ReferenceTime.ISSUE_TIME ),
-                                                     metIn.ofThreshold( 1.0, Operator.GREATER ) );
+                                                     metIn.ofThreshold( SafeOneOrTwoDoubles.of( 1.0 ),
+                                                                        Operator.GREATER ) );
         assertTrue( "Expected greater than.", third.compareTo( first ) > 0 );
         assertTrue( "Expected anticommutativity.",
                     Math.abs( first.compareTo( third ) ) == Math.abs( third.compareTo( first ) ) );
@@ -250,7 +253,8 @@ public final class DefaultDataFactoryTest
         Pair<TimeWindow, Threshold> fourth = Pair.of( metIn.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                                           Instant.parse( "1986-01-01T00:00:00Z" ),
                                                                           ReferenceTime.ISSUE_TIME ),
-                                                      metIn.ofThreshold( 1.0, Operator.GREATER ) );
+                                                      metIn.ofThreshold( SafeOneOrTwoDoubles.of( 1.0 ),
+                                                                         Operator.GREATER ) );
         assertTrue( "Expected greater than.", third.compareTo( fourth ) > 0 );
         assertTrue( "Expected anticommutativity.",
                     Math.abs( third.compareTo( fourth ) ) == Math.abs( fourth.compareTo( third ) ) );
@@ -258,7 +262,8 @@ public final class DefaultDataFactoryTest
         Pair<TimeWindow, Threshold> fifth = Pair.of( metIn.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                                          Instant.parse( "1986-01-01T00:00:00Z" ),
                                                                          ReferenceTime.VALID_TIME ),
-                                                     metIn.ofThreshold( 1.0, Operator.GREATER ) );
+                                                     metIn.ofThreshold( SafeOneOrTwoDoubles.of( 1.0 ),
+                                                                        Operator.GREATER ) );
         assertTrue( "Expected greater than.", fourth.compareTo( fifth ) > 0 );
         assertTrue( "Expected anticommutativity.",
                     Math.abs( fourth.compareTo( fifth ) ) == Math.abs( fifth.compareTo( fourth ) ) );
@@ -266,7 +271,8 @@ public final class DefaultDataFactoryTest
         Pair<TimeWindow, Threshold> sixth = Pair.of( metIn.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                                          Instant.parse( "1986-01-01T00:00:00Z" ),
                                                                          ReferenceTime.VALID_TIME ),
-                                                     metIn.ofThreshold( 0.0, Operator.GREATER ) );
+                                                     metIn.ofThreshold( SafeOneOrTwoDoubles.of( 0.0 ),
+                                                                        Operator.GREATER ) );
         assertTrue( "Expected greater than.", fifth.compareTo( sixth ) > 0 );
         assertTrue( "Expected anticommutativity.",
                     Math.abs( fifth.compareTo( sixth ) ) == Math.abs( sixth.compareTo( fifth ) ) );
@@ -292,15 +298,18 @@ public final class DefaultDataFactoryTest
         Pair<TimeWindow, Threshold> zeroeth = Pair.of( metIn.ofTimeWindow( Instant.MIN,
                                                                            Instant.MAX,
                                                                            ReferenceTime.ISSUE_TIME ),
-                                                       metIn.ofThreshold( 1.0, Operator.GREATER ) );
+                                                       metIn.ofThreshold( SafeOneOrTwoDoubles.of( 1.0 ),
+                                                                          Operator.GREATER ) );
         Pair<TimeWindow, Threshold> first = Pair.of( metIn.ofTimeWindow( Instant.MIN,
                                                                          Instant.MAX,
                                                                          ReferenceTime.ISSUE_TIME ),
-                                                     metIn.ofThreshold( 1.0, Operator.GREATER ) );
+                                                     metIn.ofThreshold( SafeOneOrTwoDoubles.of( 1.0 ),
+                                                                        Operator.GREATER ) );
         Pair<TimeWindow, Threshold> second = Pair.of( metIn.ofTimeWindow( Instant.MIN,
                                                                           Instant.MAX,
                                                                           ReferenceTime.ISSUE_TIME ),
-                                                      metIn.ofThreshold( 1.0, Operator.GREATER ) );
+                                                      metIn.ofThreshold( SafeOneOrTwoDoubles.of( 1.0 ),
+                                                                         Operator.GREATER ) );
         //Reflexive
         assertEquals( "Expected reflexive equality.", first, first );
         //Symmetric 
@@ -318,25 +327,29 @@ public final class DefaultDataFactoryTest
         Pair<TimeWindow, Threshold> third = Pair.of( metIn.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                                          Instant.MAX,
                                                                          ReferenceTime.ISSUE_TIME ),
-                                                     metIn.ofThreshold( 1.0, Operator.GREATER ) );
+                                                     metIn.ofThreshold( SafeOneOrTwoDoubles.of( 1.0 ),
+                                                                        Operator.GREATER ) );
         assertTrue( "Expected inequality.", !third.equals( first ) );
         //Latest date
         Pair<TimeWindow, Threshold> fourth = Pair.of( metIn.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                                           Instant.parse( "1986-01-01T00:00:00Z" ),
                                                                           ReferenceTime.ISSUE_TIME ),
-                                                      metIn.ofThreshold( 1.0, Operator.GREATER ) );
+                                                      metIn.ofThreshold( SafeOneOrTwoDoubles.of( 1.0 ),
+                                                                         Operator.GREATER ) );
         assertTrue( "Expected inequality.", !third.equals( fourth ) );
         //Reference time
         Pair<TimeWindow, Threshold> fifth = Pair.of( metIn.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                                          Instant.parse( "1986-01-01T00:00:00Z" ),
                                                                          ReferenceTime.VALID_TIME ),
-                                                     metIn.ofThreshold( 1.0, Operator.GREATER ) );
+                                                     metIn.ofThreshold( SafeOneOrTwoDoubles.of( 1.0 ),
+                                                                        Operator.GREATER ) );
         assertTrue( "Expected inequality.", !fourth.equals( fifth ) );
         //Threshold
         Pair<TimeWindow, Threshold> sixth = Pair.of( metIn.ofTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                                          Instant.parse( "1986-01-01T00:00:00Z" ),
                                                                          ReferenceTime.VALID_TIME ),
-                                                     metIn.ofThreshold( 0.0, Operator.GREATER ) );
+                                                     metIn.ofThreshold( SafeOneOrTwoDoubles.of( 0.0 ),
+                                                                        Operator.GREATER ) );
         assertTrue( "Expected inequality.", !fifth.equals( sixth ) );
     }
 

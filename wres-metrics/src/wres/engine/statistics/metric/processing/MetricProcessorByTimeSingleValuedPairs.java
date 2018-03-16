@@ -26,7 +26,7 @@ import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.Slicer;
 import wres.datamodel.Threshold;
 import wres.datamodel.Threshold.Operator;
-import wres.datamodel.Thresholds;
+import wres.datamodel.OneOrTwoThresholds;
 import wres.datamodel.ThresholdsByType;
 import wres.datamodel.inputs.InsufficientDataException;
 import wres.datamodel.inputs.MetricInputSliceException;
@@ -173,8 +173,8 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
         {
             timeSeries = metricFactory.ofSingleValuedTimeSeriesCollection( metricExecutor,
                                                                            getMetrics( metrics,
-                                                                                               MetricInputGroup.SINGLE_VALUED_TIME_SERIES,
-                                                                                               MetricOutputGroup.PAIRED ) );
+                                                                                       MetricInputGroup.SINGLE_VALUED_TIME_SERIES,
+                                                                                       MetricOutputGroup.PAIRED ) );
             //Summary statistics, currently done for time-to-peak only
             //TODO: replace with a collection if/when other measures of the same type are added                    
             if ( MetricConfigHelper.hasSummaryStatisticsFor( config, MetricConfigName.TIME_TO_PEAK_ERROR ) )
@@ -242,9 +242,10 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                     getCachedMetricOutputInternal().getPairedOutput().get( MetricConstants.TIME_TO_PEAK_ERROR );
             PairedOutput<Instant, Duration> union = dataFactory.unionOf( output.values() );
             TimeWindow unionWindow = union.getMetadata().getTimeWindow();
-            Pair<TimeWindow, Thresholds> key =
+            Pair<TimeWindow, OneOrTwoThresholds> key =
                     Pair.of( unionWindow,
-                             Thresholds.of( dataFactory.ofThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER ) ) );
+                             OneOrTwoThresholds.of( dataFactory.ofThreshold( dataFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
+                                                                     Operator.GREATER ) ) );
             //Build the future result
             Supplier<MetricOutputMapByMetric<DurationScoreOutput>> supplier = () -> {
                 DurationScoreOutput result = timeToPeakErrorStats.aggregate( union );
@@ -307,7 +308,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
         Set<Threshold> union =
                 getUnionOfThresholdsForThisGroup( this.thresholdsByMetric, MetricInputGroup.DICHOTOMOUS, outGroup );
         double[] sorted = getSortedClimatology( input, union );
-        Map<Thresholds, MetricCalculationException> failures = new HashMap<>();
+        Map<OneOrTwoThresholds, MetricCalculationException> failures = new HashMap<>();
         union.forEach( threshold -> {
 
             Threshold useMe = addQuantilesToThreshold( threshold, sorted );
@@ -325,7 +326,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                 //Transform the pairs
                 DichotomousPairs transformed = dataFactory.getSlicer().transformPairs( input, mapper );
 
-                processDichotomousPairs( Pair.of( timeWindow, Thresholds.of( useMe ) ),
+                processDichotomousPairs( Pair.of( timeWindow, OneOrTwoThresholds.of( useMe ) ),
                                          transformed,
                                          futures,
                                          outGroup,
@@ -335,7 +336,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
             //Insufficient data for one threshold: log, but allow
             catch ( InsufficientDataException e )
             {
-                failures.put( Thresholds.of( useMe ), new MetricCalculationException( e.getMessage(), e ) );
+                failures.put( OneOrTwoThresholds.of( useMe ), new MetricCalculationException( e.getMessage(), e ) );
             }
 
         } );
@@ -360,10 +361,13 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
         Future<MetricOutputMapByMetric<PairedOutput<Instant, Duration>>> output =
                 CompletableFuture.supplyAsync( () -> timeSeries.apply( input ),
                                                thresholdExecutor );
+
+        OneOrTwoThresholds threshold =
+                OneOrTwoThresholds.of( dataFactory.ofThreshold( dataFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
+                                                        Operator.GREATER ) );
+
         //Add the future result to the store
-        futures.addPairedOutput( Pair.of( timeWindow,
-                                          Thresholds.of( dataFactory.ofThreshold( Double.NEGATIVE_INFINITY,
-                                                                                  Operator.GREATER ) ) ),
+        futures.addPairedOutput( Pair.of( timeWindow, threshold ),
                                  output );
     }
 

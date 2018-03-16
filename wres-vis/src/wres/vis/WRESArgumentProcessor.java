@@ -15,7 +15,7 @@ import ohd.hseb.hefs.utils.plugins.UniqueGenericParameterList;
 import ohd.hseb.util.misc.HString;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.Thresholds;
+import wres.datamodel.OneOrTwoThresholds;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
@@ -76,7 +76,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * @param inputKeyInstance the input key
      * @param displayPlotInput the input data
      */
-    public WRESArgumentProcessor( Pair<TimeWindow, Thresholds> inputKeyInstance, BoxPlotOutput displayPlotInput )
+    public WRESArgumentProcessor( Pair<TimeWindow, OneOrTwoThresholds> inputKeyInstance, BoxPlotOutput displayPlotInput )
     {
         super();
         MetricOutputMetadata meta = displayPlotInput.getMetadata();
@@ -257,7 +257,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * @param threshold the threshold
      */
     public void addThresholdLeadArguments( MetricOutputMapByTimeAndThreshold<?> displayedPlotInput,
-                                           Thresholds threshold )
+                                           OneOrTwoThresholds threshold )
     {
 
         // Augment the plot title when the input dataset contains a secondary threshold/classifier

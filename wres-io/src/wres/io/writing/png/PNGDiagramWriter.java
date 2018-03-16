@@ -15,7 +15,7 @@ import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationConfig;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.Thresholds;
+import wres.datamodel.OneOrTwoThresholds;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.MapKey;
@@ -123,11 +123,11 @@ public class PNGDiagramWriter extends PNGWriter
                                                                      meta,
                                                                      (TimeWindow) append );
                 }
-                else if ( append instanceof Thresholds )
+                else if ( append instanceof OneOrTwoThresholds )
                 {
                     outputImage = ConfigHelper.getOutputPathToWrite( destinationConfig,
                                                                      meta,
-                                                                     (Thresholds) append );
+                                                                     (OneOrTwoThresholds) append );
                 }
 
                 PNGWriter.writeChart( outputImage, nextEntry.getValue(), destinationConfig );
