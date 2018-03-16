@@ -72,31 +72,6 @@ public class Validation
 
 
     /**
-     * Validates a list of {@link ProjectConfigPlus}. Returns true if the
-     * projects validate successfully, false otherwise.
-     *
-     * @param projectConfiggies a list of project configurations to validate
-     * @return true if the projects validate successfully, false otherwise
-     */
-
-    public static boolean validateProjects( List<ProjectConfigPlus> projectConfiggies )
-    {
-        boolean validationsPassed = true;
-
-        // Validate all projects, not stopping until all are done
-        for ( ProjectConfigPlus projectConfigPlus: projectConfiggies )
-        {
-            if ( !isProjectValid( projectConfigPlus ) )
-            {
-                validationsPassed = false;
-            }
-        }
-
-        return validationsPassed;
-    }
-
-
-    /**
      * Quick validation of the project configuration, will return detailed
      * information to the user regarding issues about the configuration. Strict
      * for now, i.e. return false even on minor xml problems. Does not return on
@@ -106,7 +81,7 @@ public class Validation
      * @return true if no issues were detected, false otherwise
      */
 
-    private static boolean isProjectValid( ProjectConfigPlus projectConfigPlus )
+    public static boolean isProjectValid( ProjectConfigPlus projectConfigPlus )
     {
         // Assume valid until demonstrated otherwise
         boolean result = true;
