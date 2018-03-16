@@ -1776,15 +1776,14 @@ public class ConfigHelper
 
     /**
      * Returns a set of writers to be shared across instances of writing. Returns a {@link SharedWriters} that 
-     * contains one writer for each supported incremental data format and type. 
-     *
-     * TODO: find the right level for ProjectConfigException to be handled
+     * contains one writer for each supported incremental data format and type.
      *
      * @param projectConfig the project configuration
      * @param featureCount the number of features
      * @param timeStepCount the number of time steps
      * @param leadCount the number of lead times
      * @param thresholdCount the number of thresholds
+     * @param metrics the resolved DoubleScore metrics to write
      * @return a pool of shared writers
      * @throws IOException if one or more writers could not be created
      * @throws ProjectConfigException if the project configuration is invalid
@@ -1794,7 +1793,8 @@ public class ConfigHelper
                                                   int featureCount,
                                                   int timeStepCount,
                                                   int leadCount,
-                                                  int thresholdCount )
+                                                  int thresholdCount,
+                                                  Set<MetricConstants> metrics )
             throws IOException, ProjectConfigException
     {
         Objects.requireNonNull( projectConfig, NULL_CONFIGURATION_ERROR );
@@ -1807,53 +1807,17 @@ public class ConfigHelper
         {
             // Set the writer
             builder.setNetcdfDoublescoreWriter(
-                    ConfigHelper.getNetcdfDoubleScoreWriter( projectConfig,
-                                                             featureCount,
-                                                             timeStepCount,
-                                                             leadCount,
-                                                             thresholdCount ) );
+                    NetcdfDoubleScoreWriter.of( projectConfig,
+                                                featureCount,
+                                                timeStepCount,
+                                                leadCount,
+                                                thresholdCount,
+                                                metrics ) );
         }
 
         return builder.build();
     }
 
-    /**
-     * Builds a {@link NetcdfDoubleScoreWriter} for the specified {@link ProjectConfig}.
-     *
-     * @param projectConfig the project configuration
-     * @param featureCount the number of features
-     * @param timeStepCount the number of time steps
-     * @param leadCount the number of lead times
-     * @param thresholdCount the number of thresholds
-     * @return a writer
-     * @throws IOException if one or more writers could not be created
-     */
-
-    public static NetcdfDoubleScoreWriter
-    getNetcdfDoubleScoreWriter( ProjectConfig projectConfig,
-                                int featureCount,
-                                int timeStepCount,
-                                int leadCount,
-                                int thresholdCount )
-            throws IOException
-    {
-        Objects.requireNonNull( projectConfig, NULL_CONFIGURATION_ERROR );
-
-        // Fixed/fake inputs for now
-        List<String> metricNames = new ArrayList<>( 2 );
-        metricNames.add( "MEAN_ERROR" );
-        metricNames.add( "SAMPLE_SIZE" );
-        List<String> shareableMetricNames =
-                Collections.unmodifiableList( metricNames );
-
-        NetcdfDoubleScoreWriter writer = NetcdfDoubleScoreWriter.of( projectConfig,
-                                                                     featureCount,
-                                                                     timeStepCount,
-                                                                     leadCount,
-                                                                     thresholdCount,
-                                                                     shareableMetricNames );
-        return writer;
-    }
 
     /**
      * Renders a map of collections unmodifiable. All collections in the container are rendered unmodifiable.

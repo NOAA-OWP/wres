@@ -32,6 +32,7 @@ import wres.datamodel.inputs.InsufficientDataException;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.outputs.MetricOutputAccessException;
 import wres.engine.statistics.metric.MetricFactory;
+import wres.engine.statistics.metric.config.MetricConfigurationException;
 import wres.engine.statistics.metric.processing.MetricProcessorException;
 import wres.engine.statistics.metric.processing.MetricProcessorForProject;
 import wres.io.Operations;
@@ -84,7 +85,8 @@ class ProcessorHelper
                                       final ExecutorService pairExecutor,
                                       final ExecutorService thresholdExecutor,
                                       final ExecutorService metricExecutor )
-            throws IOException, ProjectConfigException
+            throws IOException, ProjectConfigException,
+            MetricConfigurationException
     {
 
         final ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
@@ -136,7 +138,8 @@ class ProcessorHelper
                                                                      resolvedProject.getFeatureCount(),
                                                                      2,
                                                                      2,
-                                                                     resolvedProject.getThresholdCount() );
+                                                                     resolvedProject.getThresholdCount(),
+                                                                     resolvedProject.getDoubleScoreMetrics() );
 
         // Reduce our triad of executors to one object
         ExecutorServices executors = new ExecutorServices( pairExecutor,

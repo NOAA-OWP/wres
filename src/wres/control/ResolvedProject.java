@@ -1,7 +1,9 @@
 package wres.control;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -11,10 +13,15 @@ import org.slf4j.LoggerFactory;
 import wres.config.FeaturePlus;
 import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationConfig;
+import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
+import wres.config.generated.MetricsConfig;
 import wres.config.generated.ProjectConfig;
+import wres.datamodel.MetricConstants;
 import wres.datamodel.Threshold;
 import wres.datamodel.ThresholdsByType;
+import wres.engine.statistics.metric.config.MetricConfigHelper;
+import wres.engine.statistics.metric.config.MetricConfigurationException;
 
 /**
  * Represents a project that has been "resolved", i.e. any kind of translation
@@ -172,5 +179,28 @@ class ResolvedProject
     int getFeatureCount()
     {
         return this.getDecomposedFeatures().size();
+    }
+
+    /**
+     * @return set of double score metrics used by this project
+     */
+    Set<MetricConstants> getDoubleScoreMetrics()
+            throws MetricConfigurationException
+    {
+        Set<MetricConstants> result = new HashSet<>();
+        Set<MetricConstants> doubleScoreMetricOutputs = MetricConstants.getMetrics(
+                MetricConstants.MetricOutputGroup.DOUBLE_SCORE );
+
+        Set<MetricConstants> allMetrics = MetricConfigHelper.getMetricsFromConfig( this.getProjectConfig() );
+
+        for ( MetricConstants doubleScoreMetric : doubleScoreMetricOutputs )
+        {
+            if ( allMetrics.contains( doubleScoreMetric ) )
+            {
+                result.add( doubleScoreMetric );
+            }
+        }
+
+        return Collections.unmodifiableSet( result );
     }
 }
