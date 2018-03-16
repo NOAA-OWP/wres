@@ -22,6 +22,7 @@ import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigPlus;
 import wres.config.Validation;
 import wres.config.generated.ProjectConfig;
+import wres.engine.statistics.metric.config.MetricConfigurationException;
 import wres.io.config.SystemSettings;
 
 /**
@@ -37,9 +38,10 @@ public class Control implements Function<String[], Integer>
 
     /**
      * Processes one or more projects whose paths are provided in the input arguments.
-     *
+     * possible TODO: propagate exceptions and return void rather than Integer
      * @param args the paths to one or more project configurations
      */
+
     @Override
     public Integer apply(final String[] args)
     {
@@ -119,12 +121,17 @@ public class Control implements Function<String[], Integer>
 
             return 0;
         }
-        catch ( WresProcessingException | IOException | ProjectConfigException e )
+        catch ( WresProcessingException | IOException internalException)
         {
-
-            LOGGER.error( "Could not complete project execution:", e );
-            Control.addException( e );
-            return -1;
+            LOGGER.error( "Could not complete project execution due to:", internalException );
+            Control.addException( internalException );
+            return -1; // OR return 500 - Internal Server Error (see #41467)
+        }
+        catch ( ProjectConfigException | MetricConfigurationException userException )
+        {
+            LOGGER.error( "Please correct the project configuration. Details:", userException );
+            Control.addException( userException );
+            return -1; // OR return 400 - Bad Request (see #41467)
         }
         // Shutdown
         finally

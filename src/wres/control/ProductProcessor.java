@@ -21,6 +21,7 @@ import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Outputs;
+import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.BoxPlotOutput;
@@ -32,6 +33,7 @@ import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.PairedOutput;
+import wres.engine.statistics.metric.config.MetricConfigurationException;
 import wres.io.config.ConfigHelper;
 import wres.io.writing.SharedWriters;
 import wres.io.writing.commaseparated.CommaSeparatedBoxPlotWriter;
@@ -39,6 +41,7 @@ import wres.io.writing.commaseparated.CommaSeparatedDiagramWriter;
 import wres.io.writing.commaseparated.CommaSeparatedMatrixWriter;
 import wres.io.writing.commaseparated.CommaSeparatedPairedWriter;
 import wres.io.writing.commaseparated.CommaSeparatedScoreWriter;
+import wres.io.writing.netcdf.NetcdfDoubleScoreWriter;
 import wres.io.writing.png.PNGBoxPlotWriter;
 import wres.io.writing.png.PNGDiagramWriter;
 import wres.io.writing.png.PNGDoubleScoreWriter;
@@ -187,7 +190,7 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
             // implicitly passing resolvedProject via shared state
             buildConsumers( sharedWriters );
         }
-        catch ( ProjectConfigException | IOException e )
+        catch ( ProjectConfigException | MetricConfigurationException | IOException e )
         {
             throw new WresProcessingException( "While processing the project configuration to write output:", e );
         }
@@ -262,7 +265,7 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
      */
 
     private void buildConsumers( SharedWriters sharedWriters )
-            throws ProjectConfigException, IOException
+            throws ProjectConfigException, IOException, MetricConfigurationException
     {
         // There is one consumer per project for each type, because consumers are built
         // with projects, not destinations. The consumers must iterate destinations.
@@ -387,7 +390,7 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
      */
 
     private void buildNetCDFConsumers( SharedWriters sharedWriters )
-            throws IOException
+            throws IOException, MetricConfigurationException
     {
         // Build the consumers conditionally
         int featureCount = this.getResolvedProject().getFeatureCount();
@@ -396,6 +399,8 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
         // TODO: resolve the actual leadCount of a project
         int leadCount = 2;
         int thresholdCount = this.getResolvedProject().getThresholdCount();
+        Set<MetricConstants> metricConstants = this.getResolvedProject()
+                                                   .getDoubleScoreMetrics();
 
         // Register consumers for the NetCDF output type
         if ( writeWhenTrue.test( MetricOutputGroup.DOUBLE_SCORE, DestinationType.NETCDF ) )
@@ -411,11 +416,12 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
             else
             {
                 doubleScoreConsumers.put( DestinationType.NETCDF,
-                                          ConfigHelper.getNetcdfDoubleScoreWriter( this.getProjectConfig(),
-                                                                                   featureCount,
-                                                                                   timeStepCount,
-                                                                                   leadCount,
-                                                                                   thresholdCount ) );
+                                          NetcdfDoubleScoreWriter.of( this.getProjectConfig(),
+                                                                      featureCount,
+                                                                      timeStepCount,
+                                                                      leadCount,
+                                                                      thresholdCount,
+                                                                      metricConstants ) );
             }
         }
     }

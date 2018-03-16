@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -26,6 +27,7 @@ import ucar.nc2.Attribute;
 import ucar.nc2.Dimension;
 import ucar.nc2.NetcdfFileWriter;
 import ucar.nc2.Variable;
+
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.ProjectConfig;
@@ -91,7 +93,7 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                                      int timeStepCount,
                                      int leadCount,
                                      int thresholdCount,
-                                     List<String> metrics )
+                                     Set<MetricConstants> metrics )
             throws IOException
     {
         this.files = NetcdfDoubleScoreWriter.initializeFiles( projectConfig,
@@ -135,7 +137,7 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                                               int timeStepCount,
                                               int leadCount,
                                               int thresholdCount,
-                                              List<String> metrics )
+                                              Set<MetricConstants> metrics )
             throws IOException
     {
         Objects.requireNonNull( projectConfig );
@@ -348,7 +350,7 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                                                            int timeStepCount,
                                                            int leadCount,
                                                            int thresholdCount,
-                                                           List<String> metrics )
+                                                           Set<MetricConstants> metrics )
             throws IOException
     {
         Objects.requireNonNull( config );
@@ -424,7 +426,7 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                                                    int timeStepCount,
                                                    int leadCount,
                                                    int thresholdCount,
-                                                   List<String> metrics )
+                                                   Set<MetricConstants> metrics )
     {
         Objects.requireNonNull( config );
         Objects.requireNonNull( writer );
@@ -535,8 +537,9 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                 Collections.unmodifiableList( scoreDimensions );
 
         // The actual values we care about
-        for ( String metricName : metrics )
+        for ( MetricConstants metric : metrics )
         {
+            String metricName = metric.toString();
             Variable metricVariable = writer.addVariable( null,
                                                           metricName,
                                                           DataType.DOUBLE,
