@@ -6,6 +6,7 @@ import java.io.StringReader;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -617,7 +618,8 @@ public final class Database {
      */
 	public static void execute(final String query) throws SQLException
 	{
-		Connection connection = null;
+	    Database.execute( query, false );
+		/*Connection connection = null;
 		Statement statement = null;
 		Timer timer = null;
 
@@ -632,16 +634,21 @@ public final class Database {
 			connection = getConnection();
 			statement = connection.createStatement();
 			statement.execute(query);
-			if (LOGGER.isDebugEnabled())
+			if (LOGGER.isDebugEnabled() && timer != null)
             {
                 timer.cancel();
             }
 		}
 		catch (SQLException error)
         {
+            String message = query;
+            if (query.length() > 1000)
+            {
+                message = query.substring( 0, 1000 );
+            }
             LOGGER.error( "The following SQL call failed:{}{}",
                           NEWLINE,
-                          query.substring( 0, 1000 ),
+                          message,
                           error );
 			throw error;
 		}
@@ -656,8 +663,77 @@ public final class Database {
 			{
 				returnConnection(connection);
 			}
-		}
+		}*/
 	}
+
+    /**
+     * Executes the passed in query in the current thread
+     * @param query The query to execute
+     * @throws SQLException Thrown if an error occurred while attempting to
+     * communicate with the database
+     */
+    public static void execute(final String query, final boolean forceTransaction) throws SQLException
+    {
+        Connection connection = null;
+        Statement statement = null;
+        Timer timer = null;
+
+        LOGGER.trace( "{}{}{}", NEWLINE, query, NEWLINE );
+
+        try
+        {
+            if (LOGGER.isDebugEnabled())
+            {
+                timer = createScriptTimer( query );
+            }
+            connection = getConnection();
+            connection.setAutoCommit( !forceTransaction );
+            statement = connection.createStatement();
+            statement.execute(query);
+
+            if (forceTransaction)
+            {
+                connection.commit();
+            }
+
+            if (LOGGER.isDebugEnabled() && timer != null)
+            {
+                timer.cancel();
+            }
+        }
+        catch (SQLException error)
+        {
+            String message = query;
+            if (query.length() > 1000)
+            {
+                message = query.substring( 0, 1000 );
+            }
+
+            if (forceTransaction && connection != null)
+            {
+                connection.rollback();
+            }
+
+            LOGGER.error( "The following SQL call failed:{}{}",
+                          NEWLINE,
+                          message,
+                          error );
+            throw error;
+        }
+        finally
+        {
+            if (statement != null)
+            {
+                statement.close();
+            }
+
+            if (connection != null)
+            {
+                connection.setAutoCommit( true );
+                returnConnection(connection);
+            }
+        }
+    }
 
     /**
      * Sends a copy statement to the indicated table within the database
@@ -1310,7 +1386,7 @@ public final class Database {
 			connection = Database.getConnection();
 			resultSet = Database.getResults( connection, query );
 
-			if (LOGGER.isDebugEnabled())
+			if (LOGGER.isDebugEnabled() && scriptTimer != null)
             {
                 scriptTimer.cancel();
             }
@@ -1403,10 +1479,8 @@ public final class Database {
 		}
 	}
 
-	public static final boolean removeOrphanedData() throws SQLException
+	public static boolean removeOrphanedData() throws SQLException
     {
-        boolean orphanedDataRemoved;
-
         try
         {
             if (!Database.thereAreOrphanedValues())
@@ -1532,9 +1606,7 @@ public final class Database {
                 scriptBuilder.addLine(");");
             }
 
-            scriptBuilder.execute();
-
-            orphanedDataRemoved = true;
+            scriptBuilder.executeInTransaction();
 
             LOGGER.info("Incomplete data has been removed from the system.");
         }
@@ -1543,10 +1615,10 @@ public final class Database {
             throw new SQLException( "Orphaned data could not be removed", databaseError );
         }
 
-        return orphanedDataRemoved;
+        return true;
     }
 
-    public static boolean thereAreOrphanedValues() throws SQLException
+    private static boolean thereAreOrphanedValues() throws SQLException
     {
         ScriptBuilder scriptBuilder = new ScriptBuilder(  );
 
@@ -1595,7 +1667,7 @@ public final class Database {
 
 			results = statement.executeQuery(query);
 
-			if (LOGGER.isDebugEnabled())
+			if (LOGGER.isDebugEnabled() && timer != null)
 			{
 				timer.cancel();
 			}
@@ -1603,6 +1675,10 @@ public final class Database {
 		}
 		catch (SQLException error)
 		{
+		    if (!statement.isClosed())
+            {
+                statement.close();
+            }
             LOGGER.error( "The following SQL query failed:{}{}", NEWLINE, query, error );
 			throw error;
 		}
