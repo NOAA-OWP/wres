@@ -53,7 +53,7 @@ public final class MetricConfigHelper
 
 
     /**
-     * Null configuration error.
+     * Null data factory error.
      */
 
     public static final String NULL_DATA_FACTORY_ERROR = "Specify a non-null data factory.";
@@ -84,9 +84,7 @@ public final class MetricConfigHelper
     {
         if ( Objects.isNull( configName ) )
         {
-            throw new MetricConfigurationException( "Unable to map a null input identifier to a named metric: "
-                                                    + "check that the input configuration has been facet-validated against the list of metrics "
-                                                    + "supported by the system configuration." );
+            throw new MetricConfigurationException( "Unable to map a null input identifier to a named metric." );
         }
 
         buildMap();
@@ -251,11 +249,11 @@ public final class MetricConfigHelper
         switch ( group )
         {
             case ENSEMBLE:
-                returnMe.addAll( MetricConfigHelper.getMetricsForEnsembleInput( config ) );
+                returnMe.addAll( MetricConfigHelper.getValidMetricsForEnsembleInput( config ) );
                 break;
             case SINGLE_VALUED:
-                returnMe.addAll( MetricConfigHelper.getMetricsForSingleValuedInput( config ) );
-                returnMe.addAll( MetricConfigHelper.getMetricsForSingleValuedTimeSeriesInput( config ) );
+                returnMe.addAll( MetricConfigHelper.getValidMetricsForSingleValuedInput( config ) );
+                returnMe.addAll( MetricConfigHelper.getValidMetricsForSingleValuedTimeSeriesInput( config ) );
                 break;
             default:
                 throw new MetricConfigurationException( "Unexpected input type '" + group + "'." );
@@ -280,7 +278,7 @@ public final class MetricConfigHelper
         // Only single-valued time-series metrics valid in this context
         if ( group == MetricInputGroup.SINGLE_VALUED )
         {
-            return MetricConfigHelper.getMetricsForSingleValuedTimeSeriesInput( config );
+            return MetricConfigHelper.getValidMetricsForSingleValuedTimeSeriesInput( config );
         }
 
         return Collections.emptySet();
@@ -300,8 +298,7 @@ public final class MetricConfigHelper
     {
         Objects.requireNonNull( config, "Specify a non-null project from which to generate metrics." );
 
-        return Collections.unmodifiableSet( getMetricConfigByMetric( config ).keySet() );
-
+        return Collections.unmodifiableSet( MetricConfigHelper.getMetricConfigByMetric( config ).keySet() );
     }
 
     /**
@@ -321,8 +318,9 @@ public final class MetricConfigHelper
 
         Map<MetricConstants, MetricConfig> returnMe = new EnumMap<>( MetricConstants.class );
 
-        returnMe.putAll( getMetricConfigByOrdinaryMetric( config ) );
-        returnMe.putAll( getMetricConfigByTimeSeriesMetric( config ) );
+        returnMe.putAll( MetricConfigHelper.getMetricConfigByOrdinaryMetric( config ) );
+        
+        returnMe.putAll( MetricConfigHelper.getMetricConfigByTimeSeriesMetric( config ) );
 
         return Collections.unmodifiableMap( returnMe );
     }
@@ -687,12 +685,12 @@ public final class MetricConfigHelper
                     // Single-valued metrics
                     if ( inGroup == MetricInputGroup.SINGLE_VALUED )
                     {
-                        allValid = MetricConfigHelper.getMetricsForSingleValuedInput( config );
+                        allValid = MetricConfigHelper.getValidMetricsForSingleValuedInput( config );
                     }
                     // Ensemble metrics
                     else if ( inGroup == MetricInputGroup.ENSEMBLE )
                     {
-                        allValid = MetricConfigHelper.getMetricsForEnsembleInput( config );
+                        allValid = MetricConfigHelper.getValidMetricsForEnsembleInput( config );
                     }
                     // Unrecognized type
                     else
@@ -747,7 +745,7 @@ public final class MetricConfigHelper
                     // Single-valued metrics
                     if ( inGroup == MetricInputGroup.SINGLE_VALUED )
                     {
-                        allValid = MetricConfigHelper.getMetricsForSingleValuedInput( config );
+                        allValid = MetricConfigHelper.getValidMetricsForSingleValuedInput( config );
                     }
                     // Unrecognized type
                     else
@@ -793,7 +791,7 @@ public final class MetricConfigHelper
      * @throws NullPointerException if the input is null
      */
 
-    private static Set<MetricConstants> getMetricsForEnsembleInput( ProjectConfig config )
+    private static Set<MetricConstants> getValidMetricsForEnsembleInput( ProjectConfig config )
     {
         Objects.requireNonNull( config, NULL_CONFIGURATION_ERROR );
 
@@ -817,14 +815,14 @@ public final class MetricConfigHelper
 
     /**
      * Returns valid ordinary metrics for {@link MetricInputGroup#SINGLE_VALUED}. Also see:
-     * {@link #getMetricsForSingleValuedTimeSeriesInput(ProjectConfig)}
+     * {@link #getValidMetricsForSingleValuedTimeSeriesInput(ProjectConfig)}
      * 
      * @param config the project configuration
      * @return the valid metrics for {@link MetricInputGroup#SINGLE_VALUED}
      * @throws NullPointerException if the input is null
      */
 
-    private static Set<MetricConstants> getMetricsForSingleValuedInput( ProjectConfig config )
+    private static Set<MetricConstants> getValidMetricsForSingleValuedInput( ProjectConfig config )
     {
         Objects.requireNonNull( config, NULL_CONFIGURATION_ERROR );
 
@@ -851,7 +849,7 @@ public final class MetricConfigHelper
      * @throws NullPointerException if the input is null
      */
 
-    private static Set<MetricConstants> getMetricsForSingleValuedTimeSeriesInput( ProjectConfig config )
+    private static Set<MetricConstants> getValidMetricsForSingleValuedTimeSeriesInput( ProjectConfig config )
     {
         Objects.requireNonNull( config, NULL_CONFIGURATION_ERROR );
 
