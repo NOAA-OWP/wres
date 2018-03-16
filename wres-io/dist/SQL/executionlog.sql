@@ -18,3 +18,6 @@ WITH (
 );
 ALTER TABLE public.executionlog
   OWNER TO wres;
+
+ALTER TABLE public.executionlog
+  ADD COLUMN IF NOT EXISTS input_code TYPE text;

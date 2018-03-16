@@ -207,9 +207,16 @@ public abstract class Scripter extends ScriptBuilder
 
     protected void applyValueDate()
     {
-        this.add("(", this.getValueDate());
-        this.applyTimeShift();
-        this.addLine(") AS value_date,");
+        this.add("(EXTRACT(epoch FROM ", this.getValueDate(), ")");
+        if (this.getTimeShift() != null)
+        {
+            // The time shift is in hours; we want to convert to seconds
+            this.add(" + ", this.getTimeShift() * 3600);
+        }
+
+        /*this.add("(", this.getValueDate());
+        this.applyTimeShift();*/
+        this.addLine(")::int AS value_date,");
     }
 
     protected void applyTimeShift()

@@ -204,7 +204,7 @@ class TimeSeriesScripter extends Scripter
 
     private void applyScaleMember() throws IOException, SQLException
     {
-        if ( !this.getProjectDetails().shouldScale(this.getDataSourceConfig()) )
+        if ( !this.getProjectDetails().shouldScale() )
         {
             this.add("F.lead");
         }

@@ -12,6 +12,7 @@ import java.util.NavigableMap;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.TreeSet;
+import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 
@@ -179,6 +180,43 @@ public final class Collections
         }
         return filteredValues;
     }
+
+    /**
+     * Finds the key of a map based on a passed in function comparing values
+     * <p>
+     *     The following will find the key of a map with the largest numerical value:
+     * </p>
+     * <pre>Collections.getKeyByValueFunction(
+     *      map,
+     *      (value1, value2) -> Math.max(value1, value2) == value1
+     * )
+     * </pre>
+     * @param map The map to interrogate
+     * @param comparisonFunction The function that will find the correct key.
+     *                           The first parameter is the value to compare
+     *                           against the previous value
+     * @param <K> The type of the key
+     * @param <V> The type of the value
+     * @return The key that is determined to be the match based off of the function
+     */
+    public static <K, V> K getKeyByValueFunction( Map<K, V> map, BiPredicate<V, V> comparisonFunction)
+    {
+        K key = null;
+
+        for (Map.Entry<K, V> entry : map.entrySet())
+        {
+            if (key == null)
+            {
+                key = entry.getKey();
+            }
+            else if (comparisonFunction.test( entry.getValue(), map.get(key) ))
+            {
+                key = entry.getKey();
+            }
+        }
+
+        return key;
+    }
     
     /**
      * Finds an object in the passed in the collection based on the passed in expression
@@ -341,7 +379,7 @@ public final class Collections
     {
         function = function.trim().toLowerCase();
 
-        Double aggregatedValue = Double.NaN;
+        double aggregatedValue = Double.NaN;
 
         AbstractUnivariateStatistic operation = null;
 
@@ -421,11 +459,6 @@ public final class Collections
                                           return value.doubleValue();
                                   } ).toArray()
             );
-        }
-
-        if (aggregatedValue == null)
-        {
-            aggregatedValue = Double.NaN;
         }
 
         return aggregatedValue;

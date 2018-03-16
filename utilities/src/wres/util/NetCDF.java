@@ -241,8 +241,6 @@ public final class NetCDF {
         switch (var.getDimensions().size())
         {
             case 1:
-                length = var.getDimension(0).getLength();
-                break;
             case 2:
                 length = var.getDimension(0).getLength();
                 break;

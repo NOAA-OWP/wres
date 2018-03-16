@@ -30,9 +30,16 @@ class PoolingForecastScripter extends Scripter
     {
         this.applyCommonTableExpression();
         this.addLine("SELECT ");
-        this.applyScaleMember();
         this.applyValueDate();
         this.addLine("    F.lead,");
+        this.addTab().add("(EXTRACT(epoch FROM F.basis_time)");
+
+        if (this.getTimeShift() != null)
+        {
+            this.add(" + ", this.getTimeShift() * 3600);
+        }
+
+        this.addLine(")::int as basis_epoch_time,");
         this.applyMeasurementArray();
         this.addLine("    F.measurementunit_id");
         this.addLine( "FROM forecasts F" );
@@ -56,8 +63,15 @@ class PoolingForecastScripter extends Scripter
         this.addLine("    FROM wres.Forecasts F");
         this.addLine("    WHERE F.variable_id = ", this.getVariableID());
 
-        long frequency = TimeHelper.unitsToLeadUnits( this.getProjectDetails().getIssuePoolingWindowUnit(), this.getProjectDetails().getIssuePoolingWindowFrequency() );
-        long span = TimeHelper.unitsToLeadUnits( this.getProjectDetails().getIssuePoolingWindowUnit(), this.getProjectDetails().getIssuePoolingWindowPeriod());
+        long frequency = TimeHelper.unitsToLeadUnits(
+                this.getProjectDetails().getIssuePoolingWindowUnit(),
+                this.getProjectDetails().getIssuePoolingWindowFrequency()
+        );
+
+        long span = TimeHelper.unitsToLeadUnits(
+                this.getProjectDetails().getIssuePoolingWindowUnit(),
+                this.getProjectDetails().getIssuePoolingWindowPeriod()
+        );
 
         this.addLine( "        AND F.feature_id = ", Features.getFeatureID(this.getFeature()));
         this.addTab(2).addLine("AND ", this.getProjectDetails().getLeadQualifier( this.getFeature(), this.getProgress(), "F" ));
@@ -100,28 +114,6 @@ class PoolingForecastScripter extends Scripter
     {
         this.addLine( "GROUP BY F.basis_time, F.valid_time, F.lead, F.measurementunit_id" );
         this.addLine( "ORDER BY F.basis_time, F.valid_time, F.lead;" );
-    }
-
-    private void applyScaleMember() throws IOException
-    {
-        if ( !this.getProjectDetails().shouldScale(this.getDataSourceConfig()) )
-        {
-            this.add("F.lead");
-        }
-        else
-        {
-            int leadModifier = this.getProgress();
-            //leadModifier *= this.getProjectDetails().getScale().getFrequency();
-            leadModifier += this.getLeadOffset();
-            leadModifier += 1;
-
-            this.add( "(F.lead - ", leadModifier, ") % " );
-            this.add( TimeHelper.unitsToLeadUnits( this.getProjectDetails()
-                                                       .getScale().getUnit().value(),
-                                                   this.getProjectDetails()
-                                                       .getScale().getPeriod() ) );
-        }
-        this.addLine( " AS scale_member," );
     }
 
     private void applyEnsembleConstraint() throws SQLException
@@ -171,29 +163,5 @@ class PoolingForecastScripter extends Scripter
     String getValueDate()
     {
         return "F.valid_time";
-    }
-
-    private int getLeadOffset() throws IOException
-    {
-        Integer offset;
-        try
-        {
-            offset =
-                    this.getProjectDetails().getLeadOffset( this.getFeature() );
-        }
-        catch ( SQLException e )
-        {
-            throw new IOException("The offset for '" +
-                                  ConfigHelper.getFeatureDescription( this.getFeature() ) +
-                                  "' could not be evaluated.");
-        }
-
-        if (offset == null)
-        {
-            throw new NoDataException( "There is not a valid offset for '" + ConfigHelper
-                    .getFeatureDescription(this.getFeature()) + "'." );
-        }
-
-        return offset;
     }
 }

@@ -992,7 +992,8 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
             return false;
         }
 
-        boolean scale;
+        return true;
+        /*boolean scale;
 
         try
         {
@@ -1021,7 +1022,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
                                    + "data source could not be determined.", e );
         }
 
-        return scale;
+        return scale;*/
     }
 
     /**
@@ -1066,6 +1067,13 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
             else if (Math.max(left, right) % Math.min(left, right) == 0)
             {
                 commonScale = Math.max(left, right);
+                String message = "The temporal scales of the left and right hand data "
+                                 + "don't match. The left hand data is in a "
+                                 + "scale of %d hours and the scale on the "
+                                 + "right is in %d hours. If the data is "
+                                 + "compatible, a scale of %d hours should "
+                                 + "suffice.";
+                throw new NoDataException( String.format( message, left, right, commonScale ) );
             }
             else
             {
@@ -1078,6 +1086,16 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
 
                 commonScale =
                         left * right / greatestCommonFactor;
+
+                String message = "The temporal scales of the left (%d Hours) "
+                                 + "and right (%d Hours) hand data are in "
+                                 + "different temporal scales and more "
+                                 + "information is needed in order to pair "
+                                 + "data properly. Please supply a desired time "
+                                 + "scale. A scale of %d hours should work if "
+                                 + "there is enough data and an appropriate "
+                                 + "scaling function is supplied.";
+                throw new NoDataException( String.format( message, left, right, commonScale ) );
             }
         }
         catch ( NoDataException e )
@@ -1402,6 +1420,10 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
                 populateDiscreteLeads();
             }
 
+            // We can probably do an operation on period to get a full scale
+            // for the irregular series, i.e., if this gives us a period of 1,
+            // but we might be able to pull off
+            // [this.discreteLeads.get(feature)[x] - period, this.discreteLeads.get(feature)[x]]
             beginning = this.discreteLeads.get( feature )[windowNumber];
             end = beginning;
         }
@@ -1715,10 +1737,20 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
 
         part = new ScriptBuilder(  );
 
-        if (width > 1 || this.getMinimumLeadHour() != Integer.MIN_VALUE)
+        if (this.getMinimumLeadHour() != Integer.MIN_VALUE)
+        {
+            part.addTab(  2  ).addLine( "AND FV.lead >= ", (this.getMinimumLeadHour() - 1) + width);
+        }
+        else
+        {
+            part.addTab(  2  ).addLine( "AND FV.lead >= ", width);
+        }
+
+        /*if (width > 1 || this.getMinimumLeadHour() != Integer.MIN_VALUE)
         {
             part.addTab( 2 ).addLine( "AND FV.lead >= ", Math.max( width, this.getMinimumLeadHour() ) );
-        }
+        }*/
+
 
         if (this.getMaximumLeadHour() != Integer.MAX_VALUE)
         {
