@@ -36,6 +36,7 @@ import wres.config.generated.PairConfig;
 import wres.config.generated.PoolingWindowConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
+import wres.config.generated.ThresholdsConfig;
 import wres.config.generated.TimeScaleConfig;
 import wres.config.generated.TimeScaleFunction;
 import wres.config.generated.TimeSeriesMetricConfig;
@@ -152,6 +153,9 @@ public class Validation
         // Check that each named metric is consistent with the other configuration
         result = result && Validation.isAllMetricsConfigConsistentWithOtherConfig( projectConfigPlus );
 
+        // Check that any external thresholds refer to readable files
+        result = result && Validation.areAllPathsToThresholdsReadable( projectConfigPlus );
+        
         return result;
     }    
     
@@ -371,6 +375,85 @@ public class Validation
         }
         return result;
     }
+    
+    /**
+     * Validates the paths to external thresholds.
+     *
+     * @param projectConfigPlus the project configuration
+     * @return true if all have readable files, false otherwise
+     * @throws NullPointerException when projectConfigPlus is null
+     */
+
+    private static boolean areAllPathsToThresholdsReadable( ProjectConfigPlus projectConfigPlus )
+    {
+        Objects.requireNonNull( projectConfigPlus, NON_NULL);
+
+        boolean result = true;
+
+        final String PLEASE_UPDATE = "Please update the project configuration "
+                + "with a readable source of external thresholds.";
+        
+        // Iterate through the metric group
+        for ( MetricsConfig nextMetric : projectConfigPlus.getProjectConfig().getMetrics() )
+        {
+            
+            // Iterate through the thresholds within each group
+            for ( ThresholdsConfig nextThreshold : nextMetric.getThresholds() )
+            {
+                
+                Object nextSource = nextThreshold.getCommaSeparatedValuesOrSource();
+                
+                // Locate a threshold with an external source
+                if ( nextSource instanceof ThresholdsConfig.Source )
+                {
+                    String pathString = ( (ThresholdsConfig.Source) nextSource ).getValue();
+                    
+                    final Path destinationPath;
+                    try
+                    {
+                        destinationPath = Paths.get( pathString );
+                    }
+                    catch ( InvalidPathException ipe )
+                    {
+                        if ( LOGGER.isWarnEnabled() )
+                        {
+                            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                                         + " The path {} could not be found. "
+                                         + PLEASE_UPDATE,
+                                         projectConfigPlus.getPath(),
+                                         nextThreshold.sourceLocation().getLineNumber(),
+                                         nextThreshold.sourceLocation().getColumnNumber(),
+                                         pathString );
+                        }
+
+                        result = false;
+                        continue;
+                    }
+
+                    File destinationFile = destinationPath.toFile();
+
+                    if ( !destinationFile.canRead() || destinationFile.isDirectory() )
+                    {
+                        if ( LOGGER.isWarnEnabled() )
+                        {
+                            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                                         + " The path {} is not a readable file."
+                                         + " "
+                                         + PLEASE_UPDATE,
+                                         projectConfigPlus.getPath(),
+                                         nextThreshold.sourceLocation().getLineNumber(),
+                                         nextThreshold.sourceLocation().getColumnNumber(),
+                                         pathString );
+                        }
+
+                        result = false;
+                    }
+                }
+            }
+        }
+
+        return result;
+    }    
 
     /**
      * Validates outputs portion of project config have writeable directories.
