@@ -641,7 +641,7 @@ public final class Database {
         {
             LOGGER.error( "The following SQL call failed:{}{}",
                           NEWLINE,
-                          query,
+                          query.substring( 0, 1000 ),
                           error );
 			throw error;
 		}
@@ -1056,16 +1056,30 @@ public final class Database {
 	{
 		boolean columnExists = false;
 
-		// If the column exists, it will just return the index, otherwise it errors.
-		try
-		{
-			columnExists = resultSet.findColumn( columnName ) > -1;
-		}
-		catch (SQLException e)
-		{
-			LOGGER.trace( "The column '{}' was not found in the result set.",
-						  columnName );
-		}
+        try
+        {
+        	// JDBC has a findColumn function that can do this, but it throws
+			// an exception if it isn't found. This means that an exception is
+			// thrown everytime it returns false. If you have thousands of
+			// calls and they all return false, you'll hit a massive slowdown
+			// due to exceptions. Instead, we perform a simple loop which will
+			// prevent that
+            int columnCount = resultSet.getMetaData().getColumnCount();
+            for ( int index = 1; index <= columnCount; ++index )
+            {
+                if ( resultSet.getMetaData()
+                              .getColumnLabel( index )
+                              .equals( columnName ) )
+                {
+                    columnExists = true;
+                    break;
+                }
+            }
+        }
+        catch ( SQLException e )
+        {
+            LOGGER.error( "A database result set could not be queried.", e );
+        }
 
 		return columnExists;
 	}

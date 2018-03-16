@@ -14,7 +14,7 @@ import wres.util.TimeHelper;
 
 class BackToBackForecastScripter extends Scripter
 {
-    protected BackToBackForecastScripter( ProjectDetails projectDetails,
+    BackToBackForecastScripter( ProjectDetails projectDetails,
                                           DataSourceConfig dataSourceConfig,
                                           Feature feature,
                                           int progress,
@@ -28,11 +28,10 @@ class BackToBackForecastScripter extends Scripter
     {
         this.add("SELECT ");
         this.applyValueDate();
-        this.applyScaleMember();
         this.addTab().addLine( "FV.lead,");
         this.addTab().addLine( "ARRAY_AGG(FV.forecasted_value ORDER BY TS.ensemble_id) AS measurements," );
-        this.addTab().add( "TS.measurementunit_id" );
-        this.applyPersistenceRelatedFieldLines();
+        this.applyBasisTime();
+        this.addTab().addLine( "TS.measurementunit_id" );
         this.addLine( "FROM wres.TimeSeries TS" );
         this.addLine( "INNER JOIN wres.ForecastValue FV");
         this.addLine( "    ON FV.timeseries_id = TS.timeseries_id" );
@@ -64,25 +63,16 @@ class BackToBackForecastScripter extends Scripter
         return "TS.initialization_date";
     }
 
-    private void applyPersistenceRelatedFieldLines()
+    private void applyBasisTime()
     {
-        if ( ConfigHelper.hasPersistenceBaseline( this.getProjectDetails().getProjectConfig() ) )
+        this.addTab().add( "(EXTRACT( epoch FROM TS.initialization_date)");
 
+        if (this.getTimeShift() != null)
         {
-            this.addLine(",");
-            this.addTab().add("EXTRACT( epoch from " + this.getBaseDateName() + " ) as basis_epoch_time");
+            this.add(" + ", this.getTimeShift() * 3600);
         }
 
-        this.addLine();
-    }
-
-    private int getLeadOffset() throws SQLException, IOException
-    {
-        if (this.leadOffset == null)
-        {
-            this.leadOffset = this.getProjectDetails().getLeadOffset( this.getFeature() );
-        }
-        return this.leadOffset;
+        this.addLine(")::int AS basis_epoch_time,");
     }
 
     private void applyLeadQualifier() throws SQLException, IOException
@@ -95,29 +85,6 @@ class BackToBackForecastScripter extends Scripter
                                           "FV"
                                   )
         );
-    }
-
-    private void applyScaleMember() throws IOException, SQLException
-    {
-        this.add("    ");
-
-        if ( !this.getProjectDetails().shouldScale())
-        {
-            this.add("FV.lead");
-        }
-        else
-        {
-            Integer firstLead = this.getProgress() * this.getProjectDetails().getLeadFrequency() + 1;
-            firstLead += this.getLeadOffset();
-            this.add( "(FV.lead - ",
-                      firstLead,
-                      ") % ");
-            this.add( TimeHelper.unitsToLeadUnits( this.getProjectDetails()
-                                                       .getScale().getUnit().value(),
-                                                   this.getProjectDetails()
-                                                       .getScale().getPeriod() ) );
-        }
-        this.addLine(" AS scale_member,");
     }
 
     @Override
@@ -195,9 +162,8 @@ class BackToBackForecastScripter extends Scripter
 
     private void applyOrdering()
     {
-        this.addLine("ORDER BY ", this.getBaseDateName(), ", lead, scale_member");
+        this.addLine("ORDER BY ", this.getBaseDateName(), ", lead");
     }
 
     private String validTimeCalculation;
-    private Integer leadOffset;
 }

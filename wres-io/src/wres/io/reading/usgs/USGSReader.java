@@ -62,6 +62,8 @@ public class USGSReader extends BasicSource
     private static final String DAILY_VALUE = "dv";
 
     public static final String EARLIEST_DATE = "2008-01-01T00:00:00Z";
+
+    // There's a chance this operation will output the time in the wrong format
     public static final String LATEST_DATE = TimeHelper.convertDateToString( OffsetDateTime.now( ZoneId.of( "UTC" ) ) );
     /**
      * Epsilon value used to test floating point equivalency

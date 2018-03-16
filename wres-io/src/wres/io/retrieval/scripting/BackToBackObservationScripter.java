@@ -27,27 +27,8 @@ class BackToBackObservationScripter extends Scripter
         this.addLine("SELECT ARRAY[O.observed_value] AS measurements,");
 
         this.applyValueDate();
-
-        // EXTRACT(epoch FROM O.observation_time - {zero_date})/3600
-        // will yield the number of hours between the observation time and the
-        // zero date. If you mod that by the length of the period, you
-        // will reveal each member from the aggregate group. If the window
-        // period is one, they will all have the same number. Increment that
-        // and you'll start getting scale_member of 0, 1, 2, 3, etc. If the
-        // highest scale_member is 3, you'll know that you want to group values
-        // with scale_member 0, 1, 2, and 3 together. Once you reach the next 0
-        // or the end of the result set, you will group those together for
-        // aggregation (like finding the average of each) and reset the
-        // grouping of values for the next set to aggregate
-        this.addLine(
-                "    (EXTRACT(epoch FROM O.observation_time - ",
-                this.getZeroDate(),
-                ")/3600)::int % ",
-                this.getWindowPeriod(),
-                " AS scale_member,"
-        );
+        this.applyBasisTime();
         this.addLine("    0 AS lead,");
-
         this.addLine("    O.measurementunit_id");
         this.addLine("FROM wres.Observation O");
 
@@ -61,7 +42,19 @@ class BackToBackObservationScripter extends Scripter
         return this.getScript();
     }
 
-    protected void applyProjectConstraint()
+    private void applyBasisTime()
+    {
+        this.addTab().add("EXTRACT(epoch FROM O.observation_time)");
+
+        if (this.getTimeShift() != null)
+        {
+            this.add(" + ", this.getTimeShift() * 3600);
+        }
+
+        this.addLine( ")::int AS basis_epoch_time," );
+    }
+
+    private void applyProjectConstraint()
     {
         this.addLine( "    AND EXISTS (" );
         this.addLine( "        SELECT 1" );
@@ -92,19 +85,6 @@ class BackToBackObservationScripter extends Scripter
         return this.zeroDate;
     }
 
-    private Long getWindowPeriod()
-            throws InvalidPropertiesFormatException, NoDataException
-    {
-        if (this.windowPeriod == null)
-        {
-            this.windowPeriod = TimeHelper.unitsToLeadUnits(
-                    this.getProjectDetails().getLeadUnit(),
-                    this.getProjectDetails().getLeadPeriod()
-            );
-        }
-        return this.windowPeriod;
-    }
-
     @Override
     String getBaseDateName()
     {
@@ -118,5 +98,4 @@ class BackToBackObservationScripter extends Scripter
     }
 
     private String zeroDate;
-    private Long windowPeriod;
 }

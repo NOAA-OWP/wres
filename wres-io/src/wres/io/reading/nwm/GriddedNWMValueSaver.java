@@ -23,6 +23,7 @@ import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Variables;
 import wres.io.utilities.Database;
 import wres.util.Collections;
+import wres.util.NetCDF;
 import wres.util.NotImplementedException;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
@@ -237,15 +238,7 @@ class GriddedNWMValueSaver extends WRESRunnable
 	    if (this.variable == null && Strings.hasValue(nameToFind))
         {
             NetcdfFile source = getFile();
-            this.getLogger().trace("Now looking for {} inside '{}'", nameToFind, this.fileName);
-            for (Variable var : source.getVariables())
-            {
-                if (var.getShortName().equalsIgnoreCase(nameToFind))
-                {
-                    this.variable = var;
-                    break;
-                }
-            }
+            this.variable = NetCDF.getVariable(source, nameToFind);
         }
 
         if (this.variable == null)
@@ -374,17 +367,7 @@ class GriddedNWMValueSaver extends WRESRunnable
         if (xLength == Integer.MIN_VALUE) {
             Variable var = getVariable();
 
-            switch (var.getDimensions().size()) {
-                case 1:
-                    xLength = var.getDimension(0).getLength();
-                    break;
-                case 2:
-                    xLength = var.getDimension(0).getLength();
-                    break;
-                case 3:
-                    xLength = var.getDimension(1).getLength();
-                    break;
-            }
+            this.xLength = NetCDF.getXLength( var );
         }
 
         return this.xLength;
@@ -392,16 +375,10 @@ class GriddedNWMValueSaver extends WRESRunnable
 
     private int getYLength() throws IOException {
 
-        if (this.yLength == Integer.MIN_VALUE) {
+        if (this.yLength == Integer.MIN_VALUE)
+        {
             Variable var = getVariable();
-            switch (var.getDimensions().size()) {
-                case 2:
-                    yLength = var.getDimension(1).getLength();
-                    break;
-                case 3:
-                    yLength = var.getDimension(2).getLength();
-                    break;
-            }
+            this.yLength = NetCDF.getYLength( var );
         }
 
         return this.yLength;
