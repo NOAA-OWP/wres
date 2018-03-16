@@ -163,12 +163,44 @@ public class ScriptBuilder
     }
 
     /**
+     * Forces the built query to execute within an explicit transaction
+     * @throws SQLException Thrown if the query fails
+     */
+    public void executeInTransaction() throws SQLException
+    {
+        Future task = this.issueTransaction();
+
+        try
+        {
+            task.get();
+        }
+        catch ( InterruptedException e )
+        {
+            throw new SQLException( "Script execution was interrupted.", e );
+        }
+        catch ( ExecutionException e )
+        {
+            throw new SQLException( "An error occurred while executing the script.", e );
+        }
+    }
+
+    /**
      * Runs the script asynchronously
      * @return The task that is running the script
      */
     public Future issue()
     {
         SQLExecutor executor = new SQLExecutor( this.toString() );
+        return Database.execute( executor );
+    }
+
+    /**
+     * Runs the script asynchronously in an explicit transaction
+     * @return The task that is running the script
+     */
+    public Future issueTransaction()
+    {
+        SQLExecutor executor = new SQLExecutor( this.toString(), true, true );
         return Database.execute( executor );
     }
 

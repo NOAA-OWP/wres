@@ -23,6 +23,8 @@ public class SQLExecutor extends WRESRunnable
 	 */
 	public SQLExecutor(String script) {
 		this.script = script;
+		this.displayErrors = true;
+		this.forceTransaction = false;
 	}
 
 	/**
@@ -38,14 +40,22 @@ public class SQLExecutor extends WRESRunnable
 	{
 		this.script = script;
 		this.displayErrors = displayErrors;
+		this.forceTransaction = false;
 	}
 
+	public SQLExecutor(String script, boolean displayErrors, boolean forceTransaction)
+    {
+        this.script = script;
+        this.displayErrors = displayErrors;
+        this.forceTransaction = forceTransaction;
+    }
+
 	@Override
-    public void execute()
-	{
+    public void execute() throws SQLException
+    {
 		try
 		{
-			Database.execute(this.script);
+            Database.execute( this.script, forceTransaction );
 		}
 		catch (SQLException e)
 		{
@@ -54,6 +64,7 @@ public class SQLExecutor extends WRESRunnable
 			if (this.displayErrors)
 			{
 				this.getLogger().error( Strings.getStackTrace( e ) );
+				throw e;
 			}
 			else
 			{
@@ -62,8 +73,9 @@ public class SQLExecutor extends WRESRunnable
 		}
 	}
 
-	private String script = null;
-	private boolean displayErrors = true;
+	private final String script;
+	private final boolean displayErrors;
+	private final boolean forceTransaction;
 
 	@Override
 	protected Logger getLogger () {
