@@ -33,6 +33,7 @@ import wres.config.generated.DestinationType;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.OneOrTwoThresholds;
+import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MapKey;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
@@ -795,26 +796,38 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
         }
 
 
-        // Set up lead seconds (nonsense for now)
+        // Set up lead seconds
         Variable leadSeconds =
                 NetcdfDoubleScoreWriter.getVariableOrDie( writer,
                                                           "lead_seconds" );
-        int[] leadSecondsValues = { 3600, 7200 };
-        Array ncleadSecondsValues =
-                ArrayInt.D1.makeFromJavaArray( leadSecondsValues );
 
-        try
+        for ( TimeWindow window : output.setOfTimeWindowKey() )
         {
-            writer.write( leadSeconds, ncleadSecondsValues );
-        }
-        catch ( InvalidRangeException ire )
-        {
-            throw new IOException( "Failed to write to variable "
-                                   + leadSeconds + " in NetCDF file "
-                                   + writer + " using raw data "
-                                   + Arrays.toString( leadSecondsValues )
-                                   + " and nc data "
-                                   + ncleadSecondsValues, ire );
+            long earliestLeadTime = window.getEarliestLeadTimeInSeconds();
+            long latestLeadTime = window.getLatestLeadTimeInSeconds();
+
+            if ( earliestLeadTime < Integer.MIN_VALUE
+                 || earliestLeadTime > Integer.MAX_VALUE )
+            {
+                throw new UnsupportedOperationException( "Can't store lead seconds value "
+                                                         + earliestLeadTime
+                                                         + " in an integer." );
+            }
+
+            if ( latestLeadTime < Integer.MIN_VALUE
+                 || latestLeadTime > Integer.MAX_VALUE )
+            {
+                throw new UnsupportedOperationException( "Can't store lead seconds value "
+                                                         + latestLeadTime
+                                                         + " in an integer." );
+            }
+
+            this.getOrAddValueToVariable( writer,
+                                          leadSeconds,
+                                          (int) earliestLeadTime );
+            this.getOrAddValueToVariable( writer,
+                                          leadSeconds,
+                                          (int) latestLeadTime );
         }
 
 
