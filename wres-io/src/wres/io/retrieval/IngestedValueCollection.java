@@ -144,17 +144,6 @@ class IngestedValueCollection
             }
             result = new CondensedIngestedValue( lastValidTime, lastLead, valueMapping );
         }
-        else if (condensingStep == 0)
-        {
-            LOGGER.error( "A collection could not be condensed." );
-            LOGGER.error("The last block lead was: {}", lastBlockLead);
-            LOGGER.error( "The frequency was: {}", frequency );
-            LOGGER.error("The period was {}", period);
-            LOGGER.error("The earliest lead was: {}", earliestLead);
-            LOGGER.error("The first block lead was: {}", firstBlockLead);
-            LOGGER.error("The data was: {}{}", System.lineSeparator(), this);
-        }
-
         return result;
     }
 

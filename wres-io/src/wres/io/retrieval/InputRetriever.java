@@ -1122,11 +1122,11 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                                        + "values." );
         }
 
-        double leftAggregation = this.getLeftAggregation( condensedIngestedValue.validTime );
+        Double leftAggregation = this.getLeftAggregation( condensedIngestedValue.validTime );
 
         // If a valid value could not be retrieved (NaN is valid, so MAX_VALUE
         // is used), return null
-        if (leftAggregation == Double.MAX_VALUE)
+        if (leftAggregation == null)
         {
             LOGGER.trace( "No values from the left could be retrieved to pair with the retrieved right values." );
             return null;
@@ -1141,7 +1141,13 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         );
     }
 
-    private double getLeftAggregation(Instant end)
+    /**
+     * Finds and aggregates left hand values
+     * @param end The date at which the left hand values need to be aggregated to
+     * @return The scaled left hand value.
+     * @throws NoDataException
+     */
+    private Double getLeftAggregation(Instant end)
             throws NoDataException
     {
 
@@ -1172,7 +1178,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         if (leftValues == null || leftValues.isEmpty())
         {
             LOGGER.trace( "No values from the left could be retrieved to pair with the retrieved right values." );
-            return Double.MAX_VALUE;
+            return null;
         }
 
         double leftAggregation;
@@ -1221,9 +1227,9 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                                        + "values." );
         }
 
-        double leftAggregation = this.getLeftAggregation( lastDate );
+        Double leftAggregation = this.getLeftAggregation( lastDate );
 
-        if (leftAggregation == Double.MAX_VALUE)
+        if (leftAggregation == null)
         {
             LOGGER.trace( "No values from the left could be retrieved to pair with the retrieved right values." );
             return null;
