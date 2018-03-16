@@ -188,7 +188,7 @@ public final class Collections
      * </p>
      * <pre>Collections.getKeyByValueFunction(
      *      map,
-     *      (value1, value2) -> Math.max(value1, value2) == value1
+     *      (value1, value2) -&gt; Math.max(value1, value2) == value1
      * )
      * </pre>
      * @param map The map to interrogate
@@ -205,11 +205,7 @@ public final class Collections
 
         for (Map.Entry<K, V> entry : map.entrySet())
         {
-            if (key == null)
-            {
-                key = entry.getKey();
-            }
-            else if (comparisonFunction.test( entry.getValue(), map.get(key) ))
+            if (key == null || comparisonFunction.test( entry.getValue(), map.get(key) ))
             {
                 key = entry.getKey();
             }
