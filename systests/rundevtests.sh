@@ -29,16 +29,16 @@ logFileName="wresSysTestResults_$(date +"%Y%m%d_%H%M%S").txt"
 # Prep the log file.
 touch $logFileName
 echo "System test results for scenarios:" > $logFileName
-ls -d scenario0* scenario1* scenario2* scenario3* scenario4* scenario5* scenario6* >> $logFileName
+ls -d scenario0* scenario1* scenario2* scenario3* scenario4* scenario5* scenario6* scenario8* >> $logFileName
 
 echo "System test results for scenarios:" 
-ls -d scenario0* scenario1* scenario2* scenario3* scenario4* scenario5* scenario6*
+ls -d scenario0* scenario1* scenario2* scenario3* scenario4* scenario5* scenario6* scenario8*
 
 # Run and time the run.
 startsec=$(date +%s)
 
 # The tests to perform are entered manually on this line.
-./runtest.sh scenario0* scenario1* scenario2* scenario3* scenario4* scenario5* scenario6* >> $logFileName
+./runtest.sh scenario0* scenario1* scenario2* scenario3* scenario4* scenario5* scenario6* scenario8* >> $logFileName
 
 endsec=$(date +%s)
 
