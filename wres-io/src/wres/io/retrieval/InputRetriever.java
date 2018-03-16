@@ -260,7 +260,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         {
             LOGGER.debug( "Data could not be loaded for {}", metadata.getTimeWindow() );
             LOGGER.debug( "The script used was:" );
-            LOGGER.debug( this.rightScript );
+            LOGGER.debug( "{}{}", NEWLINE, this.rightScript );
             LOGGER.debug("Window: {}", this.leadIteration);
             LOGGER.debug( "Issue Date Sequence: {}", this.issueDatesPool );
             throw new NoDataException( "No data could be retrieved for Metric calculation for window " +
@@ -573,7 +573,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         ResultSet resultSet = null;
 
         IngestedValueCollection ingestedValues = new IngestedValueCollection(  );
-        int reference = -1;
+        long reference = -1;
 
         /**
          * Maps returned values to their position in their returned array.
@@ -610,16 +610,23 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             connection = Database.getConnection();
             resultSet = Database.getResults(connection, loadScript);
             int minimumLead = this.projectDetails.getLeadRange( this.feature, this.leadIteration ).getLeft();
+            int period = this.projectDetails.getScale().getPeriod();
+            int frequency = this.projectDetails.getScale().getFrequency();
+
             while(resultSet.next())
             {
-                if (ingestedValues.size() > 0 && resultSet.getInt( "basis_epoch_time" ) != reference )
+                if (ingestedValues.size() > 0 && resultSet.getLong( "basis_epoch_time" ) != reference )
                 {
-                    Integer aggregationStep = 0;
+                    Integer aggregationStep = ingestedValues.getFirstCondensingStep(
+                            period,
+                            frequency,
+                            minimumLead
+                    );
 
                     CondensedIngestedValue condensedValue = ingestedValues.condense(
                             aggregationStep,
-                            this.projectDetails.getLeadPeriod(),
-                            this.projectDetails.getLeadFrequency(),
+                            period,
+                            frequency,
                             minimumLead
                     );
 
@@ -629,8 +636,8 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                         aggregationStep++;
                         condensedValue = ingestedValues.condense(
                                 aggregationStep,
-                                this.projectDetails.getLeadPeriod(),
-                                this.projectDetails.getLeadFrequency(),
+                                period,
+                                frequency,
                                 minimumLead
                         );
                     }
@@ -638,20 +645,23 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                     ingestedValues = new IngestedValueCollection(  );
                 }
 
-                reference = resultSet.getInt("basis_epoch_time");
+                reference = resultSet.getLong("basis_epoch_time");
 
                 ingestedValues.add( resultSet, this.projectDetails);
             }
 
             if ( ingestedValues.size() > 0)
             {
-
-                Integer aggregationStep = 0;
+                Integer aggregationStep = ingestedValues.getFirstCondensingStep(
+                        period,
+                        frequency,
+                        minimumLead
+                );
 
                 CondensedIngestedValue condensedValue = ingestedValues.condense(
                         aggregationStep,
-                        this.projectDetails.getLeadPeriod(),
-                        this.projectDetails.getLeadFrequency(),
+                        period,
+                        frequency,
                         minimumLead
                 );
 
@@ -661,8 +671,8 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                     aggregationStep++;
                     condensedValue = ingestedValues.condense(
                             aggregationStep,
-                            this.projectDetails.getLeadPeriod(),
-                            this.projectDetails.getLeadFrequency(),
+                            period,
+                            frequency,
                             minimumLead
                     );
                 }
@@ -1112,8 +1122,18 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                                        + "values." );
         }
 
+        double leftAggregation = this.getLeftAggregation( condensedIngestedValue.validTime );
+
+        // If a valid value could not be retrieved (NaN is valid, so MAX_VALUE
+        // is used), return null
+        if (leftAggregation == Double.MAX_VALUE)
+        {
+            LOGGER.trace( "No values from the left could be retrieved to pair with the retrieved right values." );
+            return null;
+        }
+
         return DefaultDataFactory.getInstance().pairOf(
-                this.getLeftAggregation( condensedIngestedValue.validTime ),
+                leftAggregation,
                 condensedIngestedValue.getAggregatedValues(
                         this.projectDetails.shouldScale(),
                         this.projectDetails.getScale().getFunction()
@@ -1232,7 +1252,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         }
 
         return DefaultDataFactory.getInstance().pairOf(
-                this.getLeftAggregation( lastDate ),
+                leftAggregation,
                 validAggregations.toArray(new Double[validAggregations.size()] )
         );
     }
