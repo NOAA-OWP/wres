@@ -13,9 +13,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import ohd.hseb.charter.ChartEngineException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import ucar.ma2.Array;
 import ucar.ma2.ArrayChar;
 import ucar.ma2.ArrayDouble;
@@ -26,7 +26,6 @@ import ucar.nc2.Attribute;
 import ucar.nc2.Dimension;
 import ucar.nc2.NetcdfFileWriter;
 import ucar.nc2.Variable;
-
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.ProjectConfig;
@@ -740,14 +739,14 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                 LOGGER.debug( "threshold first has probability values" );
                 this.getOrAddValueToVariable( writer,
                                               thresholds,
-                                              t.first().getThresholdProbability() );
+                                              t.first().getProbabilities().first() );
             }
             else
             {
                 LOGGER.debug( "threshold first has no probability values" );
                 this.getOrAddValueToVariable( writer,
                                               thresholds,
-                                              t.first().getThreshold() );
+                                              t.first().getValues().first() );
             }
 
             if ( t.hasTwo() && t.second().hasProbabilities() )
@@ -755,14 +754,14 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                 LOGGER.debug( "threshold second has probability values" );
                 this.getOrAddValueToVariable( writer,
                                               thresholds,
-                                              t.second().getThresholdProbability() );
+                                              t.second().getProbabilities().first() );
             }
             else if ( t.hasTwo() )
             {
                 LOGGER.debug( "threshold second has no probability values" );
                 this.getOrAddValueToVariable( writer,
                                               thresholds,
-                                              t.second().getThreshold() );
+                                              t.second().getValues().first() );
             }
 
             this.getOrAddValueToVariable( writer,

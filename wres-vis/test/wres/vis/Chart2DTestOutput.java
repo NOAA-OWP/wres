@@ -189,7 +189,7 @@ public class Chart2DTestOutput
         for ( final Object thresh : engineMap.keySet() )
         {
             ChartTools.generateOutputImageFile( new File( "testoutput/chart2DTest/"
-                                                          + ( ( OneOrTwoThresholds ) thresh ).first().getThreshold()
+                                                          + ( (OneOrTwoThresholds) thresh ).first().getValues().first()
                                                           + "."
                                                           + outputImageFileSuffix ),
                                                 engineMap.get( thresh ).buildChart(),
@@ -311,7 +311,7 @@ public class Chart2DTestOutput
         for ( final Object thresh : engineMap.keySet() )
         {
             ChartTools.generateOutputImageFile( new File( "testoutput/chart2DTest/"
-                                                          + ( ( OneOrTwoThresholds ) thresh ).first().getThreshold()
+                                                          + ( (OneOrTwoThresholds) thresh ).first().getValues().first()
                                                           + "."
                                                           + outputImageFileSuffix ),
                                                 engineMap.get( thresh ).buildChart(),
@@ -466,8 +466,8 @@ public class Chart2DTestOutput
 
         for ( final Object thresh : engineMap.keySet() )
         {
-            String thresholdString = ( ( ( OneOrTwoThresholds ) thresh ).first().getThreshold() ).toString();
-            if ( Double.isInfinite( ( ( OneOrTwoThresholds ) thresh ).first().getThreshold() ) )
+            String thresholdString = ( ( ( OneOrTwoThresholds ) thresh ).first().getValues().first() ).toString();
+            if ( ! ( ( OneOrTwoThresholds ) thresh ).first().isFinite() )
             {
                 thresholdString = "alldata";
             }
@@ -515,8 +515,8 @@ public class Chart2DTestOutput
             long lead = key.getLeft().getEarliestLeadTimeInHours();
             OneOrTwoThresholds thresh = key.getRight();
 
-            String thresholdString = ( thresh.first().getThreshold() ).toString();
-            if ( Double.isInfinite( thresh.first().getThreshold() ) )
+            String thresholdString = ( thresh.first().getValues().first() ).toString();
+            if ( ! thresh.first().isFinite() )
             {
                 thresholdString = "alldata";
             }
@@ -564,8 +564,8 @@ public class Chart2DTestOutput
             long lead = key.getLeft().getLatestLeadTimeInHours();
             OneOrTwoThresholds thresh = key.getRight();
 
-            String thresholdString = ( thresh.first().getThreshold() ).toString();
-            if ( Double.isInfinite( thresh.first().getThreshold() ) )
+            String thresholdString = ( thresh.first().getValues().first() ).toString();
+            if ( ! thresh.first().isFinite() )
             {
                 thresholdString = "alldata";
             }

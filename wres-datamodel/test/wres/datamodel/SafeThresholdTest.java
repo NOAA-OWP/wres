@@ -470,10 +470,10 @@ public final class SafeThresholdTest
                                                     .build();
 
         // Test accessors
-        assertTrue( "Unexpected threshold.", threshold.getThreshold().equals( 0.0 ) );
-        assertTrue( "Unexpected upper threshold.", threshold.getThresholdUpper().equals( 0.5 ) );
-        assertTrue( "Unexpected probability threshold.", threshold.getThresholdProbability().equals( 0.0 ) );
-        assertTrue( "Unexpected upper probability threshold.", threshold.getThresholdUpperProbability().equals( 0.7 ) );
+        assertTrue( "Unexpected threshold.", threshold.getValues().first().equals( 0.0 ) );
+        assertTrue( "Unexpected upper threshold.", threshold.getValues().second().equals( 0.5 ) );
+        assertTrue( "Unexpected probability threshold.", threshold.getProbabilities().first().equals( 0.0 ) );
+        assertTrue( "Unexpected upper probability threshold.", threshold.getProbabilities().second().equals( 0.7 ) );
         assertTrue( "Unexpected condition.", threshold.getCondition() == Operator.BETWEEN );
         assertTrue( "Unexpected label.", threshold.getLabel().equals( "a threshold" ) );
     }
