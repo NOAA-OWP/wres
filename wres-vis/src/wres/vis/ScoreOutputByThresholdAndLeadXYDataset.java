@@ -67,7 +67,7 @@ public class ScoreOutputByThresholdAndLeadXYDataset extends
     public Number getX(final int series, final int item)
     {
         //Cannot allow all data (infinite) threshold. Use lower bound if this is a "BETWEEN" threshold
-        final double test = getPlotData().get(series).getKey(item).getRight().first().getThreshold();
+        final double test = getPlotData().get(series).getKey(item).getRight().first().getValues().first();
         if(Double.isInfinite(test))
         {
             return Double.MIN_VALUE; //JFreeChart missing protocol is to return finite double for X and null for Y

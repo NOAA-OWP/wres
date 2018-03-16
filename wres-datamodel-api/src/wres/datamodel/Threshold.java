@@ -4,15 +4,21 @@ import java.util.Objects;
 import java.util.function.Predicate;
 
 /**
- * <p>Stores a threshold value and associated logical condition. A threshold may comprise one or two threshold values. If
- * the threshold comprises two values, {@link #getCondition()} must return {@link Operator#BETWEEN} and
- * {@link #getThresholdUpper()} must return a non-null value. The reverse is also true, i.e. if the condition is
- * {@link Operator#BETWEEN}, {@link #getThresholdUpper()} must return null. The threshold may comprise ordinary 
- * threshold values and/or probability values. When both are defined, the threshold is a "quantile".</p>
+ * <p>Stores a threshold value and associated logical condition. A threshold comprises one or both of: 
+ * 
+ * <ol>
+ * <li>One or two real values, contained in a {@link OneOrTwoDoubles}.</li>
+ * <li>One or two probability values, contained in a {@link OneOrTwoDoubles}.</li>
+ * </ol>
+ * 
+ * <p>The presence of the former is determined by {@link #hasValues()}. The presence of the latter is determined by 
+ * {@link #hasProbabilities()}. If both are present, the threshold is a "quantile", as revealed by 
+ * {@link #isQuantile()}. A summary of the threshold type can be obtained from {@link #getType()}.</p>
+ * 
+ * <p>Additionally, a threshold comprises an {@link Operator}, denoting the type of threshold condition. Optionally,
+ * a threshold may comprise a label and a {@link Dimension} that describes the units of the real-valued thresholds.</p>
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.2
- * @since 0.1
  */
 
 public interface Threshold extends Comparable<Threshold>, Predicate<Double>
@@ -61,40 +67,39 @@ public interface Threshold extends Comparable<Threshold>, Predicate<Double>
 
         BETWEEN
     }
-    
+
     /**
      * An enumeration of the composition of a {@link Threshold}.
      */
-    
+
     public enum ThresholdComposition
     {
-        
+
         /**
          * A {@link Threshold} that comprises one or two probability values only. A {@link Threshold} has two 
          * probability values if {@link Threshold#hasBetweenCondition()} returns <code>true</code>, otherwise only 
-         * one value, namely {@link Threshold#getThresholdProbability()}.
+         * one value.
          */
-        
+
         PROBABILITY,
-        
+
         /**
          * A {@link Threshold} that comprises one or two real values only. A {@link Threshold} has two 
          * real values if {@link Threshold#hasBetweenCondition()} returns <code>true</code>, otherwise only one 
-         * value, namely {@link Threshold#getThreshold()}.
+         * value.
          */
-        
+
         VALUE,
-        
+
         /**
          * A {@link Threshold} that comprises both real values and probability values. It contains the same number of 
          * each. A {@link Threshold} has two values for each if {@link Threshold#hasBetweenCondition()} returns 
-         * <code>true</code>, otherwise one value for each, namely {@link Threshold#getThresholdProbability()} 
-         * and {@link Threshold#getThreshold()}.
+         * <code>true</code>, otherwise one value for each.
          */
-        
-        QUANTILE;      
-        
-    }    
+
+        QUANTILE;
+
+    }
 
     /**
      * Returns <code>true</code> if the threshold contains one or more ordinary (non-probability) values, otherwise
@@ -159,37 +164,37 @@ public interface Threshold extends Comparable<Threshold>, Predicate<Double>
      * 
      * @return the threshold type
      */
-    
+
     default ThresholdComposition getType()
     {
-        if( this.isQuantile() )
+        if ( this.isQuantile() )
         {
             return ThresholdComposition.QUANTILE;
         }
-        if( this.hasProbabilities() )
+        if ( this.hasProbabilities() )
         {
             return ThresholdComposition.PROBABILITY;
         }
         return ThresholdComposition.VALUE;
     }
-    
+
     /**
      * Returns the threshold values or null if no threshold values are defined. If no threshold values are defined,
      * {@link #getProbabilities()} always returns non-null.
      * 
      * @return the threshold values or null
      */
-    
+
     OneOrTwoDoubles getValues();
-    
+
     /**
      * Returns the probability values or null if no probability values are defined. If no probability values are 
      * defined, {@link #getValues()} always returns non-null.
      * 
      * @return the threshold values or null
      */
-    
-    OneOrTwoDoubles getProbabilities();    
+
+    OneOrTwoDoubles getProbabilities();
 
     /**
      * Returns the units associated with the {@link Threshold} or null. Always returns null when 
@@ -199,7 +204,7 @@ public interface Threshold extends Comparable<Threshold>, Predicate<Double>
      */
 
     Dimension getUnits();
-    
+
     /**
      * Returns the logical condition associated with the threshold.
      * 
@@ -207,38 +212,6 @@ public interface Threshold extends Comparable<Threshold>, Predicate<Double>
      */
 
     Operator getCondition();
-
-    /**
-     * Returns the threshold value or null if no threshold value is defined.
-     * 
-     * @return the threshold value or null
-     */
-
-    Double getThreshold();
-    
-    /**
-     * Returns the upper bound of a {@link Operator#BETWEEN} condition or null.
-     * 
-     * @return the upper threshold value or null
-     */
-
-    Double getThresholdUpper();
-
-    /**
-     * Returns the probability associated with the {@link #getThreshold()} or null.
-     * 
-     * @return a probability or null
-     */
-
-    Double getThresholdProbability();
-
-    /**
-     * Returns the probability associated with the {@link #getThresholdUpper()} or null.
-     * 
-     * @return the upper threshold probability or null
-     */
-
-    Double getThresholdUpperProbability();
 
     /**
      * Returns the label associated with the {@link Threshold} or null if no label is defined.
@@ -264,7 +237,7 @@ public interface Threshold extends Comparable<Threshold>, Predicate<Double>
      */
 
     boolean isFinite();
-    
+
     /**
      * Returns a string representation of the {@link Threshold} that contains only alphanumeric characters A-Z, a-z, 
      * and 0-9 and, additionally, the underscore character to separate between elements, and the period character as
@@ -274,7 +247,7 @@ public interface Threshold extends Comparable<Threshold>, Predicate<Double>
      */
 
     String toStringSafe();
-    
+
     /**
      * Returns a string representation of the {@link Threshold} without any units. This is useful when forming string
      * representions of a collection of {@link Threshold} and abstracting the common units to a higher level.
@@ -283,7 +256,7 @@ public interface Threshold extends Comparable<Threshold>, Predicate<Double>
      */
 
     String toStringWithoutUnits();
-    
+
     /**
      * Returns a string representation of the {@link Threshold}.
      * 

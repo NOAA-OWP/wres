@@ -53,33 +53,9 @@ class SafeThreshold implements Threshold
     }
 
     @Override
-    public Double getThreshold()
-    {
-        return values.first();
-    }
-
-    @Override
     public Operator getCondition()
     {
         return condition;
-    }
-
-    @Override
-    public Double getThresholdUpper()
-    {
-        return values.second();
-    }
-
-    @Override
-    public Double getThresholdProbability()
-    {
-        return probabilities.first();
-    }
-
-    @Override
-    public Double getThresholdUpperProbability()
-    {
-        return probabilities.second();
     }
 
     @Override
