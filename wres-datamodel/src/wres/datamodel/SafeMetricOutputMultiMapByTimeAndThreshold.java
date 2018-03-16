@@ -141,7 +141,7 @@ class SafeMetricOutputMultiMapByTimeAndThreshold<S extends MetricOutput<?>>
 
         @Override
         public MetricOutputMultiMapByTimeAndThresholdBuilder<S>
-                put( final TimeWindow timeWindow, final Threshold threshold, final MetricOutputMapByMetric<S> result )
+                put( final TimeWindow timeWindow, final OneOrTwoThresholds threshold, final MetricOutputMapByMetric<S> result )
         {
             if ( Objects.isNull( result ) )
             {

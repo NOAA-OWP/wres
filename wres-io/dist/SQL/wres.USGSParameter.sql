@@ -1,4 +1,4 @@
-﻿-- Table: wres.USGSParameter
+-- Table: wres.USGSParameter
 
 -- DROP TABLE IF EXISTS wres.USGSParameter;
 

@@ -32,32 +32,35 @@
 
     <metrics>
         <thresholds>
-            <applyTo>left</applyTo>
             <commaSeparatedValues>0.1,0.25,0.5,0.75,0.9,0.95</commaSeparatedValues>
             <operator>greater than or equal to</operator>
         </thresholds>
-        <metric>
-            <name>mean error</name>
-            <thresholds>
-                <applyTo>left</applyTo>
-                <commaSeparatedValues>0.5,0.8,0.925</commaSeparatedValues>
-                <operator>greater than or equal to</operator>
-            </thresholds>            
-        </metric>
-        <metric> 
-            <name>brier score</name>
-            <thresholds>
-                <applyTo>left</applyTo>
-                <commaSeparatedValues>0.2,0.3,0.7</commaSeparatedValues>
-                <operator>greater than</operator>
-            </thresholds> 
-        </metric>
         <metric><name>mean square error skill score</name></metric>
         <metric><name>brier skill score</name></metric>
         <metric><name>relative operating characteristic score</name></metric>
         <metric><name>continuous ranked probability skill score</name></metric>
         <metric><name>sample size</name></metric>        
     </metrics>
+
+    <metrics>
+        <thresholds>
+            <commaSeparatedValues>0.5,0.8,0.925</commaSeparatedValues>
+            <operator>greater than or equal to</operator>
+        </thresholds> 
+        <metric>
+            <name>mean error</name>           
+        </metric>      
+    </metrics>
+
+    <metrics>
+        <thresholds>
+            <commaSeparatedValues>0.2,0.3,0.7</commaSeparatedValues>
+        </thresholds> 
+        <metric> 
+            <name>brier score</name>
+        </metric>
+    </metrics>
+
     <outputs>
         <destination type="numeric" decimalFormat="0.000000">
             <path>output/</path>

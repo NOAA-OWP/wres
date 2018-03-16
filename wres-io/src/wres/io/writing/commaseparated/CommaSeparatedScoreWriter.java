@@ -16,11 +16,12 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import wres.config.ProjectConfigException;
 import wres.config.generated.DestinationConfig;
+import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.datamodel.Threshold;
+import wres.datamodel.OneOrTwoThresholds;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.MapKey;
@@ -120,25 +121,53 @@ public class CommaSeparatedScoreWriter<T extends ScoreOutput<?, T>> extends Comm
                                                                                Format formatter )
             throws IOException
     {
+
         // Loop across scores
         for ( Map.Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<T>> m : output.entrySet() )
         {
-            StringJoiner headerRow = new StringJoiner( "," );
-            headerRow.merge( HEADER_DEFAULT );
-            List<RowCompareByLeft> rows =
-                    CommaSeparatedScoreWriter.getRowsForOneScore( m.getKey().getKey(),
-                                                                  m.getValue(),
-                                                                  headerRow,
-                                                                  formatter );
+            
+            // As many outputs as secondary thresholds if secondary thresholds are defined
+            // and the output type is OutputTypeSelection.THRESHOLD_LEAD.
+            List<MetricOutputMapByTimeAndThreshold<T>> allOutputs = new ArrayList<>();
+            if ( destinationConfig.getOutputType() == OutputTypeSelection.THRESHOLD_LEAD
+                 && !m.getValue().setOfThresholdTwo().isEmpty() )
+            {
+                // Slice by threshold two
+                m.getValue().setOfThresholdTwo().forEach( next -> allOutputs.add( m.getValue().filterByThresholdTwo( next ) ) );
+            }
+            // One output only
+            else
+            {
+                allOutputs.add( m.getValue() );
+            }
 
-            // Add the header row
-            rows.add( RowCompareByLeft.of( HEADER_INDEX, headerRow ) );
+            // Process each output
+            for ( MetricOutputMapByTimeAndThreshold<T> nextOutput : allOutputs )
+            {
+                StringJoiner headerRow = new StringJoiner( "," );
+                headerRow.merge( HEADER_DEFAULT );
+                List<RowCompareByLeft> rows =
+                        CommaSeparatedScoreWriter.getRowsForOneScore( m.getKey().getKey(),
+                                                                      nextOutput,
+                                                                      headerRow,
+                                                                      formatter );
 
-            // Write the output
-            MetricOutputMetadata meta = m.getValue().getMetadata();
-            Path outputPath = ConfigHelper.getOutputPathToWrite( destinationConfig, meta );
+                // Add the header row
+                rows.add( RowCompareByLeft.of( HEADER_INDEX, headerRow ) );
 
-            CommaSeparatedScoreWriter.writeTabularOutputToFile( rows, outputPath );
+                // Write the output
+                String append = null;
+                
+                // Secondary threshold? If yes, only, one as this was sliced above
+                if ( !nextOutput.setOfThresholdTwo().isEmpty() )
+                {
+                    append = nextOutput.setOfThresholdTwo().iterator().next().toStringSafe();
+                }
+                MetricOutputMetadata meta = m.getValue().getMetadata();
+                Path outputPath = ConfigHelper.getOutputPathToWrite( destinationConfig, meta, append );
+
+                CommaSeparatedScoreWriter.writeTabularOutputToFile( rows, outputPath );
+            }
         }
     }
 
@@ -199,14 +228,14 @@ public class CommaSeparatedScoreWriter<T extends ScoreOutput<?, T>> extends Comm
                                                                                    Format formatter )
     {
         // Loop across the thresholds
-        for ( Threshold t : component.setOfThresholdKey() )
+        for ( OneOrTwoThresholds t : component.setOfThresholdKey() )
         {
             String column = name + HEADER_DELIMITER + t;
             headerRow.add( column );
             // Loop across time windows
             for ( TimeWindow timeWindow : component.setOfTimeWindowKey() )
             {
-                Pair<TimeWindow, Threshold> key = Pair.of( timeWindow, t );
+                Pair<TimeWindow, OneOrTwoThresholds> key = Pair.of( timeWindow, t );
                 if ( component.containsKey( key ) )
                 {
                     CommaSeparatedWriter.addRowToInput( rows,

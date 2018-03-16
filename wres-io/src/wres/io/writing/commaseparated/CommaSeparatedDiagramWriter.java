@@ -22,7 +22,7 @@ import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.Threshold;
+import wres.datamodel.OneOrTwoThresholds;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
@@ -113,21 +113,18 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
                                                    Format formatter )
             throws IOException
     {
-        // Obtain the output type configuration with any override for ALL_VALID metrics
+        // Obtain the output type configuration
         OutputTypeSelection diagramType = ConfigHelper.getOutputTypeSelection( projectConfig, destinationConfig );
 
         // Loop across diagrams
         for ( Entry<MapKey<MetricConstants>, MetricOutputMapByTimeAndThreshold<MultiVectorOutput>> m : output.entrySet() )
         {
-            // Obtain the output type with any local override for this metric
-            OutputTypeSelection useType =
-                    ConfigHelper.getOutputTypeSelection( projectConfig, diagramType, m.getKey().getKey() );
 
             StringJoiner headerRow = new StringJoiner( "," );
             headerRow.merge( HEADER_DEFAULT );
 
             // Default, per time-window
-            if ( useType == OutputTypeSelection.DEFAULT || useType == OutputTypeSelection.LEAD_THRESHOLD )
+            if ( diagramType == OutputTypeSelection.DEFAULT || diagramType == OutputTypeSelection.LEAD_THRESHOLD )
             {
                 CommaSeparatedDiagramWriter.writeOneDiagramOutputTypePerTimeWindow( destinationConfig,
                                                                                     m.getValue(),
@@ -135,7 +132,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
                                                                                     formatter );
             }
             // Per threshold
-            else if ( useType == OutputTypeSelection.THRESHOLD_LEAD )
+            else if ( diagramType == OutputTypeSelection.THRESHOLD_LEAD )
             {
                 CommaSeparatedDiagramWriter.writeOneDiagramOutputTypePerThreshold( destinationConfig,
                                                                                    m.getValue(),
@@ -195,7 +192,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
             throws IOException
     {
         // Loop across thresholds
-        for ( Threshold threshold : output.setOfThresholdKey() )
+        for ( OneOrTwoThresholds threshold : output.setOfThresholdKey() )
         {
             MetricOutputMetadata meta = output.getMetadata();
             MetricOutputMapByTimeAndThreshold<MultiVectorOutput> next = output.filterByThreshold( threshold );
@@ -232,9 +229,9 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
         {
             // Loop across the thresholds, merging results when multiple thresholds occur
             Map<Integer, List<Double>> merge = new TreeMap<>();
-            for ( Threshold threshold : output.setOfThresholdKey() )
+            for ( OneOrTwoThresholds threshold : output.setOfThresholdKey() )
             {
-                Pair<TimeWindow, Threshold> key = Pair.of( timeWindow, threshold );
+                Pair<TimeWindow, OneOrTwoThresholds> key = Pair.of( timeWindow, threshold );
                 CommaSeparatedDiagramWriter.addRowsForOneDiagramAtOneTimeWindowAndThreshold( output, key, merge );
             }
             // Add the merged rows
@@ -252,7 +249,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
     }
 
     /**
-     * Adds rows to the input map of merged rows for a specific {@link TimeWindow} and {@link Threshold}.
+     * Adds rows to the input map of merged rows for a specific {@link TimeWindow} and {@link OneOrTwoThresholds}.
      *
      * @param output the diagram output
      * @param key the key for which rows are required
@@ -261,7 +258,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
 
     private static void
             addRowsForOneDiagramAtOneTimeWindowAndThreshold( MetricOutputMapByTimeAndThreshold<MultiVectorOutput> output,
-                                                             Pair<TimeWindow, Threshold> key,
+                                                             Pair<TimeWindow, OneOrTwoThresholds> key,
                                                              Map<Integer, List<Double>> merge )
     {
 
@@ -338,7 +335,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
         MultiVectorOutput data = output.getValue( 0 );
         Set<MetricDimension> dimensions = data.getData().keySet();
         //Add the metric name, dimension, and threshold for each column-vector
-        for ( Threshold nextThreshold : output.setOfThresholdKey() )
+        for ( OneOrTwoThresholds nextThreshold : output.setOfThresholdKey() )
         {
             for ( MetricDimension nextDimension : dimensions )
             {

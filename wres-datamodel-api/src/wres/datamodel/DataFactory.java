@@ -62,178 +62,165 @@ public interface DataFactory
 {
 
     /**
-     * Convenience method that returns a {@link Pair} to map a {@link MetricOutput} by {@link TimeWindow} and
-     * {@link Threshold}.
+     * Returns an instance of {@link OneOrTwoDoubles}.
      * 
-     * @param timeWindow the time window
-     * @param threshold the threshold value
-     * @param condition the threshold condition
-     * @return a map key
+     * @param first the first value
+     * @return a composition of doubles
      */
-
-    default Pair<TimeWindow, Threshold> ofMapKeyByTimeThreshold( TimeWindow timeWindow,
-                                                                  Double threshold,
-                                                                  Operator condition )
+    
+    default OneOrTwoDoubles ofOneOrTwoDoubles( Double first )
     {
-        return Pair.of( timeWindow, ofThreshold( threshold, condition ) );
-    }
-
-    /**
-     * Convenience method that returns a {@link Pair} to map a {@link MetricOutput} by {@link TimeWindow} and
-     * {@link Threshold}.
-     * 
-     * @param timeWindow the time window
-     * @param threshold the threshold value or lower bound of a {@link Operator#BETWEEN} condition
-     * @param thresholdUpper the upper threshold of a {@link Operator#BETWEEN} or null
-     * @param condition the threshold condition
-     * @return a map key
-     */
-
-    default Pair<TimeWindow, Threshold> ofMapKeyByTimeThreshold( TimeWindow timeWindow,
-                                                                  Double threshold,
-                                                                  Double thresholdUpper,
-                                                                  Operator condition )
-    {
-        return Pair.of( timeWindow, ofThreshold( threshold, thresholdUpper, condition ) );
-    }
-
-    /**
-     * Returns {@link Threshold} from the specified input.
-     * 
-     * @param threshold the threshold value or lower bound of a {@link Operator#BETWEEN} condition
-     * @param thresholdUpper the upper threshold of a {@link Operator#BETWEEN} or null
-     * @param condition the threshold condition
-     * @return a threshold
-     */
-
-    default Threshold ofThreshold( Double threshold, Double thresholdUpper, Operator condition )
-    {
-        return ofThreshold( threshold, thresholdUpper, condition, null );
-    }
-
-    /**
-     * Returns {@link Threshold} from the specified input. Both inputs must be in the unit interval, [0,1].
-     * 
-     * @param threshold the threshold value or lower bound of a {@link Operator#BETWEEN} condition
-     * @param thresholdUpper the upper threshold of a {@link Operator#BETWEEN} or null
-     * @param condition the threshold condition
-     * @return a threshold
-     */
-
-    default Threshold ofProbabilityThreshold( Double threshold,
-                                              Double thresholdUpper,
-                                              Operator condition )
-    {
-        return ofProbabilityThreshold( threshold, thresholdUpper, condition, null );
-    }
-
-    /**
-     * Returns a {@link Threshold} from the specified input
-     * 
-     * @param threshold the threshold value or lower bound of a {@link Operator#BETWEEN} condition
-     * @param thresholdUpper the upper threshold of a {@link Operator#BETWEEN} or null
-     * @param probability the probability associated with the threshold
-     * @param probabilityUpper the probability associated with the upper threshold or null
-     * @param condition the threshold condition
-     * @return a quantile
-     */
-
-    default Threshold ofQuantileThreshold( Double threshold,
-                                           Double thresholdUpper,
-                                           Double probability,
-                                           Double probabilityUpper,
-                                           Operator condition )
-    {
-        return ofQuantileThreshold( threshold, thresholdUpper, probability, probabilityUpper, condition, null );
-    }
-
-    /**
-     * Returns {@link Threshold} from the specified input.
-     * 
-     * @param threshold the threshold value or lower bound
-     * @param condition the threshold condition
-     * @return a threshold
-     */
-
-    default Threshold ofThreshold( Double threshold, Operator condition )
-    {
-        return ofThreshold( threshold, null, condition, null );
-    }
-
-    /**
-     * Returns {@link Threshold} from the specified input. The input must be in the unit interval, [0,1].
-     * 
-     * @param threshold the threshold value or lower bound
-     * @param condition the threshold condition
-     * @return a threshold
-     */
-
-    default Threshold ofProbabilityThreshold( Double threshold, Operator condition )
-    {
-        return ofProbabilityThreshold( threshold, null, condition, null );
-    }
-
-    /**
-     * Returns a {@link Threshold} from the specified input.
-     * 
-     * @param threshold the threshold value
-     * @param probability the probability associated with the threshold
-     * @param condition the threshold condition
-     * @return a quantile
-     */
-
-    default Threshold ofQuantileThreshold( Double threshold,
-                                           Double probability,
-                                           Operator condition )
-    {
-        return ofQuantileThreshold( threshold, null, probability, null, condition, null );
+        return this.ofOneOrTwoDoubles( first, null );
     }
     
     /**
+     * Convenience method that returns a {@link Pair} to map a {@link MetricOutput} by {@link TimeWindow} and
+     * {@link OneOrTwoThresholds}.
+     * 
+     * @param timeWindow the time window
+     * @param values the values
+     * @param condition the threshold condition
+     * @return a map key
+     */
+
+    default Pair<TimeWindow, OneOrTwoThresholds> ofMapKeyByTimeThreshold( TimeWindow timeWindow,
+                                                                  OneOrTwoDoubles values,
+                                                                  Operator condition )
+    {
+        return Pair.of( timeWindow, OneOrTwoThresholds.of( this.ofThreshold( values, condition ) ) );
+    }
+
+    /**
      * Returns {@link Threshold} from the specified input.
      * 
-     * @param threshold the threshold value or lower bound
+     * @param values the values
+     * @param condition the threshold condition
+     * @return a threshold
+     */
+
+    default Threshold ofThreshold( OneOrTwoDoubles values, Operator condition )
+    {
+        return this.ofThreshold( values, condition, null, null );
+    }
+
+    /**
+     * Returns {@link Threshold} from the specified input.
+     * 
+     * @param values the values
+     * @param condition the threshold condition
+     * @param units the optional units for the threshold values
+     * @return a threshold
+     */
+
+    default Threshold ofThreshold( OneOrTwoDoubles values, Operator condition, Dimension units )
+    {
+        return this.ofThreshold( values, condition, null, units );
+    }
+
+    /**
+     * Returns {@link Threshold} from the specified input.
+     * 
+     * @param values the values
      * @param condition the threshold condition
      * @param label an optional label
      * @return a threshold
      */
 
-    default Threshold ofThreshold( Double threshold, Operator condition, String label )
+    default Threshold ofThreshold( OneOrTwoDoubles values, Operator condition, String label )
     {
-        return ofThreshold( threshold, null, condition, label );
+        return this.ofThreshold( values, condition, label, null );
     }
 
     /**
-     * Returns {@link Threshold} from the specified input. The input must be in the unit interval, [0,1].
+     * Returns {@link Threshold} from the specified input.
      * 
-     * @param threshold the threshold value or lower bound
+     * @param probabilities the probabilities
+     * @param condition the threshold condition
+     * @return a threshold
+     */
+
+    default Threshold ofProbabilityThreshold( OneOrTwoDoubles probabilities, Operator condition )
+    {
+        return this.ofProbabilityThreshold( probabilities, condition, null, null );
+    }
+
+    /**
+     * Returns {@link Threshold} from the specified input.
+     * 
+     * @param probabilities the probabilities
+     * @param condition the threshold condition
+     * @param units the optional units for the threshold values
+     * @return a threshold
+     */
+
+    default Threshold ofProbabilityThreshold( OneOrTwoDoubles probabilities, Operator condition, Dimension units )
+    {
+        return this.ofProbabilityThreshold( probabilities, condition, null, units );
+    }
+
+    /**
+     * Returns {@link Threshold} from the specified input.
+     * 
+     * @param probabilities the probabilities
      * @param condition the threshold condition
      * @param label an optional label
      * @return a threshold
      */
 
-    default Threshold ofProbabilityThreshold( Double threshold, Operator condition, String label )
+    default Threshold ofProbabilityThreshold( OneOrTwoDoubles probabilities, Operator condition, String label )
     {
-        return ofProbabilityThreshold( threshold, null, condition, label );
+        return this.ofProbabilityThreshold( probabilities, condition, label, null );
     }
 
     /**
-     * Returns a {@link Threshold} from the specified input
+     * Returns {@link Threshold} from the specified input.
      * 
-     * @param threshold the threshold value
-     * @param probability the probability associated with the threshold
+     * @param values the values
+     * @param probabilities the probabilities
      * @param condition the threshold condition
-     * @param label an optional label
-     * @return a quantile
+     * @return a threshold
      */
 
-    default Threshold ofQuantileThreshold( Double threshold,
-                                           Double probability,
+    default Threshold ofQuantileThreshold( OneOrTwoDoubles values, OneOrTwoDoubles probabilities, Operator condition )
+    {
+        return this.ofQuantileThreshold( values, probabilities, condition, null, null );
+    }
+
+    /**
+     * Returns {@link Threshold} from the specified input.
+     * 
+     * @param values the values
+     * @param probabilities the probabilities
+     * @param condition the threshold condition
+     * @param units the optional units for the threshold values
+     * @return a threshold
+     */
+
+    default Threshold ofQuantileThreshold( OneOrTwoDoubles values,
+                                           OneOrTwoDoubles probabilities,
+                                           Operator condition,
+                                           Dimension units )
+    {
+        return this.ofQuantileThreshold( values, probabilities, condition, null, units );
+    }
+
+    /**
+     * Returns {@link Threshold} from the specified input.
+     * 
+     * @param values the values
+     * @param probabilities the probabilities
+     * @param condition the threshold condition
+     * @param label an optional label
+     * @return a threshold
+     */
+
+    default Threshold ofQuantileThreshold( OneOrTwoDoubles values,
+                                           OneOrTwoDoubles probabilities,
                                            Operator condition,
                                            String label )
     {
-        return ofQuantileThreshold( threshold, null, probability, null, condition, label );
-    }    
+        return this.ofQuantileThreshold( values, probabilities, condition, label, null );
+    }
 
     /**
      * Return a {@link MatrixOutput}.
@@ -697,6 +684,16 @@ public interface DataFactory
      */
 
     Slicer getSlicer();
+    
+    /**
+     * Returns an instance of {@link OneOrTwoDoubles}.
+     * 
+     * @param first the first value, which is required
+     * @param second the second value, which is optional
+     * @return a composition of doubles
+     */
+    
+    OneOrTwoDoubles ofOneOrTwoDoubles( Double first, Double second );
 
     /**
      * Construct the single-valued input with a baseline.
@@ -1017,48 +1014,46 @@ public interface DataFactory
     /**
      * Returns {@link Threshold} from the specified input.
      * 
-     * @param threshold the threshold value or lower bound of a {@link Operator#BETWEEN} condition
-     * @param thresholdUpper the upper threshold of a {@link Operator#BETWEEN} or null
+     * @param values the threshold values
      * @param condition the threshold condition
      * @param label an optional label
+     * @param units the optional units for the threshold values
      * @return a threshold
      */
 
-    Threshold ofThreshold( Double threshold, Double thresholdUpper, Operator condition, String label );
+    Threshold ofThreshold( OneOrTwoDoubles values, Operator condition, String label, Dimension units );
 
     /**
      * Returns {@link Threshold} from the specified input. Both inputs must be in the unit interval, [0,1].
      * 
-     * @param threshold the threshold value or lower bound of a {@link Operator#BETWEEN} condition
-     * @param thresholdUpper the upper threshold of a {@link Operator#BETWEEN} or null
+     * @param probabilities the probabilities
      * @param condition the threshold condition
      * @param label an optional label
+     * @param units an optional set of units to use when deriving quantiles from probability thresholds
      * @return a threshold
      */
 
-    Threshold ofProbabilityThreshold( Double threshold,
-                                      Double thresholdUpper,
+    Threshold ofProbabilityThreshold( OneOrTwoDoubles probabilities,
                                       Operator condition,
-                                      String label );
+                                      String label,
+                                      Dimension units );
 
     /**
      * Returns a {@link Threshold} from the specified input
      * 
-     * @param threshold the threshold value or lower bound of a {@link Operator#BETWEEN} condition
-     * @param thresholdUpper the upper threshold of a {@link Operator#BETWEEN} or null
-     * @param probability the probability associated with the threshold
-     * @param probabilityUpper the probability associated with the upper threshold or null
+     * @param values the value or null
+     * @param probabilities the probabilities or null
      * @param condition the threshold condition
      * @param label an optional label
+     * @param units the optional units for the quantiles
      * @return a quantile
      */
 
-    Threshold ofQuantileThreshold( Double threshold,
-                                   Double thresholdUpper,
-                                   Double probability,
-                                   Double probabilityUpper,
+    Threshold ofQuantileThreshold( OneOrTwoDoubles values,
+                                   OneOrTwoDoubles probabilities,
                                    Operator condition,
-                                   String label );
+                                   String label,
+                                   Dimension units );
 
     /**
      * Returns a {@link MetricOutputMapByTimeAndThreshold} from the raw map of inputs.
@@ -1069,11 +1064,11 @@ public interface DataFactory
      */
 
     <T extends MetricOutput<?>> MetricOutputMapByTimeAndThreshold<T>
-            ofMap( Map<Pair<TimeWindow, Threshold>, T> input );
+            ofMap( Map<Pair<TimeWindow, OneOrTwoThresholds>, T> input );
 
     /**
      * Returns a {@link MetricOutputMultiMapByTimeAndThreshold} from a map of inputs by {@link TimeWindow} and 
-     * {@link Threshold}.
+     * {@link OneOrTwoThresholds}.
      * 
      * @param <T> the type of output
      * @param input the input map of metric outputs by time window and threshold
@@ -1082,7 +1077,7 @@ public interface DataFactory
      */
 
     <T extends MetricOutput<?>> MetricOutputMultiMapByTimeAndThreshold<T>
-            ofMultiMap( Map<Pair<TimeWindow, Threshold>, List<MetricOutputMapByMetric<T>>> input );
+            ofMultiMap( Map<Pair<TimeWindow, OneOrTwoThresholds>, List<MetricOutputMapByMetric<T>>> input );
 
     /**
      * Returns a builder for a {@link MetricOutputMultiMapByTimeAndThreshold} that allows for the incremental addition of

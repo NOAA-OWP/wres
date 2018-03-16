@@ -19,27 +19,29 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.FeaturePlus;
 import wres.config.ProjectConfigException;
-import wres.config.generated.DestinationConfig;
+import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationType;
 import wres.config.generated.Feature;
+import wres.config.generated.MetricConfigName;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.datamodel.Threshold;
+import wres.datamodel.ThresholdsByType;
 import wres.datamodel.inputs.InsufficientDataException;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.outputs.MetricOutputAccessException;
 import wres.engine.statistics.metric.MetricFactory;
+import wres.engine.statistics.metric.config.MetricConfigurationException;
 import wres.engine.statistics.metric.processing.MetricProcessorException;
 import wres.engine.statistics.metric.processing.MetricProcessorForProject;
 import wres.io.Operations;
 import wres.io.config.ConfigHelper;
-import wres.io.config.ProjectConfigPlus;
 import wres.io.data.details.ProjectDetails;
 import wres.io.retrieval.InputGenerator;
 import wres.io.retrieval.IterationFailedException;
 import wres.io.utilities.NoDataException;
+import wres.io.writing.SharedWriters;
 import wres.util.ProgressMonitor;
 
 /**
@@ -83,7 +85,8 @@ class ProcessorHelper
                                       final ExecutorService pairExecutor,
                                       final ExecutorService thresholdExecutor,
                                       final ExecutorService metricExecutor )
-            throws IOException, ProjectConfigException
+            throws IOException, ProjectConfigException,
+            MetricConfigurationException
     {
 
         final ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
@@ -99,7 +102,7 @@ class ProcessorHelper
 
         ProgressMonitor.setShowStepDescription( false );
 
-        Set<Feature> decomposedFeatures;
+        Set<FeaturePlus> decomposedFeatures;
 
         try
         {
@@ -116,9 +119,27 @@ class ProcessorHelper
         List<Feature> missingDataFeatures = new ArrayList<>();
 
         // Read external thresholds from the configuration, per feature
-        // Compare on locationId only. TODO: improve the representation of features
-        final Map<FeaturePlus, Set<Threshold>> thresholds = new TreeMap<>( FeaturePlus::compareByLocationId );
-        thresholds.putAll( ConfigHelper.readThresholdsFromProjectConfig( projectConfig ) );
+        // Compare on locationId only. TODO: consider how better to transmit these thresholds
+        // to wres-metrics, given that they are resolved by project configuration that is
+        // passed separately to wres-metrics. Options include moving MetricProcessor* to 
+        // wres-control, since they make processing decisions, or passing ResolvedProject onwards
+        final Map<FeaturePlus, Map<MetricConfigName, ThresholdsByType>> thresholds =
+                new TreeMap<>( FeaturePlus::compareByLocationId );
+        thresholds.putAll( ConfigHelper.readExternalThresholdsFromProjectConfig( projectConfig ) );
+
+
+        ResolvedProject resolvedProject = ResolvedProject.of( projectConfigPlus,
+                                                              decomposedFeatures,
+                                                              null,
+                                                              thresholds );
+
+        // Build any writers of incremental formats that are shared across features
+        SharedWriters sharedWriters = ConfigHelper.getSharedWriters( projectConfig,
+                                                                     resolvedProject.getFeatureCount(),
+                                                                     2,
+                                                                     2,
+                                                                     resolvedProject.getThresholdCount(),
+                                                                     resolvedProject.getDoubleScoreMetrics() );
 
         // Reduce our triad of executors to one object
         ExecutorServices executors = new ExecutorServices( pairExecutor,
@@ -127,7 +148,7 @@ class ProcessorHelper
 
         int currentFeature = 0;
 
-        for ( Feature feature : decomposedFeatures )
+        for ( FeaturePlus feature : decomposedFeatures )
         {
             ProgressMonitor.resetMonitor();
 
@@ -142,10 +163,10 @@ class ProcessorHelper
 
             FeatureProcessingResult result =
                     processFeature( feature,
-                                    thresholds.get( FeaturePlus.of( feature ) ),
-                                    projectConfigPlus,
+                                    resolvedProject,
                                     projectDetails,
-                                    executors );
+                                    executors,
+                                    sharedWriters );
 
             if ( result.hadData() )
             {
@@ -181,7 +202,7 @@ class ProcessorHelper
      */
 
     private static void printFeaturesReport( final ProjectConfigPlus projectConfigPlus,
-                                             final Set<Feature> decomposedFeatures,
+                                             final Set<FeaturePlus> decomposedFeatures,
                                              final List<Feature> successfulFeatures,
                                              final List<Feature> missingDataFeatures )
     {
@@ -229,24 +250,30 @@ class ProcessorHelper
      * Processes a {@link ProjectConfigPlus} for a specific {@link Feature} using a prescribed {@link ExecutorService}
      * for each of the pairs, thresholds and metrics.
      * 
+     * TODO: please eliminate projectConfigPlus from the params and use projectDetails to source the project config.
+     * JFB: On reconsideration, the ProjectConfigPlus was precisely intended
+     * for sharing with the graphics generator. So whatever is needed to pass
+     * the ProjectConfigPlus to the graphics generator is needed and should stay.
+     *
      * @param feature the feature to process
-     * @param thresholds an optional set of (canonical) thresholds for which
-     *                   results are required, may be null
-     * @param projectConfigPlus the project configuration
+     * @param resolvedProject the resolved project
      * @param projectDetails the project details to use
      * @param executors the executors for pairs, thresholds, and metrics
+     * @param sharedWriters writers that are shared across features 
      * @throws WresProcessingException when an error occurs during processing
      * @return a feature result
      */
 
-    private static FeatureProcessingResult processFeature( final Feature feature,
-                                                           final Set<Threshold> thresholds,
-                                                           final ProjectConfigPlus projectConfigPlus,
+    private static FeatureProcessingResult processFeature( final FeaturePlus feature,
+                                                           final ResolvedProject resolvedProject,
                                                            final ProjectDetails projectDetails,
-                                                           final ExecutorServices executors )
+                                                           final ExecutorServices executors,
+                                                           final SharedWriters sharedWriters )
     {
 
-        final ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
+        final ProjectConfig projectConfig = resolvedProject.getProjectConfig();
+        final Map<MetricConfigName, ThresholdsByType> thresholds =
+                resolvedProject.getThresholdForFeature( feature );
 
         final String featureDescription = ConfigHelper.getFeatureDescription( feature );
         final String errorMessage = "While processing feature " + featureDescription;
@@ -269,7 +296,7 @@ class ProcessorHelper
 
         // Build an InputGenerator for the next feature
         InputGenerator metricInputs = Operations.getInputs( projectDetails,
-                                                            feature );
+                                                            feature.getFeature() );
 
         // Queue the various tasks by time window (time window is the pooling dimension for metric calculation here)
         final List<CompletableFuture<?>> listOfFutures = new ArrayList<>(); //List of futures to test for completion
@@ -293,8 +320,9 @@ class ProcessorHelper
                 final CompletableFuture<Void> c =
                         CompletableFuture.supplyAsync( new PairsByTimeWindowProcessor( nextInput, processor ),
                                                        executors.getPairExecutor() )
-                                         .thenAcceptAsync( new ProductProcessor( projectConfigPlus,
-                                                                                 onlyWriteTheseTypes ),
+                                         .thenAcceptAsync( new ProductProcessor( resolvedProject,
+                                                                                 onlyWriteTheseTypes,
+                                                                                 sharedWriters ),
                                                            executors.getPairExecutor() )
                                          .thenAccept( aVoid -> ProgressMonitor.completeStep() );
 
@@ -306,7 +334,7 @@ class ProcessorHelper
         {
             if ( ProcessorHelper.wasInsufficientDataOrNoDataInThisStack( re ) )
             {
-                return new FeatureProcessingResult( feature,
+                return new FeatureProcessingResult( feature.getFeature(),
                                                     false,
                                                     re );
             }
@@ -326,7 +354,7 @@ class ProcessorHelper
             // If there was simply not enough data for this feature, OK
             if ( ProcessorHelper.wasInsufficientDataOrNoDataInThisStack( e ) )
             {
-                return new FeatureProcessingResult( feature,
+                return new FeatureProcessingResult( feature.getFeature(),
                                                     false,
                                                     e );
             }
@@ -346,8 +374,9 @@ class ProcessorHelper
                         ( type, format ) -> processor.getCachedMetricOutputTypes().contains( type )
                                             && !ConfigHelper.getIncrementalFormats( projectConfig ).contains( format );
                 ProductProcessor endOfPipeline =
-                        new ProductProcessor( projectConfigPlus,
-                                              nowWriteTheseTypes );
+                        new ProductProcessor( resolvedProject,
+                                              nowWriteTheseTypes,
+                                              sharedWriters );
 
                 // Generate output
                 endOfPipeline.accept( processor.getCachedMetricOutput() );
@@ -359,7 +388,7 @@ class ProcessorHelper
             }
         }
 
-        return new FeatureProcessingResult( feature, true, null );
+        return new FeatureProcessingResult( feature.getFeature(), true, null );
     }
 
     /**
@@ -392,35 +421,6 @@ class ProcessorHelper
         //Either all done OR one completes exceptionally
         return CompletableFuture.anyOf( allDone, oneExceptional );
     }
-
-    /**
-     * Returns true if the given config has one or more of given output type.
-     * @param config the config to search
-     * @param type the type of output to look for
-     * @return true if the output type is present, false otherwise
-     */
-
-    static boolean configNeedsThisTypeOfOutput( ProjectConfig config,
-                                                DestinationType type )
-    {
-        if ( config.getOutputs() == null
-             || config.getOutputs().getDestination() == null )
-        {
-            LOGGER.debug( "No destinations specified for config {}", config );
-            return false;
-        }
-
-        for ( DestinationConfig d : config.getOutputs().getDestination() )
-        {
-            if ( d.getType().equals( type ) )
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
 
     /**
      * Look at a chain of exceptions, returns true if ANY is a NoDataException

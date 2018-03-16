@@ -284,16 +284,12 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                     this.buildMetadata( this.projectDetails.getProjectConfig(), true );
         }
 
-        List timeSeriesMetricConfigs = projectDetails.getProjectConfig()
-                                                     .getMetrics()
-                                                     .getTimeSeriesMetric();
-
         try
         {
 
             if ( this.projectDetails.getRight().getType() == DatasourceType.ENSEMBLE_FORECASTS )
             {
-                if (timeSeriesMetricConfigs != null && timeSeriesMetricConfigs.size() > 0)
+                if ( ConfigHelper.hasTimeSeriesMetrics( this.projectDetails.getProjectConfig() ) )
                 {
                     input = this.createEnsembleTimeSeriesInput( metadata, baselineMetadata );
                 }
@@ -304,7 +300,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             }
             else
             {
-                if (timeSeriesMetricConfigs != null && timeSeriesMetricConfigs.size() > 0)
+                if ( ConfigHelper.hasTimeSeriesMetrics( this.projectDetails.getProjectConfig() ) )
                 {
                     input = this.createSingleValuedTimeSeriesInput( metadata, baselineMetadata );
                 }

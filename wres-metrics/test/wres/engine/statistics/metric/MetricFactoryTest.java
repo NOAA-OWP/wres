@@ -9,13 +9,13 @@ import java.nio.file.Paths;
 
 import org.junit.Test;
 
+import wres.config.ProjectConfigPlus;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.engine.statistics.metric.processing.MetricProcessor;
-import wres.io.config.ProjectConfigPlus;
 
 /**
  * Tests the {@link MetricFactory}.

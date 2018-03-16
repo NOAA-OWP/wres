@@ -21,9 +21,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -39,6 +41,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.FeaturePlus;
 import wres.config.ProjectConfigException;
+import wres.config.ProjectConfigPlus;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.DateCondition;
@@ -53,17 +56,22 @@ import wres.config.generated.MetricConfigName;
 import wres.config.generated.MetricsConfig;
 import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.PoolingWindowConfig;
-import wres.config.generated.ProbabilityOrValue;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Outputs;
 import wres.config.generated.ThresholdFormat;
 import wres.config.generated.ThresholdOperator;
+import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
 import wres.config.generated.TimeScaleConfig;
 import wres.config.generated.TimeWindowMode;
+import wres.datamodel.DataFactory;
+import wres.datamodel.DefaultDataFactory;
+import wres.datamodel.Dimension;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Threshold;
 import wres.datamodel.Threshold.Operator;
+import wres.datamodel.OneOrTwoThresholds;
+import wres.datamodel.ThresholdsByType;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
@@ -71,16 +79,41 @@ import wres.io.data.caching.Features;
 import wres.io.data.details.ProjectDetails;
 import wres.io.reading.commaseparated.CommaSeparatedReader;
 import wres.io.utilities.Database;
+import wres.io.writing.SharedWriters;
+import wres.io.writing.SharedWriters.SharedWritersBuilder;
+import wres.io.writing.WriterHelper;
+import wres.io.writing.netcdf.NetcdfDoubleScoreWriter;
 import wres.util.Strings;
 import wres.util.TimeHelper;
 
+/**
+ * The purpose of io's ConfigHelper is to help the io module translate raw
+ * user-specified configuration elements into a reduced form, a more
+ * actionable or meaningful form such as a SQL script, or to extract specific
+ * elements from a particular config element, or other purposes that are common
+ * to the io module.
+ *
+ * The general form of a helper method appropriate for ConfigHelper has a
+ * ProjectConfig as the first argument and some other element(s) or hint(s) as
+ * additional args. These are not hard-and-fast-rules. But the original purpose
+ * was to help the io module avoid tedious repetition of common interpretations
+ * of the raw user-specified configuration.
+ *
+ * Candidates for removal to a wres-config helper are those that purely operate
+ * on, use, and return objects of classes that are specified in the wres-config
+ * or JDK.
+ *
+ * Candidates that should stay are those returning SQL statements or are
+ * currently useful only to the wres-io module.
+ */
+
 public class ConfigHelper
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ConfigHelper.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger( ConfigHelper.class );
 
-    private static final ConcurrentMap<ProjectConfig, ConcurrentSkipListSet<String>> messages
-            = new ConcurrentHashMap<>();
-    
+    private static final ConcurrentMap<ProjectConfig, ConcurrentSkipListSet<String>> messages =
+            new ConcurrentHashMap<>();
+
     /**
      * Default exception message when a destination cannot be established.
      */
@@ -90,15 +123,22 @@ public class ConfigHelper
                                                            + "<path>c:/Users/myname/wres_output/</path>"
                                                            + "</destination>";
 
+    /**
+     * String for null configuration error.
+     */
+
+    private static final String NULL_CONFIGURATION_ERROR = "The project configuration cannot be null.";
+
     private ConfigHelper()
     {
         // prevent construction
     }
 
     // TODO: Move to Project Details
-    public static boolean usesUSGSData(ProjectConfig projectConfig)
+    // ... or wres-config if useful outside of wres-io
+    public static boolean usesUSGSData( ProjectConfig projectConfig )
     {
-        for ( DataSourceConfig.Source source : projectConfig.getInputs().getLeft().getSource())
+        for ( DataSourceConfig.Source source : projectConfig.getInputs().getLeft().getSource() )
         {
             if ( source.getFormat() == Format.USGS )
             {
@@ -106,7 +146,7 @@ public class ConfigHelper
             }
         }
 
-        for ( DataSourceConfig.Source source : projectConfig.getInputs().getRight().getSource())
+        for ( DataSourceConfig.Source source : projectConfig.getInputs().getRight().getSource() )
         {
             if ( source.getFormat() == Format.USGS )
             {
@@ -114,7 +154,7 @@ public class ConfigHelper
             }
         }
 
-        if (projectConfig.getInputs().getBaseline() != null)
+        if ( projectConfig.getInputs().getBaseline() != null )
         {
             for ( DataSourceConfig.Source source : projectConfig.getInputs()
                                                                 .getBaseline()
@@ -131,31 +171,32 @@ public class ConfigHelper
     }
 
     // TODO: Move to Project Details
-    public static boolean usesNetCDFData(ProjectConfig projectConfig)
+    // ... or wres-config if useful outside of wres-io
+    public static boolean usesNetCDFData( ProjectConfig projectConfig )
     {
-        for ( DataSourceConfig.Source source : projectConfig.getInputs().getLeft().getSource())
+        for ( DataSourceConfig.Source source : projectConfig.getInputs().getLeft().getSource() )
         {
-            if (source.getFormat() == Format.NET_CDF)
+            if ( source.getFormat() == Format.NET_CDF )
             {
                 return true;
             }
         }
 
-        for ( DataSourceConfig.Source source : projectConfig.getInputs().getRight().getSource())
+        for ( DataSourceConfig.Source source : projectConfig.getInputs().getRight().getSource() )
         {
-            if (source.getFormat() == Format.NET_CDF)
+            if ( source.getFormat() == Format.NET_CDF )
             {
                 return true;
             }
         }
 
-        if (projectConfig.getInputs().getBaseline() != null)
+        if ( projectConfig.getInputs().getBaseline() != null )
         {
             for ( DataSourceConfig.Source source : projectConfig.getInputs()
                                                                 .getBaseline()
                                                                 .getSource() )
             {
-                if (source.getFormat() == Format.NET_CDF)
+                if ( source.getFormat() == Format.NET_CDF )
                 {
                     return true;
                 }
@@ -165,21 +206,21 @@ public class ConfigHelper
         return false;
     }
 
-    public static String getVariablePositionClause( Feature feature, int variableId, String alias)
+    public static String getVariablePositionClause( Feature feature, int variableId, String alias )
             throws SQLException
     {
         StringBuilder clause = new StringBuilder();
 
         Integer variablePositionId = Features.getVariablePositionID( feature, variableId );
 
-        if (variablePositionId != null)
+        if ( variablePositionId != null )
         {
-            if (Strings.hasValue( alias ))
+            if ( Strings.hasValue( alias ) )
             {
-                clause.append(alias).append(".");
+                clause.append( alias ).append( "." );
             }
 
-            clause.append("variableposition_id = ").append(variablePositionId);
+            clause.append( "variableposition_id = " ).append( variablePositionId );
         }
 
         return clause.toString();
@@ -189,29 +230,29 @@ public class ConfigHelper
     {
         return ( feature, t1 ) -> {
 
-            String featureDescription = getFeatureDescription(feature);
+            String featureDescription = getFeatureDescription( feature );
             String t1Description = getFeatureDescription( t1 );
             try
             {
-                if (Strings.hasValue(feature.getLocationId()) &&
-                    Strings.hasValue(t1.getLocationId()))
+                if ( Strings.hasValue( feature.getLocationId() ) &&
+                     Strings.hasValue( t1.getLocationId() ) )
                 {
                     return feature.getLocationId().compareTo( t1.getLocationId() );
                 }
                 else
                 {
-                    LOGGER.trace("Either {} and {} have the same location ids or "
-                                + "one or both of them don't have one.",
-                                featureDescription,
-                                t1Description);
+                    LOGGER.trace( "Either {} and {} have the same location ids or "
+                                  + "one or both of them don't have one.",
+                                  featureDescription,
+                                  t1Description );
                 }
             }
-            catch (Exception e)
+            catch ( Exception e )
             {
-                LOGGER.error("Error occurred when comparing locations between '{}' "
-                             + "and '{}'",
-                             featureDescription,
-                             t1Description);
+                LOGGER.error( "Error occurred when comparing locations between '{}' "
+                              + "and '{}'",
+                              featureDescription,
+                              t1Description );
                 throw e;
             }
 
@@ -224,93 +265,94 @@ public class ConfigHelper
                 }
                 else
                 {
-                    LOGGER.trace("Either {} and {} have the same huc or "
-                                + "one or both of them don't have one.",
-                                featureDescription,
-                                t1Description);
+                    LOGGER.trace( "Either {} and {} have the same huc or "
+                                  + "one or both of them don't have one.",
+                                  featureDescription,
+                                  t1Description );
                 }
             }
-            catch (Exception e)
+            catch ( Exception e )
             {
-                LOGGER.error("Error occurred when comparing hucs between '{}' "
-                             + "and '{}'",
-                             featureDescription,
-                             t1Description);
+                LOGGER.error( "Error occurred when comparing hucs between '{}' "
+                              + "and '{}'",
+                              featureDescription,
+                              t1Description );
                 throw e;
             }
 
             try
             {
-                if (Strings.hasValue( feature.getGageId() ) &&
-                    Strings.hasValue(t1.getGageId()))
+                if ( Strings.hasValue( feature.getGageId() ) &&
+                     Strings.hasValue( t1.getGageId() ) )
                 {
                     return feature.getGageId().compareTo( t1.getGageId() );
                 }
                 else
                 {
-                    LOGGER.trace("Either {} and {} have the same gage ids or "
-                                + "one or both of them don't have one.",
-                                featureDescription,
-                                t1Description);
+                    LOGGER.trace( "Either {} and {} have the same gage ids or "
+                                  + "one or both of them don't have one.",
+                                  featureDescription,
+                                  t1Description );
                 }
             }
-            catch (Exception e)
+            catch ( Exception e )
             {
-                LOGGER.error("Error occurred when comparing gages between '{}' "
-                             + "and '{}'",
-                             featureDescription,
-                             t1Description);
+                LOGGER.error( "Error occurred when comparing gages between '{}' "
+                              + "and '{}'",
+                              featureDescription,
+                              t1Description );
                 throw e;
             }
 
             try
             {
-                if (feature.getComid() != null &&
-                    t1.getComid() != null)
+                if ( feature.getComid() != null &&
+                     t1.getComid() != null )
                 {
                     return feature.getComid().compareTo( t1.getComid() );
                 }
                 else
                 {
-                    LOGGER.trace("Either {} and {} have the same com ids or "
-                                + "one or both of them don't have one.",
-                                featureDescription,
-                                t1Description);
+                    LOGGER.trace( "Either {} and {} have the same com ids or "
+                                  + "one or both of them don't have one.",
+                                  featureDescription,
+                                  t1Description );
                 }
             }
-            catch (Exception e)
+            catch ( Exception e )
             {
-                LOGGER.error("Error occurred when comparing comids between '{}' "
-                             + "and '{}'",
-                             featureDescription,
-                             t1Description);
+                LOGGER.error( "Error occurred when comparing comids between '{}' "
+                              + "and '{}'",
+                              featureDescription,
+                              t1Description );
                 throw e;
             }
 
-            LOGGER.info("A proper comparison couldn't be made between {} and {}."
-                        + " Now saying that {} is greater than {}.",
-                        featureDescription,
-                        t1Description,
-                        featureDescription,
-                        t1Description);
+            LOGGER.info( "A proper comparison couldn't be made between {} and {}."
+                         + " Now saying that {} is greater than {}.",
+                         featureDescription,
+                         t1Description,
+                         featureDescription,
+                         t1Description );
             return 1;
         };
     }
 
-    public static int getValueCount(ProjectDetails projectDetails,
-                                    DataSourceConfig dataSourceConfig,
-                                    Feature feature) throws SQLException
+    public static int getValueCount( ProjectDetails projectDetails,
+                                     DataSourceConfig dataSourceConfig,
+                                     Feature feature )
+            throws SQLException
     {
         final String NEWLINE = System.lineSeparator();
         Integer variableId;
         String member;
 
-        if (projectDetails.getRight().equals( dataSourceConfig ))
+        if ( projectDetails.getRight().equals( dataSourceConfig ) )
         {
             variableId = projectDetails.getRightVariableID();
             member = ProjectDetails.RIGHT_MEMBER;
         }
-        else if (projectDetails.getLeft().equals( dataSourceConfig ))
+        else if ( projectDetails.getLeft().equals( dataSourceConfig ) )
         {
             variableId = projectDetails.getLeftVariableID();
             member = ProjectDetails.LEFT_MEMBER;
@@ -321,76 +363,76 @@ public class ConfigHelper
             member = ProjectDetails.BASELINE_MEMBER;
         }
 
-        String variablePositionClause = ConfigHelper.getVariablePositionClause( feature, variableId, "");
+        String variablePositionClause = ConfigHelper.getVariablePositionClause( feature, variableId, "" );
 
-        StringBuilder script = new StringBuilder("SELECT COUNT(*)::int").append(NEWLINE);
+        StringBuilder script = new StringBuilder( "SELECT COUNT(*)::int" ).append( NEWLINE );
 
-        if (ConfigHelper.isForecast( dataSourceConfig ))
+        if ( ConfigHelper.isForecast( dataSourceConfig ) )
         {
-            script.append("FROM wres.TimeSeries TS").append(NEWLINE);
-            script.append("INNER JOIN wres.ForecastValue FV").append(NEWLINE);
-            script.append("    ON TS.timeseries_id = FV.timeseries_id").append(NEWLINE);
-            script.append("WHERE ").append(variablePositionClause).append(NEWLINE);
-            script.append("    EXISTS (").append(NEWLINE);
-            script.append("        SELECT 1").append(NEWLINE);
-            script.append("        FROM wres.ForecastSource FS").append(NEWLINE);
-            script.append("        INNER JOIN wres.ProjectSource PS").append(NEWLINE);
-            script.append("            ON FS.source_id = PS.source_id").append(NEWLINE);
-            script.append("        WHERE PS.project_id = ").append(projectDetails.getId()).append(NEWLINE);
-            script.append("            AND PS.member = ").append(member).append(NEWLINE);
-            script.append("            AND PS.inactive_time IS NULL").append(NEWLINE);
-            script.append("            AND FS.forecast_id = TS.timeseries_id").append(NEWLINE);
-            script.append("    );");
+            script.append( "FROM wres.TimeSeries TS" ).append( NEWLINE );
+            script.append( "INNER JOIN wres.ForecastValue FV" ).append( NEWLINE );
+            script.append( "    ON TS.timeseries_id = FV.timeseries_id" ).append( NEWLINE );
+            script.append( "WHERE " ).append( variablePositionClause ).append( NEWLINE );
+            script.append( "    EXISTS (" ).append( NEWLINE );
+            script.append( "        SELECT 1" ).append( NEWLINE );
+            script.append( "        FROM wres.ForecastSource FS" ).append( NEWLINE );
+            script.append( "        INNER JOIN wres.ProjectSource PS" ).append( NEWLINE );
+            script.append( "            ON FS.source_id = PS.source_id" ).append( NEWLINE );
+            script.append( "        WHERE PS.project_id = " ).append( projectDetails.getId() ).append( NEWLINE );
+            script.append( "            AND PS.member = " ).append( member ).append( NEWLINE );
+            script.append( "            AND PS.inactive_time IS NULL" ).append( NEWLINE );
+            script.append( "            AND FS.forecast_id = TS.timeseries_id" ).append( NEWLINE );
+            script.append( "    );" );
         }
         else
         {
-            script.append("FROM wres.Observation O").append(NEWLINE);
-            script.append("WHERE ").append(variablePositionClause).append(NEWLINE);
-            script.append("    AND EXISTS (").append(NEWLINE);
-            script.append("        SELECT 1").append(NEWLINE);
-            script.append("        FROM wres.ProjectSource PS").append(NEWLINE);
-            script.append("        WHERE PS.project_id = ").append(projectDetails.getId()).append(NEWLINE);
-            script.append("            AND PS.member = ").append(member).append(NEWLINE);
-            script.append("            AND PS.source_id = O.source_id").append(NEWLINE);
-            script.append("            AND PS.inactive_time IS NULL").append(NEWLINE);
-            script.append("    );");
+            script.append( "FROM wres.Observation O" ).append( NEWLINE );
+            script.append( "WHERE " ).append( variablePositionClause ).append( NEWLINE );
+            script.append( "    AND EXISTS (" ).append( NEWLINE );
+            script.append( "        SELECT 1" ).append( NEWLINE );
+            script.append( "        FROM wres.ProjectSource PS" ).append( NEWLINE );
+            script.append( "        WHERE PS.project_id = " ).append( projectDetails.getId() ).append( NEWLINE );
+            script.append( "            AND PS.member = " ).append( member ).append( NEWLINE );
+            script.append( "            AND PS.source_id = O.source_id" ).append( NEWLINE );
+            script.append( "            AND PS.inactive_time IS NULL" ).append( NEWLINE );
+            script.append( "    );" );
         }
 
         return Database.getResult( script.toString(), "count" );
     }
 
-    public static boolean isForecast(DataSourceConfig dataSource)
+    public static boolean isForecast( DataSourceConfig dataSource )
     {
         return dataSource != null &&
-                Strings.isOneOf(dataSource.getType().value(),
+               Strings.isOneOf( dataSource.getType().value(),
                                 DatasourceType.SINGLE_VALUED_FORECASTS.value(),
-                                DatasourceType.ENSEMBLE_FORECASTS.value());
+                                DatasourceType.ENSEMBLE_FORECASTS.value() );
     }
 
-    public static boolean isSimulation(DataSourceConfig dataSourceConfig)
+    public static boolean isSimulation( DataSourceConfig dataSourceConfig )
     {
         return dataSourceConfig != null
-                && dataSourceConfig.getType() == DatasourceType.SIMULATIONS;
+               && dataSourceConfig.getType() == DatasourceType.SIMULATIONS;
     }
 
-    public static ProjectConfig read(final String path) throws IOException
+    public static ProjectConfig read( final String path ) throws IOException
     {
         Path actualPath = Paths.get( path );
         ProjectConfigPlus configPlus = ProjectConfigPlus.from( actualPath );
         return configPlus.getProjectConfig();
     }
 
-    public static DataSourceConfig.Source findDataSourceByFilename(DataSourceConfig dataSourceConfig, String filename)
+    public static DataSourceConfig.Source findDataSourceByFilename( DataSourceConfig dataSourceConfig, String filename )
     {
         DataSourceConfig.Source source = null;
-        filename = Paths.get(filename).toAbsolutePath().toString();
+        filename = Paths.get( filename ).toAbsolutePath().toString();
         String sourcePath = "";
 
-        for (DataSourceConfig.Source dataSource : dataSourceConfig.getSource())
+        for ( DataSourceConfig.Source dataSource : dataSourceConfig.getSource() )
         {
-            String fullDataSourcePath = Paths.get(dataSource.getValue()).toAbsolutePath().toString();
+            String fullDataSourcePath = Paths.get( dataSource.getValue() ).toAbsolutePath().toString();
 
-            if (filename.startsWith(fullDataSourcePath) && fullDataSourcePath.length() > sourcePath.length())
+            if ( filename.startsWith( fullDataSourcePath ) && fullDataSourcePath.length() > sourcePath.length() )
             {
                 sourcePath = fullDataSourcePath;
                 source = dataSource;
@@ -408,7 +450,7 @@ public class ConfigHelper
      * @param config the project configuration
      * @return the most narrow "earliest" date, null otherwise
      */
-    public static Instant getEarliestDateTimeFromDataSources(ProjectConfig config)
+    public static Instant getEarliestDateTimeFromDataSources( ProjectConfig config )
     {
         if ( config.getPair() == null )
         {
@@ -456,7 +498,7 @@ public class ConfigHelper
         else
         {
             String messageId = "no_earliest_date";
-            if (LOGGER.isInfoEnabled() && ConfigHelper.messageSendPutIfAbsent(config, messageId))
+            if ( LOGGER.isInfoEnabled() && ConfigHelper.messageSendPutIfAbsent( config, messageId ) )
             {
                 LOGGER.info( "No \"earliest\" date found in project. Use <dates earliest=\"2017-06-27T16:14:00Z\" latest=\"2017-07-06T11:35:00Z\" /> under <pair> (near line {} column {} of project file) to specify an earliest date.",
                              config.getPair()
@@ -480,7 +522,7 @@ public class ConfigHelper
      * @param config the project configuration
      * @return the most narrow "latest" date, null otherwise.
      */
-    public static Instant getLatestDateTimeFromDataSources(ProjectConfig config)
+    public static Instant getLatestDateTimeFromDataSources( ProjectConfig config )
     {
         if ( config.getPair() == null )
         {
@@ -528,7 +570,7 @@ public class ConfigHelper
         else
         {
             String messageId = "no_latest_date";
-            if (LOGGER.isInfoEnabled() && ConfigHelper.messageSendPutIfAbsent(config, messageId))
+            if ( LOGGER.isInfoEnabled() && ConfigHelper.messageSendPutIfAbsent( config, messageId ) )
             {
                 LOGGER.info( "No \"latest\" date found in project. Use <dates earliest=\"2017-06-27T16:14:00Z\" latest=\"2017-07-06T11:35:00Z\" />  under <pair> (near line {} col {} of project file) to specify a latest date.",
                              config.getPair()
@@ -561,26 +603,26 @@ public class ConfigHelper
      * @param message the identifier for the message to send
      * @return true if the caller should log
      */
-    private static boolean messageSendPutIfAbsent(ProjectConfig projectConfig,
-                                                      String message)
+    private static boolean messageSendPutIfAbsent( ProjectConfig projectConfig,
+                                                   String message )
     {
         // In case we are the first to call regarding a given config:
         ConcurrentSkipListSet<String> possiblyNewSet = new ConcurrentSkipListSet<>();
-        possiblyNewSet.add(message);
+        possiblyNewSet.add( message );
 
-        ConcurrentSkipListSet<String> theSet = messages.putIfAbsent(projectConfig,
-                                                                    possiblyNewSet);
-        if (theSet == null)
+        ConcurrentSkipListSet<String> theSet = messages.putIfAbsent( projectConfig,
+                                                                     possiblyNewSet );
+        if ( theSet == null )
         {
             // this call was first to put a set for this config, return true.
             return true;
         }
         // this call was not the first to put a set for this config.
-        return theSet.add(message);
+        return theSet.add( message );
     }
 
     // TODO: Should this move to wres.io.data.caching.Features?
-    public static String getFeatureDescription(Feature feature)
+    public static String getFeatureDescription( Feature feature )
     {
         String description = null;
 
@@ -604,13 +646,18 @@ public class ConfigHelper
             {
                 description = String.valueOf( feature.getComid() );
             }
-            else if (Strings.hasValue( feature.getName() ))
+            else if ( Strings.hasValue( feature.getName() ) )
             {
                 description = feature.getName();
             }
         }
 
         return description;
+    }
+
+    public static String getFeatureDescription( FeaturePlus featurePlus )
+    {
+        return ConfigHelper.getFeatureDescription( featurePlus.getFeature() );
     }
 
 
@@ -626,7 +673,7 @@ public class ConfigHelper
     public static String getFeaturesDescription( List<Feature> features )
     {
         Objects.requireNonNull( features );
-        StringJoiner result = new StringJoiner( ", ", "( ", " )");
+        StringJoiner result = new StringJoiner( ", ", "( ", " )" );
 
         for ( Feature feature : features )
         {
@@ -652,7 +699,8 @@ public class ConfigHelper
 
         if ( outputDirectory == null )
         {
-            String message = "Destination path " + d.getPath() +
+            String message = "Destination path " + d.getPath()
+                             +
                              " could not be found.";
             throw new ProjectConfigException( d, message );
         }
@@ -670,7 +718,7 @@ public class ConfigHelper
                              + "{} because there may be more than one file to "
                              + "write.",
                              outputDirectory.getParent(),
-                             outputDirectory);
+                             outputDirectory );
 
                 return outputDirectory.getParent().toFile();
             }
@@ -731,7 +779,7 @@ public class ConfigHelper
     {
         return getDestinationsOfType( config, DestinationType.GRAPHIC );
     }
-    
+
     /**
      * Get all the numerical destinations from a configuration.
      *
@@ -743,7 +791,7 @@ public class ConfigHelper
     public static List<DestinationConfig> getNumericalDestinations( ProjectConfig config )
     {
         return getDestinationsOfType( config, DestinationType.NUMERIC );
-    }    
+    }
 
     /**
      * <p>Returns a {@link TimeWindow} from the input configuration using the specified lead time to form the interval
@@ -768,7 +816,7 @@ public class ConfigHelper
      * @throws NullPointerException if the config is null
      * @throws DateTimeParseException if the configuration contains dates that cannot be parsed
      */
-    public static TimeWindow getTimeWindow( ProjectDetails projectDetails, long lead, int sequenceStep)
+    public static TimeWindow getTimeWindow( ProjectDetails projectDetails, long lead, int sequenceStep )
     {
         Objects.requireNonNull( projectDetails );
         TimeWindow windowMetadata;
@@ -776,15 +824,18 @@ public class ConfigHelper
         Duration beginningLead;
         Duration endingLead = Duration.ofHours( lead );
 
-        if (projectDetails.getProjectConfig().getPair().getLeadTimesPoolingWindow() != null)
+        if ( projectDetails.getProjectConfig().getPair().getLeadTimesPoolingWindow() != null )
         {
-            PoolingWindowConfig leadPoolingWindow = projectDetails.getProjectConfig().getPair().getLeadTimesPoolingWindow();
+            PoolingWindowConfig leadPoolingWindow =
+                    projectDetails.getProjectConfig().getPair().getLeadTimesPoolingWindow();
             /*long leadPoolPeriod = TimeHelper.unitsToLeadUnits(
                     leadPoolingWindow.getUnit().value(),
                     leadPoolingWindow.getPeriod()
             );*/
 
-            beginningLead = endingLead.minus( leadPoolingWindow.getPeriod(), ChronoUnit.valueOf( leadPoolingWindow.getUnit().toString().toUpperCase() ) );
+            beginningLead =
+                    endingLead.minus( leadPoolingWindow.getPeriod(),
+                                      ChronoUnit.valueOf( leadPoolingWindow.getUnit().toString().toUpperCase() ) );
             //beginningLead = Duration.of( lead - leadPoolPeriod, ChronoUnit.HOURS );
         }
         else
@@ -795,17 +846,17 @@ public class ConfigHelper
         if ( projectDetails.getPoolingMode() == TimeWindowMode.ROLLING )
         {
             long frequencyOffset = TimeHelper.unitsToLeadUnits( projectDetails.getIssuePoolingWindowUnit(),
-                                                                  projectDetails.getIssuePoolingWindowFrequency() )
-                                     * sequenceStep;
+                                                                projectDetails.getIssuePoolingWindowFrequency() )
+                                   * sequenceStep;
 
             Instant first = Instant.parse( projectDetails.getEarliestIssueDate() );
             first = first.plus( frequencyOffset, ChronoUnit.HOURS );
             Instant second;
 
-            if (projectDetails.getIssuePoolingWindowPeriod() > 0)
+            if ( projectDetails.getIssuePoolingWindowPeriod() > 0 )
             {
                 second = first.plus( projectDetails.getIssuePoolingWindowPeriod(),
-                                     ChronoUnit.valueOf( projectDetails.getIssuePoolingWindowUnit().toUpperCase() ));
+                                     ChronoUnit.valueOf( projectDetails.getIssuePoolingWindowUnit().toUpperCase() ) );
             }
             else
             {
@@ -817,20 +868,20 @@ public class ConfigHelper
                                             ReferenceTime.ISSUE_TIME,
                                             beginningLead,
                                             endingLead
-                                            //Duration.ofHours( lead ),
-                                            //Duration.ofHours( lead )
-                                            );
+            //Duration.ofHours( lead ),
+            //Duration.ofHours( lead )
+            );
         }
         //Valid dates available
-        else if ( projectDetails.getEarliestDate() != null && projectDetails.getLatestDate() != null)
+        else if ( projectDetails.getEarliestDate() != null && projectDetails.getLatestDate() != null )
         {
             windowMetadata = TimeWindow.of( Instant.parse( projectDetails.getEarliestDate() ),
-                                  Instant.parse( projectDetails.getLatestDate() ),
-                                  ReferenceTime.VALID_TIME,
+                                            Instant.parse( projectDetails.getLatestDate() ),
+                                            ReferenceTime.VALID_TIME,
                                             beginningLead,
                                             endingLead
-                                            //Duration.ofHours( lead ),
-                                            //Duration.ofHours( lead )
+            //Duration.ofHours( lead ),
+            //Duration.ofHours( lead )
             );
         }
         //Issue dates available
@@ -841,8 +892,8 @@ public class ConfigHelper
                                   ReferenceTime.ISSUE_TIME,
                                   beginningLead,
                                   endingLead
-                                  //Duration.ofHours( lead ),
-                                  //Duration.ofHours( lead )
+            //Duration.ofHours( lead ),
+            //Duration.ofHours( lead )
             );
         }
         //No dates available
@@ -854,8 +905,8 @@ public class ConfigHelper
                                   ReferenceTime.VALID_TIME,
                                   beginningLead,
                                   endingLead
-                                  //Duration.ofHours( lead ),
-                                  //Duration.ofHours( lead )
+            //Duration.ofHours( lead ),
+            //Duration.ofHours( lead )
             );
         }
 
@@ -960,20 +1011,20 @@ public class ConfigHelper
 
     private enum ConusZoneId
     {
-        UTC ( "+0000" ),
-        GMT ( "+0000" ),
-        EDT ( "-0400" ),
-        EST ( "-0500" ),
-        CDT ( "-0500" ),
-        CST ( "-0600" ),
-        MDT ( "-0600" ),
-        MST ( "-0700" ),
-        PDT ( "-0700" ),
-        PST ( "-0800" ),
-        AKDT ( "-0800" ),
-        AKST ( "-0900" ),
-        HADT ( "-0900" ),
-        HAST ( "-1000" );
+        UTC( "+0000" ),
+        GMT( "+0000" ),
+        EDT( "-0400" ),
+        EST( "-0500" ),
+        CDT( "-0500" ),
+        CST( "-0600" ),
+        MDT( "-0600" ),
+        MST( "-0700" ),
+        PDT( "-0700" ),
+        PST( "-0800" ),
+        AKDT( "-0800" ),
+        AKST( "-0900" ),
+        HADT( "-0900" ),
+        HAST( "-1000" );
 
         private final transient ZoneOffset zoneOffset;
 
@@ -1004,7 +1055,7 @@ public class ConfigHelper
 
     public static String getSeasonQualifier( ProjectDetails projectDetails,
                                              String databaseColumnName,
-                                             Integer timeShift)
+                                             Integer timeShift )
     {
         Objects.requireNonNull( projectDetails, "projectDetails needs to exist" );
         Objects.requireNonNull( databaseColumnName, "databaseColumnName needs to exist" );
@@ -1032,7 +1083,7 @@ public class ConfigHelper
                                                          databaseColumnName,
                                                          timeShift ) );
 
-            s.append( " + ");
+            s.append( " + " );
 
             s.append( ConfigHelper.getExtractSqlSnippet( "day",
                                                          databaseColumnName,
@@ -1045,11 +1096,11 @@ public class ConfigHelper
 
             if ( earliest.isAfter( latest ) )
             {
-                s.append( " OR ");
+                s.append( " OR " );
             }
             else
             {
-                s.append( " AND ");
+                s.append( " AND " );
             }
 
             s.append( MONTH_MULTIPLIER );
@@ -1059,19 +1110,19 @@ public class ConfigHelper
                                                          databaseColumnName,
                                                          timeShift ) );
 
-            s.append( " + ");
+            s.append( " + " );
 
             s.append( ConfigHelper.getExtractSqlSnippet( "day",
                                                          databaseColumnName,
                                                          timeShift ) );
 
-            s.append( " <= ");
+            s.append( " <= " );
 
             s.append( latest.getMonthValue() * MONTH_MULTIPLIER
                       + latest.getDayOfMonth() );
 
             s.append( " )" );
-            s.append(System.lineSeparator());
+            s.append( System.lineSeparator() );
         }
 
         LOGGER.trace( "{}", s );
@@ -1085,18 +1136,18 @@ public class ConfigHelper
     {
         StringBuilder s = new StringBuilder();
 
-        s.append( "EXTRACT( ");
+        s.append( "EXTRACT( " );
         s.append( toExtract );
         s.append( " from " );
         s.append( databaseColumnName );
 
         if ( timeShift != null )
         {
-            s.append(" + INTERVAL '1 HOUR' * ");
+            s.append( " + INTERVAL '1 HOUR' * " );
             s.append( timeShift );
         }
 
-        s.append( " )");
+        s.append( " )" );
 
         return s.toString();
     }
@@ -1135,10 +1186,11 @@ public class ConfigHelper
             throw new IllegalArgumentException( "The project configuration "
                                                 + projectConfig
                                                 + " doesn't seem to contain the"
-                                                + " source config " + config );
+                                                + " source config "
+                                                + config );
         }
     }
-       
+
     /**
      * Returns true if the input contains instantaneous data, false otherwise. A {@link TimeScaleConfig} is
      * considered instantaneous if the {@link TimeScaleConfig#getPeriod()} is 1 and the
@@ -1153,7 +1205,7 @@ public class ConfigHelper
     {
         Objects.requireNonNull( input, "Specify non-null input to check for instantanous data." );
         return input.getUnit().equals( DurationUnit.NANOS ) && input.getPeriod() == 1;
-    }    
+    }
 
     /**
      * Returns the first instance of the named metric configuration or null if no such configuration exists.
@@ -1168,14 +1220,17 @@ public class ConfigHelper
     {
         Objects.requireNonNull( projectConfig, "Specify a non-null metric configuration as input." );
         Objects.requireNonNull( metricName, "Specify a non-null metric name as input." );
-        for ( MetricConfig next : projectConfig.getMetrics().getMetric() )
+
+        for ( MetricsConfig next : projectConfig.getMetrics() )
         {
-            // Match
-            if ( next.getName().equals( metricName ) )
+            Optional<MetricConfig> nextConfig =
+                    next.getMetric().stream().filter( metric -> metric.getName().equals( metricName ) ).findFirst();
+            if ( nextConfig.isPresent() )
             {
-                return next;
+                return nextConfig.get();
             }
         }
+
         return null;
     }
 
@@ -1191,8 +1246,8 @@ public class ConfigHelper
                                                              .toUpperCase() );
         return Duration.of( timeScaleConfig.getPeriod(), unit );
     }
-    
-    
+
+
     /**
      * Returns a {@link DecimalFormat} from the input configuration or null if no formatter is required.
      * 
@@ -1211,7 +1266,7 @@ public class ConfigHelper
         }
         return decimalFormatter;
     }
-    
+
     /**
      * <p>Returns an {@link OutputTypeSelection} from the input configuration or {@link OutputTypeSelection#DEFAULT} if 
      * no selection is provided.</p> 
@@ -1229,78 +1284,17 @@ public class ConfigHelper
     public static OutputTypeSelection getOutputTypeSelection( ProjectConfig projectConfig,
                                                               DestinationConfig destinationConfig )
     {
-        Objects.requireNonNull( projectConfig, "Specify non-null project configuration." );
-        
+        Objects.requireNonNull( projectConfig, NULL_CONFIGURATION_ERROR );
+
         Objects.requireNonNull( destinationConfig, "Specify non-null destination configuration." );
-        
+
         OutputTypeSelection returnMe = OutputTypeSelection.DEFAULT;
         if ( Objects.nonNull( destinationConfig.getOutputType() ) )
         {
             returnMe = destinationConfig.getOutputType();
         }
 
-        // Obtain any override configuration
-        if ( Objects.nonNull( projectConfig.getMetrics() ) )
-        {
-            Optional<MetricConfig> first = projectConfig.getMetrics()
-                                                        .getMetric()
-                                                        .stream()
-                                                        .filter( config -> config.getName() == MetricConfigName.ALL_VALID )
-                                                        .findFirst();
-            if( first.isPresent() && Objects.nonNull( first.get().getOutputType() ) )
-            {
-                returnMe = first.get().getOutputType();
-            }
-        }
-
         return returnMe;
-    }       
-    
-    /**
-     * Returns the default {@link OutputTypeSelection} or an override if an {@link OutputTypeSelection} exists for the
-     * specified {@link MetricConstants} whose {@link MetricConstants#name()} matches a {@link MetricConfigName#name()} 
-     * in the {@link ProjectConfig} supplied.
-     * 
-     * @param projectConfig the project configuration to search for overrides
-     * @param defaultSelection the default selection
-     * @param overrideMetric the named metric to search for an override
-     * @return the default or an override
-     * @throws NullPointerException if any input is null
-     */
-
-    public static OutputTypeSelection getOutputTypeSelection( ProjectConfig projectConfig,
-                                                              OutputTypeSelection defaultSelection,
-                                                              MetricConstants overrideMetric )
-    {
-        Objects.requireNonNull( projectConfig, "Specify non-null project configuration." );
-        
-        Objects.requireNonNull( defaultSelection, "Specify a non-null default selection." );
-        
-        Objects.requireNonNull( overrideMetric, "Specify a non-null override metric." );
-        
-        OutputTypeSelection useType = defaultSelection;
-        
-        // Look for potential overrides
-        Map<MetricConfigName, MetricConfig> override = new EnumMap<>( MetricConfigName.class );
-        if( Objects.nonNull( projectConfig.getMetrics() ) )
-        {
-            projectConfig.getMetrics().getMetric().forEach( config -> override.put( config.getName(), config ) );
-        }
-        
-        // Is an override present? Find the first MetricConfigName.name() that matches MetricConstants.name()
-        Optional<MetricConfigName> match =
-                override.keySet()
-                        .stream()
-                        .filter( configName -> configName.name().equals( overrideMetric.name() ) )
-                        .findFirst();
-
-        // Set the type to an override type
-        if ( match.isPresent() && Objects.nonNull( override.get( match.get() ).getOutputType() ) )
-        {
-            useType = override.get( match.get() ).getOutputType();
-        }
-        
-        return useType;
     }
 
     /**
@@ -1332,13 +1326,13 @@ public class ConfigHelper
     public static String getVariableIdFromProjectConfig( ProjectConfig projectConfig, boolean isBaseline )
     {
         // Baseline required?
-        if( isBaseline )
+        if ( isBaseline )
         {
             // Has a baseline source
             if ( Objects.nonNull( projectConfig.getInputs().getBaseline() ) )
             {
                 // Has a baseline source with a label
-                if ( Objects.nonNull( projectConfig.getInputs().getBaseline().getLabel() ) ) 
+                if ( Objects.nonNull( projectConfig.getInputs().getBaseline().getLabel() ) )
                 {
                     return projectConfig.getInputs().getBaseline().getVariable().getLabel();
                 }
@@ -1346,7 +1340,7 @@ public class ConfigHelper
                 return projectConfig.getInputs().getBaseline().getVariable().getValue();
             }
             throw new IllegalArgumentException( "Cannot identify the variable for the baseline as the input project "
-                    + "does not contain a baseline source." );
+                                                + "does not contain a baseline source." );
         }
         // Has a left source with a label 
         if ( Objects.nonNull( projectConfig.getInputs().getLeft().getVariable().getLabel() ) )
@@ -1376,9 +1370,9 @@ public class ConfigHelper
                                              MetricOutputMetadata meta )
             throws IOException
     {
-        return getOutputPathToWrite( destinationConfig, meta, (String) null );
-    }   
-    
+        return ConfigHelper.getOutputPathToWrite( destinationConfig, meta, (String) null );
+    }
+
     /**
      * Returns a path to write from a combination of the {@link DestinationConfig}, the {@link MetricOutputMetadata} 
      * associated with the results and a {@link TimeWindow}.
@@ -1398,12 +1392,14 @@ public class ConfigHelper
     {
         Objects.requireNonNull( destinationConfig, "Enter non-null time window to establish a path for writing." );
 
-        return getOutputPathToWrite( destinationConfig, meta, timeWindow.getLatestLeadTimeInHours() + "_HOUR" );
+        return ConfigHelper.getOutputPathToWrite( destinationConfig,
+                                                  meta,
+                                                  timeWindow.getLatestLeadTimeInHours() + "_HOUR" );
     }
 
     /**
      * Returns a path to write from a combination of the {@link DestinationConfig}, the {@link MetricOutputMetadata} 
-     * associated with the results and a {@link Threshold}.
+     * associated with the results and a {@link OneOrTwoThresholds}.
      * 
      * @param destinationConfig the destination configuration
      * @param meta the metadata
@@ -1415,20 +1411,14 @@ public class ConfigHelper
 
     public static Path getOutputPathToWrite( DestinationConfig destinationConfig,
                                              MetricOutputMetadata meta,
-                                             Threshold threshold )
+                                             OneOrTwoThresholds threshold )
             throws IOException
     {
         Objects.requireNonNull( meta, "Enter non-null metadata to establish a path for writing." );
 
         Objects.requireNonNull( threshold, "Enter non-null threshold to establish a path for writing." );
 
-        String append = "";
-        // Finite threshold has a dimension
-        if( threshold.isFinite() )
-        {
-            append = "_"+meta.getInputDimension();
-        }
-        return getOutputPathToWrite( destinationConfig, meta, threshold.toStringSafe() + append );
+        return getOutputPathToWrite( destinationConfig, meta, threshold.toStringSafe() );
     }
 
     /**
@@ -1444,9 +1434,9 @@ public class ConfigHelper
      * @throws IOException if the path cannot be produced
      */
 
-    private static Path getOutputPathToWrite( DestinationConfig destinationConfig,
-                                              MetricOutputMetadata meta,
-                                              String append )
+    public static Path getOutputPathToWrite( DestinationConfig destinationConfig,
+                                             MetricOutputMetadata meta,
+                                             String append )
             throws IOException
     {
         Objects.requireNonNull( destinationConfig, "Enter non-null destination configuration to establish "
@@ -1481,7 +1471,7 @@ public class ConfigHelper
 
         // Add the metric name()
         joinElements.add( meta.getMetricID().name() );
-        
+
         // Add a non-default component name
         if ( meta.hasMetricComponentID() && MetricConstants.MAIN != meta.getMetricComponentID() )
         {
@@ -1504,67 +1494,81 @@ public class ConfigHelper
         {
             extension = ".csv";
         }
-        
+
         // Derive a sanitized name
         String safeName = URLEncoder.encode( joinElements.toString().replace( " ", "_" ) + extension, "UTF-8" );
-        
+
         return Paths.get( outputDirectory.toString(), safeName );
-    }   
-    
+    }
+
     /**
-     * Reads a source of thresholds from the input configuration and returns a map containing a set of 
+     * Reads all external sources of thresholds from the input configuration and returns a map containing a set of 
      * {@link Threshold} for each {@link FeaturePlus} in the source. If no source is provided, an empty map is
-     * returned.
+     * returned. The map stores each set of thresholds within an inner map, by metric identifier.
      * 
      * @param projectConfig the project configuration
      * @return the thresholds associated with each feature obtained from a source in the project configuration
      * @throws ProjectConfigException if the source could not be read
      */
 
-    public static Map<FeaturePlus, Set<Threshold>> readThresholdsFromProjectConfig( ProjectConfig projectConfig )
-            throws ProjectConfigException
+    public static Map<FeaturePlus, Map<MetricConfigName, ThresholdsByType>>
+            readExternalThresholdsFromProjectConfig( ProjectConfig projectConfig )
+                    throws ProjectConfigException
     {
-        Objects.requireNonNull( projectConfig, "Provide non-null project configuration with external thresholds." );
+        Objects.requireNonNull( projectConfig, NULL_CONFIGURATION_ERROR );
 
-        Map<FeaturePlus, Set<Threshold>> returnMe = new TreeMap<>();
+        Map<FeaturePlus, Map<MetricConfigName, ThresholdsByType>> returnMe = new HashMap<>();
 
         // Obtain and read thresholds
-        MetricsConfig metrics = projectConfig.getMetrics();
-        if ( Objects.nonNull( metrics ) && !metrics.getThresholds().isEmpty() )
+        List<MetricsConfig> metrics = projectConfig.getMetrics();
+        
+        // Obtain any units for non-probability thresholds
+        Dimension units = null;
+        if( Objects.nonNull( projectConfig.getPair() ) && Objects.nonNull( projectConfig.getPair().getUnit() ) )
         {
+            DataFactory dataFactory = DefaultDataFactory.getInstance();
+            units = dataFactory.getMetadataFactory().getDimension( projectConfig.getPair().getUnit() );
+        }
+        
+        for ( MetricsConfig nextGroup : metrics )
+        {
+
             // Obtain the set of external thresholds to read
-            Set<ThresholdsConfig> external = metrics.getThresholds()
-                                                    .stream()
-                                                    .filter( t -> t.getCommaSeparatedValuesOrSource() instanceof ThresholdsConfig.Source )
-                                                    .collect( Collectors.toSet() );
+            Set<ThresholdsConfig> external = nextGroup.getThresholds()
+                                                      .stream()
+                                                      .filter( t -> t.getCommaSeparatedValuesOrSource() instanceof ThresholdsConfig.Source )
+                                                      .collect( Collectors.toSet() );
 
             // Iterate the external sources and read them all into the map
             for ( ThresholdsConfig next : external )
             {
-                returnMe.putAll( ConfigHelper.readOneThresholdFromProjectConfig( projectConfig, next ) );
+                // Add or append
+                addExternalThresholdsForOneMetricConfigGroup( returnMe, nextGroup, next, units );
             }
 
         }
 
-        return Collections.unmodifiableMap( returnMe );
+        return ConfigHelper.ofUnmodifiableMap( returnMe );
     }
 
     /**
-     * Reads a {@link ThresholdConfig} and returns a corresponding {@link Set} of {@link Threshold} 
+     * Reads a {@link ThresholdConfig} and returns a corresponding {@link Set} of external {@link Threshold} 
      * by {@link FeaturePlus}.
      * 
-     * @param projectConfig the project configuration
      * @param threshold the threshold configuration
+     * @param units the optional units associated with the threshold values
      * @return a map of thresholds by feature
      * @throws ProjectConfigException if the threshold could not be read 
      */
 
-    private static Map<FeaturePlus, Set<Threshold>> readOneThresholdFromProjectConfig( ProjectConfig projectConfig,
-                                                                                       ThresholdsConfig threshold )
-            throws ProjectConfigException
+    private static Map<FeaturePlus, ThresholdsByType>
+            readOneExternalThresholdFromProjectConfig( ThresholdsConfig threshold, Dimension units )
+                    throws ProjectConfigException
     {
 
-        Map<FeaturePlus, Set<Threshold>> returnMe = new TreeMap<>();
+        Objects.requireNonNull( threshold, "Specify non-null threshold configuration." );
+
+        Map<FeaturePlus, ThresholdsByType> returnMe = new TreeMap<>();
 
         ThresholdsConfig.Source nextSource = (ThresholdsConfig.Source) threshold.getCommaSeparatedValuesOrSource();
 
@@ -1572,21 +1576,19 @@ public class ConfigHelper
         if ( Objects.isNull( nextSource.getValue() ) )
         {
             throw new ProjectConfigException( threshold, "Specify a non-null path to read for the external "
-                                                    + "source of thresholds in project '"
-                                                    + projectConfig.getLabel()
-                                                    + "'." );
+                                                         + "source of thresholds." );
         }
         // Validate format
         if ( nextSource.getFormat() != ThresholdFormat.CSV )
         {
             throw new ProjectConfigException( threshold,
                                               "Unsupported source format for thresholds '"
-                                                    + nextSource.getFormat() + "'" );
+                                                         + nextSource.getFormat() + "'" );
         }
 
         // Default to probability
         boolean isProbability =
-                Objects.isNull( threshold.getType() ) || threshold.getType() == ProbabilityOrValue.PROBABILITY;
+                Objects.isNull( threshold.getType() ) || threshold.getType() == ThresholdType.PROBABILITY;
 
         // Missing value?
         Double missing = null;
@@ -1604,22 +1606,106 @@ public class ConfigHelper
 
         try
         {
-            returnMe.putAll( CommaSeparatedReader.readThresholds( commaSeparated,
-                                                                  isProbability,
-                                                                  operator,
-                                                                  missing ) );
+            Map<FeaturePlus, Set<Threshold>> read = CommaSeparatedReader.readThresholds( commaSeparated,
+                                                                                         isProbability,
+                                                                                         operator,
+                                                                                         missing,
+                                                                                         units );
+
+            // Establish the threshold type
+            final ThresholdsByType.ThresholdType type;
+            // Default to probability
+            if ( Objects.isNull( threshold.getType() ) || threshold.getType() == ThresholdType.PROBABILITY )
+            {
+                type = ThresholdsByType.ThresholdType.PROBABILITY;
+            }
+            else if ( threshold.getType() == ThresholdType.VALUE )
+            {
+                type = ThresholdsByType.ThresholdType.VALUE;
+            }
+            else if ( threshold.getType() == ThresholdType.PROBABILITY_CLASSIFIER )
+            {
+                type = ThresholdsByType.ThresholdType.PROBABILITY_CLASSIFIER;
+            }
+            else
+            {
+                throw new ProjectConfigException( threshold, "Unexpected identifier for threshold type." );
+            }
+            // Add to map
+            read.forEach( ( key, value ) -> returnMe.put( key, ThresholdsByType.of( type, value ) ) );
         }
         catch ( IOException e )
         {
             throw new ProjectConfigException( threshold,
-                                              "Failed to read the comman separated thresholds "
-                                                    + "from '" + commaSeparated + "'.",
+                                              "Failed to read the comma separated thresholds "
+                                                         + "from '" + commaSeparated + "'.",
                                               e );
         }
 
         return returnMe;
     }
-    
+
+    /**
+     * Mutates a map of thresholds, adding the thresholds for one metric configuration group.
+     * 
+     * @param mutate the map of results to mutate
+     * @param second the second map
+     * @param units the optional units associated with the threshold values
+     * @throws ProjectConfigException 
+     * @throws NullPointerException if any input is null
+     */
+
+    private static void
+            addExternalThresholdsForOneMetricConfigGroup( Map<FeaturePlus, Map<MetricConfigName, ThresholdsByType>> mutate,
+                                                          MetricsConfig group,
+                                                          ThresholdsConfig thresholds,
+                                                          Dimension units )
+                    throws ProjectConfigException
+    {
+
+        Objects.requireNonNull( mutate, "Specify a non-null map of thresholds to mutate." );
+
+        Objects.requireNonNull( group, "Specify a non-null configuration group." );
+
+        Objects.requireNonNull( group, "Specify non-null threshold configuration." );
+
+        // Obtain the thresholds
+        Map<FeaturePlus, ThresholdsByType> thresholdsByFeature =
+                ConfigHelper.readOneExternalThresholdFromProjectConfig( thresholds, units );
+
+        // Iterate the thresholds
+        for ( Entry<FeaturePlus, ThresholdsByType> nextEntry : thresholdsByFeature.entrySet() )
+        {
+            // Iterate the metrics
+            for ( MetricConfig nextMetric : group.getMetric() )
+            {
+                // Feature exists in the uber map: mutate it
+                if ( mutate.containsKey( nextEntry.getKey() ) )
+                {
+                    Map<MetricConfigName, ThresholdsByType> nextMap = mutate.get( nextEntry.getKey() );
+                    // Metric exists, replace thresholds for that metric with union thresholds
+                    if ( nextMap.containsKey( nextMetric.getName() ) )
+                    {
+                        ThresholdsByType union = nextMap.get( nextMetric.getName() ).union( nextEntry.getValue() );
+                        nextMap.put( nextMetric.getName(), union );
+                    }
+                    // Metric does not exist, add it
+                    else
+                    {
+                        nextMap.put( nextMetric.getName(), nextEntry.getValue() );
+                    }
+                }
+                // New feature: add a new map
+                else
+                {
+                    Map<MetricConfigName, ThresholdsByType> nextMap = new EnumMap<>( MetricConfigName.class );
+                    nextMap.put( nextMetric.getName(), nextEntry.getValue() );
+                    mutate.put( nextEntry.getKey(), nextMap );
+                }
+            }
+        }
+    }
+
     /**
      * Maps between threshold operators in {@link ThresholdOperator} and those in {@link Operator}. The default is
      * {@link Operator#GREATER} when the input is null.
@@ -1644,30 +1730,119 @@ public class ConfigHelper
                 return Operator.LESS_EQUAL;
             case GREATER_THAN_OR_EQUAL_TO:
                 return Operator.GREATER_EQUAL;
-            default: return Operator.GREATER;
+            default:
+                return Operator.GREATER;
         }
-    }    
-    
+    }
+
     /**
      * Returns a list of output formats in the input configuration that can be mutated incrementally.
      * 
      * @param projectConfig the project configuration
      * @return the output formats in the configuration that can be mutated incrementally or the empty set
+     * @throws NullPointerException if the input is null
      */
 
     public static Set<DestinationType> getIncrementalFormats( ProjectConfig projectConfig )
     {
+        Objects.requireNonNull( projectConfig, NULL_CONFIGURATION_ERROR );
+
         Outputs output = projectConfig.getOutputs();
 
         // The only incremental type currently supported is DestinationType.NETCDF
         if ( Objects.nonNull( output )
              && output.getDestination().stream().anyMatch( type -> type.getType() == DestinationType.NETCDF ) )
         {
-            Collections.unmodifiableSet( new HashSet<>( Arrays.asList( DestinationType.NETCDF ) ) );
+            return Collections.unmodifiableSet( new HashSet<>( Arrays.asList( DestinationType.NETCDF ) ) );
         }
 
         // Return empty set
         return Collections.emptySet();
     }
+
+    /**
+     * Returns <code>true</code> if the input configuration has time-series metrics, otherwise <code>false</code>.
+     * 
+     * @param projectConfig the project configuration
+     * @return true if the input configuration has time-series metrics, otherwise false
+     */
+
+    public static boolean hasTimeSeriesMetrics( ProjectConfig projectConfig )
+    {
+        Objects.requireNonNull( projectConfig, NULL_CONFIGURATION_ERROR );
+
+        return projectConfig.getMetrics().stream().anyMatch( next -> !next.getTimeSeriesMetric().isEmpty() );
+    }
+
+    /**
+     * Returns a set of writers to be shared across instances of writing. Returns a {@link SharedWriters} that 
+     * contains one writer for each supported incremental data format and type.
+     *
+     * @param projectConfig the project configuration
+     * @param featureCount the number of features
+     * @param timeStepCount the number of time steps
+     * @param leadCount the number of lead times
+     * @param thresholdCount the number of thresholds
+     * @param metrics the resolved DoubleScore metrics to write
+     * @return a pool of shared writers
+     * @throws IOException if one or more writers could not be created
+     * @throws ProjectConfigException if the project configuration is invalid
+     */
+
+    public static SharedWriters getSharedWriters( ProjectConfig projectConfig,
+                                                  int featureCount,
+                                                  int timeStepCount,
+                                                  int leadCount,
+                                                  int thresholdCount,
+                                                  Set<MetricConstants> metrics )
+            throws IOException, ProjectConfigException
+    {
+        Objects.requireNonNull( projectConfig, NULL_CONFIGURATION_ERROR );
+        WriterHelper.validateProjectForWriting( projectConfig );
+
+        SharedWritersBuilder builder = new SharedWritersBuilder();
+
+        // Add the DestinationType.NETCDF format
+        if ( ConfigHelper.getIncrementalFormats( projectConfig ).contains( DestinationType.NETCDF ) )
+        {
+            // Set the writer
+            builder.setNetcdfDoublescoreWriter(
+                    NetcdfDoubleScoreWriter.of( projectConfig,
+                                                featureCount,
+                                                timeStepCount,
+                                                leadCount,
+                                                thresholdCount,
+                                                metrics ) );
+        }
+
+        return builder.build();
+    }
+
+
+    /**
+     * Renders a map of collections unmodifiable. All collections in the container are rendered unmodifiable.
+     * 
+     * @param <S> the outer key type
+     * @param <T> the inner key type
+     * @param <U> the inner stored type
+     * @param mutable the possibly mutable input
+     * @return the unmodifiable map
+     */
+
+    private static <S, T, U> Map<S, Map<T, U>> ofUnmodifiableMap( Map<S, Map<T, U>> mutable )
+    {
+        Objects.requireNonNull( mutable, "Specify non-null input to render unmodifiable." );
+
+        Map<S, Map<T, U>> returnMe = new HashMap<>();
+
+        for ( Entry<S, Map<T, U>> outerEntry : mutable.entrySet() )
+        {
+            Map<T, U> nextMap = new HashMap<>( outerEntry.getValue() );
+            returnMe.put( outerEntry.getKey(), Collections.unmodifiableMap( nextMap ) );
+        }
+
+        return Collections.unmodifiableMap( returnMe );
+    }
+
 
 }

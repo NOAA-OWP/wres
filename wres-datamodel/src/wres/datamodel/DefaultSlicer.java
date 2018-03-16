@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
 
+import wres.datamodel.Threshold.ThresholdComposition;
 import wres.datamodel.inputs.MetricInputSliceException;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
@@ -294,13 +295,13 @@ class DefaultSlicer implements Slicer
             filterByMetricComponent( MetricOutputMapByTimeAndThreshold<T> input )
     {
         Objects.requireNonNull( input, NULL_INPUT );
-        Map<MetricConstants, Map<Pair<TimeWindow, Threshold>, T>> sourceMap =
+        Map<MetricConstants, Map<Pair<TimeWindow, OneOrTwoThresholds>, T>> sourceMap =
                 new EnumMap<>( MetricConstants.class );
         input.forEach( ( key, value ) -> {
             Set<MetricConstants> components = value.getComponents();
             for ( MetricConstants next : components )
             {
-                Map<Pair<TimeWindow, Threshold>, T> nextMap = null;
+                Map<Pair<TimeWindow, OneOrTwoThresholds>, T> nextMap = null;
                 if ( sourceMap.containsKey( next ) )
                 {
                     nextMap = sourceMap.get( next );
@@ -463,17 +464,19 @@ class DefaultSlicer implements Slicer
     public Threshold getQuantileFromProbability( Threshold threshold, double[] sorted, Integer digits )
     {
         Objects.requireNonNull( threshold, "Specify a non-null probability threshold." );
+        
         Objects.requireNonNull( sorted, "Specify a non-null array of sorted values." );
-        if ( !threshold.hasProbabilityValues() )
+        
+        if ( threshold.getType() != ThresholdComposition.PROBABILITY )
         {
-            throw new IllegalArgumentException( "The input threshold must contain probability values." );
+            throw new IllegalArgumentException( "The input threshold must be a probability threshold." );
         }
         if ( sorted.length == 0 )
         {
             throw new IllegalArgumentException( "Cannot compute the quantile from empty input." );
         }
         DoubleUnaryOperator qF = getQuantileFunction( sorted );
-        Double first = qF.applyAsDouble( threshold.getThresholdProbability() );
+        Double first = qF.applyAsDouble( threshold.getProbabilities().first() );
         if ( Objects.nonNull( digits ) )
         {
             first = round().apply( first, digits );
@@ -481,18 +484,17 @@ class DefaultSlicer implements Slicer
         Double second = null;
         if ( threshold.hasBetweenCondition() )
         {
-            second = qF.applyAsDouble( threshold.getThresholdUpperProbability() );
+            second = qF.applyAsDouble( threshold.getProbabilities().second() );
             if ( Objects.nonNull( digits ) )
             {
                 second = round().apply( second, digits );
             }
         }
-        return dataFac.ofQuantileThreshold( first,
-                                            second,
-                                            threshold.getThresholdProbability(),
-                                            threshold.getThresholdUpperProbability(),
+        return dataFac.ofQuantileThreshold( SafeOneOrTwoDoubles.of( first, second ),
+                                            threshold.getProbabilities(),
                                             threshold.getCondition(),
-                                            threshold.getLabel() );
+                                            threshold.getLabel(),
+                                            threshold.getUnits() );
     }
 
     /**

@@ -27,8 +27,8 @@ import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.Threshold;
 import wres.datamodel.Threshold.Operator;
+import wres.datamodel.OneOrTwoThresholds;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
@@ -113,10 +113,11 @@ public class CommaSeparatedDiagramOutputTest extends CommaSeparatedWriterTest
 
 
         // Fake lead time and threshold
-        Pair<TimeWindow, Threshold> mapKeyByLeadThreshold =
-                Pair.of( timeOne, outputFactory.ofQuantileThreshold( 11.94128,
-                                                                     0.9,
-                                                                     Operator.GREATER_EQUAL ) );
+        Pair<TimeWindow, OneOrTwoThresholds> mapKeyByLeadThreshold =
+                Pair.of( timeOne,
+                         OneOrTwoThresholds.of( outputFactory.ofQuantileThreshold( outputFactory.ofOneOrTwoDoubles( 11.94128 ),
+                                                                           outputFactory.ofOneOrTwoDoubles( 0.9 ),
+                                                                           Operator.GREATER_EQUAL ) ) );
 
         outputBuilder.addMultiVectorOutput( mapKeyByLeadThreshold,
                                             outputMapByMetricFuture );
@@ -128,7 +129,7 @@ public class CommaSeparatedDiagramOutputTest extends CommaSeparatedWriterTest
         ProjectConfig projectConfig = getMockedProjectConfig( feature );
 
         // Begin the actual test now that we have constructed dependencies.
-        CommaSeparatedDiagramWriter.of( projectConfig ).accept( output.getMultiVectorOutput() ); 
+        CommaSeparatedDiagramWriter.of( projectConfig ).accept( output.getMultiVectorOutput() );
 
         // read the file, verify it has what we wanted:
         Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ),

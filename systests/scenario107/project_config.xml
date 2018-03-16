@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="scenario107">
+
+    <inputs>
+        <left label="">
+            <type>observations</type>
+            <source format="PI-XML" missingValue="-999.0"
+                unit="">../data/abrfcExample/LGNN5_QME.xml</source>
+            <variable label = "STREAMFLOW">QME</variable>
+            <existingTimeScale>
+                <function>avg</function>
+                <period>24</period>
+                <unit>hours</unit>
+            </existingTimeScale>
+        </left>
+        <right label="HEFS" >
+            <type>ensemble forecasts</type>
+            <source format="PI-XML" missingValue="-999.0"
+                unit="">../data/abrfcExample/LGNN5_hefs_flow_1yr.tgz</source>
+            <variable label = "STREAMFLOW">QINE</variable>
+            <existingTimeScale>
+                <function>avg</function>
+                <period>1</period>
+                <unit>nanos</unit>
+            </existingTimeScale>
+        </right>
+        <baseline label="ESP" >
+            <type>ensemble forecasts</type>
+            <source format="PI-XML" missingValue="-999.0"
+                unit="">../data/abrfcExample/LGNN5_hefs-mefp_flow_1yr.tgz</source>
+            <variable label = "STREAMFLOW">QINE</variable>
+            <existingTimeScale>
+                <function>avg</function>
+                <period>1</period>
+                <unit>nanos</unit>
+            </existingTimeScale>
+        </baseline>
+
+    </inputs>
+
+    <pair label="Pairs by location and lead time"> 
+        <unit>CMS</unit>
+        <feature locationId="LGNN5" />
+        <leadHours minimum="1" maximum="48" />
+
+        <desiredTimeScale>
+            <function>avg</function>
+            <period>24</period>
+            <unit>hours</unit>
+        </desiredTimeScale>
+    </pair>
+
+    <metrics>
+        <thresholds>
+            <commaSeparatedValues>0.9,0.95</commaSeparatedValues>
+            <operator>greater than or equal to</operator>
+        </thresholds>
+        <thresholds>
+            <type>probability classifier</type>
+            <commaSeparatedValues>0.25,0.5</commaSeparatedValues>
+        </thresholds>
+        <metric><name>mean error</name></metric>     
+        <metric><name>contingency table</name></metric>     
+        <metric><name>probability of detection</name></metric>  
+        <metric><name>relative operating characteristic diagram</name></metric>     
+    </metrics>
+    <outputs>
+        <destination type="numeric" decimalFormat="0.000000">
+            <path>output/</path>
+	    <outputType>threshold lead</outputType>
+        </destination>
+        <destination type="pairs" decimalFormat="0.000000">
+            <path>output/</path>
+        </destination>
+        <destination type="graphic">
+            <path>output/</path>
+            <outputType>threshold lead</outputType>
+            <graphical width="800" height="600"/>
+        </destination>
+    </outputs>
+
+</project>

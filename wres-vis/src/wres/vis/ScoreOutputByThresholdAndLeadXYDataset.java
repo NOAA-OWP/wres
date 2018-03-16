@@ -52,7 +52,7 @@ public class ScoreOutputByThresholdAndLeadXYDataset extends
         final List<MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>> data = new ArrayList<>();
         for(final TimeWindow lead: rawData.setOfTimeWindowKey())
         {
-            data.add(rawData.filterByTime(lead));
+            data.add( rawData.filterByTime( lead ) );
         }
         setPlotData(data);
     }
@@ -67,7 +67,7 @@ public class ScoreOutputByThresholdAndLeadXYDataset extends
     public Number getX(final int series, final int item)
     {
         //Cannot allow all data (infinite) threshold. Use lower bound if this is a "BETWEEN" threshold
-        final double test = getPlotData().get(series).getKey(item).getRight().getThreshold();
+        final double test = getPlotData().get(series).getKey(item).getRight().first().getValues().first();
         if(Double.isInfinite(test))
         {
             return Double.MIN_VALUE; //JFreeChart missing protocol is to return finite double for X and null for Y
