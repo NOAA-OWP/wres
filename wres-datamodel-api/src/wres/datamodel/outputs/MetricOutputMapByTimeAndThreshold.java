@@ -3,13 +3,13 @@ package wres.datamodel.outputs;
 import java.util.Set;
 
 import wres.datamodel.Threshold;
-import wres.datamodel.Thresholds;
+import wres.datamodel.OneOrTwoThresholds;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
 
 /**
  * A sorted map of {@link MetricOutput} associated with a single metric. The results are stored by {@link TimeWindow}
- * and {@link Thresholds}.
+ * and {@link OneOrTwoThresholds}.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
@@ -17,7 +17,7 @@ import wres.datamodel.metadata.TimeWindow;
  */
 
 public interface MetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>>
-        extends MetricOutputMapWithBiKey<TimeWindow, Thresholds, T>
+        extends MetricOutputMapWithBiKey<TimeWindow, OneOrTwoThresholds, T>
 {
 
     /**
@@ -41,7 +41,7 @@ public interface MetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>>
      * @throws MetricOutputException if the map could not be filtered
      */
 
-    default MetricOutputMapByTimeAndThreshold<T> filterByThreshold( final Thresholds threshold )
+    default MetricOutputMapByTimeAndThreshold<T> filterByThreshold( final OneOrTwoThresholds threshold )
     {
         return (MetricOutputMapByTimeAndThreshold<T>) filterBySecondKey( threshold );
     }
@@ -58,12 +58,12 @@ public interface MetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>>
     }
 
     /**
-     * Return the {@link Thresholds} keys.
+     * Return the {@link OneOrTwoThresholds} keys.
      * 
      * @return a view of the threshold keys
      */
 
-    default Set<Thresholds> setOfThresholdKey()
+    default Set<OneOrTwoThresholds> setOfThresholdKey()
     {
         return setOfSecondKey();
     }
@@ -89,7 +89,7 @@ public interface MetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>>
     Set<TimeWindow> setOfTimeWindowKeyByLeadTime();
     
     /**
-     * Returns all {@link Threshold} stored against {@link Thresholds#first()} for each entry in the map.
+     * Returns all {@link Threshold} stored against {@link OneOrTwoThresholds#first()} for each entry in the map.
      * 
      * @return the set of thresholds in the first position of the threshold composition
      */
@@ -97,7 +97,7 @@ public interface MetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>>
     Set<Threshold> setOfThresholdOne();    
     
     /**
-     * Returns all {@link Threshold} stored against {@link Thresholds#second()} for each entry in the map.
+     * Returns all {@link Threshold} stored against {@link OneOrTwoThresholds#second()} for each entry in the map.
      * 
      * @return the set of thresholds in the second position of the threshold composition, such as the empty set
      */
@@ -116,7 +116,7 @@ public interface MetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>>
     MetricOutputMapByTimeAndThreshold<T> filterByLeadTime( TimeWindow window );   
     
     /**
-     * Returns a sub-map of entries whose {@link Thresholds} contain a {@link Thresholds#first()} that matches the 
+     * Returns a sub-map of entries whose {@link OneOrTwoThresholds} contain a {@link OneOrTwoThresholds#first()} that matches the 
      * specified {@link Threshold}. 
      * 
      * @param threshold the threshold on which to filter
@@ -127,7 +127,7 @@ public interface MetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>>
     MetricOutputMapByTimeAndThreshold<T> filterByThresholdOne( final Threshold threshold );
     
     /**
-     * Returns a sub-map of entries whose {@link Thresholds} contain a {@link Thresholds#second()} that matches the 
+     * Returns a sub-map of entries whose {@link OneOrTwoThresholds} contain a {@link OneOrTwoThresholds#second()} that matches the 
      * specified {@link Threshold}.  
      * 
      * @param threshold the threshold on which to filter

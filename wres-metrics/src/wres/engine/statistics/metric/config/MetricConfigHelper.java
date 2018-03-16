@@ -351,7 +351,7 @@ public final class MetricConfigHelper
         Objects.requireNonNull( dataFactory, NULL_DATA_FACTORY_ERROR );
 
         Set<Threshold> returnMe = new HashSet<>();
-        
+
         // Iterate and transform
         for ( ThresholdsConfig next : thresholds )
         {
@@ -566,14 +566,18 @@ public final class MetricConfigHelper
             {
                 if ( areProbs )
                 {
-                    returnMe.add( dataFactory.ofProbabilityThreshold( addMe.get( i ),
-                                                                      addMe.get( i + 1 ),
+                    returnMe.add( dataFactory.ofProbabilityThreshold( dataFactory.ofOneOrTwoDoubles( addMe.get( i ),
+                                                                                                     addMe.get( i
+                                                                                                                + 1 ) ),
                                                                       oper,
                                                                       units ) );
                 }
                 else
                 {
-                    returnMe.add( dataFactory.ofThreshold( addMe.get( i ), addMe.get( i + 1 ), oper, units ) );
+                    returnMe.add( dataFactory.ofThreshold( dataFactory.ofOneOrTwoDoubles( addMe.get( i ),
+                                                                                          addMe.get( i + 1 ) ),
+                                                           oper,
+                                                           units ) );
                 }
             }
         }
@@ -582,13 +586,15 @@ public final class MetricConfigHelper
         {
             if ( areProbs )
             {
-                addMe.forEach( threshold -> returnMe.add( dataFactory.ofProbabilityThreshold( threshold,
+                addMe.forEach( threshold -> returnMe.add( dataFactory.ofProbabilityThreshold( dataFactory.ofOneOrTwoDoubles( threshold ),
                                                                                               oper,
                                                                                               units ) ) );
             }
             else
             {
-                addMe.forEach( threshold -> returnMe.add( dataFactory.ofThreshold( threshold, oper, units ) ) );
+                addMe.forEach( threshold -> returnMe.add( dataFactory.ofThreshold( dataFactory.ofOneOrTwoDoubles( threshold ),
+                                                                                   oper,
+                                                                                   units ) ) );
             }
         }
 
@@ -930,7 +936,7 @@ public final class MetricConfigHelper
                                                          null,
                                                          dataFactory,
                                                          ThresholdType.PROBABILITY_CLASSIFIER ) );
-        
+
         // Filter by input type
         Set<MetricConstants> metricsToAdd = new HashSet<>();
 

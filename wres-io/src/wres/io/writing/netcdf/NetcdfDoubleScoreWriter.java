@@ -31,7 +31,7 @@ import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.Thresholds;
+import wres.datamodel.OneOrTwoThresholds;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MapKey;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
@@ -731,11 +731,11 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
         Variable thresholdNames =
                 NetcdfDoubleScoreWriter.getVariableOrDie( writer, "threshold_name" );
 
-        for ( Thresholds t : output.setOfThresholdKey() )
+        for ( OneOrTwoThresholds t : output.setOfThresholdKey() )
         {
             // TODO Threshold should let me know which one was chosen by user,
             // that way no need to go through all these four states.
-            if ( t.first().hasProbabilityValues() )
+            if ( t.first().hasProbabilities() )
             {
                 LOGGER.debug( "threshold first has probability values" );
                 this.getOrAddValueToVariable( writer,
@@ -750,7 +750,7 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                                               t.first().getThreshold() );
             }
 
-            if ( t.hasTwo() && t.second().hasProbabilityValues() )
+            if ( t.hasTwo() && t.second().hasProbabilities() )
             {
                 LOGGER.debug( "threshold second has probability values" );
                 this.getOrAddValueToVariable( writer,

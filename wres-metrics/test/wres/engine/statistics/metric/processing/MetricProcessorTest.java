@@ -193,7 +193,7 @@ public final class MetricProcessorTest
     {
         final DataFactory metIn = DefaultDataFactory.getInstance();
         final MetadataFactory metFac = metIn.getMetadataFactory();
-        
+
         //Single-valued case
         String configPathSingleValued = "testinput/metricProcessorTest/test4SingleValued.xml";
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathSingleValued ) ).getProjectConfig();
@@ -201,7 +201,8 @@ public final class MetricProcessorTest
                 MetricFactory.getInstance( metIn )
                              .ofMetricProcessorByTimeSingleValuedPairs( config,
                                                                         MetricOutputGroup.values() );
-        Threshold firstTest = metIn.ofThreshold( 0.5, Operator.GREATER, metFac.getDimension( "CMS" ) );
+        Threshold firstTest =
+                metIn.ofThreshold( metIn.ofOneOrTwoDoubles( 0.5 ), Operator.GREATER, metFac.getDimension( "CMS" ) );
         Set<MetricConstants> firstSet =
                 processor.doNotComputeTheseMetricsForThisThreshold( processor.thresholdsByMetric,
                                                                     MetricInputGroup.SINGLE_VALUED,
@@ -211,7 +212,8 @@ public final class MetricProcessorTest
                     + "'",
                     firstSet.equals( new HashSet<>( Arrays.asList( MetricConstants.MEAN_SQUARE_ERROR,
                                                                    MetricConstants.MEAN_ABSOLUTE_ERROR ) ) ) );
-        Threshold secondTest = metIn.ofThreshold( 0.75, Operator.GREATER, metFac.getDimension( "CMS" ) );
+        Threshold secondTest =
+                metIn.ofThreshold( metIn.ofOneOrTwoDoubles( 0.75 ), Operator.GREATER, metFac.getDimension( "CMS" ) );
         Set<MetricConstants> secondSet =
                 processor.doNotComputeTheseMetricsForThisThreshold( processor.thresholdsByMetric,
                                                                     MetricInputGroup.SINGLE_VALUED,
@@ -219,8 +221,9 @@ public final class MetricProcessorTest
                                                                     secondTest );
         assertTrue( "Unexpected set of metrics to ignore for threshold '" + secondTest
                     + "'",
-                    secondSet.equals( new HashSet<>( Arrays.asList( ) ) ) );
-        Threshold thirdTest = metIn.ofThreshold( 0.83, Operator.GREATER, metFac.getDimension( "CMS" ) );
+                    secondSet.equals( new HashSet<>( Arrays.asList() ) ) );
+        Threshold thirdTest =
+                metIn.ofThreshold( metIn.ofOneOrTwoDoubles( 0.83 ), Operator.GREATER, metFac.getDimension( "CMS" ) );
         Set<MetricConstants> thirdSet =
                 processor.doNotComputeTheseMetricsForThisThreshold( processor.thresholdsByMetric,
                                                                     MetricInputGroup.SINGLE_VALUED,
@@ -229,8 +232,9 @@ public final class MetricProcessorTest
         assertTrue( "Unexpected set of metrics to ignore for threshold '" + thirdTest
                     + "'",
                     thirdSet.equals( new HashSet<>( Arrays.asList( MetricConstants.MEAN_SQUARE_ERROR,
-                                                                   MetricConstants.MEAN_ABSOLUTE_ERROR) ) ) );
-        Threshold fourthTest = metIn.ofThreshold( 0.9, Operator.GREATER, metFac.getDimension( "CMS" ) );
+                                                                   MetricConstants.MEAN_ABSOLUTE_ERROR ) ) ) );
+        Threshold fourthTest =
+                metIn.ofThreshold( metIn.ofOneOrTwoDoubles( 0.9 ), Operator.GREATER, metFac.getDimension( "CMS" ) );
         Set<MetricConstants> fourthSet =
                 processor.doNotComputeTheseMetricsForThisThreshold( processor.thresholdsByMetric,
                                                                     MetricInputGroup.SINGLE_VALUED,
@@ -259,7 +263,7 @@ public final class MetricProcessorTest
             throws IOException, MetricConfigurationException, MetricParameterException, MetricProcessorException
     {
         final DataFactory metIn = DefaultDataFactory.getInstance();
-        
+
         //Single-valued case
         String configPathSingleValued = "testinput/metricProcessorTest/test5Ensemble.xml";
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathSingleValued ) ).getProjectConfig();
@@ -267,7 +271,7 @@ public final class MetricProcessorTest
                 MetricFactory.getInstance( metIn )
                              .ofMetricProcessorByTimeEnsemblePairs( config,
                                                                     MetricOutputGroup.values() );
-        Threshold firstTest = metIn.ofProbabilityThreshold( 0.1, Operator.GREATER );
+        Threshold firstTest = metIn.ofProbabilityThreshold( metIn.ofOneOrTwoDoubles( 0.1 ), Operator.GREATER );
         Set<MetricConstants> firstSet =
                 processor.doNotComputeTheseMetricsForThisThreshold( processor.thresholdsByMetric,
                                                                     MetricInputGroup.SINGLE_VALUED,
@@ -278,8 +282,8 @@ public final class MetricProcessorTest
                     + "'",
                     firstSet.equals( new HashSet<>( Arrays.asList( MetricConstants.MEAN_ERROR,
                                                                    MetricConstants.MEAN_SQUARE_ERROR ) ) ) );
-        
-        Threshold secondTest = metIn.ofProbabilityThreshold( 0.25, Operator.GREATER );
+
+        Threshold secondTest = metIn.ofProbabilityThreshold( metIn.ofOneOrTwoDoubles( 0.25 ), Operator.GREATER );
         Set<MetricConstants> secondSet =
                 processor.doNotComputeTheseMetricsForThisThreshold( processor.thresholdsByMetric,
                                                                     MetricInputGroup.SINGLE_VALUED,
@@ -289,8 +293,8 @@ public final class MetricProcessorTest
                     + "'",
                     secondSet.equals( new HashSet<>( Arrays.asList( MetricConstants.MEAN_ERROR,
                                                                     MetricConstants.MEAN_SQUARE_ERROR ) ) ) );
-        
-        Threshold thirdTest = metIn.ofProbabilityThreshold( 0.5, Operator.GREATER );
+
+        Threshold thirdTest = metIn.ofProbabilityThreshold( metIn.ofOneOrTwoDoubles( 0.5 ), Operator.GREATER );
         Set<MetricConstants> thirdSet =
                 processor.doNotComputeTheseMetricsForThisThreshold( processor.thresholdsByMetric,
                                                                     MetricInputGroup.DISCRETE_PROBABILITY,
@@ -299,8 +303,8 @@ public final class MetricProcessorTest
         assertTrue( "Unexpected set of metrics to ignore for threshold '" + thirdTest
                     + "'",
                     thirdSet.equals( new HashSet<>( Arrays.asList( MetricConstants.BRIER_SKILL_SCORE ) ) ) );
-        
-        Threshold fourthTest = metIn.ofProbabilityThreshold( 0.925, Operator.GREATER );
+
+        Threshold fourthTest = metIn.ofProbabilityThreshold( metIn.ofOneOrTwoDoubles( 0.925 ), Operator.GREATER );
         Set<MetricConstants> fourthSet =
                 processor.doNotComputeTheseMetricsForThisThreshold( processor.thresholdsByMetric,
                                                                     MetricInputGroup.ENSEMBLE,
@@ -308,7 +312,7 @@ public final class MetricProcessorTest
                                                                     fourthTest );
         assertTrue( "Unexpected set of metrics to ignore for threshold '" + fourthTest
                     + "'",
-                    fourthSet.equals( new HashSet<>( Arrays.asList( ) ) ) );
+                    fourthSet.equals( new HashSet<>( Arrays.asList() ) ) );
     }
 
 

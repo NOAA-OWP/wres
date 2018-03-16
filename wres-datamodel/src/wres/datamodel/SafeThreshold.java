@@ -6,35 +6,21 @@ import java.util.Objects;
  * Concrete implementation of a {@link Threshold}.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 class SafeThreshold implements Threshold
 {
 
     /**
-     * The threshold value
+     * The real values or null.
      */
 
-    private final Double threshold;
+    private final SafeOneOrTwoDoubles values;
 
     /**
-     * The upper threshold value or null.
+     * The probability values or null.
      */
 
-    private final Double thresholdUpper;
-
-    /**
-     * The probability associated with the quantile.
-     */
-
-    private final Double probability;
-
-    /**
-     * The probability associated with the upper quantile or null.
-     */
-
-    private final Double probabilityUpper;
+    private final SafeOneOrTwoDoubles probabilities;
 
     /**
      * The threshold condition.
@@ -55,9 +41,21 @@ class SafeThreshold implements Threshold
     private final Dimension units;
 
     @Override
+    public OneOrTwoDoubles getValues()
+    {
+        return values;
+    }
+
+    @Override
+    public OneOrTwoDoubles getProbabilities()
+    {
+        return probabilities;
+    }
+
+    @Override
     public Double getThreshold()
     {
-        return threshold;
+        return values.first();
     }
 
     @Override
@@ -69,19 +67,19 @@ class SafeThreshold implements Threshold
     @Override
     public Double getThresholdUpper()
     {
-        return thresholdUpper;
+        return values.second();
     }
 
     @Override
     public Double getThresholdProbability()
     {
-        return probability;
+        return probabilities.first();
     }
 
     @Override
     public Double getThresholdUpperProbability()
     {
-        return probabilityUpper;
+        return probabilities.second();
     }
 
     @Override
@@ -99,7 +97,7 @@ class SafeThreshold implements Threshold
     @Override
     public boolean hasBetweenCondition()
     {
-        return condition.equals( Operator.BETWEEN );
+        return this.getCondition().equals( Operator.BETWEEN );
     }
 
     @Override
@@ -111,121 +109,102 @@ class SafeThreshold implements Threshold
         }
 
         final SafeThreshold in = (SafeThreshold) o;
-        boolean first = hasOrdinaryValues() == in.hasOrdinaryValues()
-                        && hasProbabilityValues() == in.hasProbabilityValues();
+        boolean first = this.hasValues() == in.hasValues()
+                        && this.hasProbabilities() == in.hasProbabilities();
         boolean second = hasLabel() == in.hasLabel()
-                         && getCondition().equals( in.getCondition() )
-                         && hasUnits() == in.hasUnits();
+                         && this.getCondition().equals( in.getCondition() )
+                         && this.hasUnits() == in.hasUnits();
 
-        return first && second && areOptionalStatesEqual( in );
+        return first && second && this.areOptionalStatesEqual( in );
     }
 
     @Override
     public int hashCode()
     {
-        int returnMe = 17;
-        if ( hasOrdinaryValues() )
-        {
-            returnMe = returnMe * 37 + threshold.hashCode();
-            returnMe = returnMe * 37 + condition.hashCode();
-            if ( hasBetweenCondition() )
-            {
-                returnMe = returnMe * 37 + thresholdUpper.hashCode();
-            }
-        }
-        if ( hasProbabilityValues() )
-        {
-            returnMe = returnMe * 37 + probability.hashCode();
-            if ( hasBetweenCondition() )
-            {
-                returnMe = returnMe * 37 + probabilityUpper.hashCode();
-            }
-        }
-        if ( hasLabel() )
-        {
-            returnMe = returnMe * 37 + label.hashCode();
-        }
-        if ( hasUnits() )
-        {
-            returnMe = returnMe * 37 + units.hashCode();
-        }
-
-        return returnMe;
+        return Objects.hash( values, probabilities, condition, label, units );
     }
 
     @Override
     public String toString()
     {
-        Double testInfinite = Double.valueOf( Double.NEGATIVE_INFINITY );
+
         // Label not used for all data
-        if ( testInfinite.equals( threshold ) || testInfinite.equals( probability ) )
+        if ( !this.isFinite() )
         {
             return "All data";
         }
         String append = "";
-        if ( hasLabel() )
+        if ( this.hasLabel() )
         {
-            append = " (" + label + ")";
+            append = " (" + this.getLabel() + ")";
         }
 
-        final String c = getConditionID();
+        final String c = this.getConditionID();
 
         String units = "";
-        if( hasUnits() )
+        if ( this.hasUnits() )
         {
             units = " " + this.getUnits().toString();
         }
 
         // Quantile
-        if ( hasOrdinaryValues() && hasProbabilityValues() )
+        if ( this.isQuantile() )
         {
             String common = " [Pr = ";
-            if ( hasBetweenCondition() )
+            if ( this.hasBetweenCondition() )
             {
-                return ">= " + threshold
+                return ">= " + this.getValues().first()
                        + units
                        + common
-                       + probability
+                       + this.getProbabilities().first()
                        + "] AND < "
-                       + thresholdUpper
+                       + this.getValues().second()
                        + units
                        + common
-                       + probabilityUpper
+                       + this.getProbabilities().second()
                        + "]"
                        + append;
             }
-            return c + threshold + units + common + probability + "]" + append;
+            return c + this.getValues().first() + units + common + this.getProbabilities().first() + "]" + append;
         }
         // Real value only
-        else if ( hasOrdinaryValues() )
+        else if ( this.hasValues() )
         {
-            if ( hasBetweenCondition() )
+            if ( this.hasBetweenCondition() )
             {
-                return ">= " + threshold + units + " AND < " + thresholdUpper + units + append;
+                return ">= " + this.getValues().first()
+                       + units
+                       + " AND < "
+                       + this.getValues().second()
+                       + units
+                       + append;
             }
-            return c + threshold + units + append;
+            return c + this.getValues().first() + units + append;
         }
         // Probability only
         else
         {
-            if ( hasBetweenCondition() )
+            if ( this.hasBetweenCondition() )
             {
-                return "Pr >= " + probability + " AND < " + probabilityUpper + append;
+                return "Pr >= " + this.getProbabilities().first()
+                       + " AND < "
+                       + this.getProbabilities().second()
+                       + append;
             }
-            return "Pr " + c + probability + append;
+            return "Pr " + c + this.getProbabilities().first() + append;
         }
     }
 
-    @Override 
+    @Override
     public String toStringWithoutUnits()
     {
-        if( hasUnits() )
+        if ( hasUnits() )
         {
             return toString().replaceAll( " " + this.getUnits().toString(), "" );
         }
         return toString();
     }
-    
+
     @Override
     public String toStringSafe()
     {
@@ -266,9 +245,9 @@ class SafeThreshold implements Threshold
         }
 
         //Compare ordinary values
-        if ( hasOrdinaryValues() )
+        if ( hasValues() )
         {
-            returnMe = compareOrdinaryValues( o );
+            returnMe = this.getValues().compareTo( o.getValues() );
             if ( returnMe != 0 )
             {
                 return returnMe;
@@ -276,9 +255,9 @@ class SafeThreshold implements Threshold
         }
 
         //Compare probability values
-        if ( hasProbabilityValues() )
+        if ( hasProbabilities() )
         {
-            returnMe = compareProbabilityValues( o );
+            returnMe = this.getProbabilities().compareTo( o.getProbabilities() );
             if ( returnMe != 0 )
             {
                 return returnMe;
@@ -315,15 +294,15 @@ class SafeThreshold implements Threshold
         Double upperBound;
 
         // Ordinary values are canonical
-        if ( hasOrdinaryValues() )
+        if ( hasValues() )
         {
-            lowerBound = threshold;
-            upperBound = thresholdUpper;
+            lowerBound = this.getValues().first();
+            upperBound = this.getValues().second();
         }
         else
         {
-            lowerBound = probability;
-            upperBound = probabilityUpper;
+            lowerBound = this.getProbabilities().first();
+            upperBound = this.getProbabilities().second();
         }
 
         switch ( condition )
@@ -349,20 +328,20 @@ class SafeThreshold implements Threshold
     public boolean isFinite()
     {
         boolean returnMe = true;
-        if ( hasOrdinaryValues() )
+        if ( this.hasValues() )
         {
-            returnMe = Double.isFinite( threshold );
-            if ( hasBetweenCondition() )
+            returnMe = Double.isFinite( this.getValues().first() );
+            if ( this.hasBetweenCondition() )
             {
-                returnMe = returnMe && Double.isFinite( thresholdUpper );
+                returnMe = returnMe && Double.isFinite( this.getValues().second() );
             }
         }
-        if ( hasProbabilityValues() )
+        if ( this.hasProbabilities() )
         {
-            returnMe = returnMe && Double.isFinite( probability );
-            if ( hasBetweenCondition() )
+            returnMe = returnMe && Double.isFinite( this.getProbabilities().first() );
+            if ( this.hasBetweenCondition() )
             {
-                returnMe = returnMe && Double.isFinite( probabilityUpper );
+                returnMe = returnMe && Double.isFinite( this.getProbabilities().second() );
             }
         }
         return returnMe;
@@ -382,28 +361,16 @@ class SafeThreshold implements Threshold
         private Operator condition;
 
         /**
-         * The threshold value
+         * The values
          */
 
-        private Double threshold;
+        private OneOrTwoDoubles values;
 
         /**
-         * The upper threshold value or null.
+         * The probabilities.
          */
 
-        private Double thresholdUpper;
-
-        /**
-         * The probability associated with the quantile.
-         */
-
-        private Double probability;
-
-        /**
-         * The probability associated with the upper quantile or null.
-         */
-
-        private Double probabilityUpper;
+        private OneOrTwoDoubles probabilities;
 
         /**
          * The threshold label or null.
@@ -431,54 +398,28 @@ class SafeThreshold implements Threshold
         }
 
         /**
-         * Sets the threshold value
+         * Sets the values
          * 
-         * @param threshold the threshold
+         * @param values the values
          * @return the builder
          */
 
-        ThresholdBuilder setThreshold( Double threshold )
+        ThresholdBuilder setValues( OneOrTwoDoubles values )
         {
-            this.threshold = threshold;
-            return this;
-        }
-
-        /**
-         * Sets the upper threshold value.
-         * 
-         * @param thresholdUpper the upper threshold
-         * @return the builder
-         */
-
-        ThresholdBuilder setThresholdUpper( Double thresholdUpper )
-        {
-            this.thresholdUpper = thresholdUpper;
+            this.values = values;
             return this;
         }
 
         /**
          * Sets the probability.
          * 
-         * @param probability the threshold probability
+         * @param probabilities the probabilities
          * @return the builder
          */
 
-        ThresholdBuilder setThresholdProbability( Double probability )
+        ThresholdBuilder setProbabilities( OneOrTwoDoubles probabilities )
         {
-            this.probability = probability;
-            return this;
-        }
-
-        /**
-         * Sets the probability for the upper threshold.
-         * 
-         * @param probabilityUpper the probability for the upper threshold
-         * @return the builder
-         */
-
-        ThresholdBuilder setThresholdProbabilityUpper( Double probabilityUpper )
-        {
-            this.probabilityUpper = probabilityUpper;
+            this.probabilities = probabilities;
             return this;
         }
 
@@ -529,43 +470,63 @@ class SafeThreshold implements Threshold
     {
         //Set, then validate
         this.condition = builder.condition;
-        this.threshold = builder.threshold;
-        this.thresholdUpper = builder.thresholdUpper;
-        this.probability = builder.probability;
-        this.probabilityUpper = builder.probabilityUpper;
         this.label = builder.label;
         this.units = builder.units;
 
+        // Set values
+        final OneOrTwoDoubles localValues = builder.values;
+        if ( Objects.nonNull( localValues ) )
+        {
+            this.values = SafeOneOrTwoDoubles.of( localValues.first(), localValues.second() );
+        }
+        else
+        {
+            this.values = null;
+        }
+
+        // Set probabilities
+        final OneOrTwoDoubles localProbabilities = builder.probabilities;
+        if ( Objects.nonNull( localProbabilities ) )
+        {
+            this.probabilities = SafeOneOrTwoDoubles.of( localProbabilities.first(), localProbabilities.second() );
+        }
+        else
+        {
+            this.probabilities = null;
+        }
+
         //Bounds checks
         Objects.requireNonNull( condition, "Specify a non-null condition." );
-        
+
         //Do not allow only an upper threshold or all null thresholds
-        if ( !hasOrdinaryValues() && !hasProbabilityValues() )
+        if ( !this.hasValues() && !this.hasProbabilities() )
         {
             throw new IllegalArgumentException( "Specify one or more values for the threshold." );
         }
-        
+
         //Check the probability
-        if ( Objects.nonNull( probability ) && !probability.equals( Double.NEGATIVE_INFINITY )
-             && ( probability < 0.0 || probability > 1.0 ) )
+        if ( this.hasProbabilities()
+             && !this.getProbabilities().first().equals( Double.NEGATIVE_INFINITY )
+             && ( this.getProbabilities().first() < 0.0 || this.getProbabilities().first() > 1.0 ) )
         {
-            throw new IllegalArgumentException( "The threshold probability is out of bounds [0,1]: " + probability );
+            throw new IllegalArgumentException( "The threshold probability is out of bounds [0,1]: "
+                                                + this.getProbabilities().first() );
         }
-        
+
         //Check a two-sided threshold
-        if ( hasBetweenCondition() )
+        if ( this.hasBetweenCondition() )
         {
-            validateTwoSidedThreshold();
+            this.validateTwoSidedThreshold();
         }
-        
+
         //Check a one-sided threshold
         else
         {
-            validateOneSidedThreshold();
+            this.validateOneSidedThreshold();
         }
-        
+
         //Check for no label when setting threshold as "all data"
-        if ( !isFinite() && hasLabel() )
+        if ( !this.isFinite() && this.hasLabel() )
         {
             throw new IllegalArgumentException( "Cannot set a label for an infinite threshold, as the label is "
                                                 + "reserved." );
@@ -581,12 +542,12 @@ class SafeThreshold implements Threshold
     void validateOneSidedThreshold()
     {
 
-        if ( Objects.nonNull( thresholdUpper ) )
+        if ( this.hasValues() && Objects.nonNull( this.getValues().second() ) )
         {
             throw new IllegalArgumentException( "Specify a null upper threshold or define an appropriate "
                                                 + "BETWEEN condition." );
         }
-        if ( Objects.nonNull( probabilityUpper ) )
+        if ( this.hasProbabilities() && Objects.nonNull( this.getProbabilities().second() ) )
         {
             throw new IllegalArgumentException( "Specify a non-null upper threshold probability or define an "
                                                 + "appropriate BETWEEN condition." );
@@ -602,34 +563,36 @@ class SafeThreshold implements Threshold
     void validateTwoSidedThreshold()
     {
         //Do not allow a partially defined pair of thresholds/probabilities          
-        if ( Objects.nonNull( probability ) != Objects.nonNull( probabilityUpper ) ||
-             Objects.nonNull( threshold ) != Objects.nonNull( thresholdUpper ) )
+        if ( ( this.hasProbabilities() && !this.getProbabilities().hasTwo() )
+             || ( this.hasValues() && !this.getValues().hasTwo() ) )
         {
             throw new IllegalArgumentException( "When constructing a BETWEEN condition, thresholds must be defined "
                                                 + "in pairs." );
         }
 
-        if ( Objects.nonNull( threshold ) && thresholdUpper <= threshold )
+        if ( this.hasValues() && Objects.nonNull( values.first() ) && values.second() <= values.first() )
         {
             throw new IllegalArgumentException( "The upper threshold must be greater than the lower threshold: ["
-                                                + threshold + "," + thresholdUpper + "]." );
+                                                + values.first() + "," + values.second() + "]." );
         }
         // Upper bound is less than or equal to lower bound
-        if ( Objects.nonNull( probability ) && probabilityUpper <= probability )
+        if ( this.hasProbabilities() && Objects.nonNull( probabilities.first() )
+             && probabilities.second() <= probabilities.first() )
         {
             throw new IllegalArgumentException( "The upper threshold probability must be greater than the "
                                                 + "lower threshold probability: ["
-                                                + probability
+                                                + probabilities.first()
                                                 + ","
-                                                + probabilityUpper
+                                                + probabilities.second()
                                                 + "]." );
         }
         // Upper bound is finite and invalid
-        if ( Objects.nonNull( probabilityUpper ) && !probabilityUpper.equals( Double.POSITIVE_INFINITY )
-             && probabilityUpper > 1.0 )
+        if ( this.hasProbabilities() && this.getProbabilities().hasTwo()
+             && !probabilities.second().equals( Double.POSITIVE_INFINITY )
+             && probabilities.second() > 1.0 )
         {
             throw new IllegalArgumentException( "The upper threshold probability is out of bounds [0,1]: "
-                                                + probabilityUpper );
+                                                + probabilities.second() );
         }
 
     }
@@ -661,63 +624,11 @@ class SafeThreshold implements Threshold
     }
 
     /**
-     * Compares the ordinary values associated with an input threshold.
-     * 
-     * @param o the threshold
-     * @return a negative, zero, or positive integer if this threshold is less than, equal to, or greater than the 
-     *            input, respectively
-     */
-    private int compareOrdinaryValues( final Threshold o )
-    {
-        //Compare ordinary values
-        int returnMe = Double.compare( this.getThreshold(), o.getThreshold() );
-        if ( returnMe != 0 )
-        {
-            return returnMe;
-        }
-        if ( this.hasBetweenCondition() )
-        {
-            returnMe = Double.compare( this.getThresholdUpper(), o.getThresholdUpper() );
-            if ( returnMe != 0 )
-            {
-                return returnMe;
-            }
-        }
-        return 0;
-    }
-
-    /**
-     * Compares the probability values associated with an input threshold.
-     * 
-     * @param o the threshold
-     * @return a negative, zero, or positive integer if this threshold is less than, equal to, or greater than the 
-     *            input, respectively
-     */
-    private int compareProbabilityValues( final Threshold o )
-    {
-        //Compare probability values
-        int returnMe = Double.compare( this.getThresholdProbability(), o.getThresholdProbability() );
-        if ( returnMe != 0 )
-        {
-            return returnMe;
-        }
-        if ( this.hasBetweenCondition() )
-        {
-            returnMe = Double.compare( this.getThresholdUpperProbability(), o.getThresholdUpperProbability() );
-            if ( returnMe != 0 )
-            {
-                return returnMe;
-            }
-        }
-        return 0;
-    }
-
-    /**
      * Compares the input against the current threshold for equivalence in terms of:
      * 
      * <ol>
-     * <li>{@link #hasOrdinaryValues()}</li>
-     * <li>{@link #hasProbabilityValues()}</li>
+     * <li>{@link #hasValues()}</li>
+     * <li>{@link #hasProbabilities()}</li>
      * <li>{@link #hasLabels()}</li>
      * <li>{@link #hasUnits()}</li>
      * </ol>
@@ -732,12 +643,12 @@ class SafeThreshold implements Threshold
         Objects.requireNonNull( o, "Specify a non-null threshold for comparison" );
 
         //Check for equal status of the values available        
-        int returnMe = Boolean.compare( this.hasOrdinaryValues(), o.hasOrdinaryValues() );
+        int returnMe = Boolean.compare( this.hasValues(), o.hasValues() );
         if ( returnMe != 0 )
         {
             return returnMe;
         }
-        returnMe = Boolean.compare( this.hasProbabilityValues(), o.hasProbabilityValues() );
+        returnMe = Boolean.compare( this.hasProbabilities(), o.hasProbabilities() );
         if ( returnMe != 0 )
         {
             return returnMe;
@@ -754,48 +665,39 @@ class SafeThreshold implements Threshold
         }
         return 0;
     }
-    
+
     /**
      * Returns <code>true</code> if the optional elements of a threshold are equal, otherwise <code>false</code>.
      * 
      * @param in the threshold to test
      * @return true if the optional elements are equal
      */
-    
+
     private boolean areOptionalStatesEqual( SafeThreshold in )
     {
         boolean returnMe = true;
-        
-        if ( hasOrdinaryValues() )
+
+        if ( hasValues() )
         {
-            returnMe = getThreshold().equals( in.getThreshold() );
-            if ( hasBetweenCondition() )
-            {
-                returnMe = returnMe && getThresholdUpper().equals( in.getThresholdUpper() );
-            }
+            returnMe = this.getValues().equals( in.getValues() );
         }
 
-        if ( hasProbabilityValues() )
+        if ( hasProbabilities() )
         {
-            returnMe = returnMe && getThresholdProbability().equals( in.getThresholdProbability() );
-            if ( hasBetweenCondition() )
-            {
-                returnMe = returnMe && getThresholdUpperProbability().equals( in.getThresholdUpperProbability() );
-            }
+            returnMe = returnMe && this.getProbabilities().equals( in.getProbabilities() );
         }
 
         if ( hasLabel() )
         {
-            returnMe = returnMe && getLabel().equals( in.getLabel() );
+            returnMe = returnMe && this.getLabel().equals( in.getLabel() );
         }
 
         if ( hasUnits() )
         {
-            returnMe = returnMe && getUnits().equals( in.getUnits() );
+            returnMe = returnMe && this.getUnits().equals( in.getUnits() );
         }
-        
+
         return returnMe;
     }
-    
 
 }

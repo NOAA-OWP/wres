@@ -17,7 +17,7 @@ import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationConfig;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.Thresholds;
+import wres.datamodel.OneOrTwoThresholds;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
@@ -104,14 +104,14 @@ public class PNGBoxPlotWriter extends PNGWriter
 
             GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destinationConfig, meta.getMetricID() );
 
-            final Map<Pair<TimeWindow, Thresholds>, ChartEngine> engines =
+            final Map<Pair<TimeWindow, OneOrTwoThresholds>, ChartEngine> engines =
                     ChartEngineFactory.buildBoxPlotChartEngine( projectConfigPlus.getProjectConfig(),
                                                                 output,
                                                                 helper.getTemplateResourceName(),
                                                                 helper.getGraphicsString() );
 
             // Build the outputs
-            for ( final Entry<Pair<TimeWindow, Thresholds>, ChartEngine> nextEntry : engines.entrySet() )
+            for ( final Entry<Pair<TimeWindow, OneOrTwoThresholds>, ChartEngine> nextEntry : engines.entrySet() )
             {
 
                 Path outputImage = ConfigHelper.getOutputPathToWrite( destinationConfig,

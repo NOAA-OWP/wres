@@ -70,7 +70,7 @@ import wres.datamodel.Dimension;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Threshold;
 import wres.datamodel.Threshold.Operator;
-import wres.datamodel.Thresholds;
+import wres.datamodel.OneOrTwoThresholds;
 import wres.datamodel.ThresholdsByType;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
@@ -1399,7 +1399,7 @@ public class ConfigHelper
 
     /**
      * Returns a path to write from a combination of the {@link DestinationConfig}, the {@link MetricOutputMetadata} 
-     * associated with the results and a {@link Thresholds}.
+     * associated with the results and a {@link OneOrTwoThresholds}.
      * 
      * @param destinationConfig the destination configuration
      * @param meta the metadata
@@ -1411,7 +1411,7 @@ public class ConfigHelper
 
     public static Path getOutputPathToWrite( DestinationConfig destinationConfig,
                                              MetricOutputMetadata meta,
-                                             Thresholds threshold )
+                                             OneOrTwoThresholds threshold )
             throws IOException
     {
         Objects.requireNonNull( meta, "Enter non-null metadata to establish a path for writing." );

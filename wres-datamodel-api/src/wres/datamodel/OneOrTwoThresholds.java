@@ -9,7 +9,7 @@ import java.util.Objects;
  * @author james.brown@hydrosolved.com
  */
 
-public interface Thresholds extends Comparable<Thresholds>
+public interface OneOrTwoThresholds extends Comparable<OneOrTwoThresholds>
 {
 
     /**
@@ -38,7 +38,7 @@ public interface Thresholds extends Comparable<Thresholds>
     boolean hasTwo();
 
     /**
-     * Returns a string representation of the {@link Thresholds} that contains only alphanumeric characters A-Z, a-z, 
+     * Returns a string representation of the {@link OneOrTwoThresholds} that contains only alphanumeric characters A-Z, a-z, 
      * and 0-9 and, additionally, the underscore character to separate between elements, and the period character as
      * a decimal separator.
      * 
@@ -48,7 +48,7 @@ public interface Thresholds extends Comparable<Thresholds>
     String toStringSafe();
     
     /**
-     * Returns a string representation of the {@link Thresholds} without any units. This is useful when forming string
+     * Returns a string representation of the {@link OneOrTwoThresholds} without any units. This is useful when forming string
      * representions of a collection of {@link Threshold} and abstracting the common units to a higher level.
      * 
      * @return a string without any units
@@ -64,9 +64,9 @@ public interface Thresholds extends Comparable<Thresholds>
      * @throws NullPointerException if the threshold is null
      */
 
-    static Thresholds of( Threshold first )
+    static OneOrTwoThresholds of( Threshold first )
     {
-        return Thresholds.of( first, null );
+        return OneOrTwoThresholds.of( first, null );
     }
 
     /**
@@ -78,9 +78,9 @@ public interface Thresholds extends Comparable<Thresholds>
      * @throws NullPointerException if the first threshold is null
      */
 
-    static Thresholds of( Threshold first, Threshold second )
+    static OneOrTwoThresholds of( Threshold first, Threshold second )
     {
-        final class DefaultThresholds implements Thresholds
+        final class DefaultThresholds implements OneOrTwoThresholds
         {
             /**
              * The first threshold.
@@ -179,7 +179,7 @@ public interface Thresholds extends Comparable<Thresholds>
             }
 
             @Override
-            public int compareTo( Thresholds o )
+            public int compareTo( OneOrTwoThresholds o )
             {
                 Objects.requireNonNull( o, "Specify a non-null instance of thresholds for comparison." );
                 

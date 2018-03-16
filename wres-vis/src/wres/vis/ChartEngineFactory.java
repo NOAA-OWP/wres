@@ -41,7 +41,7 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.datamodel.Thresholds;
+import wres.datamodel.OneOrTwoThresholds;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
@@ -241,7 +241,7 @@ public abstract class ChartEngineFactory
         else if ( usedPlotType == OutputTypeSelection.THRESHOLD_LEAD )
         {
             inputSlice =
-                    input.filterByThreshold( (Thresholds) inputKeyInstance );
+                    input.filterByThreshold( (OneOrTwoThresholds) inputKeyInstance );
         }
         else
         {
@@ -269,7 +269,7 @@ public abstract class ChartEngineFactory
         }
         else if ( usedPlotType == ChartType.THRESHOLD_LEAD )
         {
-            args.addThresholdLeadArguments( inputSlice, (Thresholds) inputKeyInstance );
+            args.addThresholdLeadArguments( inputSlice, (OneOrTwoThresholds) inputKeyInstance );
         }
         else
         {
@@ -619,7 +619,7 @@ public abstract class ChartEngineFactory
      */
     private static WRESChartEngine
             processBoxPlotErrorsDiagram(
-                                         Pair<TimeWindow, Thresholds> inputKeyInstance,
+                                         Pair<TimeWindow, OneOrTwoThresholds> inputKeyInstance,
                                          final MetricOutputMapByTimeAndThreshold<BoxPlotOutput> input,
                                          String templateName,
                                          String overrideParametersStr )
@@ -663,14 +663,14 @@ public abstract class ChartEngineFactory
      * @return Map where the keys are instances of {@link Pair} with the two keys being an integer and a threshold.
      * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
      */
-    public static ConcurrentMap<Pair<TimeWindow, Thresholds>, ChartEngine>
+    public static ConcurrentMap<Pair<TimeWindow, OneOrTwoThresholds>, ChartEngine>
             buildBoxPlotChartEngine( final ProjectConfig config, 
                                      final MetricOutputMapByTimeAndThreshold<BoxPlotOutput> input,
                                      final String userSpecifiedTemplateResourceName,
                                      final String overrideParametersStr )
                     throws ChartEngineException
     {
-        final ConcurrentMap<Pair<TimeWindow, Thresholds>, ChartEngine> results = new ConcurrentSkipListMap<>();
+        final ConcurrentMap<Pair<TimeWindow, OneOrTwoThresholds>, ChartEngine> results = new ConcurrentSkipListMap<>();
 
         //Determine the output type, converting DEFAULT accordingly, and template name.
         ChartType usedPlotType = determineChartType( config, input, null );
@@ -682,10 +682,10 @@ public abstract class ChartEngineFactory
         }
 
         //Determine the key set for the loop below based on if this is a lead time first and threshold first plot type.
-        Set<Pair<TimeWindow, Thresholds>> keySetValues = input.keySet();
+        Set<Pair<TimeWindow, OneOrTwoThresholds>> keySetValues = input.keySet();
 
         //For each lead time, do the following....
-        for ( final Pair<TimeWindow, Thresholds> keyInstance : keySetValues )
+        for ( final Pair<TimeWindow, OneOrTwoThresholds> keyInstance : keySetValues )
         {
             if ( input.getMetadata().getMetricID() == MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE
                  || input.getMetadata().getMetricID() == MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE )

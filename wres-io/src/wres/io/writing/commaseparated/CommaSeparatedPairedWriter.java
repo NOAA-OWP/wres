@@ -17,7 +17,7 @@ import wres.config.ProjectConfigException;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.Thresholds;
+import wres.datamodel.OneOrTwoThresholds;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.MapKey;
@@ -156,7 +156,7 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
 
         // Add the rows
         // Loop across the thresholds
-        for ( Thresholds t : output.setOfThresholdKey() )
+        for ( OneOrTwoThresholds t : output.setOfThresholdKey() )
         {
             // Append to header
             headerRow.add( HEADER_DELIMITER + outerName + HEADER_DELIMITER + "BASIS TIME" + HEADER_DELIMITER + t );
@@ -164,7 +164,7 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
             // Loop across time windows
             for ( TimeWindow timeWindow : output.setOfTimeWindowKey() )
             {
-                Pair<TimeWindow, Thresholds> key = Pair.of( timeWindow, t );
+                Pair<TimeWindow, OneOrTwoThresholds> key = Pair.of( timeWindow, t );
                 if ( output.containsKey( key ) )
                 {
                     List<Pair<S, T>> nextValues = output.get( key ).getData();

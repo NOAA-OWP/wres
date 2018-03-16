@@ -10,7 +10,7 @@ import java.util.function.BiConsumer;
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.Thresholds;
+import wres.datamodel.OneOrTwoThresholds;
 import wres.datamodel.metadata.TimeWindow;
 
 /**
@@ -105,7 +105,7 @@ public interface MetricOutputMultiMapByTimeAndThreshold<S extends MetricOutput<?
          * @throws NullPointerException if the key is null
          */
 
-        default MetricOutputMultiMapByTimeAndThresholdBuilder<S> put( Pair<TimeWindow, Thresholds> key,
+        default MetricOutputMultiMapByTimeAndThresholdBuilder<S> put( Pair<TimeWindow, OneOrTwoThresholds> key,
                                                                    MetricOutputMapByMetric<S> result )
         {
             Objects.requireNonNull( key, "Specify a non null key." );
@@ -123,7 +123,7 @@ public interface MetricOutputMultiMapByTimeAndThreshold<S extends MetricOutput<?
          */
 
         MetricOutputMultiMapByTimeAndThresholdBuilder<S> put( TimeWindow timeWindow,
-                                                           Thresholds threshold,
+                                                           OneOrTwoThresholds threshold,
                                                            MetricOutputMapByMetric<S> result );
 
         /**

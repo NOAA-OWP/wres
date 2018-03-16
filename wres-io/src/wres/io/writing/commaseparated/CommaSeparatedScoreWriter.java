@@ -21,7 +21,7 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.datamodel.Thresholds;
+import wres.datamodel.OneOrTwoThresholds;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.MapKey;
@@ -228,14 +228,14 @@ public class CommaSeparatedScoreWriter<T extends ScoreOutput<?, T>> extends Comm
                                                                                    Format formatter )
     {
         // Loop across the thresholds
-        for ( Thresholds t : component.setOfThresholdKey() )
+        for ( OneOrTwoThresholds t : component.setOfThresholdKey() )
         {
             String column = name + HEADER_DELIMITER + t;
             headerRow.add( column );
             // Loop across time windows
             for ( TimeWindow timeWindow : component.setOfTimeWindowKey() )
             {
-                Pair<TimeWindow, Thresholds> key = Pair.of( timeWindow, t );
+                Pair<TimeWindow, OneOrTwoThresholds> key = Pair.of( timeWindow, t );
                 if ( component.containsKey( key ) )
                 {
                     CommaSeparatedWriter.addRowToInput( rows,

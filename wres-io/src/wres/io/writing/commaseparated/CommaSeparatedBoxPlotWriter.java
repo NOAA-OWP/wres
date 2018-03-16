@@ -18,7 +18,7 @@ import wres.config.ProjectConfigException;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.Thresholds;
+import wres.datamodel.OneOrTwoThresholds;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.metadata.MetricOutputMetadata;
@@ -163,12 +163,12 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedWriter
 
         // Add the rows
         // Loop across the thresholds
-        for ( Thresholds t : output.setOfThresholdKey() )
+        for ( OneOrTwoThresholds t : output.setOfThresholdKey() )
         {
             // Loop across time windows
             for ( TimeWindow timeWindow : output.setOfTimeWindowKey() )
             {
-                Pair<TimeWindow, Thresholds> key = Pair.of( timeWindow, t );
+                Pair<TimeWindow, OneOrTwoThresholds> key = Pair.of( timeWindow, t );
                 if ( output.containsKey( key ) )
                 {
                     BoxPlotOutput nextValues = output.get( key );
@@ -207,7 +207,7 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedWriter
         StringJoiner returnMe = new StringJoiner( "," );
         returnMe.merge( headerRow );
         BoxPlotOutput nextValues = output.getValue( 0 );
-        for ( Thresholds nextThreshold : output.setOfThresholdKey() )
+        for ( OneOrTwoThresholds nextThreshold : output.setOfThresholdKey() )
         {
             returnMe.add( HEADER_DELIMITER + nextValues.getDomainAxisDimension() + HEADER_DELIMITER + nextThreshold );
             VectorOfDoubles headerProbabilities = nextValues.getProbabilities();

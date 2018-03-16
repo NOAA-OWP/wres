@@ -28,7 +28,7 @@ import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.Threshold.Operator;
-import wres.datamodel.Thresholds;
+import wres.datamodel.OneOrTwoThresholds;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
@@ -113,10 +113,11 @@ public class CommaSeparatedDiagramOutputTest extends CommaSeparatedWriterTest
 
 
         // Fake lead time and threshold
-        Pair<TimeWindow, Thresholds> mapKeyByLeadThreshold =
-                Pair.of( timeOne, Thresholds.of( outputFactory.ofQuantileThreshold( 11.94128,
-                                                                                    0.9,
-                                                                                    Operator.GREATER_EQUAL ) ) );
+        Pair<TimeWindow, OneOrTwoThresholds> mapKeyByLeadThreshold =
+                Pair.of( timeOne,
+                         OneOrTwoThresholds.of( outputFactory.ofQuantileThreshold( outputFactory.ofOneOrTwoDoubles( 11.94128 ),
+                                                                           outputFactory.ofOneOrTwoDoubles( 0.9 ),
+                                                                           Operator.GREATER_EQUAL ) ) );
 
         outputBuilder.addMultiVectorOutput( mapKeyByLeadThreshold,
                                             outputMapByMetricFuture );
