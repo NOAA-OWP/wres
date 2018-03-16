@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.io.config.SystemSettings;
 import wres.io.data.details.ProjectDetails;
+import wres.io.utilities.NoDataException;
 import wres.util.Collections;
 
 class IngestedValueCollection
@@ -33,7 +34,13 @@ class IngestedValueCollection
     }
 
     CondensedIngestedValue condense(final int condensingStep, final int period, final int frequency, final int minimumLead)
+            throws NoDataException
     {
+        if (this.size() == 0)
+        {
+            throw new NoDataException( "There is no data to condense" );
+        }
+
         Map<Integer, List<Double>> valueMapping = new TreeMap<>();
 
         if (this.size() == 1 && condensingStep == 0)
@@ -139,7 +146,7 @@ class IngestedValueCollection
             canAdd = true;
         }
         else if ( this.reference == null && value.getReferenceEpoch() == null ||
-                  this.reference.equals(value.getReferenceEpoch()))
+                  this.reference != null && this.reference.equals(value.getReferenceEpoch()))
         {
             canAdd = true;
         }
