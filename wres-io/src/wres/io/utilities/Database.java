@@ -6,7 +6,6 @@ import java.io.StringReader;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -669,6 +668,7 @@ public final class Database {
     /**
      * Executes the passed in query in the current thread
      * @param query The query to execute
+     * @param forceTransaction The force transaction state
      * @throws SQLException Thrown if an error occurred while attempting to
      * communicate with the database
      */

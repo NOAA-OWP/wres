@@ -4,7 +4,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -15,7 +14,6 @@ import java.util.TreeMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.io.config.SystemSettings;
 import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.NoDataException;
 import wres.util.Collections;
@@ -26,11 +24,53 @@ class IngestedValueCollection
             LOGGER = LoggerFactory.getLogger( IngestedValueCollection.class );
 
     private final List<IngestedValue> values;
-    private Integer reference;
+    private Long reference;
+    private int scale = -1;
 
     IngestedValueCollection()
     {
         this.values = new ArrayList<>(  );
+    }
+
+    int getFirstCondensingStep(int period, int frequency, int minimumLead)
+            throws NoDataException
+    {
+        if (this.size() == 0)
+        {
+            throw new NoDataException( "There is no data to condense" );
+        }
+
+        int firstCondensingStep = 0;
+
+        if (this.size() > 1)
+        {
+            // Get the first value x such that the the xth scaling frequency
+            // after the first lead is fully contained within the collection
+            for (int x = 0; x < this.size(); ++x)
+            {
+                int scale = this.getScale();
+                int firstBlockLead = this.first().getLead() + frequency * x;
+                int earliestLead = Math.max(minimumLead, firstBlockLead - scale);
+                int lastBlockLead = firstBlockLead + period - scale;
+
+                // If the scale is equivalent to the period, no scale operation
+                // is needed and we can accept a value that doesn't have a full
+                // period within the window
+                boolean scalingNotNecessary = scale == period;
+                boolean canCondense = Collections.exists(
+                        this.values,
+                        ingestedValue -> ingestedValue.getLead() == lastBlockLead &&
+                                         (ingestedValue.getLead() - period >= earliestLead || scalingNotNecessary));
+
+                if (canCondense)
+                {
+                    firstCondensingStep = x;
+                    break;
+                }
+            }
+        }
+
+        return firstCondensingStep;
     }
 
     CondensedIngestedValue condense(final int condensingStep, final int period, final int frequency, final int minimumLead)
@@ -61,37 +101,26 @@ class IngestedValueCollection
             return null;
         }
 
-        Map<Integer, Integer> scaleCount = new HashMap<>();
-
-        for (int index = 1; index < this.size(); ++index)
-        {
-            int difference = this.values.get( index ).getLead() - this.values.get(index - 1).getLead();
-
-            if (!scaleCount.containsKey( difference ))
-            {
-                scaleCount.put( difference, 0 );
-            }
-
-            scaleCount.put(difference, scaleCount.get(difference) + 1);
-        }
-
-        Integer scale = Collections.getKeyByValueFunction(
-                scaleCount,
-                (compare, to) -> compare == Math.max(compare, to)
-        );
-
+        final int scale = this.getScale();
         final int firstBlockLead = this.first().getLead() + frequency * condensingStep;
         final int earliestLead = Math.max(minimumLead, firstBlockLead - scale);
         final int lastBlockLead = firstBlockLead + period - scale;
+        final boolean scalingNotNecessary = scale == period;
 
         Instant lastValidTime = null;
         int lastLead = -1;
 
         CondensedIngestedValue result = null;
 
-        if (Collections.exists( this.values,
-                                ingestedValue -> ingestedValue.getLead() == lastBlockLead &&
-                                                 ingestedValue.getLead() - period >= earliestLead))
+        // Checks if the collection contains the value for the last block and
+        // it is either fully in the collection or it is already in the correct
+        // scale
+        boolean canCondense = Collections.exists(
+                this.values,
+                ingestedValue -> ingestedValue.getLead() == lastBlockLead &&
+                                 (ingestedValue.getLead() - period >= earliestLead || scalingNotNecessary));
+
+        if (canCondense)
         {
             List<IngestedValue> subset = Collections.where(
                     this.values,
@@ -115,8 +144,45 @@ class IngestedValueCollection
             }
             result = new CondensedIngestedValue( lastValidTime, lastLead, valueMapping );
         }
-
         return result;
+    }
+
+    private int getScale() throws NoDataException
+    {
+        if (this.size() == 0)
+        {
+            throw new NoDataException( "There is no data to interrogate for scale." );
+        }
+
+        if (this.scale == -1 && this.size() == 1)
+        {
+            this.scale = 0;
+        }
+
+        if (this.scale == -1)
+        {
+            Map<Integer, Integer> scaleCount = new HashMap<>();
+
+            for ( int index = 1; index < this.size(); ++index )
+            {
+                int difference =
+                        this.values.get( index ).getLead() - this.values.get(
+                                index - 1 ).getLead();
+
+                if ( !scaleCount.containsKey( difference ) )
+                {
+                    scaleCount.put( difference, 0 );
+                }
+
+                scaleCount.put( difference, scaleCount.get( difference ) + 1 );
+            }
+
+            this.scale = Collections.getKeyByValueFunction(
+                    scaleCount,
+                    ( compare, to ) -> compare == Math.max( compare, to )
+            );
+        }
+        return this.scale;
     }
 
     private IngestedValue first()
@@ -136,7 +202,7 @@ class IngestedValueCollection
         return values.size();
     }
 
-    boolean add(IngestedValue value)
+    void add(IngestedValue value)
     {
         boolean canAdd = false;
 
@@ -145,7 +211,7 @@ class IngestedValueCollection
             this.reference = value.getReferenceEpoch();
             canAdd = true;
         }
-        else if ( this.reference == null && value.getReferenceEpoch() == null ||
+        else if ( this.reference == null ||
                   this.reference != null && this.reference.equals(value.getReferenceEpoch()))
         {
             canAdd = true;
@@ -160,14 +226,12 @@ class IngestedValueCollection
         {
             LOGGER.error( "The value {} could not be added to the collection of values to evaluate.", value );
         }
-
-        return canAdd;
     }
 
-    boolean add( ResultSet row, ProjectDetails projectDetails) throws SQLException
+    void add( ResultSet row, ProjectDetails projectDetails) throws SQLException
     {
         IngestedValue value = new IngestedValue( row, projectDetails );
-        return this.add( value );
+        this.add( value );
     }
 
     @Override
