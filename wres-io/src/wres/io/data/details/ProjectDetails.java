@@ -1133,6 +1133,19 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         if (this.desiredTimeScale == null)
         {
             this.desiredTimeScale = this.projectConfig.getPair().getDesiredTimeScale();
+
+            // If there is an explicit desired time scale but the frequency
+            // wasn't set, we need to set the default
+            if (this.desiredTimeScale != null &&
+                this.desiredTimeScale.getFrequency() == null)
+            {
+                this.desiredTimeScale = new TimeScaleConfig(
+                        this.desiredTimeScale.getFunction(),
+                        this.desiredTimeScale.getPeriod(),
+                        this.desiredTimeScale.getPeriod(),
+                        this.desiredTimeScale.getUnit(),
+                        null);
+            }
         }
 
         if (this.desiredTimeScale == null)

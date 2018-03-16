@@ -39,7 +39,7 @@ class PoolingForecastScripter extends Scripter
             this.add(" + ", this.getTimeShift() * 3600);
         }
 
-        this.addLine(")::int as basis_epoch_time,");
+        this.addLine(")::bigint as basis_epoch_time,");
         this.applyMeasurementArray();
         this.addLine("    F.measurementunit_id");
         this.addLine( "FROM forecasts F" );

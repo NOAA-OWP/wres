@@ -72,7 +72,7 @@ class BackToBackForecastScripter extends Scripter
             this.add(" + ", this.getTimeShift() * 3600);
         }
 
-        this.addLine(")::int AS basis_epoch_time,");
+        this.addLine(")::bigint AS basis_epoch_time,");
     }
 
     private void applyLeadQualifier() throws SQLException, IOException
