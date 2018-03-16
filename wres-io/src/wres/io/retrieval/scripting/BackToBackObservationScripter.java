@@ -44,14 +44,14 @@ class BackToBackObservationScripter extends Scripter
 
     private void applyBasisTime()
     {
-        this.addTab().add("EXTRACT(epoch FROM O.observation_time)");
+        this.addTab().add("(EXTRACT(epoch FROM O.observation_time)");
 
         if (this.getTimeShift() != null)
         {
             this.add(" + ", this.getTimeShift() * 3600);
         }
 
-        this.addLine( ")::int AS basis_epoch_time," );
+        this.addLine( ")::bigint AS basis_epoch_time," );
     }
 
     private void applyProjectConstraint()

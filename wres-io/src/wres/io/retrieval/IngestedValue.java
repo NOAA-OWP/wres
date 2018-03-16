@@ -17,7 +17,7 @@ class IngestedValue implements Comparable<IngestedValue>
     private static final Object CONVERSION_LOCK = new Object();
     private static Map<Integer, UnitConversions.Conversion> conversionMap;
 
-    private final int referenceEpoch;
+    private final long referenceEpoch;
     private final Instant validTime;
     private final int lead;
     private final Double[] measurements;
@@ -83,7 +83,7 @@ class IngestedValue implements Comparable<IngestedValue>
         return this.validTime;
     }
 
-    Integer getReferenceEpoch()
+    long getReferenceEpoch()
     {
         return this.referenceEpoch;
     }

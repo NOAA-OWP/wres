@@ -5,7 +5,7 @@
 <project name="scenario801">
 
     <inputs>
-        <left label="">
+        <left>
             <type>observations</type>
             <source format="PI-XML">../data/CKLN6_STG.xml</source>
             <variable label = "STAGE">STG</variable>
@@ -17,7 +17,7 @@
         </right>
     </inputs>
 
-    <pair label="Pairs by location and lead time"> 
+    <pair> 
         <unit>FT</unit>
         <leadHours minimum="48" maximum="144" />
         <desiredTimeScale>
@@ -45,12 +45,6 @@
         </destination>
         <destination type="pairs" decimalFormat="0.000000">
             <path>output/</path>
-        </destination>
-        <destination type="graphic">
-            <path>output/</path>
-            <outputType>threshold lead</outputType>
-            <graphical width="800" height="600">
-            </graphical>
         </destination>
     </outputs>
 
