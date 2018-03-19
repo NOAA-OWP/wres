@@ -1,10 +1,14 @@
 package wres.control;
 
+import java.io.Closeable;
 import java.io.IOException;
+import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -34,6 +38,7 @@ import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.PairedOutput;
 import wres.engine.statistics.metric.config.MetricConfigurationException;
+import wres.io.Operations;
 import wres.io.writing.SharedWriters;
 import wres.io.writing.commaseparated.CommaSeparatedBoxPlotWriter;
 import wres.io.writing.commaseparated.CommaSeparatedDiagramWriter;
@@ -61,7 +66,8 @@ import wres.io.writing.png.PNGPairedWriter;
  * @author jesse.bickel@***REMOVED***
  */
 
-class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThreshold>
+class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThreshold>,
+                                  Closeable
 {
 
     /**
@@ -132,6 +138,11 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
             new EnumMap<>( DestinationType.class );
 
     /**
+     * List of resources that ProductProcessor opened that it needs to close
+     */
+    private final List<Closeable> resourcesToClose;
+
+    /**
      * Build a product processor that writes unconditionally
      *
      * @param resolvedProject the resolved project
@@ -179,6 +190,8 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
 
         Objects.requireNonNull( writeWhenTrue, "Specify a non-null condition to ignore." );
 
+        this.resourcesToClose = new ArrayList<>( 1 );
+
         this.resolvedProject = resolvedProject;
 
         this.writeWhenTrue = writeWhenTrue;
@@ -193,6 +206,7 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
         {
             throw new WresProcessingException( "While processing the project configuration to write output:", e );
         }
+
     }
 
     /**
@@ -392,14 +406,6 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
             throws IOException, MetricConfigurationException
     {
         // Build the consumers conditionally
-        int featureCount = this.getResolvedProject().getFeatureCount();
-        // TODO: resolve the actual timeStepCount of a project
-        int timeStepCount = 2;
-        // TODO: resolve the actual leadCount of a project
-        int leadCount = 2;
-        int thresholdCount = this.getResolvedProject().getThresholdCount();
-        Set<MetricConstants> metricConstants = this.getResolvedProject()
-                                                   .getDoubleScoreMetrics();
 
         // Register consumers for the NetCDF output type
         if ( writeWhenTrue.test( MetricOutputGroup.DOUBLE_SCORE, DestinationType.NETCDF ) )
@@ -414,13 +420,57 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
             // Build a writer
             else
             {
+                int featureCount = this.getResolvedProject().getFeatureCount();
+                int thresholdCount = this.getResolvedProject().getThresholdCount();
+                Set<MetricConstants> metricConstants = this.getResolvedProject()
+                                                           .getDoubleScoreMetrics();
+
+                long basisTimes;
+                long leadCount;
+
+                try
+                {
+                    leadCount = Operations.getLeadCountsForProject( this.getResolvedProject()
+                                                                        .getProjectIdentifier() );
+                }
+                catch ( SQLException se )
+                {
+                    throw new IOException( "Unable to get lead counts.", se );
+                }
+
+                if ( leadCount > Integer.MAX_VALUE )
+                {
+                    throw new IOException( "Cannot use more than "
+                                           + Integer.MAX_VALUE
+                                           + " lead times in a netCDF file." );
+                }
+
+                try
+                {
+                    basisTimes = Operations.getBasisTimeCountsForProject( this.getResolvedProject()
+                                                                              .getProjectIdentifier()  );
+                }
+                catch ( SQLException se )
+                {
+                    throw new IOException( "Unable to get basis time counts.", se );
+                }
+
+                if ( basisTimes > Integer.MAX_VALUE )
+                {
+                    throw new IOException( "Cannot use more than "
+                                           + Integer.MAX_VALUE
+                                           + " basis times in a netCDF file." );
+                }
+                NetcdfDoubleScoreWriter netcdfWriter =
+                        NetcdfDoubleScoreWriter.of( this.getProjectConfig(),
+                                                    featureCount,
+                                                    (int) basisTimes,
+                                                    (int) leadCount,
+                                                    thresholdCount,
+                                                    metricConstants );
+                this.resourcesToClose.add( netcdfWriter );
                 doubleScoreConsumers.put( DestinationType.NETCDF,
-                                          NetcdfDoubleScoreWriter.of( this.getProjectConfig(),
-                                                                      featureCount,
-                                                                      timeStepCount,
-                                                                      leadCount,
-                                                                      thresholdCount,
-                                                                      metricConstants ) );
+                                          netcdfWriter );
             }
         }
     }
@@ -658,6 +708,30 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
         // Return true if any destination types appear in allTypes, otherwise false
         return output.getDestination().stream().map( DestinationConfig::getType ).anyMatch( allTypes::contains );
     }
+
+
+    /**
+     * Close resources that ProductProcessor opened
+     */
+
+    public void close()
+    {
+        for ( Closeable resource : this.resourcesToClose )
+        {
+            try
+            {
+                resource.close();
+            }
+            catch ( IOException ioe )
+            {
+                // Not much we can do at this point. We tried to close, but
+                // we need to try to close all the other resources too before
+                // the software exits.
+                LOGGER.warn( "Unable to close resource {}", resource );
+            }
+        }
+    }
+
 
     /**
      * Logs the status of product generation.
