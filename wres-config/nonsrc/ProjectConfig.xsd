@@ -247,8 +247,20 @@
             <xs:enumeration value="reliability diagram" />
             <xs:enumeration value="root mean square error" />
             <xs:enumeration value="sample size" />
-	    <xs:enumeration value="time to peak error" />
             <xs:enumeration value="volumetric efficiency" />
+        </xs:restriction>
+    </xs:simpleType>
+
+    <!-- There is a mapping between these names and the enum in MetricConstants.
+         For now, these two lists must be periodically synchronized manually.-->
+    <xs:simpleType name="timeSeriesMetricConfigName">
+        <xs:restriction base="xs:string">
+
+            <!-- When user wishes to have all the metrics that are valid for a
+                 given configuration -->
+            <xs:enumeration value="all valid" />
+
+	    <xs:enumeration value="time to peak error" />
         </xs:restriction>
     </xs:simpleType>
 
@@ -282,6 +294,23 @@
     </xs:complexType>
 
     <!-- Base type for a metric -->
+    <xs:complexType name="abstractMetric">
+
+        <!-- for class naming using xjc-->
+        <xs:annotation>
+            <xs:appinfo>
+                <jaxb:class name="AbstractMetricConfig" />
+            </xs:appinfo>
+        </xs:annotation>
+
+        <xs:sequence>
+            <xs:element name="templateResourceName" type="xs:anyURI" minOccurs="0" />
+        </xs:sequence>
+
+        <xs:attribute name="label" type="xs:string" />
+    </xs:complexType>
+
+    <!-- Ordinary metrics -->
     <xs:complexType name="metric">
 
         <!-- for class naming using xjc-->
@@ -291,12 +320,13 @@
             </xs:appinfo>
         </xs:annotation>
 
-        <xs:sequence>
-            <xs:element name="name" type="metricConfigName" />
-            <xs:element name="templateResourceName" type="xs:anyURI" minOccurs="0" />
-        </xs:sequence>
-
-        <xs:attribute name="label" type="xs:string" />
+        <xs:complexContent>
+            <xs:extension base="abstractMetric">
+                <xs:sequence>
+                    <xs:element name="name" type="metricConfigName" />
+                </xs:sequence>
+            </xs:extension>
+        </xs:complexContent>
     </xs:complexType>
 
     <!-- Metrics that consume time-series and may have summary statistics associated with them -->
@@ -310,8 +340,9 @@
         </xs:annotation>
 
         <xs:complexContent>
-            <xs:extension base="metric">
+            <xs:extension base="abstractMetric">
                 <xs:sequence>
+                    <xs:element name="name" type="timeSeriesMetricConfigName" />
                     <xs:element name="summaryStatistics" type="summaryStatistics" minOccurs="0" maxOccurs="1"/>
                 </xs:sequence>
             </xs:extension>
