@@ -39,3 +39,5 @@ out
 /src/wres/MainLocal.java
 /.metadata/
 output
+/wres-metrics/testinput/metricProcessorEnsemblePairsByTimeTest/Contingency.R
+/wres-metrics/testinput/metricProcessorEnsemblePairsByTimeTest/NOTE.txt

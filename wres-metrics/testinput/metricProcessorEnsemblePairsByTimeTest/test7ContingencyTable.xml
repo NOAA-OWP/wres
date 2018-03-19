@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project>
+
+  <inputs>
+    <left>
+      <type>observations</type>
+    </left>
+    <right>
+      <type>ensemble forecasts</type>
+    </right>
+  </inputs>
+
+  <pair></pair>	
+
+  <metrics>
+    <thresholds>
+      <type>value</type>
+      <commaSeparatedValues>50.0</commaSeparatedValues>
+    </thresholds>
+    <thresholds>
+      <type>probability classifier</type>
+      <commaSeparatedValues>0.05, 0.25, 0.5, 0.75, 0.9, 0.95</commaSeparatedValues>
+    </thresholds>
+    <metric><name>contingency table</name></metric>
+  </metrics>
+
+  <outputs></outputs>
+
+</project>
+

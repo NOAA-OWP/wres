@@ -19,14 +19,15 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import wres.config.generated.MetricConfigName;
 import wres.config.generated.ProjectConfig;
+import wres.config.generated.TimeSeriesMetricConfigName;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
+import wres.datamodel.OneOrTwoThresholds;
 import wres.datamodel.Slicer;
 import wres.datamodel.Threshold;
 import wres.datamodel.Threshold.Operator;
-import wres.datamodel.OneOrTwoThresholds;
 import wres.datamodel.ThresholdsByType;
 import wres.datamodel.inputs.InsufficientDataException;
 import wres.datamodel.inputs.MetricInputSliceException;
@@ -177,11 +178,12 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                                                                                        MetricOutputGroup.PAIRED ) );
             //Summary statistics, currently done for time-to-peak only
             //TODO: replace with a collection if/when other measures of the same type are added                    
-            if ( MetricConfigHelper.hasSummaryStatisticsFor( config, MetricConfigName.TIME_TO_PEAK_ERROR ) )
+            if ( MetricConfigHelper.hasSummaryStatisticsFor( config, TimeSeriesMetricConfigName.TIME_TO_PEAK_ERROR ) )
             {
+                MetricConstants[] ts = MetricConfigHelper.getSummaryStatisticsFor( config,
+                                                                                   TimeSeriesMetricConfigName.TIME_TO_PEAK_ERROR );
                 timeToPeakErrorStats =
-                        metricFactory.ofTimeToPeakErrorStatistics( MetricConfigHelper.getSummaryStatisticsFor( config,
-                                                                                                               MetricConfigName.TIME_TO_PEAK_ERROR ) );
+                        metricFactory.ofTimeToPeakErrorStatistics( ts );
             }
             else
             {
@@ -217,11 +219,13 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                          + "metrics: correct the configuration labelled '"
                          + config.getLabel()
                          + "'.";
+        // Metrics that are explicitly configured as time-series
         if ( MetricConfigHelper.hasTimeSeriesMetrics( config )
              && ( hasMetrics( MetricInputGroup.SINGLE_VALUED ) || hasMetrics( MetricInputGroup.DICHOTOMOUS ) ) )
         {
             throw new MetricConfigurationException( message );
         }
+        // Time-series metrics that are configured as regular metrics, not time-series
         if ( hasMetrics( MetricInputGroup.SINGLE_VALUED_TIME_SERIES )
              && ( hasMetrics( MetricInputGroup.SINGLE_VALUED ) || hasMetrics( MetricInputGroup.DICHOTOMOUS ) ) )
         {

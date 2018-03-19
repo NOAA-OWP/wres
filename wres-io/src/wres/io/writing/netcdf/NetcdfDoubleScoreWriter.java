@@ -1,5 +1,6 @@
 package wres.io.writing.netcdf;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -45,7 +46,8 @@ import wres.io.writing.WriteException;
  * Only one expected to be used per project execution (as of 2018-03-13)
  */
 
-public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>, AutoCloseable
+public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
+                                                Closeable
 {
     /** The Logger */
     private static final Logger LOGGER =
