@@ -166,7 +166,7 @@ class ProcessorHelper
             {
                 throw new IOException( "Cannot use more than "
                                        + Integer.MAX_VALUE
-                                       + " lead times in a netCDF file." );
+                                       + " basis times in a netCDF file." );
             }
         }
 
