@@ -166,13 +166,13 @@ class ProcessorHelper
             {
                 throw new IOException( "Cannot use more than "
                                        + Integer.MAX_VALUE
-                                       + " lead times in a netCDF file." );
+                                       + " basis times in a netCDF file." );
             }
         }
 
         ResolvedProject resolvedProject = ResolvedProject.of( projectConfigPlus,
                                                               decomposedFeatures,
-                                                              null,
+                                                              projectIdentifier,
                                                               thresholds );
 
         // Build any writers of incremental formats that are shared across features
@@ -225,6 +225,8 @@ class ProcessorHelper
                 missingDataFeatures.add( result.getFeature() );
             }
         }
+
+        sharedWriters.close();
 
         printFeaturesReport( projectConfigPlus,
                              decomposedFeatures,
@@ -408,18 +410,16 @@ class ProcessorHelper
         // Generate cached output if available
         if ( processor.hasCachedMetricOutput() )
         {
-            try
+            // Only process cached types that were not written incrementally
+            BiPredicate<MetricOutputGroup, DestinationType> nowWriteTheseTypes =
+                    ( type, format ) -> processor.getCachedMetricOutputTypes().contains( type )
+                                        && !ConfigHelper.getIncrementalFormats( projectConfig ).contains( format );
+            try ( // End of pipeline processor
+                  ProductProcessor endOfPipeline =
+                          new ProductProcessor( resolvedProject,
+                                                nowWriteTheseTypes,
+                                                sharedWriters ) )
             {
-                // End of pipeline processor
-                // Only process cached types that were not written incrementally
-                BiPredicate<MetricOutputGroup, DestinationType> nowWriteTheseTypes =
-                        ( type, format ) -> processor.getCachedMetricOutputTypes().contains( type )
-                                            && !ConfigHelper.getIncrementalFormats( projectConfig ).contains( format );
-                ProductProcessor endOfPipeline =
-                        new ProductProcessor( resolvedProject,
-                                              nowWriteTheseTypes,
-                                              sharedWriters );
-
                 // Generate output
                 endOfPipeline.accept( processor.getCachedMetricOutput() );
 

@@ -309,15 +309,55 @@ public final class MetricTestDataFactory
                                       meta,
                                       metIn.vectorOf( climatology.toArray( new Double[climatology.size()] ) ) );
     }
+    
+    /**
+     * Returns a small test dataset of ensemble pairs without a baseline. Reads the pairs from
+     * testinput/metricTestDataFactory/getEnsemblePairsTwo.asc. The inputs have a lead time of 24 hours.
+     * 
+     * @return ensemble pairs
+     * @throws IOException if the read fails
+     */
 
+    public static EnsemblePairs getEnsemblePairsTwo() throws IOException
+    {
+        //Construct some ensemble pairs
+        final List<PairOfDoubleAndVectorOfDoubles> values = new ArrayList<>();
+        final DataFactory metIn = DefaultDataFactory.getInstance();
+        File file = new File( "testinput/metricTestDataFactory/getEnsemblePairsTwo.asc" );
+        List<Double> climatology = new ArrayList<>();
+        try ( BufferedReader in = new BufferedReader( new InputStreamReader( new FileInputStream( file ), "UTF-8" ) ) )
+        {
+            String line = null;
+            while ( Objects.nonNull( line = in.readLine() ) && !line.isEmpty() )
+            {
+                double[] doubleValues =
+                        Arrays.stream( line.split( "\\s+" ) ).mapToDouble( Double::parseDouble ).toArray();
+                values.add( metIn.pairOf( doubleValues[0],
+                                          Arrays.copyOfRange( doubleValues, 1, doubleValues.length ) ) );
+                climatology.add( doubleValues[0] );
+            }
+        }
+        final MetadataFactory metFac = metIn.getMetadataFactory();
+        final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                 Instant.parse( "2010-12-31T11:59:59Z" ),
+                                                 ReferenceTime.VALID_TIME,
+                                                 Duration.ofHours( 24 ) );
+        final Metadata meta = metFac.getMetadata( metFac.getDimension( "CMS" ),
+                                                  metFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ),
+                                                  window );
+        return metIn.ofEnsemblePairs( values,
+                                      meta,
+                                      metIn.vectorOf( climatology.toArray( new Double[climatology.size()] ) ) );
+    }    
+    
     /**
      * Returns a set of ensemble pairs with a single pair and no baseline. This is useful for checking exceptional
-     * behaviour due to an inadequate sample size.
+     * behavior due to an inadequate sample size.
      * 
      * @return ensemble pairs
      */
 
-    public static EnsemblePairs getEnsemblePairsTwo()
+    public static EnsemblePairs getEnsemblePairsThree()
     {
         //Construct some ensemble pairs
         final DataFactory metIn = DefaultDataFactory.getInstance();
@@ -332,8 +372,8 @@ public final class MetricTestDataFactory
                                                   metFac.getDatasetIdentifier( "A", "MAP" ),
                                                   window );
         return metIn.ofEnsemblePairs( values, meta );
-    }
-
+    }    
+    
     /**
      * Returns a set of dichotomous pairs based on http://www.cawcr.gov.au/projects/verification/#Contingency_table. The
      * test data comprises 83 hits, 38 false alarms, 23 misses and 222 correct negatives, i.e. N=365.

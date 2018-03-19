@@ -448,6 +448,7 @@ public final class Operations {
      * TODO: optimize
      * @param projectIdentifier the code/hash of a project (not row id)
      * @return the count of distinct leads found across all forecasts in project
+     * @throws SQLException if the count could not be determined
      */
 
     public static long getLeadCountsForProject( String projectIdentifier )
@@ -481,6 +482,7 @@ public final class Operations {
      * @param projectIdentifier the code/hash of a project (not row id)
      * @return the count of distinct basis times found across all forecasts
      * in the project
+     * @throws SQLException if the count could not be determined
      */
     public static long getBasisTimeCountsForProject( String projectIdentifier )
             throws SQLException
