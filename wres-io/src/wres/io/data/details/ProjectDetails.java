@@ -5,6 +5,7 @@ import java.math.BigInteger;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.time.MonthDay;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -57,7 +58,14 @@ import wres.util.TimeHelper;
  * Wrapper object linking a project configuration and the data needed to form
  * database statements
  */
-public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
+public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
+{
+    public enum PairingMode
+    {
+        ROLLING,
+        BACK_TO_BACK,
+        TIME_SERIES
+    }
 
     private static final Logger LOGGER = LoggerFactory.getLogger( ProjectDetails.class );
 
@@ -151,6 +159,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
      */
     private Integer baselineVariableID = null;
 
+    private static final Object SERIES_AMOUNT_LOCK = new Object();
     /**
      * Details the number of time series to pull at once when gathering by time series
      */
@@ -977,55 +986,6 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     }
 
     /**
-     * @param dataSourceConfig The data source that might need to be scaled
-     * @return Whether or not to scale this data source
-     * @throws IOException Thrown if there was either not enough data available
-     * to determine the scale or the sets of data were of fundamentally
-     * incompatible scales.
-     */
-    public boolean shouldScale(DataSourceConfig dataSourceConfig)
-            throws IOException
-    {
-        // If no scaling will need to be done, skip right past this.
-        if (!this.shouldScale())
-        {
-            return false;
-        }
-
-        return true;
-        /*boolean scale;
-
-        try
-        {
-            TimeScaleConfig desiredScale = this.getScale();
-
-            long dataSourcesScale;
-
-            if (dataSourceConfig == this.getLeft())
-            {
-                dataSourcesScale = this.getLeftScale();
-            }
-            else if (dataSourceConfig == this.getRight())
-            {
-                dataSourcesScale = this.getRightScale();
-            }
-            else
-            {
-                dataSourcesScale = this.getBaselineScale();
-            }
-
-            scale = ( dataSourcesScale != desiredScale.getPeriod());
-        }
-        catch (NoDataException | SQLException e)
-        {
-            throw new IOException( "The scales for either the project or the "
-                                   + "data source could not be determined.", e );
-        }
-
-        return scale;*/
-    }
-
-    /**
      * Generates a dynamic scale based on both left and right data in the database
      *
      * <p>
@@ -1170,13 +1130,17 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
      * "TimeWindowMode.BACK_TO_BACK" otherwise.
      * @return The pooling mode of the project. Defa
      */
-    public TimeWindowMode getPoolingMode()
+    public PairingMode getPairingMode()
     {
-        TimeWindowMode mode = TimeWindowMode.BACK_TO_BACK;
+        PairingMode mode = PairingMode.BACK_TO_BACK;
 
         if ( this.getIssuePoolingWindow() != null )
         {
-            mode = TimeWindowMode.ROLLING;
+            mode = PairingMode.ROLLING;
+        }
+        else if (this.usesTimeSeriesMetrics())
+        {
+            mode = PairingMode.TIME_SERIES;
         }
 
         return mode;
@@ -1323,71 +1287,97 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
      */
     public Integer getNumberOfSeriesToRetrieve() throws SQLException
     {
-        if (this.numberOfSeriesToRetrieve == null)
+        synchronized ( ProjectDetails.SERIES_AMOUNT_LOCK )
         {
+            if ( this.numberOfSeriesToRetrieve == null )
+            {
 
-            ScriptBuilder script = new ScriptBuilder();
-            script.addLine(
-                    "SELECT (((COUNT(E.ensemble_id) * 8 + 20 * -- This determines the size of a single row" );
-            script.add( "(" )
-                  .addTab()
-                  .addLine( "-- This determines the number of expected rows" );
-            script.addTab().addLine( "SELECT COUNT(*)" );
-            script.addTab().addLine( "FROM wres.ForecastValue FV" );
-            script.addTab().addLine( "INNER JOIN (" );
-            script.addTab( 2 ).addLine( "SELECT TS.timeseries_id" );
-            script.addTab( 2 ).addLine( "FROM wres.TimeSeries TS" );
-            script.addTab( 2 ).addLine( "INNER JOIN wres.ForecastSource FS" );
-            script.addTab( 3 )
-                  .addLine( "ON FS.forecast_id = TS.timeseries_id" );
-            script.addTab( 2 ).addLine( "INNER JOIN wres.ProjectSource PS" );
-            script.addTab( 3 ).addLine( "ON PS.source_id = FS.source_id" );
-            script.addTab( 2 )
-                  .addLine( "WHERE PS.project_id = ", this.getId() );
-            script.addTab( 3 )
-                  .addLine( "AND PS.member = ", ProjectDetails.RIGHT_MEMBER );
-            script.addTab( 2 ).addLine( "LIMIT 1" );
-            script.addTab().addLine( ") AS TS" );
-            script.addTab( 2 )
-                  .addLine( "ON TS.timeseries_id = FV.timeseries_id" );
-            script.add( ")) / 1000)::int AS size" )
-                  .addTab()
-                  .addLine(
-                          "-- We divide by 1000 to convert the number to kilobyte scale" );
-            script.addLine(
-                    "-- We select from ensemble because the number of ensembles affects" );
-            script.addLine(
-                    "-- the number of values returned in the resultant array" );
-            script.addLine( "FROM wres.Ensemble E" );
-            script.addLine( "WHERE EXISTS (" );
-            script.addTab().addLine( "SELECT 1" );
-            script.addTab().addLine( "FROM wres.TimeSeries TS" );
-            script.addTab().addLine( "INNER JOIN wres.ForecastSource FS" );
-            script.addTab( 2 )
-                  .addLine( "ON FS.forecast_id = TS.timeseries_id" );
-            script.addTab().addLine( "INNER JOIN wres.ProjectSource PS" );
-            script.addTab( 2 ).addLine( "ON PS.source_id = FS.source_id" );
-            script.addTab().addLine( "WHERE PS.project_id = ", this.getId() );
-            script.addTab( 2 )
-                  .addLine( "AND PS.member = ", ProjectDetails.RIGHT_MEMBER );
-            script.addTab( 2 ).addLine( "AND TS.ensemble_id = E.ensemble_id" );
-            script.addLine( ");" );
+                ScriptBuilder script = new ScriptBuilder();
+                script.addLine( "SELECT (" );
+                script.addTab().addLine( "(" );
+                script.addTab( 2 )
+                      .addLine(
+                              "COUNT(E.ensemble_id) * 8 + 20 * -- This determines the size of a single row" );
+                script.addTab( 3 )
+                      .addLine(
+                              "(  -- This determines the number of expected rows" );
+                script.addTab( 4 ).addLine( "SELECT COUNT(*)" );
+                script.addTab( 4 ).addLine( "FROM wres.ForecastValue FV" );
+                script.addTab( 4 ).addLine( "INNER JOIN (" );
+                script.addTab( 5 ).addLine( "SELECT TS.timeseries_id" );
+                script.addTab( 5 ).addLine( "FROM wres.TimeSeries TS" );
+                script.addTab( 5 )
+                      .addLine( "INNER JOIN wres.ForecastSource FS" );
+                script.addTab( 6 )
+                      .addLine( "ON FS.forecast_id = TS.timeseries_id" );
+                script.addTab( 5 )
+                      .addLine( "INNER JOIN wres.ProjectSource PS" );
+                script.addTab( 6 ).addLine( "ON PS.source_id = FS.source_id" );
+                script.addTab( 5 )
+                      .addLine( "WHERE PS.project_id = ", this.getId() );
+                script.addTab( 6 )
+                      .addLine( "AND PS.member = ",
+                                ProjectDetails.RIGHT_MEMBER );
+                script.addTab( 5 ).addLine( "LIMIT 1" );
+                script.addTab( 4 ).addLine( ") AS TS" );
+                script.addTab( 4 )
+                      .addLine( "ON TS.timeseries_id = FV.timeseries_id" );
+                script.addTab( 3 ).addLine( ")" );
+                script.addTab( 2 )
+                      .addLine(
+                              ") / 1000.0)::float AS size     -- We divide by 1000.0 to convert the number to kilobyte scale" );
+                script.addLine(
+                        "-- We Select from ensemble because the number of ensembles affects" );
+                script.addLine(
+                        "--   the number of values returned in the resultant array" );
+                script.addLine( "FROM wres.Ensemble E" );
+                script.addLine( "WHERE EXISTS (" );
+                script.addTab().addLine( "SELECT 1" );
+                script.addTab().addLine( "FROM wres.TimeSeries TS" );
+                script.addTab().addLine( "INNER JOIN wres.ForecastSource FS" );
+                script.addTab( 2 )
+                      .addLine( "ON FS.forecast_id = TS.timeseries_id" );
+                script.addTab().addLine( "INNER JOIN wres.ProjectSource PS" );
+                script.addTab( 2 ).addLine( "ON PS.source_id = FS.source_id" );
+                script.addTab()
+                      .addLine( "WHERE PS.project_id = ", this.getId() );
+                script.addTab( 2 )
+                      .addLine( "AND PS.member = ",
+                                ProjectDetails.RIGHT_MEMBER );
+                script.addTab( 2 )
+                      .addLine( "AND TS.ensemble_id = E.ensemble_id" );
+                script.addLine( ");" );
 
-            int timeSeriesSize = script.retrieve( "size" );
+                double timeSeriesSize = script.retrieve( "size" );
 
-            // We're going to limit the size of a time series group to 1MB
-            final int sizeCap = 1000;
+                // We're going to limit the size of a time series group to 1MB
+                final int sizeCap = 1000;
 
-            // The number of series to retrieve will either be 1 or the number
-            // of time series that may be retrieved and still fit under the cap.
-            // Using Math.max ensures that we'll pull at least one value at a time.
-            // If a single time series has an estimated size of 1186KB, we'll
-            // only retrieve one time series at a time. If the estimated size is
-            // 400KB, we'll bring in two at a time.
-            this.numberOfSeriesToRetrieve = Math.max(1, sizeCap / timeSeriesSize);
+                // The number of series to retrieve will either be 1 or the number
+                // of time series that may be retrieved and still fit under the cap.
+                // Using Math.max ensures that we'll pull at least one value at a time.
+                // If a single time series has an estimated size of 1186KB, we'll
+                // only retrieve one time series at a time. If the estimated size is
+                // 400KB, we'll bring in two at a time.
+                this.numberOfSeriesToRetrieve =
+                        ( ( Double ) Math.max( 1.0, sizeCap / timeSeriesSize ) )
+                                .intValue();
+            }
+
+            return this.numberOfSeriesToRetrieve;
         }
+    }
 
-        return this.numberOfSeriesToRetrieve;
+    /**
+     * @return Indicates whether or not pairs will be fed into time series
+     * only metrics
+     */
+    public boolean usesTimeSeriesMetrics()
+    {
+        return Collections.exists(
+                this.projectConfig.getMetrics(),
+                metric -> !metric.getTimeSeriesMetric().isEmpty()
+        );
     }
 
     /**
@@ -1970,7 +1960,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
      */
     public Integer getIssuePoolCount( Feature feature) throws SQLException
     {
-        if ( getPoolingMode() != TimeWindowMode.ROLLING)
+        if ( this.getPairingMode() != PairingMode.ROLLING)
         {
             return -1;
         }
@@ -2342,21 +2332,51 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     @Override
     public void save() throws SQLException
     {
-        String[] tablesToLock = { "wres.project" };
-        Pair<Integer,Boolean> databaseResult
-                = Database.getResult( this.getInsertSelectStatement(),
-                                      this.getIDName(),
-                                      tablesToLock );
+        Connection connection = null;
+        ResultSet results = null;
 
-        if ( LOGGER.isDebugEnabled() )
+        try
         {
-            LOGGER.debug( "Did I create Project ID {}? {}",
-                          databaseResult.getLeft(),
-                          databaseResult.getRight() );
-        }
+            connection = Database.getConnection();
+            connection.setAutoCommit( false );
 
-        this.setID( databaseResult.getLeft() );
-        this.performedInsert = databaseResult.getRight();
+            Database.lockTable( connection, "wres.Project" );
+
+            results = Database.getResults( connection, this.getInsertSelectStatement() );
+
+            this.setID( Database.getValue( results, this.getIDName() ) );
+            this.performedInsert = Database.getValue( results, "wasInserted" );
+
+            connection.commit();
+
+            if ( LOGGER.isTraceEnabled() )
+            {
+                LOGGER.trace( "Did I create Project ID {}? {}",
+                              this.getId(),
+                              this.performedInsert );
+            }
+        }
+        catch (SQLException e)
+        {
+            if (connection != null)
+            {
+                connection.rollback();
+            }
+
+            throw e;
+        }
+        finally
+        {
+            if (results != null)
+            {
+                results.close();
+            }
+            if (connection != null)
+            {
+                connection.setAutoCommit( true );
+                Database.returnConnection( connection );
+            }
+        }
     }
 
     public boolean performedInsert()
@@ -2652,10 +2672,14 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
                 script.addTab(  2  ).addLine(")");
                 script.addTab().addLine("ORDER BY TS.initialization_date");
                 script.addLine(")");
-                script.addLine("SELECT MAX(IL.lag) AS typical_gap");
-                script.addLine("FROM initialization_lag IL;");
+                script.addLine("SELECT max(IL.lag) AS typical_gap");
+                script.addLine("-- We take the max to ensure that values are contained within;");
+                script.addLine("--   If we try to take the mode, we risk being too granular");
+                script.addLine("--   and trying to select values that aren't there.");
+                script.addLine("FROM initialization_lag IL");
+                script.addLine("WHERE IL.lag IS NOT NULL;");
 
-                this.forecastLag.put( feature, script.retrieve( "typical_lag" ) );
+                this.forecastLag.put( feature, script.retrieve( "typical_gap" ) );
             }
 
 

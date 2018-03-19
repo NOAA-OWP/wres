@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Objects;
 
 
+import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
 import wres.config.generated.TimeWindowMode;
@@ -17,6 +18,13 @@ import wres.util.NotImplementedException;
 
 public abstract class Scripter extends ScriptBuilder
 {
+    private enum Mode
+    {
+        unknown,
+        backToBack,
+        rolling,
+        timeSeries
+    }
 
     protected Scripter( ProjectDetails projectDetails,
                         DataSourceConfig dataSourceConfig,
@@ -36,16 +44,13 @@ public abstract class Scripter extends ScriptBuilder
                                         Feature feature,
                                         int progress,
                                         int sequenceStep)
-            throws SQLException, IOException
+            throws SQLException, IOException, ProjectConfigException
     {
         Scripter loadScripter;
 
-        // TODO: This function probably needs to be modified to also include the PersistenceForecastScripter
-        // TimeWindowMode is probably no longer viable
-        TimeWindowMode mode = projectDetails.getPoolingMode();
         boolean isForecast = ConfigHelper.isForecast( dataSourceConfig );
 
-        switch ( mode )
+        switch ( projectDetails.getPairingMode() )
         {
             case BACK_TO_BACK:
                 if (isForecast)
@@ -82,7 +87,17 @@ public abstract class Scripter extends ScriptBuilder
                 }
                 else
                 {
-                    loadScripter = new PoolingObservationScripter(
+                    throw new ProjectConfigException(
+                            projectDetails.getProjectConfig(),
+                            "Only forecasts may perform evaluations based on "
+                            + "issue times. This configuration is attempting to "
+                            + "use observations or simulations instead." );
+                }
+                break;
+            case TIME_SERIES:
+                if (isForecast)
+                {
+                    loadScripter = new TimeSeriesScripter(
                             projectDetails,
                             dataSourceConfig,
                             feature,
@@ -90,14 +105,19 @@ public abstract class Scripter extends ScriptBuilder
                             sequenceStep
                     );
                 }
+                else
+                {
+                    throw new ProjectConfigException(
+                            projectDetails.getProjectConfig(),
+                            "Only forecasts may perform time series evaluations."
+                            + " This configuration is attempting to use "
+                            + "observations or simulations instead." );
+                }
                 break;
             default:
-                throw new NotImplementedException( "Comparison data could not be " +
-                                                   "loaded due to an incorrect " +
-                                                   "configuration. The configuration " +
-                                                   "mode of '" +
-                                                   String.valueOf(mode) +
-                                                   "' is not supported." );
+                throw new IllegalStateException( "A script used to retrieve "
+                                                 + "evaluation pairs could not "
+                                                 + "be generated." );
         }
 
         return loadScripter.formScript();

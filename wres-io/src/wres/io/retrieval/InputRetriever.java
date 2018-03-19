@@ -21,6 +21,7 @@ import java.util.function.BinaryOperator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.DestinationConfig;
@@ -289,7 +290,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
 
             if ( this.projectDetails.getRight().getType() == DatasourceType.ENSEMBLE_FORECASTS )
             {
-                if ( ConfigHelper.hasTimeSeriesMetrics( this.projectDetails.getProjectConfig() ) )
+                if ( this.projectDetails.usesTimeSeriesMetrics())
                 {
                     input = this.createEnsembleTimeSeriesInput( metadata, baselineMetadata );
                 }
@@ -300,7 +301,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             }
             else
             {
-                if ( ConfigHelper.hasTimeSeriesMetrics( this.projectDetails.getProjectConfig() ) )
+                if ( this.projectDetails.usesTimeSeriesMetrics())
                 {
                     input = this.createSingleValuedTimeSeriesInput( metadata, baselineMetadata );
                 }
@@ -412,7 +413,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                                           this.climatology );
     }
 
-    private Map<Instant, List<Event<PairOfDoubleAndVectorOfDoubles>>> getEnsembleEvents(List<ForecastedPair> pairs)
+    /*private Map<Instant, List<Event<PairOfDoubleAndVectorOfDoubles>>> getEnsembleEvents(List<ForecastedPair> pairs)
     {
         Map<Instant, List<Event<PairOfDoubleAndVectorOfDoubles>>> events = new TreeMap<>(  );
 
@@ -427,7 +428,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         }
 
         return events;
-    }
+    }*/
 
     private Map<Instant, List<Event<PairOfDoubles>>> getSingleValuedEvents(List<ForecastedPair> pairs)
     {
@@ -520,11 +521,19 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
 
         if ( this.projectDetails.getRight().equals(dataSourceConfig))
         {
-            loadScript = Scripter.getLoadScript( this.projectDetails,
-                                                 dataSourceConfig,
-                                                 feature,
-                                                 leadIteration,
-                                                 this.issueDatesPool );
+            try
+            {
+                loadScript = Scripter.getLoadScript( this.projectDetails,
+                                                     dataSourceConfig,
+                                                     feature,
+                                                     leadIteration,
+                                                     this.issueDatesPool );
+            }
+            catch ( ProjectConfigException e )
+            {
+                throw new IOException( "Illegal configuration is preventing "
+                                       + "data from being loaded for pairing.", e );
+            }
             // We save the script for debugging purposes
             this.rightScript = loadScript;
         }
@@ -544,12 +553,20 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             }
             else
             {
-                loadScript =
-                        Scripter.getLoadScript( this.projectDetails,
-                                                dataSourceConfig,
-                                                this.feature,
-                                                this.leadIteration,
-                                                this.issueDatesPool );
+                try
+                {
+                    loadScript =
+                            Scripter.getLoadScript( this.projectDetails,
+                                                    dataSourceConfig,
+                                                    this.feature,
+                                                    this.leadIteration,
+                                                    this.issueDatesPool );
+                }
+                catch ( ProjectConfigException e )
+                {
+                    throw new IOException( "Illegal configuration is preventing "
+                                           + "data from being loaded for pairing.", e );
+                }
             }
         }
         return loadScript;

@@ -1,6 +1,7 @@
 package wres.io.config;
 
 import static wres.config.generated.SourceTransformationType.PERSISTENCE;
+import static wres.io.data.details.ProjectDetails.PairingMode.ROLLING;
 
 import java.io.File;
 import java.io.IOException;
@@ -828,22 +829,17 @@ public class ConfigHelper
         {
             PoolingWindowConfig leadPoolingWindow =
                     projectDetails.getProjectConfig().getPair().getLeadTimesPoolingWindow();
-            /*long leadPoolPeriod = TimeHelper.unitsToLeadUnits(
-                    leadPoolingWindow.getUnit().value(),
-                    leadPoolingWindow.getPeriod()
-            );*/
 
             beginningLead =
                     endingLead.minus( leadPoolingWindow.getPeriod(),
                                       ChronoUnit.valueOf( leadPoolingWindow.getUnit().toString().toUpperCase() ) );
-            //beginningLead = Duration.of( lead - leadPoolPeriod, ChronoUnit.HOURS );
         }
         else
         {
             beginningLead = endingLead;
         }
 
-        if ( projectDetails.getPoolingMode() == TimeWindowMode.ROLLING )
+        if ( projectDetails.getPairingMode() == ROLLING )
         {
             long frequencyOffset = TimeHelper.unitsToLeadUnits( projectDetails.getIssuePoolingWindowUnit(),
                                                                 projectDetails.getIssuePoolingWindowFrequency() )
@@ -868,8 +864,6 @@ public class ConfigHelper
                                             ReferenceTime.ISSUE_TIME,
                                             beginningLead,
                                             endingLead
-            //Duration.ofHours( lead ),
-            //Duration.ofHours( lead )
             );
         }
         //Valid dates available
@@ -880,8 +874,6 @@ public class ConfigHelper
                                             ReferenceTime.VALID_TIME,
                                             beginningLead,
                                             endingLead
-            //Duration.ofHours( lead ),
-            //Duration.ofHours( lead )
             );
         }
         //Issue dates available
@@ -1552,7 +1544,7 @@ public class ConfigHelper
     }
 
     /**
-     * Reads a {@link ThresholdConfig} and returns a corresponding {@link Set} of external {@link Threshold} 
+     * Reads a {@link ThresholdConfig} and returns a corresponding {@link Set} of external {@link Threshold}
      * by {@link FeaturePlus}.
      * 
      * @param threshold the threshold configuration

@@ -30,11 +30,10 @@ class TimeSeriesScripter extends Scripter
     {
         this.add("SELECT ");
         this.applyValueDate();
-        this.applyScaleMember();
+        this.applyBasisTime();
         this.addTab().addLine( "FV.lead,");
         this.addTab().addLine( "ARRAY_AGG(FV.forecasted_value ORDER BY TS.ensemble_id) AS measurements," );
-        this.addTab().add( "TS.measurementunit_id" );
-        this.applyPersistenceRelatedFieldLines();
+        this.addTab().addLine( "TS.measurementunit_id" );
         this.addLine("FROM (");
         this.applyTimeSeriesSelect();
         this.addLine(") AS TS");
@@ -66,7 +65,7 @@ class TimeSeriesScripter extends Scripter
 
     private void applyTimeSeriesSelect() throws SQLException
     {
-        this.addTab().add("SELECT TS.initialization_date, TS.ensemble_id, TS.timeseries_id, ");
+        this.addTab().add("SELECT TS.initialization_date, TS.ensemble_id, TS.timeseries_id, TS.measurementunit_id, ");
 
         if (this.usesNetCDF())
         {
@@ -92,17 +91,14 @@ class TimeSeriesScripter extends Scripter
 
         this.addTab().addLine("WHERE ", this.getVariablePositionClause());
         this.addTab(  2  ).addLine(
-                "AND TS.initialization_date >= ",
-                this.getMinimumForecastDate(),
-                "::timestamp without time zone + (INTERVAL '1 HOUR' * ",
-                this.getForecastLag(),
-                ") * ",
-                this.getSequenceStep(),
-                " + (INTERVAL '1 HOUR' * ",
-                this.getForecastLag(),
-                ") * ",
-                this.getProjectDetails().getNumberOfSeriesToRetrieve()
+                "AND TS.initialization_date >= ", this.getMinimumForecastDate(),
+                "::timestamp without time zone + (INTERVAL '", this.getForecastLag(), " HOUR') * ",
+                this.getProjectDetails().getNumberOfSeriesToRetrieve() * this.getSequenceStep()
         );
+        this.addTab(  2  ).addLine(
+                "AND TS.initialization_date < ", this.getMinimumForecastDate(),
+                "::timestamp without time zone + (INTERVAL '", this.getForecastLag(), " HOUR') * ",
+                this.getProjectDetails().getNumberOfSeriesToRetrieve() * (this.getSequenceStep() + 1));
         this.addTab(  2  ).addLine("AND EXISTS (");
         this.addTab(   3   ).addLine( "SELECT 1");
         this.addTab(   3   ).addLine( "FROM wres.ProjectSource PS");
@@ -123,18 +119,6 @@ class TimeSeriesScripter extends Scripter
         }
 
         this.addTab(  2  ).addLine(")");
-    }
-
-    private void applyPersistenceRelatedFieldLines()
-    {
-        if ( ConfigHelper.hasPersistenceBaseline( this.getProjectDetails().getProjectConfig() ) )
-
-        {
-            this.addLine(",");
-            this.addTab().add("EXTRACT( epoch from " + this.getBaseDateName() + " ) as basis_epoch_time");
-        }
-
-        this.addLine();
     }
 
     private void applyLeadQualifier() throws SQLException, IOException
@@ -202,46 +186,9 @@ class TimeSeriesScripter extends Scripter
         super.applySeasonConstraint();
     }
 
-    private void applyScaleMember() throws IOException, SQLException
+    private void applyBasisTime()
     {
-        if ( !this.getProjectDetails().shouldScale() )
-        {
-            this.add("F.lead");
-        }
-        else
-        {
-            int leadModifier = this.getProgress() + this.getLeadOffset() + 1;
-
-            this.add( "(F.lead - ", leadModifier, ") % " );
-            this.add( TimeHelper.unitsToLeadUnits( this.getProjectDetails()
-                                                       .getScale().getUnit().value(),
-                                                   this.getProjectDetails()
-                                                       .getScale().getPeriod() ) );
-        }
-        this.addLine( " AS scale_member," );
-    }
-
-    private int getLeadOffset() throws IOException
-    {
-        Integer offset;
-        try
-        {
-            offset = this.getProjectDetails().getLeadOffset( this.getFeature() );
-        }
-        catch ( SQLException e )
-        {
-            throw new IOException("The offset for '" +
-                                  ConfigHelper.getFeatureDescription( this.getFeature() ) +
-                                  "' could not be evaluated.");
-        }
-
-        if (offset == null)
-        {
-            throw new NoDataException( "There is not a valid offset for '" + ConfigHelper
-                    .getFeatureDescription(this.getFeature()) + "'." );
-        }
-
-        return offset;
+        this.addTab().addLine("EXTRACT(epoch FROM TS.initialization_date)::bigint AS basis_epoch_time,");
     }
 
     @Override
@@ -321,7 +268,7 @@ class TimeSeriesScripter extends Scripter
         {
             this.add("TS.source_id, ");
         }
-        this.addLine("lead, scale_member");
+        this.addLine("lead");
     }
 
     private boolean usesNetCDF()

@@ -223,7 +223,7 @@ public class PairWriter extends WRESCallable<Boolean>
         // pooling step 1, etc. To find the overall window (i.e. "this is the
         // fifth calculation"), you need to break down the calculation to
         // compensate for the number of intermediate windows
-        if ( this.projectDetails.getPoolingMode() == TimeWindowMode.ROLLING )
+        if ( this.projectDetails.getPairingMode() == ProjectDetails.PairingMode.ROLLING )
         {
             window *= (this.projectDetails.getIssuePoolCount( this.feature ));
             window += this.poolingStep;

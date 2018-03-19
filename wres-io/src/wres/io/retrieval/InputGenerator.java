@@ -31,10 +31,10 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>>
     public Iterator<Future<MetricInput<?>>> iterator()
     {
         // TODO: Evaluate what kind of MetricInputIterator to return.
-        Iterator<Future<MetricInput<?>>> iterator = null;
+        Iterator<Future<MetricInput<?>>> iterator;
         try
         {
-            switch (this.projectDetails.getPoolingMode())
+            switch (this.projectDetails.getPairingMode())
             {
                 case ROLLING:
                     iterator = new PoolingMetricInputIterator( this.feature,
@@ -44,9 +44,13 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>>
                     iterator =  new BackToBackMetricInputIterator( this.feature,
                                                                    this.projectDetails );
                     break;
+                case TIME_SERIES:
+                    iterator = new TimeSeriesMetricInputIterator( this.feature,
+                                                                  this.projectDetails );
+                    break;
                 default:
                     throw new NotImplementedException( "The aggregation mode of '" +
-                                                       this.projectDetails.getPoolingMode() +
+                                                       this.projectDetails.getPairingMode() +
                                                        "' has not been implemented." );
             }
         }

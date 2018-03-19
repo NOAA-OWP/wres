@@ -322,7 +322,6 @@ public class USGSReader extends BasicSource
             else
             {
                 String unit;
-                String aggregation;
 
                 if ( this.getDataSourceConfig().getVariable().getUnit()
                      != null )
@@ -345,22 +344,27 @@ public class USGSReader extends BasicSource
                     }
                 }
 
-                if ( this.getDataSourceConfig()
-                         .getExistingTimeScale()
-                         .getUnit() == DurationUnit.SECONDS )
+                if (unit != null && this.getDataSourceConfig().getExistingTimeScale() == null)
                 {
-                    aggregation = "instant";
+                    this.parameter = USGSParameters.getParameter( variableName, unit );
                 }
-                else
+                else if ( unit != null )
                 {
-                    aggregation = this.getDataSourceConfig()
-                                      .getExistingTimeScale()
-                                      .getFunction()
-                                      .value();
-                }
+                    String aggregation;
+                    if ( this.getDataSourceConfig()
+                             .getExistingTimeScale()
+                             .getUnit() == DurationUnit.SECONDS )
+                    {
+                        aggregation = "instant";
+                    }
+                    else
+                    {
+                        aggregation = this.getDataSourceConfig()
+                                          .getExistingTimeScale()
+                                          .getFunction()
+                                          .value();
+                    }
 
-                if ( unit != null )
-                {
                     this.parameter = USGSParameters.getParameter( variableName,
                                                                   unit,
                                                                   aggregation );
@@ -471,7 +475,8 @@ public class USGSReader extends BasicSource
     {
         String valueType;
 
-        if (this.dataSourceConfig.getExistingTimeScale().getUnit() == DurationUnit.DAYS)
+        if ( this.dataSourceConfig.getExistingTimeScale() != null &&
+             this.dataSourceConfig.getExistingTimeScale().getUnit() == DurationUnit.DAYS)
         {
             valueType = DAILY_VALUE;
         }
