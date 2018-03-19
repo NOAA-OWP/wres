@@ -2,6 +2,7 @@ package wres.io.writing.netcdf;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -395,11 +396,7 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                                                                    thresholdCount,
                                                                    metrics );
                 writer.create();
-
-                if ( LOGGER.isDebugEnabled() )
-                {
-                    writer.flush();
-                }
+                writer.flush();
 
                 fileWriters.add( writer );
             }
@@ -722,12 +719,6 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
 
         this.getOrAddValueToVariable( writer, features, featureId );
 
-        if ( LOGGER.isDebugEnabled() )
-        {
-            writer.flush();
-        }
-
-
         // Set up thresholds
         Variable thresholds =
                 NetcdfDoubleScoreWriter.getVariableOrDie( writer, "threshold" );
@@ -775,28 +766,9 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                                           t.toString() );
         }
 
-        if ( LOGGER.isDebugEnabled() )
-        {
-            writer.flush();
-        }
-
         // Set up times (can be used for basis time or valid time)
         Variable times =
                 NetcdfDoubleScoreWriter.getVariableOrDie( writer, "time" );
-        int[] timeValues = { 1520520000, 1520530000 };
-        Array ncTimeValues = ArrayInt.D1.makeFromJavaArray( timeValues );
-
-        try
-        {
-            writer.write( times, ncTimeValues );
-        }
-        catch ( InvalidRangeException ire )
-        {
-            throw new IOException( "Failed to write to variable "
-                                   + times + " in NetCDF file "
-                                   + writer, ire );
-        }
-
 
         // Set up lead seconds
         Variable leadSeconds =
@@ -827,15 +799,71 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
             this.getOrAddValueToVariable( writer,
                                           leadSeconds,
                                           (int) earliestLeadTime );
+
             this.getOrAddValueToVariable( writer,
                                           leadSeconds,
                                           (int) latestLeadTime );
-        }
 
 
-        if ( LOGGER.isDebugEnabled() )
-        {
-            writer.flush();
+            long earliestTime;
+            long latestTime;
+
+            Instant earliest = window.getEarliestTime();
+
+            if ( earliest.equals( Instant.MIN ) )
+            {
+                // fill value is MIN_VALUE
+                earliestTime = Integer.MIN_VALUE + 1;
+            }
+            else if ( earliest.equals( Instant.MAX ) )
+            {
+                earliestTime = Integer.MAX_VALUE;
+            }
+            else
+            {
+                earliestTime = earliest.getEpochSecond();
+            }
+
+            Instant latest = window.getLatestTime();
+
+            if ( latest.equals( Instant.MAX ) )
+            {
+                latestTime = Integer.MAX_VALUE;
+            }
+            else if ( latest.equals( Instant.MIN ) )
+            {
+                // fill value is MIN_VALUE
+                latestTime = Integer.MIN_VALUE + 1;
+            }
+            else
+            {
+                latestTime = latest.getEpochSecond();
+            }
+
+            if ( earliestTime < Integer.MIN_VALUE
+                || earliestTime > Integer.MAX_VALUE )
+            {
+                throw new UnsupportedOperationException( "Can't store time value "
+                                                         + earliestTime
+                                                         + " derived from "
+                                                         + earliest + " in an integer." );
+            }
+
+            if ( latestTime < Integer.MIN_VALUE
+                 || latestTime > Integer.MAX_VALUE )
+            {
+                throw new UnsupportedOperationException( "Can't store time value "
+                                                         + latestTime
+                                                         + " derived from "
+                                                         + latest + " in an integer." );
+            }
+
+            this.getOrAddValueToVariable( writer,
+                                          times,
+                                          (int) earliestTime );
+            this.getOrAddValueToVariable( writer,
+                                          times,
+                                          (int) latestTime );
         }
 
         WresNetcdfVariables coordinateVariables =
@@ -1042,11 +1070,6 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                 }
             }
         }
-
-        if ( LOGGER.isDebugEnabled() )
-        {
-            writer.flush();
-        }
     }
 
     /**
@@ -1180,6 +1203,8 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                                        + ncToWrite, ire );
             }
 
+            writer.flush();
+
             return indexToUse;
         }
     }
@@ -1289,6 +1314,8 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                                        + " and nc data "
                                        + ncToWrite, ire );
             }
+
+            writer.flush();
 
             return indexToUse;
         }
@@ -1416,6 +1443,8 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                                        + " and nc data "
                                        + ncToWrite, ire );
             }
+
+            writer.flush();
 
             return stringIndex;
         }
