@@ -18,6 +18,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import com.sun.org.apache.bcel.internal.generic.NEW;
 import org.slf4j.LoggerFactory;
 
 import wres.config.FeaturePlus;
@@ -467,6 +468,36 @@ public final class Operations {
                        + "            ON FS.source_id = PS.source_id" + NEWLINE
                        + "        INNER JOIN wres.Project P" + NEWLINE
                        + "            ON P.project_id = PS.project_id" + NEWLINE
+                       + "        WHERE P.input_code = "
+                       + projectIdentifier + NEWLINE
+                       + "            AND FS.forecast_id = TS.timeseries_id" + NEWLINE
+                       + "    );";
+        return (long) Database.getResult( query, LABEL );
+    }
+
+
+    /**
+     * Get the count of basis times for a project
+     * TODO: optimize
+     * @param projectIdentifier the code/hash of a project (not row id)
+     * @return the count of distinct basis times found across all forecasts
+     * in the project
+     */
+    public static long getBasisTimeCountsForProject( String projectIdentifier )
+            throws SQLException
+    {
+        final String NEWLINE = System.lineSeparator();
+        final String LABEL = "total_bases";
+        String query = "SELECT count( distinct( TS.initialization_date ) ) AS "
+                       + LABEL + NEWLINE
+                       + "FROM wres.TimeSeries TS" + NEWLINE
+                       + "WHERE EXISTS (" + NEWLINE
+                       + "        SELECT 1" + NEWLINE
+                       + "        FROM wres.ProjectSource PS" + NEWLINE
+                       + "        INNER JOIN wres.ForecastSource FS" + NEWLINE
+                       + "            ON FS.source_id = PS.source_id" + NEWLINE
+                       + "        INNER JOIN wres.Project P" + NEWLINE
+                       + "            ON P.project_id = PS.project_id"
                        + "        WHERE P.input_code = "
                        + projectIdentifier + NEWLINE
                        + "            AND FS.forecast_id = TS.timeseries_id" + NEWLINE

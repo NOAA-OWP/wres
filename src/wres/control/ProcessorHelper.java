@@ -130,8 +130,9 @@ class ProcessorHelper
         // The project code - ideally project hash
         String projectIdentifier = String.valueOf( projectDetails.getKey() );
 
-        // Need to get lead counts when netcdf is specified
+        // Need to get lead counts when netcdf is specified, basis times
         long leadCount = 0;
+        long basisTimes = 0;
 
         if ( ConfigHelper.getIncrementalFormats( projectConfig )
                          .contains( DestinationType.NETCDF ) )
@@ -151,6 +152,22 @@ class ProcessorHelper
                                        + Integer.MAX_VALUE
                                        + " lead times in a netCDF file." );
             }
+
+            try
+            {
+                basisTimes = Operations.getBasisTimeCountsForProject( projectIdentifier );
+            }
+            catch ( SQLException se )
+            {
+                throw new IOException( "Unable to get basis time counts.", se );
+            }
+
+            if ( basisTimes > Integer.MAX_VALUE )
+            {
+                throw new IOException( "Cannot use more than "
+                                       + Integer.MAX_VALUE
+                                       + " lead times in a netCDF file." );
+            }
         }
 
         ResolvedProject resolvedProject = ResolvedProject.of( projectConfigPlus,
@@ -161,7 +178,7 @@ class ProcessorHelper
         // Build any writers of incremental formats that are shared across features
         SharedWriters sharedWriters = ConfigHelper.getSharedWriters( projectConfig,
                                                                      resolvedProject.getFeatureCount(),
-                                                                     2,
+                                                                     (int) basisTimes,
                                                                      (int) leadCount,
                                                                      resolvedProject.getThresholdCount(),
                                                                      resolvedProject.getDoubleScoreMetrics() );
