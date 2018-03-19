@@ -12,6 +12,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
+import wres.config.generated.AbstractMetricConfig;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.MetricConfig;
@@ -25,6 +26,7 @@ import wres.config.generated.ThresholdOperator;
 import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
 import wres.config.generated.TimeSeriesMetricConfig;
+import wres.config.generated.TimeSeriesMetricConfigName;
 import wres.datamodel.DataFactory;
 import wres.datamodel.Dimension;
 import wres.datamodel.MetricConstants;
@@ -59,10 +61,17 @@ public final class MetricConfigHelper
     public static final String NULL_DATA_FACTORY_ERROR = "Specify a non-null data factory.";
 
     /**
-     * Map between names
+     * Map between {@link MetricConfigName} and {@link MetricConstants}.
      */
 
     private static final EnumMap<MetricConfigName, MetricConstants> NAME_MAP = new EnumMap<>( MetricConfigName.class );
+
+    /**
+     * Map between {@link TimeSeriesMetricConfigName} and {@link MetricConstants}.
+     */
+
+    private static final EnumMap<TimeSeriesMetricConfigName, MetricConstants> TIME_SERIES_NAME_MAP =
+            new EnumMap<>( TimeSeriesMetricConfigName.class );
 
     /**
      * Map between summary statistic names
@@ -102,6 +111,37 @@ public final class MetricConfigHelper
         return NAME_MAP.get( configName );
     }
 
+    /**
+     * Returns the {@link MetricConstants} that corresponds to the {@link TimeSeriesMetricConfigName} or null if the 
+     * input is {@link MetricConfigName#ALL_VALID}. Throws an exception if no such mapping is available. 
+     * 
+     * @param configName the name in the {@link TimeSeriesMetricConfigName}
+     * @return the corresponding name in the {@link MetricConstants}
+     * @throws MetricConfigurationException if the configName is not mapped or the input is null
+     */
+
+    public static MetricConstants from( TimeSeriesMetricConfigName configName ) throws MetricConfigurationException
+    {
+        if ( Objects.isNull( configName ) )
+        {
+            throw new MetricConfigurationException( "Unable to map a null input identifier to a named metric." );
+        }
+
+        buildTimeSeriesMap();
+
+        //All valid metrics
+        if ( configName.equals( MetricConfigName.ALL_VALID ) )
+        {
+            return null;
+        }
+        if ( !TIME_SERIES_NAME_MAP.containsKey( configName ) )
+        {
+            throw new MetricConfigurationException( " Unable to find a metric with a configured identifier of "
+                                                    + "'" + configName + "'." );
+        }
+        return TIME_SERIES_NAME_MAP.get( configName );
+    }    
+    
     /**
      * Returns the {@link MetricConfigName} that corresponds to the {@link MetricConstants}. Cannot map the
      * {@link MetricConfigName#ALL_VALID}. Throws an exception if no mapping is available. 
@@ -302,21 +342,21 @@ public final class MetricConfigHelper
     }
 
     /**
-     * Returns the {@link MetricConfig} associated with each {@link MetricConstants} in the input {@link ProjectConfig}. 
-     * If the {@link ProjectConfig} contains the identifier {@link MetricConfigName#ALL_VALID}, all supported metrics 
-     * are returned that are consistent with the configuration. 
+     * Returns the {@link AbstractMetricConfig} associated with each {@link MetricConstants} in the input 
+     * {@link ProjectConfig}. If the {@link ProjectConfig} contains the identifier {@link MetricConfigName#ALL_VALID}, 
+     * all supported metrics are returned that are consistent with the configuration. 
      * 
      * @param config the project configuration
      * @return a map of metrics against their configuration
      * @throws MetricConfigurationException if the metrics are configured incorrectly
      */
 
-    public static Map<MetricConstants, MetricConfig> getMetricConfigByMetric( ProjectConfig config )
+    public static Map<MetricConstants, AbstractMetricConfig> getMetricConfigByMetric( ProjectConfig config )
             throws MetricConfigurationException
     {
         Objects.requireNonNull( config, "Specify a non-null project from which to obtain the metric configuration." );
 
-        Map<MetricConstants, MetricConfig> returnMe = new EnumMap<>( MetricConstants.class );
+        Map<MetricConstants, AbstractMetricConfig> returnMe = new EnumMap<>( MetricConstants.class );
 
         returnMe.putAll( MetricConfigHelper.getMetricConfigByOrdinaryMetric( config ) );
         
@@ -436,7 +476,7 @@ public final class MetricConfigHelper
      * @throws MetricConfigurationException if the configuration is invalid
      */
 
-    public static boolean hasSummaryStatisticsFor( ProjectConfig config, MetricConfigName metric )
+    public static boolean hasSummaryStatisticsFor( ProjectConfig config, TimeSeriesMetricConfigName metric )
             throws MetricConfigurationException
     {
         Objects.requireNonNull( config, "Specify a non-null project configuration to check for summary statistics" );
@@ -460,7 +500,7 @@ public final class MetricConfigHelper
      * @throws MetricConfigurationException if the project contains an unmapped summary statistic
      */
 
-    public static MetricConstants[] getSummaryStatisticsFor( ProjectConfig config, MetricConfigName metric )
+    public static MetricConstants[] getSummaryStatisticsFor( ProjectConfig config, TimeSeriesMetricConfigName metric )
             throws MetricConfigurationException
     {
         Objects.requireNonNull( config, "Specify a non-null project configuration to check for summary statistics" );
@@ -731,21 +771,21 @@ public final class MetricConfigHelper
 
         Map<MetricConstants, TimeSeriesMetricConfig> returnMe = new EnumMap<>( MetricConstants.class );
 
-        // Iterate through the ordinary metrics and populate the map
+        // Iterate through the metric groups
         for ( MetricsConfig metrics : config.getMetrics() )
         {
             for ( TimeSeriesMetricConfig next : metrics.getTimeSeriesMetric() )
             {
                 // All valid metrics
-                if ( next.getName() == MetricConfigName.ALL_VALID )
+                if ( next.getName() == TimeSeriesMetricConfigName.ALL_VALID )
                 {
                     Set<MetricConstants> allValid = null;
                     MetricInputGroup inGroup = MetricConfigHelper.getInputType( config );
 
-                    // Single-valued metrics
+                    // Single-valued input source
                     if ( inGroup == MetricInputGroup.SINGLE_VALUED )
                     {
-                        allValid = MetricConfigHelper.getValidMetricsForSingleValuedInput( config );
+                        allValid = MetricConfigHelper.getValidMetricsForSingleValuedTimeSeriesInput( config );
                     }
                     // Unrecognized type
                     else
@@ -1001,6 +1041,30 @@ public final class MetricConfigHelper
             }
         }
     }
+    
+    /**
+     * Builds the mapping between the {@link MetricConstants} and the {@link TimeSeriesMetricConfigName} 
+     */
+
+    private static void buildTimeSeriesMap()
+    {
+        //Lazy population
+        if ( TIME_SERIES_NAME_MAP.isEmpty() )
+        {
+            //Match on name
+            for ( TimeSeriesMetricConfigName nextConfig : TimeSeriesMetricConfigName.values() )
+            {
+                for ( MetricConstants nextMetric : MetricConstants.values() )
+                {
+                    if ( nextConfig.name().equals( nextMetric.name() ) )
+                    {
+                        TIME_SERIES_NAME_MAP.put( nextConfig, nextMetric );
+                        break;
+                    }
+                }
+            }
+        }
+    }    
 
     /**
      * Builds the mapping between the {@link MetricConstants} and the {@link SummaryStatisticsName} 

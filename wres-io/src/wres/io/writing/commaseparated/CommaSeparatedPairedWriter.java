@@ -151,7 +151,7 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
                                        StringJoiner headerRow,
                                        Format formatter )
     {
-        String outerName = metricName.toString();
+        String outerName = metricName.toString() + HEADER_DELIMITER;
         List<RowCompareByLeft> returnMe = new ArrayList<>();
 
         // Add the rows
@@ -159,8 +159,8 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
         for ( OneOrTwoThresholds t : output.setOfThresholdKey() )
         {
             // Append to header
-            headerRow.add( HEADER_DELIMITER + outerName + HEADER_DELIMITER + "BASIS TIME" + HEADER_DELIMITER + t );
-            headerRow.add( HEADER_DELIMITER + outerName + HEADER_DELIMITER + "DURATION" + HEADER_DELIMITER + t );
+            headerRow.add( outerName + "BASIS TIME" + HEADER_DELIMITER + t );
+            headerRow.add( outerName + "DURATION" + HEADER_DELIMITER + t );
             // Loop across time windows
             for ( TimeWindow timeWindow : output.setOfTimeWindowKey() )
             {
