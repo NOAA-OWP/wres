@@ -1,5 +1,7 @@
 package wres.io.writing;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
@@ -17,7 +19,7 @@ import wres.io.writing.netcdf.NetcdfDoubleScoreWriter;
  * 
  * @author james.brown@hydrosolved.com
  */
-public class SharedWriters
+public class SharedWriters implements Closeable
 {
 
     /**
@@ -122,4 +124,16 @@ public class SharedWriters
         this.storedTypes = Collections.unmodifiableSet( localTypes );
     }
 
+
+    /**
+     * Closes resources managed by SharedWriters
+     */
+
+    public void close() throws IOException
+    {
+        if ( this.getNetcdfDoubleScoreWriter() != null )
+        {
+            this.getNetcdfDoubleScoreWriter().close();
+        }
+    }
 }
