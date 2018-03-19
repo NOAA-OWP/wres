@@ -34,7 +34,6 @@ import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.PairedOutput;
 import wres.engine.statistics.metric.config.MetricConfigurationException;
-import wres.io.config.ConfigHelper;
 import wres.io.writing.SharedWriters;
 import wres.io.writing.commaseparated.CommaSeparatedBoxPlotWriter;
 import wres.io.writing.commaseparated.CommaSeparatedDiagramWriter;

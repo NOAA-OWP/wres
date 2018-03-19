@@ -78,7 +78,7 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
         {
 
             // Formatter
-            Format formatter = ConfigHelper.getDecimalFormatter( destinationConfig );
+            Format formatter = null;
 
             // Write per time-window
             try
