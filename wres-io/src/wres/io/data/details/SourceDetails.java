@@ -1,5 +1,7 @@
 package wres.io.data.details;
 
+import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Objects;
 
@@ -158,21 +160,52 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey> {
     @Override
     public void save() throws SQLException
     {
-        String[] tablesToLock = { "wres.source" };
-        Pair<Integer,Boolean> databaseResult
-                = Database.getResult( this.getInsertSelectStatement(),
-                                      this.getIDName(),
-                                      tablesToLock );
+        Connection connection = null;
+		ResultSet resultSet = null;
 
-        if ( LOGGER.isTraceEnabled() )
+		try
         {
-            LOGGER.trace( "Did I create Source ID {}? {}",
-                          databaseResult.getLeft(),
-                          databaseResult.getRight() );
-        }
+            connection = Database.getConnection();
+            connection.setAutoCommit( false );
 
-        this.setID( databaseResult.getLeft() );
-        this.performedInsert = databaseResult.getRight();
+            Database.lockTable( connection, "wres.Source" );
+
+            resultSet = Database.getResults( connection, this.getInsertSelectStatement() );
+
+            this.setID( Database.getValue( resultSet, this.getIDName() ) );
+            this.performedInsert = Database.getValue( resultSet, "wasInserted" );
+
+            connection.commit();
+
+            if ( LOGGER.isTraceEnabled() )
+            {
+                LOGGER.trace( "Did I create Source ID {}? {}",
+                              this.getId(),
+                              this.performedInsert );
+            }
+        }
+        catch (SQLException e)
+        {
+            if (connection != null)
+            {
+                connection.rollback();
+            }
+
+            throw e;
+        }
+        finally
+        {
+            if (resultSet != null)
+            {
+                resultSet.close();
+            }
+
+            if (connection != null)
+            {
+                connection.setAutoCommit( true );
+                Database.returnConnection( connection );
+            }
+        }
     }
 
     public boolean performedInsert()

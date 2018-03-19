@@ -874,164 +874,91 @@ public final class Database {
      * @throws SQLException Thrown if communication with the database was
      * unsuccessful.
      */
-	@SuppressWarnings("unchecked")
-    public static <T> T getResult( final String query,
-                                   final String label )
-            throws SQLException
-    {
-        return (T) Database.getResult( query, label, null ).getLeft();
-    }
-
-
-    /**
-     * Returns the first value in the labeled column from the query
-     * @param query The query used to select the value
-     * @param label The name of the column containing the data to retrieve
-     * @param <T> The type of data that should exist within the indicated column
-     * @param tablesToLock acquire an exclusive lock on these tables (can be
-     *                     either null or empty if caller desires no locks)
-     * @return The value in the indicated column from the first row of data.
-     * Null is returned if no data was found.
-     * The right hand boolean value of the pair indicates whether an insert was
-     * performed during retrieval: true if insert happened, false otherwise
-     * @throws SQLException Thrown if communication with the database was
-     * unsuccessful.
-     */
     @SuppressWarnings("unchecked")
-    public static <T> Pair<T,Boolean> getResult( final String query,
-                                                 final String label,
-                                                 final String[] tablesToLock )
+    public static <T> T getResult( final String query, final String label )
             throws SQLException
 	{
-		Connection connection = null;
-        Statement lockStatement = null;
-		Statement statement = null;
-		ResultSet results = null;
-		T result = null;
-        String lockQuery = null;
-        Boolean wasRowInserted = false;
+	    Connection connection = null;
+	    T result = null;
 
-        boolean shouldLock = tablesToLock != null && tablesToLock.length > 0;
-
-        try
+	    try
         {
-            connection = getConnection();
-
-            if ( shouldLock )
-            {
-                connection.setAutoCommit( false );
-                lockStatement = connection.createStatement();
-                lockStatement.setFetchSize( 1 );
-
-                StringJoiner tables = new StringJoiner(", ");
-
-                // Caller is responsible for correct order of locking
-                for ( String table : tablesToLock )
-                {
-                    tables.add( table );
-                }
-                lockQuery = "LOCK TABLE " + tables.toString()
-                            + " IN ACCESS EXCLUSIVE MODE";
-
-                LOGGER.trace( lockQuery );
-            }
-
-            if ( LOGGER.isTraceEnabled() )
-            {
-                LOGGER.trace( query );
-            }
-
-            statement = connection.createStatement();
-            statement.setFetchSize(1);
-
-            // Must this happen after the last statement is created? Doesn't
-            // seem to matter.
-            if ( shouldLock )
-            {
-                lockStatement.execute( lockQuery );
-            }
-
-            Timer scriptTimer = null;
-
-            if (LOGGER.isDebugEnabled())
-            {
-                scriptTimer = createScriptTimer( query );
-            }
-
-            results = statement.executeQuery(query);
-
-            if (LOGGER.isDebugEnabled())
-            {
-                scriptTimer.cancel();
-            }
-
-            ResultSetMetaData metaData = results.getMetaData();
-
-            if ( results.isBeforeFirst() )
-            {
-                results.next();
-                result = (T) results.getObject(label);
-            }
-
-            // If the CTE results in a second column, it should be "wasInserted"
-            if ( metaData.getColumnCount() == 2)
-            {
-                wasRowInserted =
-                        ( Boolean ) results.getObject( "wasInserted" );
-            }
-
-            if ( shouldLock )
-            {
-                connection.commit();
-            }
-        }
-        catch ( SQLException error )
-        {
-            LOGGER.error("The following SQL call failed: {}{}", NEWLINE, query, error );
-
-            if ( shouldLock && connection != null )
-            {
-                if ( lockQuery != null )
-                {
-                    LOGGER.error( "The lock statement may have failed: {}{}",
-                                  NEWLINE, lockQuery );
-                }
-                LOGGER.warn( "About to roll back" );
-                connection.rollback();
-                LOGGER.warn( "Finished rolling back" );
-            }
-            throw error;
+            connection = Database.getConnection();
+            result = Database.getResult( connection, query, label );
         }
         finally
         {
-            if (results != null)
-            {
-                results.close();
-            }
-
-            if ( lockStatement != null && !lockStatement.isClosed() )
-            {
-                lockStatement.close();
-            }
-
-            if ( statement != null && !statement.isClosed() )
-            {
-                statement.close();
-            }
-
             if (connection != null)
             {
-                if ( shouldLock )
-                {
-                    connection.setAutoCommit( true );
-                }
-                returnConnection(connection);
+                Database.returnConnection( connection );
             }
         }
 
-        LOGGER.trace( "Result of query: {}", result );
+        return result;
+	}
 
-        return Pair.of( result, wasRowInserted );
+
+	@SuppressWarnings("unchecked")
+	public static <T> T getResult( final Connection connection,
+								   final String query,
+								   final String label) throws SQLException
+	{
+		Statement statement = null;
+		ResultSet results = null;
+		T result = null;
+
+		try
+		{
+
+			if ( LOGGER.isTraceEnabled() )
+			{
+				LOGGER.trace( query );
+			}
+
+			statement = connection.createStatement();
+			statement.setFetchSize(1);
+
+			Timer scriptTimer = null;
+
+			if (LOGGER.isDebugEnabled())
+			{
+				scriptTimer = createScriptTimer( query );
+			}
+
+			results = statement.executeQuery(query);
+
+			if (LOGGER.isDebugEnabled())
+			{
+				scriptTimer.cancel();
+			}
+
+			if ( results.isBeforeFirst() )
+			{
+				results.next();
+				result = (T) results.getObject(label);
+			}
+		}
+		catch ( SQLException error )
+		{
+			LOGGER.error("The following SQL call failed: {}{}", NEWLINE, query, error );
+			throw error;
+		}
+		finally
+		{
+			if (results != null)
+			{
+				results.close();
+			}
+
+			if ( statement != null && !statement.isClosed() )
+			{
+				statement.close();
+			}
+		}
+
+		LOGGER.trace( "Result of query: {}", result );
+
+		return result;
 	}
 
     /**
@@ -1768,11 +1695,54 @@ public final class Database {
         return Database.CONNECTION_POOL;
     }
 
+    public static void lockTable(Connection connection, String tableName) throws SQLException
+    {
+        // Locking a table is nonsensical if the connection is autocommiting;
+        // even if the database implementation driver allows it, the lock will
+        // only last until the commit, which is immediate
+        if (LOGGER.isDebugEnabled() && connection.getAutoCommit())
+        {
+            LOGGER.debug( "The application is seeking to lock a table with a "
+                          + "connection that will automatically commit. Nothing "
+                          + "will be achieved by this action." );
+
+            StringJoiner traceJoiner = new StringJoiner( NEWLINE );
+            for (StackTraceElement trace : Thread.currentThread().getStackTrace())
+            {
+                traceJoiner.add( trace.toString() );
+            }
+
+            LOGGER.debug( traceJoiner.toString() );
+        }
+
+
+        Statement statement = null;
+        final String query = "LOCK TABLE " + tableName + " IN ACCESS EXCLUSIVE MODE;";
+
+        try
+        {
+            statement = connection.createStatement();
+            statement.execute( query );
+        }
+        catch (SQLException e)
+        {
+            LOGGER.error( "The table '" + tableName + "' could not be locked.", e );
+            LOGGER.error("The query was: '{}'", query);
+            throw e;
+        }
+        finally
+        {
+            if (statement == null)
+            {
+                statement.close();
+            }
+        }
+    }
+
     /**
      * Lock the database for mutation so that we can do clean up accurately.
      * @throws IOException when lock cannot be acquired or db has an error
      */
-
     public static void lockForMutation() throws IOException
     {
         final String RESULT_COLUMN = "pg_try_advisory_lock";
@@ -1853,14 +1823,6 @@ public final class Database {
 
     public static void releaseLockForMutation() throws IOException
     {
-        // This script is unneccessary; the advisory lock ends at session death
-        /*
-        final String RELEASE_LOCK_SCRIPT = "SELECT pg_advisory_unlock( "
-                                           + MUTATION_LOCK_KEY
-                                           + " )";*/
-
-        //Since the advisory lock ends at session death, we don't need to run the release script
-        //Database.execute( RELEASE_LOCK_SCRIPT );
 
         // We instead need to release the connection
         synchronized ( Database.ADVISORY_LOCK )

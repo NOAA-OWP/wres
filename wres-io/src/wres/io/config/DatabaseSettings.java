@@ -216,8 +216,10 @@ final class DatabaseSettings
             datasource.setInitialPoolSize( maxPoolSize );
 			datasource.setPreferredTestQuery("SELECT 1");
 			datasource.setTestConnectionOnCheckout(false);
+			datasource.setUnreturnedConnectionTimeout( 600 );
 		} 
-		catch (PropertyVetoException e) {
+		catch (PropertyVetoException e)
+        {
 			LOGGER.error(Strings.getStackTrace(e));
 		}
 

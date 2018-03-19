@@ -149,15 +149,20 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
                                        "Please check your specifications." );
         }
 
-        this.finalPoolingStep = this.projectDetails.getIssuePoolCount( feature );
+        this.finalPoolingStep = this.getFinalPoolingStep();
 
         // TODO: This needs a better home
         // x2; 1 step for retrieval, 1 step for calculation
         ProgressMonitor.setSteps( Long.valueOf( this.getWindowCount() ) * 2 );
     }
 
+    protected int getFinalPoolingStep() throws SQLException
+    {
+        return this.projectDetails.getIssuePoolCount( feature );
+    }
+
     // TODO: Put into its own class
-    void createLeftHandCache() throws SQLException
+    protected void createLeftHandCache() throws SQLException
     {
         Integer desiredMeasurementUnitID =
                 MeasurementUnits.getMeasurementUnitID( this.getProjectDetails()
@@ -291,7 +296,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
 
         try
         {
-            if (ConfigHelper.isForecast( this.getRight() ))
+            if (ConfigHelper.isForecast( this.getRight() ) && this.getProjectDetails().getPairingMode() != ProjectDetails.PairingMode.TIME_SERIES)
             {
                 next = this.finalPoolingStep > 0 && this.poolingStep + 1 < this.finalPoolingStep;
 

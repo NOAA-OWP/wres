@@ -10,6 +10,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import org.apache.commons.lang3.StringUtils;
 
 import wres.io.utilities.Database;
+import wres.util.Collections;
 
 public class USGSParameters
 {
@@ -206,6 +207,24 @@ public class USGSParameters
         }
 
         return foundParameter;
+    }
+
+    public static USGSParameter getParameter(String parameterName, String measurementUnit)
+            throws SQLException
+    {
+        USGSParameter parameter = null;
+
+        for (USGSParameters.ParameterKey key : USGSParameters.getParameterStore().keySet())
+        {
+            if (key.name.equalsIgnoreCase( parameterName ) &&
+                key.measurementUnit.equalsIgnoreCase( measurementUnit ))
+            {
+                parameter = USGSParameters.getParameterStore().get(key);
+                break;
+            }
+        }
+
+        return parameter;
     }
 
     public static USGSParameter getParameter(String parameterName, String measurementUnit, String aggregationMethod)

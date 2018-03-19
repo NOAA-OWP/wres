@@ -18,7 +18,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import com.sun.org.apache.bcel.internal.generic.NEW;
 import org.slf4j.LoggerFactory;
 
 import wres.config.FeaturePlus;
