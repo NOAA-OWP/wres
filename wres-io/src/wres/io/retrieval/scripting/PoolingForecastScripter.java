@@ -7,16 +7,14 @@ import java.util.StringJoiner;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.EnsembleCondition;
 import wres.config.generated.Feature;
-import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.details.ProjectDetails;
-import wres.io.utilities.NoDataException;
 import wres.util.TimeHelper;
 
 class PoolingForecastScripter extends Scripter
 {
-    protected PoolingForecastScripter( ProjectDetails projectDetails,
+    PoolingForecastScripter( ProjectDetails projectDetails,
                                        DataSourceConfig dataSourceConfig,
                                        Feature feature,
                                        int progress,

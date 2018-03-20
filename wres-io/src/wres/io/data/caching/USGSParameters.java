@@ -10,7 +10,6 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import org.apache.commons.lang3.StringUtils;
 
 import wres.io.utilities.Database;
-import wres.util.Collections;
 
 public class USGSParameters
 {
@@ -92,15 +91,13 @@ public class USGSParameters
         @Override
         public String toString()
         {
-            StringBuilder parameter = new StringBuilder(  );
+            String parameter = "Name: '" + this.name + "', " +
+                               "Description: '" + this.description + "', " +
+                               "Code: " + this.parameterCode + ", " +
+                               "Aggregated as: " + this.aggregation + ", " +
+                               "Measurement Unit: " + this.measurementUnit;
 
-            parameter.append( "Name: '" ).append(this.name).append("', ");
-            parameter.append( "Description: '").append(this.description).append("', ");
-            parameter.append( "Code: " ).append(this.parameterCode).append(", ");
-            parameter.append( "Aggregated as: ").append(this.aggregation).append(", ");
-            parameter.append( "Measurement Unit: ").append(this.measurementUnit);
-
-            return parameter.toString();
+            return parameter;
         }
 
         public String getName()

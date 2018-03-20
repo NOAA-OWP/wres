@@ -73,7 +73,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
         // Otherwise, we move on to the next window
         else
         {
-            this.setPoolingStep( 0 );
+            this.resetPoolingStep();
             this.windowNumber++;
         }
     }
@@ -83,9 +83,9 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
         poolingStep++;
     }
 
-    protected void setPoolingStep( int poolingStep )
+    protected void resetPoolingStep()
     {
-        this.poolingStep = poolingStep;
+        this.poolingStep = 0;
     }
 
     protected Integer getWindowCount() throws SQLException, IOException

@@ -288,10 +288,10 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
             return !(this.getMemberIndex() == null || this.getMemberIndex().isEmpty());
         }
 
-        private boolean hasQualifier()
-        {
-            return !(this.getQualifierID() == null || this.getQualifierID().isEmpty());
-        }
+        private boolean qualifierIsMissing()
+		{
+			return this.getQualifierID() == null || this.getQualifierID().isEmpty();
+		}
 
         /**
          * Returns the degree of similarity (0-3) between this key and the other.
@@ -338,8 +338,8 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
                 }
 				// If neither of these have a qualifier or this doesn't have a
 				// qualifier, we know that the similarity is two because we have
-				// passed the testing on member indices
-                else if (!(this.hasQualifier() || other.hasQualifier()) || !this.hasQualifier())
+				// passed the testing on member indices.
+                else if ((this.qualifierIsMissing() && other.qualifierIsMissing()) || this.qualifierIsMissing())
                 {
                     return 2;
                 }

@@ -683,7 +683,7 @@ public class USGSReader extends BasicSource
     }
 
     @Override
-    public String getHash()
+    protected String getHash()
     {
         if (this.hash == null)
         {
@@ -695,7 +695,7 @@ public class USGSReader extends BasicSource
         return this.hash;
     }
 
-    public Integer getSourceID() throws SQLException
+    private Integer getSourceID() throws SQLException
     {
         if (this.sourceID == null)
         {

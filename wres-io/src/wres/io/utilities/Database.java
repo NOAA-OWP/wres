@@ -7,7 +7,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.sql.Connection;
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.Instant;
@@ -30,7 +29,6 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.postgresql.PGConnection;
 import org.postgresql.copy.CopyManager;
 import org.slf4j.Logger;
@@ -975,6 +973,7 @@ public final class Database {
      * @return The value if it is in the result set, null otherwise
      * @throws SQLException Thrown if the field is not in the result set
      */
+    @SuppressWarnings( "unchecked" )
 	public static <U> U getValue(ResultSet resultSet, String fieldName)
 			throws SQLException
 	{
@@ -1098,6 +1097,7 @@ public final class Database {
      * @throws SQLException Thrown if the database could not be communicated
      * with successfully
      */
+    @SuppressWarnings( "unchecked" )
 	public static Collection populateCollection(final Collection collection,
                                                 final String query,
                                                 final String fieldLabel)
@@ -1228,6 +1228,7 @@ public final class Database {
      * @throws SQLException Thrown if the given query fails
      * @throws SQLException Thrown if the expected columns don't exist
      */
+    @SuppressWarnings( "unchecked" )
 	public static Map populateMap(final Map map,
 								  final String query,
 								  final String keyLabel,

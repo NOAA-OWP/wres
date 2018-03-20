@@ -10,23 +10,13 @@ import java.util.Objects;
 import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
-import wres.config.generated.TimeWindowMode;
 import wres.io.config.ConfigHelper;
 import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.ScriptBuilder;
-import wres.util.NotImplementedException;
 
 public abstract class Scripter extends ScriptBuilder
 {
-    private enum Mode
-    {
-        unknown,
-        backToBack,
-        rolling,
-        timeSeries
-    }
-
-    protected Scripter( ProjectDetails projectDetails,
+    Scripter( ProjectDetails projectDetails,
                         DataSourceConfig dataSourceConfig,
                         Feature feature,
                         int progress,
@@ -153,32 +143,32 @@ public abstract class Scripter extends ScriptBuilder
 
     abstract String getValueDate();
 
-    protected ProjectDetails getProjectDetails()
+    ProjectDetails getProjectDetails()
     {
         return this.projectDetails;
     }
 
-    protected DataSourceConfig getDataSourceConfig()
+    DataSourceConfig getDataSourceConfig()
     {
         return this.dataSourceConfig;
     }
 
-    protected Feature getFeature()
+    Feature getFeature()
     {
         return this.feature;
     }
 
-    protected int getProgress() throws IOException
+    int getProgress() throws IOException
     {
         return this.progress;
     }
 
-    protected int getSequenceStep()
+    int getSequenceStep()
     {
         return this.sequenceStep;
     }
 
-    protected Integer getVariableID() throws SQLException
+    Integer getVariableID() throws SQLException
     {
         if (this.variableID == null)
         {
@@ -198,7 +188,7 @@ public abstract class Scripter extends ScriptBuilder
         return this.variableID;
     }
 
-    protected String getVariablePositionClause() throws SQLException
+    String getVariablePositionClause() throws SQLException
     {
         if (this.variablePositionClause == null)
         {
@@ -210,7 +200,7 @@ public abstract class Scripter extends ScriptBuilder
         return this.variablePositionClause;
     }
 
-    protected Integer getTimeShift()
+    Integer getTimeShift()
     {
         if (this.timeShift == null &&
             dataSourceConfig.getTimeShift() != null &&
@@ -225,7 +215,7 @@ public abstract class Scripter extends ScriptBuilder
         return this.timeShift;
     }
 
-    protected void applyValueDate()
+    void applyValueDate()
     {
         this.add("(EXTRACT(epoch FROM ", this.getValueDate(), ")");
         if (this.getTimeShift() != null)
@@ -239,7 +229,7 @@ public abstract class Scripter extends ScriptBuilder
         this.addLine(")::bigint AS value_date,");
     }
 
-    protected void applyTimeShift()
+    void applyTimeShift()
     {
         if (this.getTimeShift() != null)
         {
@@ -248,19 +238,19 @@ public abstract class Scripter extends ScriptBuilder
         }
     }
 
-    protected void applySeasonConstraint()
+    void applySeasonConstraint()
     {
         this.add(ConfigHelper.getSeasonQualifier( this.getProjectDetails(),
                                                   this.getBaseDateName(),
                                                   this.getTimeShift() ));
     }
 
-    protected void applyVariablePositionClause() throws SQLException
+    void applyVariablePositionClause() throws SQLException
     {
         this.addLine( "WHERE ", this.getVariablePositionClause());
     }
 
-    protected void applyEarliestIssueDateConstraint()
+    void applyEarliestIssueDateConstraint()
     {
         if ( this.getProjectDetails().getEarliestIssueDate() != null)
         {
@@ -270,7 +260,7 @@ public abstract class Scripter extends ScriptBuilder
         }
     }
 
-    protected void applyLatestIssueDateConstraint()
+    void applyLatestIssueDateConstraint()
     {
         if ( this.getProjectDetails().getLatestIssueDate() != null)
         {
@@ -280,7 +270,7 @@ public abstract class Scripter extends ScriptBuilder
         }
     }
 
-    protected void applyEarliestDateConstraint() throws SQLException
+    void applyEarliestDateConstraint() throws SQLException
     {
         if (this.getProjectDetails().getEarliestDate() != null)
         {
@@ -290,7 +280,7 @@ public abstract class Scripter extends ScriptBuilder
         }
     }
 
-    protected void applyLatestDateConstraint()
+    void applyLatestDateConstraint()
     {
         if (this.getProjectDetails().getLatestDate() != null)
         {
@@ -300,7 +290,7 @@ public abstract class Scripter extends ScriptBuilder
         }
     }
 
-    protected String getMember()
+    String getMember()
     {
         if (this.member == null)
         {
@@ -309,7 +299,7 @@ public abstract class Scripter extends ScriptBuilder
         return this.member;
     }
 
-    protected String getScript()
+    String getScript()
     {
         return this.toString();
     }

@@ -101,11 +101,11 @@ class IngestedValueCollection
             return null;
         }
 
-        final int scale = this.getScale();
+        final int condensingScale = this.getScale();
         final int firstBlockLead = this.first().getLead() + frequency * condensingStep;
-        final int earliestLead = Math.max(minimumLead, firstBlockLead - scale);
-        final int lastBlockLead = firstBlockLead + period - scale;
-        final boolean scalingNotNecessary = scale == period;
+        final int earliestLead = Math.max(minimumLead, firstBlockLead - condensingScale);
+        final int lastBlockLead = firstBlockLead + period - condensingScale;
+        final boolean scalingNotNecessary = condensingScale == period;
 
         Instant lastValidTime = null;
         int lastLead = -1;
@@ -202,7 +202,7 @@ class IngestedValueCollection
         return values.size();
     }
 
-    void add(IngestedValue value)
+    private void add(IngestedValue value)
     {
         boolean canAdd = false;
 
@@ -212,7 +212,7 @@ class IngestedValueCollection
             canAdd = true;
         }
         else if ( this.reference == null ||
-                  this.reference != null && this.reference.equals(value.getReferenceEpoch()))
+                  (this.reference != null && this.reference.equals(value.getReferenceEpoch())))
         {
             canAdd = true;
         }

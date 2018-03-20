@@ -64,7 +64,6 @@ import wres.config.generated.ThresholdOperator;
 import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
 import wres.config.generated.TimeScaleConfig;
-import wres.config.generated.TimeWindowMode;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.Dimension;

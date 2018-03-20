@@ -134,12 +134,12 @@ class IngestedValue implements Comparable<IngestedValue>
     @Override
     public String toString()
     {
-        StringBuilder builder = new StringBuilder(  );
-        builder.append("Lead: ").append(this.getLead()).append(", ");
-        builder.append("Valid Date: ").append(this.getValidTime()).append(", ");
-        builder.append("Measurements: ").append( Arrays.toString(this.measurements));
-        builder.append(", Reference Date: ").append(this.getReferenceTime());
+        String builder = "Lead: " + this.getLead() + ", " +
+                         "Valid Date: " + this.getValidTime() + ", " +
+                         "Measurements: " + Arrays.toString( this.measurements )
+                         +
+                         ", Reference Date: " + this.getReferenceTime();
 
-        return builder.toString();
+        return builder;
     }
 }

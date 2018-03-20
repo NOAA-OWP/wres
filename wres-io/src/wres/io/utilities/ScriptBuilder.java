@@ -5,9 +5,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
@@ -278,7 +276,7 @@ public class ScriptBuilder
      */
     public <V> Future<V> submit(String label)
     {
-        ValueRetriever<V> retriever = new ValueRetriever<V>( this.toString(), label );
+        ValueRetriever<V> retriever = new ValueRetriever<>( this.toString(), label );
         return Database.submit( retriever );
     }
 
