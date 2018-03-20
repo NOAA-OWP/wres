@@ -1,9 +1,7 @@
 package wres.control;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -17,6 +15,9 @@ import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
 import wres.config.generated.MetricsConfig;
 import wres.config.generated.ProjectConfig;
+import wres.config.generated.ThresholdType;
+import wres.config.generated.ThresholdsConfig;
+import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Threshold;
 import wres.datamodel.ThresholdsByType;
@@ -151,27 +152,50 @@ class ResolvedProject
     }
 
     int getThresholdCount()
+            throws MetricConfigurationException
     {
         Set<Threshold> thresholds = new HashSet<>();
+
+        LOGGER.debug( "this.getThresholds(): {}", this.getThresholds() );
 
         // Dive through the threshold hierarchy to find what we
         // are looking for. TODO: find a better way of getting this info.
         for ( Map.Entry<FeaturePlus, Map<MetricConfigName, ThresholdsByType>> outerThresholds
                 : this.getThresholds().entrySet() )
         {
+            LOGGER.debug( "outerThresholds: {}", outerThresholds );
+
             for ( Map.Entry<MetricConfigName, ThresholdsByType> middleThresholds
                   : outerThresholds.getValue().entrySet() )
             {
+                LOGGER.debug( "middleThresholds: {}", middleThresholds );
+
                 for ( ThresholdsByType.ThresholdType innerThresholds
                         : middleThresholds.getValue().getStoredTypes() )
                 {
+                    LOGGER.debug( "innerThresholds: {}", innerThresholds );
+
                     thresholds.addAll( middleThresholds.getValue()
                                                        .getThresholdsByType( innerThresholds ) );
                 }
             }
         }
 
+        for ( MetricsConfig metricsConfig : this.getProjectConfig().getMetrics() )
+        {
+            Set<Threshold> directlyConfiguredThresholds =
+                    MetricConfigHelper.fromInternalThresholdsConfig(
+                                metricsConfig.getThresholds(),
+                                null,
+                                DefaultDataFactory.getInstance(),
+                                ThresholdType.PROBABILITY,
+                                ThresholdType.PROBABILITY_CLASSIFIER,
+                                ThresholdType.VALUE );
+                thresholds.addAll( directlyConfiguredThresholds );
+        }
+
         LOGGER.debug( "Thresholds found: {}", thresholds );
+
         // There is an additional implicit "All Data" threshold, so add one.
         return thresholds.size() + 1;
     }
