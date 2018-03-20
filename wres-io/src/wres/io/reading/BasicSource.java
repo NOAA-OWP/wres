@@ -333,6 +333,13 @@ public abstract class BasicSource
                     contentHash = this.getHash();
                 }
 
+                if (contentHash == null || contentHash.isEmpty())
+                {
+                    this.getLogger().debug( "The read file's ('{}') hash "
+                                            + "is empty; expect issues down "
+                                            + "the line.", filePath );
+                }
+
                 ingest = !dataExists(filePath, contentHash);
             }
             catch (SQLException | IOException e)
@@ -400,6 +407,13 @@ public abstract class BasicSource
      */
     protected void setHash(byte[] contents)
     {
+        if (contents == null)
+        {
+            this.getLogger().debug( "A file ('{}') with no contents is being "
+                                    + "attempted to be hashed.",
+                                    this.getFilename() );
+        }
+
         WRESCallable<String> hasher = new WRESCallable<String>()
         {
             @Override
@@ -547,4 +561,6 @@ public abstract class BasicSource
      * The listing of features to ingest
      */
 	private List<Feature> specifiedFeatures;
+
+	protected abstract Logger getLogger();
 }

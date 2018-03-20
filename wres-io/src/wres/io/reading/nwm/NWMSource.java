@@ -54,6 +54,12 @@ public class NWMSource extends BasicSource
 												false );
 	}
 
+	@Override
+	protected Logger getLogger()
+	{
+		return NWMSource.LOGGER;
+	}
+
 	private void saveNetCDF(NetcdfFile source)
 	{
 		Variable var = NetCDF.getVariable(source, this.getSpecifiedVariableName());

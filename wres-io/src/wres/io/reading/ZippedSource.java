@@ -84,6 +84,12 @@ public class ZippedSource extends BasicSource {
         return issue();
     }
 
+    @Override
+    protected Logger getLogger()
+    {
+        return ZippedSource.LOGGER;
+    }
+
     private Future<List<IngestResult>> getIngestTask()
     {
         return tasks.poll();
@@ -233,6 +239,13 @@ public class ZippedSource extends BasicSource {
         if ( !checkIngest.getLeft() )
         {
             LOGGER.trace( "'{}' is not being ingested because was already found", source );
+
+            if (checkIngest.getRight() == null || checkIngest.getRight().isEmpty())
+            {
+                LOGGER.debug("A file ('{}') is being added to this project "
+                             + "despite it not having a hash.", source);
+            }
+
             // Fake a future, return result immediately.
             Future<List<IngestResult>> ingest =
                     IngestResult.fakeFutureSingleItemListFrom( projectConfig,
