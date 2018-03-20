@@ -103,9 +103,13 @@ class IngestedValue implements Comparable<IngestedValue>
                     projectDetails.getDesiredMeasurementUnit()
             );
 
-            if (value < projectDetails.getMinimumValue() || value > projectDetails.getMaximumValue())
+            if (value < projectDetails.getMinimumValue())
             {
-                value = Double.NaN;
+                value = projectDetails.getDefaultMinimumValue();
+            }
+            else if (value > projectDetails.getMaximumValue())
+            {
+                value = projectDetails.getDefaultMaximumValue();
             }
 
             this.measurements[index] = value;

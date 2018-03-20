@@ -52,12 +52,12 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
     // Something is wrong."
     private int inputCounter;
 
-    protected int getWindowNumber()
+    private int getWindowNumber()
     {
         return this.windowNumber;
     }
 
-    protected void incrementWindowNumber()
+    private void incrementWindowNumber()
     {
         // No incrementing has been done, so we just want to roll with
         // window 0, sequence < 1
@@ -78,17 +78,17 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
         }
     }
 
-    protected void incrementSequenceStep()
+    private void incrementSequenceStep()
     {
         poolingStep++;
     }
 
-    protected void resetPoolingStep()
+    private void resetPoolingStep()
     {
         this.poolingStep = 0;
     }
 
-    protected Integer getWindowCount() throws SQLException, IOException
+    private Integer getWindowCount() throws SQLException, IOException
     {
         if (this.windowCount == null)
         {
@@ -108,7 +108,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
         return this.projectDetails;
     }
 
-    protected void addLeftHandValue(LocalDateTime date, Double measurement)
+    private void addLeftHandValue(LocalDateTime date, Double measurement)
     {
         if (this.leftHandMap == null)
         {
@@ -118,7 +118,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
         this.leftHandMap.put( date, measurement );
     }
 
-    protected VectorOfDoubles getClimatology() throws IOException
+    private VectorOfDoubles getClimatology() throws IOException
     {
         if (this.getProjectDetails().usesProbabilityThresholds() && this.climatology == null)
         {
@@ -131,8 +131,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
         return this.climatology;
     }
 
-    public MetricInputIterator( final Feature feature,
-                                final ProjectDetails projectDetails )
+    MetricInputIterator( final Feature feature, final ProjectDetails projectDetails )
             throws SQLException, IOException
     {
 
@@ -162,7 +161,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
     }
 
     // TODO: Put into its own class
-    protected void createLeftHandCache() throws SQLException
+    private void createLeftHandCache() throws SQLException
     {
         Integer desiredMeasurementUnitID =
                 MeasurementUnits.getMeasurementUnitID( this.getProjectDetails()
@@ -296,7 +295,8 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
 
         try
         {
-            if (ConfigHelper.isForecast( this.getRight() ) && this.getProjectDetails().getPairingMode() != ProjectDetails.PairingMode.TIME_SERIES)
+            if (ConfigHelper.isForecast( this.getRight() ) &&
+                this.getProjectDetails().getPairingMode() != ProjectDetails.PairingMode.TIME_SERIES)
             {
                 next = this.finalPoolingStep > 0 && this.poolingStep + 1 < this.finalPoolingStep;
 
