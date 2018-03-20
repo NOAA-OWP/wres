@@ -333,7 +333,9 @@ public abstract class BasicSource
                 }
                 catch ( IOException e )
                 {
-                    this.getLogger().error( Strings.getStackTrace( e ) );
+                    this.getLogger().error( "Error occurred while determining "
+                                            + "the hash of '" +
+                                            filePath + "'", e );
                 }
             }
 
@@ -352,7 +354,9 @@ public abstract class BasicSource
                 }
                 catch ( SQLException e )
                 {
-                    this.getLogger().error( Strings.getStackTrace( e ) );
+                    this.getLogger().error( "Error occurred while determining "
+                                            + "whether or not to ingest '" +
+                                            filePath + "'", e );
                     ingest = false;
                 }
             }
