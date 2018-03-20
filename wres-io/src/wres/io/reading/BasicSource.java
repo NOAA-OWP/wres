@@ -321,30 +321,40 @@ public abstract class BasicSource
 
         if (ingest)
         {
-            try
+            if (contents != null)
             {
-
-                if (contents != null)
-                {
-                    contentHash = Strings.getMD5Checksum( contents );
-                }
-                else
+                contentHash = Strings.getMD5Checksum( contents );
+            }
+            else
+            {
+                try
                 {
                     contentHash = this.getHash();
                 }
-
-                if (contentHash == null || contentHash.isEmpty())
+                catch ( IOException e )
                 {
-                    this.getLogger().debug( "The read file's ('{}') hash "
-                                            + "is empty; expect issues down "
-                                            + "the line.", filePath );
+                    this.getLogger().error( Strings.getStackTrace( e ) );
                 }
-
-                ingest = !dataExists(filePath, contentHash);
             }
-            catch (SQLException | IOException e)
+
+            if (contentHash == null || contentHash.isEmpty())
             {
+                this.getLogger().debug( "The read file's ('{}') hash "
+                                        + "is empty. It cannot be ingested.",
+                                        filePath );
                 ingest = false;
+            }
+            else
+            {
+                try
+                {
+                    ingest = !dataExists( filePath, contentHash );
+                }
+                catch ( SQLException e )
+                {
+                    this.getLogger().error( Strings.getStackTrace( e ) );
+                    ingest = false;
+                }
             }
         }
 
