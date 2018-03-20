@@ -559,7 +559,13 @@ public class DatacardSource extends BasicSource
         return save;
     }
 
-    private boolean valueIsIgnorable(final double value)
+	@Override
+	protected Logger getLogger()
+	{
+		return DatacardSource.LOGGER;
+	}
+
+	private boolean valueIsIgnorable(final double value)
     {
         return wres.util.Collections.exists( DatacardSource.IGNORABLE_VALUES,
 											 ignorable -> Precision.equals( value, ignorable, EPSILON ));

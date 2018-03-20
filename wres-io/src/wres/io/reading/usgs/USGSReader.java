@@ -695,6 +695,12 @@ public class USGSReader extends BasicSource
         return this.hash;
     }
 
+    @Override
+    protected Logger getLogger()
+    {
+        return USGSReader.LOGGER;
+    }
+
     private Integer getSourceID() throws SQLException
     {
         if (this.sourceID == null)
