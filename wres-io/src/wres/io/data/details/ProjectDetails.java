@@ -709,6 +709,19 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
         return maximum;
     }
 
+    public Double getDefaultMaximumValue()
+    {
+        Double maximum = Double.NaN;
+
+        if (this.projectConfig.getPair().getValues() != null &&
+            this.projectConfig.getPair().getValues().getDefaultMaximum() != null)
+        {
+            maximum = this.projectConfig.getPair().getValues().getDefaultMaximum();
+        }
+
+        return maximum;
+    }
+
     /**
      * @return The smallest possible value for the data. -Double.MAX_VALUE by default
      */
@@ -723,6 +736,19 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
         }
 
         return minimum;
+    }
+
+    public Double getDefaultMinimumValue()
+    {
+        Double defaultMinimum = Double.NaN;
+
+        if (this.projectConfig.getPair().getValues() != null &&
+                this.projectConfig.getPair().getValues().getDefaultMinimum() != null)
+        {
+            defaultMinimum = this.projectConfig.getPair().getValues().getDefaultMinimum();
+        }
+
+        return defaultMinimum;
     }
 
     /**

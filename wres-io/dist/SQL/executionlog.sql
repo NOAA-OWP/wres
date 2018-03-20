@@ -1,4 +1,4 @@
--- Table: public.executionlog
+﻿-- Table: public.executionlog
 
 CREATE TABLE IF NOT EXISTS public.executionlog
 (
@@ -11,7 +11,8 @@ CREATE TABLE IF NOT EXISTS public.executionlog
   start_time timestamp without time zone,
   run_time interval,
   failed boolean DEFAULT false,
-  error TEXT
+  error TEXT,
+  input_code TEXT
 )
 WITH (
   OIDS=FALSE
@@ -20,4 +21,7 @@ ALTER TABLE public.executionlog
   OWNER TO wres;
 
 ALTER TABLE public.executionlog
-  ADD COLUMN IF NOT EXISTS input_code TYPE text;
+  ADD COLUMN IF NOT EXISTS input_code text;
+
+ALTER TABLE public.executionlog
+  ADD COLUMN IF NOT EXISTS error text;

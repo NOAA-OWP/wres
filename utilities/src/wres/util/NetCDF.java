@@ -75,18 +75,7 @@ public final class NetCDF {
      */
     public static boolean hasVariable (NetcdfFile file, String variableName)
     {
-        boolean variableExists = false;
-
-        for (int variableIndex = 0; variableIndex < file.getVariables().size(); ++variableIndex)
-        {
-            if (file.getVariables().get(variableIndex).getShortName().equalsIgnoreCase(variableName))
-            {
-                variableExists = true;
-                break;
-            }
-        }
-
-        return variableExists;
+        return NetCDF.getVariable( file, variableName ) != null;
     }
 
     /**
@@ -97,18 +86,7 @@ public final class NetCDF {
      */
     public static Variable getVariable(NetcdfFile file, String variableName)
     {
-        Variable foundVariable = null;
-
-        for (int variableIndex = 0; variableIndex < file.getVariables().size(); ++variableIndex)
-        {
-            if (file.getVariables().get(variableIndex).getShortName().equalsIgnoreCase(variableName))
-            {
-                foundVariable = file.getVariables().get(variableIndex);
-                break;
-            }
-        }
-
-        return foundVariable;
+        return file.findVariable( variableName );
     }
 
 
