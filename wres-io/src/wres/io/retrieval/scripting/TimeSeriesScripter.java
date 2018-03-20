@@ -10,9 +10,7 @@ import wres.config.generated.Feature;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.details.ProjectDetails;
-import wres.io.utilities.NoDataException;
 import wres.util.Strings;
-import wres.util.TimeHelper;
 
 class TimeSeriesScripter extends Scripter
 {

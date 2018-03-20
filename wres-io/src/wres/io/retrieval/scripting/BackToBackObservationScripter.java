@@ -7,7 +7,6 @@ import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
 import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.NoDataException;
-import wres.util.TimeHelper;
 
 class BackToBackObservationScripter extends Scripter
 {

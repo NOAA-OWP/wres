@@ -10,7 +10,6 @@ import wres.config.generated.Feature;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Ensembles;
 import wres.io.data.details.ProjectDetails;
-import wres.util.TimeHelper;
 
 class BackToBackForecastScripter extends Scripter
 {

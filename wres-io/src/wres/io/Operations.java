@@ -284,14 +284,20 @@ public final class Operations {
                 {
                     address = currentAddress;
                 }
+                // "\\." gets marked as redundent, but it isn't; we want to get
+                // a period. "\." is illegal and "." selects any character.
                 else if (currentAddress.matches( "^10[\\.\\d]+$" ))
                 {
                     address = currentAddress;
                 }
+                // "\\." gets marked as redundent, but it isn't; we want to get
+                // a period. "\." is illegal and "." selects any character.
                 else if (currentAddress.matches( "^172[\\.\\d]+$" ))
                 {
                     address = currentAddress;
                 }
+                // "\\." gets marked as redundent, but it isn't; we want to get
+                // a period. "\." is illegal and "." selects any character.
                 else if (currentAddress.matches( "^192[\\.\\d]+$" ))
                 {
                     address = currentAddress;
