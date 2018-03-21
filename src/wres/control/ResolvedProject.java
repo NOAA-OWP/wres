@@ -11,12 +11,10 @@ import org.slf4j.LoggerFactory;
 import wres.config.FeaturePlus;
 import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationConfig;
-import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
 import wres.config.generated.MetricsConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ThresholdType;
-import wres.config.generated.ThresholdsConfig;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.Threshold;
@@ -44,7 +42,8 @@ class ResolvedProject
     private final ProjectConfigPlus projectConfigPlus;
     private final Set<FeaturePlus> decomposedFeatures;
     private final String projectIdentifier;
-    private final Map<FeaturePlus, Map<MetricConfigName, ThresholdsByType>> thresholds;
+    private final Map<FeaturePlus, Map<MetricConfigName, ThresholdsByType>>
+            externalThresholds;
 
     private ResolvedProject( ProjectConfigPlus projectConfigPlus,
                              Set<FeaturePlus> decomposedFeatures,
@@ -54,7 +53,7 @@ class ResolvedProject
         this.projectConfigPlus = projectConfigPlus;
         this.decomposedFeatures = Collections.unmodifiableSet( decomposedFeatures );
         this.projectIdentifier = projectIdentifier;
-        this.thresholds = Collections.unmodifiableMap( thresholds );
+        this.externalThresholds = Collections.unmodifiableMap( thresholds );
     }
 
     static ResolvedProject of( ProjectConfigPlus projectConfigPlus,
@@ -140,15 +139,15 @@ class ResolvedProject
                    .getGraphicsStrings();
     }
 
-    private Map<FeaturePlus, Map<MetricConfigName, ThresholdsByType>> getThresholds()
+    private Map<FeaturePlus, Map<MetricConfigName, ThresholdsByType>> getExternalThresholds()
     {
-        return thresholds;
+        return this.externalThresholds;
     }
 
     Map<MetricConfigName, ThresholdsByType>
     getThresholdForFeature( FeaturePlus featurePlus )
     {
-        return this.getThresholds().get( featurePlus );
+        return this.getExternalThresholds().get( featurePlus );
     }
 
     int getThresholdCount()
@@ -156,12 +155,12 @@ class ResolvedProject
     {
         Set<Threshold> thresholds = new HashSet<>();
 
-        LOGGER.debug( "this.getThresholds(): {}", this.getThresholds() );
+        LOGGER.debug( "this.getExternalThresholds(): {}", this.getExternalThresholds() );
 
         // Dive through the threshold hierarchy to find what we
         // are looking for. TODO: find a better way of getting this info.
         for ( Map.Entry<FeaturePlus, Map<MetricConfigName, ThresholdsByType>> outerThresholds
-                : this.getThresholds().entrySet() )
+                : this.getExternalThresholds().entrySet() )
         {
             LOGGER.debug( "outerThresholds: {}", outerThresholds );
 
@@ -191,7 +190,8 @@ class ResolvedProject
                                 ThresholdType.PROBABILITY,
                                 ThresholdType.PROBABILITY_CLASSIFIER,
                                 ThresholdType.VALUE );
-                thresholds.addAll( directlyConfiguredThresholds );
+
+            thresholds.addAll( directlyConfiguredThresholds );
         }
 
         LOGGER.debug( "Thresholds found: {}", thresholds );
