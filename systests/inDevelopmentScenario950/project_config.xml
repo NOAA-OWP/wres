@@ -16,8 +16,8 @@
         
         <right label="NWM Medium Range Ensemble">
             <type>ensemble forecasts</type>
-            <source format="netCDF">/wres_share/testing/data/sr1.perftest/medium_range.0hrsold.fctlen240hrs/</source>
-            <source format="netCDF">/wres_share/testing/data/sr1.perftest/medium_range.6hrsold.fctlen234hrs/</source>
+            <source format="netCDF" pattern="**/*.nc">/wres_share/testing/data/sr1.perftest/medium_range.0hrsold.fctlen240hrs/</source>
+            <source format="netCDF" pattern="**/*.nc">/wres_share/testing/data/sr1.perftest/medium_range.6hrsold.fctlen234hrs/</source>
             <variable>streamflow</variable>
             <existingTimeScale>
                 <function>avg</function>
