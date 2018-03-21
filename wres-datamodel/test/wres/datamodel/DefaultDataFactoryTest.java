@@ -75,8 +75,8 @@ public final class DefaultDataFactoryTest
         //Reference the constant member for a concrete instance of the factory
         final PairOfDoubles tuple = metIn.pairOf( 1.0, 2.0 );
         assertNotNull( tuple );
-        assertEquals( tuple.getItemOne(), 1.0, THRESHOLD );
-        assertEquals( tuple.getItemTwo(), 2.0, THRESHOLD );
+        assertEquals( 1.0, tuple.getItemOne(), THRESHOLD );
+        assertEquals( 2.0, tuple.getItemTwo(), THRESHOLD );
     }
 
     @Test
@@ -85,8 +85,8 @@ public final class DefaultDataFactoryTest
         final double[] arrOne = { 1.0, 2.0 };
         final VectorOfDoubles doubleVecOne = metIn.vectorOf( arrOne );
         assertNotNull( doubleVecOne );
-        assertEquals( doubleVecOne.getDoubles()[0], 1.0, THRESHOLD );
-        assertEquals( doubleVecOne.getDoubles()[1], 2.0, THRESHOLD );
+        assertEquals( 1.0, doubleVecOne.getDoubles()[0], THRESHOLD );
+        assertEquals( 2.0, doubleVecOne.getDoubles()[1], THRESHOLD );
     }
 
     @Test
@@ -97,8 +97,8 @@ public final class DefaultDataFactoryTest
         arrOne[0] = 3.0;
         arrOne[1] = 4.0;
         assertNotNull( doubleVecOne );
-        assertEquals( doubleVecOne.getDoubles()[0], 1.0, THRESHOLD );
-        assertEquals( doubleVecOne.getDoubles()[1], 2.0, THRESHOLD );
+        assertEquals( 1.0, doubleVecOne.getDoubles()[0], THRESHOLD );
+        assertEquals( 2.0, doubleVecOne.getDoubles()[1], THRESHOLD );
     }
 
     @Test
@@ -108,11 +108,11 @@ public final class DefaultDataFactoryTest
         final double[] arrTwo = { 4.0, 5.0 };
         final Pair<VectorOfDoubles, VectorOfDoubles> pair = metIn.pairOf( arrOne, arrTwo );
         assertNotNull( pair );
-        assertEquals( pair.getLeft().getDoubles()[0], 1.0, THRESHOLD );
-        assertEquals( pair.getLeft().getDoubles()[1], 2.0, THRESHOLD );
-        assertEquals( pair.getLeft().getDoubles()[2], 3.0, THRESHOLD );
-        assertEquals( pair.getRight().getDoubles()[0], 4.0, THRESHOLD );
-        assertEquals( pair.getRight().getDoubles()[1], 5.0, THRESHOLD );
+        assertEquals( 1.0, pair.getLeft().getDoubles()[0], THRESHOLD );
+        assertEquals( 2.0, pair.getLeft().getDoubles()[1], THRESHOLD );
+        assertEquals( 3.0, pair.getLeft().getDoubles()[2], THRESHOLD );
+        assertEquals( 4.0, pair.getRight().getDoubles()[0], THRESHOLD );
+        assertEquals( 5.0, pair.getRight().getDoubles()[1], THRESHOLD );
     }
 
     @Test
@@ -121,9 +121,9 @@ public final class DefaultDataFactoryTest
         final double[] arrOne = { 2.0, 3.0 };
         final PairOfDoubleAndVectorOfDoubles tuple = metIn.pairOf( 1.0, arrOne );
         assertNotNull( tuple );
-        assertEquals( tuple.getItemOne(), 1.0, THRESHOLD );
-        assertEquals( tuple.getItemTwo()[0], 2.0, THRESHOLD );
-        assertEquals( tuple.getItemTwo()[1], 3.0, THRESHOLD );
+        assertEquals( 1.0, tuple.getItemOne(), THRESHOLD );
+        assertEquals( 2.0, tuple.getItemTwo()[0], THRESHOLD );
+        assertEquals( 3.0, tuple.getItemTwo()[1], THRESHOLD );
         // check that toString() does not throw exception and is not null
         assertNotNull( tuple.toString() );
     }
@@ -136,9 +136,9 @@ public final class DefaultDataFactoryTest
         arrOne[0] = 4.0;
         arrOne[1] = 5.0;
         assertNotNull( tuple );
-        assertEquals( tuple.getItemOne(), 1.0, THRESHOLD );
-        assertEquals( tuple.getItemTwo()[0], 2.0, THRESHOLD );
-        assertEquals( tuple.getItemTwo()[1], 3.0, THRESHOLD );
+        assertEquals( 1.0, tuple.getItemOne(), THRESHOLD );
+        assertEquals( 2.0, tuple.getItemTwo()[0], THRESHOLD );
+        assertEquals( 3.0, tuple.getItemTwo()[1], THRESHOLD );
     }
 
     @Test
@@ -152,9 +152,9 @@ public final class DefaultDataFactoryTest
         arrOne[0] = 4.0;
         arrOne[1] = 5.0;
 
-        assertEquals( tuple.getItemOne(), 1.0, THRESHOLD );
-        assertEquals( tuple.getItemTwo()[0], 2.0, THRESHOLD );
-        assertEquals( tuple.getItemTwo()[1], 3.0, THRESHOLD );
+        assertEquals( 1.0, tuple.getItemOne(), THRESHOLD );
+        assertEquals( 2.0, tuple.getItemTwo()[0], THRESHOLD );
+        assertEquals( 3.0, tuple.getItemTwo()[1], THRESHOLD );
         // check that toString() does not throw exception and is not null
         assertNotNull( tuple.toString() );
     }
@@ -164,8 +164,8 @@ public final class DefaultDataFactoryTest
     {
         final boolean[] arrOne = { false, true };
         final VectorOfBooleans vec = metIn.vectorOf( arrOne );
-        assertEquals( vec.getBooleans()[0], false );
-        assertEquals( vec.getBooleans()[1], true );
+        assertEquals( false, vec.getBooleans()[0] );
+        assertEquals( true, vec.getBooleans()[1] );
     }
 
     @Test
@@ -177,8 +177,8 @@ public final class DefaultDataFactoryTest
         arrOne[0] = true;
         arrOne[1] = false;
         // despite mutation, we should get the same result back
-        assertEquals( vec.getBooleans()[0], false );
-        assertEquals( vec.getBooleans()[1], true );
+        assertEquals( false, vec.getBooleans()[0] );
+        assertEquals( true, vec.getBooleans()[1] );
     }
 
     @Test
