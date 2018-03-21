@@ -207,7 +207,7 @@
                     </xs:complexType>
                 </xs:element>
             </xs:choice>
-            <xs:element name="operator" type="thresholdOperator" default="less than" minOccurs="0" maxOccurs="1" />
+            <xs:element name="operator" type="thresholdOperator" default="greater than" minOccurs="0" maxOccurs="1" />
         </xs:sequence>
     </xs:complexType>
 
