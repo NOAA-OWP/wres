@@ -12,7 +12,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.generated.LeftOrRightOrBaseline;
+import wres.io.config.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
 import wres.io.data.details.ProjectDetails;
 import wres.io.reading.IngestResult;

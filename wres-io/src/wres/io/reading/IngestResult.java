@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import wres.config.generated.DataSourceConfig;
-import wres.config.generated.LeftOrRightOrBaseline;
+import wres.io.config.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
 import wres.io.config.ConfigHelper;
 
