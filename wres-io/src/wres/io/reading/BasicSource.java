@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
@@ -308,8 +309,12 @@ public abstract class BasicSource
      * @param contents optional read contents from the source file. Used when
      *                 the source originates from an archive.
      * @return Whether or not to ingest the file and the resulting hash
+     * @throws IngestException when an exception prevents determining status
      */
-    protected Pair<Boolean,String> shouldIngest( String filePath, DataSourceConfig.Source source, byte[] contents )
+    protected Pair<Boolean,String> shouldIngest( String filePath,
+                                                 DataSourceConfig.Source source,
+                                                 byte[] contents )
+            throws IngestException
     {
         Format specifiedFormat = source.getFormat();
         Format pathFormat = ReaderFactory.getFiletype( filePath );
@@ -321,40 +326,24 @@ public abstract class BasicSource
 
         if (ingest)
         {
-            if (contents != null)
+            try
             {
-                contentHash = Strings.getMD5Checksum( contents );
-            }
-            else
-            {
-                try
+                if ( contents != null )
+                {
+                    contentHash = Strings.getMD5Checksum( contents );
+                }
+                else
                 {
                     contentHash = this.getHash();
                 }
-                catch ( IOException e )
-                {
-                    this.getLogger().error( Strings.getStackTrace( e ) );
-                }
-            }
 
-            if (contentHash == null || contentHash.isEmpty())
-            {
-                this.getLogger().debug( "The read file's ('{}') hash "
-                                        + "is empty. It cannot be ingested.",
-                                        filePath );
-                ingest = false;
+                ingest = !dataExists( contentHash );
             }
-            else
+            catch ( IOException | SQLException e )
             {
-                try
-                {
-                    ingest = !dataExists( filePath, contentHash );
-                }
-                catch ( SQLException e )
-                {
-                    this.getLogger().error( Strings.getStackTrace( e ) );
-                    ingest = false;
-                }
+                String message = "Failed to determine whether to ingest file "
+                                 + filePath;
+                throw new IngestException( message, e );
             }
         }
 
@@ -478,17 +467,18 @@ public abstract class BasicSource
     }
 
     /**
-     * Determines if the hash of the passed in contents are contained within the
-     * database
-     * @param sourceName The name of the file to hash
+     * Determines if the source was already ingested into the database
      * @param contentHash The hash of the contents to look for
      * @return Whether or not the indicated data lies within the database
      * @throws SQLException Thrown if an error occurs while communicating with
      * the database
+     * @throws NullPointerException when any arg is null
      */
-    private boolean dataExists(String sourceName, String contentHash)
+    private boolean dataExists( String contentHash )
             throws SQLException
     {
+        Objects.requireNonNull( contentHash );
+
         StringBuilder script = new StringBuilder();
 
         script.append("SELECT EXISTS (").append(NEWLINE);
@@ -514,37 +504,10 @@ public abstract class BasicSource
         script.append("     INNER JOIN wres.Variable V").append(NEWLINE);
         script.append("         ON VP.variable_id = V.variable_id").append(NEWLINE);
 
-        if (contentHash != null)
-        {
-            script.append("     WHERE S.hash = '")
-                  .append( contentHash )
-                  .append("'")
-                  .append(NEWLINE);
-        }
-        else
-        {
-            if (this.futureHash != null)
-            {
-                try
-                {
-                    script.append("     WHERE S.hash = '").append(this.getHash()).append("'").append(NEWLINE);
-                }
-                catch ( IOException e )
-                {
-                    script.append( "     WHERE S.path = '" )
-                          .append( sourceName )
-                          .append( "'" )
-                          .append( NEWLINE );
-                }
-            }
-            else
-            {
-                script.append( "     WHERE S.path = '" )
-                      .append( sourceName )
-                      .append( "'" )
-                      .append( NEWLINE );
-            }
-        }
+        script.append("     WHERE S.hash = '")
+              .append( contentHash )
+              .append( "'" )
+              .append( NEWLINE );
 
         script.append("         AND V.variable_name = '")
               .append(this.dataSourceConfig.getVariable().getValue())
