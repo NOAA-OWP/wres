@@ -207,7 +207,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey> {
                 catch(SQLException e)
                 {
                     // Exception on close should not affect primary outputs.
-                    LOGGER.error( "An error was encountered when trying to close the resultset that contained data source information.",
+                    LOGGER.warn( "An error was encountered when trying to close the resultset that contained data source information.",
                                   e );
                 }
             }
