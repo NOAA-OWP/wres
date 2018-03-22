@@ -9,7 +9,7 @@ import org.junit.Test;
 
 import wres.config.generated.MetricConfigName;
 import wres.config.generated.ThresholdOperator;
-import wres.datamodel.Threshold.Operator;
+import wres.datamodel.ThresholdConstants.Operator;
 
 /**
  * Tests the {@link MetricConfigHelper}.

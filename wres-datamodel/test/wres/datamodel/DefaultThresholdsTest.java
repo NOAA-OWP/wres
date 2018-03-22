@@ -6,7 +6,8 @@ import static org.junit.Assert.fail;
 
 import org.junit.Test;
 
-import wres.datamodel.Threshold.Operator;
+import wres.datamodel.ThresholdConstants.Operator;
+
 
 /**
  * Tests the default implementation of an {@link OneOrTwoThresholds} returned by {@link OneOrTwoThresholds#of(Threshold)} and 

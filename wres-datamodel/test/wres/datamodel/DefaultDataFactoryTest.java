@@ -13,7 +13,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
 import wres.datamodel.DefaultDataFactory.DefaultMapKey;
-import wres.datamodel.Threshold.Operator;
+import wres.datamodel.ThresholdConstants.Operator;
 import wres.datamodel.inputs.pairs.PairOfBooleans;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.inputs.pairs.PairOfDoubles;

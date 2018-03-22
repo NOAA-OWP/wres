@@ -59,6 +59,7 @@ import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.PoolingWindowConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Outputs;
+import wres.config.generated.ThresholdApplicationType;
 import wres.config.generated.ThresholdFormat;
 import wres.config.generated.ThresholdOperator;
 import wres.config.generated.ThresholdType;
@@ -68,10 +69,12 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.Dimension;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.Threshold;
-import wres.datamodel.Threshold.Operator;
 import wres.datamodel.OneOrTwoThresholds;
+import wres.datamodel.Threshold;
+import wres.datamodel.ThresholdConstants;
+import wres.datamodel.ThresholdConstants.Operator;
 import wres.datamodel.ThresholdsByType;
+import wres.datamodel.ThresholdsByType.ThresholdsByTypeBuilder;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
@@ -1604,26 +1607,19 @@ public class ConfigHelper
                                                                                          units );
 
             // Establish the threshold type
-            final ThresholdsByType.ThresholdType type;
-            // Default to probability
-            if ( Objects.isNull( threshold.getType() ) || threshold.getType() == ThresholdType.PROBABILITY )
-            {
-                type = ThresholdsByType.ThresholdType.PROBABILITY;
-            }
-            else if ( threshold.getType() == ThresholdType.VALUE )
-            {
-                type = ThresholdsByType.ThresholdType.VALUE;
-            }
-            else if ( threshold.getType() == ThresholdType.PROBABILITY_CLASSIFIER )
-            {
-                type = ThresholdsByType.ThresholdType.PROBABILITY_CLASSIFIER;
-            }
-            else
-            {
-                throw new ProjectConfigException( threshold, "Unexpected identifier for threshold type." );
-            }
+            final ThresholdConstants.ThresholdType thresholdType = ConfigHelper.getThresholdType( threshold );
+
             // Add to map
-            read.forEach( ( key, value ) -> returnMe.put( key, ThresholdsByType.of( type, value ) ) );
+            for ( Entry<FeaturePlus, Set<Threshold>> next : read.entrySet() )
+            {
+                ThresholdsByTypeBuilder builder = DefaultDataFactory.getInstance().ofThresholdsByTypeBuilder();
+
+                ThresholdsByType thresholds =
+                        builder.addThresholds( next.getValue(), thresholdType ).build();
+
+                returnMe.put( next.getKey(), thresholds );
+            }
+            
         }
         catch ( IOException e )
         {
@@ -1631,6 +1627,90 @@ public class ConfigHelper
                                               "Failed to read the comma separated thresholds "
                                                          + "from '" + commaSeparated + "'.",
                                               e );
+        }
+
+        return returnMe;
+    }
+
+    /**
+     * Converts between {@link ThresholdType} and {@link ThresholdConstants.ThresholdType}. If the input is null, the 
+     * default type is {@link ThresholdConstants.ThresholdType.PROBABILITY}. Matches on the 
+     * {@link ThresholdType#name()}.
+     * 
+     * TODO: eliminate this when possible to avoid duplication with MetricConfigHelper in the scope of wres-metrics, 
+     * not visible here. 
+     * 
+     * @param threshold the threshold
+     * @return the system type
+     * @throws ProjectConfigException if the input type could not be mapped
+     */
+
+    private static ThresholdConstants.ThresholdType getThresholdType( ThresholdsConfig threshold )
+            throws ProjectConfigException
+    {
+        if ( Objects.isNull( threshold ) )
+        {
+            return ThresholdConstants.ThresholdType.PROBABILITY;
+        }
+
+        ThresholdConstants.ThresholdType returnMe = null;
+
+        for ( ThresholdConstants.ThresholdType nextType : ThresholdConstants.ThresholdType.values() )
+        {
+            if ( nextType.name().equals( threshold.getType().name() ) )
+            {
+                returnMe = nextType;
+                break;
+            }
+        }
+
+        if ( Objects.isNull( returnMe ) )
+        {
+            throw new ProjectConfigException( threshold,
+                                              "Could not map the threshold type '" + threshold.getType()
+                                                         + "' to an internal type." );
+        }
+
+        return returnMe;
+    }
+
+    /**
+     * Converts between {@link ThresholdApplicationType} and {@link ThresholdConstants.ApplicationType}. If the input 
+     * is null, the default type is {@link ThresholdConstants.ApplicationType.LEFT}. Matches on the 
+     * {@link ThresholdType#name()}.
+     * 
+     * TODO: short-term, set the threshold type for #47979, long-term, eliminate this when possible to avoid 
+     * duplication with MetricConfigHelper in the scope of wres-metrics, not visible here. 
+     * 
+     * @param threshold the threshold used to help decorate any exception
+     * @return the system type
+     * @throws ProjectConfigException if the input type could not be mapped
+     */
+
+    private static ThresholdConstants.ApplicationType getThresholdApplicationType( ThresholdsConfig threshold )
+            throws ProjectConfigException
+    {
+        if ( Objects.isNull( threshold ) )
+        {
+            return ThresholdConstants.ApplicationType.LEFT;
+        }
+
+        ThresholdConstants.ApplicationType returnMe = null;
+
+        for ( ThresholdConstants.ApplicationType nextType : ThresholdConstants.ApplicationType.values() )
+        {
+            if ( nextType.name().equals( threshold.getApplyTo().name() ) )
+            {
+                returnMe = nextType;
+                break;
+            }
+        }
+
+        if ( Objects.isNull( returnMe ) )
+        {
+            throw new ProjectConfigException( threshold,
+                                              "Could not map the threshold application type '" + threshold.getApplyTo()
+                                                         + "' to an internal type." );
         }
 
         return returnMe;

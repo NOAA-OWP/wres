@@ -3,6 +3,7 @@ package wres.control;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import org.slf4j.Logger;
@@ -15,9 +16,13 @@ import wres.config.generated.MetricConfigName;
 import wres.config.generated.MetricsConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ThresholdType;
+import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.Threshold;
+import wres.datamodel.ThresholdConstants;
+import wres.datamodel.ThresholdsByMetric;
 import wres.datamodel.ThresholdsByType;
 import wres.engine.statistics.metric.config.MetricConfigHelper;
 import wres.engine.statistics.metric.config.MetricConfigurationException;
@@ -38,7 +43,7 @@ class ResolvedProject
 {
     private static final Logger LOGGER
             = LoggerFactory.getLogger( ResolvedProject.class );
-
+    
     private final ProjectConfigPlus projectConfigPlus;
     private final Set<FeaturePlus> decomposedFeatures;
     private final String projectIdentifier;
@@ -149,7 +154,42 @@ class ResolvedProject
     {
         return this.getExternalThresholds().get( featurePlus );
     }
-
+    
+    /**
+     * Returns the cardinality of the set of thresholds that apply across 
+     * all features. These include thresholds that are sourced externally 
+     * and apply to specific features and thresholds that are sourced
+     * from within the project configuration and apply to all features. 
+     * The cardinality refers to the set of composed thresholds used
+     * to produce the metric output and not the total number of 
+     * thresholds, i.e. there is one composed threshold for each output.  
+     * 
+     * @param outGroup an optional output group for which the 
+     *            cardinality is required, may be null for all groups
+     * @return the cardinality of the set of thresholds
+     * @throws MetricConfigurationException if the configuration of 
+     *            thresholds is incorrect
+     */
+    
+    int getThresholdCount( MetricOutputGroup outGroup ) throws MetricConfigurationException
+    {
+        // Obtain the union of internal and external thresholds
+        DataFactory thresholdFactory = DefaultDataFactory.getInstance();
+        ThresholdsByMetric thresholds =
+                MetricConfigHelper.getThresholdsFromConfig( this.getProjectConfig(),
+                                                            thresholdFactory,
+                                                            externalThresholds.values() );
+        // Filter the thresholds if required
+        if( Objects.nonNull( outGroup ) )
+        {
+            thresholds = thresholds.filterByGroup( outGroup );
+        }
+        
+        // Return the cardinality of the set of composed thresholds
+        return thresholds.unionOfOneOrTwoThresholds().size();
+    }
+    
+    @Deprecated
     int getThresholdCount()
             throws MetricConfigurationException
     {
@@ -169,8 +209,8 @@ class ResolvedProject
             {
                 LOGGER.debug( "middleThresholds: {}", middleThresholds );
 
-                for ( ThresholdsByType.ThresholdType innerThresholds
-                        : middleThresholds.getValue().getStoredTypes() )
+                for ( ThresholdConstants.ThresholdType innerThresholds
+                        : middleThresholds.getValue().getAllThresholdTypes() )
                 {
                     LOGGER.debug( "innerThresholds: {}", innerThresholds );
 

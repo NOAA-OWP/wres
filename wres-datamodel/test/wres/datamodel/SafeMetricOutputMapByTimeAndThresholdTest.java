@@ -15,7 +15,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
 import wres.datamodel.SafeMetricOutputMapByTimeAndThreshold.Builder;
-import wres.datamodel.Threshold.Operator;
+import wres.datamodel.ThresholdConstants.Operator;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;

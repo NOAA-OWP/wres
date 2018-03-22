@@ -13,7 +13,7 @@ import java.util.function.Function;
 
 import org.junit.Test;
 
-import wres.datamodel.Threshold.Operator;
+import wres.datamodel.ThresholdConstants.Operator;
 import wres.datamodel.inputs.MetricInputSliceException;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.EnsemblePairs;

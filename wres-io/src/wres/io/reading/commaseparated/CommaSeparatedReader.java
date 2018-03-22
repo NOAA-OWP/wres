@@ -18,7 +18,7 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.Dimension;
 import wres.datamodel.Threshold;
-import wres.datamodel.Threshold.Operator;
+import wres.datamodel.ThresholdConstants.Operator;
 
 /**
  * Helps read files of Comma Separated Values (CSV).

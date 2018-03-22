@@ -21,6 +21,7 @@ import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
 import wres.config.generated.MetricsConfig;
 import wres.config.generated.ProjectConfig;
+import wres.config.generated.ThresholdApplicationType;
 import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
 import wres.datamodel.DataFactory;
@@ -29,8 +30,9 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.Threshold;
-import wres.datamodel.Threshold.Operator;
-import wres.datamodel.Threshold.ThresholdComposition;
+import wres.datamodel.ThresholdConstants;
+import wres.datamodel.ThresholdConstants.Operator;
+import wres.datamodel.ThresholdConstants.ThresholdComposition;
 import wres.datamodel.ThresholdsByType;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
@@ -971,10 +973,10 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
             Set<Threshold> addMe = new HashSet<>();
 
             // Probability type
-            addMe.addAll( external.getThresholdsByType( ThresholdsByType.ThresholdType.PROBABILITY ) );
+            addMe.addAll( external.getThresholdsByType( ThresholdConstants.ThresholdType.PROBABILITY ) );
 
             // Value type
-            addMe.addAll( external.getThresholdsByType( ThresholdsByType.ThresholdType.VALUE ) );
+            addMe.addAll( external.getThresholdsByType( ThresholdConstants.ThresholdType.VALUE ) );
 
             // Add existing if available
             if ( mutate.containsKey( metric ) )
@@ -1004,7 +1006,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
 
         if ( !allThresholds.isEmpty()
              && allThresholds.stream().anyMatch( next -> Objects.nonNull( next.getApplyTo() )
-                                                         && next.getApplyTo() != LeftOrRightOrBaseline.LEFT ) )
+                                                         && next.getApplyTo() != ThresholdApplicationType.LEFT ) )
         {
             throw new MetricConfigurationException( "Currently, the system requires that all thresholds are of type '"
                                                     + LeftOrRightOrBaseline.LEFT + "'." );

@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-import wres.datamodel.Threshold.ThresholdComposition;
+import wres.datamodel.ThresholdConstants.ThresholdComposition;
 import wres.datamodel.inputs.MetricInputSliceException;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
