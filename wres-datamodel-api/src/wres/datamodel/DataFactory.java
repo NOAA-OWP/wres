@@ -12,7 +12,9 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
-import wres.datamodel.Threshold.Operator;
+import wres.datamodel.ThresholdConstants.Operator;
+import wres.datamodel.ThresholdsByMetric.ThresholdsByMetricBuilder;
+import wres.datamodel.ThresholdsByType.ThresholdsByTypeBuilder;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
@@ -696,6 +698,66 @@ public interface DataFactory
     OneOrTwoDoubles ofOneOrTwoDoubles( Double first, Double second );
 
     /**
+     * Returns {@link Threshold} from the specified input.
+     * 
+     * @param values the threshold values
+     * @param condition the threshold condition
+     * @param label an optional label
+     * @param units the optional units for the threshold values
+     * @return a threshold
+     */
+
+    Threshold ofThreshold( OneOrTwoDoubles values, Operator condition, String label, Dimension units );
+
+    /**
+     * Returns {@link Threshold} from the specified input. Both inputs must be in the unit interval, [0,1].
+     * 
+     * @param probabilities the probabilities
+     * @param condition the threshold condition
+     * @param label an optional label
+     * @param units an optional set of units to use when deriving quantiles from probability thresholds
+     * @return a threshold
+     */
+
+    Threshold ofProbabilityThreshold( OneOrTwoDoubles probabilities,
+                                      Operator condition,
+                                      String label,
+                                      Dimension units );
+
+    /**
+     * Returns a {@link Threshold} from the specified input
+     * 
+     * @param values the value or null
+     * @param probabilities the probabilities or null
+     * @param condition the threshold condition
+     * @param label an optional label
+     * @param units the optional units for the quantiles
+     * @return a quantile
+     */
+
+    Threshold ofQuantileThreshold( OneOrTwoDoubles values,
+                                   OneOrTwoDoubles probabilities,
+                                   Operator condition,
+                                   String label,
+                                   Dimension units );
+    
+    /**
+     * Returns a builder for a {@link ThresholdsByMetric}.
+     * 
+     * @return a builder
+     */
+    
+    ThresholdsByMetricBuilder ofThresholdsByMetricBuilder();
+    
+    /**
+     * Returns a builder for a {@link ThresholdsByType}.
+     * 
+     * @return a builder
+     */
+    
+    ThresholdsByTypeBuilder ofThresholdsByTypeBuilder();    
+    
+    /**
      * Construct the single-valued input with a baseline.
      * 
      * @param pairs the main verification pairs
@@ -1010,50 +1072,6 @@ public interface DataFactory
      */
 
     <S extends Comparable<S>> MapKey<S> getMapKey( S key );
-
-    /**
-     * Returns {@link Threshold} from the specified input.
-     * 
-     * @param values the threshold values
-     * @param condition the threshold condition
-     * @param label an optional label
-     * @param units the optional units for the threshold values
-     * @return a threshold
-     */
-
-    Threshold ofThreshold( OneOrTwoDoubles values, Operator condition, String label, Dimension units );
-
-    /**
-     * Returns {@link Threshold} from the specified input. Both inputs must be in the unit interval, [0,1].
-     * 
-     * @param probabilities the probabilities
-     * @param condition the threshold condition
-     * @param label an optional label
-     * @param units an optional set of units to use when deriving quantiles from probability thresholds
-     * @return a threshold
-     */
-
-    Threshold ofProbabilityThreshold( OneOrTwoDoubles probabilities,
-                                      Operator condition,
-                                      String label,
-                                      Dimension units );
-
-    /**
-     * Returns a {@link Threshold} from the specified input
-     * 
-     * @param values the value or null
-     * @param probabilities the probabilities or null
-     * @param condition the threshold condition
-     * @param label an optional label
-     * @param units the optional units for the quantiles
-     * @return a quantile
-     */
-
-    Threshold ofQuantileThreshold( OneOrTwoDoubles values,
-                                   OneOrTwoDoubles probabilities,
-                                   Operator condition,
-                                   String label,
-                                   Dimension units );
 
     /**
      * Returns a {@link MetricOutputMapByTimeAndThreshold} from the raw map of inputs.

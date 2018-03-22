@@ -8,7 +8,7 @@ import static org.junit.Assert.fail;
 import org.junit.Test;
 
 import wres.datamodel.SafeThreshold.ThresholdBuilder;
-import wres.datamodel.Threshold.Operator;
+import wres.datamodel.ThresholdConstants.Operator;
 import wres.datamodel.metadata.MetadataFactory;
 
 /**

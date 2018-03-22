@@ -27,7 +27,7 @@ import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.OneOrTwoThresholds;
 import wres.datamodel.Slicer;
 import wres.datamodel.Threshold;
-import wres.datamodel.Threshold.Operator;
+import wres.datamodel.ThresholdConstants.Operator;
 import wres.datamodel.ThresholdsByType;
 import wres.datamodel.inputs.InsufficientDataException;
 import wres.datamodel.inputs.MetricInputSliceException;

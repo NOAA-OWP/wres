@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
+import wres.datamodel.ThresholdConstants.ThresholdType;
 
 /**
  * Immutable implementation of {@link ThresholdsByMetric}.
@@ -64,12 +65,6 @@ public class SafeThresholdsByMetric implements ThresholdsByMetric
      */
 
     private Map<MetricConstants, Set<Threshold>> quantiles = new EnumMap<>( MetricConstants.class );
-
-    /**
-     * The {@link ApplicationType} associated with each metric.
-     */
-
-    private Map<MetricConstants, ApplicationType> applicationTypes = new EnumMap<>( MetricConstants.class );
 
     @Override
     public Map<MetricConstants, Set<Threshold>> getThresholds( ThresholdType type )
@@ -207,9 +202,7 @@ public class SafeThresholdsByMetric implements ThresholdsByMetric
                 }
 
                 // Add to builder
-                builder.addThresholds( union,
-                                       nextType,
-                                       this.getApplicationType( union.keySet().iterator().next() ) );
+                builder.addThresholds( union, nextType );
             }
         }
 
@@ -262,14 +255,6 @@ public class SafeThresholdsByMetric implements ThresholdsByMetric
     }
 
     @Override
-    public ApplicationType getApplicationType( MetricConstants metric )
-    {
-        Objects.requireNonNull( metric, NULL_METRIC_ERROR );
-
-        return applicationTypes.get( metric );
-    }
-
-    @Override
     public Set<MetricConstants> hasTheseMetricsForThisThreshold( Threshold threshold )
     {
         Objects.requireNonNull( threshold, NULL_THRESHOLD_ERROR );
@@ -299,6 +284,19 @@ public class SafeThresholdsByMetric implements ThresholdsByMetric
     }
 
     @Override
+    public Set<MetricConstants> hasThresholdsForTheseMetrics()
+    {
+        Set<MetricConstants> returnMe = new HashSet<>();
+
+        for ( ThresholdType nextType : ThresholdType.values() )
+        {
+            returnMe.addAll( this.getThresholds( nextType ).keySet() );
+        }
+
+        return Collections.unmodifiableSet( returnMe );
+    }
+
+    @Override
     public ThresholdsByMetric filterByType( ThresholdType... type )
     {
         if ( Objects.nonNull( type ) && Arrays.equals( type, ThresholdType.values() ) )
@@ -317,9 +315,7 @@ public class SafeThresholdsByMetric implements ThresholdsByMetric
                 if ( Arrays.asList( type ).contains( nextType ) )
                 {
                     Map<MetricConstants, Set<Threshold>> thresholds = this.getThresholds( nextType );
-                    builder.addThresholds( thresholds,
-                                           nextType,
-                                           this.getApplicationType( thresholds.keySet().iterator().next() ) );
+                    builder.addThresholds( thresholds, nextType );
                 }
             }
         }
@@ -403,7 +399,7 @@ public class SafeThresholdsByMetric implements ThresholdsByMetric
                     oneOrTwo.add( OneOrTwoThresholds.of( first ) );
                 }
             }
-            
+
             // Update container
             returnMe.put( next, Collections.unmodifiableSet( oneOrTwo ) );
         }
@@ -442,43 +438,52 @@ public class SafeThresholdsByMetric implements ThresholdsByMetric
 
         private Map<MetricConstants, Set<Threshold>> quantiles = new EnumMap<>( MetricConstants.class );
 
-        /**
-         * The {@link ApplicationType} associated with each metric.
-         */
-
-        private Map<MetricConstants, ApplicationType> applicationTypes = new EnumMap<>( MetricConstants.class );
-
         @Override
         public ThresholdsByMetricBuilder addThresholds( Map<MetricConstants, Set<Threshold>> thresholds,
-                                                        ThresholdType thresholdType,
-                                                        ApplicationType applicationType )
+                                                        ThresholdType thresholdType )
         {
             Objects.requireNonNull( thresholds, "Cannot build a store of thresholds with null thresholds." );
 
             Objects.requireNonNull( thresholdType, "Cannot build a store of thresholds with null threshold type." );
 
-            Objects.requireNonNull( applicationType,
-                                    "Cannot build a store of thresholds with null threshold application type." );
+            for ( Entry<MetricConstants, Set<Threshold>> nextEntry : thresholds.entrySet() )
+            {
 
-            if ( thresholdType == ThresholdType.PROBABILITY )
-            {
-                probabilities.putAll( thresholds );
-            }
-            else if ( thresholdType == ThresholdType.VALUE )
-            {
-                values.putAll( thresholds );
-            }
-            else if ( thresholdType == ThresholdType.PROBABILITY_CLASSIFIER )
-            {
-                probabilityClassifiers.putAll( thresholds );
-            }
-            else
-            {
-                quantiles.putAll( thresholds );
-            }
+                Map<MetricConstants, Set<Threshold>> container = null;
 
-            // Set the types for each metric
-            thresholds.keySet().forEach( key -> applicationTypes.put( key, applicationType ) );
+                // Determine type of container
+                if ( thresholdType == ThresholdType.PROBABILITY )
+                {
+                    container = this.probabilities;
+                }
+                else if ( thresholdType == ThresholdType.PROBABILITY_CLASSIFIER )
+                {
+                    container = this.probabilityClassifiers;
+                }
+                else if ( thresholdType == ThresholdType.QUANTILE )
+                {
+                    container = this.quantiles;
+                }
+                else if ( thresholdType == ThresholdType.VALUE )
+                {
+                    container = this.values;
+                }
+                else
+                {
+                    throw new IllegalArgumentException( "Unrecognized type of threshold '" + thresholdType + "'." );
+                }
+
+                // Append
+                if ( container.containsKey( nextEntry.getKey() ) )
+                {
+                    container.get( nextEntry.getKey() ).addAll( nextEntry.getValue() );
+                }
+                // Add
+                else
+                {
+                    container.put( nextEntry.getKey(), new HashSet<>( nextEntry.getValue() ) );
+                }
+            }
 
             return this;
         }
@@ -488,6 +493,7 @@ public class SafeThresholdsByMetric implements ThresholdsByMetric
         {
             return new SafeThresholdsByMetric( this );
         }
+
     }
 
     /**
@@ -520,16 +526,11 @@ public class SafeThresholdsByMetric implements ThresholdsByMetric
             this.quantiles.put( next.getKey(), Collections.unmodifiableSet( new HashSet<>( next.getValue() ) ) );
         }
 
-        // Set the application type
-        this.applicationTypes.putAll( builder.applicationTypes );
-
         // Render the stores immutable       
         this.probabilities = Collections.unmodifiableMap( this.probabilities );
         this.probabilityClassifiers = Collections.unmodifiableMap( this.probabilityClassifiers );
         this.values = Collections.unmodifiableMap( this.values );
         this.quantiles = Collections.unmodifiableMap( this.quantiles );
-        this.applicationTypes = Collections.unmodifiableMap( this.applicationTypes );
-
     }
 
     /**
@@ -618,7 +619,7 @@ public class SafeThresholdsByMetric implements ThresholdsByMetric
                                                                   .collect( Collectors.toMap( Map.Entry::getKey,
                                                                                               Map.Entry::getValue ) );
 
-        builder.addThresholds( filtered, type, this.getApplicationType( filtered.keySet().iterator().next() ) );
+        builder.addThresholds( filtered, type );
     }
 
     /**

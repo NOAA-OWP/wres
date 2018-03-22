@@ -6,6 +6,7 @@ import java.util.Set;
 
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
+import wres.datamodel.ThresholdConstants.ThresholdType;
 
 /**
  * A container of {@link Threshold} by {@link MetricConstants}. Includes an optional builder.
@@ -15,72 +16,6 @@ import wres.datamodel.MetricConstants.MetricOutputGroup;
 
 public interface ThresholdsByMetric
 {
-
-    /**
-     * An enumeration of threshold types.
-     */
-
-    public enum ThresholdType
-    {
-
-        /**
-         * Probability threshold.
-         */
-
-        PROBABILITY,
-
-        /**
-         * Value threshold.
-         */
-
-        VALUE,
-
-        /**
-         * Quantile threshold.
-         */
-
-        QUANTILE,
-
-        /**
-         * Probability classifier threshold.
-         */
-
-        PROBABILITY_CLASSIFIER;
-
-    }
-
-    /**
-     * An enumeration of types to which the thresholds should be applied.
-     */
-
-    public enum ApplicationType
-    {
-
-        /**
-         * Apply to all data.
-         */
-
-        ALL,
-
-        /**
-         * Apply to the left side of paired data.
-         */
-
-        LEFT,
-
-        /**
-         * Apply to the right side of paired data.
-         */
-
-        RIGHT,
-
-        /**
-         * Apply to the mean value of the right side of paired data.
-         */
-
-        RIGHT_MEAN;
-
-    }
 
     /**
      * <p>Returns a filtered view that contains the union of thresholds associated with metrics that belong to the 
@@ -129,10 +64,12 @@ public interface ThresholdsByMetric
     Map<MetricConstants, Set<Threshold>> getThresholds( ThresholdType type );
 
     /**
-     * Returns the composed thresholds associated with each metric in the container. A composed threshold is a 
+     * <p>Returns the composed thresholds associated with each metric in the container. A composed threshold is a 
      * {@link OneOrTwoThresholds} that contains two thresholds if the metric consumes 
      * {@link MetricInputGroup#DICHOTOMOUS} and has {@link ThresholdType#PROBABILITY_CLASSIFIER},
-     * otherwise one threshold.
+     * otherwise one threshold.</p>
+     * 
+     * <p>Also see: {@link #unionOfOneOrTwoThresholds()}.</p>
      * 
      * @return the composed thresholds
      */
@@ -150,9 +87,12 @@ public interface ThresholdsByMetric
     boolean hasType( ThresholdType type );
 
     /**
-     * Returns the union of all thresholds in the store. Note that thresholds registered as 
-     * {@link ThresholdType#PROBABILITY} and {@link ThresholdType#PROBABILITY_CLASSIFIER} may overlap. Also see 
-     * {@link #unionForTheseTypes(ThresholdType...)}.
+     * <p>Returns the union of all thresholds in the store. Note that thresholds of type 
+     * {@link ThresholdType#PROBABILITY} and {@link ThresholdType#PROBABILITY_CLASSIFIER} may contain exactly the same 
+     * parameter values and hence may overlap. In general, this method should not be used for stores that contain 
+     * both of these types.</p> 
+     * 
+     * <p>Also see {@link #unionOfOneOrTwoThresholds()}.</p> 
      * 
      * @return the union of all thresholds
      */
@@ -205,6 +145,8 @@ public interface ThresholdsByMetric
      * @param thresholds the thresholds
      * @return the union of the input and the current thresholds
      * @throws NullPointerException if the input is null
+     * @throws IllegalArgumentException if the input store has thresholds for the same metrics 
+     *            but with different application types
      */
 
     ThresholdsByMetric unionWithThisStore( ThresholdsByMetric thresholds );
@@ -228,16 +170,6 @@ public interface ThresholdsByMetric
     Set<ThresholdType> getThresholdTypesForThisMetric( MetricConstants metric );
 
     /**
-     * Returns the context in which the thresholds associated with a given metric should be applied.
-     * 
-     * @param metric the metric
-     * @return the application context or null if the metric is not contained in this store
-     * @throws NullPointerException if the input is null
-     */
-
-    ApplicationType getApplicationType( MetricConstants metric );
-
-    /**
      * Returns the metrics in the store for which the input threshold is defined.
      * 
      * @param threshold the threshold
@@ -256,7 +188,15 @@ public interface ThresholdsByMetric
      */
 
     Set<MetricConstants> doesNotHaveTheseMetricsForThisThreshold( Threshold threshold );
+    
+    /**
+     * Returns the set of metrics in the store.
+     *
+     * @return the stored metrics
+     */
 
+    Set<MetricConstants> hasThresholdsForTheseMetrics();
+    
     /**
      * Returns a filtered view that contains the union of thresholds for the given input types. If no types are 
      * defined, returns the empty set. If all types are defined, returns this container.
@@ -290,14 +230,12 @@ public interface ThresholdsByMetric
          * 
          * @param thresholds the thresholds
          * @param thresholdType the threshold type
-         * @param applicationType the application type
          * @return the builder
          * @throws NullPointerException if any input is null
          */
 
         ThresholdsByMetricBuilder addThresholds( Map<MetricConstants, Set<Threshold>> thresholds,
-                                                 ThresholdType thresholdType,
-                                                 ApplicationType applicationType );
+                                                 ThresholdType thresholdType );
 
         /**
          * Builds a {@link ThresholdsByMetric}.

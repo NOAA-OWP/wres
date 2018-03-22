@@ -15,9 +15,8 @@ import org.junit.Test;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.SafeThresholdsByMetric.SafeThresholdsByMetricBuilder;
-import wres.datamodel.Threshold.Operator;
-import wres.datamodel.ThresholdsByMetric.ApplicationType;
-import wres.datamodel.ThresholdsByMetric.ThresholdType;
+import wres.datamodel.ThresholdConstants.Operator;
+import wres.datamodel.ThresholdConstants.ThresholdType;
 
 /**
  * Tests the {@link SafeThresholdsByMetric}.
@@ -427,6 +426,21 @@ public class SafeThresholdsByMetricTest
                     container.doesNotHaveTheseMetricsForThisThreshold( secondThreshold ).equals( expected ) );
 
     }
+    
+    /**
+     * Tests the {@link SafeThresholdsByMetric#hasThresholdsForTheseMetrics()}.
+     */
+
+    @Test
+    public void testHasThresholdsForTheseMetrics()
+    {
+        ThresholdsByMetric container = this.getDefaultContainerOne();
+
+        Set<MetricConstants> expected = new HashSet<>( Arrays.asList( MetricConstants.FREQUENCY_BIAS ) );
+
+        assertTrue( "Unexpected metrics for this threshold.",
+                    container.hasThresholdsForTheseMetrics().equals( expected ) );
+    }    
 
     /**
      * Tests the {@link SafeThresholdsByMetric#filterByType(ThresholdType...)}.
@@ -550,21 +564,21 @@ public class SafeThresholdsByMetricTest
                                                          FACTORY.ofProbabilityThreshold( FACTORY.ofOneOrTwoDoubles( 0.1 ),
                                                                                          Operator.GREATER ) ) ) );
 
-        builder.addThresholds( probabilities, ThresholdType.PROBABILITY, ApplicationType.LEFT );
+        builder.addThresholds( probabilities, ThresholdType.PROBABILITY );
 
         // Value thresholds
         Map<MetricConstants, Set<Threshold>> values = new HashMap<>();
         values.put( MetricConstants.FREQUENCY_BIAS,
                     new HashSet<>( Arrays.asList( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( 0.2 ),
                                                                        Operator.GREATER ) ) ) );
-        builder.addThresholds( values, ThresholdType.VALUE, ApplicationType.LEFT );
+        builder.addThresholds( values, ThresholdType.VALUE );
 
         // Probability classifier thresholds
         Map<MetricConstants, Set<Threshold>> probabilityClassifiers = new HashMap<>();
         probabilityClassifiers.put( MetricConstants.FREQUENCY_BIAS,
                                     new HashSet<>( Arrays.asList( FACTORY.ofProbabilityThreshold( FACTORY.ofOneOrTwoDoubles( 0.3 ),
                                                                                                   Operator.GREATER ) ) ) );
-        builder.addThresholds( probabilityClassifiers, ThresholdType.PROBABILITY_CLASSIFIER, ApplicationType.LEFT );
+        builder.addThresholds( probabilityClassifiers, ThresholdType.PROBABILITY_CLASSIFIER );
 
         // Quantile thresholds
         Map<MetricConstants, Set<Threshold>> quantiles = new HashMap<>();
@@ -572,7 +586,7 @@ public class SafeThresholdsByMetricTest
                        new HashSet<>( Arrays.asList( FACTORY.ofQuantileThreshold( FACTORY.ofOneOrTwoDoubles( 0.4 ),
                                                                                   FACTORY.ofOneOrTwoDoubles( 0.5 ),
                                                                                   Operator.GREATER ) ) ) );
-        builder.addThresholds( quantiles, ThresholdType.QUANTILE, ApplicationType.LEFT );
+        builder.addThresholds( quantiles, ThresholdType.QUANTILE );
 
         return builder.build();
     }
@@ -593,7 +607,7 @@ public class SafeThresholdsByMetricTest
         probabilities.put( MetricConstants.FREQUENCY_BIAS,
                            new HashSet<>( Arrays.asList( FACTORY.ofProbabilityThreshold( FACTORY.ofOneOrTwoDoubles( 0.7 ),
                                                                                          Operator.GREATER_EQUAL ) ) ) );
-        builder.addThresholds( probabilities, ThresholdType.PROBABILITY, ApplicationType.LEFT );
+        builder.addThresholds( probabilities, ThresholdType.PROBABILITY );
 
         return builder.build();
     }
@@ -614,7 +628,7 @@ public class SafeThresholdsByMetricTest
         values.put( MetricConstants.FREQUENCY_BIAS,
                     new HashSet<>( Arrays.asList( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( 12.0 ),
                                                                        Operator.LESS ) ) ) );
-        builder.addThresholds( values, ThresholdType.VALUE, ApplicationType.LEFT );
+        builder.addThresholds( values, ThresholdType.VALUE );
 
         return builder.build();
     }
@@ -637,7 +651,7 @@ public class SafeThresholdsByMetricTest
                                                                                   Operator.GREATER ),
                                                   FACTORY.ofProbabilityThreshold( FACTORY.ofOneOrTwoDoubles( 0.95 ),
                                                                                   Operator.GREATER ) ) ) );
-        builder.addThresholds( probabilities, ThresholdType.PROBABILITY, ApplicationType.LEFT );
+        builder.addThresholds( probabilities, ThresholdType.PROBABILITY );
 
         return builder.build();
     }
