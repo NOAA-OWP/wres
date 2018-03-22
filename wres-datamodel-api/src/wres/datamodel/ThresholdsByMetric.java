@@ -52,7 +52,26 @@ public interface ThresholdsByMetric
 
         return this.filterByGroup( null, outGroup );
     }
+    
+    /**
+     * Returns <code>true</code> if the store contains thresholds for the input metric with one or more of
+     * the specified types, otherwise <code>false</code>. If no types are specified, returns false.
+     * 
+     * @param metric the metric
+     * @param types the threshold types
+     * @return true if the store contains thresholds for the specified metric and one or more of the types
+     * @throws NullPointerException if the metric is null
+     */
 
+    default boolean hasThresholdsForThisMetricAndTheseTypes( MetricConstants metric, ThresholdType... types )
+    {
+        if( Objects.isNull( types ) || types.length == 0)
+        {
+            return false;
+        }
+        return ! this.unionForThisMetricAndTheseTypes( metric, types ).isEmpty();
+    }
+    
     /**
      * Returns the thresholds associated with a specified type. 
      * 
