@@ -1648,7 +1648,7 @@ public class ConfigHelper
     private static ThresholdConstants.ThresholdType getThresholdType( ThresholdsConfig threshold )
             throws ProjectConfigException
     {
-        if ( Objects.isNull( threshold ) )
+        if ( Objects.isNull( threshold.getType() ) )
         {
             return ThresholdConstants.ThresholdType.PROBABILITY;
         }
