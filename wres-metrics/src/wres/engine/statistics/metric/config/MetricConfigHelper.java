@@ -340,55 +340,6 @@ public final class MetricConfigHelper
     }
 
     /**
-     * <p>Returns a list of all supported metrics given the input {@link ProjectConfig}. Specifically, checks the 
-     * {@link ProjectConfig} for the data type of the right-side and for any thresholds, returning metrics as 
-     * follows:</p>
-     * <ol>
-     * <li>If the right side contains {@link DatasourceType#ENSEMBLE_FORECASTS} and thresholds are defined: returns
-     * all metrics that consume {@link MetricInputGroup#ENSEMBLE}, {@link MetricInputGroup#SINGLE_VALUED} and
-     * {@link MetricInputGroup#DISCRETE_PROBABILITY}</li>
-     * <li>If the right side contains {@link DatasourceType#ENSEMBLE_FORECASTS} and thresholds are not defined: returns
-     * all metrics that consume {@link MetricInputGroup#ENSEMBLE} and {@link MetricInputGroup#SINGLE_VALUED}</li>
-     * <li>If the right side contains {@link DatasourceType#SINGLE_VALUED_FORECASTS} and thresholds are defined: returns
-     * all metrics that consume {@link MetricInputGroup#SINGLE_VALUED} and {@link MetricInputGroup#DICHOTOMOUS}</li>
-     * <li>If the right side contains {@link DatasourceType#SINGLE_VALUED_FORECASTS} and thresholds are not defined: 
-     * returns all metrics that consume {@link MetricInputGroup#SINGLE_VALUED}.</li>
-     * </ol>
-     * 
-     * TODO: implement multicategory metrics.
-     * @param config the {@link ProjectConfig}
-     * @return a list of all metrics that are compatible with the project configuration  
-     * @throws MetricConfigurationException if the configuration is invalid
-     */
-
-    public static Set<MetricConstants> getAllValidMetricsFromConfig( ProjectConfig config )
-            throws MetricConfigurationException
-    {
-        Set<MetricConstants> returnMe = new TreeSet<>();
-
-        MetricInputGroup inGroup = MetricConfigHelper.getInputType( config );
-
-        // Iterate through the metric groups
-        for ( MetricsConfig next : config.getMetrics() )
-        {
-            switch ( inGroup )
-            {
-                case ENSEMBLE:
-                    returnMe.addAll( MetricConfigHelper.getValidMetricsForEnsembleInput( config, next ) );
-                    break;
-                case SINGLE_VALUED:
-                    returnMe.addAll( MetricConfigHelper.getValidMetricsForSingleValuedInput( config, next ) );
-                    returnMe.addAll( MetricConfigHelper.getValidMetricsForSingleValuedTimeSeriesInput( config, next ) );
-                    break;
-                default:
-                    throw new MetricConfigurationException( "Unexpected input type '" + inGroup + "'." );
-            }
-        }
-
-        return Collections.unmodifiableSet( returnMe );
-    }
-
-    /**
      * Returns a set of {@link MetricConstants} from a {@link ProjectConfig}. If the {@link ProjectConfig} contains
      * the identifier {@link MetricConfigName#ALL_VALID}, all supported metrics are returned that are consistent
      * with the configuration. 
@@ -407,6 +358,34 @@ public final class MetricConfigHelper
         returnMe.addAll( MetricConfigHelper.getOrdinaryMetricsFromConfig( config ) );
 
         returnMe.addAll( MetricConfigHelper.getTimeSeriesMetricsFromConfig( config ) );
+
+        return Collections.unmodifiableSet( returnMe );
+    }
+
+    /**
+     * Returns a set of {@link MetricConstants} from a particular metric group in the {@link ProjectConfig}. 
+     * If the {@link ProjectConfig} contains the identifier {@link MetricConfigName#ALL_VALID}, all supported metrics 
+     * are returned that are consistent with the configuration. 
+     * 
+     * @param config the project configuration
+     * @param metrics the metric configuration
+     * @return a set of {@link MetricConstants}
+     * @throws MetricConfigurationException if the metrics are configured incorrectly
+     * @throws NullPointerException if either input is null
+     */
+
+    public static Set<MetricConstants> getMetricsFromConfig( ProjectConfig config, MetricsConfig metrics )
+            throws MetricConfigurationException
+    {
+        Objects.requireNonNull( config, NULL_CONFIGURATION_ERROR );
+
+        Objects.requireNonNull( metrics, NULL_CONFIGURATION_ERROR );
+
+        Set<MetricConstants> returnMe = new HashSet<>();
+
+        returnMe.addAll( MetricConfigHelper.getOrdinaryMetricsFromConfig( config, metrics ) );
+
+        returnMe.addAll( MetricConfigHelper.getTimeSeriesMetricsFromConfig( config, metrics ) );
 
         return Collections.unmodifiableSet( returnMe );
     }
@@ -473,12 +452,10 @@ public final class MetricConfigHelper
         // Iterate through the metric groups
         for ( MetricsConfig nextGroup : projectConfig.getMetrics() )
         {
-            // Find the named metrics
-            Set<MetricConstants> metrics = MetricConfigHelper.getMetricsFromConfig( projectConfig );
 
-            MetricConfigHelper.addThresholdsToBuilderForOneMetricGroup( nextGroup,
+            MetricConfigHelper.addThresholdsToBuilderForOneMetricGroup( projectConfig,
+                                                                        nextGroup,
                                                                         builder,
-                                                                        metrics,
                                                                         units,
                                                                         dataFactory );
         }
@@ -496,8 +473,10 @@ public final class MetricConfigHelper
      * @return a set of thresholds (possibly empty)
      * @throws MetricConfigurationException if the metric configuration is invalid
      * @throws NullPointerException if either input is null
+     * @deprecated
      */
 
+    @Deprecated
     public static Set<Threshold> fromInternalThresholdsConfig( List<ThresholdsConfig> thresholds,
                                                                Dimension units,
                                                                DataFactory dataFactory,
@@ -529,12 +508,14 @@ public final class MetricConfigHelper
      * @return a set of thresholds (possibly empty)
      * @throws MetricConfigurationException if the metric configuration is invalid
      * @throws NullPointerException if either input is null
+     * @deprecated
      */
 
-    public static Set<Threshold> fromInternalThresholdsConfig( ThresholdsConfig thresholds,
-                                                               Dimension units,
-                                                               DataFactory dataFactory,
-                                                               ThresholdType... types )
+    @Deprecated
+    private static Set<Threshold> fromInternalThresholdsConfig( ThresholdsConfig thresholds,
+                                                                Dimension units,
+                                                                DataFactory dataFactory,
+                                                                ThresholdType... types )
             throws MetricConfigurationException
     {
         Objects.requireNonNull( thresholds, NULL_CONFIGURATION_ERROR );
@@ -574,45 +555,6 @@ public final class MetricConfigHelper
         }
 
         return Collections.unmodifiableSet( returnMe );
-    }
-
-    /**
-     * Returns a set of thresholds used to classify probabilities to binary outcomes. If external thresholds are
-     * defined, these thresholds are appended. Only returns metrics to which these thresholds apply, namely
-     * metrics that consume {@link MetricInputGroup#DICHOTOMOUS}.
-     * 
-     * @param config the project configuration
-     * @param dataFactory the data factory with which to build thresholds
-     * @param external the optional external thresholds, may be null
-     * @throws MetricConfigurationException if the canonical thresholds are inappropriate
-     * @throws NullPointerException if any required input is null
-     * @return the probability classifiers
-     */
-
-    public static Map<MetricConstants, Set<Threshold>> getProbabilityClassifiers( ProjectConfig config,
-                                                                                  DataFactory dataFactory,
-                                                                                  Map<MetricConfigName, ThresholdsByType> external )
-            throws MetricConfigurationException
-    {
-
-        // Validate
-        Objects.requireNonNull( config, NULL_CONFIGURATION_ERROR );
-
-        Objects.requireNonNull( dataFactory, NULL_DATA_FACTORY_ERROR );
-
-        Map<MetricConstants, Set<Threshold>> returnMe = new EnumMap<>( MetricConstants.class );
-
-        // Iterate through the metric configuration groups, adding thresholds
-        for ( MetricsConfig nextGroup : config.getMetrics() )
-        {
-            MetricConfigHelper.addProbabilityClassifiers( config,
-                                                          returnMe,
-                                                          nextGroup,
-                                                          dataFactory,
-                                                          external );
-        }
-
-        return Collections.unmodifiableMap( returnMe );
     }
 
     /**
@@ -705,6 +647,50 @@ public final class MetricConfigHelper
         }
 
         return hasSpecifiedType && hasThresholdLeadType;
+    }
+
+    /**
+     * Returns <code>true</code> if the project configuration contains thresholds, <code>false</code> otherwise.
+     * 
+     * @param config the project configuration
+     * @param type an optional threshold type, may be null
+     * @return true if the configuration contains thresholds, otherwise false
+     * @throws NullPointerException if the input is null
+     */
+
+    public static boolean hasThresholds( MetricsConfig config, ThresholdType type )
+    {
+        Objects.requireNonNull( config, NULL_CONFIGURATION_ERROR );
+
+        // No type condition
+        if ( Objects.isNull( type ) )
+        {
+            // Has some thresholds
+            return !config.getThresholds().isEmpty();
+        }
+        
+        // No explicit type condition, defaults to ThresholdType.PROBABILITY
+        ThresholdType defaultType = ThresholdType.PROBABILITY;
+
+        // Has some thresholds of a specified type
+        return config.getThresholds()
+                     .stream()
+                     .anyMatch( testType -> testType.getType() == type
+                                            || ( Objects.isNull( testType.getType() ) && type == defaultType ) );
+    }
+
+    /**
+     * Returns <code>true</code> if the input configuration has time-series metrics, otherwise <code>false</code>.
+     * 
+     * @param projectConfig the project configuration
+     * @return true if the input configuration has time-series metrics, otherwise false
+     */
+
+    public static boolean hasTimeSeriesMetrics( ProjectConfig projectConfig )
+    {
+        Objects.requireNonNull( projectConfig, NULL_CONFIGURATION_ERROR );
+
+        return projectConfig.getMetrics().stream().anyMatch( next -> !next.getTimeSeriesMetric().isEmpty() );
     }
 
     /**
@@ -843,76 +829,6 @@ public final class MetricConfigHelper
     }
 
     /**
-     * Returns <code>true</code> if the project configuration contains thresholds, <code>false</code> otherwise.
-     * 
-     * @param config the project configuration
-     * @return true if the configuration contains thresholds, otherwise false
-     * @throws NullPointerException if the input is null
-     */
-
-    public static boolean hasThresholds( ProjectConfig config )
-    {
-        return MetricConfigHelper.hasThresholds( config, null );
-    }
-
-    /**
-     * Returns <code>true</code> if the project configuration contains thresholds of the specified type or for 
-     * all types (null), <code>false</code> otherwise.
-     * 
-     * @param config the project configuration
-     * @param type the optional threshold type, may be null for all types
-     * @return true if the configuration contains thresholds, otherwise false
-     * @throws NullPointerException if the input is null
-     */
-
-    public static boolean hasThresholds( ProjectConfig config, ThresholdType type )
-    {
-        Objects.requireNonNull( config, NULL_CONFIGURATION_ERROR );
-
-        return config.getMetrics()
-                     .stream()
-                     .anyMatch( nextGroup -> MetricConfigHelper.hasThresholds( nextGroup, type ) );
-    }
-
-    /**
-     * Returns <code>true</code> if the project configuration contains thresholds, <code>false</code> otherwise.
-     * 
-     * @param config the project configuration
-     * @param type an optional threshold type, may be null
-     * @return true if the configuration contains thresholds, otherwise false
-     * @throws NullPointerException if the input is null
-     */
-
-    public static boolean hasThresholds( MetricsConfig config, ThresholdType type )
-    {
-        Objects.requireNonNull( config, NULL_CONFIGURATION_ERROR );
-
-        // No type condition
-        if ( Objects.isNull( type ) )
-        {
-            // Has some thresholds
-            return !config.getThresholds().isEmpty();
-        }
-
-        // Has some thresholds of a specified type
-        return config.getThresholds().stream().anyMatch( testType -> testType.getType() == type );
-    }
-
-    /**
-     * Returns <code>true</code> if the input configuration has time-series metrics, otherwise <code>false</code>.
-     * 
-     * @param projectConfig the project configuration
-     * @return true if the input configuration has time-series metrics, otherwise false
-     */
-
-    public static boolean hasTimeSeriesMetrics( ProjectConfig projectConfig )
-    {
-        Objects.requireNonNull( projectConfig, NULL_CONFIGURATION_ERROR );
-
-        return projectConfig.getMetrics().stream().anyMatch( next -> !next.getTimeSeriesMetric().isEmpty() );
-    }
-
-    /**
      * Returns {@link MetricConstants} from the input configuration for metrics that are not time-series. 
      * If the configuration contains the identifier {@link MetricConfigName#ALL_VALID}, all supported metrics 
      * are returned that are consistent with the configuration. 
@@ -933,40 +849,64 @@ public final class MetricConfigHelper
         // Iterate through the ordinary metrics and populate the map
         for ( MetricsConfig metrics : config.getMetrics() )
         {
-            for ( MetricConfig next : metrics.getMetric() )
+            returnMe.addAll( MetricConfigHelper.getOrdinaryMetricsFromConfig( config, metrics ) );
+        }
+
+        return Collections.unmodifiableSet( returnMe );
+    }
+
+    /**
+     * Returns {@link MetricConstants} from the input configuration for metrics that are not time-series. 
+     * If the configuration contains the identifier {@link MetricConfigName#ALL_VALID}, all supported metrics 
+     * are returned that are consistent with the configuration. 
+     * 
+     * @param config the project configuration
+     * @param metrics the metrics configuration
+     * @return a set of metrics
+     * @throws MetricConfigurationException if the metrics are configured incorrectly
+     * @throws NullPointerException if the input is null
+     */
+
+    private static Set<MetricConstants> getOrdinaryMetricsFromConfig( ProjectConfig config, MetricsConfig metrics )
+            throws MetricConfigurationException
+    {
+        Objects.requireNonNull( config, NULL_CONFIGURATION_ERROR );
+
+        Set<MetricConstants> returnMe = new HashSet<>();
+
+        for ( MetricConfig next : metrics.getMetric() )
+        {
+            // All valid metrics
+            if ( next.getName() == MetricConfigName.ALL_VALID )
             {
-                // All valid metrics
-                if ( next.getName() == MetricConfigName.ALL_VALID )
+                Set<MetricConstants> allValid = null;
+                MetricInputGroup inGroup = MetricConfigHelper.getInputType( config );
+
+                // Single-valued metrics
+                if ( inGroup == MetricInputGroup.SINGLE_VALUED )
                 {
-                    Set<MetricConstants> allValid = null;
-                    MetricInputGroup inGroup = MetricConfigHelper.getInputType( config );
-
-                    // Single-valued metrics
-                    if ( inGroup == MetricInputGroup.SINGLE_VALUED )
-                    {
-                        allValid = MetricConfigHelper.getValidMetricsForSingleValuedInput( config, metrics );
-                    }
-                    // Ensemble metrics
-                    else if ( inGroup == MetricInputGroup.ENSEMBLE )
-                    {
-                        allValid = MetricConfigHelper.getValidMetricsForEnsembleInput( config, metrics );
-                    }
-                    // Unrecognized type
-                    else
-                    {
-                        throw new MetricConfigurationException( "Unexpected input type for metrics '" + inGroup
-                                                                + "'." );
-                    }
-
-                    returnMe.addAll( allValid );
-
-                    // Cannot be defined more than once in one metric group
-                    break;
+                    allValid = MetricConfigHelper.getAllValidMetricsForSingleValuedInput( config, metrics );
                 }
+                // Ensemble metrics
+                else if ( inGroup == MetricInputGroup.ENSEMBLE )
+                {
+                    allValid = MetricConfigHelper.getAllValidMetricsForEnsembleInput( config, metrics );
+                }
+                // Unrecognized type
                 else
                 {
-                    returnMe.add( from( next.getName() ) );
+                    throw new MetricConfigurationException( "Unexpected input type for metrics '" + inGroup
+                                                            + "'." );
                 }
+
+                returnMe.addAll( allValid );
+
+                // Cannot be defined more than once in one metric group
+                break;
+            }
+            else
+            {
+                returnMe.add( from( next.getName() ) );
             }
         }
 
@@ -994,36 +934,59 @@ public final class MetricConfigHelper
         // Iterate through the metric groups
         for ( MetricsConfig metrics : config.getMetrics() )
         {
-            for ( TimeSeriesMetricConfig next : metrics.getTimeSeriesMetric() )
+            returnMe.addAll( MetricConfigHelper.getTimeSeriesMetricsFromConfig( config, metrics ) );
+        }
+
+        return Collections.unmodifiableSet( returnMe );
+    }
+
+    /**
+     * Returns a set of{@link MetricConstants} associated with time-series metrics in the input configuration. 
+     * If the configuration contains the identifier {@link MetricConfigName#ALL_VALID}, all supported metrics are 
+     * returned that are consistent with the configuration. 
+     * 
+     * @param config the project configuration
+     * @return a set of metrics
+     * @throws MetricConfigurationException if the metrics are configured incorrectly
+     * @throws NullPointerException if the input is null
+     */
+
+    private static Set<MetricConstants> getTimeSeriesMetricsFromConfig( ProjectConfig config, MetricsConfig metrics )
+            throws MetricConfigurationException
+    {
+        Objects.requireNonNull( config, NULL_CONFIGURATION_ERROR );
+
+        Set<MetricConstants> returnMe = new HashSet<>();
+
+        for ( TimeSeriesMetricConfig next : metrics.getTimeSeriesMetric() )
+        {
+            // All valid metrics
+            if ( next.getName() == TimeSeriesMetricConfigName.ALL_VALID )
             {
-                // All valid metrics
-                if ( next.getName() == TimeSeriesMetricConfigName.ALL_VALID )
+                Set<MetricConstants> allValid = null;
+                MetricInputGroup inGroup = MetricConfigHelper.getInputType( config );
+
+                // Single-valued input source
+                if ( inGroup == MetricInputGroup.SINGLE_VALUED )
                 {
-                    Set<MetricConstants> allValid = null;
-                    MetricInputGroup inGroup = MetricConfigHelper.getInputType( config );
-
-                    // Single-valued input source
-                    if ( inGroup == MetricInputGroup.SINGLE_VALUED )
-                    {
-                        allValid = MetricConfigHelper.getValidMetricsForSingleValuedTimeSeriesInput( config, metrics );
-                    }
-                    // Unrecognized type
-                    else
-                    {
-                        throw new MetricConfigurationException( "Unexpected input type for time-series metrics '"
-                                                                + inGroup
-                                                                + "'." );
-                    }
-
-                    returnMe.addAll( allValid );
-
-                    // Cannot be defined more than once in one metric group
-                    break;
+                    allValid = MetricConfigHelper.getAllValidMetricsForSingleValuedTimeSeriesInput( config, metrics );
                 }
+                // Unrecognized type
                 else
                 {
-                    returnMe.add( from( next.getName() ) );
+                    throw new MetricConfigurationException( "Unexpected input type for time-series metrics '"
+                                                            + inGroup
+                                                            + "'." );
                 }
+
+                returnMe.addAll( allValid );
+
+                // Cannot be defined more than once in one metric group
+                break;
+            }
+            else
+            {
+                returnMe.add( from( next.getName() ) );
             }
         }
 
@@ -1039,8 +1002,8 @@ public final class MetricConfigHelper
      * @throws NullPointerException if the input is null
      */
 
-    private static Set<MetricConstants> getValidMetricsForEnsembleInput( ProjectConfig projectConfig,
-                                                                         MetricsConfig metricsConfig )
+    private static Set<MetricConstants> getAllValidMetricsForEnsembleInput( ProjectConfig projectConfig,
+                                                                            MetricsConfig metricsConfig )
     {
         Objects.requireNonNull( metricsConfig, NULL_CONFIGURATION_ERROR );
 
@@ -1077,8 +1040,8 @@ public final class MetricConfigHelper
      * @throws NullPointerException if the input is null
      */
 
-    private static Set<MetricConstants> getValidMetricsForSingleValuedInput( ProjectConfig projectConfig,
-                                                                             MetricsConfig metricsConfig )
+    private static Set<MetricConstants> getAllValidMetricsForSingleValuedInput( ProjectConfig projectConfig,
+                                                                                MetricsConfig metricsConfig )
     {
         Objects.requireNonNull( metricsConfig, NULL_CONFIGURATION_ERROR );
 
@@ -1107,8 +1070,8 @@ public final class MetricConfigHelper
      * @throws NullPointerException if the input is null
      */
 
-    private static Set<MetricConstants> getValidMetricsForSingleValuedTimeSeriesInput( ProjectConfig projectConfig,
-                                                                                       MetricsConfig metricsConfig )
+    private static Set<MetricConstants> getAllValidMetricsForSingleValuedTimeSeriesInput( ProjectConfig projectConfig,
+                                                                                          MetricsConfig metricsConfig )
     {
         Objects.requireNonNull( metricsConfig, NULL_CONFIGURATION_ERROR );
 
@@ -1163,23 +1126,27 @@ public final class MetricConfigHelper
     /**
      * Adds thresholds to the input builder for one metric group.
      * 
-     * @param nextGroup the metric group
+     * @param projectConfig the project configuration
+     * @param metricsConfig the metrics configuration
      * @param builder the builder
-     * @param metrics the set of metrics
      * @param units the optional units for value thresholds
      * @param dataFactory the data factory
      * @throws MetricConfigurationException if the threshold configuration is incorrect
      */
 
-    private static void addThresholdsToBuilderForOneMetricGroup( MetricsConfig nextGroup,
+    private static void addThresholdsToBuilderForOneMetricGroup( ProjectConfig projectConfig,
+                                                                 MetricsConfig metricsConfig,
                                                                  ThresholdsByMetricBuilder builder,
-                                                                 Set<MetricConstants> metrics,
                                                                  Dimension units,
                                                                  DataFactory dataFactory )
             throws MetricConfigurationException
     {
+
+        // Find the metrics
+        Set<MetricConstants> metrics = MetricConfigHelper.getMetricsFromConfig( projectConfig, metricsConfig );
+
         // No explicit thresholds, add an "all data" threshold
-        if ( nextGroup.getThresholds().isEmpty() )
+        if ( metricsConfig.getThresholds().isEmpty() )
         {
             for ( MetricConstants next : metrics )
             {
@@ -1194,7 +1161,7 @@ public final class MetricConfigHelper
         }
 
         // Iterate through any explicit thresholds
-        for ( ThresholdsConfig nextThresholds : nextGroup.getThresholds() )
+        for ( ThresholdsConfig nextThresholds : metricsConfig.getThresholds() )
         {
             // Thresholds
             Set<Threshold> thresholds =
@@ -1223,83 +1190,6 @@ public final class MetricConfigHelper
             // Add the thresholds
             builder.addThresholds( thresholdsMap, thresholdType );
         }
-    }
-
-    /**
-     * Mutates the input map of thresholds, adding probability classifiers for the specified metric configuration.
-     * 
-     * @param config the project configuration
-     * @param returnMe the map of thresholds to mutate
-     * @param metrics the metric configuration to use in mutating the input
-     * @param dataFactory the data factory
-     * @param external the optional external thresholds, may be null
-     * @throws MetricConfigurationException if the configuration is invalid
-     * @throws NullPointerException if any required input is null 
-     */
-
-    private static void addProbabilityClassifiers( ProjectConfig config,
-                                                   Map<MetricConstants, Set<Threshold>> returnMe,
-                                                   MetricsConfig metrics,
-                                                   DataFactory dataFactory,
-                                                   Map<MetricConfigName, ThresholdsByType> external )
-            throws MetricConfigurationException
-    {
-
-        // Validate
-        Objects.requireNonNull( returnMe, "Specify non-null input to mutate." );
-
-        Objects.requireNonNull( metrics, NULL_CONFIGURATION_ERROR );
-
-        Objects.requireNonNull( dataFactory, NULL_DATA_FACTORY_ERROR );
-
-        Set<Threshold> thresholds = new HashSet<>();
-
-        thresholds.addAll( fromInternalThresholdsConfig( metrics.getThresholds(),
-                                                         null,
-                                                         dataFactory,
-                                                         ThresholdType.PROBABILITY_CLASSIFIER ) );
-
-        // Filter by input type
-        Set<MetricConstants> metricsToAdd = new HashSet<>();
-
-        // Add ALL_VALID metrics
-        if ( metrics.getMetric().stream().anyMatch( name -> name.getName() == MetricConfigName.ALL_VALID ) )
-        {
-            metricsToAdd.addAll( MetricConfigHelper.getAllValidMetricsFromConfig( config ) );
-        }
-        // Add named metrics
-        else
-        {
-            for ( MetricConfig nextMetric : metrics.getMetric() )
-            {
-                metricsToAdd.add( MetricConfigHelper.from( nextMetric.getName() ) );
-            }
-        }
-
-        // Filter everything except dichotomous
-        metricsToAdd.removeIf( a -> !a.isInGroup( MetricInputGroup.DICHOTOMOUS ) );
-
-        // Add or append
-        for ( MetricConstants nextMetric : metricsToAdd )
-        {
-            if ( returnMe.containsKey( nextMetric ) )
-            {
-                returnMe.get( nextMetric ).addAll( thresholds );
-            }
-            else
-            {
-                returnMe.put( nextMetric, thresholds );
-            }
-            // Add external thresholds
-            MetricConfigName name = from( nextMetric );
-            if ( Objects.nonNull( external ) && external.containsKey( name ) )
-            {
-                returnMe.get( nextMetric )
-                        .addAll( external.get( name )
-                                         .getThresholdsByType( ThresholdConstants.ThresholdType.PROBABILITY_CLASSIFIER ) );
-            }
-        }
-
     }
 
     /**

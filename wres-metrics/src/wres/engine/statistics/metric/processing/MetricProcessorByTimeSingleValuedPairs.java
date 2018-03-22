@@ -28,6 +28,8 @@ import wres.datamodel.OneOrTwoThresholds;
 import wres.datamodel.Slicer;
 import wres.datamodel.Threshold;
 import wres.datamodel.ThresholdConstants.Operator;
+import wres.datamodel.ThresholdConstants.ThresholdType;
+import wres.datamodel.ThresholdsByMetric;
 import wres.datamodel.ThresholdsByType;
 import wres.datamodel.inputs.InsufficientDataException;
 import wres.datamodel.inputs.MetricInputSliceException;
@@ -201,7 +203,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
     void validate( ProjectConfig config ) throws MetricConfigurationException
     {
         //Check the metrics individually, as some may belong to multiple groups
-        for ( MetricConstants next : metrics )
+        for ( MetricConstants next : this.metrics )
         {
             if ( ! ( next.isInGroup( MetricInputGroup.SINGLE_VALUED )
                      || next.isInGroup( MetricInputGroup.SINGLE_VALUED_TIME_SERIES )
@@ -213,6 +215,20 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                                                         + config.getLabel()
                                                         + "'." );
             }
+
+            // Thresholds required for dichotomous metrics
+            if ( next.isInGroup( MetricInputGroup.DICHOTOMOUS )
+                 && !this.getThresholdsByMetric().hasThresholdsForThisMetricAndTheseTypes( next,
+                                                                                            ThresholdType.PROBABILITY,
+                                                                                            ThresholdType.VALUE ) )
+            {
+                throw new MetricConfigurationException( "Cannot configure '" + next
+                                                        + "' without thresholds to define the events: correct the "
+                                                        + "configuration labelled '"
+                                                        + config.getLabel()
+                                                        + "'." );
+            }
+            
         }
         // Check that time-series metrics are not combined with other metrics
         String message = "Cannot configure time-series metrics together with non-time-series "
@@ -308,19 +324,20 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                                                      MetricFuturesByTimeBuilder futures,
                                                      MetricOutputGroup outGroup )
     {
-        //Process thresholds
-        Set<Threshold> union =
-                getUnionOfThresholdsForThisGroup( this.thresholdsByMetric, MetricInputGroup.DICHOTOMOUS, outGroup );
+        // Find the thresholds for this group and for the required types
+        ThresholdsByMetric filtered = this.getThresholdsByMetric()
+                                   .filterByGroup( MetricInputGroup.DICHOTOMOUS, outGroup )
+                                   .filterByType( ThresholdType.PROBABILITY, ThresholdType.VALUE );
+        
+        // Find the union across metrics
+        Set<Threshold> union = filtered.union();
+        
         double[] sorted = getSortedClimatology( input, union );
         Map<OneOrTwoThresholds, MetricCalculationException> failures = new HashMap<>();
         union.forEach( threshold -> {
 
             Threshold useMe = addQuantilesToThreshold( threshold, sorted );
-            Set<MetricConstants> ignoreTheseMetrics =
-                    doNotComputeTheseMetricsForThisThreshold( this.thresholdsByMetric,
-                                                              MetricInputGroup.DICHOTOMOUS,
-                                                              outGroup,
-                                                              threshold );
+            Set<MetricConstants> ignoreTheseMetrics = filtered.doesNotHaveTheseMetricsForThisThreshold( threshold );
             try
             {
                 //Define a mapper to convert the single-valued pairs to dichotomous pairs
