@@ -160,7 +160,6 @@ public class USGSReader extends BasicSource
         }
         catch ( SQLException e )
         {
-            LOGGER.error(Strings.getStackTrace( e ));
             throw new IOException( "Features for the project could not be accessed.", e );
         }
 
@@ -245,7 +244,6 @@ public class USGSReader extends BasicSource
         }
         catch ( SQLException e )
         {
-            LOGGER.error( "The desired parameter could not be determined." );
             throw new IngestException( "The desired parameter could not be determined.", e );
         }
         finally
@@ -499,25 +497,18 @@ public class USGSReader extends BasicSource
 
         if (!this.variablePositionIDs.containsKey( gageID ))
         {
-            try
-            {
-                details =
-                        wres.util.Collections.find( this.getFeatureDetailsSet(),
-                                                    feature ->
-                                                            feature.getGageID()
-                                                            != null &&
-                                                            feature.getGageID()
-                                                                   .equalsIgnoreCase(
-                                                                           gageID ) );
+            details =
+                    wres.util.Collections.find( this.getFeatureDetailsSet(),
+                                                feature ->
+                                                        feature.getGageID()
+                                                        != null &&
+                                                        feature.getGageID()
+                                                               .equalsIgnoreCase(
+                                                                       gageID ) );
 
-                this.variablePositionIDs.put( gageID,
-                                              details.getVariablePositionID(
-                                                      this.getVariableID() ) );
-            }
-            catch (Exception e)
-            {
-                LOGGER.debug( Strings.getStackTrace( e ) );
-            }
+            this.variablePositionIDs.put( gageID,
+                                          details.getVariablePositionID(
+                                                  this.getVariableID() ) );
         }
 
         return this.variablePositionIDs.get( gageID );
