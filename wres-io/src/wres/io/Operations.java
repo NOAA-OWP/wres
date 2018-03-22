@@ -263,57 +263,8 @@ public final class Operations {
                                      boolean failed,
                                      String error)
     {
-        String address = "Unknown";
-
         try
         {
-            NetworkInterface currentInterface;
-            int interfaceIndex = NetworkInterface.getNetworkInterfaces().nextElement().getIndex();
-
-            while ( interfaceIndex > 0)
-            {
-                currentInterface = NetworkInterface.getByIndex( interfaceIndex );
-
-                String currentAddress = currentInterface.getInterfaceAddresses()
-                                                        .get(currentInterface.getInterfaceAddresses().size() - 1)
-                                                        .getAddress()
-                                                        .getHostName();
-
-                // If nothing has been assigned, go with whatever is found
-                if (address.equals( "Unknown" ))
-                {
-                    address = currentAddress;
-                }
-                // "\\." gets marked as redundent, but it isn't; we want to get
-                // a period. "\." is illegal and "." selects any character.
-                else if (currentAddress.matches( "^10[\\.\\d]+$" ))
-                {
-                    address = currentAddress;
-                }
-                // "\\." gets marked as redundent, but it isn't; we want to get
-                // a period. "\." is illegal and "." selects any character.
-                else if (currentAddress.matches( "^172[\\.\\d]+$" ))
-                {
-                    address = currentAddress;
-                }
-                // "\\." gets marked as redundent, but it isn't; we want to get
-                // a period. "\." is illegal and "." selects any character.
-                else if (currentAddress.matches( "^192[\\.\\d]+$" ))
-                {
-                    address = currentAddress;
-                }
-
-                interfaceIndex--;
-            }
-        }
-        catch (SocketException e)
-        {
-            LOGGER.warn( "The execution address could not be determined.", e );
-        }
-
-        try
-        {
-            String username = SystemSettings.getUserName();
             Timestamp startTimestamp = new Timestamp( start );
             String runTime = duration + " MILLISECONDS";
             String wresVersion = "Development";
@@ -372,8 +323,8 @@ public final class Operations {
             script.addTab().addLine("?,");
             script.addTab().addLine("?,");
             script.addTab().addLine("?,");
-            script.addTab().addLine("?,");
-            script.addTab().addLine("?,");
+            script.addTab().addLine("current_user,");
+            script.addTab().addLine("inet_client_addr(),");
             script.addTab().addLine("?,");
             script.addTab().addLine("CAST(? AS INTERVAL),");
             script.addTab().addLine("?,");
@@ -383,8 +334,8 @@ public final class Operations {
             script.execute( String.join(" ", arguments),
                           wresVersion,
                           project,
-                          username,
-                          address,
+                          // Let server find and report username
+                          // Let server find and report network address
                           startTimestamp,
                           runTime,
                           failed,
