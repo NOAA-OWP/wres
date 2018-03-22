@@ -147,15 +147,6 @@
         </xs:restriction>
     </xs:simpleType>
 
-    <!-- An enum to specify if the left, right, or baseline has been chosen. -->
-    <xs:simpleType name="leftOrRightOrBaseline">
-        <xs:restriction base="xs:string">
-            <xs:enumeration value="left" />
-            <xs:enumeration value="right" />
-            <xs:enumeration value="baseline" />
-        </xs:restriction>
-    </xs:simpleType>
-
     <!-- An enum to specify if the left, right, or right mean has been chosen for thresholds. -->
     <xs:simpleType name="thresholdApplicationType">
         <xs:restriction base="xs:string">
