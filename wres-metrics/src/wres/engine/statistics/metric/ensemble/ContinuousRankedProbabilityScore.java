@@ -50,7 +50,7 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Ensemble
         }
         //Slice the data into groups with an equal number of ensemble members
         Slicer slicer = getDataFactory().getSlicer();
-        Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> sliced = slicer.filterByRight( s.getData() );
+        Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> sliced = slicer.filterByRightSize( s.getData() );
         //CRPS, currently without decomposition
         //TODO: implement the decomposition
         double[] crps = new double[1];

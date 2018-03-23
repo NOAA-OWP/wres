@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.DoubleUnaryOperator;
 import java.util.function.Function;
+import java.util.function.ToDoubleFunction;
 
 import org.junit.Test;
 
@@ -112,7 +113,7 @@ public final class DefaultSlicerTest
     }
 
     /**
-     * Tests the {@link Slicer#filterByLeft(SingleValuedPairs, Threshold)}.
+     * Tests the {@link Slicer#filter(SingleValuedPairs, java.util.function.Predicate, java.util.function.DoublePredicate)}.
      * 
      * @throws MetricInputSliceException if the filtering fails
      */
@@ -129,24 +130,29 @@ public final class DefaultSlicerTest
         values.add( metIn.pairOf( 0, 0.0 / 5.0 ) );
         values.add( metIn.pairOf( 1, 1.0 / 5.0 ) );
         double[] expected = new double[] { 1, 1, 1 };
-        Threshold threshold = metIn.ofThreshold( SafeOneOrTwoDoubles.of( 0.0 ), Operator.GREATER,
+        Threshold threshold = metIn.ofThreshold( SafeOneOrTwoDoubles.of( 0.0 ),
+                                                 Operator.GREATER,
                                                  ThresholdDataType.LEFT );
         Metadata meta = metIn.getMetadataFactory().getMetadata();
         SingleValuedPairs pairs = metIn.ofSingleValuedPairs( values, values, meta, meta, null );
-        SingleValuedPairs sliced = slicer.filterByLeft( pairs, threshold );
+        SingleValuedPairs sliced =
+                slicer.filter( pairs, Slicer.left( threshold::test ), clim -> threshold.test( clim ) );
         //Test with baseline
         assertTrue( "The left side of the test data does not match the benchmark.",
                     Arrays.equals( slicer.getLeftSide( sliced.getBaselineData() ), expected ) );
         //Test without baseline
         SingleValuedPairs pairsNoBase = metIn.ofSingleValuedPairs( values, meta );
-        SingleValuedPairs slicedNoBase = slicer.filterByLeft( pairsNoBase, threshold );
+        SingleValuedPairs slicedNoBase =
+                slicer.filter( pairsNoBase, Slicer.left( threshold::test ), clim -> threshold.test( clim ) );
         assertTrue( "The left side of the test data does not match the benchmark.",
                     Arrays.equals( slicer.getLeftSide( slicedNoBase ), expected ) );
         //Test exception
         try
         {
-            slicer.filterByLeft( pairs, metIn.ofThreshold( SafeOneOrTwoDoubles.of( 1.0 ), Operator.GREATER,
-                                                           ThresholdDataType.LEFT ) );
+            Threshold next = metIn.ofThreshold( SafeOneOrTwoDoubles.of( 1.0 ),
+                                                Operator.GREATER,
+                                                ThresholdDataType.LEFT );
+            slicer.filter( pairs, Slicer.left( next::test ), null );
             fail( "Expected an exception on attempting to return an empty subset." );
         }
         catch ( Exception e )
@@ -164,7 +170,7 @@ public final class DefaultSlicerTest
         SingleValuedPairs pairsNullBase = metIn.ofSingleValuedPairs( values, nullValuesBase, meta, meta, null );
         try
         {
-            slicer.filterByLeft( pairsNullBase, threshold );
+            slicer.filter( pairsNullBase, Slicer.left( threshold::test ), null );
             fail( "Expected an exception on attempting to return an empty subset for the baseline." );
         }
         catch ( Exception e )
@@ -173,7 +179,7 @@ public final class DefaultSlicerTest
     }
 
     /**
-     * Tests the {@link Slicer#filterByLeft(EnsemblePairs, Threshold)}.
+     * Tests the {@link Slicer#filter(EnsemblePairs, java.util.function.Predicate, java.util.function.DoublePredicate)}.
      * 
      * @throws MetricInputSliceException if the filtering fails
      */
@@ -190,24 +196,30 @@ public final class DefaultSlicerTest
         values.add( metIn.pairOf( 0, new double[] { 1, 2, 3 } ) );
         values.add( metIn.pairOf( 1, new double[] { 1, 2, 3 } ) );
         double[] expected = new double[] { 1, 1, 1 };
-        Threshold threshold = metIn.ofThreshold( SafeOneOrTwoDoubles.of( 0.0 ), Operator.GREATER,
+        Threshold threshold = metIn.ofThreshold( SafeOneOrTwoDoubles.of( 0.0 ),
+                                                 Operator.GREATER,
                                                  ThresholdDataType.LEFT );
         Metadata meta = metIn.getMetadataFactory().getMetadata();
         EnsemblePairs pairs = metIn.ofEnsemblePairs( values, values, meta, meta, null );
-        EnsemblePairs sliced = slicer.filterByLeft( pairs, threshold );
+        EnsemblePairs sliced =
+                slicer.filter( pairs, Slicer.leftVector( threshold::test ), clim -> threshold.test( clim ) );
         //Test with baseline
         assertTrue( "The left side of the test data does not match the benchmark.",
                     Arrays.equals( slicer.getLeftSide( sliced.getBaselineData() ), expected ) );
         //Test without baseline
         EnsemblePairs pairsNoBase = metIn.ofEnsemblePairs( values, meta );
-        EnsemblePairs slicedNoBase = slicer.filterByLeft( pairsNoBase, threshold );
+        EnsemblePairs slicedNoBase =
+                slicer.filter( pairsNoBase, Slicer.leftVector( threshold::test ), clim -> threshold.test( clim ) );
         assertTrue( "The left side of the test data does not match the benchmark.",
                     Arrays.equals( slicer.getLeftSide( slicedNoBase ), expected ) );
         //Test exception
         try
         {
-            slicer.filterByLeft( pairs, metIn.ofThreshold( SafeOneOrTwoDoubles.of( 1.0 ), Operator.GREATER,
-                                                           ThresholdDataType.LEFT ) );
+
+            Threshold next = metIn.ofThreshold( SafeOneOrTwoDoubles.of( 1.0 ),
+                                                Operator.GREATER,
+                                                ThresholdDataType.LEFT );
+            slicer.filter( pairs, Slicer.leftVector( next::test ), null );
             fail( "Expected an exception on attempting to return an empty subset." );
         }
         catch ( Exception e )
@@ -225,7 +237,7 @@ public final class DefaultSlicerTest
         EnsemblePairs pairsNullBase = metIn.ofEnsemblePairs( values, nullValuesBase, meta, meta, null );
         try
         {
-            slicer.filterByLeft( pairsNullBase, threshold );
+            slicer.filter( pairsNullBase, Slicer.leftVector( threshold::test ), null );
             fail( "Expected an exception on attempting to return an empty subset for the baseline." );
         }
         catch ( Exception e )
@@ -234,7 +246,7 @@ public final class DefaultSlicerTest
     }
 
     /**
-     * Tests the {@link Slicer#transformPairs(EnsemblePairs, Function)}.
+     * Tests the {@link Slicer#transform(EnsemblePairs, Function)}.
      */
 
     @Test
@@ -256,16 +268,16 @@ public final class DefaultSlicerTest
         double[] expected = new double[] { 3.0, 8.0, 13.0, 18.0, 23.0, 28.0 };
         //Test without baseline
         double[] actualNoBase =
-                slicer.getRightSide( slicer.transformPairs( metIn.ofEnsemblePairs( values, meta ), mapper ) );
+                slicer.getRightSide( slicer.transform( metIn.ofEnsemblePairs( values, meta ), mapper ) );
         assertTrue( "The transformed test data does not match the benchmark.",
                     Arrays.equals( actualNoBase, expected ) );
         //Test baseline
-        double[] actualBase = slicer.getRightSide( slicer.transformPairs( input, mapper ).getBaselineData() );
+        double[] actualBase = slicer.getRightSide( slicer.transform( input, mapper ).getBaselineData() );
         assertTrue( "The transformed test data does not match the benchmark.", Arrays.equals( actualBase, expected ) );
     }
 
     /**
-     * Tests the {@link Slicer#transformPairs(SingleValuedPairs, Function)}. 
+     * Tests the {@link Slicer#transform(SingleValuedPairs, Function)}. 
      */
 
     @Test
@@ -298,19 +310,19 @@ public final class DefaultSlicerTest
                                                                             null );
 
         //Test without baseline
-        DichotomousPairs actualNoBase = slicer.transformPairs( metIn.ofSingleValuedPairs( values, meta ), mapper );
+        DichotomousPairs actualNoBase = slicer.transform( metIn.ofSingleValuedPairs( values, meta ), mapper );
         assertTrue( "The transformed test data does not match the benchmark.",
                     actualNoBase.getData().equals( expectedNoBase.getData() ) );
         //Test baseline
         DichotomousPairs actualBase =
-                slicer.transformPairs( metIn.ofSingleValuedPairs( values, values, meta, meta, null ),
-                                       mapper );
+                slicer.transform( metIn.ofSingleValuedPairs( values, values, meta, meta, null ),
+                                  mapper );
         assertTrue( "The transformed test data does not match the benchmark.",
                     actualBase.getDataForBaseline().equals( expectedBase.getDataForBaseline() ) );
     }
 
     /**
-     * Tests the {@link Slicer#transformPairs(EnsemblePairs, Threshold, BiFunction)}.
+     * Tests the {@link Slicer#transform(EnsemblePairs, Threshold, BiFunction)}.
      */
 
     @Test
@@ -325,42 +337,43 @@ public final class DefaultSlicerTest
         values.add( metIn.pairOf( 0, new double[] { 1, 2, 3, 4, 5 } ) );
         values.add( metIn.pairOf( 5, new double[] { 1, 1, 6, 6, 50 } ) );
         Metadata meta = metIn.getMetadataFactory().getMetadata();
-        Threshold threshold = metIn.ofThreshold( SafeOneOrTwoDoubles.of( 3.0 ), Operator.GREATER,
+        Threshold threshold = metIn.ofThreshold( SafeOneOrTwoDoubles.of( 3.0 ),
+                                                 Operator.GREATER,
                                                  ThresholdDataType.LEFT );
-        BiFunction<PairOfDoubleAndVectorOfDoubles, Threshold, PairOfDoubles> mapper = metIn.getSlicer()::transformPair;
+        BiFunction<PairOfDoubleAndVectorOfDoubles, Threshold, PairOfDoubles> mapper = metIn.getSlicer()::transform;
         double[] expectedLeft = new double[] { 0.0, 0.0, 0.0, 1.0, 0.0, 1.0 };
         double[] expectedRight = new double[] { 2.0 / 5.0, 0.0 / 5.0, 0.0 / 5.0, 5.0 / 5.0, 2.0 / 5.0, 3.0 / 5.0 };
 
         //Test without baseline
-        double[] actualNoBaseLeft = slicer.getLeftSide( slicer.transformPairs( metIn.ofEnsemblePairs( values, meta ),
-                                                                               threshold,
-                                                                               mapper ) );
-        double[] actualNoBaseRight = slicer.getRightSide( slicer.transformPairs( metIn.ofEnsemblePairs( values, meta ),
-                                                                                 threshold,
-                                                                                 mapper ) );
+        double[] actualNoBaseLeft = slicer.getLeftSide( slicer.transform( metIn.ofEnsemblePairs( values, meta ),
+                                                                          threshold,
+                                                                          mapper ) );
+        double[] actualNoBaseRight = slicer.getRightSide( slicer.transform( metIn.ofEnsemblePairs( values, meta ),
+                                                                            threshold,
+                                                                            mapper ) );
         assertTrue( "The transformed test data does not match the benchmark.",
                     Arrays.equals( actualNoBaseLeft, expectedLeft ) );
         assertTrue( "The transformed test data does not match the benchmark.",
                     Arrays.equals( actualNoBaseRight, expectedRight ) );
 
         //Test baseline
-        double[] actualBaseLeft = slicer.getLeftSide( slicer.transformPairs(
-                                                                             metIn.ofEnsemblePairs( values,
-                                                                                                    values,
-                                                                                                    meta,
-                                                                                                    meta,
-                                                                                                    null ),
-                                                                             threshold,
-                                                                             mapper )
+        double[] actualBaseLeft = slicer.getLeftSide( slicer.transform(
+                                                                        metIn.ofEnsemblePairs( values,
+                                                                                               values,
+                                                                                               meta,
+                                                                                               meta,
+                                                                                               null ),
+                                                                        threshold,
+                                                                        mapper )
                                                             .getBaselineData() );
-        double[] actualBaseRight = slicer.getRightSide( slicer.transformPairs(
-                                                                               metIn.ofEnsemblePairs( values,
-                                                                                                      values,
-                                                                                                      meta,
-                                                                                                      meta,
-                                                                                                      null ),
-                                                                               threshold,
-                                                                               mapper )
+        double[] actualBaseRight = slicer.getRightSide( slicer.transform(
+                                                                          metIn.ofEnsemblePairs( values,
+                                                                                                 values,
+                                                                                                 meta,
+                                                                                                 meta,
+                                                                                                 null ),
+                                                                          threshold,
+                                                                          mapper )
                                                               .getBaselineData() );
         assertTrue( "The transformed test data does not match the benchmark.",
                     Arrays.equals( actualBaseLeft, expectedLeft ) );
@@ -369,7 +382,7 @@ public final class DefaultSlicerTest
     }
 
     /**
-     * Tests the {@link Slicer#transformPair(PairOfDoubleAndVectorOfDoubles, Threshold)}.
+     * Tests the {@link Slicer#transform(PairOfDoubleAndVectorOfDoubles, Threshold)}.
      */
 
     @Test
@@ -382,9 +395,10 @@ public final class DefaultSlicerTest
         PairOfDoubleAndVectorOfDoubles d = metIn.pairOf( 4, new double[] { 4, 4, 4, 4, 4 } );
         PairOfDoubleAndVectorOfDoubles e = metIn.pairOf( 0, new double[] { 1, 2, 3, 4, 5 } );
         PairOfDoubleAndVectorOfDoubles f = metIn.pairOf( 5, new double[] { 1, 1, 6, 6, 50 } );
-        Threshold threshold = metIn.ofThreshold( SafeOneOrTwoDoubles.of( 3.0 ), Operator.GREATER,
+        Threshold threshold = metIn.ofThreshold( SafeOneOrTwoDoubles.of( 3.0 ),
+                                                 Operator.GREATER,
                                                  ThresholdDataType.LEFT );
-        BiFunction<PairOfDoubleAndVectorOfDoubles, Threshold, PairOfDoubles> mapper = metIn.getSlicer()::transformPair;
+        BiFunction<PairOfDoubleAndVectorOfDoubles, Threshold, PairOfDoubles> mapper = metIn.getSlicer()::transform;
         assertTrue( "The transformed pair does not match the benchmark",
                     mapper.apply( a, threshold ).equals( metIn.pairOf( 0.0, 2.0 / 5.0 ) ) );
         assertTrue( "The transformed pair does not match the benchmark",
@@ -480,19 +494,26 @@ public final class DefaultSlicerTest
         double tF = 8.0 / 11.0;
         double tG = 0.01;
 
-        Threshold testA = metIn.ofProbabilityThreshold( SafeOneOrTwoDoubles.of( tA ), Operator.GREATER,
+        Threshold testA = metIn.ofProbabilityThreshold( SafeOneOrTwoDoubles.of( tA ),
+                                                        Operator.GREATER,
                                                         ThresholdDataType.LEFT );
-        Threshold testB = metIn.ofProbabilityThreshold( SafeOneOrTwoDoubles.of( tB ), Operator.GREATER,
+        Threshold testB = metIn.ofProbabilityThreshold( SafeOneOrTwoDoubles.of( tB ),
+                                                        Operator.GREATER,
                                                         ThresholdDataType.LEFT );
-        Threshold testC = metIn.ofProbabilityThreshold( SafeOneOrTwoDoubles.of( tC ), Operator.GREATER,
+        Threshold testC = metIn.ofProbabilityThreshold( SafeOneOrTwoDoubles.of( tC ),
+                                                        Operator.GREATER,
                                                         ThresholdDataType.LEFT );
-        Threshold testD = metIn.ofProbabilityThreshold( SafeOneOrTwoDoubles.of( tD ), Operator.GREATER,
+        Threshold testD = metIn.ofProbabilityThreshold( SafeOneOrTwoDoubles.of( tD ),
+                                                        Operator.GREATER,
                                                         ThresholdDataType.LEFT );
-        Threshold testE = metIn.ofProbabilityThreshold( SafeOneOrTwoDoubles.of( tE[0], tE[1] ), Operator.BETWEEN,
+        Threshold testE = metIn.ofProbabilityThreshold( SafeOneOrTwoDoubles.of( tE[0], tE[1] ),
+                                                        Operator.BETWEEN,
                                                         ThresholdDataType.LEFT );
-        Threshold testF = metIn.ofProbabilityThreshold( SafeOneOrTwoDoubles.of( tF ), Operator.GREATER,
+        Threshold testF = metIn.ofProbabilityThreshold( SafeOneOrTwoDoubles.of( tF ),
+                                                        Operator.GREATER,
                                                         ThresholdDataType.LEFT );
-        Threshold testG = metIn.ofProbabilityThreshold( SafeOneOrTwoDoubles.of( tG ), Operator.GREATER,
+        Threshold testG = metIn.ofProbabilityThreshold( SafeOneOrTwoDoubles.of( tG ),
+                                                        Operator.GREATER,
                                                         ThresholdDataType.LEFT );
         Threshold expectedA = metIn.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 1.5 ),
                                                          SafeOneOrTwoDoubles.of( tA ),
@@ -568,7 +589,7 @@ public final class DefaultSlicerTest
     }
 
     /**
-     * Tests the {@link Slicer#transformPair(PairOfDoubleAndVectorOfDoubles)}.
+     * Tests the {@link Slicer#transform(PairOfDoubleAndVectorOfDoubles)}.
      */
 
     @Test
@@ -581,7 +602,8 @@ public final class DefaultSlicerTest
         PairOfDoubleAndVectorOfDoubles d = metIn.pairOf( 4, new double[] { 4, 4, 4, 4, 4 } );
         PairOfDoubleAndVectorOfDoubles e = metIn.pairOf( 0, new double[] { 1, 2, 3, 4, 5 } );
         PairOfDoubleAndVectorOfDoubles f = metIn.pairOf( 5, new double[] { 1, 1, 6, 6, 50 } );
-        Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> mapper = metIn.getSlicer()::transformPair;
+        Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> mapper =
+                metIn.getSlicer().transform( vector -> vector[0] );
         assertTrue( "The transformed pair does not match the benchmark",
                     mapper.apply( a ).equals( metIn.pairOf( 3, 1 ) ) );
         assertTrue( "The transformed pair does not match the benchmark",
@@ -597,7 +619,7 @@ public final class DefaultSlicerTest
     }
 
     /**
-     * Tests the {@link Slicer#filterByRight(List)}.
+     * Tests the {@link Slicer#filterByRightSize(List)}.
      */
 
     @Test
@@ -618,7 +640,7 @@ public final class DefaultSlicerTest
         input.add( metIn.pairOf( 3, new double[] { 1, 2, 3, 4, 5, 6 } ) );
         input.add( metIn.pairOf( 3, new double[] { 1, 2, 3, 4, 5, 6 } ) );
         //Slice
-        Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> sliced = slicer.filterByRight( input );
+        Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> sliced = slicer.filterByRightSize( input );
         //Check the results
         assertTrue( "Expected three slices of data.", sliced.size() == 3 );
         assertTrue( "Expected the first slice to contain three pairs.", sliced.get( 3 ).size() == 3 );
@@ -646,7 +668,7 @@ public final class DefaultSlicerTest
     }
 
     /**
-     * Tests the {@link Slicer#filter(SingleValuedPairs, java.util.function.DoublePredicate, boolean)}.
+     * Tests the {@link Slicer#filter(SingleValuedPairs, java.util.function.Predicate, java.util.function.DoublePredicate)}.
     
      * @throws MetricInputSliceException if slicing results in an unexpected exception
      */
@@ -673,7 +695,7 @@ public final class DefaultSlicerTest
 
         Metadata meta = metIn.getMetadataFactory().getMetadata();
         SingleValuedPairs pairs = metIn.ofSingleValuedPairs( values, values, meta, meta, climatology );
-        SingleValuedPairs sliced = slicer.filter( pairs, a -> Double.isFinite( a ), true );
+        SingleValuedPairs sliced = slicer.filter( pairs, Slicer.leftAndRight( Double::isFinite ), Double::isFinite );
 
         //Test with baseline
         assertTrue( "The sliced data does not match the benchmark.", sliced.getData().equals( expectedValues ) );
@@ -682,7 +704,7 @@ public final class DefaultSlicerTest
         assertTrue( "The sliced climatology data does not match the benchmark.",
                     Arrays.equals( sliced.getClimatology().getDoubles(), climatologyExpected.getDoubles() ) );
         assertTrue( "Unexpected equality of the sliced and unsliced climatology.",
-                    !Arrays.equals( slicer.filter( pairs, a -> Double.isFinite( a ), false )
+                    !Arrays.equals( slicer.filter( pairs, Slicer.leftAndRight( Double::isFinite ), null )
                                           .getClimatology()
                                           .getDoubles(),
                                     climatologyExpected.getDoubles() ) );
@@ -690,7 +712,7 @@ public final class DefaultSlicerTest
                     !sliced.getData().equals( values ) );
         //Test without baseline or climatology
         SingleValuedPairs pairsNoBase = metIn.ofSingleValuedPairs( values, meta );
-        SingleValuedPairs slicedNoBase = slicer.filter( pairsNoBase, a -> Double.isFinite( a ), false );
+        SingleValuedPairs slicedNoBase = slicer.filter( pairsNoBase, Slicer.leftAndRight( Double::isFinite ), null );
 
         assertTrue( "The sliced data without a baseline does not match the benchmark.",
                     slicedNoBase.getData().equals( expectedValues ) );
@@ -702,7 +724,7 @@ public final class DefaultSlicerTest
             List<PairOfDoubles> none = new ArrayList<>();
             none.add( metIn.pairOf( 1, 1 ) );
             none.add( metIn.pairOf( Double.NaN, Double.NaN ) );
-            slicer.filter( metIn.ofSingleValuedPairs( none, meta ), a -> a > 1, false );
+            slicer.filter( metIn.ofSingleValuedPairs( none, meta ), Slicer.leftAndRight( a -> a > 1 ), null );
             fail( "Expected an exception on attempting to filter with no data." );
         }
         catch ( MetricInputSliceException e )
@@ -714,7 +736,9 @@ public final class DefaultSlicerTest
             List<PairOfDoubles> none = new ArrayList<>();
             none.add( metIn.pairOf( 1, 1 ) );
             none.add( metIn.pairOf( Double.NaN, Double.NaN ) );
-            slicer.filter( metIn.ofSingleValuedPairs( values, none, meta, meta ), a -> a > 1, false );
+            slicer.filter( metIn.ofSingleValuedPairs( values, none, meta, meta ),
+                           Slicer.leftAndRight( a -> a > 1 ),
+                           null );
             fail( "Expected an exception on attempting to filter with no baseline data." );
         }
         catch ( MetricInputSliceException e )
@@ -728,7 +752,7 @@ public final class DefaultSlicerTest
                     metIn.ofSingleValuedPairs( values,
                                                meta,
                                                metIn.vectorOf( new double[] { 1, Double.NaN } ) );
-            slicer.filter( test, a -> a > 1, true );
+            slicer.filter( test, Slicer.leftAndRight( a -> a > 1 ), a -> a > 1 );
             fail( "Expected an exception on attempting to filter with no climatological data." );
         }
         catch ( MetricInputSliceException e )
@@ -737,7 +761,7 @@ public final class DefaultSlicerTest
     }
 
     /**
-     * Tests the {@link Slicer#filter(EnsemblePairs, java.util.function.DoublePredicate, boolean)}.
+     * Tests the {@link Slicer#filter(EnsemblePairs, Function)}.
     
      * @throws MetricInputSliceException if slicing results in an unexpected exception
      */
@@ -765,7 +789,7 @@ public final class DefaultSlicerTest
 
         Metadata meta = metIn.getMetadataFactory().getMetadata();
         EnsemblePairs pairs = metIn.ofEnsemblePairs( values, values, meta, meta, climatology );
-        EnsemblePairs sliced = slicer.filter( pairs, a -> Double.isFinite( a ), true );
+        EnsemblePairs sliced = slicer.filter( pairs, slicer.leftAndEachOfRight( Double::isFinite ), Double::isFinite );
 
         //Test with baseline
         assertTrue( "The sliced data does not match the benchmark.", sliced.getData().equals( expectedValues ) );
@@ -774,7 +798,7 @@ public final class DefaultSlicerTest
         assertTrue( "The sliced climatology data does not match the benchmark.",
                     Arrays.equals( sliced.getClimatology().getDoubles(), climatologyExpected.getDoubles() ) );
         assertTrue( "Unexpected equality of the sliced and unsliced climatology.",
-                    !Arrays.equals( slicer.filter( pairs, a -> Double.isFinite( a ), false )
+                    !Arrays.equals( slicer.filter( pairs, slicer.leftAndEachOfRight( Double::isFinite ), null )
                                           .getClimatology()
                                           .getDoubles(),
                                     climatologyExpected.getDoubles() ) );
@@ -782,7 +806,7 @@ public final class DefaultSlicerTest
                     !sliced.getData().equals( values ) );
         //Test without baseline or climatology
         EnsemblePairs pairsNoBase = metIn.ofEnsemblePairs( values, meta );
-        EnsemblePairs slicedNoBase = slicer.filter( pairsNoBase, a -> Double.isFinite( a ), false );
+        EnsemblePairs slicedNoBase = slicer.filter( pairsNoBase, slicer.leftAndEachOfRight( Double::isFinite ), null );
 
         assertTrue( "The sliced data without a baseline does not match the benchmark.",
                     slicedNoBase.getData().equals( expectedValues ) );
@@ -794,7 +818,7 @@ public final class DefaultSlicerTest
             List<PairOfDoubleAndVectorOfDoubles> none = new ArrayList<>();
             none.add( metIn.pairOf( 1, new double[] { 1 } ) );
             none.add( metIn.pairOf( Double.NaN, new double[] { Double.NaN } ) );
-            slicer.filter( metIn.ofEnsemblePairs( none, meta ), a -> a > 1, false );
+            slicer.filter( metIn.ofEnsemblePairs( none, meta ), slicer.leftAndEachOfRight( a -> a > 1 ), null );
             fail( "Expected an exception on attempting to filter with no data." );
         }
         catch ( MetricInputSliceException e )
@@ -806,7 +830,9 @@ public final class DefaultSlicerTest
             List<PairOfDoubleAndVectorOfDoubles> none = new ArrayList<>();
             none.add( metIn.pairOf( 1, new double[] { 1 } ) );
             none.add( metIn.pairOf( Double.NaN, new double[] { Double.NaN } ) );
-            slicer.filter( metIn.ofEnsemblePairs( values, none, meta, meta ), a -> a > 1, false );
+            slicer.filter( metIn.ofEnsemblePairs( values, none, meta, meta ),
+                           slicer.leftAndEachOfRight( a -> a > 1 ),
+                           null );
             fail( "Expected an exception on attempting to filter with no baseline data." );
         }
         catch ( MetricInputSliceException e )
@@ -820,7 +846,108 @@ public final class DefaultSlicerTest
                     metIn.ofEnsemblePairs( values,
                                            meta,
                                            metIn.vectorOf( new double[] { 1, Double.NaN } ) );
-            slicer.filter( test, a -> a > 1, true );
+            slicer.filter( test, slicer.leftAndEachOfRight( a -> a > 1 ), a -> a > 1 );
+            fail( "Expected an exception on attempting to filter with no climatological data." );
+        }
+        catch ( MetricInputSliceException e )
+        {
+        }
+    }
+
+
+    /**
+     * Tests the {@link Slicer#filter(EnsemblePairs, java.util.function.Predicate, Function, java.util.function.DoublePredicate)}.
+    
+     * @throws MetricInputSliceException if slicing results in an unexpected exception
+     */
+
+    @Test
+    public void test17FilterEnsemblePairs() throws MetricInputSliceException
+    {
+        DataFactory metIn = DefaultDataFactory.getInstance();
+        final List<PairOfDoubleAndVectorOfDoubles> values = new ArrayList<>();
+        values.add( metIn.pairOf( 0, new double[] { 1, 2, 3 } ) );
+        values.add( metIn.pairOf( 0, new double[] { 1, 2, 3 } ) );
+        values.add( metIn.pairOf( 0, new double[] { 3, 4, 5 } ) );
+        values.add( metIn.pairOf( 0, new double[] { 3, 4, 5 } ) );
+        values.add( metIn.pairOf( 0, new double[] { 4, 5, 6 } ) );
+        values.add( metIn.pairOf( 0, new double[] { 4, 5, 6 } ) );
+
+        List<PairOfDoubleAndVectorOfDoubles> expectedValues = new ArrayList<>();
+        expectedValues.add( metIn.pairOf( 0, new double[] { 3, 4, 5 } ) );
+        expectedValues.add( metIn.pairOf( 0, new double[] { 3, 4, 5 } ) );
+        expectedValues.add( metIn.pairOf( 0, new double[] { 4, 5, 6 } ) );
+        expectedValues.add( metIn.pairOf( 0, new double[] { 4, 5, 6 } ) );
+
+        VectorOfDoubles climatology = metIn.vectorOf( new double[] { 1, 2, 3, 4, 5, Double.NaN } );
+        VectorOfDoubles climatologyExpected = metIn.vectorOf( new double[] { 1, 2, 3, 4, 5 } );
+
+        Metadata meta = metIn.getMetadataFactory().getMetadata();
+        EnsemblePairs pairs = metIn.ofEnsemblePairs( values, values, meta, meta, climatology );
+
+        ToDoubleFunction<double[]> mean = doubles -> Arrays.stream( doubles ).average().getAsDouble();
+        Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> meanFunc =
+                pair -> metIn.pairOf( pair.getItemOne(), mean.applyAsDouble( pair.getItemTwo() ) );
+
+        EnsemblePairs sliced = slicer.filter( pairs, Slicer.right( right -> right >= 4 ), meanFunc, Double::isFinite );
+
+        //Test with baseline
+        assertTrue( "The sliced data does not match the benchmark.", sliced.getData().equals( expectedValues ) );
+        assertTrue( "The sliced baseline data does not match the benchmark.",
+                    sliced.getDataForBaseline().equals( expectedValues ) );
+        assertTrue( "The sliced climatology data does not match the benchmark.",
+                    Arrays.equals( sliced.getClimatology().getDoubles(), climatologyExpected.getDoubles() ) );
+        assertTrue( "Unexpected equality of the sliced and unsliced climatology.",
+                    !Arrays.equals( slicer.filter( pairs, Slicer.right( right -> right >= 4 ), meanFunc, null )
+                                          .getClimatology()
+                                          .getDoubles(),
+                                    climatologyExpected.getDoubles() ) );
+        assertTrue( "Unexpected equality of the sliced and unsliced data.",
+                    !sliced.getData().equals( values ) );
+        //Test without baseline or climatology
+        EnsemblePairs pairsNoBase = metIn.ofEnsemblePairs( values, meta );
+        EnsemblePairs slicedNoBase = slicer.filter( pairsNoBase, Slicer.right( right -> right >= 4 ), meanFunc, null );
+
+        assertTrue( "The sliced data without a baseline does not match the benchmark.",
+                    slicedNoBase.getData().equals( expectedValues ) );
+
+        //Test exceptions
+        //No pairs in main
+        try
+        {
+            List<PairOfDoubleAndVectorOfDoubles> none = new ArrayList<>();
+            none.add( metIn.pairOf( 1, new double[] { 1 } ) );
+            none.add( metIn.pairOf( Double.NaN, new double[] { Double.NaN } ) );
+            slicer.filter( metIn.ofEnsemblePairs( none, meta ), Slicer.right( right -> right >= 4 ), meanFunc, null );
+            fail( "Expected an exception on attempting to filter with no data." );
+        }
+        catch ( MetricInputSliceException e )
+        {
+        }
+        //No pairs in baseline
+        try
+        {
+            List<PairOfDoubleAndVectorOfDoubles> none = new ArrayList<>();
+            none.add( metIn.pairOf( 1, new double[] { 1 } ) );
+            none.add( metIn.pairOf( Double.NaN, new double[] { Double.NaN } ) );
+            slicer.filter( metIn.ofEnsemblePairs( values, none, meta, meta ),
+                           Slicer.right( right -> right >= 4 ),
+                           meanFunc,
+                           null );
+            fail( "Expected an exception on attempting to filter with no baseline data." );
+        }
+        catch ( MetricInputSliceException e )
+        {
+        }
+
+        //No climatological data
+        try
+        {
+            EnsemblePairs test =
+                    metIn.ofEnsemblePairs( values,
+                                           meta,
+                                           metIn.vectorOf( new double[] { 1, Double.NaN } ) );
+            slicer.filter( test, Slicer.right( right -> right >= 4 ), meanFunc, a -> a > 1 );
             fail( "Expected an exception on attempting to filter with no climatological data." );
         }
         catch ( MetricInputSliceException e )

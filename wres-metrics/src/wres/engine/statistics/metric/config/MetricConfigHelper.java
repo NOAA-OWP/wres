@@ -109,7 +109,7 @@ public final class MetricConfigHelper
      * Returns the {@link MetricConstants} that corresponds to the {@link MetricConfigName} or null if the input is
      * {@link MetricConfigName#ALL_VALID}. Throws an exception if no such mapping is available. 
      * 
-     * @param configName the name in the {@link MetricConfigName}
+     * @param configName the metric name
      * @return the corresponding name in the {@link MetricConstants}
      * @throws MetricConfigurationException if the configName is not mapped or the input is null
      */
@@ -140,7 +140,7 @@ public final class MetricConfigHelper
      * Returns the {@link MetricConstants} that corresponds to the {@link TimeSeriesMetricConfigName} or null if the 
      * input is {@link MetricConfigName#ALL_VALID}. Throws an exception if no such mapping is available. 
      * 
-     * @param configName the name in the {@link TimeSeriesMetricConfigName}
+     * @param configName the time-series metric name
      * @return the corresponding name in the {@link MetricConstants}
      * @throws MetricConfigurationException if the configName is not mapped or the input is null
      */
@@ -201,7 +201,7 @@ public final class MetricConfigHelper
      * Returns the {@link MetricConstants} that corresponds to the {@link SummaryStatisticsName} or null if the input is
      * {@link SummaryStatisticsName#ALL_VALID}. Throws an exception if no such mapping is available. 
      * 
-     * @param statsName the name in the {@link SummaryStatisticsName}
+     * @param statsName the name of the summary statistic
      * @return the corresponding name in the {@link MetricConstants}
      * @throws MetricConfigurationException if the statsName is not mapped or the input is null
      */
@@ -232,7 +232,7 @@ public final class MetricConfigHelper
      * Returns the {@link ThresholdConstants.ThresholdDataType} that corresponds to the {@link ThresholdDataType}. 
      * Throws an exception if no such mapping is available. 
      * 
-     * @param type the {@link ThresholdDataType}
+     * @param type the threshold data type
      * @return the corresponding {@link ThresholdConstants.ThresholdDataType}
      * @throws MetricConfigurationException if the type is not mapped or the input is null
      */
@@ -260,7 +260,7 @@ public final class MetricConfigHelper
      * Returns the {@link ThresholdConstants.ThresholdGroup} that corresponds to the {@link ThresholdType}. 
      * Throws an exception if no such mapping is available. 
      * 
-     * @param type the {@link ThresholdType}
+     * @param type the threshold type
      * @return the corresponding {@link ThresholdConstants.ThresholdGroup}
      * @throws MetricConfigurationException if the type is not mapped or the input is null
      */
@@ -285,18 +285,18 @@ public final class MetricConfigHelper
     /**
      * Maps between threshold operators in {@link ThresholdOperator} and those in {@link Operator}.
      * 
-     * @param configName the input {@link ThresholdOperator}
+     * @param operator the threshold operator
      * @return the corresponding {@link Operator}.
      * @throws MetricConfigurationException if the configName is not mapped or the input is null
      */
 
-    public static Operator from( ThresholdOperator configName ) throws MetricConfigurationException
+    public static Operator from( ThresholdOperator operator ) throws MetricConfigurationException
     {
-        if ( Objects.isNull( configName ) )
+        if ( Objects.isNull( operator ) )
         {
             throw new MetricConfigurationException( "Unable to map a null input identifier to a name operator." );
         }
-        switch ( configName )
+        switch ( operator )
         {
             case EQUAL_TO:
                 return Operator.EQUAL;
@@ -310,22 +310,22 @@ public final class MetricConfigHelper
                 return Operator.GREATER_EQUAL;
             default:
                 throw new MetricConfigurationException( "Unrecognized threshold operator in project configuration '"
-                                                        + configName + "'." );
+                                                        + operator + "'." );
         }
     }
 
     /**
-     * Returns the metric data input type from the {@link ProjectConfig}.
+     * Returns the metric data input type from the {@link DatasourceType}.
      * 
-     * @param config the {@link ProjectConfig}
+     * @param type the data source type
      * @return the {@link MetricInputGroup} based on the {@link ProjectConfig}
      * @throws MetricConfigurationException if the input type is not recognized
      */
 
-    public static MetricInputGroup getInputType( ProjectConfig config ) throws MetricConfigurationException
+    public static MetricInputGroup from( DatasourceType type ) throws MetricConfigurationException
     {
-        Objects.requireNonNull( config, NULL_CONFIGURATION_ERROR );
-        DatasourceType type = config.getInputs().getRight().getType();
+        Objects.requireNonNull( type, NULL_CONFIGURATION_ERROR );
+
         switch ( type )
         {
             case ENSEMBLE_FORECASTS:
@@ -899,7 +899,7 @@ public final class MetricConfigHelper
             if ( next.getName() == MetricConfigName.ALL_VALID )
             {
                 Set<MetricConstants> allValid = null;
-                MetricInputGroup inGroup = MetricConfigHelper.getInputType( config );
+                MetricInputGroup inGroup = MetricConfigHelper.from( config.getInputs().getRight().getType() );
 
                 // Single-valued metrics
                 if ( inGroup == MetricInputGroup.SINGLE_VALUED )
@@ -983,7 +983,7 @@ public final class MetricConfigHelper
             if ( next.getName() == TimeSeriesMetricConfigName.ALL_VALID )
             {
                 Set<MetricConstants> allValid = null;
-                MetricInputGroup inGroup = MetricConfigHelper.getInputType( config );
+                MetricInputGroup inGroup = MetricConfigHelper.from( config.getInputs().getRight().getType() );
 
                 // Single-valued input source
                 if ( inGroup == MetricInputGroup.SINGLE_VALUED )

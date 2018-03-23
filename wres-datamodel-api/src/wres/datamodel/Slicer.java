@@ -9,6 +9,7 @@ import java.util.function.DoublePredicate;
 import java.util.function.DoubleUnaryOperator;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.ToDoubleFunction;
 
 import wres.datamodel.inputs.MetricInputSliceException;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
@@ -33,17 +34,111 @@ public interface Slicer
 {
 
     /**
-     * Returns a {@link Threshold} with quantiles defined from the prescribed {@link Threshold} with probabilities, 
-     * where the quantiles are mapped using {@link #getQuantileFunction(double[])}.
+     * Composes the input predicate as applying to the left side of a pair.
      * 
-     * @param sorted the sorted input array
-     * @param threshold the probability threshold from which the quantile is determined
-     * @return the quantile threshold
+     * @param predicate the input predicate
+     * @return a composed predicate
      */
 
-    default Threshold getQuantileFromProbability( Threshold threshold, double[] sorted )
+    static Predicate<PairOfDoubles> left( DoublePredicate predicate )
     {
-        return getQuantileFromProbability( threshold, sorted, null );
+        return pair -> predicate.test( pair.getItemOne() );
+    }
+
+    /**
+     * Composes the input predicate as applying to the right side of a pair.
+     * 
+     * @param predicate the input predicate
+     * @return a composed predicate
+     */
+
+    static Predicate<PairOfDoubles> right( DoublePredicate predicate )
+    {
+        return pair -> predicate.test( pair.getItemTwo() );
+    }
+
+    /**
+     * Composes the input predicate as applying to the both the left and right sides of a pair.
+     * 
+     * @param predicate the input predicate
+     * @return a composed predicate
+     */
+
+    static Predicate<PairOfDoubles> leftAndRight( DoublePredicate predicate )
+    {
+        return pair -> predicate.test( pair.getItemOne() ) && predicate.test( pair.getItemTwo() );
+    }
+
+    /**
+     * Composes the input predicate as applying to the either the left side or to the right side of a pair.
+     * 
+     * @param predicate the input predicate
+     * @return a composed predicate
+     */
+
+    static Predicate<PairOfDoubles> leftOrRight( DoublePredicate predicate )
+    {
+        return pair -> predicate.test( pair.getItemOne() ) || predicate.test( pair.getItemTwo() );
+    }
+
+    /**
+     * Composes the input predicate as applying to the left side of a pair.
+     * 
+     * @param predicate the input predicate
+     * @return a composed predicate
+     */
+
+    static Predicate<PairOfDoubleAndVectorOfDoubles> leftVector( DoublePredicate predicate )
+    {
+        return pair -> predicate.test( pair.getItemOne() );
+    }
+
+    /**
+     * Composes the input predicate as applying to all elements of the right side of a pair.
+     * 
+     * @param predicate the input predicate
+     * @return a composed predicate
+     */
+
+    static Predicate<PairOfDoubleAndVectorOfDoubles> allOfRight( DoublePredicate predicate )
+    {
+        return pair -> Arrays.stream( pair.getItemTwo() ).allMatch( predicate );
+    }
+
+    /**
+     * Composes the input predicate as applying to one or more elements of the right side of a pair.
+     * 
+     * @param predicate the input predicate
+     * @return a composed predicate
+     */
+
+    static Predicate<PairOfDoubleAndVectorOfDoubles> anyOfRight( DoublePredicate predicate )
+    {
+        return pair -> Arrays.stream( pair.getItemTwo() ).anyMatch( predicate );
+    }
+
+    /**
+     * Composes the input predicate as applying to the left side of a pair and all elements of the right side of a pair.
+     * 
+     * @param predicate the input predicate
+     * @return a composed predicate
+     */
+
+    static Predicate<PairOfDoubleAndVectorOfDoubles> leftAndAllOfRight( DoublePredicate predicate )
+    {
+        return pair -> predicate.test( pair.getItemOne() ) && Arrays.stream( pair.getItemTwo() ).allMatch( predicate );
+    }
+
+    /**
+     * Composes the input predicate as applying to the left side of a pair and any element of the right side of a pair.
+     * 
+     * @param predicate the input predicate
+     * @return a composed predicate
+     */
+
+    static Predicate<PairOfDoubleAndVectorOfDoubles> leftAndAnyOfRight( DoublePredicate predicate )
+    {
+        return pair -> predicate.test( pair.getItemOne() ) && Arrays.stream( pair.getItemTwo() ).anyMatch( predicate );
     }
 
     /**
@@ -96,6 +191,20 @@ public interface Slicer
     }
 
     /**
+     * Returns a {@link Threshold} with quantiles defined from the prescribed {@link Threshold} with probabilities, 
+     * where the quantiles are mapped using {@link #getQuantileFunction(double[])}.
+     * 
+     * @param sorted the sorted input array
+     * @param threshold the probability threshold from which the quantile is determined
+     * @return the quantile threshold
+     */
+
+    default Threshold getQuantileFromProbability( Threshold threshold, double[] sorted )
+    {
+        return this.getQuantileFromProbability( threshold, sorted, null );
+    }    
+    
+    /**
      * Returns the left side of {@link SingleValuedPairs#getData()} as a primitive array of doubles.
      * 
      * @param input the input pairs
@@ -123,56 +232,72 @@ public interface Slicer
     double[] getLeftSide( EnsemblePairs input );
 
     /**
-     * Returns the subset of pairs where the left and right both meet the prescribed condition. Applies to both the 
-     * main pairs and any baseline, by default, and optionally to any climatological data associated with the pairs.
+     * Returns the subset of pairs where the condition is met. Applies to both the main pairs and any baseline pairs.
      * 
-     * @param input the {@link SingleValuedPairs} to slice
+     * @param input the pairs to slice
      * @param condition the condition on which to slice
-     * @param applyToClimatology is true to apply the filter to the climatology also, false otherwise
+     * @param applyToClimatology an optional filter for the climatology, may be null
      * @return the subset of pairs that meet the condition
      * @throws MetricInputSliceException if the slice contains no elements
+     * @throws NullPointerException if either the input or condition is null
      */
 
-    SingleValuedPairs filter( SingleValuedPairs input, DoublePredicate condition, boolean applyToClimatology )
+    SingleValuedPairs filter( SingleValuedPairs input,
+                              Predicate<PairOfDoubles> condition,
+                              DoublePredicate applyToClimatology )
             throws MetricInputSliceException;
 
     /**
-     * Returns the subset of pairs where the left meets the prescribed condition and one or more elements of the right
-     * meet the prescribed condition, returning only those elements of the right that meet the prescribed condition. 
-     * Applies to both the main pairs and any baseline, by default, and optionally to any climatological data 
-     * associated with the pairs.
+     * Returns the subset of pairs where the condition is met. Applies to both the main pairs and any baseline pairs.
      * 
-     * @param input the {@link EnsemblePairs} to slice
+     * @param input the pairs to slice
      * @param condition the condition on which to slice
-     * @param applyToClimatology is true to apply the filter to the climatology also, false otherwise
+     * @param applyToClimatology an optional filter for the climatology, may be null
      * @return the subset of pairs that meet the condition
      * @throws MetricInputSliceException if the slice contains no elements
+     * @throws NullPointerException if either the input or condition is null
      */
 
-    EnsemblePairs filter( EnsemblePairs input, DoublePredicate condition, boolean applyToClimatology )
+    EnsemblePairs filter( EnsemblePairs input,
+                          Predicate<PairOfDoubleAndVectorOfDoubles> condition,
+                          DoublePredicate applyToClimatology )
             throws MetricInputSliceException;
-
+    
     /**
-     * Returns a subset of pairs where the {@link Threshold} is met on the left side or null for the empty subset.
+     * Applies a transformer, inline, and then filters the transformed pairs according to the supplied condition, 
+     * returning the untransformed pairs where the condition is met.
      * 
-     * @param input the {@link SingleValuedPairs} to slice
-     * @param threshold the {@link Threshold} on which to slice
+     * @param input the pairs to slice
+     * @param condition the condition on which to slice
+     * @param transformer the transformer
+     * @param applyToClimatology an optional filter for the climatology, may be null
      * @return the subset of pairs that meet the condition
      * @throws MetricInputSliceException if the slice contains no elements
+     * @throws NullPointerException if either the input, transformer or condition is null
      */
 
-    SingleValuedPairs filterByLeft( SingleValuedPairs input, Threshold threshold ) throws MetricInputSliceException;
-
+    EnsemblePairs filter( EnsemblePairs input,
+                          Predicate<PairOfDoubles> condition,
+                          Function<PairOfDoubleAndVectorOfDoubles,PairOfDoubles> transformer, 
+                          DoublePredicate applyToClimatology )
+            throws MetricInputSliceException;    
+    
     /**
-     * Returns a subset of pairs where the {@link Threshold} is met on the left side or null for the empty subset.
+     * Filters {@link EnsemblePairs} by applying a mapper function to the input. This allows for fine-grain filtering
+     * of specific elements of the right side of a pair.
      * 
-     * @param input the {@link EnsemblePairs} to slice
-     * @param threshold the {@link Threshold} on which to slice
-     * @return the subset of pairs that meet the condition
-     * @throws MetricInputSliceException if the slice contains no elements
+     * @param input the {@link EnsemblePairs}
+     * @param mapper the function that maps from {@link EnsemblePairs} to a new {@link EnsemblePairs}
+     * @param applyToClimatology an optional filter for the climatology, may be null
+     * @return the filtered {@link EnsemblePairs}
+     * @throws MetricInputSliceException if the output could not be transformed
+     * @throws NullPointerException if either the input or condition is null
      */
 
-    EnsemblePairs filterByLeft( EnsemblePairs input, Threshold threshold ) throws MetricInputSliceException;
+    EnsemblePairs filter( EnsemblePairs input,
+                          Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubleAndVectorOfDoubles> mapper,
+                          DoublePredicate applyToClimatology )
+            throws MetricInputSliceException; 
 
     /**
      * Returns as many lists of {@link PairOfDoubleAndVectorOfDoubles} as groups of atomic pairs in the input with an
@@ -184,7 +309,7 @@ public interface Slicer
      * @return as many subsets of {@link PairOfDoubleAndVectorOfDoubles} as groups of pairs in the input of equal size
      */
 
-    Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> filterByRight( List<PairOfDoubleAndVectorOfDoubles> input );
+    Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> filterByRightSize( List<PairOfDoubleAndVectorOfDoubles> input );
 
     /**
      * Returns a map of {@link ScoreOutput} for each component in the input map of {@link ScoreOutput}. The slices are 
@@ -207,8 +332,8 @@ public interface Slicer
      * @return the {@link SingleValuedPairs}
      */
 
-    List<PairOfDoubles> transformPairs( List<PairOfDoubleAndVectorOfDoubles> input,
-                                        Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> mapper );
+    List<PairOfDoubles> transform( List<PairOfDoubleAndVectorOfDoubles> input,
+                                   Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> mapper );
 
     /**
      * Produces {@link DichotomousPairs} from a {@link SingleValuedPairs} by applying a mapper function to the input.
@@ -218,7 +343,7 @@ public interface Slicer
      * @return the {@link DichotomousPairs}
      */
 
-    DichotomousPairs transformPairs( SingleValuedPairs input, Function<PairOfDoubles, PairOfBooleans> mapper );
+    DichotomousPairs transform( SingleValuedPairs input, Function<PairOfDoubles, PairOfBooleans> mapper );
 
     /**
      * Produces {@link SingleValuedPairs} from a {@link EnsemblePairs} by applying a mapper function to the input.
@@ -228,8 +353,8 @@ public interface Slicer
      * @return the {@link SingleValuedPairs}
      */
 
-    SingleValuedPairs transformPairs( EnsemblePairs input,
-                                      Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> mapper );
+    SingleValuedPairs transform( EnsemblePairs input,
+                                 Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> mapper );
 
     /**
      * Produces {@link DiscreteProbabilityPairs} from a {@link EnsemblePairs} by applying a mapper function to the input
@@ -241,9 +366,9 @@ public interface Slicer
      * @return the {@link DiscreteProbabilityPairs}
      */
 
-    DiscreteProbabilityPairs transformPairs( EnsemblePairs input,
-                                             Threshold threshold,
-                                             BiFunction<PairOfDoubleAndVectorOfDoubles, Threshold, PairOfDoubles> mapper );
+    DiscreteProbabilityPairs transform( EnsemblePairs input,
+                                        Threshold threshold,
+                                        BiFunction<PairOfDoubleAndVectorOfDoubles, Threshold, PairOfDoubles> mapper );
 
     /**
      * Converts a {@link PairOfDoubleAndVectorOfDoubles} to a {@link PairOfDoubles} that contains the probabilities that
@@ -255,17 +380,28 @@ public interface Slicer
      * @return the transformed pair
      */
 
-    PairOfDoubles transformPair( PairOfDoubleAndVectorOfDoubles pair, Threshold threshold );
-
+    PairOfDoubles transform( PairOfDoubleAndVectorOfDoubles pair, Threshold threshold );
+    
     /**
-     * Converts a {@link PairOfDoubleAndVectorOfDoubles} to a {@link PairOfDoubles} by retrieving the first element of
-     * the right hand side from the paired {@link VectorOfDoubles}.
+     * Returns a function that converts a {@link PairOfDoubleAndVectorOfDoubles} to a {@link PairOfDoubles} by 
+     * applying the specified transformer to the {@link PairOfDoubleAndVectorOfDoubles#getItemTwo()}.
      * 
-     * @param pair the pair to transform
-     * @return the transformed pair
+     * @param transformer the transformer
+     * @return a composed function
      */
 
-    PairOfDoubles transformPair( PairOfDoubleAndVectorOfDoubles pair );
+    Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> transform( ToDoubleFunction<double[]> transformer );       
+
+    /**
+     * A transformer that applies a predicate to the left and each of the right separately, returning a transformed
+     * pair or null if the left and none of the right meet the condition.
+     * 
+     * @param predicate the input predicate
+     * @return a composed function
+     */
+
+    Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubleAndVectorOfDoubles>
+            leftAndEachOfRight( DoublePredicate predicate );
 
     /**
      * Returns a function to compute a value from the sorted array that corresponds to the input non-exceedence 

@@ -56,7 +56,7 @@ public class RankHistogram extends Diagram<EnsemblePairs, MultiVectorOutput>
         DataFactory d = getDataFactory();
         Slicer slicer = d.getSlicer();
         //Acquire subsets in case of missing data
-        Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> sliced = slicer.filterByRight( s.getData() );
+        Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> sliced = slicer.filterByRightSize( s.getData() );
         //Find the subset with the most elements
         List<PairOfDoubleAndVectorOfDoubles> useMe =
                 sliced.values().stream().max( Comparator.comparingInt( List::size ) ).get();

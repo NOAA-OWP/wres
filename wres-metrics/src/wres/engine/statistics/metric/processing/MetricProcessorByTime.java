@@ -26,6 +26,7 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.OneOrTwoThresholds;
+import wres.datamodel.Slicer;
 import wres.datamodel.Threshold;
 import wres.datamodel.ThresholdConstants.ThresholdGroup;
 import wres.datamodel.ThresholdsByMetric;
@@ -632,7 +633,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
                 SingleValuedPairs pairs = input;
                 if ( useMe.isFinite() )
                 {
-                    pairs = dataFactory.getSlicer().filterByLeft( input, useMe );
+                    pairs = dataFactory.getSlicer().filter( input, Slicer.left( useMe::test ), null );
 
                 }
                 processSingleValuedPairs( Pair.of( timeWindow, OneOrTwoThresholds.of( useMe ) ),
