@@ -3,6 +3,7 @@ package wres.datamodel;
 import java.util.Objects;
 
 import wres.datamodel.ThresholdConstants.Operator;
+import wres.datamodel.ThresholdConstants.ThresholdDataType;
 
 /**
  * Concrete implementation of a {@link Threshold}.
@@ -29,6 +30,12 @@ class SafeThreshold implements Threshold
      */
 
     private final Operator condition;
+
+    /**
+     * The type of data to which the threshold applies.
+     */
+
+    private final ThresholdDataType dataType;
 
     /**
      * The label associated with the threshold.
@@ -61,6 +68,12 @@ class SafeThreshold implements Threshold
     }
 
     @Override
+    public ThresholdDataType getDataType()
+    {
+        return dataType;
+    }
+
+    @Override
     public String getLabel()
     {
         return label;
@@ -90,7 +103,8 @@ class SafeThreshold implements Threshold
         boolean first = this.hasValues() == in.hasValues()
                         && this.hasProbabilities() == in.hasProbabilities();
         boolean second = hasLabel() == in.hasLabel()
-                         && this.getCondition().equals( in.getCondition() )
+                         && this.getCondition() == in.getCondition()
+                         && this.getDataType() == in.getDataType()
                          && this.hasUnits() == in.hasUnits();
 
         return first && second && this.areOptionalStatesEqual( in );
@@ -99,7 +113,7 @@ class SafeThreshold implements Threshold
     @Override
     public int hashCode()
     {
-        return Objects.hash( values, probabilities, condition, label, units );
+        return Objects.hash( this.values, this.probabilities, this.condition, this.dataType, this.label, this.units );
     }
 
     @Override
@@ -214,6 +228,13 @@ class SafeThreshold implements Threshold
             return returnMe;
         }
 
+       //Compare data type
+        returnMe = this.getDataType().compareTo( o.getDataType() );
+        if ( returnMe != 0 )
+        {
+            return returnMe;
+        }
+        
         //Check for status of optional elements
         returnMe = comparePresenceAbsence( o );
 
@@ -339,6 +360,12 @@ class SafeThreshold implements Threshold
         private Operator condition;
 
         /**
+         * The threshold data type.
+         */
+
+        private ThresholdDataType dataType;
+
+        /**
          * The values
          */
 
@@ -372,6 +399,19 @@ class SafeThreshold implements Threshold
         ThresholdBuilder setCondition( Operator condition )
         {
             this.condition = condition;
+            return this;
+        }
+
+        /**
+         * Sets the {@link ThresholdDataType} associated with the threshold
+         * 
+         * @param dataType the data type
+         * @return the builder
+         */
+
+        ThresholdBuilder setDataType( ThresholdDataType dataType )
+        {
+            this.dataType = dataType;
             return this;
         }
 
@@ -450,6 +490,7 @@ class SafeThreshold implements Threshold
         this.condition = builder.condition;
         this.label = builder.label;
         this.units = builder.units;
+        this.dataType = builder.dataType;
 
         // Set values
         final OneOrTwoDoubles localValues = builder.values;
@@ -475,6 +516,8 @@ class SafeThreshold implements Threshold
 
         //Bounds checks
         Objects.requireNonNull( condition, "Specify a non-null condition." );
+
+        Objects.requireNonNull( dataType, "Specify a non-null data type." );
 
         //Do not allow only an upper threshold or all null thresholds
         if ( !this.hasValues() && !this.hasProbabilities() )

@@ -209,7 +209,7 @@ class ResolvedProject
             {
                 LOGGER.debug( "middleThresholds: {}", middleThresholds );
 
-                for ( ThresholdConstants.ThresholdType innerThresholds
+                for ( ThresholdConstants.ThresholdGroup innerThresholds
                         : middleThresholds.getValue().getAllThresholdTypes() )
                 {
                     LOGGER.debug( "innerThresholds: {}", innerThresholds );

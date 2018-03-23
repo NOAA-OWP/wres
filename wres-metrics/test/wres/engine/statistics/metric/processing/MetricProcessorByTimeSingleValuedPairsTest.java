@@ -33,6 +33,7 @@ import wres.datamodel.OneOrTwoThresholds;
 import wres.datamodel.Threshold;
 import wres.datamodel.ThresholdConstants;
 import wres.datamodel.ThresholdConstants.Operator;
+import wres.datamodel.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.ThresholdsByType;
 import wres.datamodel.ThresholdsByType.ThresholdsByTypeBuilder;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
@@ -191,6 +192,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                 Pair.of( expectedWindow,
                          OneOrTwoThresholds.of( metIn.ofThreshold( metIn.ofOneOrTwoDoubles( 1.0 ),
                                                                    Operator.GREATER,
+                                                                   ThresholdDataType.LEFT,
                                                                    metFac.getDimension( "CMS" ) ) ) );
         assertTrue( "Unexpected results for the contingency table.",
                     expected.equals( processor.getCachedMetricOutput()
@@ -390,11 +392,13 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         Map<Pair<TimeWindow, OneOrTwoThresholds>, PairedOutput<Instant, Duration>> inMap = new HashMap<>();
         inMap.put( Pair.of( firstWindow,
                             OneOrTwoThresholds.of( metIn.ofThreshold( metIn.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
-                                                                      Operator.GREATER ) ) ),
+                                                                      Operator.GREATER,
+                                                                      ThresholdDataType.ALL ) ) ),
                    expectedErrorsFirst );
         inMap.put( Pair.of( secondWindow,
                             OneOrTwoThresholds.of( metIn.ofThreshold( metIn.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
-                                                                      Operator.GREATER ) ) ),
+                                                                      Operator.GREATER,
+                                                                      ThresholdDataType.ALL ) ) ),
                    expectedErrorsSecond );
         MetricOutputMapByTimeAndThreshold<PairedOutput<Instant, Duration>> mapped = metIn.ofMap( inMap );
         MetricOutputMultiMapByTimeAndThresholdBuilder<PairedOutput<Instant, Duration>> builder = metIn.ofMultiMap();
@@ -470,7 +474,8 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         Map<Pair<TimeWindow, OneOrTwoThresholds>, DurationScoreOutput> scoreInMap = new HashMap<>();
         scoreInMap.put( Pair.of( combinedWindow,
                                  OneOrTwoThresholds.of( metIn.ofThreshold( metIn.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
-                                                                           Operator.GREATER ) ) ),
+                                                                           Operator.GREATER,
+                                                                           ThresholdDataType.ALL ) ) ),
                         expectedScoresSource );
         MetricOutputMapByTimeAndThreshold<DurationScoreOutput> mappedScores = metIn.ofMap( scoreInMap );
         MetricOutputMultiMapByTimeAndThresholdBuilder<DurationScoreOutput> scoreBuilder = metIn.ofMultiMap();
@@ -505,11 +510,12 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         Set<Threshold> inputThresholds =
                 new HashSet<>( Arrays.asList( metIn.ofThreshold( metIn.ofOneOrTwoDoubles( 0.5 ),
-                                                                 Operator.GREATER_EQUAL ) ) );
+                                                                 Operator.GREATER_EQUAL,
+                                                                 ThresholdDataType.LEFT ) ) );
 
         ThresholdsByTypeBuilder builder = metIn.ofThresholdsByTypeBuilder();
         builder.addThresholds( inputThresholds,
-                               ThresholdConstants.ThresholdType.PROBABILITY );
+                               ThresholdConstants.ThresholdGroup.PROBABILITY );
         ThresholdsByType thresholds = builder.build();
 
         canonical.put( MetricConfigName.MEAN_ERROR, thresholds );
@@ -572,7 +578,8 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         Pair<TimeWindow, OneOrTwoThresholds> key =
                 Pair.of( expectedWindow,
                          OneOrTwoThresholds.of( metIn.ofThreshold( metIn.ofOneOrTwoDoubles( 0.5 ),
-                                                                   Operator.GREATER_EQUAL ) ) );
+                                                                   Operator.GREATER_EQUAL,
+                                                                   ThresholdDataType.LEFT ) ) );
         assertTrue( "Unexpected results for the contingency table.",
                     expected.equals( processor.getCachedMetricOutput()
                                               .getMatrixOutput()

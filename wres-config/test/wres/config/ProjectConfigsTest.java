@@ -8,7 +8,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import wres.config.generated.ThresholdApplicationType;
+import wres.config.generated.ThresholdDataType;
 import wres.config.generated.ThresholdOperator;
 import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
@@ -24,7 +24,7 @@ public class ProjectConfigsTest
         String probabilities = "0.2, 0.5,0.8";
 
         ThresholdType probability = ThresholdType.fromValue( "probability" );
-        ThresholdApplicationType applyToLeft = ThresholdApplicationType.fromValue( "left" );
+        ThresholdDataType applyToLeft = ThresholdDataType.fromValue( "left" );
         ThresholdOperator operator = ThresholdOperator.fromValue( "less than" );
         ThresholdsConfig config = new ThresholdsConfig( probability,
                                                         applyToLeft,
@@ -47,7 +47,7 @@ public class ProjectConfigsTest
     {
         String probabilities = "boogaflickle";
         ThresholdType probability = ThresholdType.fromValue( "probability" );
-        ThresholdApplicationType applyToLeft = ThresholdApplicationType.fromValue( "left" );
+        ThresholdDataType applyToLeft = ThresholdDataType.fromValue( "left" );
         ThresholdOperator operator = ThresholdOperator.fromValue( "less than" );
 
         ThresholdsConfig config = new ThresholdsConfig( probability,
@@ -64,7 +64,7 @@ public class ProjectConfigsTest
     {
         String probabilities = "-5.0";
         ThresholdType probability = ThresholdType.fromValue( "probability" );
-        ThresholdApplicationType applyToLeft = ThresholdApplicationType.fromValue( "left" );
+        ThresholdDataType applyToLeft = ThresholdDataType.fromValue( "left" );
         ThresholdOperator operator = ThresholdOperator.fromValue( "less than" );
 
         ThresholdsConfig config = new ThresholdsConfig( probability,
@@ -81,7 +81,7 @@ public class ProjectConfigsTest
     {
         String probabilities = "1.2";
         ThresholdType probability = ThresholdType.fromValue( "probability" );
-        ThresholdApplicationType applyToLeft = ThresholdApplicationType.fromValue( "left" );
+        ThresholdDataType applyToLeft = ThresholdDataType.fromValue( "left" );
         ThresholdOperator operator = ThresholdOperator.fromValue( "less than" );
 
         ThresholdsConfig config = new ThresholdsConfig( probability,
@@ -98,7 +98,7 @@ public class ProjectConfigsTest
     {
         String values = "200, 50.0,-8";
         ThresholdType value = ThresholdType.fromValue( "value" );
-        ThresholdApplicationType applyToLeft = ThresholdApplicationType.fromValue( "left" );
+        ThresholdDataType applyToLeft = ThresholdDataType.fromValue( "left" );
         ThresholdOperator operator = ThresholdOperator.fromValue( "less than" );
         ThresholdsConfig config =
                 new ThresholdsConfig( value, applyToLeft, values, operator );
@@ -118,7 +118,7 @@ public class ProjectConfigsTest
     {
         String values = "schnitzelbank";
         ThresholdType value = ThresholdType.fromValue( "value" );
-        ThresholdApplicationType applyToLeft = ThresholdApplicationType.fromValue( "left" );
+        ThresholdDataType applyToLeft = ThresholdDataType.fromValue( "left" );
         ThresholdOperator operator = ThresholdOperator.fromValue( "less than" );
         ThresholdsConfig config =
                 new ThresholdsConfig( value, applyToLeft, values, operator );

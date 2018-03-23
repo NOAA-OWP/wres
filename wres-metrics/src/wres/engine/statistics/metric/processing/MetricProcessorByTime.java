@@ -27,7 +27,7 @@ import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.OneOrTwoThresholds;
 import wres.datamodel.Threshold;
-import wres.datamodel.ThresholdConstants.ThresholdType;
+import wres.datamodel.ThresholdConstants.ThresholdGroup;
 import wres.datamodel.ThresholdsByMetric;
 import wres.datamodel.ThresholdsByType;
 import wres.datamodel.inputs.InsufficientDataException;
@@ -613,7 +613,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
         // Find the thresholds for this group and for the required types
         ThresholdsByMetric filtered = this.getThresholdsByMetric()
                                    .filterByGroup( MetricInputGroup.SINGLE_VALUED, outGroup )
-                                   .filterByType( ThresholdType.PROBABILITY, ThresholdType.VALUE );
+                                   .filterByType( ThresholdGroup.PROBABILITY, ThresholdGroup.VALUE );
         
         // Find the union across metrics
         Set<Threshold> union = filtered.union();

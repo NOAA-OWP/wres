@@ -22,6 +22,7 @@ import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.SafeMetricOutputForProjectByTimeAndThreshold.SafeMetricOutputForProjectByTimeAndThresholdBuilder;
 import wres.datamodel.SafeMetricOutputMapByTimeAndThreshold.Builder;
 import wres.datamodel.ThresholdConstants.Operator;
+import wres.datamodel.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
@@ -96,8 +97,9 @@ public final class DataModelTestDataFactory
                     final double[] probConstants = f.getParVal().getConstants();
                     final OneOrTwoThresholds q =
                             OneOrTwoThresholds.of( outputFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( constants[0] ),
-                                                                              SafeOneOrTwoDoubles.of( probConstants[0] ),
-                                                                              Operator.GREATER ) );
+                                                                                      SafeOneOrTwoDoubles.of( probConstants[0] ),
+                                                                                      Operator.GREATER,
+                                                                                      ThresholdDataType.LEFT ) );
                     final Pair<TimeWindow, OneOrTwoThresholds> key = Pair.of( timeWindow, q );
 
                     //Build the scalar result
@@ -156,9 +158,12 @@ public final class DataModelTestDataFactory
             // Add first result
             OneOrTwoThresholds first =
                     OneOrTwoThresholds.of( outF.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 1.0 ),
-                                                             SafeOneOrTwoDoubles.of( 0.1 ),
-                                                             Operator.GREATER ),
-                                   outF.ofThreshold( SafeOneOrTwoDoubles.of( 5.0 ), Operator.GREATER ) );
+                                                                     SafeOneOrTwoDoubles.of( 0.1 ),
+                                                                     Operator.GREATER,
+                                                                     ThresholdDataType.LEFT ),
+                                           outF.ofThreshold( SafeOneOrTwoDoubles.of( 5.0 ),
+                                                             Operator.GREATER,
+                                                             ThresholdDataType.LEFT ) );
 
             DoubleScoreOutput firstValue = outF.ofDoubleScoreOutput( 66.0, meta );
 
@@ -168,9 +173,12 @@ public final class DataModelTestDataFactory
             // Add second result
             OneOrTwoThresholds second =
                     OneOrTwoThresholds.of( outF.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 2.0 ),
-                                                             SafeOneOrTwoDoubles.of( 0.2 ),
-                                                             Operator.GREATER ),
-                                   outF.ofThreshold( SafeOneOrTwoDoubles.of( 5.0 ), Operator.GREATER ) );
+                                                                     SafeOneOrTwoDoubles.of( 0.2 ),
+                                                                     Operator.GREATER,
+                                                                     ThresholdDataType.LEFT ),
+                                           outF.ofThreshold( SafeOneOrTwoDoubles.of( 5.0 ),
+                                                             Operator.GREATER,
+                                                             ThresholdDataType.LEFT ) );
 
             DoubleScoreOutput secondValue = outF.ofDoubleScoreOutput( 67.0, meta );
 
@@ -180,9 +188,12 @@ public final class DataModelTestDataFactory
             // Add third result
             OneOrTwoThresholds third =
                     OneOrTwoThresholds.of( outF.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 3.0 ),
-                                                             SafeOneOrTwoDoubles.of( 0.3 ),
-                                                             Operator.GREATER ),
-                                   outF.ofThreshold( SafeOneOrTwoDoubles.of( 6.0 ), Operator.GREATER ) );
+                                                                     SafeOneOrTwoDoubles.of( 0.3 ),
+                                                                     Operator.GREATER,
+                                                                     ThresholdDataType.LEFT ),
+                                           outF.ofThreshold( SafeOneOrTwoDoubles.of( 6.0 ),
+                                                             Operator.GREATER,
+                                                             ThresholdDataType.LEFT ) );
 
 
             DoubleScoreOutput thirdValue = outF.ofDoubleScoreOutput( 68.0, meta );
@@ -248,8 +259,9 @@ public final class DataModelTestDataFactory
                     final double[] probConstants = f.getParVal().getConstants();
                     final OneOrTwoThresholds q =
                             OneOrTwoThresholds.of( outputFactory.ofQuantileThreshold( SafeOneOrTwoDoubles.of( constants[0] ),
-                                                                              SafeOneOrTwoDoubles.of( probConstants[0] ),
-                                                                              Operator.GREATER ) );
+                                                                                      SafeOneOrTwoDoubles.of( probConstants[0] ),
+                                                                                      Operator.GREATER,
+                                                                                      ThresholdDataType.LEFT ) );
                     final Pair<TimeWindow, OneOrTwoThresholds> key = Pair.of( timeWindow, q );
 
                     //Build the scalar result
@@ -309,7 +321,8 @@ public final class DataModelTestDataFactory
         //Fake lead time and threshold
         builder.addDoubleScoreOutput( factory.ofMapKeyByTimeThreshold( timeWindow,
                                                                        SafeOneOrTwoDoubles.of( 23.0 ),
-                                                                       Operator.GREATER ),
+                                                                       Operator.GREATER,
+                                                                       ThresholdDataType.LEFT ),
                                       CompletableFuture.completedFuture( in ) );
 
         //Return data

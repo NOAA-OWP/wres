@@ -6,7 +6,7 @@ import java.util.Set;
 
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.datamodel.ThresholdConstants.ThresholdType;
+import wres.datamodel.ThresholdConstants.ThresholdGroup;
 
 /**
  * A container of {@link Threshold} by {@link MetricConstants}. Includes an optional builder.
@@ -63,7 +63,7 @@ public interface ThresholdsByMetric
      * @throws NullPointerException if the metric is null
      */
 
-    default boolean hasThresholdsForThisMetricAndTheseTypes( MetricConstants metric, ThresholdType... types )
+    default boolean hasThresholdsForThisMetricAndTheseTypes( MetricConstants metric, ThresholdGroup... types )
     {
         if( Objects.isNull( types ) || types.length == 0)
         {
@@ -80,12 +80,12 @@ public interface ThresholdsByMetric
      * @throws NullPointerException if the input is null 
      */
 
-    Map<MetricConstants, Set<Threshold>> getThresholds( ThresholdType type );
+    Map<MetricConstants, Set<Threshold>> getThresholds( ThresholdGroup type );
 
     /**
      * <p>Returns the composed thresholds associated with each metric in the container. A composed threshold is a 
      * {@link OneOrTwoThresholds} that contains two thresholds if the metric consumes 
-     * {@link MetricInputGroup#DICHOTOMOUS} and has {@link ThresholdType#PROBABILITY_CLASSIFIER},
+     * {@link MetricInputGroup#DICHOTOMOUS} and has {@link ThresholdGroup#PROBABILITY_CLASSIFIER},
      * otherwise one threshold.</p>
      * 
      * <p>Also see: {@link #unionOfOneOrTwoThresholds()}.</p>
@@ -96,18 +96,18 @@ public interface ThresholdsByMetric
     Map<MetricConstants, Set<OneOrTwoThresholds>> getOneOrTwoThresholds();
 
     /**
-     * Returns <code>true</code> if the store contains thresholds for the specified type, otherwise <code>false</code>.
+     * Returns <code>true</code> if the store contains thresholds for the specified group, otherwise <code>false</code>.
      * 
-     * @param type the type of threshold 
+     * @param type the type of threshold group
      * @return true if the store contains the type, otherwise false 
      * @throws NullPointerException if the input is null
      */
 
-    boolean hasType( ThresholdType type );
+    boolean hasType( ThresholdGroup type );
 
     /**
      * <p>Returns the union of all thresholds in the store. Note that thresholds of type 
-     * {@link ThresholdType#PROBABILITY} and {@link ThresholdType#PROBABILITY_CLASSIFIER} may contain exactly the same 
+     * {@link ThresholdGroup#PROBABILITY} and {@link ThresholdGroup#PROBABILITY_CLASSIFIER} may contain exactly the same 
      * parameter values and hence may overlap. In general, this method should not be used for stores that contain 
      * both of these types.</p> 
      * 
@@ -143,7 +143,7 @@ public interface ThresholdsByMetric
      * @return the thresholds for a specified type
      */
 
-    Set<Threshold> unionForTheseTypes( ThresholdType... type );
+    Set<Threshold> unionForTheseTypes( ThresholdGroup... type );
 
     /**
      * Returns the union of all thresholds for a given metric and varargs of types. If no types are specified, returns 
@@ -155,7 +155,7 @@ public interface ThresholdsByMetric
      * @throws NullPointerException if the metric is null
      */
 
-    Set<Threshold> unionForThisMetricAndTheseTypes( MetricConstants metric, ThresholdType... type );
+    Set<Threshold> unionForThisMetricAndTheseTypes( MetricConstants metric, ThresholdGroup... type );
 
     /**
      * Combines the input with the contents of the current container, return a new container that reflects the union
@@ -171,12 +171,12 @@ public interface ThresholdsByMetric
     ThresholdsByMetric unionWithThisStore( ThresholdsByMetric thresholds );
 
     /**
-     * Returns the set of {@link ThresholdType} in the store.
+     * Returns the set of {@link ThresholdGroup} in the store.
      * 
      * @return the threshold types stored
      */
 
-    Set<ThresholdType> getThresholdTypes();
+    Set<ThresholdGroup> getThresholdTypes();
 
     /**
      * Returns the type of thresholds associated with a given metric.
@@ -186,7 +186,7 @@ public interface ThresholdsByMetric
      * @throws NullPointerException if the input is null
      */
 
-    Set<ThresholdType> getThresholdTypesForThisMetric( MetricConstants metric );
+    Set<ThresholdGroup> getThresholdTypesForThisMetric( MetricConstants metric );
 
     /**
      * Returns the metrics in the store for which the input threshold is defined.
@@ -224,7 +224,7 @@ public interface ThresholdsByMetric
      * @return a filtered view by type
      */
 
-    ThresholdsByMetric filterByType( ThresholdType... type );
+    ThresholdsByMetric filterByType( ThresholdGroup... type );
 
     /**
      * Returns a filtered view that contains the union of thresholds associated with metrics that belong to the 
@@ -254,7 +254,7 @@ public interface ThresholdsByMetric
          */
 
         ThresholdsByMetricBuilder addThresholds( Map<MetricConstants, Set<Threshold>> thresholds,
-                                                 ThresholdType thresholdType );
+                                                 ThresholdGroup thresholdType );
 
         /**
          * Builds a {@link ThresholdsByMetric}.

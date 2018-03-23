@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import wres.datamodel.ThresholdConstants.ThresholdType;
+import wres.datamodel.ThresholdConstants.ThresholdGroup;
 
 public class SafeThresholdsByType implements ThresholdsByType
 {
@@ -17,10 +17,10 @@ public class SafeThresholdsByType implements ThresholdsByType
      * The thresholds by type.
      */
 
-    private final Map<ThresholdType, Set<Threshold>> thresholdsByType;
+    private final Map<ThresholdGroup, Set<Threshold>> thresholdsByType;
 
     @Override
-    public Set<Threshold> getThresholdsByType( ThresholdType type )
+    public Set<Threshold> getThresholdsByType( ThresholdGroup type )
     {
         if ( this.contains( type ) )
         {
@@ -30,7 +30,7 @@ public class SafeThresholdsByType implements ThresholdsByType
     }
 
     @Override
-    public boolean contains( ThresholdType type )
+    public boolean contains( ThresholdGroup type )
     {
         Objects.requireNonNull( type, "Specify a non-null threshold type." );
 
@@ -38,7 +38,7 @@ public class SafeThresholdsByType implements ThresholdsByType
     }
 
     @Override
-    public Set<ThresholdType> getAllThresholdTypes()
+    public Set<ThresholdGroup> getAllThresholdTypes()
     {
         return Collections.unmodifiableSet( thresholdsByType.keySet() );
     }
@@ -52,13 +52,13 @@ public class SafeThresholdsByType implements ThresholdsByType
         SafeThresholdsByTypeBuilder builder = new SafeThresholdsByTypeBuilder();
         
         // Add inputs
-        for ( ThresholdType next : thresholds.getAllThresholdTypes() )
+        for ( ThresholdGroup next : thresholds.getAllThresholdTypes() )
         {
             builder.addThresholds( thresholds.getThresholdsByType( next ), next );
         }
         
         // Add this
-        for ( ThresholdType next : this.getAllThresholdTypes() )
+        for ( ThresholdGroup next : this.getAllThresholdTypes() )
         {
             builder.addThresholds( this.getThresholdsByType( next ), next );
         }
@@ -77,11 +77,11 @@ public class SafeThresholdsByType implements ThresholdsByType
          * The thresholds by type.
          */
 
-        private final Map<ThresholdType, Set<Threshold>> thresholdsByType = new EnumMap<>( ThresholdType.class );
+        private final Map<ThresholdGroup, Set<Threshold>> thresholdsByType = new EnumMap<>( ThresholdGroup.class );
 
         @Override
         public ThresholdsByTypeBuilder addThresholds( Set<Threshold> thresholds,
-                                                      ThresholdType thresholdType )
+                                                      ThresholdGroup thresholdType )
         {
             Objects.requireNonNull( thresholds, "Specify non-null thresholds." );
 

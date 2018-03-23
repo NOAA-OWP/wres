@@ -21,7 +21,9 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.Threshold;
-import wres.datamodel.ThresholdConstants.ThresholdComposition;
+import wres.datamodel.ThresholdConstants.Operator;
+import wres.datamodel.ThresholdConstants.ThresholdDataType;
+import wres.datamodel.ThresholdConstants.ThresholdType;
 import wres.datamodel.ThresholdsByMetric;
 import wres.datamodel.ThresholdsByType;
 import wres.datamodel.inputs.MetricInput;
@@ -104,6 +106,12 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
      */
 
     static final DoublePredicate ADMISSABLE_DATA = Double::isFinite;
+
+    /**
+     * The dall data threshold.
+     */
+
+    final Threshold allDataThreshold;
 
     /**
      * Instance of a {@link MetricFactory}.
@@ -429,6 +437,10 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
             this.thresholdExecutor = ForkJoinPool.commonPool();
         }
 
+        this.allDataThreshold = dataFactory.ofThreshold( dataFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
+                                                         Operator.GREATER,
+                                                         ThresholdDataType.ALL );
+
         //Finally, validate the configuration against the parameters set
         validate( config );
     }
@@ -438,10 +450,21 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
      * 
      * @return the thresholds
      */
-    
+
     ThresholdsByMetric getThresholdsByMetric()
     {
         return this.thresholdsByMetric;
+    }
+
+    /**
+     * Returns the all data threshold.
+     * 
+     * @return the all data threshold
+     */
+    
+    Threshold getAllDataThreshold()
+    {
+        return this.allDataThreshold;
     }
     
     /**
@@ -519,7 +542,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
     /**
      * Adds the quantile values to the input threshold if the threshold contains probability values. This method is
      * lenient with regard to the input type, returning the input threshold if it is not a 
-     * {@link ThresholdComposition#PROBABILITY} type.
+     * {@link ThresholdType#PROBABILITY_ONLY} type.
      * 
      * @param threshold the input threshold
      * @param sorted a sorted set of values from which to determine the quantiles
@@ -529,7 +552,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
 
     Threshold addQuantilesToThreshold( Threshold threshold, double[] sorted )
     {
-        if ( threshold.getType() != ThresholdComposition.PROBABILITY )
+        if ( threshold.getType() != ThresholdType.PROBABILITY_ONLY )
         {
             return threshold;
         }
@@ -544,5 +567,5 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
                                                                    sorted,
                                                                    DECIMALS );
     }
-    
+
 }

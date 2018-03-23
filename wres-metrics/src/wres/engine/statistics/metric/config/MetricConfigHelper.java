@@ -22,7 +22,7 @@ import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.PoolingWindowConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.SummaryStatisticsName;
-import wres.config.generated.ThresholdApplicationType;
+import wres.config.generated.ThresholdDataType;
 import wres.config.generated.ThresholdOperator;
 import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
@@ -92,17 +92,17 @@ public final class MetricConfigHelper
             new EnumMap<>( SummaryStatisticsName.class );
 
     /**
-     * Map between {@link ThresholdApplicationType} and {@link ThresholdsByMetric.ApplicationType}.
+     * Map between {@link ThresholdDataType} and {@link ThresholdsByMetric.ThresholdDataType}.
      */
 
-    private static final EnumMap<ThresholdApplicationType, ThresholdConstants.ApplicationType> THRESHOLD_APPLICATION_TYPE_MAP =
-            new EnumMap<>( ThresholdApplicationType.class );
+    private static final EnumMap<ThresholdDataType, ThresholdConstants.ThresholdDataType> THRESHOLD_APPLICATION_TYPE_MAP =
+            new EnumMap<>( ThresholdDataType.class );
 
     /**
-     * Map between {@link ThresholdType} and {@link ThresholdsByType.ThresholdType}.
+     * Map between {@link ThresholdType} and {@link ThresholdsByType.ThresholdGroup}.
      */
 
-    private static final EnumMap<ThresholdType, ThresholdConstants.ThresholdType> THRESHOLD_TYPE_MAP =
+    private static final EnumMap<ThresholdType, ThresholdConstants.ThresholdGroup> THRESHOLD_TYPE_MAP =
             new EnumMap<>( ThresholdType.class );
 
     /**
@@ -229,15 +229,15 @@ public final class MetricConfigHelper
     }
 
     /**
-     * Returns the {@link ThresholdConstants.ApplicationType} that corresponds to the {@link ThresholdApplicationType}. 
+     * Returns the {@link ThresholdConstants.ThresholdDataType} that corresponds to the {@link ThresholdDataType}. 
      * Throws an exception if no such mapping is available. 
      * 
-     * @param type the {@link ThresholdApplicationType}
-     * @return the corresponding {@link ThresholdConstants.ApplicationType}
+     * @param type the {@link ThresholdDataType}
+     * @return the corresponding {@link ThresholdConstants.ThresholdDataType}
      * @throws MetricConfigurationException if the type is not mapped or the input is null
      */
 
-    public static ThresholdConstants.ApplicationType from( ThresholdApplicationType type )
+    public static ThresholdConstants.ThresholdDataType from( ThresholdDataType type )
             throws MetricConfigurationException
     {
         if ( Objects.isNull( type ) )
@@ -246,7 +246,7 @@ public final class MetricConfigHelper
                                                     + "type." );
         }
 
-        buildThresholdApplicationTypeMap();
+        buildThresholdDataTypeMap();
 
         if ( !THRESHOLD_APPLICATION_TYPE_MAP.containsKey( type ) )
         {
@@ -257,15 +257,15 @@ public final class MetricConfigHelper
     }
 
     /**
-     * Returns the {@link ThresholdConstants.ThresholdType} that corresponds to the {@link ThresholdType}. 
+     * Returns the {@link ThresholdConstants.ThresholdGroup} that corresponds to the {@link ThresholdType}. 
      * Throws an exception if no such mapping is available. 
      * 
      * @param type the {@link ThresholdType}
-     * @return the corresponding {@link ThresholdConstants.ThresholdType}
+     * @return the corresponding {@link ThresholdConstants.ThresholdGroup}
      * @throws MetricConfigurationException if the type is not mapped or the input is null
      */
 
-    public static ThresholdConstants.ThresholdType from( ThresholdType type ) throws MetricConfigurationException
+    public static ThresholdConstants.ThresholdGroup from( ThresholdType type ) throws MetricConfigurationException
     {
         if ( Objects.isNull( type ) )
         {
@@ -531,6 +531,14 @@ public final class MetricConfigHelper
         {
             operator = MetricConfigHelper.from( thresholds.getOperator() );
         }
+        
+        ThresholdConstants.ThresholdDataType dataType = ThresholdConstants.ThresholdDataType.LEFT;
+
+        // Operator specified
+        if ( Objects.nonNull( thresholds.getApplyTo() ) )
+        {
+            dataType = MetricConfigHelper.from( thresholds.getApplyTo() );
+        }
 
         // Must be internally sourced: thresholds with global scope should be provided directly 
         Object values = thresholds.getCommaSeparatedValuesOrSource();
@@ -550,6 +558,7 @@ public final class MetricConfigHelper
             returnMe.addAll( MetricConfigHelper.getThresholdsFromCommaSeparatedValues( dataFactory,
                                                                                        values.toString(),
                                                                                        operator,
+                                                                                       dataType,
                                                                                        type != ThresholdType.VALUE,
                                                                                        units ) );
         }
@@ -650,36 +659,6 @@ public final class MetricConfigHelper
     }
 
     /**
-     * Returns <code>true</code> if the project configuration contains thresholds, <code>false</code> otherwise.
-     * 
-     * @param config the project configuration
-     * @param type an optional threshold type, may be null
-     * @return true if the configuration contains thresholds, otherwise false
-     * @throws NullPointerException if the input is null
-     */
-
-    public static boolean hasThresholds( MetricsConfig config, ThresholdType type )
-    {
-        Objects.requireNonNull( config, NULL_CONFIGURATION_ERROR );
-
-        // No type condition
-        if ( Objects.isNull( type ) )
-        {
-            // Has some thresholds
-            return !config.getThresholds().isEmpty();
-        }
-        
-        // No explicit type condition, defaults to ThresholdType.PROBABILITY
-        ThresholdType defaultType = ThresholdType.PROBABILITY;
-
-        // Has some thresholds of a specified type
-        return config.getThresholds()
-                     .stream()
-                     .anyMatch( testType -> testType.getType() == type
-                                            || ( Objects.isNull( testType.getType() ) && type == defaultType ) );
-    }
-
-    /**
      * Returns <code>true</code> if the input configuration has time-series metrics, otherwise <code>false</code>.
      * 
      * @param projectConfig the project configuration
@@ -694,12 +673,43 @@ public final class MetricConfigHelper
     }
 
     /**
+     * Returns <code>true</code> if the project configuration contains thresholds, <code>false</code> otherwise.
+     * 
+     * @param config the project configuration
+     * @param type an optional threshold type, may be null
+     * @return true if the configuration contains thresholds, otherwise false
+     * @throws NullPointerException if the input is null
+     */
+
+    private static boolean hasThresholds( MetricsConfig config, ThresholdType type )
+    {
+        Objects.requireNonNull( config, NULL_CONFIGURATION_ERROR );
+
+        // No type condition
+        if ( Objects.isNull( type ) )
+        {
+            // Has some thresholds
+            return !config.getThresholds().isEmpty();
+        }
+
+        // No explicit type condition, defaults to ThresholdType.PROBABILITY
+        ThresholdType defaultType = ThresholdType.PROBABILITY;
+
+        // Has some thresholds of a specified type
+        return config.getThresholds()
+                     .stream()
+                     .anyMatch( testType -> testType.getType() == type
+                                            || ( Objects.isNull( testType.getType() ) && type == defaultType ) );
+    }
+
+    /**
      * Returns a list of {@link Threshold} from a comma-separated string. Specify the type of {@link Threshold}
      * required.
      * 
      * @param dataFactory a factory for building thresholds
      * @param inputString the comma-separated input string
      * @param oper the operator
+     * @param dataType the data type to which the threshold applies
      * @param areProbs is true to generate probability thresholds, false for ordinary thresholds
      * @param units the optional units in which non-probability thresholds are expressed
      * @return the thresholds
@@ -710,6 +720,7 @@ public final class MetricConfigHelper
     private static Set<Threshold> getThresholdsFromCommaSeparatedValues( DataFactory dataFactory,
                                                                          String inputString,
                                                                          Operator oper,
+                                                                         ThresholdConstants.ThresholdDataType dataType,
                                                                          boolean areProbs,
                                                                          Dimension units )
             throws MetricConfigurationException
@@ -719,6 +730,8 @@ public final class MetricConfigHelper
         Objects.requireNonNull( inputString, "Specify a non-null input string." );
 
         Objects.requireNonNull( oper, "Specify a non-null operator." );
+
+        Objects.requireNonNull( dataType, "Specify a non-null data type." );
 
         //Parse the double values
         List<Double> addMe =
@@ -741,6 +754,7 @@ public final class MetricConfigHelper
                                                                                                      addMe.get( i
                                                                                                                 + 1 ) ),
                                                                       oper,
+                                                                      dataType,
                                                                       units ) );
                 }
                 else
@@ -748,6 +762,7 @@ public final class MetricConfigHelper
                     returnMe.add( dataFactory.ofThreshold( dataFactory.ofOneOrTwoDoubles( addMe.get( i ),
                                                                                           addMe.get( i + 1 ) ),
                                                            oper,
+                                                           dataType,
                                                            units ) );
                 }
             }
@@ -759,12 +774,14 @@ public final class MetricConfigHelper
             {
                 addMe.forEach( threshold -> returnMe.add( dataFactory.ofProbabilityThreshold( dataFactory.ofOneOrTwoDoubles( threshold ),
                                                                                               oper,
+                                                                                              dataType,
                                                                                               units ) ) );
             }
             else
             {
                 addMe.forEach( threshold -> returnMe.add( dataFactory.ofThreshold( dataFactory.ofOneOrTwoDoubles( threshold ),
                                                                                    oper,
+                                                                                   dataType,
                                                                                    units ) ) );
             }
         }
@@ -787,7 +804,7 @@ public final class MetricConfigHelper
 
     private static Set<Threshold> getAdjustedThresholds( MetricConstants metric,
                                                          Set<Threshold> thresholds,
-                                                         ThresholdConstants.ThresholdType type,
+                                                         ThresholdConstants.ThresholdGroup type,
                                                          DataFactory dataFactory )
     {
         Objects.requireNonNull( metric, "Specify a non-null metric." );
@@ -798,7 +815,7 @@ public final class MetricConfigHelper
 
         Objects.requireNonNull( thresholds, NULL_DATA_FACTORY_ERROR );
 
-        if ( type == ThresholdConstants.ThresholdType.PROBABILITY_CLASSIFIER )
+        if ( type == ThresholdConstants.ThresholdGroup.PROBABILITY_CLASSIFIER )
         {
             return thresholds;
         }
@@ -806,7 +823,9 @@ public final class MetricConfigHelper
         Set<Threshold> returnMe = new HashSet<>();
 
         Threshold allData =
-                dataFactory.ofThreshold( dataFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ), Operator.GREATER );
+                dataFactory.ofThreshold( dataFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
+                                         Operator.GREATER,
+                                         ThresholdConstants.ThresholdDataType.ALL );
 
         // All data only
         if ( metric.getMetricOutputGroup() == MetricOutputGroup.BOXPLOT
@@ -1152,11 +1171,11 @@ public final class MetricConfigHelper
             {
                 Set<Threshold> allData = MetricConfigHelper.getAdjustedThresholds( next,
                                                                                    Collections.emptySet(),
-                                                                                   ThresholdConstants.ThresholdType.VALUE,
+                                                                                   ThresholdConstants.ThresholdGroup.VALUE,
                                                                                    dataFactory );
 
                 builder.addThresholds( Collections.singletonMap( next, allData ),
-                                       ThresholdConstants.ThresholdType.VALUE );
+                                       ThresholdConstants.ThresholdGroup.VALUE );
             }
         }
 
@@ -1171,7 +1190,7 @@ public final class MetricConfigHelper
             Map<MetricConstants, Set<Threshold>> thresholdsMap = new EnumMap<>( MetricConstants.class );
 
             // Type of thresholds
-            ThresholdConstants.ThresholdType thresholdType = ThresholdConstants.ThresholdType.PROBABILITY;
+            ThresholdConstants.ThresholdGroup thresholdType = ThresholdConstants.ThresholdGroup.PROBABILITY;
             if ( Objects.nonNull( nextThresholds.getType() ) )
             {
                 thresholdType = MetricConfigHelper.from( nextThresholds.getType() );
@@ -1267,7 +1286,7 @@ public final class MetricConfigHelper
 
         Objects.requireNonNull( builder, "Specify a non-null source of external thresholds." );
 
-        for ( ThresholdConstants.ThresholdType nextType : external.getAllThresholdTypes() )
+        for ( ThresholdConstants.ThresholdGroup nextType : external.getAllThresholdTypes() )
         {
             Map<MetricConstants, Set<Threshold>> input =
                     Collections.singletonMap( metric, external.getThresholdsByType( nextType ) );
@@ -1349,19 +1368,19 @@ public final class MetricConfigHelper
     }
 
     /**
-     * Builds the mapping between the {@link ThresholdsByMetric.ApplicationType} and the {@link ThresholdApplicationType} 
+     * Builds the mapping between the {@link ThresholdsByMetric.ThresholdDataType} and the {@link ThresholdDataType} 
      */
 
-    private static void buildThresholdApplicationTypeMap()
+    private static void buildThresholdDataTypeMap()
     {
         // Lazy population
         if ( THRESHOLD_APPLICATION_TYPE_MAP.isEmpty() )
         {
             // Iterate the external types
-            for ( ThresholdApplicationType nextExternalType : ThresholdApplicationType.values() )
+            for ( ThresholdDataType nextExternalType : ThresholdDataType.values() )
             {
                 // Iterate the internal types
-                for ( ThresholdConstants.ApplicationType nextInternalType : ThresholdConstants.ApplicationType.values() )
+                for ( ThresholdConstants.ThresholdDataType nextInternalType : ThresholdConstants.ThresholdDataType.values() )
                 {
                     if ( nextExternalType.name().equals( nextInternalType.name() ) )
                     {
@@ -1374,7 +1393,7 @@ public final class MetricConfigHelper
     }
 
     /**
-     * Builds the mapping between the {@link ThresholdsByType.ThresholdType} and the {@link ThresholdType} 
+     * Builds the mapping between the {@link ThresholdsByType.ThresholdGroup} and the {@link ThresholdType} 
      */
 
     private static void buildThresholdTypeMap()
@@ -1386,7 +1405,7 @@ public final class MetricConfigHelper
             for ( ThresholdType nextExternalType : ThresholdType.values() )
             {
                 // Iterate the internal types
-                for ( ThresholdConstants.ThresholdType nextInternalType : ThresholdConstants.ThresholdType.values() )
+                for ( ThresholdConstants.ThresholdGroup nextInternalType : ThresholdConstants.ThresholdGroup.values() )
                 {
                     if ( nextExternalType.name().equals( nextInternalType.name() ) )
                     {

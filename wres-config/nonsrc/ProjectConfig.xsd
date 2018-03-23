@@ -148,7 +148,7 @@
     </xs:simpleType>
 
     <!-- An enum to specify if the left, right, or right mean has been chosen for thresholds. -->
-    <xs:simpleType name="thresholdApplicationType">
+    <xs:simpleType name="thresholdDataType">
         <xs:restriction base="xs:string">
             <xs:enumeration value="left" />
             <xs:enumeration value="right" />
@@ -189,7 +189,7 @@
         <!-- A threshold contains a type, applyTo and operator and EITHER an external source OR an internal commaSeparatedValues. -->
         <xs:sequence>
 	    <xs:element name="type" type="thresholdType" default="probability" minOccurs="0" maxOccurs="1"/>
-            <xs:element name="applyTo" type="thresholdApplicationType" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="applyTo" type="thresholdDataType" minOccurs="0" maxOccurs="1"/>
             <!-- Choice of using an internal source or an external source -->
             <xs:choice>
                 <!-- Internal source -->

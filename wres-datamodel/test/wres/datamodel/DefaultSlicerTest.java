@@ -14,6 +14,7 @@ import java.util.function.Function;
 import org.junit.Test;
 
 import wres.datamodel.ThresholdConstants.Operator;
+import wres.datamodel.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.inputs.MetricInputSliceException;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
@@ -128,7 +129,8 @@ public final class DefaultSlicerTest
         values.add( metIn.pairOf( 0, 0.0 / 5.0 ) );
         values.add( metIn.pairOf( 1, 1.0 / 5.0 ) );
         double[] expected = new double[] { 1, 1, 1 };
-        Threshold threshold = metIn.ofThreshold( SafeOneOrTwoDoubles.of( 0.0 ), Operator.GREATER );
+        Threshold threshold = metIn.ofThreshold( SafeOneOrTwoDoubles.of( 0.0 ), Operator.GREATER,
+                                                 ThresholdDataType.LEFT );
         Metadata meta = metIn.getMetadataFactory().getMetadata();
         SingleValuedPairs pairs = metIn.ofSingleValuedPairs( values, values, meta, meta, null );
         SingleValuedPairs sliced = slicer.filterByLeft( pairs, threshold );
@@ -143,7 +145,8 @@ public final class DefaultSlicerTest
         //Test exception
         try
         {
-            slicer.filterByLeft( pairs, metIn.ofThreshold( SafeOneOrTwoDoubles.of( 1.0 ), Operator.GREATER ) );
+            slicer.filterByLeft( pairs, metIn.ofThreshold( SafeOneOrTwoDoubles.of( 1.0 ), Operator.GREATER,
+                                                           ThresholdDataType.LEFT ) );
             fail( "Expected an exception on attempting to return an empty subset." );
         }
         catch ( Exception e )
@@ -187,7 +190,8 @@ public final class DefaultSlicerTest
         values.add( metIn.pairOf( 0, new double[] { 1, 2, 3 } ) );
         values.add( metIn.pairOf( 1, new double[] { 1, 2, 3 } ) );
         double[] expected = new double[] { 1, 1, 1 };
-        Threshold threshold = metIn.ofThreshold( SafeOneOrTwoDoubles.of( 0.0 ), Operator.GREATER );
+        Threshold threshold = metIn.ofThreshold( SafeOneOrTwoDoubles.of( 0.0 ), Operator.GREATER,
+                                                 ThresholdDataType.LEFT );
         Metadata meta = metIn.getMetadataFactory().getMetadata();
         EnsemblePairs pairs = metIn.ofEnsemblePairs( values, values, meta, meta, null );
         EnsemblePairs sliced = slicer.filterByLeft( pairs, threshold );
@@ -202,7 +206,8 @@ public final class DefaultSlicerTest
         //Test exception
         try
         {
-            slicer.filterByLeft( pairs, metIn.ofThreshold( SafeOneOrTwoDoubles.of( 1.0 ), Operator.GREATER ) );
+            slicer.filterByLeft( pairs, metIn.ofThreshold( SafeOneOrTwoDoubles.of( 1.0 ), Operator.GREATER,
+                                                           ThresholdDataType.LEFT ) );
             fail( "Expected an exception on attempting to return an empty subset." );
         }
         catch ( Exception e )
@@ -320,7 +325,8 @@ public final class DefaultSlicerTest
         values.add( metIn.pairOf( 0, new double[] { 1, 2, 3, 4, 5 } ) );
         values.add( metIn.pairOf( 5, new double[] { 1, 1, 6, 6, 50 } ) );
         Metadata meta = metIn.getMetadataFactory().getMetadata();
-        Threshold threshold = metIn.ofThreshold( SafeOneOrTwoDoubles.of( 3.0 ), Operator.GREATER );
+        Threshold threshold = metIn.ofThreshold( SafeOneOrTwoDoubles.of( 3.0 ), Operator.GREATER,
+                                                 ThresholdDataType.LEFT );
         BiFunction<PairOfDoubleAndVectorOfDoubles, Threshold, PairOfDoubles> mapper = metIn.getSlicer()::transformPair;
         double[] expectedLeft = new double[] { 0.0, 0.0, 0.0, 1.0, 0.0, 1.0 };
         double[] expectedRight = new double[] { 2.0 / 5.0, 0.0 / 5.0, 0.0 / 5.0, 5.0 / 5.0, 2.0 / 5.0, 3.0 / 5.0 };
@@ -376,7 +382,8 @@ public final class DefaultSlicerTest
         PairOfDoubleAndVectorOfDoubles d = metIn.pairOf( 4, new double[] { 4, 4, 4, 4, 4 } );
         PairOfDoubleAndVectorOfDoubles e = metIn.pairOf( 0, new double[] { 1, 2, 3, 4, 5 } );
         PairOfDoubleAndVectorOfDoubles f = metIn.pairOf( 5, new double[] { 1, 1, 6, 6, 50 } );
-        Threshold threshold = metIn.ofThreshold( SafeOneOrTwoDoubles.of( 3.0 ), Operator.GREATER );
+        Threshold threshold = metIn.ofThreshold( SafeOneOrTwoDoubles.of( 3.0 ), Operator.GREATER,
+                                                 ThresholdDataType.LEFT );
         BiFunction<PairOfDoubleAndVectorOfDoubles, Threshold, PairOfDoubles> mapper = metIn.getSlicer()::transformPair;
         assertTrue( "The transformed pair does not match the benchmark",
                     mapper.apply( a, threshold ).equals( metIn.pairOf( 0.0, 2.0 / 5.0 ) ) );
@@ -473,36 +480,50 @@ public final class DefaultSlicerTest
         double tF = 8.0 / 11.0;
         double tG = 0.01;
 
-        Threshold testA = metIn.ofProbabilityThreshold( SafeOneOrTwoDoubles.of( tA ), Operator.GREATER );
-        Threshold testB = metIn.ofProbabilityThreshold( SafeOneOrTwoDoubles.of( tB ), Operator.GREATER );
-        Threshold testC = metIn.ofProbabilityThreshold( SafeOneOrTwoDoubles.of( tC ), Operator.GREATER );
-        Threshold testD = metIn.ofProbabilityThreshold( SafeOneOrTwoDoubles.of( tD ), Operator.GREATER );
-        Threshold testE = metIn.ofProbabilityThreshold( SafeOneOrTwoDoubles.of( tE[0], tE[1] ), Operator.BETWEEN );
-        Threshold testF = metIn.ofProbabilityThreshold( SafeOneOrTwoDoubles.of( tF ), Operator.GREATER );
-        Threshold testG = metIn.ofProbabilityThreshold( SafeOneOrTwoDoubles.of( tG ), Operator.GREATER );
+        Threshold testA = metIn.ofProbabilityThreshold( SafeOneOrTwoDoubles.of( tA ), Operator.GREATER,
+                                                        ThresholdDataType.LEFT );
+        Threshold testB = metIn.ofProbabilityThreshold( SafeOneOrTwoDoubles.of( tB ), Operator.GREATER,
+                                                        ThresholdDataType.LEFT );
+        Threshold testC = metIn.ofProbabilityThreshold( SafeOneOrTwoDoubles.of( tC ), Operator.GREATER,
+                                                        ThresholdDataType.LEFT );
+        Threshold testD = metIn.ofProbabilityThreshold( SafeOneOrTwoDoubles.of( tD ), Operator.GREATER,
+                                                        ThresholdDataType.LEFT );
+        Threshold testE = metIn.ofProbabilityThreshold( SafeOneOrTwoDoubles.of( tE[0], tE[1] ), Operator.BETWEEN,
+                                                        ThresholdDataType.LEFT );
+        Threshold testF = metIn.ofProbabilityThreshold( SafeOneOrTwoDoubles.of( tF ), Operator.GREATER,
+                                                        ThresholdDataType.LEFT );
+        Threshold testG = metIn.ofProbabilityThreshold( SafeOneOrTwoDoubles.of( tG ), Operator.GREATER,
+                                                        ThresholdDataType.LEFT );
         Threshold expectedA = metIn.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 1.5 ),
                                                          SafeOneOrTwoDoubles.of( tA ),
-                                                         Operator.GREATER );
+                                                         Operator.GREATER,
+                                                         ThresholdDataType.LEFT );
         Threshold expectedB = metIn.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 17897.2 ),
                                                          SafeOneOrTwoDoubles.of( tB ),
-                                                         Operator.GREATER );
+                                                         Operator.GREATER,
+                                                         ThresholdDataType.LEFT );
         Threshold expectedC = metIn.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 1647.1818181818185 ),
                                                          SafeOneOrTwoDoubles.of( tC ),
-                                                         Operator.GREATER );
+                                                         Operator.GREATER,
+                                                         ThresholdDataType.LEFT );
         Threshold expectedD = metIn.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 8924.920568373052 ),
                                                          SafeOneOrTwoDoubles.of( tD ),
-                                                         Operator.GREATER );
+                                                         Operator.GREATER,
+                                                         ThresholdDataType.LEFT );
         Threshold expectedE = metIn.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 6.3,
                                                                                  433.9 ),
                                                          SafeOneOrTwoDoubles.of( tE[0],
                                                                                  tE[1] ),
-                                                         Operator.BETWEEN );
+                                                         Operator.BETWEEN,
+                                                         ThresholdDataType.LEFT );
         Threshold expectedF = metIn.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 1.5 ),
                                                          SafeOneOrTwoDoubles.of( tF ),
-                                                         Operator.GREATER );
+                                                         Operator.GREATER,
+                                                         ThresholdDataType.LEFT );
         Threshold expectedG = metIn.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 1.5 ),
                                                          SafeOneOrTwoDoubles.of( tG ),
-                                                         Operator.GREATER );
+                                                         Operator.GREATER,
+                                                         ThresholdDataType.LEFT );
 
         //Test for equality
         assertTrue( "The inverse cumulative probability does not match the benchmark",

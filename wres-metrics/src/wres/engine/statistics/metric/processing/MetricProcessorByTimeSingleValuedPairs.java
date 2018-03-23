@@ -27,8 +27,7 @@ import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.OneOrTwoThresholds;
 import wres.datamodel.Slicer;
 import wres.datamodel.Threshold;
-import wres.datamodel.ThresholdConstants.Operator;
-import wres.datamodel.ThresholdConstants.ThresholdType;
+import wres.datamodel.ThresholdConstants.ThresholdGroup;
 import wres.datamodel.ThresholdsByMetric;
 import wres.datamodel.ThresholdsByType;
 import wres.datamodel.inputs.InsufficientDataException;
@@ -219,8 +218,8 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
             // Thresholds required for dichotomous metrics
             if ( next.isInGroup( MetricInputGroup.DICHOTOMOUS )
                  && !this.getThresholdsByMetric().hasThresholdsForThisMetricAndTheseTypes( next,
-                                                                                            ThresholdType.PROBABILITY,
-                                                                                            ThresholdType.VALUE ) )
+                                                                                           ThresholdGroup.PROBABILITY,
+                                                                                           ThresholdGroup.VALUE ) )
             {
                 throw new MetricConfigurationException( "Cannot configure '" + next
                                                         + "' without thresholds to define the events: correct the "
@@ -228,7 +227,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                                                         + config.getLabel()
                                                         + "'." );
             }
-            
+
         }
         // Check that time-series metrics are not combined with other metrics
         String message = "Cannot configure time-series metrics together with non-time-series "
@@ -263,9 +262,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
             PairedOutput<Instant, Duration> union = dataFactory.unionOf( output.values() );
             TimeWindow unionWindow = union.getMetadata().getTimeWindow();
             Pair<TimeWindow, OneOrTwoThresholds> key =
-                    Pair.of( unionWindow,
-                             OneOrTwoThresholds.of( dataFactory.ofThreshold( dataFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
-                                                                     Operator.GREATER ) ) );
+                    Pair.of( unionWindow, OneOrTwoThresholds.of( this.getAllDataThreshold() ) );
             //Build the future result
             Supplier<MetricOutputMapByMetric<DurationScoreOutput>> supplier = () -> {
                 DurationScoreOutput result = timeToPeakErrorStats.aggregate( union );
@@ -326,12 +323,12 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
     {
         // Find the thresholds for this group and for the required types
         ThresholdsByMetric filtered = this.getThresholdsByMetric()
-                                   .filterByGroup( MetricInputGroup.DICHOTOMOUS, outGroup )
-                                   .filterByType( ThresholdType.PROBABILITY, ThresholdType.VALUE );
-        
+                                          .filterByGroup( MetricInputGroup.DICHOTOMOUS, outGroup )
+                                          .filterByType( ThresholdGroup.PROBABILITY, ThresholdGroup.VALUE );
+
         // Find the union across metrics
         Set<Threshold> union = filtered.union();
-        
+
         double[] sorted = getSortedClimatology( input, union );
         Map<OneOrTwoThresholds, MetricCalculationException> failures = new HashMap<>();
         union.forEach( threshold -> {
@@ -383,9 +380,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                 CompletableFuture.supplyAsync( () -> timeSeries.apply( input ),
                                                thresholdExecutor );
 
-        OneOrTwoThresholds threshold =
-                OneOrTwoThresholds.of( dataFactory.ofThreshold( dataFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
-                                                        Operator.GREATER ) );
+        OneOrTwoThresholds threshold = OneOrTwoThresholds.of( this.getAllDataThreshold() );
 
         //Add the future result to the store
         futures.addPairedOutput( Pair.of( timeWindow, threshold ),
