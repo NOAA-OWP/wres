@@ -15,8 +15,12 @@ import wres.io.utilities.Database;
  * Details about a source of observation or forecast data
  * @author Christopher Tubbs
  */
-public class SourceDetails extends CachedDetail<SourceDetails, SourceKey> {
-
+public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
+{
+	/**
+	 * Prevents asynchronous saving of the same source information
+	 */
+	private static final Object SOURCE_SAVE_LOCK = new Object();
     private static final Logger LOGGER = LoggerFactory.getLogger( SourceDetails.class );
 
 	private String sourcePath = null;
@@ -84,7 +88,8 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey> {
 	}
 
 	@Override
-	public int compareTo(SourceDetails other) {
+	public int compareTo(SourceDetails other)
+	{
 		Integer id = this.sourceID;
 		
 		if (id == null) {
@@ -156,7 +161,13 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey> {
 		return script;
 	}
 
-    @Override
+	@Override
+	protected Object getSaveLock()
+	{
+		return SourceDetails.SOURCE_SAVE_LOCK;
+	}
+
+	@Override
     public void save() throws SQLException
     {
         Connection connection = null;

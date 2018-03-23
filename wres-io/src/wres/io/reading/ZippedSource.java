@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -104,7 +105,7 @@ public class ZippedSource extends BasicSource {
      * @param projectConfig the project config causing this ingest
 	 * @param filename The name of the source file
 	 */
-    public ZippedSource ( ProjectConfig projectConfig,
+    ZippedSource ( ProjectConfig projectConfig,
                           String filename )
 	{
         super( projectConfig );
@@ -130,7 +131,14 @@ public class ZippedSource extends BasicSource {
                 ProgressMonitor.increment();
                 if (archivedSource.isFile())
                 {
-                    processFile(archivedSource, archive);
+                    int bytesRead = processFile(archivedSource, archive);
+
+                    // The loop can be broken if the end of the file is reached
+                    if (bytesRead == -1)
+                    {
+                        ProgressMonitor.completeStep();
+                        break;
+                    }
                 }
 
                 archivedSource = archive.getNextTarEntry();
@@ -200,42 +208,57 @@ public class ZippedSource extends BasicSource {
                                           e );
         }
 
+        LOGGER.debug("Finished parsing '{}'", this.getFilename());
         return Collections.unmodifiableList( result );
     }
 
-    private void processFile(TarArchiveEntry source,
+    private int processFile(TarArchiveEntry source,
                              TarArchiveInputStream archiveInputStream)
             throws IOException
     {
+        int bytesRead = (int)source.getSize();
         String archivedFileName = Paths.get(this.directoryPath, source.getName()).toString();
         Format sourceType = ReaderFactory.getFiletype( archivedFileName );
         DataSourceConfig.Source
                 originalSource = ConfigHelper.findDataSourceByFilename( this.getDataSourceConfig(), this.getAbsoluteFilename() );
 
-        byte[] content = new byte[(int)source.getSize()];
+        byte[] content = new byte[bytesRead];
 
         try
         {
-            archiveInputStream.read( content, 0, content.length );
+            bytesRead = archiveInputStream.read( content, 0, content.length );
         }
         catch (EOFException eof)
         {
             String message = "The end of the archive entry for: {} was ";
             message += "reached. Data within the archive may have been ";
             message += "cut off when creating or moving the archive.";
-            LOGGER.error(message, archivedFileName);
-            LOGGER.error(Strings.getStackTrace( eof ));
-            return;
+            LOGGER.warn(message, archivedFileName);
+            LOGGER.warn(Strings.getStackTrace( eof ));
+            return -1;
         }
 
         if ( originalSource == null )
         {
             LOGGER.trace( "'{}' is not being ingested because its data source is null", source );
-            return;
+            return bytesRead;
         }
 
-        Pair<Boolean, String> checkIngest =
-                this.shouldIngest( archivedFileName, originalSource, content );
+        Pair<Boolean, String> checkIngest;
+
+        try
+        {
+            checkIngest =
+                    this.shouldIngest( archivedFileName, originalSource, content );
+        }
+        catch ( SQLException e )
+        {
+            e.printStackTrace();
+            throw new IOException( "The database could not be used to evaluate "
+                                   + "whether or not '" + archivedFileName +
+                                   "' should be ingested.", e );
+        }
+
         if ( !checkIngest.getLeft() )
         {
             LOGGER.trace( "'{}' is not being ingested because was already found", source );
@@ -252,7 +275,7 @@ public class ZippedSource extends BasicSource {
                                                                dataSourceConfig,
                                                                checkIngest.getRight() );
             this.addIngestTask( ingest );
-            return;
+            return bytesRead;
         }
         else
         {
@@ -302,6 +325,8 @@ public class ZippedSource extends BasicSource {
                 this.addIngestTask(task);
             }
         }
+
+        return bytesRead;
     }
 
     private final String directoryPath;

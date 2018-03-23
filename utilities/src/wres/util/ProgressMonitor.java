@@ -19,6 +19,7 @@ public class ProgressMonitor
     private ExecutorService ASYNC_UPDATER = Executors.newSingleThreadExecutor();
 
     private static ProgressMonitor MONITOR = new ProgressMonitor();
+    private static final Object MONITOR_LOCK = new Object();
     private final Logger LOGGER = LoggerFactory.getLogger( this.getClass() );
     public static void deactivate()
     {
@@ -38,7 +39,7 @@ public class ProgressMonitor
     {
         if (ProgressMonitor.UPDATE_MONITOR)
         {
-            synchronized (MONITOR)
+            synchronized (MONITOR_LOCK)
             {
                 MONITOR.addStep();
             }
@@ -58,7 +59,7 @@ public class ProgressMonitor
 
     public static void setUpdateFrequency(Long frequency)
     {
-        synchronized (MONITOR)
+        synchronized (MONITOR_LOCK)
         {
             MONITOR.updateFrequency = frequency;
         }
@@ -90,7 +91,7 @@ public class ProgressMonitor
 
     public static void setOutput(Consumer<ProgressMonitor> outputFunction)
     {
-        synchronized (MONITOR)
+        synchronized (MONITOR_LOCK)
         {
             MONITOR.setOutputFunction( outputFunction);
         }
@@ -151,13 +152,13 @@ public class ProgressMonitor
     
     public static void resetMonitor()
     {
-        synchronized (MONITOR)
+        synchronized (MONITOR_LOCK)
         {
             MONITOR.reset();
         }
     }
     
-    public void UpdateMonitor()
+    private void UpdateMonitor()
     {
 
         if (completedSteps <= totalSteps)
@@ -167,7 +168,7 @@ public class ProgressMonitor
         }
     }
     
-    public void addStep()
+    private void addStep()
     {
         if (this.totalSteps == 0)
         {
@@ -185,13 +186,13 @@ public class ProgressMonitor
             return;
         }
 
-        synchronized ( MONITOR )
+        synchronized ( MONITOR_LOCK )
         {
             MONITOR.setTotalSteps( steps );
         }
     }
 
-    public void setTotalSteps(Long steps)
+    private void setTotalSteps(Long steps)
     {
         this.completedSteps = 0L;
         this.totalSteps = steps;
@@ -212,16 +213,31 @@ public class ProgressMonitor
         MONITOR.showStepDescription = showStepDescription;
     }
 
-    public void reset()
+    private void reset()
     {
         this.totalSteps = 0L;
         this.completedSteps = 0L;
+        this.reachedCompletion = false;
         this.startTime = System.currentTimeMillis();
+    }
+
+    private float getCompletion()
+    {
+        float completion = ( ( completedSteps * 1.0F ) / ( totalSteps * 1.0F ) ) * 100.0f;
+
+        if ( Float.isNaN( completion ) )
+        {
+            completion = 0.0F;
+        }
+        else if ( completion > 100.0 )
+        {
+            completion = 100.0F;
+        }
+        return completion;
     }
 
     private String getProgressMessage()
     {
-        String message;
         String builder = "\r  ";
 
         if ( this.showStepDescription )
@@ -235,16 +251,7 @@ public class ProgressMonitor
         }
         else
         {
-            float completion = ( ( completedSteps * 1.0F ) / ( totalSteps * 1.0F ) ) * 100.0f;
-
-            if ( Float.isNaN( completion ) )
-            {
-                completion = 0.0F;
-            }
-            else if ( completion > 100.0 )
-            {
-                completion = 100.0F;
-            }
+            float completion = this.getCompletion();
 
             builder += String.format( "%.2f", completion );
             builder += "% Completed ";
@@ -255,11 +262,17 @@ public class ProgressMonitor
             }
 
             builder += ">";
+
+            builder = Strings.formatForLine( builder );
+
+            if (completion == 100.0)
+            {
+                builder += System.lineSeparator() + System.lineSeparator();
+                reachedCompletion = true;
+            }
         }
 
-        message = builder;
-
-        return message;
+        return builder;
     }
 
     private boolean shouldUpdate()
@@ -267,7 +280,8 @@ public class ProgressMonitor
         if (!ProgressMonitor.UPDATE_MONITOR ||
             this.ASYNC_UPDATER == null ||
             this.ASYNC_UPDATER.isTerminated() ||
-            this.ASYNC_UPDATER.isShutdown())
+            this.ASYNC_UPDATER.isShutdown() ||
+            this.reachedCompletion)
         {
             return false;
         }
@@ -276,10 +290,13 @@ public class ProgressMonitor
 
         if (this.updateFrequency != null &&
                 lastUpdate != null &&
-                (System.currentTimeMillis() - this.lastUpdate) < (this.updateFrequency * 1000))
+            ((System.currentTimeMillis() - this.lastUpdate) < (this.updateFrequency * 1000)))
         {
                 update = false;
         }
+
+
+        update = update || (!this.showStepDescription && this.getCompletion() > 99.0);
 
         return update;
     }
@@ -298,7 +315,7 @@ public class ProgressMonitor
         return String.format("%.2f TPS", speed);
     }
 
-    public void printMessage(String message)
+    private void printMessage(String message)
     {
         if (this.printer != null)
         {
@@ -348,7 +365,7 @@ public class ProgressMonitor
         }
     }
 
-    public void setOutputFunction( Consumer<ProgressMonitor> outputFunction)
+    private void setOutputFunction( Consumer<ProgressMonitor> outputFunction)
     {
         this.outputFunction = outputFunction;
     }
@@ -359,6 +376,7 @@ public class ProgressMonitor
     private Long lastUpdate;
     private Long updateFrequency;
     private Long startTime;
+    private boolean reachedCompletion = false;
     private final DecimalFormat percentFormat;
     private final DecimalFormat mainFormat;
     private PrintStream printer;

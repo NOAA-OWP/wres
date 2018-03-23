@@ -27,6 +27,7 @@ import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.Executor;
 import wres.io.concurrency.IngestSaver;
 import wres.io.config.ConfigHelper;
+import wres.io.config.SystemSettings;
 import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Features;
 import wres.io.data.details.FeatureDetails;
@@ -36,7 +37,7 @@ import wres.util.Strings;
 /**
  * Evaluates datasources specified within a project configuration and determines
  * what data should be ingested. Asynchronous tasks for each file needed for
- * ingest are created and sent to the Exector for ingestion.
+ * ingest are created and sent to the Executor for ingestion.
  * @author Christopher Tubbs
  */
 public class SourceLoader
@@ -59,6 +60,11 @@ public class SourceLoader
      */
     public List<Future<List<IngestResult>>> load() throws IOException
     {
+        // The maximum amount is the maximum thread count + 1 because
+        // the main thread will parse a file when {maximum thread count} other
+        // threads are parsing files.
+        LOGGER.info( "Parsing files. Only {} files may be parsed at once.",
+                     SystemSettings.maximumThreadCount() + 1);
         List<Future<List<IngestResult>>> savingFiles = new ArrayList<>();
 
         savingFiles.addAll( loadConfig( getLeftSource() ) );
@@ -395,7 +401,7 @@ public class SourceLoader
      * some way
      */
     private boolean dataExists( String hash )
-            throws SQLException
+            throws SQLException, IOException
     {
         return DataSources.hasSource( hash );
     }

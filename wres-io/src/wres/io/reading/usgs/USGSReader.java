@@ -233,7 +233,7 @@ public class USGSReader extends BasicSource
 
             stopwatch.stop();
 
-            LOGGER.info( "It took {} to load the USGS data.", stopwatch.getFormattedDuration() );
+            LOGGER.debug( "It took {} to load the USGS data.", stopwatch.getFormattedDuration() );
         }
         catch (IOException e)
         {
@@ -266,18 +266,15 @@ public class USGSReader extends BasicSource
     {
         String ID = null;
 
-        if (this.getSpecifiedFeatures().size() > 0)
+        for ( FeatureDetails feature : Features.getAllDetails( this.getProjectConfig() ) )
         {
-            for ( FeatureDetails feature : Features.getAllDetails( this.getProjectConfig() ) )
+            if ( Strings.hasValue( feature.getGageID()) && !Strings.hasValue( ID ))
             {
-                if ( Strings.hasValue( feature.getGageID()) && !Strings.hasValue( ID ))
-                {
-                    ID = feature.getGageID();
-                }
-                else if (Strings.hasValue( feature.getGageID() ))
-                {
-                    ID += "," + feature.getGageID();
-                }
+                ID = feature.getGageID();
+            }
+            else if (Strings.hasValue( feature.getGageID() ))
+            {
+                ID += "," + feature.getGageID();
             }
         }
 
@@ -659,7 +656,8 @@ public class USGSReader extends BasicSource
             }
         }
 
-        LOGGER.trace("A USGS time series has been saved for location '{}'", gageID);
+        LOGGER.info("A USGS time series has been parsed for location '{}'",
+                    series.getSourceInfo().getSiteName());
     }
 
     private void performUpserts() throws SQLException

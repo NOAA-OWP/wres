@@ -19,7 +19,8 @@ import wres.util.Strings;
  */
 public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDetails.FeatureKey>
 {
-    private static Comparator<FeatureDetails> alphabeticalComparator = null;
+    // Prevents asynchronous saving of identical features
+    private static final Object FEATURE_SAVE_LOCK = new Object();
 
 	private String lid = null;
 	private String featureName = null;
@@ -82,7 +83,8 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
                             null );
     }
 
-    private void update(ResultSet row) throws SQLException
+    @Override
+    protected void update( ResultSet row ) throws SQLException
     {
         if (Database.hasColumn( row, "comid" ))
         {
@@ -459,6 +461,12 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
 
 		return script;
 	}
+
+    @Override
+    protected Object getSaveLock()
+    {
+        return FeatureDetails.FEATURE_SAVE_LOCK;
+    }
 
     /**
      * Creates the 'Insert' portion of the InsertSelectStatement that will

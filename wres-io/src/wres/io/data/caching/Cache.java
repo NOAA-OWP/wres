@@ -24,26 +24,32 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
 
 	Map<U, Integer> getKeyIndex()
     {
-        if (keyIndex == null)
-        {
-        	keyIndex = new LRUMap<>( this.getMaxDetails(), eldest -> {
-        		if (this.details != null)
-				{
-					details.remove( eldest.getValue() );
-				}
-			} );
-        }
+    	synchronized ( KEY_LOCK )
+		{
+			if ( keyIndex == null )
+			{
+				keyIndex = new LRUMap<>( this.getMaxDetails(), eldest -> {
+					if ( this.details != null )
+					{
+						details.remove( eldest.getValue() );
+					}
+				} );
+			}
+		}
 
         return this.keyIndex;
     }
 
 	final ConcurrentMap<Integer, T> getDetails()
 	{
-		this.initializeDetails();
-		return this.details;
+	    synchronized ( DETAIL_LOCK )
+        {
+            this.initializeDetails();
+            return this.details;
+        }
 	}
 
-	protected void initializeDetails()
+	void initializeDetails()
 	{
 		synchronized ( DETAIL_LOCK )
 		{

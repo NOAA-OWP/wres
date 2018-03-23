@@ -69,7 +69,7 @@ class VectorNWMValueSaver extends WRESRunnable
         @Override
         public boolean equals( Object obj )
         {
-            return !Objects.isNull( obj ) && this.hashCode() == obj.hashCode();
+            return obj instanceof TimeSeriesIndexKey && this.hashCode() == obj.hashCode();
         }
 
         @Override
@@ -168,10 +168,11 @@ class VectorNWMValueSaver extends WRESRunnable
     private Integer sourceID;
     private Double missingValue;
     private boolean inChargeOfIngest;
+    private Integer ensembleId;
 
-    public VectorNWMValueSaver( String filename,
-                                Future<String> futureHash,
-                                DataSourceConfig dataSourceConfig)
+    VectorNWMValueSaver( String filename,
+                         Future<String> futureHash,
+                         DataSourceConfig dataSourceConfig)
     {
         if (filename == null || filename.isEmpty())
         {
@@ -189,8 +190,9 @@ class VectorNWMValueSaver extends WRESRunnable
 
     /**
      * Gets the result of the
-     * @return
-     * @throws IOException
+     * @return The hash representing the source file
+     * @throws IOException thrown if hashing was interrupted and if it
+     * encountered an error during processing
      */
     private String getHash() throws IOException
     {
@@ -350,8 +352,8 @@ class VectorNWMValueSaver extends WRESRunnable
                 + NEWLINE;
         forecastSourceInsert +=
                 "WHERE TS.ensemble_id = " + this.getEnsembleID() + NEWLINE;
-        forecastSourceInsert += "   AND TS.initialization_date = '" + NetCDF
-                .getInitializedTime( this.getSource() ) + "'" + NEWLINE;
+        forecastSourceInsert += "   AND TS.initialization_date = '" +
+                                NetCDF.getInitializedTime( this.getSource() ) + "'" + NEWLINE;
         forecastSourceInsert += "   AND TS.measurementunit_id = "
                                 + this.getMeasurementUnitID() + NEWLINE;
         forecastSourceInsert +=
@@ -376,6 +378,8 @@ class VectorNWMValueSaver extends WRESRunnable
         {
             // Read and save the data from the NetCDF file
             this.read();
+
+            LOGGER.debug("Finished Parsing '{}'", this.filePath);
         }
         catch (SQLException | IOException e )
         {
@@ -759,7 +763,11 @@ class VectorNWMValueSaver extends WRESRunnable
      */
     private int getEnsembleID() throws SQLException, IOException
     {
-        return Ensembles.getEnsembleID(NetCDF.getEnsemble(this.getSource()));
+        if (this.ensembleId == null)
+        {
+            this.ensembleId = Ensembles.getEnsembleID( NetCDF.getEnsemble( this.getSource() ) );
+        }
+        return this.ensembleId;
     }
 
     /**
@@ -920,7 +928,7 @@ class VectorNWMValueSaver extends WRESRunnable
     {
         if (this.lead == null)
         {
-            this.lead = NetCDF.getNWMLeadTime(this.getSource());
+            this.lead = NetCDF.getLeadTime( this.getSource());
         }
         return this.lead;
     }

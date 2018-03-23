@@ -36,7 +36,7 @@ final class BackToBackMetricInputIterator extends MetricInputIterator
         int count;
         if ( ConfigHelper.isForecast( this.getRight() ))
         {
-            long start = this.getFirstLeadInWindow();
+            long start = Math.max(1, this.getFirstLeadInWindow());
             Integer last = this.getProjectDetails().getLastLead( this.getFeature() );
 
             if (last == null)

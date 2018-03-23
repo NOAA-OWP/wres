@@ -65,6 +65,11 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
         TIME_SERIES
     }
 
+    /**
+     * Ensures that multiple copies of a project aren't saved at the same time
+     */
+    private static final Object PROJECT_SAVE_LOCK = new Object();
+
     private static final Logger LOGGER = LoggerFactory.getLogger( ProjectDetails.class );
 
     /**
@@ -2350,6 +2355,12 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
                         "WHERE P.input_code = " + this.getInputCode() + ";";
 
         return script;
+    }
+
+    @Override
+    protected Object getSaveLock()
+    {
+        return PROJECT_SAVE_LOCK;
     }
 
 

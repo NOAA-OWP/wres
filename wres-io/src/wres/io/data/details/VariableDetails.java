@@ -11,6 +11,11 @@ import wres.io.utilities.Database;
  */
 public final class VariableDetails extends CachedDetail<VariableDetails, String>
 {
+	/**
+	 * Prevents asynchronous saving of identical variables
+	 */
+	private static final Object VARIABLE_SAVE_LOCK = new Object();
+
 	public static VariableDetails from (ResultSet resultSet) throws SQLException
 	{
 	    VariableDetails details = new VariableDetails();
@@ -60,22 +65,19 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
 	}
 
 	@Override
-	public void save() throws SQLException {
+	protected void update( ResultSet databaseResults ) throws SQLException
+	{
+		super.update( databaseResults );
+		String partition = "";
+		partition += "CREATE TABLE IF NOT EXISTS ";
+		partition += this.getVariablePositionPartitionName();
+		partition += " ( " + NEWLINE;
+		partition += "	CHECK (variable_id = ";
+		partition += this.getId().toString();
+		partition += ")" + NEWLINE;
+		partition += ") INHERITS (wres.VariablePosition);";
 
-		synchronized (saveLock)
-		{
-			super.save();
-			String partition = "";
-			partition += "CREATE TABLE IF NOT EXISTS ";
-			partition += this.getVariablePositionPartitionName();
-			partition += " ( " + NEWLINE;
-			partition += "	CHECK (variable_id = ";
-			partition += this.getId().toString();
-			partition += ")" + NEWLINE;
-			partition += ") INHERITS (wres.VariablePosition);";
-
-			Database.execute(partition);
-		}
+		Database.execute(partition);
 	}
 
 	@Override
@@ -128,6 +130,12 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
 		script += "WHERE variable_name = '" + variableName + "';";
 		
 		return script;
+	}
+
+	@Override
+	protected Object getSaveLock()
+	{
+		return VariableDetails.VARIABLE_SAVE_LOCK;
 	}
 
 	@Override

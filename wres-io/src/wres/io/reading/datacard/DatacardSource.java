@@ -344,13 +344,15 @@ public class DatacardSource extends BasicSource
                          entryCount );
 		}
 
+		LOGGER.debug("Finished Parsing '{}'", this.getFilename());
+
         return IngestResult.singleItemListFrom( this.getProjectConfig(),
                                                 this.getDataSourceConfig(),
                                                 this.getHash(),
                                                 false );
 	}
 
-	public void sendToDatabase()
+	private void sendToDatabase()
     {
         if (insertCount > 0)
         {

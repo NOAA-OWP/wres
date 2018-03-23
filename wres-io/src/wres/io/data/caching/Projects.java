@@ -1,5 +1,6 @@
 package wres.io.data.caching;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -151,7 +152,7 @@ public class Projects extends Cache<ProjectDetails, Integer> {
      */
     public static ProjectDetails getProjectFromIngest( ProjectConfig projectConfig,
                                                        List<IngestResult> ingestResults )
-            throws SQLException
+            throws SQLException, IOException
     {
         List<String> leftHashes = new ArrayList<>();
         List<String> rightHashes = new ArrayList<>();
@@ -212,6 +213,15 @@ public class Projects extends Cache<ProjectDetails, Integer> {
             {
                 Integer sourceID =
                     DataSources.getActiveSourceID( ingestResult.getHash() );
+
+                if (sourceID == null)
+                {
+                    throw new IOException( "The id for a source file that must "
+                                           + "be linked to this project could "
+                                           + "not be determined. The data "
+                                           + "ingest cannot continue." );
+                }
+
                 copyStatement.add( details.getId() + delimiter
                                    + sourceID + delimiter
                                    + ingestResult.getLeftOrRightOrBaseline().value() );

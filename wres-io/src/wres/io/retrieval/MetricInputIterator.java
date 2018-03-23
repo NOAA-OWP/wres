@@ -150,9 +150,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
 
         this.finalPoolingStep = this.getFinalPoolingStep();
 
-        // TODO: This needs a better home
-        // x2; 1 step for retrieval, 1 step for calculation
-        ProgressMonitor.setSteps( Long.valueOf( this.getWindowCount() ) * 2 );
+        ProgressMonitor.setSteps( Long.valueOf( this.getWindowCount() ) );
     }
 
     protected int getFinalPoolingStep() throws SQLException
@@ -387,7 +385,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
      * @return A callable object that will create a Metric Input
      * @throws IOException Thrown if a climatology could not be created as needed
      */
-    protected Callable<MetricInput<?>> createRetriever() throws IOException
+    Callable<MetricInput<?>> createRetriever() throws IOException
     {
         // TODO: Pass the leftHandMap instead of the function
         InputRetriever retriever = new InputRetriever(
@@ -398,8 +396,6 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
         retriever.setClimatology( this.getClimatology() );
         retriever.setLeadIteration( this.getWindowNumber() );
         retriever.setIssueDatesPool( this.poolingStep );
-        retriever.setOnRun( ProgressMonitor.onThreadStartHandler() );
-        retriever.setOnComplete( ProgressMonitor.onThreadCompleteHandler() );
         return retriever;
     }
 
@@ -428,7 +424,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
         return this.getProjectDetails().getBaseline();
     }
 
-    protected long getFirstLeadInWindow()
+    long getFirstLeadInWindow()
             throws SQLException, IOException
     {
         Integer offset = this.getProjectDetails().getLeadOffset( feature );
@@ -439,8 +435,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
                                        + "lead time offset for the location: " +
                                        ConfigHelper.getFeatureDescription( feature ) );
         }
-        return ( this.getWindowNumber() * this.getProjectDetails().getWindowWidth()) +
-               offset;
+        return this.getProjectDetails().getWindowWidth() + offset;
     }
 
     abstract int calculateWindowCount() throws SQLException, IOException;

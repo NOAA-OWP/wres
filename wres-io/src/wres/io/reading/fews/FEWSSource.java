@@ -13,6 +13,7 @@ import wres.io.data.caching.DataSources;
 import wres.io.reading.BasicSource;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
+import wres.util.Strings;
 
 /**
  * @author Christopher Tubbs
@@ -75,6 +76,9 @@ public class FEWSSource extends BasicSource
 
             throw new IngestException( message, se );
         }
+
+
+        LOGGER.debug("Finished Parsing '{}'", this.getFilename());
 
         return IngestResult.singleItemListFrom( this.getProjectConfig(),
                                                 this.getDataSourceConfig(),
