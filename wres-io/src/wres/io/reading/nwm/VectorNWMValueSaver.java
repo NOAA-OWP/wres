@@ -25,6 +25,7 @@ import ucar.nc2.Variable;
 import wres.config.generated.DataSourceConfig;
 import wres.io.concurrency.CopyExecutor;
 import wres.io.concurrency.WRESRunnable;
+import wres.io.concurrency.WRESRunnableException;
 import wres.io.config.ConfigHelper;
 import wres.io.config.SystemSettings;
 import wres.io.data.caching.DataSources;
@@ -206,17 +207,16 @@ class VectorNWMValueSaver extends WRESRunnable
             {
                 String message = "The hashing process for the file '";
                 message += this.filePath.toAbsolutePath().toString();
-                message += "' was interupted and could not be completed.";
-                LOGGER.error(message);
+                message += "' was interrupted and could not be completed.";
+                LOGGER.warn( message );
 
-                throw new IOException( message, e );
+                Thread.currentThread().interrupt();
             }
             catch ( ExecutionException e )
             {
                 String message = "An error occurred while hashing the file '";
                 message += this.filePath.toAbsolutePath().toString();
                 message += "'.";
-                LOGGER.error(message);
 
                 throw new IOException( message, e );
             }
@@ -383,7 +383,8 @@ class VectorNWMValueSaver extends WRESRunnable
         }
         catch (SQLException | IOException e )
         {
-            LOGGER.error(Strings.getStackTrace(e));
+            String message = "Failed to read or save data from an NWM file.";
+            throw new WRESRunnableException( message, e );
         }
         finally
         {
@@ -398,9 +399,9 @@ class VectorNWMValueSaver extends WRESRunnable
                 }
                 catch (IOException e)
                 {
-                    LOGGER.error("Could not close the NetCDF file: '{}'",
-                                 this.filePath.toAbsolutePath().toString());
-                    LOGGER.error(Strings.getStackTrace(e));
+                    // Exception on close should not affect primary outputs.
+                    LOGGER.warn("Could not close the NetCDF file: '{}'",
+                                 this.filePath.toAbsolutePath().toString(), e );
                 }
             }
         }
@@ -508,7 +509,6 @@ class VectorNWMValueSaver extends WRESRunnable
             catch (IOException e)
             {
                 String message = "The variable could not be retrieved from the NetCDF source file.";
-                LOGGER.error(message);
                 throw new IOException( message, e );
             }
         }
@@ -524,8 +524,7 @@ class VectorNWMValueSaver extends WRESRunnable
             catch (IOException e)
             {
                 String message = "The source NetCDF file could not be loaded.";
-                LOGGER.error(message);
-                throw new IOException( message );
+                throw new IOException( message, e );
             }
         }
         else
@@ -642,7 +641,6 @@ class VectorNWMValueSaver extends WRESRunnable
                 String message = "A variable ID for '" +
                                  this.getVariable().getShortName() +
                                  "' could not be retrieved from the database.";
-                LOGGER.error(message);
                 throw new IOException( message, e );
             }
         }
@@ -944,11 +942,12 @@ class VectorNWMValueSaver extends WRESRunnable
             {
                 this.source = NetcdfFile.open(filePath.toAbsolutePath().toString());
             }
-            catch (IOException e) {
-                LOGGER.error("A file at: '{}' could not be loaded as a NetCDF file.",
-                             this.filePath.toAbsolutePath().toString());
-                LOGGER.error(Strings.getStackTrace(e));
-                throw e;
+            catch ( IOException e )
+            {
+                String message = "A file at: '"
+                                 + this.filePath.toAbsolutePath()
+                                 + "' could not be loaded as a NetCDF file.";
+                throw new IOException( message, e );
             }
         }
         return this.source;

@@ -14,7 +14,6 @@ import org.slf4j.LoggerFactory;
 
 import wres.io.data.caching.USGSParameters;
 import wres.io.utilities.Database;
-import wres.util.Strings;
 
 public class USGSParameterReader
 {
@@ -95,7 +94,9 @@ public class USGSParameterReader
         }
         catch (SQLException e)
         {
-            LOGGER.error(Strings.getStackTrace( e ));
+            String message = "Failed to save a USGS parameter using statement "
+                             + statement;
+            throw new IOException( message, e );
         }
         finally
         {
@@ -107,8 +108,9 @@ public class USGSParameterReader
                 }
                 catch ( SQLException e )
                 {
-                    LOGGER.debug("The prepared statement used to save USGS " +
-                                 "parameters could not be closed.");
+                    // Exception on close should not affect primary outputs.
+                    LOGGER.warn( "The prepared statement used to save USGS parameters could not be closed.",
+                                 e );
                 }
             }
             if (connection != null)
@@ -118,7 +120,7 @@ public class USGSParameterReader
         }
     }
 
-    private void setMeasuremenUnitIDS() throws SQLException
+    private void setMeasuremenUnitIDS() throws IOException
     {
         String script = "UPDATE wres.USGSParameter UP" + System.lineSeparator() +
                         "SET measurementunit_id = MU.measurementunit_id" + System.lineSeparator() +
@@ -230,15 +232,23 @@ public class USGSParameterReader
         }
         catch (SQLException e)
         {
-            LOGGER.error("USGS Parameters could not be linked to their units of measurement.");
-            LOGGER.error("Please try again.");
-            throw e;
+            String message = "USGS Parameters could not be linked to their units of measurement."
+                             + System.lineSeparator() + "Please try again.";
+            throw new IOException( message, e );
         }
         finally
         {
             if (statement != null)
             {
-                statement.close();
+                try
+                {
+                    statement.close();
+                }
+                catch ( SQLException se )
+                {
+                    // Exception on close should not affect primary outputs.
+                    LOGGER.warn( "Failed to close statement {}.", statement, se );
+                }
             }
 
             if (connection != null)

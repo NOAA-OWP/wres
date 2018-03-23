@@ -198,7 +198,7 @@ public class ScriptBuilder
      */
     public Future issueTransaction()
     {
-        SQLExecutor executor = new SQLExecutor( this.toString(), true, true );
+        SQLExecutor executor = new SQLExecutor( this.toString(), true );
         return Database.execute( executor );
     }
 

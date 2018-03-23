@@ -21,9 +21,11 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
+import wres.datamodel.OneOrTwoThresholds;
 import wres.datamodel.Slicer;
 import wres.datamodel.Threshold;
-import wres.datamodel.OneOrTwoThresholds;
+import wres.datamodel.ThresholdConstants.ThresholdGroup;
+import wres.datamodel.ThresholdsByMetric;
 import wres.datamodel.ThresholdsByType;
 import wres.datamodel.inputs.InsufficientDataException;
 import wres.datamodel.inputs.MetricInputSliceException;
@@ -109,13 +111,6 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
      */
 
     private final BiFunction<PairOfDoubleAndVectorOfDoubles, Threshold, PairOfDoubles> toDiscreteProbabilities;
-
-    /**
-     * Set of probability classifiers that are used to transform discrete probabilities into dichotomous outcomes.
-     * There is one set of classifiers for each metric.
-     */
-
-    private final Map<MetricConstants, Set<Threshold>> probabilityClassifiers;
 
     @Override
     public MetricOutputForProjectByTimeAndThreshold apply( EnsemblePairs input )
@@ -279,10 +274,6 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         //Construct the default mapper from ensembles to probabilities: this is not currently configurable
         toDiscreteProbabilities = dataFactory.getSlicer()::transformPair;
 
-        //Set any classifiers for discrete probabilities to dichotomous outcomes
-        probabilityClassifiers =
-                MetricConfigHelper.getProbabilityClassifiers( config, dataFactory, externalThresholds );
-
         // Finalize validation now all required parameters are available
         // This is also called by the constructor of the superclass, but local parameters must be validated too
         validate( config );
@@ -295,9 +286,26 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
 
         // This method checks local parameters, so ensure they have been set.
         // If null, this is being called by the superclass constructor, not the local constructor
-        if ( Objects.nonNull( probabilityClassifiers ) )
+        if ( Objects.nonNull( this.toSingleValues ) )
         {
-            
+
+            // Thresholds required for dichotomous and probability metrics
+            for ( MetricConstants next : this.metrics )
+            {
+                if ( ( next.isInGroup( MetricInputGroup.DICHOTOMOUS )
+                       || next.isInGroup( MetricInputGroup.DISCRETE_PROBABILITY ) )
+                     && !this.getThresholdsByMetric().hasThresholdsForThisMetricAndTheseTypes( next,
+                                                                                               ThresholdGroup.PROBABILITY,
+                                                                                               ThresholdGroup.VALUE ) )
+                {
+                    throw new MetricConfigurationException( "Cannot configure '" + next
+                                                            + "' without thresholds to define the events: correct the "
+                                                            + "configuration labelled '"
+                                                            + config.getLabel()
+                                                            + "'." );
+                }
+            }
+
             validateCategoricalState();
 
             //Ensemble input, vector output
@@ -363,17 +371,18 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                                                   MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
                                                   MetricOutputGroup outGroup )
     {
-        //Process thresholds
-        Set<Threshold> union =
-                getUnionOfThresholdsForThisGroup( this.thresholdsByMetric, MetricInputGroup.ENSEMBLE, outGroup );
+        // Find the thresholds for this group and for the required types
+        ThresholdsByMetric filtered = this.getThresholdsByMetric()
+                                          .filterByGroup( MetricInputGroup.ENSEMBLE, outGroup )
+                                          .filterByType( ThresholdGroup.PROBABILITY, ThresholdGroup.VALUE );
+
+        // Find the union across metrics
+        Set<Threshold> union = filtered.union();
+
         double[] sorted = getSortedClimatology( input, union );
         Map<OneOrTwoThresholds, MetricCalculationException> failures = new HashMap<>();
         union.forEach( threshold -> {
-            Set<MetricConstants> ignoreTheseMetrics =
-                    doNotComputeTheseMetricsForThisThreshold( this.thresholdsByMetric,
-                                                              MetricInputGroup.ENSEMBLE,
-                                                              outGroup,
-                                                              threshold );
+            Set<MetricConstants> ignoreTheseMetrics = filtered.doesNotHaveTheseMetricsForThisThreshold( threshold );
 
             // Add quantiles to threshold
             Threshold useMe = addQuantilesToThreshold( threshold, sorted );
@@ -506,18 +515,18 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                                                              MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
                                                              MetricOutputGroup outGroup )
     {
-        //Process thresholds
-        Set<Threshold> union = getUnionOfThresholdsForThisGroup( this.thresholdsByMetric,
-                                                                 MetricInputGroup.DISCRETE_PROBABILITY,
-                                                                 outGroup );
+        // Find the thresholds for this group and for the required types
+        ThresholdsByMetric filtered = this.getThresholdsByMetric()
+                                          .filterByGroup( MetricInputGroup.DISCRETE_PROBABILITY, outGroup )
+                                          .filterByType( ThresholdGroup.PROBABILITY, ThresholdGroup.VALUE );
+
+        // Find the union across metrics
+        Set<Threshold> union = filtered.union();
+
         double[] sorted = getSortedClimatology( input, union );
         Map<OneOrTwoThresholds, MetricCalculationException> failures = new HashMap<>();
         union.forEach( threshold -> {
-            Set<MetricConstants> ignoreTheseMetrics =
-                    doNotComputeTheseMetricsForThisThreshold( this.thresholdsByMetric,
-                                                              MetricInputGroup.DISCRETE_PROBABILITY,
-                                                              outGroup,
-                                                              threshold );
+            Set<MetricConstants> ignoreTheseMetrics = filtered.doesNotHaveTheseMetricsForThisThreshold( threshold );
 
             // Add quantiles to threshold
             Threshold useMe = addQuantilesToThreshold( threshold, sorted );
@@ -640,18 +649,26 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                                                      MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
                                                      MetricOutputGroup outGroup )
     {
-        // Process thresholds
-        Set<Threshold> union =
-                getUnionOfThresholdsForThisGroup( this.thresholdsByMetric, MetricInputGroup.DICHOTOMOUS, outGroup );
+        // Find the thresholds filtered by group
+        ThresholdsByMetric filtered = this.getThresholdsByMetric()
+                                          .filterByGroup( MetricInputGroup.DICHOTOMOUS, outGroup );
+
+        // Find the thresholds filtered by outer type
+        ThresholdsByMetric filteredByOuter = filtered.filterByType( ThresholdGroup.PROBABILITY, ThresholdGroup.VALUE );
+
+        // Find the thresholds filtered by inner type
+        ThresholdsByMetric filteredByInner = filtered.filterByType( ThresholdGroup.PROBABILITY_CLASSIFIER );
+
+        // Find the union across metrics
+        Set<Threshold> union = filteredByOuter.union();
+
         double[] sorted = getSortedClimatology( input, union );
         Map<OneOrTwoThresholds, MetricCalculationException> failures = new HashMap<>();
         union.forEach( threshold -> {
+
             Set<MetricConstants> ignoreTheseMetrics =
-                    doNotComputeTheseMetricsForThisThreshold( this.thresholdsByMetric,
-                                                              MetricInputGroup.DICHOTOMOUS,
-                                                              outGroup,
-                                                              threshold );
-            
+                    filteredByOuter.doesNotHaveTheseMetricsForThisThreshold( threshold );
+
             // Add quantiles to threshold
             Threshold outerThreshold = addQuantilesToThreshold( threshold, sorted );
 
@@ -664,17 +681,13 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                                                                                    toDiscreteProbabilities );
 
                 // Find the union of classifiers across all metrics   
-                Set<Threshold> classifiers = getUnionOfThresholdsForThisGroup( this.probabilityClassifiers,
-                                                                               MetricInputGroup.DICHOTOMOUS,
-                                                                               outGroup );
+                Set<Threshold> classifiers = filteredByInner.union();
+
                 for ( Threshold innerThreshold : classifiers )
                 {
                     // Metrics for which the current classifier is not required
                     Set<MetricConstants> innerIgnoreTheseMetrics =
-                            doNotComputeTheseMetricsForThisThreshold( this.probabilityClassifiers,
-                                                                      MetricInputGroup.DICHOTOMOUS,
-                                                                      outGroup,
-                                                                      innerThreshold );
+                            filteredByInner.doesNotHaveTheseMetricsForThisThreshold( innerThreshold );
 
                     // Union of metrics to ignore, either because the threshold is not required or
                     // because the classifier is not required
@@ -699,7 +712,8 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
             //Insufficient data for one threshold: log, but allow
             catch ( InsufficientDataException e )
             {
-                failures.put( OneOrTwoThresholds.of( outerThreshold ), new MetricCalculationException( e.getMessage(), e ) );
+                failures.put( OneOrTwoThresholds.of( outerThreshold ),
+                              new MetricCalculationException( e.getMessage(), e ) );
             }
 
         } );
@@ -709,13 +723,13 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                               input.getMetadata(),
                               MetricInputGroup.DISCRETE_PROBABILITY );
     }
-       
+
     /**
      * Validates the current state for categorical metrics.
      * 
      * @throws MetricConfigurationException
      */
-    
+
     private void validateCategoricalState() throws MetricConfigurationException
     {
 
@@ -723,10 +737,14 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         // have thresholds of type ThresholdType.PROBABILITY_CLASSIFIER
         // Check that the relevant parameters have been set first
 
+        Map<MetricConstants, Set<Threshold>> probabilityClassifiers =
+                this.getThresholdsByMetric().getThresholds( ThresholdGroup.PROBABILITY_CLASSIFIER );
+
         // Dichotomous
         if ( this.hasMetrics( MetricInputGroup.DICHOTOMOUS ) )
         {
             MetricConstants[] check = this.getMetrics( this.metrics, MetricInputGroup.DICHOTOMOUS, null );
+
 
             if ( !Arrays.stream( check ).allMatch( next -> probabilityClassifiers.containsKey( next )
                                                            && !probabilityClassifiers.get( next ).isEmpty() ) )

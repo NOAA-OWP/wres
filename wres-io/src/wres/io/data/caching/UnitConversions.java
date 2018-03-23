@@ -14,7 +14,6 @@ import static wres.io.data.caching.Cache.NEWLINE;
 
 import wres.io.utilities.Database;
 import wres.util.NotImplementedException;
-import wres.util.Strings;
 
 public final class UnitConversions
 {
@@ -101,7 +100,8 @@ public final class UnitConversions
         }
         catch (SQLException e)
         {
-            LOGGER.error(Strings.getStackTrace(e));
+            // Failure to pre-populate cache should not affect primary outputs.
+            LOGGER.warn( "Failed to pre-populate unit conversions cache.", e );
         }
         finally
         {
@@ -113,7 +113,9 @@ public final class UnitConversions
                 }
                 catch (SQLException e)
                 {
-                    LOGGER.error(Strings.getStackTrace(e));
+                    // Exception on close should not affect primary outputs.
+                    LOGGER.warn( "Failed to close unit conversion row results.",
+                                 e );
                 }
             }
 

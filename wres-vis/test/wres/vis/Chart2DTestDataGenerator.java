@@ -27,9 +27,10 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.Threshold;
-import wres.datamodel.Threshold.Operator;
 import wres.datamodel.OneOrTwoThresholds;
+import wres.datamodel.Threshold;
+import wres.datamodel.ThresholdConstants.Operator;
+import wres.datamodel.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.metadata.MetadataFactory;
@@ -73,7 +74,7 @@ public abstract class Chart2DTestDataGenerator
         {
             combine.add( full.filterByThreshold( OneOrTwoThresholds.of( FACTORY.ofQuantileThreshold( FACTORY.ofOneOrTwoDoubles( next[1] ),
                                                                                              FACTORY.ofOneOrTwoDoubles( next[0] ),
-                                                                                             Operator.GREATER ) ) ) );
+                                                                                             Operator.GREATER, ThresholdDataType.LEFT ) ) ) );
         }
         return FACTORY.combine( combine );
     }
@@ -150,7 +151,7 @@ public abstract class Chart2DTestDataGenerator
                 final double[] probConstants = f.getParVal().getConstants();
                 final Threshold q = FACTORY.ofQuantileThreshold( FACTORY.ofOneOrTwoDoubles( constants[0] ),
                                                                  FACTORY.ofOneOrTwoDoubles( probConstants[0] ),
-                                                                 Operator.GREATER );
+                                                                 Operator.GREATER, ThresholdDataType.LEFT );
                 TimeWindow window = TimeWindow.of( Instant.MIN,
                                                    Instant.MAX,
                                                    ReferenceTime.VALID_TIME,
@@ -217,7 +218,7 @@ public abstract class Chart2DTestDataGenerator
                 final double[] probConstants = f.getParVal().getConstants();
                 final Threshold q = FACTORY.ofQuantileThreshold( FACTORY.ofOneOrTwoDoubles( constants[0] ),
                                                                  FACTORY.ofOneOrTwoDoubles( probConstants[0] ),
-                                                                 Operator.GREATER );
+                                                                 Operator.GREATER, ThresholdDataType.LEFT );
                 TimeWindow window = TimeWindow.of( Instant.MIN,
                                                    Instant.MAX,
                                                    ReferenceTime.VALID_TIME,
@@ -259,7 +260,7 @@ public abstract class Chart2DTestDataGenerator
         {
             allowed.add( FACTORY.ofQuantileThreshold( FACTORY.ofOneOrTwoDoubles( next[1] ),
                                                       FACTORY.ofOneOrTwoDoubles( next[0] ),
-                                                      Operator.GREATER ) );
+                                                      Operator.GREATER, ThresholdDataType.LEFT ) );
         }
 
         //Create the input file
@@ -305,7 +306,7 @@ public abstract class Chart2DTestDataGenerator
                 final double[] probConstants = f.getParVal().getConstants();
                 final Threshold q = FACTORY.ofQuantileThreshold( FACTORY.ofOneOrTwoDoubles( constants[0] ),
                                                                  FACTORY.ofOneOrTwoDoubles( probConstants[0] ),
-                                                                 Operator.GREATER );
+                                                                 Operator.GREATER, ThresholdDataType.LEFT );
                 //Read only selected quantiles
                 if ( allowed.contains( q ) )
                 {
@@ -377,7 +378,7 @@ public abstract class Chart2DTestDataGenerator
         {
             allowed.add( FACTORY.ofQuantileThreshold( FACTORY.ofOneOrTwoDoubles( next[1] ),
                                                       FACTORY.ofOneOrTwoDoubles( next[0] ),
-                                                      Operator.GREATER ) );
+                                                      Operator.GREATER, ThresholdDataType.LEFT ) );
         }
 
         //Create the input file
@@ -413,7 +414,7 @@ public abstract class Chart2DTestDataGenerator
                 final double[] probConstants = f.getParVal().getConstants();
                 final Threshold q = FACTORY.ofQuantileThreshold( FACTORY.ofOneOrTwoDoubles( constants[0] ),
                                                                  FACTORY.ofOneOrTwoDoubles( probConstants[0] ),
-                                                                 Operator.GREATER );
+                                                                 Operator.GREATER, ThresholdDataType.LEFT );
                 //Read only selected quantiles
                 if ( allowed.contains( q ) )
                 {
@@ -510,7 +511,7 @@ public abstract class Chart2DTestDataGenerator
                 final double[] probConstants = f.getParVal().getConstants();
                 final Threshold q = FACTORY.ofQuantileThreshold( FACTORY.ofOneOrTwoDoubles( constants[0] ),
                                                                  FACTORY.ofOneOrTwoDoubles( probConstants[0] ),
-                                                                 Operator.GREATER );
+                                                                 Operator.GREATER, ThresholdDataType.LEFT );
                 TimeWindow window = TimeWindow.of( Instant.MIN,
                                                    Instant.MAX,
                                                    ReferenceTime.VALID_TIME,
@@ -587,7 +588,7 @@ public abstract class Chart2DTestDataGenerator
         //Single threshold
         final Threshold threshold = FACTORY.ofQuantileThreshold( FACTORY.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
                                                                  FACTORY.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
-                                                                 Operator.GREATER );
+                                                                 Operator.GREATER, ThresholdDataType.LEFT );
 
         //Iterate through the lead times.
         while ( d.hasNext() )
@@ -650,7 +651,7 @@ public abstract class Chart2DTestDataGenerator
         //Single threshold
         final Threshold threshold = FACTORY.ofQuantileThreshold( FACTORY.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
                                                                  FACTORY.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
-                                                                 Operator.GREATER );
+                                                                 Operator.GREATER, ThresholdDataType.LEFT );
 
         //Iterate through the lead times.
         while ( d.hasNext() )
@@ -723,7 +724,7 @@ public abstract class Chart2DTestDataGenerator
         final Threshold threshold =
                 FACTORY.ofQuantileThreshold( FACTORY.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
                                                    FACTORY.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
-                                                   Operator.GREATER );
+                                                   Operator.GREATER, ThresholdDataType.LEFT );
 
         //Iterate through the lead times.
         while ( d.hasNext() )
@@ -793,7 +794,7 @@ public abstract class Chart2DTestDataGenerator
         // Threshold
         final Threshold threshold = FACTORY.ofQuantileThreshold( FACTORY.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
                                                                  FACTORY.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
-                                                                 Operator.GREATER );
+                                                                 Operator.GREATER, ThresholdDataType.LEFT );
 
         // Source data for the outputs
         double[] sixHourOutputs = new double[] { 0.42, 0.32, 0.54, 0.56, 0.52, 0.82, 0.85, 0.63, 0.79, 0.86 };
@@ -896,7 +897,7 @@ public abstract class Chart2DTestDataGenerator
         };
         // Build the map
         Threshold threshold =
-                FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ), Operator.GREATER );
+                FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ), Operator.GREATER, ThresholdDataType.LEFT );
         for ( int i = 0; i < scores.length; i++ )
         {
             String nextDate = "2017-08-08T" + String.format( "%02d", i ) + ":00:00Z";
@@ -956,7 +957,7 @@ public abstract class Chart2DTestDataGenerator
         Map<Pair<TimeWindow, OneOrTwoThresholds>, PairedOutput<Instant, Duration>> rawData = new TreeMap<>();
         rawData.put( Pair.of( window,
                               OneOrTwoThresholds.of( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
-                                                                  Operator.GREATER ) ) ),
+                                                                  Operator.GREATER, ThresholdDataType.LEFT ) ) ),
                      FACTORY.ofPairedOutput( input, meta ) );
         return FACTORY.ofMap( rawData );
     }
@@ -1007,7 +1008,7 @@ public abstract class Chart2DTestDataGenerator
         Map<Pair<TimeWindow, OneOrTwoThresholds>, DurationScoreOutput> rawData = new TreeMap<>();
         rawData.put( Pair.of( window,
                               OneOrTwoThresholds.of( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
-                                                                  Operator.GREATER ) ) ),
+                                                                  Operator.GREATER, ThresholdDataType.LEFT ) ) ),
                      FACTORY.ofDurationScoreOutput( returnMe, meta ) );
         return FACTORY.ofMap( rawData );
     }

@@ -18,7 +18,6 @@ import wres.io.data.details.EnsembleDetails.EnsembleKey;
 import wres.io.utilities.Database;
 import wres.util.Collections;
 import wres.util.NetCDF;
-import wres.util.Strings;
 
 /**
  * Cached details about Ensembles from the database
@@ -252,8 +251,8 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
         }
         catch (SQLException error)
         {
-            LOGGER.error("An error was encountered when trying to populate the Ensemble cache.");
-            LOGGER.error(Strings.getStackTrace(error));
+            // Failure to pre-populate cache should not affect primary outputs.
+            LOGGER.warn( "An error was encountered when trying to populate the Ensemble cache.", error);
         }
         finally
         {
@@ -265,8 +264,8 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
                 }
                 catch(SQLException e)
                 {
-                    LOGGER.error("An error was encountered when trying to close the result set containing ensemble information.");
-                    LOGGER.error(Strings.getStackTrace(e));
+                    // Exception on close should not affect primary outputs.
+                    LOGGER.warn( "An error was encountered when trying to close the result set containing ensemble information.", e);
                 }
             }
 
@@ -278,8 +277,8 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
                 }
                 catch(SQLException e)
                 {
-                    LOGGER.error("An error was encountered when trying to close the query that loaded ensemble information.");
-                    LOGGER.error(Strings.getStackTrace(e));
+                    // Exception on close should not affect primary outputs.
+                    LOGGER.warn( "An error was encountered when trying to close the query that loaded ensemble information.", e );
                 }
             }
 

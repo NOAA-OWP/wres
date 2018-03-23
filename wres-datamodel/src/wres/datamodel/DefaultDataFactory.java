@@ -16,9 +16,14 @@ import wres.datamodel.SafeMetricOutputMapByMetric.SafeMetricOutputMapByMetricBui
 import wres.datamodel.SafeMetricOutputMultiMapByTimeAndThreshold.SafeMetricOutputMultiMapByTimeAndThresholdBuilder;
 import wres.datamodel.SafeRegularTimeSeriesOfEnsemblePairs.SafeRegularTimeSeriesOfEnsemblePairsBuilder;
 import wres.datamodel.SafeRegularTimeSeriesOfSingleValuedPairs.SafeRegularTimeSeriesOfSingleValuedPairsBuilder;
+import wres.datamodel.SafeThresholdsByMetric.SafeThresholdsByMetricBuilder;
+import wres.datamodel.SafeThresholdsByType.SafeThresholdsByTypeBuilder;
 import wres.datamodel.SafeTimeSeriesOfEnsemblePairs.SafeTimeSeriesOfEnsemblePairsBuilder;
 import wres.datamodel.SafeTimeSeriesOfSingleValuedPairs.SafeTimeSeriesOfSingleValuedPairsBuilder;
-import wres.datamodel.Threshold.Operator;
+import wres.datamodel.ThresholdConstants.Operator;
+import wres.datamodel.ThresholdConstants.ThresholdDataType;
+import wres.datamodel.ThresholdsByMetric.ThresholdsByMetricBuilder;
+import wres.datamodel.ThresholdsByType.ThresholdsByTypeBuilder;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
@@ -100,6 +105,18 @@ public class DefaultDataFactory implements DataFactory
     public OneOrTwoDoubles ofOneOrTwoDoubles( Double first, Double second )
     {
         return SafeOneOrTwoDoubles.of( first, second );
+    }
+    
+    @Override
+    public ThresholdsByMetricBuilder ofThresholdsByMetricBuilder()
+    {
+        return new SafeThresholdsByMetricBuilder();
+    }
+    
+    @Override
+    public ThresholdsByTypeBuilder ofThresholdsByTypeBuilder()
+    {
+        return new SafeThresholdsByTypeBuilder();
     }
     
     @Override
@@ -520,11 +537,13 @@ public class DefaultDataFactory implements DataFactory
     @Override
     public Threshold ofThreshold( final OneOrTwoDoubles values,
                                   final Operator condition,
+                                  final ThresholdDataType dataType,
                                   final String label,
                                   final Dimension units )
     {
         return new SafeThreshold.ThresholdBuilder().setValues( values )
                                                    .setCondition( condition )
+                                                   .setDataType( dataType )
                                                    .setLabel( label )
                                                    .setUnits( units )
                                                    .build();
@@ -533,11 +552,13 @@ public class DefaultDataFactory implements DataFactory
     @Override
     public Threshold ofProbabilityThreshold( final OneOrTwoDoubles probabilities,
                                              final Operator condition,
+                                             final ThresholdDataType dataType,
                                              final String label,
                                              final Dimension units )
     {
         return new SafeThreshold.ThresholdBuilder().setProbabilities( probabilities )
                                                    .setCondition( condition )
+                                                   .setDataType( dataType )
                                                    .setLabel( label )
                                                    .setUnits( units )
                                                    .build();
@@ -547,12 +568,14 @@ public class DefaultDataFactory implements DataFactory
     public Threshold ofQuantileThreshold( final OneOrTwoDoubles values,
                                           final OneOrTwoDoubles probabilities,
                                           final Operator condition,
+                                          final ThresholdDataType dataType,
                                           final String label,
                                           final Dimension units )
     {
         return new SafeThreshold.ThresholdBuilder().setValues( values )
                                                    .setProbabilities( probabilities )
                                                    .setCondition( condition )
+                                                   .setDataType( dataType )
                                                    .setLabel( label )
                                                    .setUnits( units )
                                                    .build();

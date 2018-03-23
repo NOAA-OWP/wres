@@ -51,7 +51,6 @@ import wres.config.generated.DestinationType;
 import wres.config.generated.DurationUnit;
 import wres.config.generated.Feature;
 import wres.config.generated.Format;
-import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
 import wres.config.generated.MetricsConfig;
@@ -68,10 +67,12 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.Dimension;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.Threshold;
-import wres.datamodel.Threshold.Operator;
 import wres.datamodel.OneOrTwoThresholds;
+import wres.datamodel.Threshold;
+import wres.datamodel.ThresholdConstants;
+import wres.datamodel.ThresholdConstants.Operator;
 import wres.datamodel.ThresholdsByType;
+import wres.datamodel.ThresholdsByType.ThresholdsByTypeBuilder;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
@@ -422,6 +423,14 @@ public class ConfigHelper
         return configPlus.getProjectConfig();
     }
 
+    /**
+     * // TODO: document what returning null means to this method to let the
+     * caller decide what can or can't be done with a null response.
+     * @param dataSourceConfig ?
+     * @param filename ?
+     * @return null when ______ (What does it mean for findDataSourceByFilename
+     * to return null?)
+     */
     public static DataSourceConfig.Source findDataSourceByFilename( DataSourceConfig dataSourceConfig, String filename )
     {
         DataSourceConfig.Source source = null;
@@ -1593,37 +1602,34 @@ public class ConfigHelper
         Path commaSeparated = Paths.get( nextSource.getValue() );
 
         // Condition: default to greater
-        Operator operator = ConfigHelper.fromThresholdOperator( threshold.getOperator() );
+        ThresholdConstants.Operator operator = ConfigHelper.getThresholdOperator( threshold );
 
+        // Data type: default to left
+        ThresholdConstants.ThresholdDataType dataType = ConfigHelper.getThresholdDataType( threshold );
+        
+        // Establish the threshold type
+        ThresholdConstants.ThresholdGroup thresholdType = ConfigHelper.getThresholdType( threshold );
+        
         try
         {
             Map<FeaturePlus, Set<Threshold>> read = CommaSeparatedReader.readThresholds( commaSeparated,
                                                                                          isProbability,
                                                                                          operator,
+                                                                                         dataType,
                                                                                          missing,
                                                                                          units );
 
-            // Establish the threshold type
-            final ThresholdsByType.ThresholdType type;
-            // Default to probability
-            if ( Objects.isNull( threshold.getType() ) || threshold.getType() == ThresholdType.PROBABILITY )
-            {
-                type = ThresholdsByType.ThresholdType.PROBABILITY;
-            }
-            else if ( threshold.getType() == ThresholdType.VALUE )
-            {
-                type = ThresholdsByType.ThresholdType.VALUE;
-            }
-            else if ( threshold.getType() == ThresholdType.PROBABILITY_CLASSIFIER )
-            {
-                type = ThresholdsByType.ThresholdType.PROBABILITY_CLASSIFIER;
-            }
-            else
-            {
-                throw new ProjectConfigException( threshold, "Unexpected identifier for threshold type." );
-            }
             // Add to map
-            read.forEach( ( key, value ) -> returnMe.put( key, ThresholdsByType.of( type, value ) ) );
+            for ( Entry<FeaturePlus, Set<Threshold>> next : read.entrySet() )
+            {
+                ThresholdsByTypeBuilder builder = DefaultDataFactory.getInstance().ofThresholdsByTypeBuilder();
+
+                ThresholdsByType thresholds =
+                        builder.addThresholds( next.getValue(), thresholdType ).build();
+
+                returnMe.put( next.getKey(), thresholds );
+            }
+            
         }
         catch ( IOException e )
         {
@@ -1635,6 +1641,129 @@ public class ConfigHelper
 
         return returnMe;
     }
+
+    /**
+     * Converts between {@link ThresholdType} and {@link ThresholdConstants.ThresholdGroup}. If the input is null, the 
+     * default type is {@link ThresholdConstants.ThresholdGroup.PROBABILITY}. Matches on the 
+     * {@link ThresholdType#name()}.
+     * 
+     * TODO: eliminate this when possible to avoid duplication with MetricConfigHelper in the scope of wres-metrics, 
+     * not visible here. 
+     * 
+     * @param threshold the threshold
+     * @return the system type
+     * @throws ProjectConfigException if the input type could not be mapped
+     */
+
+    private static ThresholdConstants.ThresholdGroup getThresholdType( ThresholdsConfig threshold )
+            throws ProjectConfigException
+    {
+        if ( Objects.isNull( threshold.getType() ) )
+        {
+            return ThresholdConstants.ThresholdGroup.PROBABILITY;
+        }
+
+        ThresholdConstants.ThresholdGroup returnMe = null;
+
+        for ( ThresholdConstants.ThresholdGroup nextType : ThresholdConstants.ThresholdGroup.values() )
+        {
+            if ( nextType.name().equals( threshold.getType().name() ) )
+            {
+                returnMe = nextType;
+                break;
+            }
+        }
+
+        if ( Objects.isNull( returnMe ) )
+        {
+            throw new ProjectConfigException( threshold,
+                                              "Could not map the threshold type '" + threshold.getType()
+                                                         + "' to an internal type." );
+        }
+
+        return returnMe;
+    }
+
+    /**
+     * Converts between {@link ThresholdApplicationType} and {@link ThresholdConstants.ThresholdDataType}. If the input 
+     * is null, the default type is {@link ThresholdConstants.ThresholdDataType.LEFT}. Matches on the 
+     * {@link ThresholdType#name()}.
+     * 
+     * TODO: short-term, set the threshold type for #47979, long-term, eliminate this when possible to avoid 
+     * duplication with MetricConfigHelper in the scope of wres-metrics, not visible here. 
+     * 
+     * @param threshold the threshold used to help decorate any exception
+     * @return the system type
+     * @throws ProjectConfigException if the input type could not be mapped
+     */
+
+    private static ThresholdConstants.ThresholdDataType getThresholdDataType( ThresholdsConfig threshold )
+            throws ProjectConfigException
+    {
+        if ( Objects.isNull( threshold.getApplyTo() ) )
+        {
+            return ThresholdConstants.ThresholdDataType.LEFT;
+        }
+
+        ThresholdConstants.ThresholdDataType returnMe = null;
+
+        for ( ThresholdConstants.ThresholdDataType nextType : ThresholdConstants.ThresholdDataType.values() )
+        {
+            if ( nextType.name().equals( threshold.getApplyTo().name() ) )
+            {
+                returnMe = nextType;
+                break;
+            }
+        }
+
+        if ( Objects.isNull( returnMe ) )
+        {
+            throw new ProjectConfigException( threshold,
+                                              "Could not map the threshold application type '" + threshold.getApplyTo()
+                                                         + "' to an internal type." );
+        }
+
+        return returnMe;
+    }
+    
+    /**
+     * Maps between threshold operators in {@link ThresholdOperator} and those in {@link Operator}. The default is
+     * {@link Operator#GREATER} when the input is null.
+     * 
+     * TODO: eliminate this when possible to avoid duplication with MetricConfigHelper in the scope of wres-metrics, 
+     * not visible here. 
+     * 
+     * @param configName the input {@link ThresholdOperator}
+     * @return the corresponding {@link Operator}.
+     * @throws ProjectConfigException if the project configuration is invalid
+     */
+
+    private static Operator getThresholdOperator( ThresholdsConfig threshold ) throws ProjectConfigException
+    {
+        if ( Objects.isNull( threshold.getOperator() ) )
+        {
+            return Operator.GREATER;
+        }
+
+        ThresholdOperator condition = threshold.getOperator();
+
+        switch ( condition )
+        {
+            case EQUAL_TO:
+                return Operator.EQUAL;
+            case LESS_THAN:
+                return Operator.LESS;
+            case LESS_THAN_OR_EQUAL_TO:
+                return Operator.LESS_EQUAL;
+            case GREATER_THAN_OR_EQUAL_TO:
+                return Operator.GREATER_EQUAL;
+            default:
+                throw new ProjectConfigException( threshold,
+                                                  "Could not map the threshold application type '"
+                                                             + threshold.getApplyTo()
+                                                             + "' to an internal type." );
+        }
+    }    
 
     /**
      * Mutates a map of thresholds, adding the thresholds for one metric configuration group.
@@ -1694,35 +1823,6 @@ public class ConfigHelper
                     mutate.put( nextEntry.getKey(), nextMap );
                 }
             }
-        }
-    }
-
-    /**
-     * Maps between threshold operators in {@link ThresholdOperator} and those in {@link Operator}. The default is
-     * {@link Operator#GREATER} when the input is null.
-     * 
-     * @param configName the input {@link ThresholdOperator}
-     * @return the corresponding {@link Operator}.
-     */
-
-    private static Operator fromThresholdOperator( ThresholdOperator configName )
-    {
-        if ( Objects.isNull( configName ) )
-        {
-            return Operator.GREATER;
-        }
-        switch ( configName )
-        {
-            case EQUAL_TO:
-                return Operator.EQUAL;
-            case LESS_THAN:
-                return Operator.LESS;
-            case LESS_THAN_OR_EQUAL_TO:
-                return Operator.LESS_EQUAL;
-            case GREATER_THAN_OR_EQUAL_TO:
-                return Operator.GREATER_EQUAL;
-            default:
-                return Operator.GREATER;
         }
     }
 

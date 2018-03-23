@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-import wres.datamodel.Threshold.ThresholdComposition;
+import wres.datamodel.ThresholdConstants.ThresholdType;
 import wres.datamodel.inputs.MetricInputSliceException;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
@@ -467,7 +467,7 @@ class DefaultSlicer implements Slicer
         
         Objects.requireNonNull( sorted, "Specify a non-null array of sorted values." );
         
-        if ( threshold.getType() != ThresholdComposition.PROBABILITY )
+        if ( threshold.getType() != ThresholdType.PROBABILITY_ONLY )
         {
             throw new IllegalArgumentException( "The input threshold must be a probability threshold." );
         }
@@ -493,6 +493,7 @@ class DefaultSlicer implements Slicer
         return dataFac.ofQuantileThreshold( SafeOneOrTwoDoubles.of( first, second ),
                                             threshold.getProbabilities(),
                                             threshold.getCondition(),
+                                            threshold.getDataType(),
                                             threshold.getLabel(),
                                             threshold.getUnits() );
     }

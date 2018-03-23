@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- This is a test of verifying forecast MAPX vs obs MAP using a value threshold to break out the 0s from non-zeros. -->
+<project label="ExampleProject" name="scenario300">
+
+    <inputs>
+        <left label="">
+            <type>observations</type>
+            <source>../data/abrfcExample/LGNN5_MAP.xml</source>
+            <variable>MAP</variable>
+        </left>
+        <right label="HEFS">
+            <type>ensemble forecasts</type>
+            <source format="PI-XML">../data/abrfcExample/LGNN5_precip_1yr.tgz</source>
+            <variable>MAPX</variable>
+        </right>
+    </inputs>
+
+    <pair label="Pairs by location and lead time"> 
+        <unit>MM</unit>
+        <feature locationId="LGNN5" />
+        <leadHours minimum="1" maximum="48" />
+        <values minimum="1.00" default_minimum="0.0"/>
+<!--        <desiredTimeScale>
+            <function>none</function>
+            <period>6</period>
+            <unit>hours</unit>
+        </desiredTimeScale>
+-->
+    </pair>
+
+    <metrics>
+        <thresholds>
+            <type>value</type> 
+            <commaSeparatedValues>0.0</commaSeparatedValues>
+            <operator>greater than</operator>
+        </thresholds>
+        <metric> <name>mean error</name> </metric>
+        <metric> <name>sample size</name> </metric>
+    </metrics>
+    <outputs>
+        <destination type="numeric" decimalFormat="0.000000">
+            <path>output</path>
+        </destination>
+        <destination type="pairs" decimalFormat="0.000000">
+            <path>output</path>
+        </destination>
+        <destination type="graphic">
+            <path>output/</path>
+            <outputType>lead threshold</outputType>
+            <graphical width="800" height="600">
+            </graphical>
+        </destination>
+    </outputs>
+
+</project>
+

@@ -25,8 +25,9 @@ import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.Threshold.Operator;
 import wres.datamodel.OneOrTwoThresholds;
+import wres.datamodel.ThresholdConstants.Operator;
+import wres.datamodel.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
@@ -114,7 +115,8 @@ public class CommaSeparatedMatrixWriterTest extends CommaSeparatedWriterTest
         Pair<TimeWindow, OneOrTwoThresholds> mapKeyByLeadThreshold =
                 Pair.of( timeOne,
                          OneOrTwoThresholds.of( outputFactory.ofThreshold( outputFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
-                                                                   Operator.GREATER ) ) );
+                                                                   Operator.GREATER,
+                                                                   ThresholdDataType.LEFT ) ) );
 
         outputBuilder.addMatrixOutput( mapKeyByLeadThreshold,
                                        outputMapByMetricFuture );
