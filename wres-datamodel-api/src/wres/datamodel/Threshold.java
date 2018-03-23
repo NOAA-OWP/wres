@@ -4,7 +4,8 @@ import java.util.Objects;
 import java.util.function.Predicate;
 
 import wres.datamodel.ThresholdConstants.Operator;
-import wres.datamodel.ThresholdConstants.ThresholdComposition;
+import wres.datamodel.ThresholdConstants.ThresholdDataType;
+import wres.datamodel.ThresholdConstants.ThresholdType;
 
 /**
  * <p>Stores a threshold value and associated logical condition. A threshold comprises one or both of: 
@@ -86,24 +87,32 @@ public interface Threshold extends Comparable<Threshold>, Predicate<Double>
     }
 
     /**
-     * Returns the {@link ThresholdComposition}.
+     * Returns the {@link ThresholdType}.
      * 
      * @return the threshold type
      */
 
-    default ThresholdComposition getType()
+    default ThresholdType getType()
     {
         if ( this.isQuantile() )
         {
-            return ThresholdComposition.QUANTILE;
+            return ThresholdType.PROBABILITY_AND_VALUE;
         }
         if ( this.hasProbabilities() )
         {
-            return ThresholdComposition.PROBABILITY;
+            return ThresholdType.PROBABILITY_ONLY;
         }
-        return ThresholdComposition.VALUE;
+        return ThresholdType.VALUE_ONLY;
     }
+    
+    /**
+     * Returns the {@link ThresholdDataType} to which the threshold applies.
+     * 
+     * @return the threshold data type
+     */
 
+    ThresholdDataType getDataType();
+    
     /**
      * Returns the threshold values or null if no threshold values are defined. If no threshold values are defined,
      * {@link #getProbabilities()} always returns non-null.

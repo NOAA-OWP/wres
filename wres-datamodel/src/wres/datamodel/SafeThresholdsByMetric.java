@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.datamodel.ThresholdConstants.ThresholdType;
+import wres.datamodel.ThresholdConstants.ThresholdGroup;
 
 /**
  * Immutable implementation of {@link ThresholdsByMetric}.
@@ -43,45 +43,45 @@ public class SafeThresholdsByMetric implements ThresholdsByMetric
     private static final String NULL_THRESHOLD_TYPE_ERROR = "Specify a non-null threshold type.";
 
     /**
-     * Thresholds by {@link ThresholdType#PROBABILITY}.
+     * Thresholds by {@link ThresholdGroup#PROBABILITY}.
      */
 
     private Map<MetricConstants, Set<Threshold>> probabilities = new EnumMap<>( MetricConstants.class );
 
     /**
-     * Thresholds by {@link ThresholdType#VALUE}.
+     * Thresholds by {@link ThresholdGroup#VALUE}.
      */
 
     private Map<MetricConstants, Set<Threshold>> values = new EnumMap<>( MetricConstants.class );
 
     /**
-     * Thresholds by {@link ThresholdType#PROBABILITY_CLASSIFIER}.
+     * Thresholds by {@link ThresholdGroup#PROBABILITY_CLASSIFIER}.
      */
 
     private Map<MetricConstants, Set<Threshold>> probabilityClassifiers = new EnumMap<>( MetricConstants.class );
 
     /**
-     * Thresholds by {@link ThresholdType#QUANTILE}.
+     * Thresholds by {@link ThresholdGroup#QUANTILE}.
      */
 
     private Map<MetricConstants, Set<Threshold>> quantiles = new EnumMap<>( MetricConstants.class );
 
     @Override
-    public Map<MetricConstants, Set<Threshold>> getThresholds( ThresholdType type )
+    public Map<MetricConstants, Set<Threshold>> getThresholds( ThresholdGroup type )
     {
         Objects.requireNonNull( type, NULL_THRESHOLD_TYPE_ERROR );
 
         Map<MetricConstants, Set<Threshold>> returnMe = new EnumMap<>( MetricConstants.class );
 
-        if ( type == ThresholdType.PROBABILITY )
+        if ( type == ThresholdGroup.PROBABILITY )
         {
             returnMe.putAll( this.getProbabilities() );
         }
-        else if ( type == ThresholdType.VALUE )
+        else if ( type == ThresholdGroup.VALUE )
         {
             returnMe.putAll( this.getValues() );
         }
-        else if ( type == ThresholdType.PROBABILITY_CLASSIFIER )
+        else if ( type == ThresholdGroup.PROBABILITY_CLASSIFIER )
         {
             returnMe.putAll( this.getProbabilityClassifiers() );
         }
@@ -94,7 +94,7 @@ public class SafeThresholdsByMetric implements ThresholdsByMetric
     }
 
     @Override
-    public boolean hasType( ThresholdType type )
+    public boolean hasType( ThresholdGroup type )
     {
         Objects.requireNonNull( type, NULL_THRESHOLD_TYPE_ERROR );
 
@@ -107,7 +107,7 @@ public class SafeThresholdsByMetric implements ThresholdsByMetric
         Set<Threshold> union = new HashSet<>();
 
         // Iterate the types
-        for ( ThresholdType nextType : ThresholdType.values() )
+        for ( ThresholdGroup nextType : ThresholdGroup.values() )
         {
             this.getThresholds( nextType ).values().forEach( union::addAll );
         }
@@ -118,11 +118,11 @@ public class SafeThresholdsByMetric implements ThresholdsByMetric
     @Override
     public Set<Threshold> unionForThisMetric( MetricConstants metric )
     {
-        return this.unionForThisMetricAndTheseTypes( metric, ThresholdType.values() );
+        return this.unionForThisMetricAndTheseTypes( metric, ThresholdGroup.values() );
     }
 
     @Override
-    public Set<Threshold> unionForTheseTypes( ThresholdType... type )
+    public Set<Threshold> unionForTheseTypes( ThresholdGroup... type )
     {
         if ( Objects.isNull( type ) || type.length == 0 )
         {
@@ -132,7 +132,7 @@ public class SafeThresholdsByMetric implements ThresholdsByMetric
         Set<Threshold> union = new HashSet<>();
 
         // Iterate the types
-        for ( ThresholdType nextType : ThresholdType.values() )
+        for ( ThresholdGroup nextType : ThresholdGroup.values() )
         {
             if ( Arrays.asList( type ).contains( nextType ) )
             {
@@ -144,7 +144,7 @@ public class SafeThresholdsByMetric implements ThresholdsByMetric
     }
 
     @Override
-    public Set<Threshold> unionForThisMetricAndTheseTypes( MetricConstants metric, ThresholdType... type )
+    public Set<Threshold> unionForThisMetricAndTheseTypes( MetricConstants metric, ThresholdGroup... type )
     {
         Objects.requireNonNull( metric, NULL_METRIC_ERROR );
 
@@ -153,7 +153,7 @@ public class SafeThresholdsByMetric implements ThresholdsByMetric
         // Iterate the types if non-null
         if ( Objects.nonNull( type ) )
         {
-            for ( ThresholdType nextType : type )
+            for ( ThresholdGroup nextType : type )
             {
                 if ( this.getThresholds( nextType ).containsKey( metric ) )
                 {
@@ -179,7 +179,7 @@ public class SafeThresholdsByMetric implements ThresholdsByMetric
         SafeThresholdsByMetricBuilder builder = new SafeThresholdsByMetricBuilder();
 
         // Find the union for each type
-        for ( ThresholdType nextType : ThresholdType.values() )
+        for ( ThresholdGroup nextType : ThresholdGroup.values() )
         {
             if ( this.hasType( nextType ) || thresholds.hasType( nextType ) )
             {
@@ -220,11 +220,11 @@ public class SafeThresholdsByMetric implements ThresholdsByMetric
     }
 
     @Override
-    public Set<ThresholdType> getThresholdTypes()
+    public Set<ThresholdGroup> getThresholdTypes()
     {
-        Set<ThresholdType> types = new HashSet<>();
+        Set<ThresholdGroup> types = new HashSet<>();
 
-        for ( ThresholdType nextType : ThresholdType.values() )
+        for ( ThresholdGroup nextType : ThresholdGroup.values() )
         {
             if ( this.hasType( nextType ) )
             {
@@ -236,14 +236,14 @@ public class SafeThresholdsByMetric implements ThresholdsByMetric
     }
 
     @Override
-    public Set<ThresholdType> getThresholdTypesForThisMetric( MetricConstants metric )
+    public Set<ThresholdGroup> getThresholdTypesForThisMetric( MetricConstants metric )
     {
         Objects.requireNonNull( metric, NULL_METRIC_ERROR );
 
-        Set<ThresholdType> types = new HashSet<>();
+        Set<ThresholdGroup> types = new HashSet<>();
 
         // Iterate the types
-        for ( ThresholdType nextType : ThresholdType.values() )
+        for ( ThresholdGroup nextType : ThresholdGroup.values() )
         {
             if ( this.getThresholds( nextType ).containsKey( metric ) )
             {
@@ -262,7 +262,7 @@ public class SafeThresholdsByMetric implements ThresholdsByMetric
         Set<MetricConstants> metrics = new HashSet<>();
 
         // Filter each set, collecting those metrics for which the input threshold is specified
-        for ( ThresholdType nextType : ThresholdType.values() )
+        for ( ThresholdGroup nextType : ThresholdGroup.values() )
         {
             metrics.addAll( this.filterByThreshold( this.getThresholds( nextType ), threshold ) );
         }
@@ -288,7 +288,7 @@ public class SafeThresholdsByMetric implements ThresholdsByMetric
     {
         Set<MetricConstants> returnMe = new HashSet<>();
 
-        for ( ThresholdType nextType : ThresholdType.values() )
+        for ( ThresholdGroup nextType : ThresholdGroup.values() )
         {
             returnMe.addAll( this.getThresholds( nextType ).keySet() );
         }
@@ -297,9 +297,9 @@ public class SafeThresholdsByMetric implements ThresholdsByMetric
     }
 
     @Override
-    public ThresholdsByMetric filterByType( ThresholdType... type )
+    public ThresholdsByMetric filterByType( ThresholdGroup... type )
     {
-        if ( Objects.nonNull( type ) && Arrays.equals( type, ThresholdType.values() ) )
+        if ( Objects.nonNull( type ) && Arrays.equals( type, ThresholdGroup.values() ) )
         {
             return this;
         }
@@ -309,7 +309,7 @@ public class SafeThresholdsByMetric implements ThresholdsByMetric
         // Add the stored types within the input array
         if ( Objects.nonNull( type ) )
         {
-            for ( ThresholdType nextType : ThresholdType.values() )
+            for ( ThresholdGroup nextType : ThresholdGroup.values() )
             {
                 // Filter by type
                 if ( Arrays.asList( type ).contains( nextType ) )
@@ -347,7 +347,7 @@ public class SafeThresholdsByMetric implements ThresholdsByMetric
         SafeThresholdsByMetricBuilder builder = new SafeThresholdsByMetricBuilder();
 
         // Add the filtered thresholds for each type
-        for ( ThresholdType nextType : ThresholdType.values() )
+        for ( ThresholdGroup nextType : ThresholdGroup.values() )
         {
             this.addFilteredThresholdsByGroup( builder, nextType, this.getThresholds( nextType ), test );
         }
@@ -367,21 +367,21 @@ public class SafeThresholdsByMetric implements ThresholdsByMetric
         for ( MetricConstants next : union )
         {
             //Non-classifiers
-            Set<ThresholdType> types = new HashSet<>( this.getThresholdTypesForThisMetric( next ) );
-            types.removeIf( type -> type == ThresholdType.PROBABILITY_CLASSIFIER );
+            Set<ThresholdGroup> types = new HashSet<>( this.getThresholdTypesForThisMetric( next ) );
+            types.removeIf( type -> type == ThresholdGroup.PROBABILITY_CLASSIFIER );
             Set<Threshold> nonClassifiers =
-                    this.unionForThisMetricAndTheseTypes( next, types.toArray( new ThresholdType[types.size()] ) );
+                    this.unionForThisMetricAndTheseTypes( next, types.toArray( new ThresholdGroup[types.size()] ) );
 
             // Thresholds to add
             Set<OneOrTwoThresholds> oneOrTwo = new HashSet<>();
 
             // Dichotomous metrics with classifiers
             if ( next.isInGroup( MetricInputGroup.DICHOTOMOUS )
-                 && this.hasType( ThresholdType.PROBABILITY_CLASSIFIER ) )
+                 && this.hasType( ThresholdGroup.PROBABILITY_CLASSIFIER ) )
             {
                 // Classifiers
                 Set<Threshold> classifiers =
-                        this.unionForThisMetricAndTheseTypes( next, ThresholdType.PROBABILITY_CLASSIFIER );
+                        this.unionForThisMetricAndTheseTypes( next, ThresholdGroup.PROBABILITY_CLASSIFIER );
 
                 for ( Threshold first : nonClassifiers )
                 {
@@ -415,32 +415,32 @@ public class SafeThresholdsByMetric implements ThresholdsByMetric
     {
 
         /**
-         * Thresholds by {@link ThresholdType#PROBABILITY}.
+         * Thresholds by {@link ThresholdGroup#PROBABILITY}.
          */
 
         private Map<MetricConstants, Set<Threshold>> probabilities = new EnumMap<>( MetricConstants.class );
 
         /**
-         * Thresholds by {@link ThresholdType#VALUE}.
+         * Thresholds by {@link ThresholdGroup#VALUE}.
          */
 
         private Map<MetricConstants, Set<Threshold>> values = new EnumMap<>( MetricConstants.class );
 
         /**
-         * Thresholds by {@link ThresholdType#PROBABILITY_CLASSIFIER}.
+         * Thresholds by {@link ThresholdGroup#PROBABILITY_CLASSIFIER}.
          */
 
         private Map<MetricConstants, Set<Threshold>> probabilityClassifiers = new EnumMap<>( MetricConstants.class );
 
         /**
-         * Thresholds by {@link ThresholdType#QUANTILE}.
+         * Thresholds by {@link ThresholdGroup#QUANTILE}.
          */
 
         private Map<MetricConstants, Set<Threshold>> quantiles = new EnumMap<>( MetricConstants.class );
 
         @Override
         public ThresholdsByMetricBuilder addThresholds( Map<MetricConstants, Set<Threshold>> thresholds,
-                                                        ThresholdType thresholdType )
+                                                        ThresholdGroup thresholdType )
         {
             Objects.requireNonNull( thresholds, "Cannot build a store of thresholds with null thresholds." );
 
@@ -452,19 +452,19 @@ public class SafeThresholdsByMetric implements ThresholdsByMetric
                 Map<MetricConstants, Set<Threshold>> container = null;
 
                 // Determine type of container
-                if ( thresholdType == ThresholdType.PROBABILITY )
+                if ( thresholdType == ThresholdGroup.PROBABILITY )
                 {
                     container = this.probabilities;
                 }
-                else if ( thresholdType == ThresholdType.PROBABILITY_CLASSIFIER )
+                else if ( thresholdType == ThresholdGroup.PROBABILITY_CLASSIFIER )
                 {
                     container = this.probabilityClassifiers;
                 }
-                else if ( thresholdType == ThresholdType.QUANTILE )
+                else if ( thresholdType == ThresholdGroup.QUANTILE )
                 {
                     container = this.quantiles;
                 }
-                else if ( thresholdType == ThresholdType.VALUE )
+                else if ( thresholdType == ThresholdGroup.VALUE )
                 {
                     container = this.values;
                 }
@@ -608,7 +608,7 @@ public class SafeThresholdsByMetric implements ThresholdsByMetric
      */
 
     private void addFilteredThresholdsByGroup( SafeThresholdsByMetricBuilder builder,
-                                               ThresholdType type,
+                                               ThresholdGroup type,
                                                Map<MetricConstants, Set<Threshold>> thresholds,
                                                Predicate<MetricConstants> test )
     {
@@ -633,7 +633,7 @@ public class SafeThresholdsByMetric implements ThresholdsByMetric
         Set<MetricConstants> union = new HashSet<>();
 
         // Iterate the types
-        for ( ThresholdType nextType : ThresholdType.values() )
+        for ( ThresholdGroup nextType : ThresholdGroup.values() )
         {
             union.addAll( this.getThresholds( nextType ).keySet() );
         }

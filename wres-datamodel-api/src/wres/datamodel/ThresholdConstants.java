@@ -35,7 +35,7 @@ public final class ThresholdConstants
         LESS_EQUAL,
 
         /**
-         * Identifier for greater than or equal to
+         * Identifier for greater than or equal to.
          */
 
         GREATER_EQUAL,
@@ -54,10 +54,10 @@ public final class ThresholdConstants
     }
 
     /**
-     * An enumeration of the composition of a {@link Threshold}.
+     * An enumeration of the components within a single threshold.
      */
 
-    public enum ThresholdComposition
+    public enum ThresholdType
     {
 
         /**
@@ -66,7 +66,7 @@ public final class ThresholdConstants
          * one value.
          */
 
-        PROBABILITY,
+        PROBABILITY_ONLY,
 
         /**
          * A {@link Threshold} that comprises one or two real values only. A {@link Threshold} has two 
@@ -74,7 +74,7 @@ public final class ThresholdConstants
          * value.
          */
 
-        VALUE,
+        VALUE_ONLY,
 
         /**
          * A {@link Threshold} that comprises both real values and probability values. It contains the same number of 
@@ -82,15 +82,15 @@ public final class ThresholdConstants
          * <code>true</code>, otherwise one value for each.
          */
 
-        QUANTILE;
+        PROBABILITY_AND_VALUE;
 
     }    
 
     /**
-     * An enumeration of types to which the thresholds should be applied.
+     * An enumeration of the data types to which a {@link Threshold} should be applied.
      */
 
-    public enum ApplicationType
+    public enum ThresholdDataType
     {
 
         /**
@@ -120,32 +120,32 @@ public final class ThresholdConstants
     }    
     
     /**
-     * An enumeration of threshold types.
+     * An enumeration of threshold groups.
      */
     
-    public enum ThresholdType
+    public enum ThresholdGroup
     {
         
         /**
-         * Probability threshold.
+         * A group of thresholds that denote probabilities.
          */
         
         PROBABILITY,
         
         /**
-         * Value threshold.
+         * A group of thresholds that denote real values.
          */
         
         VALUE,
         
         /**
-         * Quantile threshold.
+         * A group of thresholds that denote quantiles.
          */
         
         QUANTILE,
         
         /**
-         * Probability classifier threshold.
+         * A group of thresholds that denote probabilities used for classification.
          */
         
         PROBABILITY_CLASSIFIER;        

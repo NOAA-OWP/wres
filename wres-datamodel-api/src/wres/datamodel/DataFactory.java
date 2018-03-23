@@ -13,6 +13,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.ThresholdConstants.Operator;
+import wres.datamodel.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.ThresholdsByMetric.ThresholdsByMetricBuilder;
 import wres.datamodel.ThresholdsByType.ThresholdsByTypeBuilder;
 import wres.datamodel.inputs.MetricInputException;
@@ -69,12 +70,12 @@ public interface DataFactory
      * @param first the first value
      * @return a composition of doubles
      */
-    
+
     default OneOrTwoDoubles ofOneOrTwoDoubles( Double first )
     {
         return this.ofOneOrTwoDoubles( first, null );
     }
-    
+
     /**
      * Convenience method that returns a {@link Pair} to map a {@link MetricOutput} by {@link TimeWindow} and
      * {@link OneOrTwoThresholds}.
@@ -82,14 +83,16 @@ public interface DataFactory
      * @param timeWindow the time window
      * @param values the values
      * @param condition the threshold condition
+     * @param dataType the data to which the threshold applies
      * @return a map key
      */
 
     default Pair<TimeWindow, OneOrTwoThresholds> ofMapKeyByTimeThreshold( TimeWindow timeWindow,
-                                                                  OneOrTwoDoubles values,
-                                                                  Operator condition )
+                                                                          OneOrTwoDoubles values,
+                                                                          Operator condition,
+                                                                          ThresholdDataType dataType )
     {
-        return Pair.of( timeWindow, OneOrTwoThresholds.of( this.ofThreshold( values, condition ) ) );
+        return Pair.of( timeWindow, OneOrTwoThresholds.of( this.ofThreshold( values, condition, dataType ) ) );
     }
 
     /**
@@ -97,12 +100,13 @@ public interface DataFactory
      * 
      * @param values the values
      * @param condition the threshold condition
+     * @param dataType the data to which the threshold applies
      * @return a threshold
      */
 
-    default Threshold ofThreshold( OneOrTwoDoubles values, Operator condition )
+    default Threshold ofThreshold( OneOrTwoDoubles values, Operator condition, ThresholdDataType dataType )
     {
-        return this.ofThreshold( values, condition, null, null );
+        return this.ofThreshold( values, condition, dataType, null, null );
     }
 
     /**
@@ -111,12 +115,16 @@ public interface DataFactory
      * @param values the values
      * @param condition the threshold condition
      * @param units the optional units for the threshold values
+     * @param dataType the data to which the threshold applies
      * @return a threshold
      */
 
-    default Threshold ofThreshold( OneOrTwoDoubles values, Operator condition, Dimension units )
+    default Threshold ofThreshold( OneOrTwoDoubles values,
+                                   Operator condition,
+                                   ThresholdDataType dataType,
+                                   Dimension units )
     {
-        return this.ofThreshold( values, condition, null, units );
+        return this.ofThreshold( values, condition, dataType, null, units );
     }
 
     /**
@@ -125,12 +133,16 @@ public interface DataFactory
      * @param values the values
      * @param condition the threshold condition
      * @param label an optional label
+     * @param dataType the data to which the threshold applies
      * @return a threshold
      */
 
-    default Threshold ofThreshold( OneOrTwoDoubles values, Operator condition, String label )
+    default Threshold ofThreshold( OneOrTwoDoubles values,
+                                   Operator condition,
+                                   ThresholdDataType dataType,
+                                   String label )
     {
-        return this.ofThreshold( values, condition, label, null );
+        return this.ofThreshold( values, condition, dataType, label, null );
     }
 
     /**
@@ -138,12 +150,15 @@ public interface DataFactory
      * 
      * @param probabilities the probabilities
      * @param condition the threshold condition
+     * @param dataType the data to which the threshold applies
      * @return a threshold
      */
 
-    default Threshold ofProbabilityThreshold( OneOrTwoDoubles probabilities, Operator condition )
+    default Threshold ofProbabilityThreshold( OneOrTwoDoubles probabilities,
+                                              Operator condition,
+                                              ThresholdDataType dataType )
     {
-        return this.ofProbabilityThreshold( probabilities, condition, null, null );
+        return this.ofProbabilityThreshold( probabilities, condition, dataType, null, null );
     }
 
     /**
@@ -151,13 +166,17 @@ public interface DataFactory
      * 
      * @param probabilities the probabilities
      * @param condition the threshold condition
+     * @param dataType the data to which the threshold applies
      * @param units the optional units for the threshold values
      * @return a threshold
      */
 
-    default Threshold ofProbabilityThreshold( OneOrTwoDoubles probabilities, Operator condition, Dimension units )
+    default Threshold ofProbabilityThreshold( OneOrTwoDoubles probabilities,
+                                              Operator condition,
+                                              ThresholdDataType dataType,
+                                              Dimension units )
     {
-        return this.ofProbabilityThreshold( probabilities, condition, null, units );
+        return this.ofProbabilityThreshold( probabilities, condition, dataType, null, units );
     }
 
     /**
@@ -165,13 +184,17 @@ public interface DataFactory
      * 
      * @param probabilities the probabilities
      * @param condition the threshold condition
+     * @param dataType the data to which the threshold applies
      * @param label an optional label
      * @return a threshold
      */
 
-    default Threshold ofProbabilityThreshold( OneOrTwoDoubles probabilities, Operator condition, String label )
+    default Threshold ofProbabilityThreshold( OneOrTwoDoubles probabilities,
+                                              Operator condition,
+                                              ThresholdDataType dataType,
+                                              String label )
     {
-        return this.ofProbabilityThreshold( probabilities, condition, label, null );
+        return this.ofProbabilityThreshold( probabilities, condition, dataType, label, null );
     }
 
     /**
@@ -180,12 +203,16 @@ public interface DataFactory
      * @param values the values
      * @param probabilities the probabilities
      * @param condition the threshold condition
+     * @param dataType the data to which the threshold applies
      * @return a threshold
      */
 
-    default Threshold ofQuantileThreshold( OneOrTwoDoubles values, OneOrTwoDoubles probabilities, Operator condition )
+    default Threshold ofQuantileThreshold( OneOrTwoDoubles values,
+                                           OneOrTwoDoubles probabilities,
+                                           Operator condition,
+                                           ThresholdDataType dataType )
     {
-        return this.ofQuantileThreshold( values, probabilities, condition, null, null );
+        return this.ofQuantileThreshold( values, probabilities, condition, dataType, null, null );
     }
 
     /**
@@ -194,6 +221,7 @@ public interface DataFactory
      * @param values the values
      * @param probabilities the probabilities
      * @param condition the threshold condition
+     * @param dataType the data to which the threshold applies
      * @param units the optional units for the threshold values
      * @return a threshold
      */
@@ -201,9 +229,10 @@ public interface DataFactory
     default Threshold ofQuantileThreshold( OneOrTwoDoubles values,
                                            OneOrTwoDoubles probabilities,
                                            Operator condition,
+                                           ThresholdDataType dataType,
                                            Dimension units )
     {
-        return this.ofQuantileThreshold( values, probabilities, condition, null, units );
+        return this.ofQuantileThreshold( values, probabilities, condition, dataType, null, units );
     }
 
     /**
@@ -212,6 +241,7 @@ public interface DataFactory
      * @param values the values
      * @param probabilities the probabilities
      * @param condition the threshold condition
+     * @param dataType the data to which the threshold applies
      * @param label an optional label
      * @return a threshold
      */
@@ -219,9 +249,10 @@ public interface DataFactory
     default Threshold ofQuantileThreshold( OneOrTwoDoubles values,
                                            OneOrTwoDoubles probabilities,
                                            Operator condition,
+                                           ThresholdDataType dataType,
                                            String label )
     {
-        return this.ofQuantileThreshold( values, probabilities, condition, label, null );
+        return this.ofQuantileThreshold( values, probabilities, condition, dataType, label, null );
     }
 
     /**
@@ -686,7 +717,7 @@ public interface DataFactory
      */
 
     Slicer getSlicer();
-    
+
     /**
      * Returns an instance of {@link OneOrTwoDoubles}.
      * 
@@ -694,7 +725,7 @@ public interface DataFactory
      * @param second the second value, which is optional
      * @return a composition of doubles
      */
-    
+
     OneOrTwoDoubles ofOneOrTwoDoubles( Double first, Double second );
 
     /**
@@ -702,18 +733,24 @@ public interface DataFactory
      * 
      * @param values the threshold values
      * @param condition the threshold condition
+     * @param dataType the data to which the threshold applies
      * @param label an optional label
      * @param units the optional units for the threshold values
      * @return a threshold
      */
 
-    Threshold ofThreshold( OneOrTwoDoubles values, Operator condition, String label, Dimension units );
+    Threshold ofThreshold( OneOrTwoDoubles values,
+                           Operator condition,
+                           ThresholdDataType dataType,
+                           String label,
+                           Dimension units );
 
     /**
      * Returns {@link Threshold} from the specified input. Both inputs must be in the unit interval, [0,1].
      * 
      * @param probabilities the probabilities
      * @param condition the threshold condition
+     * @param dataType the data to which the threshold applies
      * @param label an optional label
      * @param units an optional set of units to use when deriving quantiles from probability thresholds
      * @return a threshold
@@ -721,6 +758,7 @@ public interface DataFactory
 
     Threshold ofProbabilityThreshold( OneOrTwoDoubles probabilities,
                                       Operator condition,
+                                      ThresholdDataType dataType,
                                       String label,
                                       Dimension units );
 
@@ -730,6 +768,7 @@ public interface DataFactory
      * @param values the value or null
      * @param probabilities the probabilities or null
      * @param condition the threshold condition
+     * @param dataType the data to which the threshold applies
      * @param label an optional label
      * @param units the optional units for the quantiles
      * @return a quantile
@@ -738,25 +777,26 @@ public interface DataFactory
     Threshold ofQuantileThreshold( OneOrTwoDoubles values,
                                    OneOrTwoDoubles probabilities,
                                    Operator condition,
+                                   ThresholdDataType dataType,
                                    String label,
                                    Dimension units );
-    
+
     /**
      * Returns a builder for a {@link ThresholdsByMetric}.
      * 
      * @return a builder
      */
-    
+
     ThresholdsByMetricBuilder ofThresholdsByMetricBuilder();
-    
+
     /**
      * Returns a builder for a {@link ThresholdsByType}.
      * 
      * @return a builder
      */
-    
-    ThresholdsByTypeBuilder ofThresholdsByTypeBuilder();    
-    
+
+    ThresholdsByTypeBuilder ofThresholdsByTypeBuilder();
+
     /**
      * Construct the single-valued input with a baseline.
      * 

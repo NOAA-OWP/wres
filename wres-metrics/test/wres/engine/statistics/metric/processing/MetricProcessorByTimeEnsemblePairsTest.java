@@ -21,6 +21,7 @@ import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.OneOrTwoThresholds;
 import wres.datamodel.ThresholdConstants.Operator;
+import wres.datamodel.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
@@ -851,9 +852,9 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         Pair<TimeWindow, OneOrTwoThresholds> first =
                 Pair.of( expectedWindow,
                          OneOrTwoThresholds.of( metIn.ofThreshold( metIn.ofOneOrTwoDoubles( 50.0 ),
-                                                                   Operator.GREATER ),
+                                                                   Operator.GREATER, ThresholdDataType.LEFT ),
                                                 metIn.ofProbabilityThreshold( metIn.ofOneOrTwoDoubles( 0.05 ),
-                                                                   Operator.GREATER ) ) );
+                                                                   Operator.GREATER, ThresholdDataType.LEFT ) ) );
 
         assertTrue( "Unexpected results for the contingency table.",
                     expectedFirst.equals( results.get( MetricConstants.CONTINGENCY_TABLE )
@@ -865,9 +866,9 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         Pair<TimeWindow, OneOrTwoThresholds> second =
                 Pair.of( expectedWindow,
                          OneOrTwoThresholds.of( metIn.ofThreshold( metIn.ofOneOrTwoDoubles( 50.0 ),
-                                                                   Operator.GREATER ),
+                                                                   Operator.GREATER, ThresholdDataType.LEFT ),
                                                 metIn.ofProbabilityThreshold( metIn.ofOneOrTwoDoubles( 0.25 ),
-                                                                   Operator.GREATER ) ) );
+                                                                   Operator.GREATER, ThresholdDataType.LEFT ) ) );
 
         assertTrue( "Unexpected results for the contingency table.",
                     expectedSecond.equals( results.get( MetricConstants.CONTINGENCY_TABLE )
@@ -879,9 +880,9 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         Pair<TimeWindow, OneOrTwoThresholds> third =
                 Pair.of( expectedWindow,
                          OneOrTwoThresholds.of( metIn.ofThreshold( metIn.ofOneOrTwoDoubles( 50.0 ),
-                                                                   Operator.GREATER ),
+                                                                   Operator.GREATER, ThresholdDataType.LEFT ),
                                                 metIn.ofProbabilityThreshold( metIn.ofOneOrTwoDoubles( 0.5 ),
-                                                                   Operator.GREATER ) ) );
+                                                                   Operator.GREATER, ThresholdDataType.LEFT ) ) );
 
         assertTrue( "Unexpected results for the contingency table.",
                     expectedThird.equals( results.get( MetricConstants.CONTINGENCY_TABLE )
@@ -893,9 +894,9 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         Pair<TimeWindow, OneOrTwoThresholds> fourth =
                 Pair.of( expectedWindow,
                          OneOrTwoThresholds.of( metIn.ofThreshold( metIn.ofOneOrTwoDoubles( 50.0 ),
-                                                                   Operator.GREATER ),
+                                                                   Operator.GREATER, ThresholdDataType.LEFT ),
                                                 metIn.ofProbabilityThreshold( metIn.ofOneOrTwoDoubles( 0.75 ),
-                                                                   Operator.GREATER ) ) );
+                                                                   Operator.GREATER, ThresholdDataType.LEFT ) ) );
 
         assertTrue( "Unexpected results for the contingency table.",
                     expectedFourth.equals( results.get( MetricConstants.CONTINGENCY_TABLE )
@@ -907,9 +908,9 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         Pair<TimeWindow, OneOrTwoThresholds> fifth =
                 Pair.of( expectedWindow,
                          OneOrTwoThresholds.of( metIn.ofThreshold( metIn.ofOneOrTwoDoubles( 50.0 ),
-                                                                   Operator.GREATER ),
+                                                                   Operator.GREATER, ThresholdDataType.LEFT ),
                                                 metIn.ofProbabilityThreshold( metIn.ofOneOrTwoDoubles( 0.9 ),
-                                                                   Operator.GREATER ) ) );
+                                                                   Operator.GREATER, ThresholdDataType.LEFT ) ) );
 
         assertTrue( "Unexpected results for the contingency table.",
                     expectedFifth.equals( results.get( MetricConstants.CONTINGENCY_TABLE )
@@ -921,9 +922,10 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         Pair<TimeWindow, OneOrTwoThresholds> sixth =
                 Pair.of( expectedWindow,
                          OneOrTwoThresholds.of( metIn.ofThreshold( metIn.ofOneOrTwoDoubles( 50.0 ),
-                                                                   Operator.GREATER ),
+                                                                   Operator.GREATER, ThresholdDataType.LEFT ),
                                                 metIn.ofProbabilityThreshold( metIn.ofOneOrTwoDoubles( 0.95 ),
-                                                                   Operator.GREATER ) ) );
+                                                                              Operator.GREATER,
+                                                                              ThresholdDataType.LEFT ) ) );
 
         assertTrue( "Unexpected results for the contingency table.",
                     expectedSixth.equals( results.get( MetricConstants.CONTINGENCY_TABLE )

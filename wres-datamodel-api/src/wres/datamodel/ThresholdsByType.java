@@ -2,10 +2,10 @@ package wres.datamodel;
 
 import java.util.Set;
 
-import wres.datamodel.ThresholdConstants.ThresholdType;
+import wres.datamodel.ThresholdConstants.ThresholdGroup;
 
 /**
- * A container of {@link Threshold} by {@link ThresholdType}.
+ * A container of {@link Threshold} by {@link ThresholdGroup}.
  * 
  * TODO: eliminate this container when possible, in favor of {@link ThresholdsByMetric}.
  * 
@@ -16,14 +16,14 @@ public interface ThresholdsByType
 {
 
     /**
-     * Returns the thresholds by {@link ThresholdType}.
+     * Returns the thresholds by {@link ThresholdGroup}.
      * 
      * @param type the type of threshold
      * @return the thresholds for a specified type
      * @throws NullPointerException if the input is null
      */
 
-    Set<Threshold> getThresholdsByType( ThresholdType type );
+    Set<Threshold> getThresholdsByType( ThresholdGroup type );
 
     /**
      * Returns <code>true</code> if the store contains thresholds for the specified type, otherwise <code>false</code>.
@@ -33,15 +33,15 @@ public interface ThresholdsByType
      * @throws NullPointerException if the input is null
      */
 
-    boolean contains( ThresholdType type );
+    boolean contains( ThresholdGroup type );
 
     /**
-     * Returns the set of {@link ThresholdType} in the store.
+     * Returns the set of {@link ThresholdGroup} in the store.
      * 
      * @return the threshold types stored
      */
 
-    Set<ThresholdType> getAllThresholdTypes();
+    Set<ThresholdGroup> getAllThresholdTypes();
 
     /**
      * Combines the input with the contents of the current container, return a new container that reflects the union
@@ -71,7 +71,7 @@ public interface ThresholdsByType
          */
 
         ThresholdsByTypeBuilder addThresholds( Set<Threshold> thresholds,
-                                               ThresholdType thresholdType );
+                                               ThresholdGroup thresholdType );
 
         /**
          * Builds a {@link ThresholdsByType}.

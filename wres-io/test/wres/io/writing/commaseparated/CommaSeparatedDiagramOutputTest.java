@@ -29,6 +29,7 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.OneOrTwoThresholds;
 import wres.datamodel.ThresholdConstants.Operator;
+import wres.datamodel.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
@@ -117,7 +118,8 @@ public class CommaSeparatedDiagramOutputTest extends CommaSeparatedWriterTest
                 Pair.of( timeOne,
                          OneOrTwoThresholds.of( outputFactory.ofQuantileThreshold( outputFactory.ofOneOrTwoDoubles( 11.94128 ),
                                                                            outputFactory.ofOneOrTwoDoubles( 0.9 ),
-                                                                           Operator.GREATER_EQUAL ) ) );
+                                                                           Operator.GREATER_EQUAL,
+                                                                           ThresholdDataType.LEFT ) ) );
 
         outputBuilder.addMultiVectorOutput( mapKeyByLeadThreshold,
                                             outputMapByMetricFuture );

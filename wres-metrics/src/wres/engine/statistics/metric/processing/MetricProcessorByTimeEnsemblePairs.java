@@ -24,7 +24,7 @@ import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.OneOrTwoThresholds;
 import wres.datamodel.Slicer;
 import wres.datamodel.Threshold;
-import wres.datamodel.ThresholdConstants.ThresholdType;
+import wres.datamodel.ThresholdConstants.ThresholdGroup;
 import wres.datamodel.ThresholdsByMetric;
 import wres.datamodel.ThresholdsByType;
 import wres.datamodel.inputs.InsufficientDataException;
@@ -295,8 +295,8 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                 if ( ( next.isInGroup( MetricInputGroup.DICHOTOMOUS )
                        || next.isInGroup( MetricInputGroup.DISCRETE_PROBABILITY ) )
                      && !this.getThresholdsByMetric().hasThresholdsForThisMetricAndTheseTypes( next,
-                                                                                               ThresholdType.PROBABILITY,
-                                                                                               ThresholdType.VALUE ) )
+                                                                                               ThresholdGroup.PROBABILITY,
+                                                                                               ThresholdGroup.VALUE ) )
                 {
                     throw new MetricConfigurationException( "Cannot configure '" + next
                                                             + "' without thresholds to define the events: correct the "
@@ -374,7 +374,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         // Find the thresholds for this group and for the required types
         ThresholdsByMetric filtered = this.getThresholdsByMetric()
                                           .filterByGroup( MetricInputGroup.ENSEMBLE, outGroup )
-                                          .filterByType( ThresholdType.PROBABILITY, ThresholdType.VALUE );
+                                          .filterByType( ThresholdGroup.PROBABILITY, ThresholdGroup.VALUE );
 
         // Find the union across metrics
         Set<Threshold> union = filtered.union();
@@ -518,7 +518,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         // Find the thresholds for this group and for the required types
         ThresholdsByMetric filtered = this.getThresholdsByMetric()
                                           .filterByGroup( MetricInputGroup.DISCRETE_PROBABILITY, outGroup )
-                                          .filterByType( ThresholdType.PROBABILITY, ThresholdType.VALUE );
+                                          .filterByType( ThresholdGroup.PROBABILITY, ThresholdGroup.VALUE );
 
         // Find the union across metrics
         Set<Threshold> union = filtered.union();
@@ -654,10 +654,10 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                                           .filterByGroup( MetricInputGroup.DICHOTOMOUS, outGroup );
 
         // Find the thresholds filtered by outer type
-        ThresholdsByMetric filteredByOuter = filtered.filterByType( ThresholdType.PROBABILITY, ThresholdType.VALUE );
+        ThresholdsByMetric filteredByOuter = filtered.filterByType( ThresholdGroup.PROBABILITY, ThresholdGroup.VALUE );
 
         // Find the thresholds filtered by inner type
-        ThresholdsByMetric filteredByInner = filtered.filterByType( ThresholdType.PROBABILITY_CLASSIFIER );
+        ThresholdsByMetric filteredByInner = filtered.filterByType( ThresholdGroup.PROBABILITY_CLASSIFIER );
 
         // Find the union across metrics
         Set<Threshold> union = filteredByOuter.union();
@@ -738,7 +738,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         // Check that the relevant parameters have been set first
 
         Map<MetricConstants, Set<Threshold>> probabilityClassifiers =
-                this.getThresholdsByMetric().getThresholds( ThresholdType.PROBABILITY_CLASSIFIER );
+                this.getThresholdsByMetric().getThresholds( ThresholdGroup.PROBABILITY_CLASSIFIER );
 
         // Dichotomous
         if ( this.hasMetrics( MetricInputGroup.DICHOTOMOUS ) )
