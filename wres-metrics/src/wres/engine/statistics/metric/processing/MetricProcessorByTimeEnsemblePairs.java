@@ -131,7 +131,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         EnsemblePairs inputNoMissing = input;
         try
         {
-            inputNoMissing = slicer.filter( input, ADMISSABLE_DATA, true );
+            inputNoMissing = slicer.filter( input, slicer.leftAndEachOfRight( ADMISSABLE_DATA ), ADMISSABLE_DATA );
         }
         catch ( MetricInputSliceException e )
         {
@@ -147,7 +147,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         if ( hasMetrics( MetricInputGroup.SINGLE_VALUED ) )
         {
             //Derive the single-valued pairs from the ensemble pairs using the configured mapper
-            SingleValuedPairs singleValued = slicer.transformPairs( inputNoMissing, toSingleValues );
+            SingleValuedPairs singleValued = slicer.transform( inputNoMissing, toSingleValues );
             processSingleValuedPairs( timeWindow, singleValued, futures );
         }
         //Process the metrics that consume discrete probability pairs
@@ -272,7 +272,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                                                    Arrays.stream( in.getItemTwo() ).average().getAsDouble() );
 
         //Construct the default mapper from ensembles to probabilities: this is not currently configurable
-        toDiscreteProbabilities = dataFactory.getSlicer()::transformPair;
+        toDiscreteProbabilities = dataFactory.getSlicer()::transform;
 
         // Finalize validation now all required parameters are available
         // This is also called by the constructor of the superclass, but local parameters must be validated too
@@ -393,7 +393,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                 EnsemblePairs pairs = input;
                 if ( threshold.isFinite() )
                 {
-                    pairs = dataFactory.getSlicer().filterByLeft( input, useMe );
+                    pairs = dataFactory.getSlicer().filter( input, Slicer.leftVector( useMe::test ), null );
                 }
 
                 processEnsemblePairs( Pair.of( timeWindow, OneOrTwoThresholds.of( useMe ) ),
@@ -535,9 +535,9 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
             {
                 // Transform the pairs
                 DiscreteProbabilityPairs transformed = dataFactory.getSlicer()
-                                                                  .transformPairs( input,
-                                                                                   useMe,
-                                                                                   toDiscreteProbabilities );
+                                                                  .transform( input,
+                                                                              useMe,
+                                                                              toDiscreteProbabilities );
 
                 processDiscreteProbabilityPairs( Pair.of( timeWindow, OneOrTwoThresholds.of( useMe ) ),
                                                  transformed,
@@ -676,9 +676,9 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
             {
                 // Transform the pairs to probabilities first
                 DiscreteProbabilityPairs transformed = dataFactory.getSlicer()
-                                                                  .transformPairs( input,
-                                                                                   outerThreshold,
-                                                                                   toDiscreteProbabilities );
+                                                                  .transform( input,
+                                                                              outerThreshold,
+                                                                              toDiscreteProbabilities );
 
                 // Find the union of classifiers across all metrics   
                 Set<Threshold> classifiers = filteredByInner.union();
@@ -704,7 +704,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                             pair -> dataFactory.pairOf( innerThreshold.test( pair.getItemOne() ),
                                                         innerThreshold.test( pair.getItemTwo() ) );
                     //Transform the pairs
-                    DichotomousPairs dichotomous = dataFactory.getSlicer().transformPairs( transformed, mapper );
+                    DichotomousPairs dichotomous = dataFactory.getSlicer().transform( transformed, mapper );
                     processDichotomousPairs( nextKey, dichotomous, futures, outGroup, unionToIgnore );
                 }
 
