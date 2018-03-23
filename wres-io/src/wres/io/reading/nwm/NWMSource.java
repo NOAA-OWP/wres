@@ -60,7 +60,7 @@ public class NWMSource extends BasicSource
 		return NWMSource.LOGGER;
 	}
 
-	private void saveNetCDF(NetcdfFile source)
+    private void saveNetCDF( NetcdfFile source ) throws IOException
 	{
 		Variable var = NetCDF.getVariable(source, this.getSpecifiedVariableName());
 
@@ -87,9 +87,11 @@ public class NWMSource extends BasicSource
                 saver.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
                 Database.ingest(saver);
             }
-            catch (SQLException e)
-			{
-                LOGGER.error(Strings.getStackTrace(e));
+            catch ( SQLException e )
+            {
+                String message = "Failed to save NWM source file "
+                                 + this.getFilename();
+                throw new IOException( message, e );
             }
         }
 	}

@@ -2,9 +2,7 @@ package wres.engine.statistics.metric.processing;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.EnumMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -16,21 +14,17 @@ import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.generated.LeftOrRightOrBaseline;
-import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
-import wres.config.generated.MetricsConfig;
 import wres.config.generated.ProjectConfig;
-import wres.config.generated.ThresholdType;
-import wres.config.generated.ThresholdsConfig;
 import wres.datamodel.DataFactory;
-import wres.datamodel.Dimension;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.Threshold;
-import wres.datamodel.Threshold.Operator;
-import wres.datamodel.Threshold.ThresholdComposition;
+import wres.datamodel.ThresholdConstants.Operator;
+import wres.datamodel.ThresholdConstants.ThresholdDataType;
+import wres.datamodel.ThresholdConstants.ThresholdType;
+import wres.datamodel.ThresholdsByMetric;
 import wres.datamodel.ThresholdsByType;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
@@ -114,6 +108,12 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
     static final DoublePredicate ADMISSABLE_DATA = Double::isFinite;
 
     /**
+     * The dall data threshold.
+     */
+
+    final Threshold allDataThreshold;
+
+    /**
      * Instance of a {@link MetricFactory}.
      */
 
@@ -129,7 +129,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
      * Set of thresholds associated with each metric.
      */
 
-    final EnumMap<MetricConstants, Set<Threshold>> thresholdsByMetric;
+    final ThresholdsByMetric thresholdsByMetric;
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume {@link SingleValuedPairs} and produce
@@ -182,18 +182,6 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
      */
 
     private static final int DECIMALS = 5;
-
-    /**
-     * Error message for missing thresholds.
-     */
-
-    private static final String MISSING_THRESHOLDS_ERROR = "Specify non-null thresholds.";
-
-    /**
-     * Error message for missing thresholds.
-     */
-
-    private static final String MISSING_METRIC_ERROR = "Specify non-null metric information.";
 
     /**
      * Returns true if a prior call led to the caching of metric outputs.
@@ -435,8 +423,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         }
 
         //Set the thresholds: canonical --> metric-local overrides --> global        
-        thresholdsByMetric = new EnumMap<>( MetricConstants.class );
-        setThresholds( config, this.thresholdsByMetric, externalThresholds );
+        thresholdsByMetric = MetricConfigHelper.getThresholdsFromConfig( config, dataFactory, externalThresholds );
 
         this.mergeList = mergeList;
 
@@ -450,10 +437,36 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
             this.thresholdExecutor = ForkJoinPool.commonPool();
         }
 
+        this.allDataThreshold = dataFactory.ofThreshold( dataFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
+                                                         Operator.GREATER,
+                                                         ThresholdDataType.ALL );
+
         //Finally, validate the configuration against the parameters set
         validate( config );
     }
 
+    /**
+     * Returns the thresholds.
+     * 
+     * @return the thresholds
+     */
+
+    ThresholdsByMetric getThresholdsByMetric()
+    {
+        return this.thresholdsByMetric;
+    }
+
+    /**
+     * Returns the all data threshold.
+     * 
+     * @return the all data threshold
+     */
+    
+    Threshold getAllDataThreshold()
+    {
+        return this.allDataThreshold;
+    }
+    
     /**
      * Returns true if the input list of thresholds contains one or more probability thresholds, false otherwise.
      * 
@@ -529,7 +542,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
     /**
      * Adds the quantile values to the input threshold if the threshold contains probability values. This method is
      * lenient with regard to the input type, returning the input threshold if it is not a 
-     * {@link ThresholdComposition#PROBABILITY} type.
+     * {@link ThresholdType#PROBABILITY_ONLY} type.
      * 
      * @param threshold the input threshold
      * @param sorted a sorted set of values from which to determine the quantiles
@@ -539,7 +552,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
 
     Threshold addQuantilesToThreshold( Threshold threshold, double[] sorted )
     {
-        if ( threshold.getType() != ThresholdComposition.PROBABILITY )
+        if ( threshold.getType() != ThresholdType.PROBABILITY_ONLY )
         {
             return threshold;
         }
@@ -553,463 +566,6 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         return dataFactory.getSlicer().getQuantileFromProbability( threshold,
                                                                    sorted,
                                                                    DECIMALS );
-    }
-
-    /**
-     * Returns the thresholds to process for a specific combination of {@link MetricInputGroup} and 
-     * {@link MetricOutputGroup}. Returns the union of thresholds across all metrics in the group. Also see: 
-     * {@link #doNotComputeTheseMetricsForThisThreshold(wres.datamodel.MetricConstants.MetricInputGroup, 
-     * wres.datamodel.MetricConstants.MetricOutputGroup, wres.datamodel.Threshold)}
-     * 
-     * @param the thresholds for which the union is required
-     * @param inGroup the input group
-     * @param outGroup the output group
-     * @return the thresholds to process 
-     * @throws MetricCalculationException if no thresholds exist
-     */
-
-    Set<Threshold> getUnionOfThresholdsForThisGroup( Map<MetricConstants, Set<Threshold>> thresholds,
-                                                     MetricInputGroup inGroup,
-                                                     MetricOutputGroup outGroup )
-    {
-        Set<Threshold> returnMe = new HashSet<>();
-
-        // Add all thresholds
-        thresholds.forEach( ( key, value ) -> {
-            if ( key.isInGroup( inGroup, outGroup ) )
-            {
-                returnMe.addAll( value );
-            }
-        } );
-
-        // Validate
-        if ( returnMe.isEmpty() )
-        {
-            throw new MetricCalculationException( "Could not identify thresholds for '" + inGroup
-                                                  + "' and "
-                                                  + "'"
-                                                  + outGroup
-                                                  + "'." );
-        }
-
-        return Collections.unmodifiableSet( returnMe );
-    }
-
-    /**
-     * Returns a list of metrics for the prescribed {@link MetricInputGroup} and {@link MetricOutputGroup} that 
-     * should not be computed for the specified {@link Threshold}. 
-     *
-     * @param the union of thresholds that should be checked
-     * @param inGroup the input group
-     * @param outGroup the output group
-     * @param threshold the threshold
-     * @return the list of metrics within the specified inGroup and outGroup that should not be computed
-     * @throws NullPointerException if any input is null
-     */
-
-    Set<MetricConstants> doNotComputeTheseMetricsForThisThreshold( Map<MetricConstants, Set<Threshold>> union,
-                                                                   MetricInputGroup inGroup,
-                                                                   MetricOutputGroup outGroup,
-                                                                   Threshold threshold )
-    {
-
-        Objects.requireNonNull( inGroup, "Specify a non-null input group to search for metrics." );
-
-        Objects.requireNonNull( outGroup, "Specify a non-null output group to search for metrics." );
-
-        Objects.requireNonNull( outGroup, "Specify a non-null threshold to search for metrics." );
-
-        Set<MetricConstants> ignoreTheseMetrics = new HashSet<>();
-
-        // Find the metrics within the specified group to which the input threshold does not apply
-        union.forEach( ( metric, thresholds ) -> {
-
-            // In group?
-            if ( metric.isInGroup( inGroup, outGroup ) && !thresholds.contains( threshold ) )
-            {
-                ignoreTheseMetrics.add( metric );
-            }
-
-        } );
-
-        return Collections.unmodifiableSet( ignoreTheseMetrics );
-    }
-
-    /**
-     * Sets the thresholds for each metric in the configuration.
-     * 
-     * @param config the project configuration
-     * @param mutate the thresholds to mutate
-     * @param externalThresholds the optional external thresholds, may be null
-     * @throws MetricConfigurationException if thresholds are configured incorrectly
-     * @throws NullPointerException if any required inputs is null
-     */
-
-    private void setThresholds( ProjectConfig config,
-                                Map<MetricConstants, Set<Threshold>> mutate,
-                                Map<MetricConfigName, ThresholdsByType> externalThresholds )
-            throws MetricConfigurationException
-    {
-
-        Objects.requireNonNull( mutate, MetricConfigHelper.NULL_CONFIGURATION_ERROR );
-
-        Objects.requireNonNull( mutate, MISSING_THRESHOLDS_ERROR );
-
-        // Validate the configuration
-        if ( hasThresholdMetrics() && !MetricConfigHelper.hasThresholds( config ) )
-        {
-            throw new MetricConfigurationException( "Thresholds are required by one or more of the configured "
-                                                    + "metrics." );
-        }
-
-        // Iterate through the configuration groups and append thresholds
-        for ( MetricsConfig nextGroup : config.getMetrics() )
-        {
-            // Validate the configuration
-            validateMetricsConfig( nextGroup );
-
-            addThresholdsForOneConfigurationGroup( config, mutate, nextGroup, externalThresholds );
-        }
-    }
-
-    /**
-     * Adds the thresholds for each metric in the input configuration group. 
-     * 
-     * @param config the project configuration
-     * @param mutate the thresholds to mutate
-     * @param metrics the metric configuration
-     * @param externalThresholds the optional external thresholds, may be null
-     * @throws MetricConfigurationException if thresholds are configured incorrectly
-     * @throws NullPointerException if any required input is null
-     */
-
-    private void addThresholdsForOneConfigurationGroup( ProjectConfig config,
-                                                        Map<MetricConstants, Set<Threshold>> mutate,
-                                                        MetricsConfig metrics,
-                                                        Map<MetricConfigName, ThresholdsByType> externalThresholds )
-            throws MetricConfigurationException
-    {
-
-        Objects.requireNonNull( mutate, MetricConfigHelper.NULL_CONFIGURATION_ERROR );
-
-        Objects.requireNonNull( metrics, MISSING_METRIC_ERROR );
-
-        Objects.requireNonNull( mutate, MISSING_THRESHOLDS_ERROR );
-
-        Set<Threshold> thresholdsWithAllData = new HashSet<>();
-        Set<Threshold> thresholdsWithoutAllData = new HashSet<>();
-        Set<Threshold> thresholdsWithAllDataOnly = new HashSet<>();
-
-        // Add a threshold for "all data" by default
-        Threshold allData =
-                dataFactory.ofThreshold( dataFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ), Operator.GREATER );
-        thresholdsWithAllData.add( allData );
-        thresholdsWithAllDataOnly.add( allData );
-
-        // Add internal thresholds
-        if ( !metrics.getThresholds().isEmpty() )
-        {
-
-            // Obtain any units
-            Dimension units = null;
-            if ( Objects.nonNull( config.getPair() ) && Objects.nonNull( config.getPair().getUnit() ) )
-            {
-                units = dataFactory.getMetadataFactory().getDimension( config.getPair().getUnit() );
-            }
-
-            // Only read types that are valid in this context
-            Set<Threshold> thresholds =
-                    MetricConfigHelper.fromInternalThresholdsConfig( metrics.getThresholds(),
-                                                                     units,
-                                                                     dataFactory,
-                                                                     ThresholdType.PROBABILITY,
-                                                                     ThresholdType.VALUE );
-            thresholdsWithoutAllData.addAll( thresholds );
-            thresholdsWithAllData.addAll( thresholds );
-        }
-
-        // Iterate through the metrics
-        for ( MetricConfig next : metrics.getMetric() )
-        {
-            // ALL_VALID metrics
-            if ( next.getName() == MetricConfigName.ALL_VALID )
-            {
-                Set<MetricConstants> allValid = MetricConfigHelper.getAllValidMetricsFromConfig( config );
-                for ( MetricConstants nextNamedMetric : allValid )
-                {
-                    addThresholdsForOneMetric( nextNamedMetric,
-                                               mutate,
-                                               thresholdsWithAllData,
-                                               thresholdsWithoutAllData,
-                                               thresholdsWithAllDataOnly,
-                                               externalThresholds );
-                }
-            }
-            // Named metric
-            else
-            {
-                addThresholdsForOneMetric( MetricConfigHelper.from( next.getName() ),
-                                           mutate,
-                                           thresholdsWithAllData,
-                                           thresholdsWithoutAllData,
-                                           thresholdsWithAllDataOnly,
-                                           externalThresholds );
-            }
-        }
-    }
-
-    /**
-     * Adds thresholds for the specified metric.
-     * 
-     * @param metric the metric
-     * @param mutate the thresholds to mutate
-     * @param thresholdsWithAllData the thresholds that include the all data threshold
-     * @param thresholdsWithoutAllData the thresholds that do not include the all data threshold
-     * @param thresholdsWithAllDataOnly the thresholds that include only the all data threshold
-     * @param externalThresholds the optional external thresholds, may be null
-     * @throws MetricConfigurationException if the metric configuration is invalid
-     * @throws NullPointerException if any required input is null
-     */
-
-    private void addThresholdsForOneMetric( MetricConstants metric,
-                                            Map<MetricConstants, Set<Threshold>> mutate,
-                                            Set<Threshold> thresholdsWithAllData,
-                                            Set<Threshold> thresholdsWithoutAllData,
-                                            Set<Threshold> thresholdsWithAllDataOnly,
-                                            Map<MetricConfigName, ThresholdsByType> externalThresholds )
-            throws MetricConfigurationException
-    {
-
-        // Validate
-        Objects.requireNonNull( metric, MISSING_METRIC_ERROR );
-
-        Objects.requireNonNull( thresholdsWithAllData, MISSING_THRESHOLDS_ERROR );
-
-        Objects.requireNonNull( thresholdsWithoutAllData, MISSING_THRESHOLDS_ERROR );
-
-        Objects.requireNonNull( thresholdsWithAllDataOnly, MISSING_THRESHOLDS_ERROR );
-
-        Objects.requireNonNull( mutate, MISSING_THRESHOLDS_ERROR );
-
-        // Ensemble
-        if ( metric.isInGroup( MetricInputGroup.ENSEMBLE ) )
-        {
-            addThresholdsForEnsembleInput( metric,
-                                           mutate,
-                                           thresholdsWithAllData,
-                                           thresholdsWithAllDataOnly,
-                                           externalThresholds );
-        }
-        // Single-valued
-        else if ( metric.isInGroup( MetricInputGroup.SINGLE_VALUED ) )
-        {
-            addThresholdsForSingleValuedInput( metric,
-                                               mutate,
-                                               thresholdsWithAllData,
-                                               thresholdsWithAllDataOnly,
-                                               externalThresholds );
-        }
-        // Discrete probability and categorical
-        else
-        {
-            if ( !mutate.containsKey( metric ) )
-            {
-                mutate.put( metric, thresholdsWithoutAllData );
-            }
-            else
-            {
-                mutate.get( metric ).addAll( thresholdsWithoutAllData );
-            }
-
-            // Finally, add the external thresholds
-            addExternalThresholdsForOneMetric( metric, mutate, externalThresholds );
-        }
-    }
-
-    /**
-     * Adds thresholds for a metric within the group {@link MetricInputGroup#ENSEMBLE}.
-     * 
-     * @param metric the metric
-     * @param mutate the thresholds to mutate
-     * @param thresholdsWithAllData the thresholds that include the all data threshold
-     * @param thresholdsWithAllDataOnly the thresholds that include only the all data threshold
-     * @param externalThresholds the optional external thresholds, may be null
-     * @throws MetricConfigurationException if the metric configuration is invalid
-     * @throws IllegalArgumentException if the metric is not in the required input group
-     * @throws NullPointerException if any required input is null
-     */
-
-    private void addThresholdsForEnsembleInput( MetricConstants metric,
-                                                Map<MetricConstants, Set<Threshold>> mutate,
-                                                Set<Threshold> thresholdsWithAllData,
-                                                Set<Threshold> thresholdsWithAllDataOnly,
-                                                Map<MetricConfigName, ThresholdsByType> externalThresholds )
-            throws MetricConfigurationException
-    {
-        // Validate
-        Objects.requireNonNull( metric, MISSING_METRIC_ERROR );
-
-        Objects.requireNonNull( thresholdsWithAllData, MISSING_THRESHOLDS_ERROR );
-
-        Objects.requireNonNull( thresholdsWithAllDataOnly, MISSING_THRESHOLDS_ERROR );
-
-        Objects.requireNonNull( mutate, MISSING_THRESHOLDS_ERROR );
-
-        if ( !metric.isInGroup( MetricInputGroup.ENSEMBLE ) )
-        {
-            throw new IllegalArgumentException( "Expected a metric that consumes ensemble input." );
-        }
-
-        //For box plots, only consider "all data"
-        if ( metric.getMetricOutputGroup() == MetricOutputGroup.BOXPLOT )
-        {
-            if ( !mutate.containsKey( metric ) )
-            {
-                mutate.put( metric, thresholdsWithAllDataOnly );
-            }
-        }
-        else
-        {
-            if ( !mutate.containsKey( metric ) )
-            {
-                mutate.put( metric, thresholdsWithAllData );
-            }
-            else
-            {
-                mutate.get( metric ).addAll( thresholdsWithAllData );
-            }
-
-            // Finally, add the external thresholds
-            addExternalThresholdsForOneMetric( metric, mutate, externalThresholds );
-        }
-    }
-
-    /**
-     * Adds thresholds for a metric within the group {@link MetricInputGroup#SINGLE_VALUED}.
-     * 
-     * @param metric the metric
-     * @param mutate the thresholds to mutate
-     * @param thresholdsWithAllData the thresholds that include the all data threshold
-     * @param thresholdsWithAllDataOnly the thresholds that include only the all data threshold
-     * @param externalThresholds the optional external thresholds, may be null
-     * @throws IllegalArgumentException if the metric is not in the required input group
-     * @throws NullPointerException if any required input is null
-     * @throws MetricConfigurationException if the metric configuration is invalid
-     */
-
-    private void addThresholdsForSingleValuedInput( MetricConstants metric,
-                                                    Map<MetricConstants, Set<Threshold>> mutate,
-                                                    Set<Threshold> thresholdsWithAllData,
-                                                    Set<Threshold> thresholdsWithAllDataOnly,
-                                                    Map<MetricConfigName, ThresholdsByType> externalThresholds )
-            throws MetricConfigurationException
-    {
-        // Validate
-        Objects.requireNonNull( metric, MISSING_METRIC_ERROR );
-
-        Objects.requireNonNull( thresholdsWithAllData, MISSING_THRESHOLDS_ERROR );
-
-        Objects.requireNonNull( thresholdsWithAllDataOnly, MISSING_THRESHOLDS_ERROR );
-
-        Objects.requireNonNull( mutate, MISSING_THRESHOLDS_ERROR );
-
-        if ( !metric.isInGroup( MetricInputGroup.SINGLE_VALUED ) )
-        {
-            throw new IllegalArgumentException( "Expected a metric that consumes ensemble input." );
-        }
-
-        //For the QQ diagram, only consider "all data"
-        if ( metric == MetricConstants.QUANTILE_QUANTILE_DIAGRAM )
-        {
-            if ( !mutate.containsKey( metric ) )
-            {
-                mutate.put( metric, thresholdsWithAllDataOnly );
-            }
-        }
-        else
-        {
-            if ( !mutate.containsKey( metric ) )
-            {
-                mutate.put( metric, thresholdsWithAllData );
-            }
-            else
-            {
-                mutate.get( metric ).addAll( thresholdsWithAllData );
-            }
-
-            // Finally, add the external thresholds
-            addExternalThresholdsForOneMetric( metric, mutate, externalThresholds );
-        }
-    }
-
-    /**
-     * Adds an external threshold to the map if external thresholds exist for the named metric.
-     * 
-     * @param metric the metric
-     * @param mutate the thresholds to mutate
-     * @param externalThresholds the optional external thresholds, may be null
-     * @throws NullPointerException if any required input is null
-     * @throws MetricConfigurationException if the metric configuration is invalid
-     */
-
-    private void addExternalThresholdsForOneMetric( MetricConstants metric,
-                                                    Map<MetricConstants, Set<Threshold>> mutate,
-                                                    Map<MetricConfigName, ThresholdsByType> externalThresholds )
-            throws MetricConfigurationException
-    {
-        Objects.requireNonNull( metric, MISSING_METRIC_ERROR );
-
-        Objects.requireNonNull( mutate, MISSING_THRESHOLDS_ERROR );
-
-        MetricConfigName name = MetricConfigHelper.from( metric );
-
-        if ( Objects.nonNull( externalThresholds )
-             && externalThresholds.containsKey( name ) )
-        {
-            ThresholdsByType external = externalThresholds.get( name );
-
-            Set<Threshold> addMe = new HashSet<>();
-
-            // Probability type
-            addMe.addAll( external.getThresholdsByType( ThresholdsByType.ThresholdType.PROBABILITY ) );
-
-            // Value type
-            addMe.addAll( external.getThresholdsByType( ThresholdsByType.ThresholdType.VALUE ) );
-
-            // Add existing if available
-            if ( mutate.containsKey( metric ) )
-            {
-                addMe.addAll( mutate.get( metric ) );
-            }
-
-            mutate.put( metric, Collections.unmodifiableSet( addMe ) );
-        }
-    }
-
-    /**
-     * Validates the metrics configuration and throws a {@link MetricConfigurationException} if the validation fails
-     * 
-     * @param metrics the metrics configuration
-     * @throws MetricConfigurationException if thresholds are configured incorrectly
-     */
-
-    private void validateMetricsConfig( MetricsConfig metrics )
-            throws MetricConfigurationException
-    {
-
-        Objects.requireNonNull( metrics, MISSING_METRIC_ERROR );
-
-        // Check that thresholds are configured for left       
-        List<ThresholdsConfig> allThresholds = metrics.getThresholds();
-
-        if ( !allThresholds.isEmpty()
-             && allThresholds.stream().anyMatch( next -> Objects.nonNull( next.getApplyTo() )
-                                                         && next.getApplyTo() != LeftOrRightOrBaseline.LEFT ) )
-        {
-            throw new MetricConfigurationException( "Currently, the system requires that all thresholds are of type '"
-                                                    + LeftOrRightOrBaseline.LEFT + "'." );
-        }
-
     }
 
 }

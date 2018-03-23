@@ -11,6 +11,7 @@ import java.util.concurrent.Future;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ucar.ma2.Array;
+import ucar.ma2.InvalidRangeException;
 import ucar.nc2.Attribute;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
@@ -18,6 +19,7 @@ import ucar.nc2.Variable;
 import wres.io.concurrency.CopyExecutor;
 import wres.io.concurrency.SQLExecutor;
 import wres.io.concurrency.WRESRunnable;
+import wres.io.concurrency.WRESRunnableException;
 import wres.io.config.SystemSettings;
 import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Variables;
@@ -166,28 +168,35 @@ class GriddedNWMValueSaver extends WRESRunnable
 
                 while (!this.operations.empty())
                 {
-                    try {
-                        ProgressMonitor.increment();
-                        this.operations.pop().get();
-                        ProgressMonitor.completeStep();
-                    }
-                    catch (Exception e)
-                    {
-                        this.getLogger().error("Could not complete a task to save {} from '{}'",
-                                               this.variable.getShortName(),
-                                               this.fileName);
-                    }
+                    ProgressMonitor.increment();
+                    this.operations.pop().get();
+                    ProgressMonitor.completeStep();
                 }
             }
-		} catch (Exception e) {
-            LOGGER.error(Strings.getStackTrace(e));
 		}
+        catch ( SQLException | IOException | ExecutionException
+                | InvalidRangeException e )
+        {
+            String message = "Unable to finish saving NWM gridded data from "
+                             + this.fileName + " variable " + this.variable;
+            throw new WRESRunnableException( message, e );
+        }
+		catch ( InterruptedException ie )
+        {
+            LOGGER.warn( "Interrupted while saving NWM gridded data from {}.",
+                         this.fileName );
+            Thread.currentThread().interrupt();
+        }
 		finally
 		{
-            try {
+            try
+            {
                 this.closeFile();
-            } catch (IOException e) {
-                LOGGER.error(Strings.getStackTrace(e));
+            }
+            catch ( IOException e )
+            {
+                // Exception on close should not affect primary outputs.
+                LOGGER.warn( "Failed to close file {}.", this.fileName, e );
             }
         }
 	}
@@ -297,9 +306,17 @@ class GriddedNWMValueSaver extends WRESRunnable
                 this.getLogger().trace("Sending NetCDF values to the database executor to copy...");
                 this.operations.push(Database.execute(copier));
             }
-            catch (ExecutionException | InterruptedException | SQLException | IOException e)
+            catch ( InterruptedException ie )
             {
-                LOGGER.error(Strings.getStackTrace(e));
+                LOGGER.warn( "Interrupted while copying values from {}",
+                             this.fileName );
+                Thread.currentThread().interrupt();
+            }
+            catch ( ExecutionException | SQLException | IOException e )
+            {
+                String message = "Failed to copy gridded NWM values from "
+                                 + this.fileName + ".";
+                throw new WRESRunnableException( message, e );
             }
             builder = new StringBuilder();
             copyCount = 0;
@@ -310,21 +327,17 @@ class GriddedNWMValueSaver extends WRESRunnable
         }
     }
 
-	private boolean isValueValid(double value)
+	private boolean isValueValid( double value ) throws IOException
 	{
 		return this.getInvalidValue() == Double.MIN_VALUE || !String.valueOf(value).equalsIgnoreCase(String.valueOf(this.getInvalidValue()));
 	}
 
-	private Double getInvalidValue()
+	private Double getInvalidValue() throws IOException
     {
         if (this.invalidValue == null)
         {
-            try {
-                Attribute attr = this.getVariable().findAttribute("_FillValue");
-                this.invalidValue = attr.getNumericValue().doubleValue();
-            } catch (IOException e) {
-                LOGGER.error(Strings.getStackTrace(e));
-            }
+            Attribute attr = this.getVariable().findAttribute("_FillValue");
+            this.invalidValue = attr.getNumericValue().doubleValue();
         }
         return this.invalidValue;
     }
@@ -384,18 +397,15 @@ class GriddedNWMValueSaver extends WRESRunnable
         return this.yLength;
     }
 
-    private int getRank()
+    private int getRank() throws IOException
     {
         if (this.rank == Integer.MIN_VALUE) {
             Variable var;
-            try {
-                var = this.getVariable();
+            var = this.getVariable();
 
-                if (var != null) {
-                    this.rank = var.getRank();
-                }
-            } catch (IOException e) {
-                LOGGER.error(Strings.getStackTrace(e));
+            if (var != null)
+            {
+                this.rank = var.getRank();
             }
         }
         return this.rank;

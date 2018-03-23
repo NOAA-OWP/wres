@@ -7,7 +7,6 @@ import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.Iterator;
 import java.util.NavigableMap;
-import java.util.NoSuchElementException;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
@@ -28,7 +27,6 @@ import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
 import wres.util.Collections;
 import wres.util.ProgressMonitor;
-import wres.util.Strings;
 import wres.util.TimeHelper;
 
 abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
@@ -341,7 +339,6 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
         }
         catch ( SQLException | IOException e )
         {
-            this.getLogger().error( Strings.getStackTrace( e ));
             throw new IterationFailedException( "The data provided could not be "
                                                 + "used to determine if another "
                                                 + "object is present for "
@@ -369,12 +366,15 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
         }
         catch ( IOException e )
         {
-            throw new NoSuchElementException( Strings.getStackTrace( e ) );
+            throw new IterationFailedException( "An exception prevented iteration.", e );
         }
 
+        // Does null have a specific meaning here? Is it expected that
+        // null will be returned every time the last call to next() happens?
+        // Shouldn't the caller call hasNext() prior to calling next()?
         if (nextInput == null)
         {
-            throw new NoSuchElementException( "There are no more windows to evaluate" );
+            throw new IterationFailedException( "There are no more windows to evaluate" );
         }
 
         return nextInput;
@@ -402,6 +402,8 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
     /**
      * Submits a retrieval object for asynchronous execution
      * @return A MetricInput object that will be fully formed later in the application
+     * TODO: document what returning null means so caller can decide what to do
+     * when null is returned.
      * @throws IOException Thrown if the retrieval object could not be created
      */
     protected Future<MetricInput<?>> submitForRetrieval() throws IOException

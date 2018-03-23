@@ -18,7 +18,8 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.Dimension;
 import wres.datamodel.Threshold;
-import wres.datamodel.Threshold.Operator;
+import wres.datamodel.ThresholdConstants.Operator;
+import wres.datamodel.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.metadata.MetadataFactory;
 
 /**
@@ -51,23 +52,46 @@ public class CommaSeparatedReaderTest
         Path commaSeparated = Paths.get( "testinput/commaseparated/testProbabilityThresholdsWithLabels.csv" );
 
         Map<FeaturePlus, Set<Threshold>> actual =
-                CommaSeparatedReader.readThresholds( commaSeparated, true, Operator.GREATER, null, null );
+                CommaSeparatedReader.readThresholds( commaSeparated,
+                                                     true,
+                                                     Operator.GREATER,
+                                                     ThresholdDataType.LEFT,
+                                                     null,
+                                                     null );
 
         // Compare to expected
         Map<FeaturePlus, Set<Threshold>> expected = new TreeMap<>();
 
         Set<Threshold> first = new TreeSet<>();
-        first.add( FACTORY.ofProbabilityThreshold( FACTORY.ofOneOrTwoDoubles( 0.4 ), Operator.GREATER, "A" ) );
-        first.add( FACTORY.ofProbabilityThreshold( FACTORY.ofOneOrTwoDoubles( 0.6 ), Operator.GREATER, "B" ) );
-        first.add( FACTORY.ofProbabilityThreshold( FACTORY.ofOneOrTwoDoubles( 0.8 ), Operator.GREATER, "C" ) );
+        first.add( FACTORY.ofProbabilityThreshold( FACTORY.ofOneOrTwoDoubles( 0.4 ),
+                                                   Operator.GREATER,
+                                                   ThresholdDataType.LEFT,
+                                                   "A" ) );
+        first.add( FACTORY.ofProbabilityThreshold( FACTORY.ofOneOrTwoDoubles( 0.6 ),
+                                                   Operator.GREATER,
+                                                   ThresholdDataType.LEFT,
+                                                   "B" ) );
+        first.add( FACTORY.ofProbabilityThreshold( FACTORY.ofOneOrTwoDoubles( 0.8 ),
+                                                   Operator.GREATER,
+                                                   ThresholdDataType.LEFT,
+                                                   "C" ) );
 
         Feature firstFeature = new Feature( null, null, null, "DRRC2", null, null, null, null, null, null );
         expected.put( FeaturePlus.of( firstFeature ), first );
 
         Set<Threshold> second = new TreeSet<>();
-        second.add( FACTORY.ofProbabilityThreshold( FACTORY.ofOneOrTwoDoubles( 0.2 ), Operator.GREATER, "A" ) );
-        second.add( FACTORY.ofProbabilityThreshold( FACTORY.ofOneOrTwoDoubles( 0.3 ), Operator.GREATER, "B" ) );
-        second.add( FACTORY.ofProbabilityThreshold( FACTORY.ofOneOrTwoDoubles( 0.7 ), Operator.GREATER, "C" ) );
+        second.add( FACTORY.ofProbabilityThreshold( FACTORY.ofOneOrTwoDoubles( 0.2 ),
+                                                    Operator.GREATER,
+                                                    ThresholdDataType.LEFT,
+                                                    "A" ) );
+        second.add( FACTORY.ofProbabilityThreshold( FACTORY.ofOneOrTwoDoubles( 0.3 ),
+                                                    Operator.GREATER,
+                                                    ThresholdDataType.LEFT,
+                                                    "B" ) );
+        second.add( FACTORY.ofProbabilityThreshold( FACTORY.ofOneOrTwoDoubles( 0.7 ),
+                                                    Operator.GREATER,
+                                                    ThresholdDataType.LEFT,
+                                                    "C" ) );
 
         Feature secondFeature = new Feature( null, null, null, "DOLC2", null, null, null, null, null, null );
         expected.put( FeaturePlus.of( secondFeature ), second );
@@ -94,23 +118,52 @@ public class CommaSeparatedReaderTest
         Dimension dim = meta.getDimension( "CMS" );
 
         Map<FeaturePlus, Set<Threshold>> actual =
-                CommaSeparatedReader.readThresholds( commaSeparated, false, Operator.GREATER, null, dim );
+                CommaSeparatedReader.readThresholds( commaSeparated,
+                                                     false,
+                                                     Operator.GREATER,
+                                                     ThresholdDataType.LEFT,
+                                                     null,
+                                                     dim );
 
         // Compare to expected
         Map<FeaturePlus, Set<Threshold>> expected = new TreeMap<>();
 
         Set<Threshold> first = new TreeSet<>();
-        first.add( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( 3.0 ), Operator.GREATER, "E", dim ) );
-        first.add( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( 7.0 ), Operator.GREATER, "F", dim ) );
-        first.add( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( 15.0 ), Operator.GREATER, "G", dim ) );
+        first.add( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( 3.0 ),
+                                        Operator.GREATER,
+                                        ThresholdDataType.LEFT,
+                                        "E",
+                                        dim ) );
+        first.add( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( 7.0 ),
+                                        Operator.GREATER,
+                                        ThresholdDataType.LEFT,
+                                        "F",
+                                        dim ) );
+        first.add( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( 15.0 ),
+                                        Operator.GREATER,
+                                        ThresholdDataType.LEFT,
+                                        "G",
+                                        dim ) );
 
         Feature firstFeature = new Feature( null, null, null, "DRRC2", null, null, null, null, null, null );
         expected.put( FeaturePlus.of( firstFeature ), first );
 
         Set<Threshold> second = new TreeSet<>();
-        second.add( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( 23.0 ), Operator.GREATER, "E", dim ) );
-        second.add( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( 12.0 ), Operator.GREATER, "F", dim ) );
-        second.add( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( 99.7 ), Operator.GREATER, "G", dim ) );
+        second.add( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( 23.0 ),
+                                         Operator.GREATER,
+                                         ThresholdDataType.LEFT,
+                                         "E",
+                                         dim ) );
+        second.add( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( 12.0 ),
+                                         Operator.GREATER,
+                                         ThresholdDataType.LEFT,
+                                         "F",
+                                         dim ) );
+        second.add( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( 99.7 ),
+                                         Operator.GREATER,
+                                         ThresholdDataType.LEFT,
+                                         "G",
+                                         dim ) );
 
         Feature secondFeature = new Feature( null, null, null, "DOLC2", null, null, null, null, null, null );
         expected.put( FeaturePlus.of( secondFeature ), second );
@@ -133,23 +186,40 @@ public class CommaSeparatedReaderTest
         Path commaSeparated = Paths.get( "testinput/commaseparated/testProbabilityThresholdsWithoutLabels.csv" );
 
         Map<FeaturePlus, Set<Threshold>> actual =
-                CommaSeparatedReader.readThresholds( commaSeparated, true, Operator.GREATER, null, null );
+                CommaSeparatedReader.readThresholds( commaSeparated,
+                                                     true,
+                                                     Operator.GREATER,
+                                                     ThresholdDataType.LEFT,
+                                                     null,
+                                                     null );
 
         // Compare to expected
         Map<FeaturePlus, Set<Threshold>> expected = new TreeMap<>();
 
         Set<Threshold> first = new TreeSet<>();
-        first.add( FACTORY.ofProbabilityThreshold( FACTORY.ofOneOrTwoDoubles( 0.4 ), Operator.GREATER ) );
-        first.add( FACTORY.ofProbabilityThreshold( FACTORY.ofOneOrTwoDoubles( 0.6 ), Operator.GREATER ) );
-        first.add( FACTORY.ofProbabilityThreshold( FACTORY.ofOneOrTwoDoubles( 0.8 ), Operator.GREATER ) );
+        first.add( FACTORY.ofProbabilityThreshold( FACTORY.ofOneOrTwoDoubles( 0.4 ),
+                                                   Operator.GREATER,
+                                                   ThresholdDataType.LEFT ) );
+        first.add( FACTORY.ofProbabilityThreshold( FACTORY.ofOneOrTwoDoubles( 0.6 ),
+                                                   Operator.GREATER,
+                                                   ThresholdDataType.LEFT ) );
+        first.add( FACTORY.ofProbabilityThreshold( FACTORY.ofOneOrTwoDoubles( 0.8 ),
+                                                   Operator.GREATER,
+                                                   ThresholdDataType.LEFT ) );
 
         Feature firstFeature = new Feature( null, null, null, "DRRC2", null, null, null, null, null, null );
         expected.put( FeaturePlus.of( firstFeature ), first );
 
         Set<Threshold> second = new TreeSet<>();
-        second.add( FACTORY.ofProbabilityThreshold( FACTORY.ofOneOrTwoDoubles( 0.2 ), Operator.GREATER ) );
-        second.add( FACTORY.ofProbabilityThreshold( FACTORY.ofOneOrTwoDoubles( 0.3 ), Operator.GREATER ) );
-        second.add( FACTORY.ofProbabilityThreshold( FACTORY.ofOneOrTwoDoubles( 0.7 ), Operator.GREATER ) );
+        second.add( FACTORY.ofProbabilityThreshold( FACTORY.ofOneOrTwoDoubles( 0.2 ),
+                                                    Operator.GREATER,
+                                                    ThresholdDataType.LEFT ) );
+        second.add( FACTORY.ofProbabilityThreshold( FACTORY.ofOneOrTwoDoubles( 0.3 ),
+                                                    Operator.GREATER,
+                                                    ThresholdDataType.LEFT ) );
+        second.add( FACTORY.ofProbabilityThreshold( FACTORY.ofOneOrTwoDoubles( 0.7 ),
+                                                    Operator.GREATER,
+                                                    ThresholdDataType.LEFT ) );
 
         Feature secondFeature = new Feature( null, null, null, "DOLC2", null, null, null, null, null, null );
         expected.put( FeaturePlus.of( secondFeature ), second );
@@ -172,23 +242,34 @@ public class CommaSeparatedReaderTest
         Path commaSeparated = Paths.get( "testinput/commaseparated/testValueThresholdsWithoutLabels.csv" );
 
         Map<FeaturePlus, Set<Threshold>> actual =
-                CommaSeparatedReader.readThresholds( commaSeparated, false, Operator.GREATER, null, null );
+                CommaSeparatedReader.readThresholds( commaSeparated,
+                                                     false,
+                                                     Operator.GREATER,
+                                                     ThresholdDataType.LEFT,
+                                                     null,
+                                                     null );
 
         // Compare to expected
         Map<FeaturePlus, Set<Threshold>> expected = new TreeMap<>();
 
         Set<Threshold> first = new TreeSet<>();
-        first.add( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( 3.0 ), Operator.GREATER ) );
-        first.add( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( 7.0 ), Operator.GREATER ) );
-        first.add( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( 15.0 ), Operator.GREATER ) );
+        first.add( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( 3.0 ), Operator.GREATER, ThresholdDataType.LEFT ) );
+        first.add( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( 7.0 ), Operator.GREATER, ThresholdDataType.LEFT ) );
+        first.add( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( 15.0 ), Operator.GREATER, ThresholdDataType.LEFT ) );
 
         Feature firstFeature = new Feature( null, null, null, "DRRC2", null, null, null, null, null, null );
         expected.put( FeaturePlus.of( firstFeature ), first );
 
         Set<Threshold> second = new TreeSet<>();
-        second.add( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( 23.0 ), Operator.GREATER ) );
-        second.add( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( 12.0 ), Operator.GREATER ) );
-        second.add( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( 99.7 ), Operator.GREATER ) );
+        second.add( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( 23.0 ),
+                                         Operator.GREATER,
+                                         ThresholdDataType.LEFT ) );
+        second.add( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( 12.0 ),
+                                         Operator.GREATER,
+                                         ThresholdDataType.LEFT ) );
+        second.add( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( 99.7 ),
+                                         Operator.GREATER,
+                                         ThresholdDataType.LEFT ) );
 
         Feature secondFeature = new Feature( null, null, null, "DOLC2", null, null, null, null, null, null );
         expected.put( FeaturePlus.of( secondFeature ), second );
@@ -211,21 +292,30 @@ public class CommaSeparatedReaderTest
         Path commaSeparated = Paths.get( "testinput/commaseparated/testValueThresholdsWithoutLabelsWithMissings.csv" );
 
         Map<FeaturePlus, Set<Threshold>> actual =
-                CommaSeparatedReader.readThresholds( commaSeparated, false, Operator.GREATER, -999.0, null );
+                CommaSeparatedReader.readThresholds( commaSeparated,
+                                                     false,
+                                                     Operator.GREATER,
+                                                     ThresholdDataType.LEFT,
+                                                     -999.0,
+                                                     null );
 
         // Compare to expected
         Map<FeaturePlus, Set<Threshold>> expected = new TreeMap<>();
 
         Set<Threshold> first = new TreeSet<>();
-        first.add( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( 3.0 ), Operator.GREATER ) );
-        first.add( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( 7.0 ), Operator.GREATER ) );
+        first.add( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( 3.0 ), Operator.GREATER, ThresholdDataType.LEFT ) );
+        first.add( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( 7.0 ), Operator.GREATER, ThresholdDataType.LEFT ) );
 
         Feature firstFeature = new Feature( null, null, null, "DRRC2", null, null, null, null, null, null );
         expected.put( FeaturePlus.of( firstFeature ), first );
 
         Set<Threshold> second = new TreeSet<>();
-        second.add( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( 23.0 ), Operator.GREATER ) );
-        second.add( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( 99.7 ), Operator.GREATER ) );
+        second.add( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( 23.0 ),
+                                         Operator.GREATER,
+                                         ThresholdDataType.LEFT ) );
+        second.add( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( 99.7 ),
+                                         Operator.GREATER,
+                                         ThresholdDataType.LEFT ) );
 
         Feature secondFeature = new Feature( null, null, null, "DOLC2", null, null, null, null, null, null );
         expected.put( FeaturePlus.of( secondFeature ), second );

@@ -16,6 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,6 +36,7 @@ import wres.config.generated.DestinationType;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.OneOrTwoThresholds;
+import wres.datamodel.Threshold;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MapKey;
@@ -729,38 +731,46 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
 
         for ( OneOrTwoThresholds t : output.setOfThresholdKey() )
         {
-            // TODO Threshold should let me know which one was chosen by user,
-            // that way no need to go through all these four states.
+            LOGGER.debug( "t: {}, t.first(): {}, t.hasTwo(): {}",
+                          t, t.first(), t.hasTwo() );
+            // Goal: a unique id
+            double thresholdId;
+
+            // Means to reach the goal: two numbers from the thresholds
+            double firstNumber;
+            double secondNumber = 0.0;
+
             if ( t.first().hasProbabilities() )
             {
-                LOGGER.debug( "threshold first has probability values" );
-                this.getOrAddValueToVariable( writer,
-                                              thresholds,
-                                              t.first().getProbabilities().first() );
+                firstNumber = t.first().getProbabilities().first();
             }
             else
             {
-                LOGGER.debug( "threshold first has no probability values" );
-                this.getOrAddValueToVariable( writer,
-                                              thresholds,
-                                              t.first().getValues().first() );
+                firstNumber = t.first().getValues().first();
             }
 
-            if ( t.hasTwo() && t.second().hasProbabilities() )
+            if ( t.hasTwo() )
             {
-                LOGGER.debug( "threshold second has probability values" );
-                this.getOrAddValueToVariable( writer,
-                                              thresholds,
-                                              t.second().getProbabilities().first() );
-            }
-            else if ( t.hasTwo() )
-            {
-                LOGGER.debug( "threshold second has no probability values" );
-                this.getOrAddValueToVariable( writer,
-                                              thresholds,
-                                              t.second().getValues().first() );
+                if ( t.second().hasProbabilities() )
+                {
+                    LOGGER.debug( "t.second(): {}, t.second().getProbabilities: {}",
+                                  t.second(), t.second().getProbabilities() );
+                    // The first of the wrapped OneOrTwoThresholds is used
+                    secondNumber = t.second().getProbabilities().first();
+                }
+                else
+                {
+                    LOGGER.debug( "t.second(): {}, t.second().getValues: {}",
+                                  t.second(), t.second().getValues() );
+                    secondNumber = t.second().getValues().first();
+                }
             }
 
+            thresholdId = Math.pow( firstNumber, secondNumber + 1.0 );
+
+            this.getOrAddValueToVariable( writer,
+                                          thresholds,
+                                          thresholdId );
             this.getOrAddValueToVariable( writer,
                                           thresholdNames,
                                           t.toString() );
@@ -872,10 +882,29 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                                          times,
                                          leadSeconds );
 
-        this.writeSingleValue( writer,
-                               coordinateVariables,
-                               ncVariable,
-                               output );
+        for ( Map.Entry<TimeWindow,OneOrTwoThresholds> wrappedStuff : output.keySet() )
+        {
+            Pair<TimeWindow,OneOrTwoThresholds> wrappedKey =
+                    Pair.of( wrappedStuff.getKey(), wrappedStuff.getValue() );
+            this.writeSingleValue( writer,
+                                   coordinateVariables,
+                                   ncVariable,
+                                   output,
+                                   wrappedStuff.getValue().first(),
+                                   wrappedStuff.getKey(),
+                                   output.get( wrappedKey ) );
+
+            if ( wrappedStuff.getValue().second() != null )
+            {
+                this.writeSingleValue( writer,
+                                       coordinateVariables,
+                                       ncVariable,
+                                       output,
+                                       wrappedStuff.getValue().second(),
+                                       wrappedStuff.getKey(),
+                                       output.get( wrappedKey ) );
+            }
+        }
     }
 
 
@@ -892,7 +921,10 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
     private void writeSingleValue( NetcdfFileWriter writer,
                                    WresNetcdfVariables coordinateVariables,
                                    Variable ncVariable,
-                                   MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> output )
+                                   MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> output,
+                                   Threshold threshold,
+                                   TimeWindow pool,
+                                   DoubleScoreOutput scoreOutput )
             throws IOException
     {
         Objects.requireNonNull( writer );
@@ -930,17 +962,21 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
         Array allLeadSeconds = coordinateVariables.getLeadSeconds()
                                                   .read();
 
+        String stationName = output.getMetadata()
+                                   .getIdentifier()
+                                   .getGeospatialID();
+
         // Behold the most horrifying nested loop!
         for ( int featureIndex = 0; featureIndex < shape[STATION_INDEX]; featureIndex++ )
         {
             int currentStation = allStations.getInt( featureIndex );
+            int targetStation = this.getStations().get( stationName );
 
             // We only enter the nested loop when station matches, and so on...
             for ( int thresholdIndex = 0;
-                  currentStation == 1 && thresholdIndex < shape[THRESHOLD_INDEX];
+                  currentStation == targetStation && thresholdIndex < shape[THRESHOLD_INDEX];
                   thresholdIndex++ )
             {
-
                 char[] currentThreshold = new char[STRING_LENGTH];
 
                 // Need to read all the chars from threshold, 2d...
@@ -956,39 +992,60 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
 
                 String actualCurrentThreshold = String.valueOf( currentThreshold )
                                                       .trim(); // remove 0s.
-                LOGGER.debug( "actualCurrentThreshold: {}", actualCurrentThreshold );
+                String targetThreshold = threshold.toString();
+                LOGGER.debug( "actualCurrentThreshold: {}, targetThreshold: {}",
+                              actualCurrentThreshold, targetThreshold );
+
 
                 for ( int startTimeIndex = 0;
-                      actualCurrentThreshold.equals( "Some kind of threshold" )
+                      actualCurrentThreshold.equals( targetThreshold )
                       && startTimeIndex < shape[START_TIME_INDEX];
                       startTimeIndex++ )
                 {
                     int currentStartTime = allTimes.getInt( startTimeIndex );
 
+                    // Trust that out-of-bounds values would have failed early
+                    int targetStartTime = (int) pool.getEarliestTime()
+                                                    .getEpochSecond();
+                    LOGGER.debug( "currentStartTime: {}, targetStartTime: {}",
+                                  currentStartTime, targetStartTime );
+
                     for ( int endTimeIndex = 0;
-                          currentStartTime == 1520520000
+                          currentStartTime == targetStartTime
                           && endTimeIndex < shape[END_TIME_INDEX];
                           endTimeIndex++ )
                     {
                         int currentEndTime = allTimes.getInt( endTimeIndex );
 
+                        // Trust that out-of-bounds values failed early
+                        int targetEndTime = (int) pool.getLatestTime()
+                                                      .getEpochSecond();
+                        LOGGER.debug( "currentEndTime: {}, targetEndTime: {}",
+                                      currentEndTime, targetEndTime );
+
                         for ( int startLeadIndex = 0;
-                              currentEndTime == 1520530000
+                              currentEndTime == targetEndTime
                               && startLeadIndex < shape[START_LEAD_SECONDS_INDEX];
                               startLeadIndex++ )
                         {
                             int currentStartLeadSeconds =
                                     allLeadSeconds.getInt( startLeadIndex );
+                            int targetStartLeadSeconds = (int) pool.getEarliestLeadTimeInSeconds();
+                            LOGGER.debug( "currentStartLeadSeconds: {}, targetStartLeadSeconds: {}",
+                                          currentStartLeadSeconds, targetStartLeadSeconds );
 
                             for ( int endLeadIndex = 0;
-                                  currentStartLeadSeconds == 3600
+                                  currentStartLeadSeconds == targetStartLeadSeconds
                                   && endLeadIndex < shape[END_LEAD_SECONDS_INDEX];
                                   endLeadIndex++ )
                             {
                                 int currentEndLeadSeconds =
                                         allLeadSeconds.getInt( endLeadIndex );
+                                int targetEndLeadSeconds = (int) pool.getLatestLeadTimeInSeconds();
+                                LOGGER.debug( "currentEndLeadSeconds: {}, targetEndLeadSeconds: {}",
+                                              currentEndLeadSeconds, targetEndLeadSeconds );
 
-                                if ( currentEndLeadSeconds == 3600 )
+                                if ( currentEndLeadSeconds == targetEndLeadSeconds )
                                 {
                                     LOGGER.debug( "Found the spot to write! {}, {}, {}, {}, {}, {}",
                                                   featureIndex,
@@ -1001,67 +1058,34 @@ public class NetcdfDoubleScoreWriter implements NetcdfWriter<DoubleScoreOutput>,
                                             { featureIndex, thresholdIndex,
                                               startTimeIndex, endTimeIndex,
                                               startLeadIndex, endLeadIndex };
-                                    double[][][][][][] valueToWrite = {{{{{{ 505.0 }}}}}};
+
+                                    double targetValue = scoreOutput.getData();
+                                    double[][][][][][] valueToWrite = {{{{{{ targetValue }}}}}};
                                     Array ncValueToWrite = Array.makeFromJavaArray( valueToWrite );
 
-                                    try
+                                    synchronized ( this.getLocks().get( writer ) )
                                     {
-                                        writer.write( ncVariable,
-                                                      locationToWrite,
-                                                      ncValueToWrite );
-                                    }
-                                    catch ( InvalidRangeException ire )
-                                    {
-                                        throw new IOException(
-                                                "Failed to write to variable "
-                                                + ncVariable + " in NetCDF file "
-                                                + writer + " using raw data "
-                                                + Arrays.deepToString( valueToWrite )
-                                                + " and nc data "
-                                                + ncValueToWrite , ire );
-                                    }
-                                }
-                            }
-
-                            for ( int endLeadIndex = 0;
-                                  currentStartLeadSeconds == 7200
-                                  && endLeadIndex < shape[END_LEAD_SECONDS_INDEX];
-                                  endLeadIndex++ )
-                            {
-                                int currentEndLeadSeconds =
-                                        allLeadSeconds.getInt( endLeadIndex );
-
-                                if ( currentEndLeadSeconds == 7200 )
-                                {
-                                    LOGGER.debug( "Found another spot to write! {}, {}, {}, {}, {}, {}",
-                                                  featureIndex,
-                                                  thresholdIndex,
-                                                  startTimeIndex,
-                                                  endTimeIndex,
-                                                  startLeadIndex,
-                                                  endLeadIndex );
-                                    int[] locationToWrite =
-                                            { featureIndex, thresholdIndex,
-                                                    startTimeIndex, endTimeIndex,
-                                                    startLeadIndex, endLeadIndex };
-                                    double[][][][][][] valueToWrite = {{{{{{ 705.0 }}}}}};
-                                    Array ncValueToWrite = Array.makeFromJavaArray( valueToWrite );
-
-                                    try
-                                    {
-                                        writer.write( ncVariable,
-                                                      locationToWrite,
-                                                      ncValueToWrite );
-                                    }
-                                    catch ( InvalidRangeException ire )
-                                    {
-                                        throw new IOException(
-                                                "Failed to write to variable "
-                                                + ncVariable + " in NetCDF file "
-                                                + writer + " using raw data "
-                                                + Arrays.deepToString( valueToWrite )
-                                                + " and nc data "
-                                                + ncValueToWrite , ire );
+                                        try
+                                        {
+                                            writer.write( ncVariable,
+                                                          locationToWrite,
+                                                          ncValueToWrite );
+                                        }
+                                        catch ( InvalidRangeException ire )
+                                        {
+                                            throw new IOException(
+                                                    "Failed to write to variable "
+                                                    + ncVariable
+                                                    + " in NetCDF file "
+                                                    + writer
+                                                    + " using raw data "
+                                                    + Arrays.deepToString(
+                                                            valueToWrite )
+                                                    + " and nc data "
+                                                    + ncValueToWrite,
+                                                    ire );
+                                        }
+                                        writer.flush();
                                     }
                                 }
                             }

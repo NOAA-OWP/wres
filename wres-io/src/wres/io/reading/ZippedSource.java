@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -230,43 +229,42 @@ public class ZippedSource extends BasicSource {
         }
         catch (EOFException eof)
         {
-            String message = "The end of the archive entry for: {} was ";
-            message += "reached. Data within the archive may have been ";
-            message += "cut off when creating or moving the archive.";
-            LOGGER.warn(message, archivedFileName);
-            LOGGER.warn(Strings.getStackTrace( eof ));
-            return -1;
+            String message = "The end of the archive entry for: '"
+                             + archivedFileName + "' was "
+                             + "reached. Data within the archive may have been "
+                             + "cut off when creating or moving the archive.";
+            // Regarding whether to log-and-continue or to propagate and stop:
+            // On the one hand, it might happen on a file that is intended for
+            // ingest and therefore can affect primary outputs if not ingested.
+            // On the other hand, this is a very specific case of a particular
+            // exception when reading a particular file within an archive.
+            // But then again, shouldn't the user be notified that the archive
+            // is corrupt? And if so, stopping (propagating here) is the
+            // clearest way to notify the user of a corrupt input file.
+            throw new IngestException( message, eof );
         }
 
         if ( originalSource == null )
         {
-            LOGGER.trace( "'{}' is not being ingested because its data source is null", source );
+            // Demote to debug or trace if null is known as being a normal,
+            // usual occurrence that has no potential impact on anything.
+            LOGGER.warn( "'{}' is not being ingested because its data source is null",
+                         source );
             return bytesRead;
         }
 
-        Pair<Boolean, String> checkIngest;
-
-        try
-        {
-            checkIngest =
-                    this.shouldIngest( archivedFileName, originalSource, content );
-        }
-        catch ( SQLException e )
-        {
-            e.printStackTrace();
-            throw new IOException( "The database could not be used to evaluate "
-                                   + "whether or not '" + archivedFileName +
-                                   "' should be ingested.", e );
-        }
-
+        Pair<Boolean, String> checkIngest =
+                this.shouldIngest( archivedFileName, originalSource, content );
         if ( !checkIngest.getLeft() )
         {
             LOGGER.trace( "'{}' is not being ingested because was already found", source );
 
             if (checkIngest.getRight() == null || checkIngest.getRight().isEmpty())
             {
-                LOGGER.debug("A file ('{}') is being added to this project "
-                             + "despite it not having a hash.", source);
+                String message = "Method shouldIngest did not return a hash for"
+                                 + " file " + archivedFileName + " from source "
+                                 + originalSource;
+                throw new PreIngestException( message );
             }
 
             // Fake a future, return result immediately.

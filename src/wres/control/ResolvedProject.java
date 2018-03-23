@@ -1,10 +1,9 @@
 package wres.control;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import org.slf4j.Logger;
@@ -13,12 +12,17 @@ import org.slf4j.LoggerFactory;
 import wres.config.FeaturePlus;
 import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationConfig;
-import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
 import wres.config.generated.MetricsConfig;
 import wres.config.generated.ProjectConfig;
+import wres.config.generated.ThresholdType;
+import wres.datamodel.DataFactory;
+import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.Threshold;
+import wres.datamodel.ThresholdConstants;
+import wres.datamodel.ThresholdsByMetric;
 import wres.datamodel.ThresholdsByType;
 import wres.engine.statistics.metric.config.MetricConfigHelper;
 import wres.engine.statistics.metric.config.MetricConfigurationException;
@@ -39,11 +43,12 @@ class ResolvedProject
 {
     private static final Logger LOGGER
             = LoggerFactory.getLogger( ResolvedProject.class );
-
+    
     private final ProjectConfigPlus projectConfigPlus;
     private final Set<FeaturePlus> decomposedFeatures;
     private final String projectIdentifier;
-    private final Map<FeaturePlus, Map<MetricConfigName, ThresholdsByType>> thresholds;
+    private final Map<FeaturePlus, Map<MetricConfigName, ThresholdsByType>>
+            externalThresholds;
 
     private ResolvedProject( ProjectConfigPlus projectConfigPlus,
                              Set<FeaturePlus> decomposedFeatures,
@@ -53,7 +58,7 @@ class ResolvedProject
         this.projectConfigPlus = projectConfigPlus;
         this.decomposedFeatures = Collections.unmodifiableSet( decomposedFeatures );
         this.projectIdentifier = projectIdentifier;
-        this.thresholds = Collections.unmodifiableMap( thresholds );
+        this.externalThresholds = Collections.unmodifiableMap( thresholds );
     }
 
     static ResolvedProject of( ProjectConfigPlus projectConfigPlus,
@@ -139,39 +144,98 @@ class ResolvedProject
                    .getGraphicsStrings();
     }
 
-    private Map<FeaturePlus, Map<MetricConfigName, ThresholdsByType>> getThresholds()
+    private Map<FeaturePlus, Map<MetricConfigName, ThresholdsByType>> getExternalThresholds()
     {
-        return thresholds;
+        return this.externalThresholds;
     }
 
     Map<MetricConfigName, ThresholdsByType>
     getThresholdForFeature( FeaturePlus featurePlus )
     {
-        return this.getThresholds().get( featurePlus );
+        return this.getExternalThresholds().get( featurePlus );
     }
-
+    
+    /**
+     * Returns the cardinality of the set of thresholds that apply across 
+     * all features. These include thresholds that are sourced externally 
+     * and apply to specific features and thresholds that are sourced
+     * from within the project configuration and apply to all features. 
+     * The cardinality refers to the set of composed thresholds used
+     * to produce the metric output and not the total number of 
+     * thresholds, i.e. there is one composed threshold for each output.  
+     * 
+     * @param outGroup an optional output group for which the 
+     *            cardinality is required, may be null for all groups
+     * @return the cardinality of the set of thresholds
+     * @throws MetricConfigurationException if the configuration of 
+     *            thresholds is incorrect
+     */
+    
+    int getThresholdCount( MetricOutputGroup outGroup ) throws MetricConfigurationException
+    {
+        // Obtain the union of internal and external thresholds
+        DataFactory thresholdFactory = DefaultDataFactory.getInstance();
+        ThresholdsByMetric thresholds =
+                MetricConfigHelper.getThresholdsFromConfig( this.getProjectConfig(),
+                                                            thresholdFactory,
+                                                            externalThresholds.values() );
+        // Filter the thresholds if required
+        if( Objects.nonNull( outGroup ) )
+        {
+            thresholds = thresholds.filterByGroup( outGroup );
+        }
+        
+        // Return the cardinality of the set of composed thresholds
+        return thresholds.unionOfOneOrTwoThresholds().size();
+    }
+    
+    @Deprecated
     int getThresholdCount()
+            throws MetricConfigurationException
     {
         Set<Threshold> thresholds = new HashSet<>();
+
+        LOGGER.debug( "this.getExternalThresholds(): {}", this.getExternalThresholds() );
 
         // Dive through the threshold hierarchy to find what we
         // are looking for. TODO: find a better way of getting this info.
         for ( Map.Entry<FeaturePlus, Map<MetricConfigName, ThresholdsByType>> outerThresholds
-                : this.getThresholds().entrySet() )
+                : this.getExternalThresholds().entrySet() )
         {
+            LOGGER.debug( "outerThresholds: {}", outerThresholds );
+
             for ( Map.Entry<MetricConfigName, ThresholdsByType> middleThresholds
                   : outerThresholds.getValue().entrySet() )
             {
-                for ( ThresholdsByType.ThresholdType innerThresholds
-                        : middleThresholds.getValue().getStoredTypes() )
+                LOGGER.debug( "middleThresholds: {}", middleThresholds );
+
+                for ( ThresholdConstants.ThresholdGroup innerThresholds
+                        : middleThresholds.getValue().getAllThresholdTypes() )
                 {
+                    LOGGER.debug( "innerThresholds: {}", innerThresholds );
+
                     thresholds.addAll( middleThresholds.getValue()
                                                        .getThresholdsByType( innerThresholds ) );
                 }
             }
         }
 
+        for ( MetricsConfig metricsConfig : this.getProjectConfig().getMetrics() )
+        {
+            Set<Threshold> directlyConfiguredThresholds =
+                    MetricConfigHelper.fromInternalThresholdsConfig(
+                                metricsConfig.getThresholds(),
+                                null,
+                                DefaultDataFactory.getInstance(),
+                                ThresholdType.PROBABILITY,
+                                ThresholdType.PROBABILITY_CLASSIFIER,
+                                ThresholdType.VALUE );
+
+            thresholds.addAll( directlyConfiguredThresholds );
+        }
+
         LOGGER.debug( "Thresholds found: {}", thresholds );
+
         // There is an additional implicit "All Data" threshold, so add one.
         return thresholds.size() + 1;
     }

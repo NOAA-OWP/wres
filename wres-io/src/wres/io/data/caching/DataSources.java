@@ -11,7 +11,6 @@ import org.slf4j.LoggerFactory;
 import wres.io.data.details.SourceDetails;
 import wres.io.data.details.SourceDetails.SourceKey;
 import wres.io.utilities.Database;
-import wres.util.Strings;
 
 /**
  * Caches information about the source of forecast and observation data
@@ -195,8 +194,9 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
         }
         catch (SQLException error)
         {
-            LOGGER.error("An error was encountered when trying to populate the Source cache.");
-            LOGGER.error(Strings.getStackTrace(error));
+            // Failure to pre-populate cache should not affect primary outputs.
+            LOGGER.warn( "An error was encountered when trying to populate the Source cache.",
+                         error );
         }
         finally
         {
@@ -208,8 +208,9 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
                 }
                 catch(SQLException e)
                 {
-                    LOGGER.error("An error was encountered when trying to close the resultset that contained data source information.");
-                    LOGGER.error(Strings.getStackTrace(e));
+                    // Exception on close should not affect primary outputs.
+                    LOGGER.warn( "An error was encountered when trying to close the resultset that contained data source information.",
+                                  e );
                 }
             }
 

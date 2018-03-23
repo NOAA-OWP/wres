@@ -25,8 +25,10 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.datamodel.Threshold;
 import wres.datamodel.OneOrTwoThresholds;
+import wres.datamodel.Threshold;
+import wres.datamodel.ThresholdConstants.ThresholdGroup;
+import wres.datamodel.ThresholdsByMetric;
 import wres.datamodel.ThresholdsByType;
 import wres.datamodel.inputs.InsufficientDataException;
 import wres.datamodel.inputs.MetricInput;
@@ -608,17 +610,18 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
                                                       MetricFuturesByTime.MetricFuturesByTimeBuilder futures,
                                                       MetricOutputGroup outGroup )
     {
-        //Process thresholds
-        Set<Threshold> union =
-                getUnionOfThresholdsForThisGroup( this.thresholdsByMetric, MetricInputGroup.SINGLE_VALUED, outGroup );
+        // Find the thresholds for this group and for the required types
+        ThresholdsByMetric filtered = this.getThresholdsByMetric()
+                                   .filterByGroup( MetricInputGroup.SINGLE_VALUED, outGroup )
+                                   .filterByType( ThresholdGroup.PROBABILITY, ThresholdGroup.VALUE );
+        
+        // Find the union across metrics
+        Set<Threshold> union = filtered.union();
+
         double[] sorted = getSortedClimatology( input, union );
         Map<OneOrTwoThresholds, MetricCalculationException> failures = new HashMap<>();
         union.forEach( threshold -> {
-            Set<MetricConstants> ignoreTheseMetrics =
-                    doNotComputeTheseMetricsForThisThreshold( this.thresholdsByMetric,
-                                                              MetricInputGroup.SINGLE_VALUED,
-                                                              outGroup,
-                                                              threshold );
+            Set<MetricConstants> ignoreTheseMetrics = filtered.doesNotHaveTheseMetricsForThisThreshold( threshold );
 
             // Add quantiles to threshold
             Threshold useMe = this.addQuantilesToThreshold( threshold, sorted );
