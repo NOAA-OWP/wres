@@ -71,7 +71,7 @@ public class RelativeOperatingCharacteristicDiagram extends Diagram<DiscreteProb
             //Compute the PoD/PoFD using the probability threshold to determine whether the event occurred
             //according to the probability on the RHS
             MetricOutputMapByMetric<DoubleScoreOutput> out =
-                    roc.apply( slice.transformPairs( s,
+                    roc.apply( slice.transform( s,
                                                      in -> d.pairOf( Double.compare( in.getItemOne(),
                                                                                      1.0 ) == 0,
                                                                      in.getItemTwo() > prob ) ) );
