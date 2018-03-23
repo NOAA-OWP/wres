@@ -423,6 +423,14 @@ public class ConfigHelper
         return configPlus.getProjectConfig();
     }
 
+    /**
+     * // TODO: document what returning null means to this method to let the
+     * caller decide what can or can't be done with a null response.
+     * @param dataSourceConfig ?
+     * @param filename ?
+     * @return null when ______ (What does it mean for findDataSourceByFilename
+     * to return null?)
+     */
     public static DataSourceConfig.Source findDataSourceByFilename( DataSourceConfig dataSourceConfig, String filename )
     {
         DataSourceConfig.Source source = null;
