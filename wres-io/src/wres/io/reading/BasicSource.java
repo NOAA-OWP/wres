@@ -309,7 +309,10 @@ public abstract class BasicSource
      *                 the source originates from an archive.
      * @return Whether or not to ingest the file and the resulting hash
      */
-    protected Pair<Boolean,String> shouldIngest( String filePath, DataSourceConfig.Source source, byte[] contents )
+    Pair<Boolean,String> shouldIngest( String filePath,
+                                       DataSourceConfig.Source source,
+                                       byte[] contents )
+            throws IOException, SQLException
     {
         Format specifiedFormat = source.getFormat();
         Format pathFormat = ReaderFactory.getFiletype( filePath );
@@ -333,18 +336,16 @@ public abstract class BasicSource
                 }
                 catch ( IOException e )
                 {
-                    this.getLogger().error( "Error occurred while determining "
-                                            + "the hash of '" +
-                                            filePath + "'", e );
+                    throw new IOException( "Error occured while determining "
+                                           + "the hash of '" + filePath + "'",
+                                           e );
                 }
             }
 
             if (contentHash == null || contentHash.isEmpty())
             {
-                this.getLogger().debug( "The read file's ('{}') hash "
-                                        + "is empty. It cannot be ingested.",
-                                        filePath );
-                ingest = false;
+                throw new IOException( "A valid hash for '" + filePath + "' "
+                                       + "could not be computed." );
             }
             else
             {
@@ -354,10 +355,9 @@ public abstract class BasicSource
                 }
                 catch ( SQLException e )
                 {
-                    this.getLogger().error( "Error occurred while determining "
-                                            + "whether or not to ingest '" +
-                                            filePath + "'", e );
-                    ingest = false;
+                    throw new SQLException( "Error occurred while determining "
+                                            + "whether or not '" + filePath +
+                                            "' has already been ingested.", e );
                 }
             }
         }

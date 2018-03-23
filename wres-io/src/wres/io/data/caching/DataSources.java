@@ -1,5 +1,6 @@
 package wres.io.data.caching;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -16,8 +17,8 @@ import wres.util.Strings;
  * Caches information about the source of forecast and observation data
  * @author Christopher Tubbs
  */
-public class DataSources extends Cache<SourceDetails, SourceKey> {
-
+public class DataSources extends Cache<SourceDetails, SourceKey>
+{
     private static final Logger LOGGER = LoggerFactory.getLogger(DataSources.class);
     private static final Object CACHE_LOCK = new Object();
 
@@ -59,12 +60,14 @@ public class DataSources extends Cache<SourceDetails, SourceKey> {
                           .hasID( key );
     }
 
-	public static boolean hasSource(String hash) throws SQLException
+	public static boolean hasSource(String hash)
+            throws SQLException, IOException
     {
         return DataSources.getActiveSourceID( hash ) != null;
     }
 
-    public static Integer getActiveSourceID(String hash) throws SQLException
+    public static Integer getActiveSourceID(String hash)
+            throws SQLException, IOException
     {
         Integer id = null;
 
@@ -75,8 +78,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey> {
             id = DataSources.getCache().getID( key );
         }
 
-        if (id == null &&
-            DataSources.getCache().getKeyIndex().size() >= DataSources.getCache().getMaxDetails())
+        if (id == null)
         {
             Connection connection = null;
             ResultSet results = null;

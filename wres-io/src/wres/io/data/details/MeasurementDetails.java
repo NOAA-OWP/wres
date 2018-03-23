@@ -9,7 +9,11 @@ import wres.io.utilities.Database;
  * M (meter), etc)
  * @author Christopher Tubbs
  */
-public final class MeasurementDetails extends CachedDetail<MeasurementDetails, String> {
+public final class MeasurementDetails extends CachedDetail<MeasurementDetails, String>
+{
+	// Prevents asynchronous saving of identical measurementunits
+	private static final Object MEASUREMENTUNIT_SAVE_LOCK = new Object();
+
 	private String unit = null;
 	private Integer measurementUnitID = null;
 
@@ -85,8 +89,14 @@ public final class MeasurementDetails extends CachedDetail<MeasurementDetails, S
 
 		return script;
 	}
-	
-    private static String getUnitConversionInsertScript() {
+
+	@Override
+	protected Object getSaveLock()
+	{
+		return MEASUREMENTUNIT_SAVE_LOCK;
+	}
+
+	private static String getUnitConversionInsertScript() {
 	    String script = "";
 	    
 	    script += "INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)" + NEWLINE;

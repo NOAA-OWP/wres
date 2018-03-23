@@ -8,7 +8,10 @@ import wres.io.data.details.EnsembleDetails.EnsembleKey;
  * Describes basic information used to define an Ensemble from the database
  * @author Christopher Tubbs
  */
-public final class EnsembleDetails extends CachedDetail<EnsembleDetails, EnsembleKey>{
+public final class EnsembleDetails extends CachedDetail<EnsembleDetails, EnsembleKey>
+{
+    // Lock that will prevent the saving of the ensemble multiple times in a row
+    private static final Object ENSEMBLE_SAVE_LOCK = new Object();
 	
 	// The name of the ensemble being represented
 	private String ensembleName = null;
@@ -136,6 +139,7 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
 		script += "			FROM wres.Ensemble" + NEWLINE;
 		script += "			WHERE ensemble_name = '" + ensembleName + "'" + NEWLINE;
 		script += "				AND ensemblemember_id = " + getEnsembleMemberID() + NEWLINE;
+		script += "             AND qualifier_id = " + getQualifierID() + NEWLINE;
 		script += "		)" + NEWLINE;
 		script += "		RETURNING ensemble_id" + NEWLINE;
 		script += ")" + NEWLINE;
@@ -147,11 +151,18 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
 		script += "SELECT ensemble_id" + NEWLINE;
 		script += "FROM wres.Ensemble" + NEWLINE;
 		script += "WHERE ensemble_name = '" + ensembleName + "'" + NEWLINE;
-		script += "		AND ensemblemember_id = " + getEnsembleMemberID() + ";";
+		script += "		AND ensemblemember_id = " + getEnsembleMemberID() + NEWLINE;
+		script += "     AND qualifier_id = " + getQualifierID() + ";";
 		return script;
 	}
-	
-	public static EnsembleKey createKey(String ensembleName, String qualifierID, String memberIndex)
+
+    @Override
+    protected Object getSaveLock()
+    {
+        return EnsembleDetails.ENSEMBLE_SAVE_LOCK;
+    }
+
+    public static EnsembleKey createKey(String ensembleName, String qualifierID, String memberIndex)
 	{
 	    return new EnsembleKey(ensembleName, qualifierID, memberIndex);
 	}

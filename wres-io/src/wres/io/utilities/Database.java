@@ -210,7 +210,7 @@ public final class Database {
 			watch.start();
 		}
 
-        ProgressMonitor.resetMonitor();
+        //ProgressMonitor.resetMonitor();
 
         try
         {
@@ -405,6 +405,7 @@ public final class Database {
 
 		try
 		{
+		    ProgressMonitor.setShouldUpdate( true );
             task = getStoredIngestTask();
 
             while ( task != null )
@@ -416,6 +417,7 @@ public final class Database {
 					try
                     {
 						List<IngestResult> singleResult = task.get();
+                        ProgressMonitor.completeStep();
 
                         if ( singleResult != null )
                         {
@@ -433,7 +435,6 @@ public final class Database {
 					}
 				}
 
-				ProgressMonitor.completeStep();
                 task = getStoredIngestTask();
 			}
 		}
@@ -682,7 +683,7 @@ public final class Database {
         {
             if (LOGGER.isDebugEnabled())
             {
-                timer = createScriptTimer( query );
+                timer = Database.createScriptTimer( query );
             }
             connection = getConnection();
             connection.setAutoCommit( !forceTransaction );

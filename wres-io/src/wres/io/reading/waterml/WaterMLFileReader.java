@@ -25,14 +25,14 @@ import wres.io.reading.IngestResult;
  * Prototype reader for WaterML JSON data. With some extra work in the WaterML
  * objects, XML may be supported as well.
  */
-public class WaterMLReader extends BasicSource
+public class WaterMLFileReader extends BasicSource
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger( WaterMLReader.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( WaterMLFileReader.class );
 
     private static final DeserializationFeature DESERIALIZATION_FEATURE =
             DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
 
-    protected WaterMLReader( ProjectConfig projectConfig, String filename )
+    protected WaterMLFileReader( ProjectConfig projectConfig, String filename )
     {
         super( projectConfig );
         this.setFilename( filename );
@@ -86,7 +86,7 @@ public class WaterMLReader extends BasicSource
     @Override
     protected Logger getLogger()
     {
-        return WaterMLReader.LOGGER;
+        return WaterMLFileReader.LOGGER;
     }
 
     private Response load() throws IOException
