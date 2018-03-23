@@ -101,7 +101,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                     throw new MetricCalculationException( " The project configuration includes time-series metrics. "
                                                           + "Expected a time-series of single-valued pairs as input." );
                 }
-                inputNoMissing = slicer.filter( input, ADMISSABLE_DATA, true );
+                inputNoMissing = slicer.filter( input, Slicer.leftAndRight( ADMISSABLE_DATA ), ADMISSABLE_DATA );
             }
         }
         catch ( MetricInputSliceException e )
@@ -342,7 +342,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                         pair -> dataFactory.pairOf( useMe.test( pair.getItemOne() ),
                                                     useMe.test( pair.getItemTwo() ) );
                 //Transform the pairs
-                DichotomousPairs transformed = dataFactory.getSlicer().transformPairs( input, mapper );
+                DichotomousPairs transformed = dataFactory.getSlicer().transform( input, mapper );
 
                 processDichotomousPairs( Pair.of( timeWindow, OneOrTwoThresholds.of( useMe ) ),
                                          transformed,
