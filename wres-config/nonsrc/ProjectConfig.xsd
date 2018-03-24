@@ -147,12 +147,14 @@
         </xs:restriction>
     </xs:simpleType>
 
-    <!-- An enum to specify if the left, right, or right mean has been chosen for thresholds. -->
+    <!-- An enum to specify the scope of the thresholds when filtering paired data. -->
     <xs:simpleType name="thresholdDataType">
         <xs:restriction base="xs:string">
             <xs:enumeration value="left" />
             <xs:enumeration value="right" />
+            <xs:enumeration value="left and right" />
             <xs:enumeration value="right mean" />
+            <xs:enumeration value="left and right mean" />
         </xs:restriction>
     </xs:simpleType>
 

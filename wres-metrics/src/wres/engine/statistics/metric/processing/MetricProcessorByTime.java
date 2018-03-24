@@ -16,6 +16,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
+import java.util.function.Predicate;
 
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -35,6 +36,7 @@ import wres.datamodel.inputs.InsufficientDataException;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.MetricInputSliceException;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
+import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.TimeWindow;
@@ -557,7 +559,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
         {
             return;
         }
-        // Aggregate, and report first instance
+
         LOGGER.warn( "WARN: failed to compute {} of {} thresholds at time window {} for metrics that consume {} "
                      + "inputs. "
                      +
@@ -566,6 +568,34 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
                      thresholdCount,
                      meta.getTimeWindow(),
                      inGroup );
+    }
+
+    /**
+     * Helper that returns a predicate for filtering pairs based on the {@link Threshold#getDataType()}
+     * of the input threshold.
+     * 
+     * @param threshold the threshold
+     * @return the predicate for filtering pairs
+     * @throws UnsupportedOperationException if the threshold data type is unrecognized
+     */
+
+    static Predicate<PairOfDoubles> getFilterForSingleValuedPairs( Threshold input )
+    {
+        switch ( input.getDataType() )
+        {
+            case LEFT:
+                return Slicer.left( input::test );
+            case LEFT_AND_RIGHT:
+            case LEFT_AND_RIGHT_MEAN:
+                return Slicer.leftAndRight( input::test );
+            case RIGHT:
+            case RIGHT_MEAN:
+                return Slicer.right( input::test );
+            default:
+                throw new UnsupportedOperationException( "Cannot map the threshold data type '"
+                                                         + input.getDataType()
+                                                         + "'." );
+        }
     }
 
     /**
@@ -613,9 +643,9 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
     {
         // Find the thresholds for this group and for the required types
         ThresholdsByMetric filtered = this.getThresholdsByMetric()
-                                   .filterByGroup( MetricInputGroup.SINGLE_VALUED, outGroup )
-                                   .filterByType( ThresholdGroup.PROBABILITY, ThresholdGroup.VALUE );
-        
+                                          .filterByGroup( MetricInputGroup.SINGLE_VALUED, outGroup )
+                                          .filterByType( ThresholdGroup.PROBABILITY, ThresholdGroup.VALUE );
+
         // Find the union across metrics
         Set<Threshold> union = filtered.union();
 
@@ -629,13 +659,17 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
 
             try
             {
-                // Slice the data if required
                 SingleValuedPairs pairs = input;
+
+                // Filter the data if required
                 if ( useMe.isFinite() )
                 {
-                    pairs = dataFactory.getSlicer().filter( input, Slicer.left( useMe::test ), null );
+                    Predicate<PairOfDoubles> filter = MetricProcessorByTime.getFilterForSingleValuedPairs( useMe );
+
+                    pairs = dataFactory.getSlicer().filter( input, filter, null );
 
                 }
+
                 processSingleValuedPairs( Pair.of( timeWindow, OneOrTwoThresholds.of( useMe ) ),
                                           pairs,
                                           futures,

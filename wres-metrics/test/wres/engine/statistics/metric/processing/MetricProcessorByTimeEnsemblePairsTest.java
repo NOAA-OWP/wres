@@ -127,6 +127,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         //Obtain the results
         MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> results = processor.getCachedMetricOutput()
                                                                                      .getDoubleScoreOutput();
+
         //Validate bias
         MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> bias = results.get( MetricConstants.BIAS_FRACTION );
         assertTrue( "Expected results differ from actual results for " + MetricConstants.BIAS_FRACTION

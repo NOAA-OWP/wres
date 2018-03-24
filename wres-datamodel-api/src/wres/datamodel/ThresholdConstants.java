@@ -94,12 +94,6 @@ public final class ThresholdConstants
     {
 
         /**
-         * Apply to all data.
-         */
-
-        ALL,
-
-        /**
          * Apply to the left side of paired data.
          */
 
@@ -110,12 +104,24 @@ public final class ThresholdConstants
          */
 
         RIGHT,
-
+        
         /**
-         * Apply to the mean value of the right side of paired data.
+         * Apply to both sides of the data.
          */
 
-        RIGHT_MEAN;
+        LEFT_AND_RIGHT,
+
+        /**
+         * Apply to the mean value of the right side of the paired data.
+         */
+
+        RIGHT_MEAN,
+        
+        /**
+         * Apply to the left and the mean value of the right side of the paired data.
+         */
+
+        LEFT_AND_RIGHT_MEAN;        
 
     }    
     

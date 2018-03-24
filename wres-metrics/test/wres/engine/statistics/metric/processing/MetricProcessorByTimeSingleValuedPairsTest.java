@@ -393,12 +393,12 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         inMap.put( Pair.of( firstWindow,
                             OneOrTwoThresholds.of( metIn.ofThreshold( metIn.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
                                                                       Operator.GREATER,
-                                                                      ThresholdDataType.ALL ) ) ),
+                                                                      ThresholdDataType.LEFT_AND_RIGHT ) ) ),
                    expectedErrorsFirst );
         inMap.put( Pair.of( secondWindow,
                             OneOrTwoThresholds.of( metIn.ofThreshold( metIn.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
                                                                       Operator.GREATER,
-                                                                      ThresholdDataType.ALL ) ) ),
+                                                                      ThresholdDataType.LEFT_AND_RIGHT ) ) ),
                    expectedErrorsSecond );
         MetricOutputMapByTimeAndThreshold<PairedOutput<Instant, Duration>> mapped = metIn.ofMap( inMap );
         MetricOutputMultiMapByTimeAndThresholdBuilder<PairedOutput<Instant, Duration>> builder = metIn.ofMultiMap();
@@ -475,7 +475,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         scoreInMap.put( Pair.of( combinedWindow,
                                  OneOrTwoThresholds.of( metIn.ofThreshold( metIn.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
                                                                            Operator.GREATER,
-                                                                           ThresholdDataType.ALL ) ) ),
+                                                                           ThresholdDataType.LEFT_AND_RIGHT ) ) ),
                         expectedScoresSource );
         MetricOutputMapByTimeAndThreshold<DurationScoreOutput> mappedScores = metIn.ofMap( scoreInMap );
         MetricOutputMultiMapByTimeAndThresholdBuilder<DurationScoreOutput> scoreBuilder = metIn.ofMultiMap();

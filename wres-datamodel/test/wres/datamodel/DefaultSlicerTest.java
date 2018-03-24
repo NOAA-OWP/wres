@@ -10,7 +10,6 @@ import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.DoubleUnaryOperator;
 import java.util.function.Function;
-import java.util.function.ToDoubleFunction;
 
 import org.junit.Test;
 
@@ -853,107 +852,5 @@ public final class DefaultSlicerTest
         {
         }
     }
-
-
-    /**
-     * Tests the {@link Slicer#filter(EnsemblePairs, java.util.function.Predicate, Function, java.util.function.DoublePredicate)}.
-    
-     * @throws MetricInputSliceException if slicing results in an unexpected exception
-     */
-
-    @Test
-    public void test17FilterEnsemblePairs() throws MetricInputSliceException
-    {
-        DataFactory metIn = DefaultDataFactory.getInstance();
-        final List<PairOfDoubleAndVectorOfDoubles> values = new ArrayList<>();
-        values.add( metIn.pairOf( 0, new double[] { 1, 2, 3 } ) );
-        values.add( metIn.pairOf( 0, new double[] { 1, 2, 3 } ) );
-        values.add( metIn.pairOf( 0, new double[] { 3, 4, 5 } ) );
-        values.add( metIn.pairOf( 0, new double[] { 3, 4, 5 } ) );
-        values.add( metIn.pairOf( 0, new double[] { 4, 5, 6 } ) );
-        values.add( metIn.pairOf( 0, new double[] { 4, 5, 6 } ) );
-
-        List<PairOfDoubleAndVectorOfDoubles> expectedValues = new ArrayList<>();
-        expectedValues.add( metIn.pairOf( 0, new double[] { 3, 4, 5 } ) );
-        expectedValues.add( metIn.pairOf( 0, new double[] { 3, 4, 5 } ) );
-        expectedValues.add( metIn.pairOf( 0, new double[] { 4, 5, 6 } ) );
-        expectedValues.add( metIn.pairOf( 0, new double[] { 4, 5, 6 } ) );
-
-        VectorOfDoubles climatology = metIn.vectorOf( new double[] { 1, 2, 3, 4, 5, Double.NaN } );
-        VectorOfDoubles climatologyExpected = metIn.vectorOf( new double[] { 1, 2, 3, 4, 5 } );
-
-        Metadata meta = metIn.getMetadataFactory().getMetadata();
-        EnsemblePairs pairs = metIn.ofEnsemblePairs( values, values, meta, meta, climatology );
-
-        ToDoubleFunction<double[]> mean = doubles -> Arrays.stream( doubles ).average().getAsDouble();
-        Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> meanFunc =
-                pair -> metIn.pairOf( pair.getItemOne(), mean.applyAsDouble( pair.getItemTwo() ) );
-
-        EnsemblePairs sliced = slicer.filter( pairs, Slicer.right( right -> right >= 4 ), meanFunc, Double::isFinite );
-
-        //Test with baseline
-        assertTrue( "The sliced data does not match the benchmark.", sliced.getData().equals( expectedValues ) );
-        assertTrue( "The sliced baseline data does not match the benchmark.",
-                    sliced.getDataForBaseline().equals( expectedValues ) );
-        assertTrue( "The sliced climatology data does not match the benchmark.",
-                    Arrays.equals( sliced.getClimatology().getDoubles(), climatologyExpected.getDoubles() ) );
-        assertTrue( "Unexpected equality of the sliced and unsliced climatology.",
-                    !Arrays.equals( slicer.filter( pairs, Slicer.right( right -> right >= 4 ), meanFunc, null )
-                                          .getClimatology()
-                                          .getDoubles(),
-                                    climatologyExpected.getDoubles() ) );
-        assertTrue( "Unexpected equality of the sliced and unsliced data.",
-                    !sliced.getData().equals( values ) );
-        //Test without baseline or climatology
-        EnsemblePairs pairsNoBase = metIn.ofEnsemblePairs( values, meta );
-        EnsemblePairs slicedNoBase = slicer.filter( pairsNoBase, Slicer.right( right -> right >= 4 ), meanFunc, null );
-
-        assertTrue( "The sliced data without a baseline does not match the benchmark.",
-                    slicedNoBase.getData().equals( expectedValues ) );
-
-        //Test exceptions
-        //No pairs in main
-        try
-        {
-            List<PairOfDoubleAndVectorOfDoubles> none = new ArrayList<>();
-            none.add( metIn.pairOf( 1, new double[] { 1 } ) );
-            none.add( metIn.pairOf( Double.NaN, new double[] { Double.NaN } ) );
-            slicer.filter( metIn.ofEnsemblePairs( none, meta ), Slicer.right( right -> right >= 4 ), meanFunc, null );
-            fail( "Expected an exception on attempting to filter with no data." );
-        }
-        catch ( MetricInputSliceException e )
-        {
-        }
-        //No pairs in baseline
-        try
-        {
-            List<PairOfDoubleAndVectorOfDoubles> none = new ArrayList<>();
-            none.add( metIn.pairOf( 1, new double[] { 1 } ) );
-            none.add( metIn.pairOf( Double.NaN, new double[] { Double.NaN } ) );
-            slicer.filter( metIn.ofEnsemblePairs( values, none, meta, meta ),
-                           Slicer.right( right -> right >= 4 ),
-                           meanFunc,
-                           null );
-            fail( "Expected an exception on attempting to filter with no baseline data." );
-        }
-        catch ( MetricInputSliceException e )
-        {
-        }
-
-        //No climatological data
-        try
-        {
-            EnsemblePairs test =
-                    metIn.ofEnsemblePairs( values,
-                                           meta,
-                                           metIn.vectorOf( new double[] { 1, Double.NaN } ) );
-            slicer.filter( test, Slicer.right( right -> right >= 4 ), meanFunc, a -> a > 1 );
-            fail( "Expected an exception on attempting to filter with no climatological data." );
-        }
-        catch ( MetricInputSliceException e )
-        {
-        }
-    }
-
 
 }

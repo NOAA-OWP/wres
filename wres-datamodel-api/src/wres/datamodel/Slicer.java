@@ -34,7 +34,9 @@ public interface Slicer
 {
 
     /**
-     * Composes the input predicate as applying to the left side of a pair.
+     * <p>Composes the input predicate as applying to the left side of a pair. 
+     * 
+     * <p>Also see {@link #filter(SingleValuedPairs, Predicate, DoublePredicate)}.
      * 
      * @param predicate the input predicate
      * @return a composed predicate
@@ -46,7 +48,9 @@ public interface Slicer
     }
 
     /**
-     * Composes the input predicate as applying to the right side of a pair.
+     * <p>Composes the input predicate as applying to the right side of a pair.
+     * 
+     * <p>Also see {@link #filter(SingleValuedPairs, Predicate, DoublePredicate)}.
      * 
      * @param predicate the input predicate
      * @return a composed predicate
@@ -58,7 +62,9 @@ public interface Slicer
     }
 
     /**
-     * Composes the input predicate as applying to the both the left and right sides of a pair.
+     * <p>Composes the input predicate as applying to the both the left and right sides of a pair.
+     * 
+     * <p>Also see {@link #filter(SingleValuedPairs, Predicate, DoublePredicate)}
      * 
      * @param predicate the input predicate
      * @return a composed predicate
@@ -70,7 +76,9 @@ public interface Slicer
     }
 
     /**
-     * Composes the input predicate as applying to the either the left side or to the right side of a pair.
+     * <p>Composes the input predicate as applying to the either the left side or to the right side of a pair.
+     * 
+     * <p>Also see {@link #filter(SingleValuedPairs, Predicate, DoublePredicate)}.
      * 
      * @param predicate the input predicate
      * @return a composed predicate
@@ -82,7 +90,9 @@ public interface Slicer
     }
 
     /**
-     * Composes the input predicate as applying to the left side of a pair.
+     * <p>Composes the input predicate as applying to the left side of a pair.
+     * 
+     * <p>Also see {@link #filter(EnsemblePairs, Predicate, DoublePredicate)}
      * 
      * @param predicate the input predicate
      * @return a composed predicate
@@ -94,7 +104,9 @@ public interface Slicer
     }
 
     /**
-     * Composes the input predicate as applying to all elements of the right side of a pair.
+     * <p>Composes the input predicate as applying to all elements of the right side of a pair.
+     * 
+     * <p>Also see {@link #filter(EnsemblePairs, Predicate, DoublePredicate)}
      * 
      * @param predicate the input predicate
      * @return a composed predicate
@@ -106,7 +118,9 @@ public interface Slicer
     }
 
     /**
-     * Composes the input predicate as applying to one or more elements of the right side of a pair.
+     * <p>Composes the input predicate as applying to one or more elements of the right side of a pair.
+     * 
+     * <p>Also see {@link #filter(EnsemblePairs, Predicate, DoublePredicate)}
      * 
      * @param predicate the input predicate
      * @return a composed predicate
@@ -118,7 +132,9 @@ public interface Slicer
     }
 
     /**
-     * Composes the input predicate as applying to the left side of a pair and all elements of the right side of a pair.
+     * <p>Composes the input predicate as applying to the left side of a pair and all elements of the right side of a pair.
+     * 
+     * <p>Also see {@link #filter(EnsemblePairs, Predicate, DoublePredicate)}
      * 
      * @param predicate the input predicate
      * @return a composed predicate
@@ -130,7 +146,9 @@ public interface Slicer
     }
 
     /**
-     * Composes the input predicate as applying to the left side of a pair and any element of the right side of a pair.
+     * <p>Composes the input predicate as applying to the left side of a pair and any element of the right side of a pair.
+     * 
+     * <p>Also see {@link #filter(EnsemblePairs, Predicate, DoublePredicate)}
      * 
      * @param predicate the input predicate
      * @return a composed predicate
@@ -139,6 +157,40 @@ public interface Slicer
     static Predicate<PairOfDoubleAndVectorOfDoubles> leftAndAnyOfRight( DoublePredicate predicate )
     {
         return pair -> predicate.test( pair.getItemOne() ) && Arrays.stream( pair.getItemTwo() ).anyMatch( predicate );
+    }
+
+    /**
+     * <p>Composes the input predicate as applying to the transformed value of the right side of a pair.</p>
+     * 
+     * <p>Also see {@link #filter(EnsemblePairs, Predicate, DoublePredicate)}
+     * 
+     * @param predicate the input predicate
+     * @param transformer the transformer
+     * @return a composed predicate
+     */
+
+    static Predicate<PairOfDoubleAndVectorOfDoubles> right( DoublePredicate predicate,
+                                                            ToDoubleFunction<double[]> transformer )
+    {
+        return pair -> predicate.test( transformer.applyAsDouble( pair.getItemTwo() ) );
+    }
+
+    /**
+     * <p>Composes the input predicate as applying to the left side of a pair and to the transformed value of the 
+     * right side of a pair.</p>
+     * 
+     * <p>Also see {@link #filter(EnsemblePairs, Predicate, DoublePredicate)}
+     * 
+     * @param predicate the input predicate
+     * @param transformer the transformer
+     * @return a composed predicate
+     */
+
+    static Predicate<PairOfDoubleAndVectorOfDoubles> leftAndRight( DoublePredicate predicate,
+                                                                   ToDoubleFunction<double[]> transformer )
+    {
+        return pair -> predicate.test( pair.getItemOne() )
+                       && predicate.test( transformer.applyAsDouble( pair.getItemTwo() ) );
     }
 
     /**
@@ -202,8 +254,8 @@ public interface Slicer
     default Threshold getQuantileFromProbability( Threshold threshold, double[] sorted )
     {
         return this.getQuantileFromProbability( threshold, sorted, null );
-    }    
-    
+    }
+
     /**
      * Returns the left side of {@link SingleValuedPairs#getData()} as a primitive array of doubles.
      * 
@@ -262,29 +314,11 @@ public interface Slicer
                           Predicate<PairOfDoubleAndVectorOfDoubles> condition,
                           DoublePredicate applyToClimatology )
             throws MetricInputSliceException;
-    
-    /**
-     * Applies a transformer, inline, and then filters the transformed pairs according to the supplied condition, 
-     * returning the untransformed pairs where the condition is met.
-     * 
-     * @param input the pairs to slice
-     * @param condition the condition on which to slice
-     * @param transformer the transformer
-     * @param applyToClimatology an optional filter for the climatology, may be null
-     * @return the subset of pairs that meet the condition
-     * @throws MetricInputSliceException if the slice contains no elements
-     * @throws NullPointerException if either the input, transformer or condition is null
-     */
 
-    EnsemblePairs filter( EnsemblePairs input,
-                          Predicate<PairOfDoubles> condition,
-                          Function<PairOfDoubleAndVectorOfDoubles,PairOfDoubles> transformer, 
-                          DoublePredicate applyToClimatology )
-            throws MetricInputSliceException;    
-    
     /**
      * Filters {@link EnsemblePairs} by applying a mapper function to the input. This allows for fine-grain filtering
-     * of specific elements of the right side of a pair.
+     * of specific elements of the right side of a pair. For example, filter all elements of the right side that 
+     * correspond to {@link Double#isNaN()}.
      * 
      * @param input the {@link EnsemblePairs}
      * @param mapper the function that maps from {@link EnsemblePairs} to a new {@link EnsemblePairs}
@@ -297,7 +331,7 @@ public interface Slicer
     EnsemblePairs filter( EnsemblePairs input,
                           Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubleAndVectorOfDoubles> mapper,
                           DoublePredicate applyToClimatology )
-            throws MetricInputSliceException; 
+            throws MetricInputSliceException;
 
     /**
      * Returns as many lists of {@link PairOfDoubleAndVectorOfDoubles} as groups of atomic pairs in the input with an
@@ -381,7 +415,7 @@ public interface Slicer
      */
 
     PairOfDoubles transform( PairOfDoubleAndVectorOfDoubles pair, Threshold threshold );
-    
+
     /**
      * Returns a function that converts a {@link PairOfDoubleAndVectorOfDoubles} to a {@link PairOfDoubles} by 
      * applying the specified transformer to the {@link PairOfDoubleAndVectorOfDoubles#getItemTwo()}.
@@ -390,7 +424,7 @@ public interface Slicer
      * @return a composed function
      */
 
-    Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> transform( ToDoubleFunction<double[]> transformer );       
+    Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> transform( ToDoubleFunction<double[]> transformer );
 
     /**
      * A transformer that applies a predicate to the left and each of the right separately, returning a transformed

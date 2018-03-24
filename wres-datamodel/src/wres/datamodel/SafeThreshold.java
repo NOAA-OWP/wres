@@ -227,13 +227,6 @@ class SafeThreshold implements Threshold
         {
             return returnMe;
         }
-
-       //Compare data type
-        returnMe = this.getDataType().compareTo( o.getDataType() );
-        if ( returnMe != 0 )
-        {
-            return returnMe;
-        }
         
         //Check for status of optional elements
         returnMe = comparePresenceAbsence( o );
@@ -262,6 +255,13 @@ class SafeThreshold implements Threshold
                 return returnMe;
             }
         }
+        
+        //Compare data type
+        returnMe = this.getDataType().compareTo( o.getDataType() );
+        if ( returnMe != 0 )
+        {
+            return returnMe;
+        }        
 
         //Compare labels
         if ( hasLabel() )

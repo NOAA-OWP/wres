@@ -229,17 +229,20 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
             }
 
         }
+        
         // Check that time-series metrics are not combined with other metrics
         String message = "Cannot configure time-series metrics together with non-time-series "
                          + "metrics: correct the configuration labelled '"
                          + config.getLabel()
                          + "'.";
+        
         // Metrics that are explicitly configured as time-series
         if ( MetricConfigHelper.hasTimeSeriesMetrics( config )
              && ( hasMetrics( MetricInputGroup.SINGLE_VALUED ) || hasMetrics( MetricInputGroup.DICHOTOMOUS ) ) )
         {
             throw new MetricConfigurationException( message );
         }
+        
         // Time-series metrics that are configured as regular metrics, not time-series
         if ( hasMetrics( MetricInputGroup.SINGLE_VALUED_TIME_SERIES )
              && ( hasMetrics( MetricInputGroup.SINGLE_VALUED ) || hasMetrics( MetricInputGroup.DICHOTOMOUS ) ) )
@@ -263,6 +266,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
             TimeWindow unionWindow = union.getMetadata().getTimeWindow();
             Pair<TimeWindow, OneOrTwoThresholds> key =
                     Pair.of( unionWindow, OneOrTwoThresholds.of( this.getAllDataThreshold() ) );
+            
             //Build the future result
             Supplier<MetricOutputMapByMetric<DurationScoreOutput>> supplier = () -> {
                 DurationScoreOutput result = timeToPeakErrorStats.aggregate( union );
@@ -272,6 +276,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
             };
             Future<MetricOutputMapByMetric<DurationScoreOutput>> addMe =
                     CompletableFuture.supplyAsync( supplier, thresholdExecutor );
+            
             //Add the future result to the store
             //Metric futures 
             MetricFuturesByTimeBuilder addFutures = new MetricFuturesByTimeBuilder();
