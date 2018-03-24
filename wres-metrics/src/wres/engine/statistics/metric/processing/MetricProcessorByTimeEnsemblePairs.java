@@ -12,6 +12,7 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -143,6 +144,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         {
             processEnsemblePairs( timeWindow, inputNoMissing, futures );
         }
+
         //Process the metrics that consume single-valued pairs
         if ( hasMetrics( MetricInputGroup.SINGLE_VALUED ) )
         {
@@ -150,11 +152,13 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
             SingleValuedPairs singleValued = slicer.transform( inputNoMissing, toSingleValues );
             processSingleValuedPairs( timeWindow, singleValued, futures );
         }
+
         //Process the metrics that consume discrete probability pairs
         if ( hasMetrics( MetricInputGroup.DISCRETE_PROBABILITY ) )
         {
             processDiscreteProbabilityPairs( timeWindow, inputNoMissing, futures );
         }
+
         //Process the metrics that consume dichotomous pairs
         if ( hasMetrics( MetricInputGroup.DICHOTOMOUS ) )
         {
@@ -279,6 +283,35 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         validate( config );
     }
 
+    /**
+     * Helper that returns a predicate for filtering pairs based on the {@link Threshold#getDataType()}
+     * of the input threshold.
+     * 
+     * @param threshold the threshold
+     * @return the predicate for filtering pairs
+     * @throws UnsupportedOperationException if the threshold data type is unrecognized
+     */
+
+    static Predicate<PairOfDoubleAndVectorOfDoubles> getFilterForEnsemblePairs( Threshold input )
+    {
+        switch ( input.getDataType() )
+        {
+            case LEFT:
+                return Slicer.leftVector( input::test );
+            case RIGHT:
+                return Slicer.allOfRight( input::test );
+            case LEFT_AND_RIGHT:
+                return Slicer.leftAndAllOfRight( input::test );
+            case RIGHT_MEAN:
+                return Slicer.right( input::test, right -> Arrays.stream( right ).average().getAsDouble() );
+            case LEFT_AND_RIGHT_MEAN:
+                return Slicer.leftAndRight( input::test, right -> Arrays.stream( right ).average().getAsDouble() );                
+            default:
+                throw new UnsupportedOperationException( "Cannot map the threshold data type '" + input.getDataType()
+                                                         + "'." );
+        }
+    }
+
     @Override
     void validate( ProjectConfig config ) throws MetricConfigurationException
     {
@@ -388,12 +421,16 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
             Threshold useMe = addQuantilesToThreshold( threshold, sorted );
 
             try
-            {
-                //Slice the pairs if required
+            {         
                 EnsemblePairs pairs = input;
+
+                //Filter the pairs if required
                 if ( threshold.isFinite() )
                 {
-                    pairs = dataFactory.getSlicer().filter( input, Slicer.leftVector( useMe::test ), null );
+                    Predicate<PairOfDoubleAndVectorOfDoubles> filter =
+                            MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( useMe );
+
+                    pairs = dataFactory.getSlicer().filter( input, filter, null );
                 }
 
                 processEnsemblePairs( Pair.of( timeWindow, OneOrTwoThresholds.of( useMe ) ),

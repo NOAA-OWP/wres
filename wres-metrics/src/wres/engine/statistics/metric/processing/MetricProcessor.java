@@ -337,6 +337,18 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
     abstract T getCachedMetricOutputInternal();
 
     /**
+     * Helper that returns a function for filtering ensemble pairs based on the {@link Threshold#getDataType()}
+     * of the input threshold. Ensemble pairs may be transformed, inline, before being filtered. For example, the 
+     * pairs may be filtered against a predicate on the ensemble mean of the right side. Where no such transformation
+     * is required, the identity function is used.
+     * 
+     * @param threshold the threshold
+     * @return the function for filtering pairs
+     * @throws UnsupportedOperationException if the threshold data type is unrecognized
+     */
+    
+
+    /**
      * Constructor.
      * 
      * @param dataFactory the data factory
@@ -439,7 +451,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
 
         this.allDataThreshold = dataFactory.ofThreshold( dataFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
                                                          Operator.GREATER,
-                                                         ThresholdDataType.ALL );
+                                                         ThresholdDataType.LEFT_AND_RIGHT );
 
         //Finally, validate the configuration against the parameters set
         validate( config );
@@ -466,7 +478,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
     {
         return this.allDataThreshold;
     }
-    
+
     /**
      * Returns true if the input list of thresholds contains one or more probability thresholds, false otherwise.
      * 

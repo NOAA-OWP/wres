@@ -825,7 +825,7 @@ public final class MetricConfigHelper
         Threshold allData =
                 dataFactory.ofThreshold( dataFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
                                          Operator.GREATER,
-                                         ThresholdConstants.ThresholdDataType.ALL );
+                                         ThresholdConstants.ThresholdDataType.LEFT_AND_RIGHT );
 
         // All data only
         if ( metric.getMetricOutputGroup() == MetricOutputGroup.BOXPLOT
