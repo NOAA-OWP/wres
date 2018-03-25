@@ -586,9 +586,11 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
             case LEFT:
                 return Slicer.left( input::test );
             case LEFT_AND_RIGHT:
+            case LEFT_AND_ANY_RIGHT:
             case LEFT_AND_RIGHT_MEAN:
                 return Slicer.leftAndRight( input::test );
             case RIGHT:
+            case ANY_RIGHT:
             case RIGHT_MEAN:
                 return Slicer.right( input::test );
             default:

@@ -153,6 +153,8 @@
             <xs:enumeration value="left" />
             <xs:enumeration value="right" />
             <xs:enumeration value="left and right" />
+            <xs:enumeration value="any right" />
+            <xs:enumeration value="left and any right" />
             <xs:enumeration value="right mean" />
             <xs:enumeration value="left and right mean" />
         </xs:restriction>
