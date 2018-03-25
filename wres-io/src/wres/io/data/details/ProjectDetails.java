@@ -24,6 +24,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.ProjectConfigs;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
@@ -1400,6 +1401,10 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
     /**
      * @return Indicates whether or not pairs will be fed into time series
      * only metrics
+     * 
+     * TODO: replace this with a call to {@link ProjectConfigs#hasTimeSeriesMetrics(ProjectConfig)}. 
+     * JBr: unclear why this was explicitly duplicated again - the reason I haven't removed it again - but this check
+     * for nullity is not needed. Implementation details aside, we shouldn't duplicate such helpers.
      */
     public boolean usesTimeSeriesMetrics()
     {

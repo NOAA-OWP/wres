@@ -497,7 +497,7 @@ public final class DefaultSlicerTest
                                                         Operator.GREATER,
                                                         ThresholdDataType.LEFT );
         Threshold testB = metIn.ofProbabilityThreshold( SafeOneOrTwoDoubles.of( tB ),
-                                                        Operator.GREATER,
+                                                        Operator.LESS,
                                                         ThresholdDataType.LEFT );
         Threshold testC = metIn.ofProbabilityThreshold( SafeOneOrTwoDoubles.of( tC ),
                                                         Operator.GREATER,
@@ -520,7 +520,7 @@ public final class DefaultSlicerTest
                                                          ThresholdDataType.LEFT );
         Threshold expectedB = metIn.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 17897.2 ),
                                                          SafeOneOrTwoDoubles.of( tB ),
-                                                         Operator.GREATER,
+                                                         Operator.LESS,
                                                          ThresholdDataType.LEFT );
         Threshold expectedC = metIn.ofQuantileThreshold( SafeOneOrTwoDoubles.of( 1647.1818181818185 ),
                                                          SafeOneOrTwoDoubles.of( tC ),

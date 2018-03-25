@@ -512,7 +512,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
      */
 
     @Test
-    public void test4Exceptions() throws IOException
+    public void test4Exceptions() throws IOException, MetricProcessorException
     {
         final DataFactory metIn = DefaultDataFactory.getInstance();
         String testOne = "testinput/metricProcessorEnsemblePairsByTimeTest/test4ExceptionsOne.xml";

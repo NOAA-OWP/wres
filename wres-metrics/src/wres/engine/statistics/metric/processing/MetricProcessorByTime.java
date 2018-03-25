@@ -20,7 +20,7 @@ import java.util.function.Predicate;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-import wres.config.generated.MetricConfigName;
+import wres.config.MetricConfigException;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
@@ -31,7 +31,6 @@ import wres.datamodel.Slicer;
 import wres.datamodel.Threshold;
 import wres.datamodel.ThresholdConstants.ThresholdGroup;
 import wres.datamodel.ThresholdsByMetric;
-import wres.datamodel.ThresholdsByType;
 import wres.datamodel.inputs.InsufficientDataException;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.MetricInputSliceException;
@@ -53,7 +52,6 @@ import wres.datamodel.outputs.PairedOutput;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricCollection;
 import wres.engine.statistics.metric.MetricParameterException;
-import wres.engine.statistics.metric.config.MetricConfigurationException;
 
 /**
  * A {@link MetricProcessor} that processes and stores metric results by {@link TimeWindow}.
@@ -605,24 +603,24 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
      * 
      * @param dataFactory the data factory
      * @param config the project configuration
-     * @param externalThresholds an optional set of canonical thresholds (one per metric), may be null
+     * @param externalThresholds an optional set of canonical thresholds, may be null
      * @param thresholdExecutor an optional {@link ExecutorService} for executing thresholds. Defaults to the 
      *            {@link ForkJoinPool#commonPool()}
      * @param metricExecutor an optional {@link ExecutorService} for executing metrics. Defaults to the 
      *            {@link ForkJoinPool#commonPool()}  
      * @param mergeList a list of {@link MetricOutputGroup} whose outputs should be retained and merged across calls to
      *            {@link #apply(Object)}
-     * @throws MetricConfigurationException if the metrics are configured incorrectly
+     * @throws MetricConfigException if the metrics are configured incorrectly
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
     MetricProcessorByTime( final DataFactory dataFactory,
                            final ProjectConfig config,
-                           final Map<MetricConfigName, ThresholdsByType> externalThresholds,
+                           final ThresholdsByMetric externalThresholds,
                            final ExecutorService thresholdExecutor,
                            final ExecutorService metricExecutor,
                            final MetricOutputGroup[] mergeList )
-            throws MetricConfigurationException, MetricParameterException
+            throws MetricConfigException, MetricParameterException
     {
         super( dataFactory, config, externalThresholds, thresholdExecutor, metricExecutor, mergeList );
     }

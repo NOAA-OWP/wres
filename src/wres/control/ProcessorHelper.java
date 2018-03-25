@@ -18,21 +18,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.FeaturePlus;
+import wres.config.MetricConfigException;
 import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationType;
 import wres.config.generated.Feature;
-import wres.config.generated.MetricConfigName;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.datamodel.ThresholdsByType;
+import wres.datamodel.ThresholdsByMetric;
 import wres.datamodel.inputs.InsufficientDataException;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.outputs.MetricOutputAccessException;
 import wres.engine.statistics.metric.MetricFactory;
-import wres.engine.statistics.metric.config.MetricConfigurationException;
 import wres.engine.statistics.metric.processing.MetricProcessorException;
 import wres.engine.statistics.metric.processing.MetricProcessorForProject;
 import wres.io.Operations;
@@ -86,7 +85,7 @@ class ProcessorHelper
                                       final ExecutorService thresholdExecutor,
                                       final ExecutorService metricExecutor )
             throws IOException, ProjectConfigException,
-            MetricConfigurationException
+            MetricConfigException
     {
 
         final ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
@@ -123,7 +122,7 @@ class ProcessorHelper
         // to wres-metrics, given that they are resolved by project configuration that is
         // passed separately to wres-metrics. Options include moving MetricProcessor* to 
         // wres-control, since they make processing decisions, or passing ResolvedProject onwards
-        final Map<FeaturePlus, Map<MetricConfigName, ThresholdsByType>> thresholds =
+        final Map<FeaturePlus, ThresholdsByMetric> thresholds =
                 new TreeMap<>( FeaturePlus::compareByLocationId );
         thresholds.putAll( ConfigHelper.readExternalThresholdsFromProjectConfig( projectConfig ) );
 
@@ -180,7 +179,7 @@ class ProcessorHelper
                                                                      resolvedProject.getFeatureCount(),
                                                                      (int) basisTimes,
                                                                      (int) leadCount,
-                                                                     resolvedProject.getThresholdCount(),
+                                                                     resolvedProject.getThresholdCount( MetricOutputGroup.DOUBLE_SCORE ),
                                                                      resolvedProject.getDoubleScoreMetrics() );
 
         // Reduce our triad of executors to one object
@@ -316,7 +315,7 @@ class ProcessorHelper
     {
 
         final ProjectConfig projectConfig = resolvedProject.getProjectConfig();
-        final Map<MetricConfigName, ThresholdsByType> thresholds =
+        final ThresholdsByMetric thresholds =
                 resolvedProject.getThresholdForFeature( feature );
 
         final String featureDescription = ConfigHelper.getFeatureDescription( feature );

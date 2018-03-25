@@ -11,6 +11,7 @@ import java.util.Set;
 
 import org.junit.Test;
 
+import wres.config.MetricConfigException;
 import wres.config.ProjectConfigPlus;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
@@ -29,7 +30,6 @@ import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
-import wres.engine.statistics.metric.config.MetricConfigurationException;
 
 /**
  * Tests the {@link MetricProcessor}.
@@ -46,13 +46,13 @@ public final class MetricProcessorTest
      * 
      * @throws IOException if the input data could not be read
      * @throws MetricProcessorException if the metric processor could not be built
-     * @throws MetricConfigurationException if the metric configuration is incorrect
+     * @throws MetricConfigException if the metric configuration is incorrect
      * @throws MetricParameterException if a metric parameter is incorrect
      */
 
     @Test
     public void test1WillStoreMetricOutput()
-            throws IOException, MetricConfigurationException, MetricParameterException, MetricProcessorException
+            throws IOException, MetricConfigException, MetricParameterException, MetricProcessorException
     {
         final DataFactory metIn = DefaultDataFactory.getInstance();
         String configPath = "testinput/metricProcessorTest/test1AllValid.xml";
@@ -84,13 +84,13 @@ public final class MetricProcessorTest
      * 
      * @throws IOException if the input data could not be read
      * @throws MetricProcessorException if the metric processor could not be built
-     * @throws MetricConfigurationException if the metric configuration is incorrect
+     * @throws MetricConfigException if the metric configuration is incorrect
      * @throws MetricParameterException if a metric parameter is incorrect
      */
 
     @Test
     public void test2HasMetrics()
-            throws IOException, MetricConfigurationException, MetricParameterException, MetricProcessorException
+            throws IOException, MetricConfigException, MetricParameterException, MetricProcessorException
     {
         final DataFactory metIn = DefaultDataFactory.getInstance();
         String configPath = "testinput/metricProcessorTest/test1AllValid.xml";
@@ -122,13 +122,13 @@ public final class MetricProcessorTest
      * 
      * @throws IOException if the input data could not be read
      * @throws MetricProcessorException if the metric processor could not be built
-     * @throws MetricConfigurationException if the metric configuration is incorrect
+     * @throws MetricConfigException if the metric configuration is incorrect
      * @throws MetricParameterException if a metric parameter is incorrect
      */
 
     @Test
     public void test3DisallowNonScores()
-            throws IOException, MetricConfigurationException, MetricParameterException, MetricProcessorException
+            throws IOException, MetricConfigException, MetricParameterException, MetricProcessorException
     {
         final DataFactory metIn = DefaultDataFactory.getInstance();
         //Single-valued case
@@ -185,13 +185,13 @@ public final class MetricProcessorTest
      * 
      * @throws IOException if the input data could not be read
      * @throws MetricProcessorException if the metric processor could not be built
-     * @throws MetricConfigurationException if the metric configuration is incorrect
+     * @throws MetricConfigException if the metric configuration is incorrect
      * @throws MetricParameterException if a metric parameter is incorrect
      */
 
     @Test
     public void test4DoNotComputeTheseMetricsForThisThreshold()
-            throws IOException, MetricConfigurationException, MetricParameterException, MetricProcessorException
+            throws IOException, MetricConfigException, MetricParameterException, MetricProcessorException
     {
         final DataFactory metIn = DefaultDataFactory.getInstance();
         final MetadataFactory metFac = metIn.getMetadataFactory();
@@ -261,13 +261,13 @@ public final class MetricProcessorTest
      * 
      * @throws IOException if the input data could not be read
      * @throws MetricProcessorException if the metric processor could not be built
-     * @throws MetricConfigurationException if the metric configuration is incorrect
+     * @throws MetricConfigException if the metric configuration is incorrect
      * @throws MetricParameterException if a metric parameter is incorrect
      */
 
     @Test
     public void test5DoNotComputeTheseMetricsForThisThreshold()
-            throws IOException, MetricConfigurationException, MetricParameterException, MetricProcessorException
+            throws IOException, MetricConfigException, MetricParameterException, MetricProcessorException
     {
         final DataFactory metIn = DefaultDataFactory.getInstance();
 

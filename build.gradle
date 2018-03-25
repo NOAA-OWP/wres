@@ -283,6 +283,11 @@ project(':wres-config')
 
     dependencies
     {
+        compile project(':wres-datamodel-api')
+    }
+
+    dependencies
+    {
         xjc 'com.github.sabomichal:immutable-xjc-plugin:1.3.3'
         // May help in future with #37380, may need to modify sources
         // available at https://git.apache.org/cxf-xjc-utils.git in dv dir:
