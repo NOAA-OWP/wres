@@ -302,6 +302,10 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                 return Slicer.allOfRight( input::test );
             case LEFT_AND_RIGHT:
                 return Slicer.leftAndAllOfRight( input::test );
+            case ANY_RIGHT:
+                return Slicer.anyOfRight( input::test );
+            case LEFT_AND_ANY_RIGHT:
+                return Slicer.leftAndAnyOfRight( input::test );
             case RIGHT_MEAN:
                 return Slicer.right( input::test, right -> Arrays.stream( right ).average().getAsDouble() );
             case LEFT_AND_RIGHT_MEAN:
