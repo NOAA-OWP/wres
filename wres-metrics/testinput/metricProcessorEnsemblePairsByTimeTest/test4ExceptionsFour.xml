@@ -42,7 +42,7 @@
       <commaSeparatedValues>0.0,0.3919,0.4415,0.5042,0.5525</commaSeparatedValues>
       <operator>greater than or equal to</operator>
     </valueThresholds>
-    <metric><name>critical success index</name></metric>
+    <metric><name>threat score</name></metric>
   </metrics>
   <outputs>
     <destination type="numeric">/home/jesse/text_output"</destination>

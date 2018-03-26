@@ -41,8 +41,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.FeaturePlus;
+import wres.config.MetricConfigException;
 import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigPlus;
+import wres.config.ProjectConfigs;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.DateCondition;
@@ -59,8 +61,6 @@ import wres.config.generated.PoolingWindowConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Outputs;
 import wres.config.generated.ThresholdFormat;
-import wres.config.generated.ThresholdOperator;
-import wres.config.generated.ThresholdType;
 import wres.config.generated.ThresholdsConfig;
 import wres.config.generated.TimeScaleConfig;
 import wres.datamodel.DataFactory;
@@ -70,9 +70,8 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.OneOrTwoThresholds;
 import wres.datamodel.Threshold;
 import wres.datamodel.ThresholdConstants;
-import wres.datamodel.ThresholdConstants.Operator;
-import wres.datamodel.ThresholdsByType;
-import wres.datamodel.ThresholdsByType.ThresholdsByTypeBuilder;
+import wres.datamodel.ThresholdsByMetric;
+import wres.datamodel.ThresholdsByMetric.ThresholdsByMetricBuilder;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
@@ -1500,36 +1499,36 @@ public class ConfigHelper
 
         return Paths.get( outputDirectory.toString(), safeName );
     }
-
+    
     /**
      * Reads all external sources of thresholds from the input configuration and returns a map containing a set of 
      * {@link Threshold} for each {@link FeaturePlus} in the source. If no source is provided, an empty map is
-     * returned. The map stores each set of thresholds within an inner map, by metric identifier.
+     * returned.
      * 
      * @param projectConfig the project configuration
      * @return the thresholds associated with each feature obtained from a source in the project configuration
-     * @throws ProjectConfigException if the source could not be read
+     * @throws MetricConfigException if the metric configuration is invalid
      */
 
-    public static Map<FeaturePlus, Map<MetricConfigName, ThresholdsByType>>
+    public static Map<FeaturePlus, ThresholdsByMetric>
             readExternalThresholdsFromProjectConfig( ProjectConfig projectConfig )
-                    throws ProjectConfigException
+                    throws MetricConfigException
     {
         Objects.requireNonNull( projectConfig, NULL_CONFIGURATION_ERROR );
 
-        Map<FeaturePlus, Map<MetricConfigName, ThresholdsByType>> returnMe = new HashMap<>();
+        Map<FeaturePlus, ThresholdsByMetric> returnMe = new HashMap<>();
 
         // Obtain and read thresholds
         List<MetricsConfig> metrics = projectConfig.getMetrics();
-        
+
         // Obtain any units for non-probability thresholds
         Dimension units = null;
-        if( Objects.nonNull( projectConfig.getPair() ) && Objects.nonNull( projectConfig.getPair().getUnit() ) )
+        if ( Objects.nonNull( projectConfig.getPair() ) && Objects.nonNull( projectConfig.getPair().getUnit() ) )
         {
             DataFactory dataFactory = DefaultDataFactory.getInstance();
             units = dataFactory.getMetadataFactory().getDimension( projectConfig.getPair().getUnit() );
         }
-        
+
         for ( MetricsConfig nextGroup : metrics )
         {
 
@@ -1543,12 +1542,66 @@ public class ConfigHelper
             for ( ThresholdsConfig next : external )
             {
                 // Add or append
-                addExternalThresholdsForOneMetricConfigGroup( returnMe, nextGroup, next, units );
+                ConfigHelper.addExternalThresholdsForOneMetricConfigGroup( projectConfig,
+                                                                           returnMe,
+                                                                           nextGroup,
+                                                                           next,
+                                                                           units );
             }
 
         }
 
-        return ConfigHelper.ofUnmodifiableMap( returnMe );
+        return Collections.unmodifiableMap( returnMe );
+    }  
+    
+    /**
+     * Mutates a map of thresholds, adding the thresholds for one metric configuration group.
+     * 
+     * @param projectConfig the project configuration
+     * @param mutate the map of results to mutate
+     * @param second the second map
+     * @param units the optional units associated with the threshold values
+     * @throws MetricConfigException if the metric configuration is invalid
+     * @throws NullPointerException if any input is null
+     */
+
+    private static void
+            addExternalThresholdsForOneMetricConfigGroup( ProjectConfig projectConfig,
+                                                          Map<FeaturePlus, ThresholdsByMetric> mutate,
+                                                          MetricsConfig group,
+                                                          ThresholdsConfig thresholdsConfig,
+                                                          Dimension units )
+                    throws MetricConfigException
+    {
+
+        Objects.requireNonNull( mutate, "Specify a non-null map of thresholds to mutate." );
+
+        Objects.requireNonNull( group, "Specify a non-null configuration group." );
+
+        Objects.requireNonNull( group, "Specify non-null threshold configuration." );
+
+        // Obtain the metrics
+        Set<MetricConstants> metrics = ProjectConfigs.getMetricsFromMetricsConfig( group, projectConfig );
+
+        // Obtain the thresholds
+        Map<FeaturePlus, ThresholdsByMetric> thresholdsByFeature =
+                ConfigHelper.readOneExternalThresholdFromProjectConfig( thresholdsConfig, metrics, units );
+
+        // Iterate the thresholds
+        for ( Entry<FeaturePlus, ThresholdsByMetric> nextEntry : thresholdsByFeature.entrySet() )
+        {
+            // Feature exists in the uber map: mutate it
+            if ( mutate.containsKey( nextEntry.getKey() ) )
+            {
+                ThresholdsByMetric union = mutate.get( nextEntry.getKey() ).unionWithThisStore( nextEntry.getValue() );
+                mutate.put( nextEntry.getKey(), union );
+            }
+            // New feature: add a new map
+            else
+            {
+                mutate.put( nextEntry.getKey(), nextEntry.getValue() );
+            }
+        }
     }
 
     /**
@@ -1556,39 +1609,41 @@ public class ConfigHelper
      * by {@link FeaturePlus}.
      * 
      * @param threshold the threshold configuration
+     * @param metrics the metrics to which the threshold applies
      * @param units the optional units associated with the threshold values
      * @return a map of thresholds by feature
-     * @throws ProjectConfigException if the threshold could not be read 
+     * @throws MetricConfigException if the threshold could not be read
+     * @throws NullPointerException if the threshold configuration is null or the metrics are null
      */
 
-    private static Map<FeaturePlus, ThresholdsByType>
-            readOneExternalThresholdFromProjectConfig( ThresholdsConfig threshold, Dimension units )
-                    throws ProjectConfigException
+    private static Map<FeaturePlus, ThresholdsByMetric>
+            readOneExternalThresholdFromProjectConfig( ThresholdsConfig threshold,
+                                                       Set<MetricConstants> metrics,
+                                                       Dimension units )
+                    throws MetricConfigException
     {
 
         Objects.requireNonNull( threshold, "Specify non-null threshold configuration." );
 
-        Map<FeaturePlus, ThresholdsByType> returnMe = new TreeMap<>();
+        Objects.requireNonNull( threshold, "Specify non-null metrics." );
+
+        Map<FeaturePlus, ThresholdsByMetric> returnMe = new TreeMap<>();
 
         ThresholdsConfig.Source nextSource = (ThresholdsConfig.Source) threshold.getCommaSeparatedValuesOrSource();
 
         // Pre-validate path
         if ( Objects.isNull( nextSource.getValue() ) )
         {
-            throw new ProjectConfigException( threshold, "Specify a non-null path to read for the external "
-                                                         + "source of thresholds." );
+            throw new MetricConfigException( threshold, "Specify a non-null path to read for the external "
+                                                        + "source of thresholds." );
         }
         // Validate format
         if ( nextSource.getFormat() != ThresholdFormat.CSV )
         {
-            throw new ProjectConfigException( threshold,
-                                              "Unsupported source format for thresholds '"
-                                                         + nextSource.getFormat() + "'" );
+            throw new MetricConfigException( threshold,
+                                             "Unsupported source format for thresholds '"
+                                                        + nextSource.getFormat() + "'" );
         }
-
-        // Default to probability
-        boolean isProbability =
-                Objects.isNull( threshold.getType() ) || threshold.getType() == ThresholdType.PROBABILITY;
 
         // Missing value?
         Double missing = null;
@@ -1602,14 +1657,29 @@ public class ConfigHelper
         Path commaSeparated = Paths.get( nextSource.getValue() );
 
         // Condition: default to greater
-        ThresholdConstants.Operator operator = ConfigHelper.getThresholdOperator( threshold );
+        ThresholdConstants.Operator operator = ThresholdConstants.Operator.GREATER;
+        if ( Objects.nonNull( threshold.getOperator() ) )
+        {
+            operator = ProjectConfigs.getThresholdOperator( threshold );
+        }
 
         // Data type: default to left
-        ThresholdConstants.ThresholdDataType dataType = ConfigHelper.getThresholdDataType( threshold );
+        ThresholdConstants.ThresholdDataType dataType = ThresholdConstants.ThresholdDataType.LEFT;
+        if ( Objects.nonNull( threshold.getApplyTo() ) )
+        {
+            dataType = ProjectConfigs.getThresholdDataType( threshold );
+        }
         
-        // Establish the threshold type
-        ThresholdConstants.ThresholdGroup thresholdType = ConfigHelper.getThresholdType( threshold );
-        
+        // Threshold type: default to probability
+        ThresholdConstants.ThresholdGroup thresholdType = ThresholdConstants.ThresholdGroup.PROBABILITY;
+        if ( Objects.nonNull( threshold.getType() ) )
+        {
+            thresholdType = ProjectConfigs.getThresholdGroup( threshold );
+        }
+
+        // Default to probability
+        boolean isProbability = thresholdType == ThresholdConstants.ThresholdGroup.PROBABILITY;
+
         try
         {
             Map<FeaturePlus, Set<Threshold>> read = CommaSeparatedReader.readThresholds( commaSeparated,
@@ -1619,211 +1689,31 @@ public class ConfigHelper
                                                                                          missing,
                                                                                          units );
 
-            // Add to map
-            for ( Entry<FeaturePlus, Set<Threshold>> next : read.entrySet() )
+            // Add the thresholds for each feature
+            for ( Entry<FeaturePlus, Set<Threshold>> nextEntry : read.entrySet() )
             {
-                ThresholdsByTypeBuilder builder = DefaultDataFactory.getInstance().ofThresholdsByTypeBuilder();
+                ThresholdsByMetricBuilder builder = DefaultDataFactory.getInstance().ofThresholdsByMetricBuilder();
+                Map<MetricConstants, Set<Threshold>> thresholds = new EnumMap<>( MetricConstants.class );
 
-                ThresholdsByType thresholds =
-                        builder.addThresholds( next.getValue(), thresholdType ).build();
+                // Add the thresholds for each metric in the group
+                metrics.forEach( nextMetric -> thresholds.put( nextMetric, nextEntry.getValue() ) );
+                
+                // Add to builder
+                builder.addThresholds( thresholds, thresholdType );
 
-                returnMe.put( next.getKey(), thresholds );
+                // Add to store
+                returnMe.put( nextEntry.getKey(), builder.build() );
             }
-            
         }
         catch ( IOException e )
         {
-            throw new ProjectConfigException( threshold,
-                                              "Failed to read the comma separated thresholds "
-                                                         + "from '" + commaSeparated + "'.",
-                                              e );
+            throw new MetricConfigException( threshold,
+                                             "Failed to read the comma separated thresholds "
+                                                        + "from '" + commaSeparated + "'.",
+                                             e );
         }
-
+        
         return returnMe;
-    }
-
-    /**
-     * Converts between {@link ThresholdType} and {@link ThresholdConstants.ThresholdGroup}. If the input is null, the 
-     * default type is {@link ThresholdConstants.ThresholdGroup.PROBABILITY}. Matches on the 
-     * {@link ThresholdType#name()}.
-     * 
-     * TODO: eliminate this when possible to avoid duplication with MetricConfigHelper in the scope of wres-metrics, 
-     * not visible here. 
-     * 
-     * @param threshold the threshold
-     * @return the system type
-     * @throws ProjectConfigException if the input type could not be mapped
-     */
-
-    private static ThresholdConstants.ThresholdGroup getThresholdType( ThresholdsConfig threshold )
-            throws ProjectConfigException
-    {
-        if ( Objects.isNull( threshold.getType() ) )
-        {
-            return ThresholdConstants.ThresholdGroup.PROBABILITY;
-        }
-
-        ThresholdConstants.ThresholdGroup returnMe = null;
-
-        for ( ThresholdConstants.ThresholdGroup nextType : ThresholdConstants.ThresholdGroup.values() )
-        {
-            if ( nextType.name().equals( threshold.getType().name() ) )
-            {
-                returnMe = nextType;
-                break;
-            }
-        }
-
-        if ( Objects.isNull( returnMe ) )
-        {
-            throw new ProjectConfigException( threshold,
-                                              "Could not map the threshold type '" + threshold.getType()
-                                                         + "' to an internal type." );
-        }
-
-        return returnMe;
-    }
-
-    /**
-     * Converts between {@link ThresholdApplicationType} and {@link ThresholdConstants.ThresholdDataType}. If the input 
-     * is null, the default type is {@link ThresholdConstants.ThresholdDataType.LEFT}. Matches on the 
-     * {@link ThresholdType#name()}.
-     * 
-     * TODO: short-term, set the threshold type for #47979, long-term, eliminate this when possible to avoid 
-     * duplication with MetricConfigHelper in the scope of wres-metrics, not visible here. 
-     * 
-     * @param threshold the threshold used to help decorate any exception
-     * @return the system type
-     * @throws ProjectConfigException if the input type could not be mapped
-     */
-
-    private static ThresholdConstants.ThresholdDataType getThresholdDataType( ThresholdsConfig threshold )
-            throws ProjectConfigException
-    {
-        if ( Objects.isNull( threshold.getApplyTo() ) )
-        {
-            return ThresholdConstants.ThresholdDataType.LEFT;
-        }
-
-        ThresholdConstants.ThresholdDataType returnMe = null;
-
-        for ( ThresholdConstants.ThresholdDataType nextType : ThresholdConstants.ThresholdDataType.values() )
-        {
-            if ( nextType.name().equals( threshold.getApplyTo().name() ) )
-            {
-                returnMe = nextType;
-                break;
-            }
-        }
-
-        if ( Objects.isNull( returnMe ) )
-        {
-            throw new ProjectConfigException( threshold,
-                                              "Could not map the threshold application type '" + threshold.getApplyTo()
-                                                         + "' to an internal type." );
-        }
-
-        return returnMe;
-    }
-    
-    /**
-     * Maps between threshold operators in {@link ThresholdOperator} and those in {@link Operator}. The default is
-     * {@link Operator#GREATER} when the input is null.
-     * 
-     * TODO: eliminate this when possible to avoid duplication with MetricConfigHelper in the scope of wres-metrics, 
-     * not visible here. 
-     * 
-     * @param configName the input {@link ThresholdOperator}
-     * @return the corresponding {@link Operator}.
-     * @throws ProjectConfigException if the project configuration is invalid
-     */
-
-    private static Operator getThresholdOperator( ThresholdsConfig threshold ) throws ProjectConfigException
-    {
-        if ( Objects.isNull( threshold.getOperator() ) )
-        {
-            return Operator.GREATER;
-        }
-
-        ThresholdOperator condition = threshold.getOperator();
-
-        switch ( condition )
-        {
-            case EQUAL_TO:
-                return Operator.EQUAL;
-            case LESS_THAN:
-                return Operator.LESS;
-            case LESS_THAN_OR_EQUAL_TO:
-                return Operator.LESS_EQUAL;
-            case GREATER_THAN_OR_EQUAL_TO:
-                return Operator.GREATER_EQUAL;
-            default:
-                throw new ProjectConfigException( threshold,
-                                                  "Could not map the threshold application type '"
-                                                             + threshold.getApplyTo()
-                                                             + "' to an internal type." );
-        }
-    }    
-
-    /**
-     * Mutates a map of thresholds, adding the thresholds for one metric configuration group.
-     * 
-     * @param mutate the map of results to mutate
-     * @param second the second map
-     * @param units the optional units associated with the threshold values
-     * @throws ProjectConfigException 
-     * @throws NullPointerException if any input is null
-     */
-
-    private static void
-            addExternalThresholdsForOneMetricConfigGroup( Map<FeaturePlus, Map<MetricConfigName, ThresholdsByType>> mutate,
-                                                          MetricsConfig group,
-                                                          ThresholdsConfig thresholds,
-                                                          Dimension units )
-                    throws ProjectConfigException
-    {
-
-        Objects.requireNonNull( mutate, "Specify a non-null map of thresholds to mutate." );
-
-        Objects.requireNonNull( group, "Specify a non-null configuration group." );
-
-        Objects.requireNonNull( group, "Specify non-null threshold configuration." );
-
-        // Obtain the thresholds
-        Map<FeaturePlus, ThresholdsByType> thresholdsByFeature =
-                ConfigHelper.readOneExternalThresholdFromProjectConfig( thresholds, units );
-
-        // Iterate the thresholds
-        for ( Entry<FeaturePlus, ThresholdsByType> nextEntry : thresholdsByFeature.entrySet() )
-        {
-            // Iterate the metrics
-            for ( MetricConfig nextMetric : group.getMetric() )
-            {
-                // Feature exists in the uber map: mutate it
-                if ( mutate.containsKey( nextEntry.getKey() ) )
-                {
-                    Map<MetricConfigName, ThresholdsByType> nextMap = mutate.get( nextEntry.getKey() );
-                    // Metric exists, replace thresholds for that metric with union thresholds
-                    if ( nextMap.containsKey( nextMetric.getName() ) )
-                    {
-                        ThresholdsByType union = nextMap.get( nextMetric.getName() ).union( nextEntry.getValue() );
-                        nextMap.put( nextMetric.getName(), union );
-                    }
-                    // Metric does not exist, add it
-                    else
-                    {
-                        nextMap.put( nextMetric.getName(), nextEntry.getValue() );
-                    }
-                }
-                // New feature: add a new map
-                else
-                {
-                    Map<MetricConfigName, ThresholdsByType> nextMap = new EnumMap<>( MetricConfigName.class );
-                    nextMap.put( nextMetric.getName(), nextEntry.getValue() );
-                    mutate.put( nextEntry.getKey(), nextMap );
-                }
-            }
-        }
     }
 
     /**
@@ -1849,20 +1739,6 @@ public class ConfigHelper
 
         // Return empty set
         return Collections.emptySet();
-    }
-
-    /**
-     * Returns <code>true</code> if the input configuration has time-series metrics, otherwise <code>false</code>.
-     * 
-     * @param projectConfig the project configuration
-     * @return true if the input configuration has time-series metrics, otherwise false
-     */
-
-    public static boolean hasTimeSeriesMetrics( ProjectConfig projectConfig )
-    {
-        Objects.requireNonNull( projectConfig, NULL_CONFIGURATION_ERROR );
-
-        return projectConfig.getMetrics().stream().anyMatch( next -> !next.getTimeSeriesMetric().isEmpty() );
     }
 
     /**
@@ -1908,32 +1784,5 @@ public class ConfigHelper
 
         return builder.build();
     }
-
-
-    /**
-     * Renders a map of collections unmodifiable. All collections in the container are rendered unmodifiable.
-     * 
-     * @param <S> the outer key type
-     * @param <T> the inner key type
-     * @param <U> the inner stored type
-     * @param mutable the possibly mutable input
-     * @return the unmodifiable map
-     */
-
-    private static <S, T, U> Map<S, Map<T, U>> ofUnmodifiableMap( Map<S, Map<T, U>> mutable )
-    {
-        Objects.requireNonNull( mutable, "Specify non-null input to render unmodifiable." );
-
-        Map<S, Map<T, U>> returnMe = new HashMap<>();
-
-        for ( Entry<S, Map<T, U>> outerEntry : mutable.entrySet() )
-        {
-            Map<T, U> nextMap = new HashMap<>( outerEntry.getValue() );
-            returnMe.put( outerEntry.getKey(), Collections.unmodifiableMap( nextMap ) );
-        }
-
-        return Collections.unmodifiableMap( returnMe );
-    }
-
 
 }

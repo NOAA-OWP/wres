@@ -10,22 +10,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.FeaturePlus;
+import wres.config.MetricConfigException;
 import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationConfig;
-import wres.config.generated.MetricConfigName;
-import wres.config.generated.MetricsConfig;
 import wres.config.generated.ProjectConfig;
-import wres.config.generated.ThresholdType;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.datamodel.Threshold;
-import wres.datamodel.ThresholdConstants;
 import wres.datamodel.ThresholdsByMetric;
-import wres.datamodel.ThresholdsByType;
 import wres.engine.statistics.metric.config.MetricConfigHelper;
-import wres.engine.statistics.metric.config.MetricConfigurationException;
 
 /**
  * Represents a project that has been "resolved", i.e. any kind of translation
@@ -47,13 +41,13 @@ class ResolvedProject
     private final ProjectConfigPlus projectConfigPlus;
     private final Set<FeaturePlus> decomposedFeatures;
     private final String projectIdentifier;
-    private final Map<FeaturePlus, Map<MetricConfigName, ThresholdsByType>>
+    private final Map<FeaturePlus, ThresholdsByMetric>
             externalThresholds;
 
     private ResolvedProject( ProjectConfigPlus projectConfigPlus,
                              Set<FeaturePlus> decomposedFeatures,
                              String projectIdentifier,
-                             Map<FeaturePlus, Map<MetricConfigName, ThresholdsByType>> thresholds )
+                             Map<FeaturePlus, ThresholdsByMetric> thresholds )
     {
         this.projectConfigPlus = projectConfigPlus;
         this.decomposedFeatures = Collections.unmodifiableSet( decomposedFeatures );
@@ -64,7 +58,7 @@ class ResolvedProject
     static ResolvedProject of( ProjectConfigPlus projectConfigPlus,
                                Set<FeaturePlus> decomposedFeatures,
                                String projectIdentifier,
-                               Map<FeaturePlus, Map<MetricConfigName, ThresholdsByType>> thresholds )
+                               Map<FeaturePlus, ThresholdsByMetric> thresholds )
     {
         return new ResolvedProject( projectConfigPlus,
                                     decomposedFeatures,
@@ -144,13 +138,12 @@ class ResolvedProject
                    .getGraphicsStrings();
     }
 
-    private Map<FeaturePlus, Map<MetricConfigName, ThresholdsByType>> getExternalThresholds()
+    private Map<FeaturePlus, ThresholdsByMetric> getExternalThresholds()
     {
         return this.externalThresholds;
     }
 
-    Map<MetricConfigName, ThresholdsByType>
-    getThresholdForFeature( FeaturePlus featurePlus )
+    ThresholdsByMetric getThresholdForFeature( FeaturePlus featurePlus )
     {
         return this.getExternalThresholds().get( featurePlus );
     }
@@ -167,11 +160,11 @@ class ResolvedProject
      * @param outGroup an optional output group for which the 
      *            cardinality is required, may be null for all groups
      * @return the cardinality of the set of thresholds
-     * @throws MetricConfigurationException if the configuration of 
+     * @throws MetricConfigException if the configuration of 
      *            thresholds is incorrect
      */
     
-    int getThresholdCount( MetricOutputGroup outGroup ) throws MetricConfigurationException
+    int getThresholdCount( MetricOutputGroup outGroup ) throws MetricConfigException
     {
         // Obtain the union of internal and external thresholds
         DataFactory thresholdFactory = DefaultDataFactory.getInstance();
@@ -188,57 +181,6 @@ class ResolvedProject
         // Return the cardinality of the set of composed thresholds
         return thresholds.unionOfOneOrTwoThresholds().size();
     }
-    
-    @Deprecated
-    int getThresholdCount()
-            throws MetricConfigurationException
-    {
-        Set<Threshold> thresholds = new HashSet<>();
-
-        LOGGER.debug( "this.getExternalThresholds(): {}", this.getExternalThresholds() );
-
-        // Dive through the threshold hierarchy to find what we
-        // are looking for. TODO: find a better way of getting this info.
-        for ( Map.Entry<FeaturePlus, Map<MetricConfigName, ThresholdsByType>> outerThresholds
-                : this.getExternalThresholds().entrySet() )
-        {
-            LOGGER.debug( "outerThresholds: {}", outerThresholds );
-
-            for ( Map.Entry<MetricConfigName, ThresholdsByType> middleThresholds
-                  : outerThresholds.getValue().entrySet() )
-            {
-                LOGGER.debug( "middleThresholds: {}", middleThresholds );
-
-                for ( ThresholdConstants.ThresholdGroup innerThresholds
-                        : middleThresholds.getValue().getAllThresholdTypes() )
-                {
-                    LOGGER.debug( "innerThresholds: {}", innerThresholds );
-
-                    thresholds.addAll( middleThresholds.getValue()
-                                                       .getThresholdsByType( innerThresholds ) );
-                }
-            }
-        }
-
-        for ( MetricsConfig metricsConfig : this.getProjectConfig().getMetrics() )
-        {
-            Set<Threshold> directlyConfiguredThresholds =
-                    MetricConfigHelper.fromInternalThresholdsConfig(
-                                metricsConfig.getThresholds(),
-                                null,
-                                DefaultDataFactory.getInstance(),
-                                ThresholdType.PROBABILITY,
-                                ThresholdType.PROBABILITY_CLASSIFIER,
-                                ThresholdType.VALUE );
-
-            thresholds.addAll( directlyConfiguredThresholds );
-        }
-
-        LOGGER.debug( "Thresholds found: {}", thresholds );
-
-        // There is an additional implicit "All Data" threshold, so add one.
-        return thresholds.size() + 1;
-    }
 
     int getFeatureCount()
     {
@@ -249,7 +191,7 @@ class ResolvedProject
      * @return set of double score metrics used by this project
      */
     Set<MetricConstants> getDoubleScoreMetrics()
-            throws MetricConfigurationException
+            throws MetricConfigException
     {
         Set<MetricConstants> result = new HashSet<>();
         Set<MetricConstants> doubleScoreMetricOutputs = MetricConstants.getMetrics(

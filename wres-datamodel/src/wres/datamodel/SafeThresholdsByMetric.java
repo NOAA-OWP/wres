@@ -406,7 +406,7 @@ public class SafeThresholdsByMetric implements ThresholdsByMetric
 
         return Collections.unmodifiableMap( returnMe );
     }
-
+    
     /**
      * Builder.
      */

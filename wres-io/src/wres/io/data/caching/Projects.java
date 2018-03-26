@@ -13,8 +13,8 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.io.config.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
+import wres.io.config.LeftOrRightOrBaseline;
 import wres.io.data.details.ProjectDetails;
 import wres.io.reading.IngestResult;
 import wres.io.utilities.Database;
@@ -149,6 +149,7 @@ public class Projects extends Cache<ProjectDetails, Integer> {
      * @return the ProjectDetails to use
      * @throws SQLException when ProjectDetails construction goes wrong
      * @throws IllegalArgumentException when an IngestResult does not have left/right/baseline information
+     * @throws IOException when a source identifier cannot be determined
      */
     public static ProjectDetails getProjectFromIngest( ProjectConfig projectConfig,
                                                        List<IngestResult> ingestResults )

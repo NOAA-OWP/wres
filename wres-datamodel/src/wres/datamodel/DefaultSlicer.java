@@ -236,64 +236,6 @@ class DefaultSlicer implements Slicer
 
     @Override
     public EnsemblePairs filter( EnsemblePairs input,
-                                 Predicate<PairOfDoubles> condition,
-                                 Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> transformer,
-                                 DoublePredicate applyToClimatology )
-            throws MetricInputSliceException
-    {
-        Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
-
-        Objects.requireNonNull( condition, NULL_PREDICATE_EXCEPTION );
-
-        List<PairOfDoubleAndVectorOfDoubles> mainPairs = input.getData();
-
-        // Transform inline, then filter
-        List<PairOfDoubleAndVectorOfDoubles> mainPairsSubset =
-                mainPairs.stream()
-                         .filter( pair -> condition.test( transformer.apply( pair ) ) )
-                         .collect( Collectors.toList() );
-
-        //No pairs in the subset
-        if ( mainPairsSubset.isEmpty() )
-        {
-            throw new MetricInputSliceException( NO_DATA_FOR_MAIN_PAIRS_EXCEPTION );
-        }
-
-        //Filter climatology as required
-        VectorOfDoubles climatology = input.getClimatology();
-        if ( input.hasClimatology() && Objects.nonNull( applyToClimatology ) )
-        {
-            climatology =
-                    this.filter( input.getClimatology(), applyToClimatology, NO_DATA_FOR_CLIMATOLOGY_EXCEPTION );
-        }
-
-        //Filter baseline as required
-        if ( input.hasBaseline() )
-        {
-            List<PairOfDoubleAndVectorOfDoubles> basePairs = input.getDataForBaseline();
-            List<PairOfDoubleAndVectorOfDoubles> basePairsSubset =
-                    basePairs.stream()
-                             .filter( pair -> condition.test( transformer.apply( pair ) ) )
-                             .collect( Collectors.toList() );
-
-            //No pairs in the subset
-            if ( basePairsSubset.isEmpty() )
-            {
-                throw new MetricInputSliceException( NO_DATA_FOR_BASELINE_PAIRS_EXCEPTION );
-            }
-
-            return dataFac.ofEnsemblePairs( mainPairsSubset,
-                                            basePairsSubset,
-                                            input.getMetadata(),
-                                            input.getMetadataForBaseline(),
-                                            climatology );
-        }
-
-        return dataFac.ofEnsemblePairs( mainPairsSubset, input.getMetadata(), climatology );
-    }
-
-    @Override
-    public EnsemblePairs filter( EnsemblePairs input,
                                  Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubleAndVectorOfDoubles> mapper,
                                  DoublePredicate applyToClimatology )
             throws MetricInputSliceException
