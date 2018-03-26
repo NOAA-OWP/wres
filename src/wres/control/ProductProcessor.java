@@ -260,6 +260,7 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
         }
         catch ( final MetricOutputAccessException | IOException e )
         {
+            // TODO: James, is this still necessary? Why or why not?
             if ( Thread.currentThread().isInterrupted() )
             {
                 LOGGER.warn( "Interrupted while processing intermediate results:", e );
@@ -727,7 +728,7 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
                 // Not much we can do at this point. We tried to close, but
                 // we need to try to close all the other resources too before
                 // the software exits.
-                LOGGER.warn( "Unable to close resource {}", resource );
+                LOGGER.warn( "Unable to close resource {}", resource, ioe );
             }
         }
     }
