@@ -20,7 +20,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
 import wres.config.ProjectConfigPlus;
-import wres.config.generated.MetricConfigName;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
@@ -34,8 +33,8 @@ import wres.datamodel.Threshold;
 import wres.datamodel.ThresholdConstants;
 import wres.datamodel.ThresholdConstants.Operator;
 import wres.datamodel.ThresholdConstants.ThresholdDataType;
-import wres.datamodel.ThresholdsByType;
-import wres.datamodel.ThresholdsByType.ThresholdsByTypeBuilder;
+import wres.datamodel.ThresholdsByMetric;
+import wres.datamodel.ThresholdsByMetric.ThresholdsByMetricBuilder;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.metadata.Metadata;
@@ -393,12 +392,12 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         inMap.put( Pair.of( firstWindow,
                             OneOrTwoThresholds.of( metIn.ofThreshold( metIn.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
                                                                       Operator.GREATER,
-                                                                      ThresholdDataType.ALL ) ) ),
+                                                                      ThresholdDataType.LEFT_AND_RIGHT ) ) ),
                    expectedErrorsFirst );
         inMap.put( Pair.of( secondWindow,
                             OneOrTwoThresholds.of( metIn.ofThreshold( metIn.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
                                                                       Operator.GREATER,
-                                                                      ThresholdDataType.ALL ) ) ),
+                                                                      ThresholdDataType.LEFT_AND_RIGHT ) ) ),
                    expectedErrorsSecond );
         MetricOutputMapByTimeAndThreshold<PairedOutput<Instant, Duration>> mapped = metIn.ofMap( inMap );
         MetricOutputMultiMapByTimeAndThresholdBuilder<PairedOutput<Instant, Duration>> builder = metIn.ofMultiMap();
@@ -475,7 +474,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         scoreInMap.put( Pair.of( combinedWindow,
                                  OneOrTwoThresholds.of( metIn.ofThreshold( metIn.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
                                                                            Operator.GREATER,
-                                                                           ThresholdDataType.ALL ) ) ),
+                                                                           ThresholdDataType.LEFT_AND_RIGHT ) ) ),
                         expectedScoresSource );
         MetricOutputMapByTimeAndThreshold<DurationScoreOutput> mappedScores = metIn.ofMap( scoreInMap );
         MetricOutputMultiMapByTimeAndThresholdBuilder<DurationScoreOutput> scoreBuilder = metIn.ofMultiMap();
@@ -506,34 +505,34 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/test2ApplyThresholds.xml";
 
         // Define the external thresholds to use
-        Map<MetricConfigName, ThresholdsByType> canonical = new HashMap<>();
+        Map<MetricConstants, Set<Threshold>> canonical = new HashMap<>();
 
-        Set<Threshold> inputThresholds =
+        Set<Threshold> thresholds =
                 new HashSet<>( Arrays.asList( metIn.ofThreshold( metIn.ofOneOrTwoDoubles( 0.5 ),
                                                                  Operator.GREATER_EQUAL,
                                                                  ThresholdDataType.LEFT ) ) );
 
-        ThresholdsByTypeBuilder builder = metIn.ofThresholdsByTypeBuilder();
-        builder.addThresholds( inputThresholds,
-                               ThresholdConstants.ThresholdGroup.PROBABILITY );
-        ThresholdsByType thresholds = builder.build();
+        ThresholdsByMetricBuilder builder = metIn.ofThresholdsByMetricBuilder();
 
-        canonical.put( MetricConfigName.MEAN_ERROR, thresholds );
-        canonical.put( MetricConfigName.PEARSON_CORRELATION_COEFFICIENT, thresholds );
-        canonical.put( MetricConfigName.MEAN_ABSOLUTE_ERROR, thresholds );
-        canonical.put( MetricConfigName.MEAN_SQUARE_ERROR, thresholds );
-        canonical.put( MetricConfigName.BIAS_FRACTION, thresholds );
-        canonical.put( MetricConfigName.COEFFICIENT_OF_DETERMINATION, thresholds );
-        canonical.put( MetricConfigName.ROOT_MEAN_SQUARE_ERROR, thresholds );
-        canonical.put( MetricConfigName.THREAT_SCORE, thresholds );
-        canonical.put( MetricConfigName.CONTINGENCY_TABLE, thresholds );
-        canonical.put( MetricConfigName.QUANTILE_QUANTILE_DIAGRAM, thresholds );
+        canonical.put( MetricConstants.MEAN_ERROR, thresholds );
+        canonical.put( MetricConstants.PEARSON_CORRELATION_COEFFICIENT, thresholds );
+        canonical.put( MetricConstants.MEAN_ABSOLUTE_ERROR, thresholds );
+        canonical.put( MetricConstants.MEAN_SQUARE_ERROR, thresholds );
+        canonical.put( MetricConstants.BIAS_FRACTION, thresholds );
+        canonical.put( MetricConstants.COEFFICIENT_OF_DETERMINATION, thresholds );
+        canonical.put( MetricConstants.ROOT_MEAN_SQUARE_ERROR, thresholds );
+        canonical.put( MetricConstants.THREAT_SCORE, thresholds );
+        canonical.put( MetricConstants.CONTINGENCY_TABLE, thresholds );
+        canonical.put( MetricConstants.QUANTILE_QUANTILE_DIAGRAM, thresholds );
+
+        builder.addThresholds( canonical, ThresholdConstants.ThresholdGroup.PROBABILITY );
+        ThresholdsByMetric thresholdsByMetric = builder.build();
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
                 MetricFactory.getInstance( metIn )
                              .ofMetricProcessorByTimeSingleValuedPairs( config,
-                                                                        canonical,
+                                                                        thresholdsByMetric,
                                                                         MetricOutputGroup.values() );
         SingleValuedPairs pairs = MetricTestDataFactory.getSingleValuedPairsFour();
         final MetadataFactory metFac = metIn.getMetadataFactory();

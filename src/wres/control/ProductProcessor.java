@@ -19,6 +19,7 @@ import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.MetricConfigException;
 import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationConfig;
@@ -37,7 +38,6 @@ import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.PairedOutput;
-import wres.engine.statistics.metric.config.MetricConfigurationException;
 import wres.io.Operations;
 import wres.io.writing.SharedWriters;
 import wres.io.writing.commaseparated.CommaSeparatedBoxPlotWriter;
@@ -202,7 +202,7 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
             // implicitly passing resolvedProject via shared state
             buildConsumers( sharedWriters );
         }
-        catch ( ProjectConfigException | MetricConfigurationException | IOException e )
+        catch ( ProjectConfigException | IOException e )
         {
             throw new WresProcessingException( "While processing the project configuration to write output:", e );
         }
@@ -278,7 +278,7 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
      */
 
     private void buildConsumers( SharedWriters sharedWriters )
-            throws ProjectConfigException, IOException, MetricConfigurationException
+            throws ProjectConfigException, IOException, MetricConfigException
     {
         // There is one consumer per project for each type, because consumers are built
         // with projects, not destinations. The consumers must iterate destinations.
@@ -403,7 +403,7 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
      */
 
     private void buildNetCDFConsumers( SharedWriters sharedWriters )
-            throws IOException, MetricConfigurationException
+            throws IOException, MetricConfigException
     {
         // Build the consumers conditionally
 
@@ -421,7 +421,7 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
             else
             {
                 int featureCount = this.getResolvedProject().getFeatureCount();
-                int thresholdCount = this.getResolvedProject().getThresholdCount();
+                int thresholdCount = this.getResolvedProject().getThresholdCount( MetricOutputGroup.DOUBLE_SCORE );
                 Set<MetricConstants> metricConstants = this.getResolvedProject()
                                                            .getDoubleScoreMetrics();
 

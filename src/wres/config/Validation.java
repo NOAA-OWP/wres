@@ -43,7 +43,6 @@ import wres.config.generated.TimeSeriesMetricConfig;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.engine.statistics.metric.config.MetricConfigHelper;
-import wres.engine.statistics.metric.config.MetricConfigurationException;
 import wres.io.config.ConfigHelper;
 import wres.util.Strings;
 
@@ -253,6 +252,7 @@ public class Validation
                          metrics
                                 .sourceLocation()
                                 .getColumnNumber() );
+            returnMe = false;
         }
 
         // Cannot define specific metrics together with all valid        
@@ -364,7 +364,7 @@ public class Validation
                 }
                 // Handle the situation where a metric is recognized by the xsd but not by the ConfigMapper. This is
                 // unlikely and implies an incomplete implementation of a metric by the system  
-                catch ( MetricConfigurationException e )
+                catch ( MetricConfigException e )
                 {
                     LOGGER.error( "In file {}, a metric named {} was requested, but is not recognized by the system.",
                                   projectConfigPlus.getPath(),

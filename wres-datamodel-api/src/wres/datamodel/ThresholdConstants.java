@@ -94,28 +94,46 @@ public final class ThresholdConstants
     {
 
         /**
-         * Apply to all data.
-         */
-
-        ALL,
-
-        /**
-         * Apply to the left side of paired data.
+         * Left side of a pair meets the threshold condition.
          */
 
         LEFT,
 
         /**
-         * Apply to the right side of paired data.
+         * Right side of a pair meets the threshold condition.
          */
 
         RIGHT,
-
+        
         /**
-         * Apply to the mean value of the right side of paired data.
+         * Left side and all values of the right side of a pair meet the threshold condition.
          */
 
-        RIGHT_MEAN;
+        LEFT_AND_RIGHT,
+        
+        /**
+         * Any value on the right side of a pair meet the threshold condition. 
+         */
+        
+        ANY_RIGHT,
+        
+        /**
+         * Left side and any value on the right side of a pair meet the threshold condition.
+         */
+
+        LEFT_AND_ANY_RIGHT,
+
+        /**
+         * The mean value of the right side of a pair meets the threshold condition.
+         */
+
+        RIGHT_MEAN,
+        
+        /**
+         * The left side and the mean value of the right side of a pair meets the threshold condition.
+         */
+
+        LEFT_AND_RIGHT_MEAN;
 
     }    
     

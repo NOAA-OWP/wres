@@ -17,7 +17,8 @@ import java.util.function.Supplier;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-import wres.config.generated.MetricConfigName;
+import wres.config.MetricConfigException;
+import wres.config.ProjectConfigs;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.TimeSeriesMetricConfigName;
 import wres.datamodel.DataFactory;
@@ -29,7 +30,6 @@ import wres.datamodel.Slicer;
 import wres.datamodel.Threshold;
 import wres.datamodel.ThresholdConstants.ThresholdGroup;
 import wres.datamodel.ThresholdsByMetric;
-import wres.datamodel.ThresholdsByType;
 import wres.datamodel.inputs.InsufficientDataException;
 import wres.datamodel.inputs.MetricInputSliceException;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
@@ -49,7 +49,6 @@ import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricCollection;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.config.MetricConfigHelper;
-import wres.engine.statistics.metric.config.MetricConfigurationException;
 import wres.engine.statistics.metric.processing.MetricProcessorByTime.MetricFuturesByTime.MetricFuturesByTimeBuilder;
 import wres.engine.statistics.metric.timeseries.TimeToPeakErrorStatistics;
 
@@ -147,24 +146,24 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
      * 
      * @param dataFactory the data factory
      * @param config the project configuration
-     * @param externalThresholds an optional set of external thresholds (one per metric), may be null
+     * @param externalThresholds an optional set of external thresholds, may be null
      * @param thresholdExecutor an optional {@link ExecutorService} for executing thresholds. Defaults to the 
      *            {@link ForkJoinPool#commonPool()}
      * @param metricExecutor an optional {@link ExecutorService} for executing metrics. Defaults to the 
      *            {@link ForkJoinPool#commonPool()} 
      * @param mergeList a list of {@link MetricOutputGroup} whose outputs should be retained and merged across calls to
      *            {@link #apply(SingleValuedPairs)}
-     * @throws MetricConfigurationException if the metrics are configured incorrectly
+     * @throws MetricConfigException if the metrics are configured incorrectly
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
     public MetricProcessorByTimeSingleValuedPairs( final DataFactory dataFactory,
                                                    final ProjectConfig config,
-                                                   final Map<MetricConfigName, ThresholdsByType> externalThresholds,
+                                                   final ThresholdsByMetric externalThresholds,
                                                    final ExecutorService thresholdExecutor,
                                                    final ExecutorService metricExecutor,
                                                    final MetricOutputGroup... mergeList )
-            throws MetricConfigurationException, MetricParameterException
+            throws MetricConfigException, MetricParameterException
     {
         super( dataFactory, config, externalThresholds, thresholdExecutor, metricExecutor, mergeList );
 
@@ -199,7 +198,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
     }
 
     @Override
-    void validate( ProjectConfig config ) throws MetricConfigurationException
+    void validate( ProjectConfig config ) throws MetricConfigException
     {
         //Check the metrics individually, as some may belong to multiple groups
         for ( MetricConstants next : this.metrics )
@@ -208,7 +207,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                      || next.isInGroup( MetricInputGroup.SINGLE_VALUED_TIME_SERIES )
                      || next.isInGroup( MetricInputGroup.DICHOTOMOUS ) ) )
             {
-                throw new MetricConfigurationException( "Cannot configure '" + next
+                throw new MetricConfigException( "Cannot configure '" + next
                                                         + "' for single-valued inputs: correct the configuration "
                                                         + "labelled '"
                                                         + config.getLabel()
@@ -221,7 +220,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                                                                                            ThresholdGroup.PROBABILITY,
                                                                                            ThresholdGroup.VALUE ) )
             {
-                throw new MetricConfigurationException( "Cannot configure '" + next
+                throw new MetricConfigException( "Cannot configure '" + next
                                                         + "' without thresholds to define the events: correct the "
                                                         + "configuration labelled '"
                                                         + config.getLabel()
@@ -229,22 +228,25 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
             }
 
         }
+        
         // Check that time-series metrics are not combined with other metrics
         String message = "Cannot configure time-series metrics together with non-time-series "
                          + "metrics: correct the configuration labelled '"
                          + config.getLabel()
                          + "'.";
+        
         // Metrics that are explicitly configured as time-series
-        if ( MetricConfigHelper.hasTimeSeriesMetrics( config )
+        if ( ProjectConfigs.hasTimeSeriesMetrics( config )
              && ( hasMetrics( MetricInputGroup.SINGLE_VALUED ) || hasMetrics( MetricInputGroup.DICHOTOMOUS ) ) )
         {
-            throw new MetricConfigurationException( message );
+            throw new MetricConfigException( message );
         }
+        
         // Time-series metrics that are configured as regular metrics, not time-series
         if ( hasMetrics( MetricInputGroup.SINGLE_VALUED_TIME_SERIES )
              && ( hasMetrics( MetricInputGroup.SINGLE_VALUED ) || hasMetrics( MetricInputGroup.DICHOTOMOUS ) ) )
         {
-            throw new MetricConfigurationException( message );
+            throw new MetricConfigException( message );
         }
     }
 
@@ -263,6 +265,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
             TimeWindow unionWindow = union.getMetadata().getTimeWindow();
             Pair<TimeWindow, OneOrTwoThresholds> key =
                     Pair.of( unionWindow, OneOrTwoThresholds.of( this.getAllDataThreshold() ) );
+            
             //Build the future result
             Supplier<MetricOutputMapByMetric<DurationScoreOutput>> supplier = () -> {
                 DurationScoreOutput result = timeToPeakErrorStats.aggregate( union );
@@ -272,6 +275,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
             };
             Future<MetricOutputMapByMetric<DurationScoreOutput>> addMe =
                     CompletableFuture.supplyAsync( supplier, thresholdExecutor );
+            
             //Add the future result to the store
             //Metric futures 
             MetricFuturesByTimeBuilder addFutures = new MetricFuturesByTimeBuilder();
