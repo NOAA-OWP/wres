@@ -30,6 +30,7 @@ import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.Variables;
 import wres.io.data.details.SourceDetails;
 import wres.io.reading.BasicSource;
+import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
 import wres.io.reading.InvalidInputDataException;
 import wres.io.utilities.Database;
@@ -111,7 +112,7 @@ public class DatacardSource extends BasicSource
         }
         catch ( SQLException se )
         {
-            throw new IOException( "While retrieving source ID:", se );
+            throw new IngestException( "While retrieving source ID:", se );
         }
 
         if ( !this.inChargeOfIngest )
@@ -205,10 +206,12 @@ public class DatacardSource extends BasicSource
             }
             else
             {
-                String message = "The NWS Datacard file ('%s') was not formatted correctly and could not be loaded correctly";
-                throw new IOException(String.format(message, getFilename()));
+                String message = "The NWS Datacard file ('" + this.getFilename()
+                                 + "') had unexpected syntax therefore it "
+                                 + "could not be successfully read by WRES.";
+                throw new InvalidInputDataException( message );
             }
-			
+
 			//Second non-comment, header line.
 			if ((line = reader.readLine()) != null)
 			{
@@ -224,10 +227,13 @@ public class DatacardSource extends BasicSource
 				}
 			}
 			else
-			{
-				String message = "The NWS Datacard file ('%s') was not formatted correctly on line %d and could not be loaded correctly";
-				throw new IOException(String.format(message, getFilename(), lineNumber + 1));
-			}					
+            {
+                String message = "The NWS Datacard file '" + this.getFilename()
+                                 +"' had unexpected syntax on line "
+                                 + lineNumber + 1 + " therefore it could not be"
+                                 + " successfully read by WRES.";
+                throw new InvalidInputDataException( message );
+            }
 
             LocalDateTime  localDateTime  = LocalDateTime.of( getFirstYear(),
                                                               getFirstMonth(),
@@ -312,16 +318,8 @@ public class DatacardSource extends BasicSource
 
                         utcDateTime = utcDateTime.plusHours( timeInterval );
 
-                        try
-                        {
-                            addObservedEvent( utcDateTime, this.getValueToSave( actualValue ) );
-                            entryCount++;
-                        }
-                        catch ( SQLException | IOException e )
-                        {
-                            LOGGER.warn(value + " in datacard file not saved to database; cause: " + e.getMessage());
-                            throw new IOException("Unable to save datacard file data to database; cause: " + e.getMessage(), e);
-                        }
+                        addObservedEvent( utcDateTime, this.getValueToSave( actualValue ) );
+                        entryCount++;
 					}
 					else
 					{
@@ -335,8 +333,8 @@ public class DatacardSource extends BasicSource
 		}
         catch ( ProjectConfigException pce )
         {
-            throw new IOException( "Failed to add datacard data from "
-                                   + this.getFilename(), pce );
+            throw new IngestException( "Failed to add datacard data from "
+                                       + this.getFilename(), pce );
         }
 		finally
 		{
@@ -357,26 +355,25 @@ public class DatacardSource extends BasicSource
         if (insertCount > 0)
         {
             insertCount = 0;
-            CopyExecutor copier = new CopyExecutor(currentTableDefinition, currentScript.toString(), delimiter);
+            CopyExecutor copier = new CopyExecutor( currentTableDefinition, currentScript.toString(),
+                                                    COPY_DELIMITER );
             copier.setOnRun(ProgressMonitor.onThreadStartHandler());
             copier.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
             Database.ingest(copier);
             currentScript = null;
         }
     }
-	
+
 	/**
 	 * Adds measurement information to the current insert script in the form of observation data
      * @param observedTime The datetime when the measurement was taken (in UTC)
 	 * @param observedValue The value retrieved from the XML
-     * @throws SQLException when a database issue is encountered while trying
-     * to retrieve the variable position id or the id of the measurement unit
      * @throws IOException when reading the file or computing the hash
+     * @throws IngestException when getting information from db fails
      */
     private void addObservedEvent( LocalDateTime observedTime,
                                    String observedValue )
-    // TODO translate to some kind of IOException here or deeper in the stack
-            throws SQLException, IOException
+            throws IOException
 	{
        	if (insertCount > 0)
 		{
@@ -388,16 +385,24 @@ public class DatacardSource extends BasicSource
 			currentScript = new StringBuilder();
 		}
 
-		currentScript.append(getVariablePositionID());
-		currentScript.append(delimiter);
-		currentScript.append("'").append(observedTime).append("'");
-		currentScript.append(delimiter);
-		currentScript.append(observedValue);
-		currentScript.append(delimiter);
-		currentScript.append(String.valueOf(getMeasurementID()));
-		currentScript.append(delimiter);
-		currentScript.append(String.valueOf(getSourceID()));
-		
+		try
+        {
+            currentScript.append( this.getVariablePositionID() );
+            currentScript.append( COPY_DELIMITER );
+            currentScript.append( "'" ).append( observedTime ).append( "'" );
+            currentScript.append( COPY_DELIMITER );
+            currentScript.append( observedValue );
+            currentScript.append( COPY_DELIMITER );
+            currentScript.append( this.getMeasurementID() );
+            currentScript.append( COPY_DELIMITER );
+            currentScript.append( this.getSourceID() );
+        }
+        catch ( SQLException se )
+        {
+            throw new IngestException( "Failed to get information from database.",
+                                       se );
+        }
+
 		insertCount++;
 	}
 
@@ -621,7 +626,7 @@ public class DatacardSource extends BasicSource
 	/**
 	 * The delimiter between values for copy statements
 	 */
-	private static final String delimiter = "|";
+	private static final String COPY_DELIMITER = "|";
 	
 	/**
 	 * The ID for the variable that is currently being parsed
