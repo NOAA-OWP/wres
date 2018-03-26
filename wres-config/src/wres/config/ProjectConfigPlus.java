@@ -63,6 +63,7 @@ public class ProjectConfigPlus
     private final ProjectConfig projectConfig;
     private final Map<DestinationConfig, String> graphicsStrings;
     private final List<ValidationEvent> validationEvents;
+    private final String canonicalPath;
 
     /** Used to find the end of the graphics custom configuration */
     private static final String GFX_END_TAG = "</config>";
@@ -74,13 +75,30 @@ public class ProjectConfigPlus
                                ProjectConfig projectConfig,
                                Map<DestinationConfig, String> graphicsStrings,
                                List<ValidationEvent> validationEvents )
+            throws IOException
     {
         this.path = path;
+        this.canonicalPath = ProjectConfigPlus.getCanonicalPath( path );
         this.rawConfig = rawConfig;
         this.projectConfig = projectConfig;
         this.graphicsStrings = Collections.unmodifiableMap(graphicsStrings);
         List<ValidationEvent> copiedList = new ArrayList<>(validationEvents);
         this.validationEvents = Collections.unmodifiableList(copiedList);
+    }
+
+
+    /**
+     * Retrieve the canonical path string for a given Path
+     * @param path the path to look up
+     * @return the canonical path from the file
+     * @throws IOException when resolving the path could not happen
+     */
+
+    private static String getCanonicalPath( Path path )
+            throws IOException
+    {
+        File file = path.toFile();
+        return file.getCanonicalPath();
     }
 
     public Path getPath()
@@ -91,13 +109,10 @@ public class ProjectConfigPlus
     /**
      * Get the full path and filename for this ProjectConfig
      * @return the full path and filename
-     * @throws IOException when the canonical path cannot be determined
      */
-    public String getCanonicalPath() throws IOException
+    public String getCanonicalPath()
     {
-        File file = this.getPath()
-                        .toFile();
-        return file.getCanonicalPath();
+        return this.canonicalPath;
     }
 
     public String getRawConfig()
@@ -290,17 +305,9 @@ public class ProjectConfigPlus
         return visConfigs;
     }
 
-
     @Override
     public String toString()
     {
-        try
-        {
-            return this.getCanonicalPath();
-        }
-        catch ( IOException ioe )
-        {
-            return this.path.toString();
-        }
+        return this.getCanonicalPath();
     }
 }
