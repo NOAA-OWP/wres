@@ -67,7 +67,7 @@ public class Chart2DTestInput extends TestCase
 
     }
 
-    public static void main(final String[] args)
+    public static void main( final String[] args ) throws ChartEngineException
     {
         //Construct some single-valued pairs
         final DataFactory metIn = DefaultDataFactory.getInstance();
@@ -87,45 +87,27 @@ public class Chart2DTestInput extends TestCase
                                                  metFac.getDatasetIdentifier("DRRC2", "SQIN", "HEFS"));
         final SingleValuedPairs pairs = metIn.ofSingleValuedPairs(values, meta);
 
-        try
-        {
-            ChartEngine engine = ChartEngineFactory.buildSingleValuedPairsChartEngine( pairs, null, null );
+        ChartEngine engine = ChartEngineFactory.buildSingleValuedPairsChartEngine( pairs, null, null );
 
-            //Put chart in a frame.
-            final JPanel panel = ChartPanelTools.buildPanelFromChartEngine(engine, false);
-            final JFrame frame = new JFrame();
-            frame.setContentPane(panel);
-            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            frame.setSize(800, 500);
-            frame.setVisible(true);
-        }
-        catch( Exception e )
-        {
-            e.printStackTrace();
-            fail( "Unexpected exception: " + e.getMessage() );
-        }
+        //Put chart in a frame.
+        final JPanel panel = ChartPanelTools.buildPanelFromChartEngine(engine, false);
+        final JFrame frame = new JFrame();
+        frame.setContentPane(panel);
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setSize(800, 500);
+        frame.setVisible(true);
     }
 
     /**
      * This makes use of some James EVS stuff to read back in computed EVS results. However, we have no class for
      * storing these results in a wres-datamodel manner.
      */
-//    public void test2JamesStuff()
+//    public void test2JamesStuff() throws IOException
 //    {
-//        try
-//        {
-//            final MetricResultByLeadTime results =
-//                                                 ProductFileIO.read(new File("testinput/chart2DTest/WGCM8.Streamflow.GEFS_CFSv2_1D_ALL.Correlation_coefficient.xml"));
+//        final MetricResultByLeadTime results =
+//                ProductFileIO.read(new File("testinput/chart2DTest/WGCM8.Streamflow.GEFS_CFSv2_1D_ALL.Correlation_coefficient.xml"));
 //            System.out.println(results.toString());
-//        }
-//        catch(final IOException e)
-//        {
-//            e.printStackTrace();
-//            fail("Unexpected exception reading EVS output.");
-//        }
 //
 //    }
-
-
 
 }
