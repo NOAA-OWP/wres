@@ -232,103 +232,60 @@ public class ConfigHelper
 
             String featureDescription = getFeatureDescription( feature );
             String t1Description = getFeatureDescription( t1 );
-            try
+
+            if ( Strings.hasValue( feature.getLocationId() ) &&
+                 Strings.hasValue( t1.getLocationId() ) )
             {
-                if ( Strings.hasValue( feature.getLocationId() ) &&
-                     Strings.hasValue( t1.getLocationId() ) )
-                {
-                    return feature.getLocationId().compareTo( t1.getLocationId() );
-                }
-                else
-                {
-                    LOGGER.trace( "Either {} and {} have the same location ids or "
-                                  + "one or both of them don't have one.",
-                                  featureDescription,
-                                  t1Description );
-                }
+                return feature.getLocationId().compareTo( t1.getLocationId() );
             }
-            catch ( Exception e )
+            else
             {
-                LOGGER.error( "Error occurred when comparing locations between '{}' "
-                              + "and '{}'",
+                LOGGER.trace( "Either {} and {} have the same location ids or "
+                              + "one or both of them don't have one.",
                               featureDescription,
                               t1Description );
-                throw e;
             }
 
-            try
+            if ( Strings.hasValue( feature.getHuc() ) &&
+                 Strings.hasValue( t1.getHuc() ) )
             {
-                if ( Strings.hasValue( feature.getHuc() ) &&
-                     Strings.hasValue( t1.getHuc() ) )
-                {
-                    return feature.getHuc().compareTo( t1.getHuc() );
-                }
-                else
-                {
-                    LOGGER.trace( "Either {} and {} have the same huc or "
-                                  + "one or both of them don't have one.",
-                                  featureDescription,
-                                  t1Description );
-                }
+                return feature.getHuc().compareTo( t1.getHuc() );
             }
-            catch ( Exception e )
+            else
             {
-                LOGGER.error( "Error occurred when comparing hucs between '{}' "
-                              + "and '{}'",
+                LOGGER.trace( "Either {} and {} have the same huc or "
+                              + "one or both of them don't have one.",
                               featureDescription,
                               t1Description );
-                throw e;
             }
 
-            try
+            if ( Strings.hasValue( feature.getGageId() ) &&
+                 Strings.hasValue( t1.getGageId() ) )
             {
-                if ( Strings.hasValue( feature.getGageId() ) &&
-                     Strings.hasValue( t1.getGageId() ) )
-                {
-                    return feature.getGageId().compareTo( t1.getGageId() );
-                }
-                else
-                {
-                    LOGGER.trace( "Either {} and {} have the same gage ids or "
-                                  + "one or both of them don't have one.",
-                                  featureDescription,
-                                  t1Description );
-                }
+                return feature.getGageId().compareTo( t1.getGageId() );
             }
-            catch ( Exception e )
+            else
             {
-                LOGGER.error( "Error occurred when comparing gages between '{}' "
-                              + "and '{}'",
+                LOGGER.trace( "Either {} and {} have the same gage ids or "
+                              + "one or both of them don't have one.",
                               featureDescription,
                               t1Description );
-                throw e;
             }
 
-            try
+            if ( feature.getComid() != null &&
+                 t1.getComid() != null )
             {
-                if ( feature.getComid() != null &&
-                     t1.getComid() != null )
-                {
-                    return feature.getComid().compareTo( t1.getComid() );
-                }
-                else
-                {
-                    LOGGER.trace( "Either {} and {} have the same com ids or "
-                                  + "one or both of them don't have one.",
-                                  featureDescription,
-                                  t1Description );
-                }
+                return feature.getComid().compareTo( t1.getComid() );
             }
-            catch ( Exception e )
+            else
             {
-                LOGGER.error( "Error occurred when comparing comids between '{}' "
-                              + "and '{}'",
+                LOGGER.trace( "Either {} and {} have the same com ids or "
+                              + "one or both of them don't have one.",
                               featureDescription,
                               t1Description );
-                throw e;
             }
 
-            LOGGER.info( "A proper comparison couldn't be made between {} and {}."
+            LOGGER.warn( "A proper comparison couldn't be made between {} and {}."
                          + " Now saying that {} is greater than {}.",
                          featureDescription,
                          t1Description,
