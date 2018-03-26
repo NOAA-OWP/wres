@@ -78,10 +78,17 @@ public final class Operations {
         {
             LOGGER.info("Since previously incomplete data was removed, the "
                         + "state of the database will now be refreshed.");
-            Database.refreshStatistics( true );
+            try
+            {
+                Database.refreshStatistics( true );
+            }
+            catch ( SQLException se )
+            {
+                throw new IOException( "Failed to refresh statistics.", se );
+            }
         }
 
-        ProjectDetails result;
+        ProjectDetails result = null;
 
         List<IngestResult> projectSources = new ArrayList<>();
 
@@ -137,12 +144,22 @@ public final class Operations {
                 Database.refreshStatistics( false );
             }
         }
-        catch ( SQLException se )
+        catch ( InterruptedException ie )
         {
-            throw new IngestException( "Failed to finalize ingest.", se );
+            LOGGER.warn( "Interrupted while finalizing ingest." );
+            Thread.currentThread().interrupt();
+        }
+        catch ( SQLException | ExecutionException e )
+        {
+            throw new IngestException( "Failed to finalize ingest.", e );
         }
 
         Database.releaseLockForMutation();
+
+        if ( result == null )
+        {
+            throw new IngestException( "Result of ingest was null" );
+        }
 
         return result;
     }
@@ -168,7 +185,20 @@ public final class Operations {
     public static void shutdown()
     {
         LOGGER.info("Shutting down the IO layer...");
-        Database.addNewIndexes();
+
+        try
+        {
+            Database.addNewIndexes();
+        }
+        catch ( InterruptedException ie )
+        {
+            Thread.currentThread().interrupt();
+        }
+        catch ( SQLException | ExecutionException e )
+        {
+            LOGGER.warn( "Failed to add indices while shutting down.", e );
+        }
+
         Executor.complete();
         Database.shutdown();
         PairWriter.flushAndCloseAllWriters();
@@ -182,7 +212,20 @@ public final class Operations {
     public static void forceShutdown( long timeOut, TimeUnit timeUnit )
     {
         LOGGER.info( "Forcefully shutting down the IO module..." );
-        Database.addNewIndexes();
+
+        try
+        {
+            Database.addNewIndexes();
+        }
+        catch ( InterruptedException ie )
+        {
+            Thread.currentThread().interrupt();
+        }
+        catch ( SQLException | ExecutionException e )
+        {
+            LOGGER.warn( "Failed to add indices while shutting down.", e );
+        }
+
         List<Runnable> executorTasks =
                 Executor.forceShutdown( timeOut / 2, timeUnit );
         List<Runnable> databaseTasks =

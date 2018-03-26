@@ -172,29 +172,28 @@ public final class Database {
 		return result;
 	}
 
+
 	/**
 	 * Loads the metadata for each saved index and reinstates them within the
 	 * database
+     * @throws SQLException when script execution or gets from resultsets fail
+     * @throws InterruptedException when an underlying task is interrupted
+     * @throws ExecutionException when an underlying task throws an exception
 	 */
-	public static void addNewIndexes()
-	{
-	    try
-        {
-            // Remove queued indexes for tables that don't exist
-            ScriptBuilder script = new ScriptBuilder(  );
-            script.addLine("DELETE FROM IndexQueue IQ");
-            script.addLine("WHERE NOT EXISTS (");
-            script.addTab().addLine("SELECT 1");
-            script.addTab().addLine("FROM INFORMATION_SCHEMA.TABLES T");
-            script.addTab().addLine("WHERE LOWER(T.table_schema || '.' || T.table_name) = LOWER(IQ.table_name)");
-            script.addLine(");");
 
-            script.execute();
-        }
-        catch ( SQLException e )
-        {
-            LOGGER.error( "Invalid dynamic indexes could not be removed from the queue." );
-        }
+	public static void addNewIndexes() throws SQLException,
+            InterruptedException, ExecutionException
+	{
+        // Remove queued indexes for tables that don't exist
+        ScriptBuilder script = new ScriptBuilder(  );
+        script.addLine("DELETE FROM IndexQueue IQ");
+        script.addLine("WHERE NOT EXISTS (");
+        script.addTab().addLine("SELECT 1");
+        script.addTab().addLine("FROM INFORMATION_SCHEMA.TABLES T");
+        script.addTab().addLine("WHERE LOWER(T.table_schema || '.' || T.table_name) = LOWER(IQ.table_name)");
+        script.addLine(");");
+
+        script.execute();
 
         StringBuilder builder;
         LinkedList<Future<?>> indexTasks = new LinkedList<>();
@@ -254,10 +253,6 @@ public final class Database {
                 indexTasks.add(Database.execute(restore));
             }
         }
-        catch ( SQLException e )
-        {
-            LOGGER.error(Strings.getStackTrace( e ));
-        }
         finally
         {
             if (indexes != null)
@@ -268,8 +263,9 @@ public final class Database {
                 }
                 catch ( SQLException e )
                 {
-                    LOGGER.error("The result set containing the collection of indexes could not be closed");
-                    LOGGER.error( Strings.getStackTrace(e));
+                    // Exception on close should not affect primary outputs.
+                    LOGGER.warn( "The result set containing the collection of indexes could not be closed",
+                                 e );
                 }
             }
 
@@ -287,14 +283,7 @@ public final class Database {
 		Future<?> task;
 		while ((task = indexTasks.poll()) != null)
         {
-            try
-            {
-                task.get();
-            }
-            catch (InterruptedException | ExecutionException e)
-            {
-                LOGGER.error(Strings.getStackTrace(e));
-            }
+            task.get();
         }
 
         if (LOGGER.isTraceEnabled())
@@ -310,8 +299,10 @@ public final class Database {
      * @param tableName The name of the table to index
      * @param indexName The name of the index to instate
      * @param indexDefinition The definition of the index to instate
+     * @throws SQLException when query fails
      */
 	public static void saveIndex(String tableName, String indexName, String indexDefinition)
+            throws SQLException
 	{
 		saveIndex( tableName, indexName, indexDefinition, "btree" );
 	}
@@ -322,11 +313,14 @@ public final class Database {
      * @param indexName The name of the index to instate
      * @param indexDefinition The definition of the index
      * @param indexType The organizational method for the index
+     * @throws SQLException when query fails
      */
+
 	public static void saveIndex(String tableName,
                                  String indexName,
                                  String indexDefinition,
                                  String indexType)
+            throws SQLException
     {
 		if (!indexDefinition.startsWith("("))
 		{
@@ -351,15 +345,16 @@ public final class Database {
 			  .append("');");
 
 		try
-		{
+        {
 			Database.execute( script.toString() );
 		}
 		catch ( SQLException e )
 		{
-			LOGGER.error( "Could not store metadata about the index '{}' in the database", indexName );
-			LOGGER.error(Strings.getStackTrace( e ));
+			String message = "Could not store metadata about the index '"
+                             + indexName + "' in the database.";
+			// Decorate with some additional information, propagate.
+			throw new SQLException( message, e );
 		}
-
     }
 
 	/**
@@ -390,11 +385,13 @@ public final class Database {
 		return executor;
 	}
 
+
     /**
      * Loops through all stored ingest tasks and ensures that they all complete
 	 * @return the list of resulting ingested file identifiers
-     * @throws IngestException if the ingest fails or is interrupted
+     * @throws IngestException if the ingest fails
      */
+
     public static List<IngestResult> completeAllIngestTasks() throws IngestException
     {
         LOGGER.trace( "Now completing all issued ingest tasks..." );
@@ -410,41 +407,37 @@ public final class Database {
 
             while ( task != null )
             {
-				ProgressMonitor.increment();
+                ProgressMonitor.increment();
 
-				if (!task.isDone())
-				{
-					try
-                    {
-						List<IngestResult> singleResult = task.get();
-                        ProgressMonitor.completeStep();
+                if (!task.isDone())
+                {
+                    List<IngestResult> singleResult = task.get();
+                    ProgressMonitor.completeStep();
 
-                        if ( singleResult != null )
-                        {
-                            result.addAll( singleResult );
-                        }
-                        else if ( LOGGER.isTraceEnabled() )
-                        {
-                            LOGGER.trace( "A null value was returned in the "
-                                          + "Database class. Task: {}", task );
-                        }
-					}
-					catch (ExecutionException e)
+                    if ( singleResult != null )
                     {
-						LOGGER.error(Strings.getStackTrace(e));
-					}
-				}
+                        result.addAll( singleResult );
+                    }
+                    else if ( LOGGER.isTraceEnabled() )
+                    {
+                        LOGGER.trace( "A null value was returned in the "
+                                      + "Database class. Task: {}", task );
+                    }
+                }
 
                 task = getStoredIngestTask();
-			}
-		}
-		catch (InterruptedException e)
+            }
+        }
+        catch ( InterruptedException ie )
         {
-		    LOGGER.error("Ingest task completion was interrupted.");
-			LOGGER.error(Strings.getStackTrace(e));
-			throw new IngestException( "The ingest could not be completed; " +
-                                       "the operation was interupted." );
-		}
+            LOGGER.warn( "Ingest task completion was interrupted." );
+            Thread.currentThread().interrupt();
+        }
+        catch ( ExecutionException ee )
+        {
+            String message = "Could not complete all ingest tasks.";
+            throw new IngestException( message, ee );
+        }
 
 
         if ( LOGGER.isDebugEnabled() )
@@ -574,10 +567,11 @@ public final class Database {
             {
                 connection.close();
             }
-            catch(SQLException error)
+            catch( SQLException se )
             {
-                LOGGER.error("A connection could not be returned to the connection pool properly." + System.lineSeparator());
-                LOGGER.error(Strings.getStackTrace(error));
+                // Exception on close should not affect primary outputs.
+               LOGGER.warn( "A connection could not be returned to the connection pool properly.",
+                             se );
             }
 	    }
 	}
@@ -600,10 +594,11 @@ public final class Database {
                 connection.close();
                 LOGGER.debug("A high priority database operation has completed.");
             }
-            catch (SQLException error)
+            catch ( SQLException se )
             {
-                LOGGER.error("A high priority connection could not be returned to the connection pool properly.");
-                LOGGER.error(Strings.getStackTrace(error));
+                // Exception on close should not affect primary outputs.
+                LOGGER.warn( "A high priority connection could not be returned to the connection pool properly.",
+                             se );
             }
         }
     }
@@ -790,20 +785,18 @@ public final class Database {
 			LOGGER.error(message);
 			throw new CopyException(message, noMethod);
 		}
-		catch (SQLException | IOException error)
+		catch (SQLException | IOException | IllegalAccessException error)
 		{
-			LOGGER.debug("Data could not be copied to the database:");
-			LOGGER.debug(Strings.truncate(values));
-			LOGGER.debug("");
-
-			throw new CopyException("Data could not be copied: " + error.getMessage(), error);
+		    if ( LOGGER.isDebugEnabled() )
+            {
+                LOGGER.debug( "Data could not be copied to the database:{}{}",
+                              Strings.truncate( values ), NEWLINE );
+            }
+			throw new CopyException( "Data could not be copied to the database.",
+                                     error);
 		}
-        catch (IllegalAccessException e) {
-			LOGGER.error(Strings.getStackTrace(e));
-        }
         catch (InvocationTargetException e) {
 		    String message = "The dynamically retrieved method '" + copyAPIMethodName + "' threw an exception upon execution.";
-            LOGGER.error(message);
             throw new CopyException(message, e);
         }
         finally
@@ -939,14 +932,23 @@ public final class Database {
 		}
 		catch ( SQLException error )
 		{
-			LOGGER.error("The following SQL call failed: {}{}", NEWLINE, query, error );
-			throw error;
+			String message = "The following SQL query failed:" + NEWLINE + query;
+			// Decorate SQLException with additional information
+			throw new SQLException( message, error );
 		}
 		finally
 		{
 			if (results != null)
 			{
-				results.close();
+			    try
+                {
+                    results.close();
+                }
+                catch ( SQLException se )
+                {
+                    // Exception on close should not affect primary outputs.
+                    LOGGER.warn( "Could not close results {}.", results, se );
+                }
 			}
 
 			if ( statement != null && !statement.isClosed() )
@@ -1049,39 +1051,41 @@ public final class Database {
         return result;
     }
 
+
     /**
      * Checks if the specified column is in the given result set
      * @param resultSet The set of data retrieved from the database
      * @param columnName The name of the column to check for
      * @return Whether or not the column exists
+     * @throws SQLException when resultSet metadata cannot be retrieved
+     * @throws NullPointerException when any arg is null
      */
+
 	public static boolean hasColumn(ResultSet resultSet, String columnName)
+            throws SQLException
 	{
+	    Objects.requireNonNull( resultSet );
+	    Objects.requireNonNull( columnName );
+
 		boolean columnExists = false;
 
-        try
+        // JDBC has a findColumn function that can do this, but it throws
+        // an exception if it isn't found. This means that an exception is
+        // thrown everytime it returns false. If you have thousands of
+        // calls and they all return false, you'll hit a massive slowdown
+        // due to exceptions. Instead, we perform a simple loop which will
+        // prevent that
+        int columnCount = resultSet.getMetaData().getColumnCount();
+
+        for ( int index = 1; index <= columnCount; ++index )
         {
-        	// JDBC has a findColumn function that can do this, but it throws
-			// an exception if it isn't found. This means that an exception is
-			// thrown everytime it returns false. If you have thousands of
-			// calls and they all return false, you'll hit a massive slowdown
-			// due to exceptions. Instead, we perform a simple loop which will
-			// prevent that
-            int columnCount = resultSet.getMetaData().getColumnCount();
-            for ( int index = 1; index <= columnCount; ++index )
+            if ( resultSet.getMetaData()
+                          .getColumnLabel( index )
+                          .equals( columnName ) )
             {
-                if ( resultSet.getMetaData()
-                              .getColumnLabel( index )
-                              .equals( columnName ) )
-                {
-                    columnExists = true;
-                    break;
-                }
+                columnExists = true;
+                break;
             }
-        }
-        catch ( SQLException e )
-        {
-            LOGGER.error( "A database result set could not be queried.", e );
         }
 
 		return columnExists;
@@ -1136,14 +1140,23 @@ public final class Database {
 		}
 		catch (SQLException error)
 		{
-            LOGGER.error( "The following query failed:{}{}", NEWLINE, query );
-			throw error;
+            String message = "The following query failed:" + NEWLINE + query;
+            // Decorate SQLException with additional information.
+			throw new SQLException( message, error );
 		}
 		finally
 		{
 			if (results != null)
 			{
-				results.close();
+			    try
+                {
+                    results.close();
+                }
+                catch ( SQLException se )
+                {
+                    // Exception on close should not affect primary outputs.
+                    LOGGER.warn( "Could not close result set {}.", results, se );
+                }
 			}
 
 			if (connection != null)
@@ -1265,14 +1278,23 @@ public final class Database {
 		}
 		catch (SQLException error)
 		{
-            LOGGER.error( "The following query failed:{}{}", NEWLINE, query );
-			throw error;
+            String message = "The following query failed:" + NEWLINE + query;
+            // Decorate SQLException with additional information.
+			throw new SQLException( message, error );
 		}
 		finally
 		{
 			if (results != null)
 			{
-				results.close();
+			    try
+                {
+                    results.close();
+                }
+                catch ( SQLException se )
+                {
+                    // Exception on close should not affect primary outputs.
+                    LOGGER.warn( "Could not close result set {}.", results, se );
+                }
 			}
 
 			if (connection != null)
@@ -1326,7 +1348,15 @@ public final class Database {
 		{
 			if (resultSet != null)
 			{
-				resultSet.close();
+			    try
+                {
+                    resultSet.close();
+                }
+                catch ( SQLException se )
+                {
+                    // Exception on close should not affect primary outputs.
+                    LOGGER.warn( "Could not close result set {}.", resultSet, se );
+                }
 			}
 
 			if (connection != null)
@@ -1345,12 +1375,28 @@ public final class Database {
      * were removed prior to running.
      * @param vacuum Whether or not to remove records pertaining to deleted
      *               values as well
+     * @throws SQLException when refresh or adding indices goes wrong
      */
+
 	public static void refreshStatistics(boolean vacuum)
+            throws SQLException
 	{
         if (vacuum)
         {
-            Database.addNewIndexes();
+            try
+            {
+                Database.addNewIndexes();
+            }
+            catch ( InterruptedException ie )
+            {
+                Thread.currentThread().interrupt();
+            }
+            catch ( ExecutionException ee )
+            {
+                // This might not actually be a SQLException underneath, but
+                // for now, translate to one until we figure out a better way.
+                throw new SQLException( "Could not add indices.", ee );
+            }
         }
 
 		Connection connection = null;
@@ -1396,10 +1442,6 @@ public final class Database {
             LOGGER.info("Now refreshing the statistics within the database.");
             Database.execute(script.toString());
 
-        }
-        catch (SQLException e)
-        {
-			LOGGER.error(Strings.getStackTrace(e));
         }
         finally
         {
@@ -1606,12 +1648,21 @@ public final class Database {
 		{
 		    if (!statement.isClosed())
             {
-                statement.close();
+                try
+                {
+                    statement.close();
+                }
+                catch ( SQLException se )
+                {
+                    // Exception on close should not affect primary outputs.
+                    LOGGER.warn( "Failed to close statement {}.", statement, se );
+                }
             }
             LOGGER.error( "The following SQL query failed:{}{}", NEWLINE, query, error );
 			throw error;
 		}
-        return results; 
+
+        return results;
     }
 
     /**
@@ -1680,12 +1731,11 @@ public final class Database {
 		}
 		catch (final SQLException e)
         {
-			LOGGER.error("WRES data could not be removed from the database." + NEWLINE);
-			LOGGER.error("");
-			LOGGER.error(builder.toString());
-			LOGGER.error("");
-			LOGGER.error(Strings.getStackTrace(e));
-			throw e;
+			String message = "WRES data could not be removed from the database."
+                             + NEWLINE + NEWLINE
+                             + builder.toString();
+			// Decorate with contextual information.
+			throw new SQLException( message, e );
 		}
 	}
 
@@ -1728,15 +1778,24 @@ public final class Database {
         }
         catch (SQLException e)
         {
-            LOGGER.error( "The table '" + tableName + "' could not be locked.", e );
-            LOGGER.error("The query was: '{}'", query);
-            throw e;
+            String message = "The table '" + tableName + "' could not be locked."
+                    + NEWLINE + "The query was: '" + query + "'";
+            // Decorate SQLException with contextual information
+            throw new SQLException( message,e );
         }
         finally
         {
-            if (statement == null)
+            if ( statement != null )
             {
-                statement.close();
+                try
+                {
+                    statement.close();
+                }
+                catch ( SQLException se )
+                {
+                    // Exception on close should not affect primary outputs.
+                    LOGGER.warn( "Failed to close a statement.", se );
+                }
             }
         }
     }
@@ -1840,7 +1899,7 @@ public final class Database {
             {
                 // The above statement is a diagnostic measure - it doesn't
                 // affect the user, but we do need to log it for our own sakes
-                LOGGER.error( Strings.getStackTrace( e ) );
+                LOGGER.warn( "Could not get lock status.", e );
             }
 
             try
