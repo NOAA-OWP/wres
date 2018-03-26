@@ -881,8 +881,9 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
      * @return The length of a period of lead time to retrieve from the database
      * @throws NoDataException Thrown if the period could not be determined
      * from the scale
+     * @throws SQLException when communication with the database failed
      */
-    public Integer getLeadPeriod() throws NoDataException
+    public Integer getLeadPeriod() throws NoDataException, SQLException
     {
         Integer period;
 
@@ -925,8 +926,9 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
      * @return The unit of time that leads should be queried in
      * @throws NoDataException Thrown if there wasn't enough data available to
      * determine the scale
+     * @throws SQLException when communication with the database failed
      */
-    public String getLeadUnit() throws NoDataException
+    public String getLeadUnit() throws NoDataException, SQLException
     {
         String unit;
 
@@ -960,8 +962,9 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
      * @return The frequency will which to retrieve a period of leads
      * @throws NoDataException Thrown if there wasn't enough data available to
      * infer a frequency from.
+     * @throws SQLException when communication with the database failed
      */
-    public Integer getLeadFrequency() throws NoDataException
+    public Integer getLeadFrequency() throws NoDataException, SQLException
     {
         Integer frequency;
 
@@ -1007,8 +1010,9 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
     /**
      * @return Whether or not data should be scaled
      * @throws NoDataException Thrown if a dynamic scale could not be created
+     * @throws SQLException when communication with the database failed
      */
-    public boolean shouldScale() throws NoDataException
+    public boolean shouldScale() throws NoDataException, SQLException
     {
         return this.getScale() != null &&
                !TimeScaleFunction.NONE
@@ -1028,8 +1032,9 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
      * data
      * @throws NoDataException Thrown if the scales for either the left or
      * right handed data could not be evaluated.
+     * @throws SQLException when communication with the database failed
      */
-    private TimeScaleConfig getCommonScale() throws NoDataException
+    private TimeScaleConfig getCommonScale() throws NoDataException, SQLException
     {
         Long commonScale;
 
@@ -1094,12 +1099,6 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
                                        + "right inputs could not be evaluated.",
                                        e );
         }
-        catch ( SQLException e )
-        {
-            throw new NoDataException( "The database could not determine "
-                                       + "the scale of the left and right hand data.",
-                                       e );
-        }
 
         return new TimeScaleConfig(
                 scaleFunction,
@@ -1117,8 +1116,9 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
      * @return The expected scale of the data
      * @throws NoDataException Thrown if there wasn't enough data in the
      * database to determine the scale of both the left and right inputs
+     * @throws SQLException when communication with the database failed
      */
-    public TimeScaleConfig getScale() throws NoDataException
+    public TimeScaleConfig getScale() throws NoDataException, SQLException
     {
         if (this.desiredTimeScale == null)
         {
@@ -1671,7 +1671,9 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
             }
             catch ( InterruptedException e )
             {
-                throw new IOException( "Population of discrete leads has been interrupted.", e );
+                LOGGER.warn( "Population of discrete leads has been interrupted.",
+                             e );
+                Thread.currentThread().interrupt();
             }
             catch ( ExecutionException e )
             {
@@ -1907,7 +1909,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
                 }
                 catch ( SQLException e )
                 {
-                    LOGGER.debug("A database result set could not be closed.", e);
+                    LOGGER.warn("A database result set could not be closed.", e);
                 }
             }
 
@@ -1950,7 +1952,8 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
             }
             catch ( InterruptedException e )
             {
-                throw new IOException( "Population of lead offsets has been interrupted.", e );
+                LOGGER.warn( "Population of lead offsets has been interrupted.", e );
+                Thread.currentThread().interrupt();
             }
             catch ( ExecutionException e )
             {
@@ -2054,7 +2057,15 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
         {
             if (resultSet != null)
             {
-                resultSet.close();
+                try
+                {
+                    resultSet.close();
+                }
+                catch ( SQLException se )
+                {
+                    // Failure to close resource shouldn't affect primary output
+                    LOGGER.warn( "Failed to close result set {}.", resultSet, se );
+                }
             }
 
             if (connection != null)
@@ -2400,7 +2411,14 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
         {
             if (connection != null)
             {
-                connection.rollback();
+                try
+                {
+                    connection.rollback();
+                }
+                catch ( SQLException se )
+                {
+                    LOGGER.warn( "Failed to rollback.", se );
+                }
             }
 
             throw e;
@@ -2409,7 +2427,15 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
         {
             if (results != null)
             {
-                results.close();
+                try
+                {
+                    results.close();
+                }
+                catch ( SQLException se )
+                {
+                    // Failure to close resource shouldn't affect primary output
+                    LOGGER.warn( "Failed to close result set {}.", results, se );
+                }
             }
             if (connection != null)
             {
@@ -2576,8 +2602,9 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
      * @return The overall number of lead units within a single window
      * @throws NoDataException Thrown if there wasn't enough data available to
      * evaluate
+     * @throws SQLException when communication with the database failed
      */
-    public long getWindowWidth() throws NoDataException
+    public long getWindowWidth() throws NoDataException, SQLException
     {
         return TimeHelper.unitsToLeadUnits( this.getLeadUnit(), this.getLeadPeriod() );
     }
