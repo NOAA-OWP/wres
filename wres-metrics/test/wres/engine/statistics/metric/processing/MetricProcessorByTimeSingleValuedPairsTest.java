@@ -9,6 +9,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -89,7 +90,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                         null,
                                                                         Executors.newSingleThreadExecutor(),
                                                                         Executors.newSingleThreadExecutor(),
-                                                                        (MetricOutputGroup[]) null );
+                                                                        null );
         SingleValuedPairs pairs = MetricTestDataFactory.getSingleValuedPairsFour();
         MetricOutputForProjectByTimeAndThreshold results = processor.apply( pairs );
         MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> bias = results.getDoubleScoreOutput()
@@ -146,8 +147,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
                 MetricFactory.getInstance( metIn )
-                             .ofMetricProcessorByTimeSingleValuedPairs( config,
-                                                                        MetricOutputGroup.values() );
+                             .ofMetricProcessorByTimeSingleValuedPairs( config, MetricOutputGroup.set() );
         SingleValuedPairs pairs = MetricTestDataFactory.getSingleValuedPairsFour();
         final MetadataFactory metFac = metIn.getMetadataFactory();
         // Generate results for 10 nominal lead times
@@ -220,7 +220,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
             MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
                                  .ofMetricProcessorByTimeSingleValuedPairs( config,
-                                                                            MetricOutputGroup.DOUBLE_SCORE );
+                                                                            Collections.singleton( MetricOutputGroup.DOUBLE_SCORE ) );
             processor.apply( null );
             fail( "Expected a checked exception on processing the project configuration '" + testOne + "'." );
         }
@@ -235,7 +235,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
             MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
                                  .ofMetricProcessorByTimeSingleValuedPairs( config,
-                                                                            MetricOutputGroup.DOUBLE_SCORE );
+                                                                            Collections.singleton( MetricOutputGroup.DOUBLE_SCORE ) );
             processor.apply( MetricTestDataFactory.getSingleValuedPairsSix() );
             fail( "Expected a checked exception on processing the project configuration '" + testTwo
                   + "' "
@@ -252,7 +252,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
             MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
                                  .ofMetricProcessorByTimeSingleValuedPairs( config,
-                                                                            MetricOutputGroup.DOUBLE_SCORE );
+                                                                            Collections.singleton( MetricOutputGroup.DOUBLE_SCORE ) );
             processor.apply( MetricTestDataFactory.getSingleValuedPairsSix() );
             fail( "Expected a checked exception on processing the project configuration '" + testThree
                   + "' "
@@ -269,7 +269,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
             MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
                                  .ofMetricProcessorByTimeSingleValuedPairs( config,
-                                                                            MetricOutputGroup.DOUBLE_SCORE );
+                                                                            Collections.singleton( MetricOutputGroup.DOUBLE_SCORE ) );
             processor.apply( MetricTestDataFactory.getSingleValuedPairsSix() );
             fail( "Expected a checked exception on processing the project configuration '" + testFour
                   + "' "
@@ -286,7 +286,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
             MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
                                  .ofMetricProcessorByTimeSingleValuedPairs( config,
-                                                                            MetricOutputGroup.DOUBLE_SCORE );
+                                                                            Collections.singleton( MetricOutputGroup.DOUBLE_SCORE ) );
             processor.apply( MetricTestDataFactory.getSingleValuedPairsSix() );
             fail( "Expected a checked exception on processing the project configuration '" + testFive
                   + "' "
@@ -314,7 +314,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
                 MetricFactory.getInstance( metIn )
                              .ofMetricProcessorByTimeSingleValuedPairs( config,
-                                                                        MetricOutputGroup.values() );
+                                                                        MetricOutputGroup.set() );
 
         //Check for the expected number of metrics
         assertTrue( "Unexpected number of metrics.",
@@ -345,7 +345,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
                 MetricFactory.getInstance( metIn )
                              .ofMetricProcessorByTimeSingleValuedPairs( config,
-                                                                        MetricOutputGroup.values() );
+                                                                        MetricOutputGroup.set() );
         TimeSeriesOfSingleValuedPairs pairs = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsOne();
         //Break into two time-series to test sequential calls
         TimeSeriesOfSingleValuedPairs first =
@@ -432,7 +432,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
                 MetricFactory.getInstance( metIn )
                              .ofMetricProcessorByTimeSingleValuedPairs( config,
-                                                                        MetricOutputGroup.values() );
+                                                                        MetricOutputGroup.set() );
         TimeSeriesOfSingleValuedPairs pairs = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsOne();
         //Break into two time-series to test sequential calls
         TimeSeriesOfSingleValuedPairs first =
@@ -533,7 +533,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                 MetricFactory.getInstance( metIn )
                              .ofMetricProcessorByTimeSingleValuedPairs( config,
                                                                         thresholdsByMetric,
-                                                                        MetricOutputGroup.values() );
+                                                                        MetricOutputGroup.set() );
         SingleValuedPairs pairs = MetricTestDataFactory.getSingleValuedPairsFour();
         final MetadataFactory metFac = metIn.getMetadataFactory();
 

@@ -136,15 +136,36 @@ public class MetricProcessorForProject
      * @return the output types to cache
      */
 
-    public Set<MetricOutputGroup> getCachedMetricOutputTypes()
+    public Set<MetricOutputGroup> getMetricOutputTypesToCache()
     {
         if ( Objects.nonNull( singleValuedProcessor ) )
         {
-            return singleValuedProcessor.getMetricOutputToCache();
+            return singleValuedProcessor.getMetricOutputTypesToCache();
         }
         else
         {
-            return ensembleProcessor.getMetricOutputToCache();
+            return ensembleProcessor.getMetricOutputTypesToCache();
+        }
+    }
+
+    /**
+     * Returns the set of {@link MetricOutputGroup} that were actually cached across successive executions of a 
+     * {@link MetricProcessor}. This may differ from {@link #getMetricOutputTypesToCache()}, as some end-of-pipeline 
+     * outputs are computed and cached automatically.
+     * 
+     * @return the output types to cache
+     * @throws MetricOutputAccessException if the cached types could not be determined
+     */
+
+    public Set<MetricOutputGroup> getCachedMetricOutputTypes() throws MetricOutputAccessException
+    {
+        if ( Objects.nonNull( singleValuedProcessor ) )
+        {
+            return singleValuedProcessor.getCachedMetricOutputTypes();
+        }
+        else
+        {
+            return ensembleProcessor.getCachedMetricOutputTypes();
         }
     }
 

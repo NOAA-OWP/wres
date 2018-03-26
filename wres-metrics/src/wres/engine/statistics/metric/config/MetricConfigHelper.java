@@ -120,7 +120,8 @@ public final class MetricConfigHelper
      * @throws NullPointerException if the input is null
      */
 
-    public static MetricConstants getSummaryStatisticsName( SummaryStatisticsName statsName ) throws MetricConfigException
+    public static MetricConstants getSummaryStatisticsName( SummaryStatisticsName statsName )
+            throws MetricConfigException
     {
 
         Objects.requireNonNull( statsName, NULL_CONFIGURATION_NAME_ERROR );
@@ -241,54 +242,19 @@ public final class MetricConfigHelper
                                                                         units,
                                                                         dataFactory );
         }
-        
+
         ThresholdsByMetric returnMe = builder.build();
-        
+
         // Find the union with any external thresholds
-        if( Objects.nonNull( externalThresholds ) )
+        if ( Objects.nonNull( externalThresholds ) )
         {
-            for( ThresholdsByMetric nextStore : externalThresholds )
+            for ( ThresholdsByMetric nextStore : externalThresholds )
             {
                 returnMe = returnMe.unionWithThisStore( nextStore );
             }
         }
 
         return returnMe;
-    }
-
-    /**
-     * Transforms a list of {@link ThresholdsConfig} to a set of {@link Threshold}.
-     * 
-     * @param thresholds the thresholds configuration
-     * @param units optional units for non-probability thresholds
-     * @param dataFactory the data factory with which to build thresholds
-     * @param types an optional list of threshold types to read
-     * @return a set of thresholds (possibly empty)
-     * @throws MetricConfigException if the metric configuration is invalid
-     * @throws NullPointerException if either input is null
-     * @deprecated
-     */
-
-    @Deprecated
-    public static Set<Threshold> fromInternalThresholdsConfig( List<ThresholdsConfig> thresholds,
-                                                               Dimension units,
-                                                               DataFactory dataFactory,
-                                                               ThresholdType... types )
-            throws MetricConfigException
-    {
-        Objects.requireNonNull( thresholds, NULL_CONFIGURATION_ERROR );
-
-        Objects.requireNonNull( dataFactory, NULL_DATA_FACTORY_ERROR );
-
-        Set<Threshold> returnMe = new HashSet<>();
-
-        // Iterate and transform
-        for ( ThresholdsConfig next : thresholds )
-        {
-            returnMe.addAll( MetricConfigHelper.getThresholdsFromThresholdsConfig( next, units, dataFactory, types ) );
-        }
-
-        return Collections.unmodifiableSet( returnMe );
     }
 
     /**
@@ -304,11 +270,13 @@ public final class MetricConfigHelper
     public static boolean hasSummaryStatisticsFor( ProjectConfig config, TimeSeriesMetricConfigName metric )
             throws MetricConfigException
     {
-        return MetricConfigHelper.getSummaryStatisticsFor( config, metric ).length > 0;
+        return !MetricConfigHelper.getSummaryStatisticsFor( config, metric ).isEmpty();
     }
 
     /**
-     * Returns a list of summary statistics associated with the named metric.
+     * Returns a list of summary statistics associated with the named metric. The input name cannot be 
+     * {@link TimeSeriesMetricConfigName#ALL_VALID}, but will match the input against configuration that says
+     * {@link TimeSeriesMetricConfigName#ALL_VALID}.
      * 
      * @param config the project configuration
      * @param metric the metric whose summary statistics are required
@@ -316,12 +284,19 @@ public final class MetricConfigHelper
      * @throws MetricConfigException if the project contains an unmapped summary statistic
      */
 
-    public static MetricConstants[] getSummaryStatisticsFor( ProjectConfig config, TimeSeriesMetricConfigName metric )
+    public static Set<MetricConstants> getSummaryStatisticsFor( ProjectConfig config,
+                                                                TimeSeriesMetricConfigName metric )
             throws MetricConfigException
     {
         Objects.requireNonNull( config, "Specify a non-null project configuration to check for summary statistics" );
 
-        Objects.requireNonNull( metric, "Specify a non null metric name to check for summary statistics." );
+        Objects.requireNonNull( metric, "Specify a non null metric to check for summary statistics." );
+
+        if ( metric == TimeSeriesMetricConfigName.ALL_VALID )
+        {
+            throw new IllegalArgumentException( "Cannot obtain summary statistics for the general type 'all valid' "
+                                                + "when a specific type is required: instead, provide a time-series metric that is specific." );
+        }
 
         Set<MetricConstants> allStats = new HashSet<>();
 
@@ -332,18 +307,19 @@ public final class MetricConfigHelper
             for ( TimeSeriesMetricConfig next : nextGroup.getTimeSeriesMetric() )
             {
                 // Match the name
-                if ( next.getName() == metric && Objects.nonNull( next.getSummaryStatistics() ) )
+                if ( ( next.getName() == TimeSeriesMetricConfigName.ALL_VALID || next.getName() == metric )
+                     && Objects.nonNull( next.getSummaryStatistics() ) )
                 {
                     // Return the summary statistics
                     for ( SummaryStatisticsName nextStat : next.getSummaryStatistics().getName() )
                     {
-                        allStats.add( getSummaryStatisticsName( nextStat ) );
+                        allStats.addAll( MetricConfigHelper.getSummaryStatisticsFor( nextStat ) );
                     }
                 }
             }
         }
 
-        return allStats.toArray( new MetricConstants[allStats.size()] );
+        return Collections.unmodifiableSet( allStats );
     }
 
     /**
@@ -577,6 +553,38 @@ public final class MetricConfigHelper
         for ( MetricsConfig metrics : projectConfig.getMetrics() )
         {
             returnMe.addAll( ProjectConfigs.getTimeSeriesMetricsFromConfig( metrics, projectConfig ) );
+        }
+
+        return Collections.unmodifiableSet( returnMe );
+    }
+
+    /**
+     * Returns a a summary statistic for the named input and all valid statistics if the input is 
+     * {@link SummaryStatisticName#ALL_VALID}.
+     * 
+     * @param name the statistic name
+     * @return a set of summary statistics
+     * @throws MetricConfigException if the named statistic could not be mapped
+     * @throws NullPointerException if the input is null
+     */
+
+    private static Set<MetricConstants> getSummaryStatisticsFor( SummaryStatisticsName name )
+            throws MetricConfigException
+    {
+        Objects.requireNonNull( name, "Specify a non-null summary statistic name." );
+
+        // Lazy build
+        buildSummaryStatisticsNameMap();
+
+        Set<MetricConstants> returnMe = new HashSet<>();
+
+        if ( name == SummaryStatisticsName.ALL_VALID )
+        {
+            returnMe.addAll( STATISTICS_NAME_MAP.values() );
+        }
+        else
+        {
+            returnMe.add( MetricConfigHelper.getSummaryStatisticsName( name ) );
         }
 
         return Collections.unmodifiableSet( returnMe );

@@ -136,8 +136,10 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
 
         //Process and return the result       
         MetricFuturesByTime futureResults = futures.build();
+        
         //Add for merge with existing futures, if required
         addToMergeList( futureResults );
+        
         return futureResults.getMetricOutput();
     }
 
@@ -151,7 +153,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
      *            {@link ForkJoinPool#commonPool()}
      * @param metricExecutor an optional {@link ExecutorService} for executing metrics. Defaults to the 
      *            {@link ForkJoinPool#commonPool()} 
-     * @param mergeList a list of {@link MetricOutputGroup} whose outputs should be retained and merged across calls to
+     * @param mergeSet a list of {@link MetricOutputGroup} whose outputs should be retained and merged across calls to
      *            {@link #apply(SingleValuedPairs)}
      * @throws MetricConfigException if the metrics are configured incorrectly
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
@@ -162,10 +164,10 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                                                    final ThresholdsByMetric externalThresholds,
                                                    final ExecutorService thresholdExecutor,
                                                    final ExecutorService metricExecutor,
-                                                   final MetricOutputGroup... mergeList )
+                                                   final Set<MetricOutputGroup> mergeSet )
             throws MetricConfigException, MetricParameterException
     {
-        super( dataFactory, config, externalThresholds, thresholdExecutor, metricExecutor, mergeList );
+        super( dataFactory, config, externalThresholds, thresholdExecutor, metricExecutor, mergeSet );
 
         //Construct the metrics
 
@@ -180,8 +182,8 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
             //TODO: replace with a collection if/when other measures of the same type are added                    
             if ( MetricConfigHelper.hasSummaryStatisticsFor( config, TimeSeriesMetricConfigName.TIME_TO_PEAK_ERROR ) )
             {
-                MetricConstants[] ts = MetricConfigHelper.getSummaryStatisticsFor( config,
-                                                                                   TimeSeriesMetricConfigName.TIME_TO_PEAK_ERROR );
+                Set<MetricConstants> ts = MetricConfigHelper.getSummaryStatisticsFor( config,
+                                                                                      TimeSeriesMetricConfigName.TIME_TO_PEAK_ERROR );
                 timeToPeakErrorStats =
                         metricFactory.ofTimeToPeakErrorStatistics( ts );
             }
@@ -208,10 +210,10 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                      || next.isInGroup( MetricInputGroup.DICHOTOMOUS ) ) )
             {
                 throw new MetricConfigException( "Cannot configure '" + next
-                                                        + "' for single-valued inputs: correct the configuration "
-                                                        + "labelled '"
-                                                        + config.getLabel()
-                                                        + "'." );
+                                                 + "' for single-valued inputs: correct the configuration "
+                                                 + "labelled '"
+                                                 + config.getLabel()
+                                                 + "'." );
             }
 
             // Thresholds required for dichotomous metrics
@@ -221,27 +223,27 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                                                                                            ThresholdGroup.VALUE ) )
             {
                 throw new MetricConfigException( "Cannot configure '" + next
-                                                        + "' without thresholds to define the events: correct the "
-                                                        + "configuration labelled '"
-                                                        + config.getLabel()
-                                                        + "'." );
+                                                 + "' without thresholds to define the events: correct the "
+                                                 + "configuration labelled '"
+                                                 + config.getLabel()
+                                                 + "'." );
             }
 
         }
-        
+
         // Check that time-series metrics are not combined with other metrics
         String message = "Cannot configure time-series metrics together with non-time-series "
                          + "metrics: correct the configuration labelled '"
                          + config.getLabel()
                          + "'.";
-        
+
         // Metrics that are explicitly configured as time-series
         if ( ProjectConfigs.hasTimeSeriesMetrics( config )
              && ( hasMetrics( MetricInputGroup.SINGLE_VALUED ) || hasMetrics( MetricInputGroup.DICHOTOMOUS ) ) )
         {
             throw new MetricConfigException( message );
         }
-        
+
         // Time-series metrics that are configured as regular metrics, not time-series
         if ( hasMetrics( MetricInputGroup.SINGLE_VALUED_TIME_SERIES )
              && ( hasMetrics( MetricInputGroup.SINGLE_VALUED ) || hasMetrics( MetricInputGroup.DICHOTOMOUS ) ) )
@@ -265,7 +267,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
             TimeWindow unionWindow = union.getMetadata().getTimeWindow();
             Pair<TimeWindow, OneOrTwoThresholds> key =
                     Pair.of( unionWindow, OneOrTwoThresholds.of( this.getAllDataThreshold() ) );
-            
+
             //Build the future result
             Supplier<MetricOutputMapByMetric<DurationScoreOutput>> supplier = () -> {
                 DurationScoreOutput result = timeToPeakErrorStats.aggregate( union );
@@ -275,7 +277,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
             };
             Future<MetricOutputMapByMetric<DurationScoreOutput>> addMe =
                     CompletableFuture.supplyAsync( supplier, thresholdExecutor );
-            
+
             //Add the future result to the store
             //Metric futures 
             MetricFuturesByTimeBuilder addFutures = new MetricFuturesByTimeBuilder();

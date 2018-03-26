@@ -60,15 +60,15 @@ public final class MetricProcessorTest
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> trueProcessor =
                 MetricFactory.getInstance( metIn )
                              .ofMetricProcessorByTimeSingleValuedPairs( config,
-                                                                        MetricOutputGroup.values() );
+                                                                        MetricOutputGroup.set() );
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> falseProcessor =
                 MetricFactory.getInstance( metIn )
-                             .ofMetricProcessorByTimeSingleValuedPairs( config );
+                             .ofMetricProcessorByTimeSingleValuedPairs( config, null );
         //Check for storage
-        assertTrue( "Expected a metric processor that stores metric outputs.",
-                    trueProcessor.willCacheMetricOutput() );
-        assertFalse( "Expected a metric processor that does not store metric outputs.",
-                     falseProcessor.willCacheMetricOutput() );
+        assertFalse( "Expected a metric processor that stores metric outputs.",
+                    trueProcessor.getMetricOutputTypesToCache().isEmpty() );
+        assertTrue( "Expected a metric processor that does not store metric outputs.",
+                     falseProcessor.getMetricOutputTypesToCache().isEmpty() );
     }
 
     /**
@@ -98,7 +98,7 @@ public final class MetricProcessorTest
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
                 MetricFactory.getInstance( metIn )
                              .ofMetricProcessorByTimeSingleValuedPairs( config,
-                                                                        MetricOutputGroup.values() );
+                                                                        MetricOutputGroup.set() );
         //Check for existence of metrics
         assertTrue( "Expected metrics for '" + MetricInputGroup.SINGLE_VALUED
                     + "' and '"
@@ -137,7 +137,7 @@ public final class MetricProcessorTest
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
                 MetricFactory.getInstance( metIn )
                              .ofMetricProcessorByTimeSingleValuedPairs( config,
-                                                                        MetricOutputGroup.values() );
+                                                                        MetricOutputGroup.set() );
 
         //Check that score metrics are defined 
         assertTrue( "Expected metrics for '" + MetricOutputGroup.DOUBLE_SCORE
@@ -161,7 +161,7 @@ public final class MetricProcessorTest
         MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processorEnsemble =
                 MetricFactory.getInstance( metIn )
                              .ofMetricProcessorByTimeEnsemblePairs( configEnsemble,
-                                                                    MetricOutputGroup.values() );
+                                                                    MetricOutputGroup.set() );
         //Check that score metrics are defined 
         assertTrue( "Expected metrics for '" + MetricOutputGroup.DOUBLE_SCORE
                     + "'.",
@@ -202,7 +202,7 @@ public final class MetricProcessorTest
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
                 MetricFactory.getInstance( metIn )
                              .ofMetricProcessorByTimeSingleValuedPairs( config,
-                                                                        MetricOutputGroup.values() );
+                                                                        MetricOutputGroup.set() );
 
         ThresholdsByMetric thresholds =
                 processor.getThresholdsByMetric().filterByGroup( MetricInputGroup.SINGLE_VALUED,
@@ -277,7 +277,7 @@ public final class MetricProcessorTest
         MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
                 MetricFactory.getInstance( metIn )
                              .ofMetricProcessorByTimeEnsemblePairs( config,
-                                                                    MetricOutputGroup.values() );
+                                                                    MetricOutputGroup.set() );
         Threshold firstTest = metIn.ofProbabilityThreshold( metIn.ofOneOrTwoDoubles( 0.1 ),
                                                             Operator.GREATER,
                                                             ThresholdDataType.LEFT );

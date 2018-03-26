@@ -1090,7 +1090,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
         }
         catch ( NoDataException e )
         {
-            throw new NoDataException( "The common scale between left and"
+            throw new NoDataException( "The common scale between left and "
                                        + "right inputs could not be evaluated.",
                                        e );
         }

@@ -14,7 +14,6 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.engine.statistics.metric.processing.MetricProcessor;
 
 /**
@@ -401,7 +400,7 @@ public final class MetricFactoryTest
         {
             ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathSingleValued ) ).getProjectConfig();
             MetricFactory.getInstance( DefaultDataFactory.getInstance() )
-                         .ofMetricProcessorByTimeSingleValuedPairs( config, (MetricOutputGroup) null );
+                         .ofMetricProcessorByTimeSingleValuedPairs( config, null );
         }
         catch ( Exception e )
         {
@@ -413,7 +412,7 @@ public final class MetricFactoryTest
         {
             ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathEnsemble ) ).getProjectConfig();
             MetricFactory.getInstance( DefaultDataFactory.getInstance() )
-                         .ofMetricProcessorByTimeEnsemblePairs( config, (MetricOutputGroup) null );
+                         .ofMetricProcessorByTimeEnsemblePairs( config, null );
         }
         catch ( Exception e )
         {

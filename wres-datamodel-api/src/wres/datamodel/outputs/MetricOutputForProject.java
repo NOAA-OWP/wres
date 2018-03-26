@@ -1,5 +1,6 @@
 package wres.datamodel.outputs;
 
+import java.util.Set;
 import java.util.concurrent.Future;
 
 import wres.datamodel.MetricConstants.MetricOutputGroup;
@@ -87,6 +88,6 @@ public interface MetricOutputForProject<T extends MetricOutputMultiMap<?>>
      * @return all {@link MetricOutputGroup} for which outputs are available
      */
 
-    MetricOutputGroup[] getOutputTypes();
+    Set<MetricOutputGroup> getOutputTypes();
 
 }

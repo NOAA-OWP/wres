@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TimeSeries xmlns="http://www.wldelft.nl/fews/PI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.wldelft.nl/fews/PI http://fews.wldelft.nl/schemas/version1.0/pi-schemas/pi_timeseries.xsd" version="1.5">
+    <timeZone>0.0</timeZone>
+    <series>
+        <header>
+            <type>instantaneous</type>
+            <locationId>FAKE3</locationId>
+            <parameterId>STREAMFLOW</parameterId>
+            <timeStep unit="second" multiplier="10800"/>
+            <startDate date="2551-03-18" time="15:00:00"/>
+            <endDate date="2551-03-19" time="21:00:00"/>
+            <forecastDate date="2551-03-18" time="12:00:00"/>
+            <missVal>-999</missVal>
+            <stationName>SOME FAKE PLACE 3</stationName>
+            <units>CMS</units>
+            <creationDate>2018-01-11</creationDate>
+            <creationTime>20:45:50</creationTime>
+        </header>
+        <event date="2551-03-18" time="15:00:00" value="191" flag="0"/>
+        <event date="2551-03-18" time="18:00:00" value="193" flag="0"/>
+        <event date="2551-03-18" time="21:00:00" value="197" flag="0"/>
+        <event date="2551-03-19" time="00:00:00" value="199" flag="0"/>
+        <event date="2551-03-19" time="03:00:00" value="211" flag="0"/>
+        <event date="2551-03-19" time="06:00:00" value="223" flag="0"/>
+        <event date="2551-03-19" time="09:00:00" value="287" flag="0"/>
+        <event date="2551-03-19" time="12:00:00" value="229" flag="0"/>
+        <event date="2551-03-19" time="15:00:00" value="233" flag="0"/>
+        <event date="2551-03-19" time="18:00:00" value="239" flag="0"/>
+        <event date="2551-03-19" time="21:00:00" value="241" flag="0"/>
+    </series>
+</TimeSeries>
