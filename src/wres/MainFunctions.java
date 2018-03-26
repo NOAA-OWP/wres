@@ -214,13 +214,16 @@ final class MainFunctions
 	 */
 	private static Function<String[], Integer> connectToDB () {
 		return (final String[] args) -> {
-			Integer result = FAILURE;
-			boolean successfullyConnected = Operations.testConnection();
-			if (successfullyConnected)
+		    try
             {
-                result = SUCCESS;
+                Operations.testConnection();
+                return SUCCESS;
             }
-            return result;
+            catch ( SQLException se )
+            {
+                LOGGER.warn( "Could not connect to database.", se );
+                return FAILURE;
+            }
 		};
 	}
 
