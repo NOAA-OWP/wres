@@ -366,7 +366,7 @@ public class Validation
                 // unlikely and implies an incomplete implementation of a metric by the system  
                 catch ( MetricConfigException e )
                 {
-                    LOGGER.error( "In file {}, a metric named {} was requested, but is not recognized by the system.",
+                    LOGGER.warn( "In file {}, a metric named {} was requested, but is not recognized by the system.",
                                   projectConfigPlus.getPath(),
                                   next.getName() );
                     result = false;
