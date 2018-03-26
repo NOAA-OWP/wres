@@ -50,7 +50,7 @@ public class ProgressMonitor
     {
         if (ProgressMonitor.UPDATE_MONITOR)
         {
-            synchronized (MONITOR)
+            synchronized (MONITOR_LOCK)
             {
                 MONITOR.UpdateMonitor();
             }

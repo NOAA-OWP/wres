@@ -37,7 +37,7 @@ import wres.util.Strings;
 /**
  * Evaluates datasources specified within a project configuration and determines
  * what data should be ingested. Asynchronous tasks for each file needed for
- * ingest are created and sent to the Executor for ingestion.
+ * ingest are created and sent to the Exector for ingestion.
  * @author Christopher Tubbs
  */
 public class SourceLoader
@@ -60,9 +60,6 @@ public class SourceLoader
      */
     public List<Future<List<IngestResult>>> load() throws IOException
     {
-        // The maximum amount is the maximum thread count + 1 because
-        // the main thread will parse a file when {maximum thread count} other
-        // threads are parsing files.
         LOGGER.info( "Parsing files. Only {} files may be parsed at once.",
                      SystemSettings.maximumThreadCount() + 1);
         List<Future<List<IngestResult>>> savingFiles = new ArrayList<>();
@@ -87,7 +84,7 @@ public class SourceLoader
     {
         List<Future<List<IngestResult>>> savingFiles = new ArrayList<>();
 
-        ProgressMonitor.increment();
+        //ProgressMonitor.increment();
 
         if (config != null) {
             for (DataSourceConfig.Source source : config.getSource())
@@ -156,7 +153,7 @@ public class SourceLoader
             }
         }
 
-        ProgressMonitor.completeStep();
+        //ProgressMonitor.completeStep();
 
         return Collections.unmodifiableList( savingFiles );
     }
@@ -190,7 +187,7 @@ public class SourceLoader
             matcher = null;
         }
 
-        ProgressMonitor.increment();
+        //ProgressMonitor.increment();
         
         try
         {
@@ -243,7 +240,7 @@ public class SourceLoader
                                                 + "\" does not yield any files within the provided source path and is therefore not a valid source.");
         }
         
-        ProgressMonitor.completeStep();
+        //ProgressMonitor.completeStep();
 
         return Collections.unmodifiableList( results );
     }
@@ -264,7 +261,7 @@ public class SourceLoader
         String absolutePath = filePath.toAbsolutePath().toString();
         Future<List<IngestResult>> task = null;
 
-        ProgressMonitor.increment();
+        //ProgressMonitor.increment();
 
         FileEvaluation checkIngest = shouldIngest( absolutePath,
                                                    source );
@@ -318,7 +315,7 @@ public class SourceLoader
             }
         }
 
-        ProgressMonitor.completeStep();
+        //ProgressMonitor.completeStep();
 
         LOGGER.trace( "saveFile returning task {} for filePath {}",
                       task,

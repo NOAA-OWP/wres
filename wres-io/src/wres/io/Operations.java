@@ -38,6 +38,7 @@ import wres.io.retrieval.InputGenerator;
 import wres.io.utilities.Database;
 import wres.io.utilities.ScriptBuilder;
 import wres.io.writing.PairWriter;
+import wres.util.ProgressMonitor;
 import wres.util.Strings;
 
 public final class Operations {
@@ -88,6 +89,7 @@ public final class Operations {
         SourceLoader loader = new SourceLoader(projectConfig);
         try {
             List<Future<List<IngestResult>>> ingestions = loader.load();
+            ProgressMonitor.setSteps((long)ingestions.size());
 
             if ( LOGGER.isDebugEnabled() )
             {
@@ -97,6 +99,7 @@ public final class Operations {
             for (Future<List<IngestResult>> task : ingestions)
             {
                 List<IngestResult> ingested = task.get();
+                ProgressMonitor.completeStep();
                 projectSources.addAll( ingested );
             }
         }

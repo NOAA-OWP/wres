@@ -210,8 +210,6 @@ public final class Database {
 			watch.start();
 		}
 
-        //ProgressMonitor.resetMonitor();
-
         try
         {
             connection = Database.getConnection();
@@ -323,7 +321,7 @@ public final class Database {
      * @param indexDefinition The definition of the index
      * @param indexType The organizational method for the index
      */
-	public static void saveIndex(String tableName,
+	private static void saveIndex(String tableName,
                                  String indexName,
                                  String indexDefinition,
                                  String indexType)

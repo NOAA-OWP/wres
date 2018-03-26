@@ -127,7 +127,7 @@ public class ZippedSource extends BasicSource {
 
             while (archivedSource != null)
             {
-                ProgressMonitor.increment();
+                //ProgressMonitor.increment();
                 if (archivedSource.isFile())
                 {
                     int bytesRead = processFile(archivedSource, archive);
@@ -135,13 +135,13 @@ public class ZippedSource extends BasicSource {
                     // The loop can be broken if the end of the file is reached
                     if (bytesRead == -1)
                     {
-                        ProgressMonitor.completeStep();
+                        //ProgressMonitor.completeStep();
                         break;
                     }
                 }
 
                 archivedSource = archive.getNextTarEntry();
-                ProgressMonitor.completeStep();
+                //ProgressMonitor.completeStep();
             }
 
             Future<List<IngestResult>> ingestTask = this.getIngestTask();
@@ -300,8 +300,8 @@ public class ZippedSource extends BasicSource {
                                            this.getSpecifiedFeatures(),
                                            this.getProjectConfig() );
 
-            ingest.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
-            ProgressMonitor.increment();
+            //ingest.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
+            //ProgressMonitor.increment();
             this.addIngestTask(ingest);
         }
         else
@@ -316,9 +316,9 @@ public class ZippedSource extends BasicSource {
                                          originalSource,
                                          this.getSpecifiedFeatures());
 
-                ingest.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
+                //ingest.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
 
-                ProgressMonitor.increment();
+                //ProgressMonitor.increment();
                 Future<List<IngestResult>> task = Executor.submit( ingest );
                 this.addIngestTask(task);
             }
