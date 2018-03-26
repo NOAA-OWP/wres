@@ -11,6 +11,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ExecutionException;
@@ -280,6 +281,7 @@ public final class Operations {
         return SUCCESS;
     }
 
+
     /**
      * Logs information about the execution of the WRES into the database for
      * aid in remote debugging
@@ -289,23 +291,23 @@ public final class Operations {
      *                 executed in
      * @param failed Whether or not the execution failed
      * @param error Any error that caused the WRES to crash
+     * @param version The top-level version of WRES (module versions vary)
      */
+
     public static void logExecution( String[] arguments,
                                      long start,
                                      long duration,
                                      boolean failed,
-                                     String error)
+                                     String error,
+                                     String version )
     {
+        Objects.requireNonNull( arguments );
+        Objects.requireNonNull( version );
+
         try
         {
             Timestamp startTimestamp = new Timestamp( start );
             String runTime = duration + " MILLISECONDS";
-            String wresVersion = "Development";
-
-            if (Operations.class.getPackage() != null && Operations.class.getPackage().getImplementationVersion() != null)
-            {
-                wresVersion = Operations.class.getPackage().getImplementationVersion();
-            }
 
 
             // For any arguments that happen to be regular files, read the
@@ -360,7 +362,7 @@ public final class Operations {
             script.addLine(");");
 
             script.execute( String.join(" ", arguments),
-                          wresVersion,
+                            version,
                           project,
                           // Let server find and report username
                           // Let server find and report network address
