@@ -83,8 +83,8 @@ public class NWMSource extends BasicSource
 													 this.dataSourceConfig );
                 }
 
-                saver.setOnRun(ProgressMonitor.onThreadStartHandler());
-                saver.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
+                //saver.setOnRun(ProgressMonitor.onThreadStartHandler());
+                //saver.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
                 Database.ingest(saver);
             }
             catch ( SQLException e )

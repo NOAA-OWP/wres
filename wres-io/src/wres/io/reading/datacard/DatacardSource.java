@@ -358,8 +358,8 @@ public class DatacardSource extends BasicSource
         {
             insertCount = 0;
             CopyExecutor copier = new CopyExecutor(currentTableDefinition, currentScript.toString(), delimiter);
-            copier.setOnRun(ProgressMonitor.onThreadStartHandler());
-            copier.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
+            //copier.setOnRun(ProgressMonitor.onThreadStartHandler());
+            //copier.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
             Database.ingest(copier);
             currentScript = null;
         }

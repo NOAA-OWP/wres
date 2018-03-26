@@ -589,11 +589,11 @@ class VectorNWMValueSaver extends WRESRunnable
             // It is debatable whether we should increase the number in this
             // thread or in the thread operating on the actual database copy
             // statement
-            copier.setOnRun( ProgressMonitor.onThreadStartHandler() );
+            //copier.setOnRun( ProgressMonitor.onThreadStartHandler() );
 
             // Tell the copier to inform the ProgressMonitor that work has been
             // completed when the thread has finished
-            copier.setOnComplete( ProgressMonitor.onThreadCompleteHandler() );
+            //copier.setOnComplete( ProgressMonitor.onThreadCompleteHandler() );
 
             // Send the copier to the Database handler's task queue and add
             // the resulting future to our list of copy operations

@@ -12,6 +12,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -590,6 +591,28 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
     public DataSourceConfig getBaseline()
     {
         return this.projectConfig.getInputs().getBaseline();
+    }
+
+    public Integer getVariableId(DataSourceConfig dataSourceConfig)
+            throws SQLException
+    {
+        final String side = this.getInputName( dataSourceConfig );
+        Integer variableId = null;
+
+        if (ProjectDetails.LEFT_MEMBER.equals( side ))
+        {
+            variableId = this.getLeftVariableID();
+        }
+        else if (ProjectDetails.RIGHT_MEMBER.equals( side ))
+        {
+            variableId = this.getRightVariableID();
+        }
+        else if (ProjectDetails.BASELINE_MEMBER.equals( side ))
+        {
+            variableId = this.getBaselineVariableID();
+        }
+
+        return variableId;
     }
 
     /**
@@ -2246,7 +2269,47 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
         script.addLine("(");
         script.addLine("    SELECT lead - lag(lead) OVER (ORDER BY FV.timeseries_id, lead) AS difference");
         script.addLine("    FROM wres.ForecastValue FV");
-        script.addLine("    WHERE lead > 0");
+        script.addLine("    INNER JOIN wres.TimeSeries TS");
+        script.addLine("        ON TS.timeseries_id = FV.timeseries_id");
+
+        if (this.getMinimumLeadHour() != Integer.MIN_VALUE)
+        {
+            script.addTab().addLine("WHERE lead > ", this.getMinimumLeadHour());
+        }
+        else
+        {
+            script.addLine("    WHERE lead > 0");
+        }
+
+        if (this.getMaximumLeadHour() != Integer.MAX_VALUE)
+        {
+            script.addTab().addLine("AND lead <= ", this.getMaximumLeadHour());
+        }
+        else
+        {
+            // Set the maximum to 500. If the maximum is lead is 200, then this
+            // not should behave much differently than having no clause at all.
+            // If real maximum was 2880, 500 will provide a large enough sample
+            // size and produce the correct values in a slightly faster fashion.
+            // In one data set, leaving this out causes this to take 11.5s .
+            // That was even with a subset of the real data (1 month vs 30 years).
+            // If we cut it to 500, it now takes 1.6s. Still not great, but
+            // much faster
+            script.addTab().addLine( "AND lead <= ", 500 );
+        }
+
+        Optional<FeatureDetails> featureDetails = this.getFeatures().stream().findFirst();
+
+        if (featureDetails.isPresent())
+        {
+            String variablePositionClause = ConfigHelper.getVariablePositionClause(
+                    featureDetails.get().toFeature(),
+                    this.getVariableId( dataSourceConfig ),
+                    "TS" );
+            script.addLine("        AND ", variablePositionClause);
+
+        }
+
         script.addLine("        AND EXISTS (");
         script.addLine("            SELECT 1");
         script.addLine("            FROM wres.ProjectSource PS");
@@ -2260,7 +2323,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
         script.addLine("SELECT MIN(difference)::integer AS scale");
         script.addLine("FROM differences");
         script.addLine("WHERE difference IS NOT NULL");
-        script.addLine("    AND difference >= 0");
+        script.addLine("    AND difference > 0");
 
         return script.retrieve( "scale" );
     }
@@ -2281,14 +2344,37 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
         script.addLine("(");
         script.addLine("    SELECT AGE(observation_time, (LAG(observation_time) OVER (ORDER BY observation_time)))");
         script.addLine("    FROM wres.Observation O");
-        script.addLine("    WHERE EXISTS (");
-        script.addLine("        SELECT 1");
-        script.addLine("        FROM wres.ProjectSource PS");
-        script.addLine("        WHERE PS.project_id = ", this.getId());
-        script.addLine("            AND PS.member = ", this.getInputName( dataSourceConfig ) );
-        script.addLine("            AND PS.source_id = O.source_id");
-        script.addLine("    )");
-        script.addLine("    GROUP BY observation_time");
+
+        Optional<FeatureDetails> featureDetails = this.getFeatures().stream().findFirst();
+        int tabCount;
+
+        if (featureDetails.isPresent())
+        {
+            String variablePositionClause = ConfigHelper.getVariablePositionClause(
+                    featureDetails.get().toFeature(),
+                    this.getVariableId( dataSourceConfig ),
+                    "O" );
+            script.addLine("    WHERE ", variablePositionClause);
+            tabCount = 3;
+            script.addTab(  2  ).add("AND ");
+
+        }
+        else
+        {
+            tabCount = 2;
+            script.addTab().add("WHERE ");
+        }
+
+
+        script.addLine("EXISTS (");
+
+        script.addTab(tabCount).addLine("SELECT 1");
+        script.addTab(tabCount).addLine("FROM wres.ProjectSource PS");
+        script.addTab(tabCount).addLine("WHERE PS.project_id = ", this.getId());
+        script.addTab(tabCount).addTab().addLine("AND PS.member = ", this.getInputName( dataSourceConfig ) );
+        script.addTab(tabCount).addTab().addLine("AND PS.source_id = O.source_id");
+        script.addTab().addLine(")");
+        script.addTab().addLine("GROUP BY observation_time");
         script.addLine(")");
 
         // TODO: When we change the scale of the lead column, we need to change this as well

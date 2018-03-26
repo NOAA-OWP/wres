@@ -663,10 +663,10 @@ public class USGSReader extends BasicSource
             }
 
             StatementRunner statement = new StatementRunner( USGSReader.UPSERT, values );
-            statement.setOnComplete( ProgressMonitor.onThreadCompleteHandler() );
+            //statement.setOnComplete( ProgressMonitor.onThreadCompleteHandler() );
             Database.ingest(statement);
 
-            ProgressMonitor.increment();
+            //ProgressMonitor.increment();
             LOGGER.trace("USGS data has been submitted to the database queue.");
         }
     }
