@@ -255,15 +255,27 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
     @Override
     void completeCachedOutput() throws MetricOutputAccessException
     {
+        // Determine whether to compute summary statistics
+        boolean proceed = this.hasCachedMetricOutput()
+                          && this.getCachedMetricOutputInternal().hasOutput( MetricOutputGroup.PAIRED )
+                          && this.getCachedMetricOutputInternal()
+                                 .getPairedOutput()
+                                 .containsKey( dataFactory.getMapKey( MetricConstants.TIME_TO_PEAK_ERROR ) );
+        
+        // Summary statistics required
+        proceed = proceed && Objects.nonNull( this.timeToPeakErrorStats );
+
         //Add the summary statistics for the cached time-to-peak errors if these statistics do not already exist
-        if ( hasCachedMetricOutput() && getCachedMetricOutputInternal().hasOutput( MetricOutputGroup.PAIRED )
-             && !getCachedMetricOutputInternal().hasOutput( MetricOutputGroup.DURATION_SCORE )
-             && getCachedMetricOutputInternal().getPairedOutput()
-                                               .containsKey( dataFactory.getMapKey( MetricConstants.TIME_TO_PEAK_ERROR ) ) )
+        if ( proceed )
         {
+            // Obtain the paired output
             MetricOutputMapByTimeAndThreshold<PairedOutput<Instant, Duration>> output =
                     getCachedMetricOutputInternal().getPairedOutput().get( MetricConstants.TIME_TO_PEAK_ERROR );
+            
+            // Find the union of the paired output
             PairedOutput<Instant, Duration> union = dataFactory.unionOf( output.values() );
+            
+            // Find the union of the metadata
             TimeWindow unionWindow = union.getMetadata().getTimeWindow();
             Pair<TimeWindow, OneOrTwoThresholds> key =
                     Pair.of( unionWindow, OneOrTwoThresholds.of( this.getAllDataThreshold() ) );
