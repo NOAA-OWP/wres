@@ -18,7 +18,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.FeaturePlus;
-import wres.config.MetricConfigException;
 import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationType;
@@ -84,8 +83,7 @@ class ProcessorHelper
                                       final ExecutorService pairExecutor,
                                       final ExecutorService thresholdExecutor,
                                       final ExecutorService metricExecutor )
-            throws IOException, ProjectConfigException,
-            MetricConfigException
+            throws IOException, ProjectConfigException
     {
 
         final ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
@@ -109,9 +107,7 @@ class ProcessorHelper
         }
         catch ( SQLException e )
         {
-            IOException ioe = new IOException( "Failed to retrieve the set of features.", e );
-            ProcessorHelper.addException( ioe );
-            throw ioe;
+            throw new IOException( "Failed to retrieve the set of features.", e );
         }
 
         List<Feature> successfulFeatures = new ArrayList<>();
@@ -380,16 +376,16 @@ class ProcessorHelper
         }
         catch ( IterationFailedException re )
         {
+            // If there was not enough data for this feature, OK
             if ( ProcessorHelper.wasInsufficientDataOrNoDataInThisStack( re ) )
             {
                 return new FeatureProcessingResult( feature.getFeature(),
                                                     false,
                                                     re );
             }
-            else
-            {
-                ProcessorHelper.addException( re );
-            }
+
+            // Otherwise, chain and propagate the exception up to the top.
+            throw new WresProcessingException( "Iteration failed", re );
         }
 
         // Complete all tasks or one exceptionally: join() is blocking, representing a final sink for the results
@@ -499,45 +495,6 @@ class ProcessorHelper
             cause = cause.getCause();
         }
         return false;
-    }
-
-    /**
-     * List of exceptions encountered during processing.
-     */
-    private static final List<Exception> exceptionList = new ArrayList<>();
-
-    /**
-     * A lock to use when mutating the list of exceptions.
-     */
-
-    private static final Object EXCEPTION_LOCK = new Object();
-
-    /**
-     * Add an exception to the list of exceptions.
-     * 
-     * @param exception the exception to add
-     */
-
-    private static void addException( Exception exception )
-    {
-        synchronized ( EXCEPTION_LOCK )
-        {
-            ProcessorHelper.exceptionList.add( exception );
-        }
-    }
-
-    /**
-     * Return a list of processing exceptions encountered.
-     * 
-     * @return a list of processing exceptions
-     */
-
-    public static List<Exception> getEncounteredExceptions()
-    {
-        synchronized ( EXCEPTION_LOCK )
-        {
-            return Collections.unmodifiableList( ProcessorHelper.exceptionList );
-        }
     }
 
 

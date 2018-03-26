@@ -246,9 +246,6 @@ public class Control implements Function<String[], Integer>
                 Control.encounteredExceptions = new ArrayList<>(  );
             }
 
-            Control.encounteredExceptions.addAll( WresProcessingException.getOccurrences() );
-            Control.encounteredExceptions.addAll(ProcessorHelper.getEncounteredExceptions());
-
             return Collections.unmodifiableList(Control.encounteredExceptions);
         }
     }
