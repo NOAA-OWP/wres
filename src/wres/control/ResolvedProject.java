@@ -6,9 +6,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import wres.config.FeaturePlus;
 import wres.config.MetricConfigException;
 import wres.config.ProjectConfigPlus;
@@ -35,8 +32,6 @@ import wres.engine.statistics.metric.config.MetricConfigHelper;
  */
 class ResolvedProject
 {
-    private static final Logger LOGGER
-            = LoggerFactory.getLogger( ResolvedProject.class );
     
     private final ProjectConfigPlus projectConfigPlus;
     private final Set<FeaturePlus> decomposedFeatures;
