@@ -1,14 +1,13 @@
 package wres.io;
 
 import java.io.IOException;
-import java.net.NetworkInterface;
-import java.net.SocketException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -25,7 +24,6 @@ import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;
-import wres.io.config.SystemSettings;
 import wres.io.data.caching.Projects;
 import wres.io.data.details.FeatureDetails;
 import wres.io.data.details.ProjectDetails;
@@ -38,7 +36,6 @@ import wres.io.retrieval.InputGenerator;
 import wres.io.utilities.Database;
 import wres.io.utilities.ScriptBuilder;
 import wres.io.writing.PairWriter;
-import wres.util.Strings;
 
 public final class Operations {
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(Operations.class);
@@ -242,27 +239,20 @@ public final class Operations {
         PairWriter.flushAndCloseAllWriters();
     }
 
+
     /**
      * Tests whether or not the WRES may access the database and logs the
      * version of the database it may access
-     * @return Whether or not the WRES can access the database
+     * @throws SQLException when WRES cannot access the database
      */
-    public static boolean testConnection()
-    {
-        boolean result = FAILURE;
-        try
-        {
-            final String version = Database.getResult("Select version() AS version_detail", "version_detail");
-            LOGGER.info(version);
-            LOGGER.info("Successfully connected to the database");
-            result = SUCCESS;
-        }
-        catch (final SQLException e) {
-            LOGGER.error("Could not connect to database because:");
-            LOGGER.error(Strings.getStackTrace(e));
-        }
 
-        return result;
+    public static void testConnection()
+            throws SQLException
+    {
+        String version = Database.getResult("Select version() AS version_detail",
+                                            "version_detail");
+        LOGGER.info(version);
+        LOGGER.info("Successfully connected to the database");
     }
 
     /**
@@ -323,8 +313,10 @@ public final class Operations {
             // is an improvement that can be made, but this should cover the
             // common case of a single file in the args.
             String project = "";
+            List<String> commandsAcceptingFiles = Arrays.asList( "execute",
+                                                                 "ingest" );
 
-            if (Strings.isOneOf( arguments[0].toLowerCase(), "execute", "ingest" ))
+            if ( commandsAcceptingFiles.contains( arguments[0].toLowerCase() ) )
             {
                 for ( String arg : arguments )
                 {
@@ -333,15 +325,8 @@ public final class Operations {
                     if ( path.toFile()
                              .isFile() )
                     {
-                        try
-                        {
-                            project = String.join( System.lineSeparator(),
-                                                   Files.readAllLines( path ) );
-                        }
-                        catch ( IOException e )
-                        {
-                            LOGGER.warn( "A project could not be recorded." );
-                        }
+                        project = String.join( System.lineSeparator(),
+                                               Files.readAllLines( path ) );
 
                         // Since this is an xml column, only go for first file.
                         break;
@@ -384,9 +369,10 @@ public final class Operations {
                           failed,
                           error );
         }
-        catch ( SQLException e )
+        catch ( SQLException | IOException e )
         {
-            LOGGER.warn("Execution metadata could not be logged to the database.");
+            LOGGER.warn( "Execution metadata could not be logged to the database.",
+                         e );
         }
     }
 
