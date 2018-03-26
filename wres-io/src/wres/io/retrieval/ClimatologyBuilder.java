@@ -358,22 +358,32 @@ class ClimatologyBuilder
 
             List<Double> aggregatedValues = new ArrayList<>();
 
-            for (List<Double> valuesToAggregate : this.getValues().values())
+            try
             {
-                if (this.projectDetails.shouldScale())
+                for ( List<Double> valuesToAggregate : this.getValues()
+                                                           .values() )
                 {
-                    Double aggregation = wres.util.Collections.aggregate(
-                            valuesToAggregate,
-                            this.projectDetails.getScale().getFunction().value() );
-                    if ( !Double.isNaN( aggregation ) )
+                    if ( this.projectDetails.shouldScale() )
                     {
-                        aggregatedValues.add( aggregation );
+                        Double aggregation = wres.util.Collections.aggregate(
+                                valuesToAggregate,
+                                this.projectDetails.getScale()
+                                                   .getFunction()
+                                                   .value() );
+                        if ( !Double.isNaN( aggregation ) )
+                        {
+                            aggregatedValues.add( aggregation );
+                        }
+                    }
+                    else
+                    {
+                        aggregatedValues.addAll( valuesToAggregate );
                     }
                 }
-                else
-                {
-                    aggregatedValues.addAll( valuesToAggregate );
-                }
+            }
+            catch ( SQLException se )
+            {
+                throw new IOException( "Failed to get scale information.", se );
             }
 
             DataFactory factory = DefaultDataFactory.getInstance();
