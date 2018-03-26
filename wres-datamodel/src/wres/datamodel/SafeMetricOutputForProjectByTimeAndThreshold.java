@@ -4,10 +4,13 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -150,34 +153,41 @@ class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForPro
     }
 
     @Override
-    public MetricOutputGroup[] getOutputTypes()
+    public Set<MetricOutputGroup> getOutputTypes()
     {
-        List<MetricOutputGroup> returnMe = new ArrayList<>();
+        Set<MetricOutputGroup> returnMe = new HashSet<>();
+        
         if ( hasOutput( MetricOutputGroup.DOUBLE_SCORE ) )
         {
             returnMe.add( MetricOutputGroup.DOUBLE_SCORE );
         }
+        
         if ( hasOutput( MetricOutputGroup.DURATION_SCORE ) )
         {
             returnMe.add( MetricOutputGroup.DURATION_SCORE );
         }
+        
         if ( hasOutput( MetricOutputGroup.MULTIVECTOR ) )
         {
             returnMe.add( MetricOutputGroup.MULTIVECTOR );
         }
+        
         if ( hasOutput( MetricOutputGroup.MATRIX ) )
         {
             returnMe.add( MetricOutputGroup.MATRIX );
         }
+        
         if ( hasOutput( MetricOutputGroup.BOXPLOT ) )
         {
             returnMe.add( MetricOutputGroup.BOXPLOT );
         }
+        
         if ( hasOutput( MetricOutputGroup.PAIRED ) )
         {
             returnMe.add( MetricOutputGroup.PAIRED );
         }
-        return returnMe.toArray( new MetricOutputGroup[returnMe.size()] );
+        
+        return Collections.unmodifiableSet( returnMe );
     }
 
     @Override

@@ -166,7 +166,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
      * An array of {@link MetricOutputGroup} that should be retained and merged across calls. May be null.
      */
 
-    final MetricOutputGroup[] mergeList;
+    final Set<MetricOutputGroup> mergeSet;
 
     /**
      * An {@link ExecutorService} used to process the thresholds.
@@ -189,6 +189,21 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
     public abstract boolean hasCachedMetricOutput();
 
     /**
+     * Returns the (possibly empty) set of {@link MetricOutputGroup} that were cached across successive calls to 
+     * {@link #apply(Object)}. This may differ from the set of cached outputs that were declared on construction, 
+     * because some outputs are cached automatically. For the set of cached outputs declared on construction, 
+     * see: {@link #getMetricOutputTypesToCache()}.
+     * 
+     * @return the output types that were cached
+     * @throws MetricOutputAccessException if the cached types could not be determined
+     */
+
+    public Set<MetricOutputGroup> getCachedMetricOutputTypes() throws MetricOutputAccessException
+    {
+        return this.getCachedMetricOutput().getOutputTypes();
+    }
+
+    /**
      * Returns a {@link MetricOutputForProject} for the last available results or null if
      * {@link #hasCachedMetricOutput()} returns false.
      * 
@@ -200,46 +215,25 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
     {
         //Complete any end-of-pipeline processing
         completeCachedOutput();
+
         //Return the results
         return getCachedMetricOutputInternal();
     }
 
     /**
-     * Returns true if one or more metric outputs will be cached across successive calls to {@link #apply(Object)},
-     * false otherwise.
-     * 
-     * @return true if results will be cached, false otherwise
-     */
-
-    public boolean willCacheMetricOutput()
-    {
-        return Objects.nonNull( mergeList ) && mergeList.length > 0;
-    }
-
-    /**
-     * Returns true if a named {@link MetricOutputGroup} will be cached across successive calls to 
-     * {@link #apply(Object)}, false otherwise.
-     * 
-     * @param outputGroup the metric output group
-     * @return true if results will be cached for the outputGroup, false otherwise
-     */
-
-    public boolean willCacheMetricOutput( MetricOutputGroup outputGroup )
-    {
-        return Objects.nonNull( mergeList ) && Arrays.stream( mergeList ).anyMatch( a -> a.equals( outputGroup ) );
-    }
-
-    /**
      * Returns the (possibly empty) set of {@link MetricOutputGroup} that will be cached across successive calls to 
-     * {@link #apply(Object)}.
+     * {@link #apply(Object)}. This contains the set of types to cache that were declared on construction of the 
+     * {@link MetricProcessor}. It may differ from the actual set of cached outputs, because some outputs are
+     * cached automatically. For the full set of cached outputs, post-computation, 
+     * see: {@link #getCachedMetricOutputTypes()}.
      * 
      * @return the output types that will be cached
      */
 
-    public Set<MetricOutputGroup> getMetricOutputToCache()
+    public Set<MetricOutputGroup> getMetricOutputTypesToCache()
     {
-        return Objects.nonNull( this.mergeList ) ? Collections.unmodifiableSet( new HashSet<>( Arrays.asList( this.mergeList ) ) )
-                                                 : Collections.emptySet();
+        return Objects.nonNull( this.mergeSet ) ? Collections.unmodifiableSet( new HashSet<>( this.mergeSet ) )
+                                                : Collections.emptySet();
     }
 
     /**
@@ -334,18 +328,6 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
     abstract T getCachedMetricOutputInternal();
 
     /**
-     * Helper that returns a function for filtering ensemble pairs based on the {@link Threshold#getDataType()}
-     * of the input threshold. Ensemble pairs may be transformed, inline, before being filtered. For example, the 
-     * pairs may be filtered against a predicate on the ensemble mean of the right side. Where no such transformation
-     * is required, the identity function is used.
-     * 
-     * @param threshold the threshold
-     * @return the function for filtering pairs
-     * @throws UnsupportedOperationException if the threshold data type is unrecognized
-     */
-
-
-    /**
      * Constructor.
      * 
      * @param dataFactory the data factory
@@ -355,7 +337,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
      *            {@link ForkJoinPool#commonPool()}
      * @param metricExecutor an optional {@link ExecutorService} for executing metrics. Defaults to the 
      *            {@link ForkJoinPool#commonPool()}                    
-     * @param mergeList a list of {@link MetricOutputGroup} whose outputs should be retained and merged across calls to
+     * @param mergeSet a list of {@link MetricOutputGroup} whose outputs should be retained and merged across calls to
      *            {@link #apply(Object)}
      * @throws MetricConfigException if the metrics are configured incorrectly
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
@@ -366,7 +348,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
                      final ThresholdsByMetric externalThresholds,
                      final ExecutorService thresholdExecutor,
                      final ExecutorService metricExecutor,
-                     final MetricOutputGroup... mergeList )
+                     final Set<MetricOutputGroup> mergeSet )
             throws MetricConfigException, MetricParameterException
     {
 
@@ -434,7 +416,14 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         //Set the thresholds: canonical --> metric-local overrides --> global        
         this.thresholdsByMetric = MetricConfigHelper.getThresholdsFromConfig( config, dataFactory, externalThresholds );
 
-        this.mergeList = mergeList;
+        if ( Objects.nonNull( mergeSet ) )
+        {
+            this.mergeSet = Collections.unmodifiableSet( new HashSet<>( mergeSet ) );
+        }
+        else
+        {
+            this.mergeSet = Collections.emptySet();
+        }
 
         //Set the executor for processing thresholds
         if ( Objects.nonNull( thresholdExecutor ) )

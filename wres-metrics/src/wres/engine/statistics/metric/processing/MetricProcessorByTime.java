@@ -4,7 +4,9 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -71,36 +73,24 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
 
     List<MetricFuturesByTime> futures = new CopyOnWriteArrayList<>();
 
-    /**
-     * Returns true if a prior call led to the caching of metric outputs.
-     * 
-     * @return true if stored results are available, false otherwise
-     */
     @Override
     public boolean hasCachedMetricOutput()
     {
         return futures.stream().anyMatch( MetricFuturesByTime::hasFutureOutputs );
     }
-
-    /**
-     * Returns a {@link MetricOutputForProjectByTimeAndThreshold} for the last available results or null if
-     * {@link #hasCachedMetricOutput()} returns false.
-     * 
-     * @return a {@link MetricOutputForProjectByTimeAndThreshold} or null
-     */
-
+    
     @Override
     MetricOutputForProjectByTimeAndThreshold getCachedMetricOutputInternal()
     {
         MetricOutputForProjectByTimeAndThreshold returnMe = null;
-        if ( hasCachedMetricOutput() )
+        if ( this.hasCachedMetricOutput() )
         {
             MetricFuturesByTime.MetricFuturesByTimeBuilder builder =
                     new MetricFuturesByTime.MetricFuturesByTimeBuilder();
             builder.addDataFactory( dataFactory );
             for ( MetricFuturesByTime future : futures )
             {
-                builder.addFutures( future, mergeList );
+                builder.addFutures( future );
             }
             returnMe = builder.build().getMetricOutput();
         }
@@ -117,10 +107,16 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
     void addToMergeList( MetricFuturesByTime mergeFutures )
     {
         Objects.requireNonNull( mergeFutures, "Specify non-null futures for merging." );
+        
         //Merge futures if cached outputs identified
-        if ( willCacheMetricOutput() )
+        Set<MetricOutputGroup> cacheMe = this.getMetricOutputTypesToCache();
+        if ( !cacheMe.isEmpty() )
         {
-            futures.add( mergeFutures );
+            MetricFuturesByTime.MetricFuturesByTimeBuilder builder =
+                    new MetricFuturesByTime.MetricFuturesByTimeBuilder();
+            builder.addDataFactory( dataFactory );
+            builder.addFutures( mergeFutures, cacheMe );
+            this.futures.add( builder.build() );
         }
     }
 
@@ -200,7 +196,50 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
             matrix.forEach( ( key, list ) -> list.forEach( value -> builder.addMatrixOutput( key, value ) ) );
             return builder.build();
         }
-
+       
+        /**
+         * Returns the {@link MetricOutputGroup} for which futures exist.
+         * 
+         * @return the set of output types for which futures exist
+         */
+        
+        Set<MetricOutputGroup> getOutputTypes()
+        {
+            Set<MetricOutputGroup> returnMe = new HashSet<>();
+            
+            if( ! this.doubleScore.isEmpty() )
+            {
+                returnMe.add( MetricOutputGroup.DOUBLE_SCORE );
+            }
+            
+            if( ! this.durationScore.isEmpty() )
+            {
+                returnMe.add( MetricOutputGroup.DURATION_SCORE );
+            }
+            
+            if( ! this.multiVector.isEmpty() )
+            {
+                returnMe.add( MetricOutputGroup.MULTIVECTOR );
+            }
+            
+            if( ! this.boxplot.isEmpty() )
+            {
+                returnMe.add( MetricOutputGroup.BOXPLOT );
+            }
+            
+            if( ! this.paired.isEmpty() )
+            {
+                returnMe.add( MetricOutputGroup.PAIRED );
+            }
+            
+            if( ! this.matrix.isEmpty() )
+            {
+                returnMe.add( MetricOutputGroup.MATRIX );
+            }
+            
+            return Collections.unmodifiableSet( returnMe );
+        }        
+        
         /**
          * Returns true if one or more future outputs is available, false otherwise.
          * 
@@ -209,9 +248,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
 
         boolean hasFutureOutputs()
         {
-            boolean first = doubleScore.isEmpty() && durationScore.isEmpty() && multiVector.isEmpty();
-            boolean second = boxplot.isEmpty() && paired.isEmpty() && matrix.isEmpty();
-            return ! ( first && second );
+            return ! this.getOutputTypes().isEmpty();
         }
 
         /**
@@ -412,22 +449,37 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
             {
                 return new MetricFuturesByTime( this );
             }
-
+            
             /**
-             * Adds the outputs from an existing {@link MetricFuturesByTime} for the outputs that are included in the merge
-             * list.
+             * Adds the outputs from an existing {@link MetricFuturesByTime} for the outputs that are included in the
+             * merge list.
              * 
              * @param futures the input futures
-             * @param mergeList the merge list
+             * @param mergeSet the merge list
+             * @return the builder
+             */
+
+            private MetricFuturesByTimeBuilder addFutures( MetricFuturesByTime futures )
+            {
+                this.addFutures( futures, MetricOutputGroup.set() );
+                return this;
+            }
+            
+            /**
+             * Adds the outputs from an existing {@link MetricFuturesByTime} for the outputs that are included in the
+             * merge list.
+             * 
+             * @param futures the input futures
+             * @param mergeSet the merge list
              * @return the builder
              */
 
             private MetricFuturesByTimeBuilder addFutures( MetricFuturesByTime futures,
-                                                           MetricOutputGroup[] mergeList )
+                                                           Set<MetricOutputGroup> mergeSet )
             {
-                if ( Objects.nonNull( mergeList ) )
+                if ( Objects.nonNull( mergeSet ) )
                 {
-                    for ( MetricOutputGroup nextGroup : mergeList )
+                    for ( MetricOutputGroup nextGroup : mergeSet )
                     {
                         if ( nextGroup == MetricOutputGroup.DOUBLE_SCORE )
                         {
@@ -608,7 +660,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
      *            {@link ForkJoinPool#commonPool()}
      * @param metricExecutor an optional {@link ExecutorService} for executing metrics. Defaults to the 
      *            {@link ForkJoinPool#commonPool()}  
-     * @param mergeList a list of {@link MetricOutputGroup} whose outputs should be retained and merged across calls to
+     * @param mergeSet a list of {@link MetricOutputGroup} whose outputs should be retained and merged across calls to
      *            {@link #apply(Object)}
      * @throws MetricConfigException if the metrics are configured incorrectly
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
@@ -619,10 +671,10 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
                            final ThresholdsByMetric externalThresholds,
                            final ExecutorService thresholdExecutor,
                            final ExecutorService metricExecutor,
-                           final MetricOutputGroup[] mergeList )
+                           final Set<MetricOutputGroup> mergeSet )
             throws MetricConfigException, MetricParameterException
     {
-        super( dataFactory, config, externalThresholds, thresholdExecutor, metricExecutor, mergeList );
+        super( dataFactory, config, externalThresholds, thresholdExecutor, metricExecutor, mergeSet );
     }
 
     /**

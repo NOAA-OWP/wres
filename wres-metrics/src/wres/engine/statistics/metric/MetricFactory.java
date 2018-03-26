@@ -2,6 +2,7 @@ package wres.engine.statistics.metric;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
@@ -227,21 +228,21 @@ public class MetricFactory
      * <p>Uses the {@link ForkJoinPool#commonPool()} for execution.</p>
      * 
      * @param config the project configuration
-     * @param mergeList an optional list of {@link MetricOutputGroup} for which results should be retained and merged
+     * @param mergeSet an optional list of {@link MetricOutputGroup} for which results should be retained and merged
      * @return the {@link MetricProcessorByTime}
      * @throws MetricProcessorException if the metric processor could not be built
      */
 
     public MetricProcessorByTime<SingleValuedPairs>
             ofMetricProcessorByTimeSingleValuedPairs( final ProjectConfig config,
-                                                      final MetricOutputGroup... mergeList )
+                                                      final Set<MetricOutputGroup> mergeSet )
                     throws MetricProcessorException
     {
         return ofMetricProcessorByTimeSingleValuedPairs( config,
                                                          null,
                                                          ForkJoinPool.commonPool(),
                                                          ForkJoinPool.commonPool(),
-                                                         mergeList );
+                                                         mergeSet );
     }
 
     /**
@@ -253,21 +254,21 @@ public class MetricFactory
      * <p>Uses the {@link ForkJoinPool#commonPool()} for execution.</p>
      * 
      * @param config the project configuration
-     * @param mergeList an optional list of {@link MetricOutputGroup} for which results should be retained and merged
+     * @param mergeSet an optional list of {@link MetricOutputGroup} for which results should be retained and merged
      * @return the {@link MetricProcessorByTime}
      * @throws MetricProcessorException if the metric processor could not be built
      */
 
     public MetricProcessorByTime<EnsemblePairs>
             ofMetricProcessorByTimeEnsemblePairs( final ProjectConfig config,
-                                                  final MetricOutputGroup... mergeList )
+                                                  final Set<MetricOutputGroup> mergeSet )
                     throws MetricProcessorException
     {
         return ofMetricProcessorByTimeEnsemblePairs( config,
                                                      null,
                                                      ForkJoinPool.commonPool(),
                                                      ForkJoinPool.commonPool(),
-                                                     mergeList );
+                                                     mergeSet );
     }
 
     /**
@@ -280,7 +281,7 @@ public class MetricFactory
      * 
      * @param config the project configuration
      * @param externalThresholds an optional set of external thresholds, may be null
-     * @param mergeList an optional list of {@link MetricOutputGroup} for which results should be retained and merged
+     * @param mergeSet an optional list of {@link MetricOutputGroup} for which results should be retained and merged
      * @return the {@link MetricProcessorByTime}
      * @throws MetricProcessorException if the metric processor could not be built
      */
@@ -288,14 +289,14 @@ public class MetricFactory
     public MetricProcessorByTime<SingleValuedPairs>
             ofMetricProcessorByTimeSingleValuedPairs( final ProjectConfig config,
                                                       final ThresholdsByMetric externalThresholds,
-                                                      final MetricOutputGroup... mergeList )
+                                                      final Set<MetricOutputGroup> mergeSet )
                     throws MetricProcessorException
     {
         return ofMetricProcessorByTimeSingleValuedPairs( config,
                                                          externalThresholds,
                                                          ForkJoinPool.commonPool(),
                                                          ForkJoinPool.commonPool(),
-                                                         mergeList );
+                                                         mergeSet );
     }
 
     /**
@@ -308,7 +309,7 @@ public class MetricFactory
      * 
      * @param config the project configuration
      * @param externalThresholds an optional set of external thresholds (one per metric), may be null
-     * @param mergeList an optional list of {@link MetricOutputGroup} for which results should be retained and merged
+     * @param mergeSet an optional list of {@link MetricOutputGroup} for which results should be retained and merged
      * @return the {@link MetricProcessorByTime}
      * @throws MetricProcessorException if the metric processor could not be built
      */
@@ -316,14 +317,14 @@ public class MetricFactory
     public MetricProcessorByTime<EnsemblePairs>
             ofMetricProcessorByTimeEnsemblePairs( final ProjectConfig config,
                                                   final ThresholdsByMetric externalThresholds,
-                                                  final MetricOutputGroup... mergeList )
+                                                  final Set<MetricOutputGroup> mergeSet )
                     throws MetricProcessorException
     {
         return ofMetricProcessorByTimeEnsemblePairs( config,
                                                      externalThresholds,
                                                      ForkJoinPool.commonPool(),
                                                      ForkJoinPool.commonPool(),
-                                                     mergeList );
+                                                     mergeSet );
     }
 
     /**
@@ -355,7 +356,7 @@ public class MetricFactory
                                                              externalThresholds,
                                                              thresholdExecutor,
                                                              metricExecutor,
-                                                             getCacheListFromProjectConfig( config ) );
+                                                             MetricFactory.getCacheListFromProjectConfig( config ) );
         }
         catch ( MetricConfigException e )
         {
@@ -391,7 +392,7 @@ public class MetricFactory
                                                          externalThresholds,
                                                          thresholdExecutor,
                                                          metricExecutor,
-                                                         getCacheListFromProjectConfig( config ) );
+                                                         MetricFactory.getCacheListFromProjectConfig( config ) );
         }
         catch ( MetricConfigException e )
         {
@@ -411,7 +412,7 @@ public class MetricFactory
      *            {@link ForkJoinPool#commonPool()}
      * @param metricExecutor an optional {@link ExecutorService} for executing metrics. Defaults to the 
      *            {@link ForkJoinPool#commonPool()} 
-     * @param mergeList an optional list of {@link MetricOutputGroup} for which results should be retained and merged
+     * @param mergeSet an optional list of {@link MetricOutputGroup} for which results should be retained and merged
      * @return the {@link MetricProcessorByTime}
      * @throws MetricProcessorException if the metric processor could not be built
      */
@@ -421,7 +422,7 @@ public class MetricFactory
                                                       final ThresholdsByMetric externalThresholds,
                                                       final ExecutorService thresholdExecutor,
                                                       final ExecutorService metricExecutor,
-                                                      final MetricOutputGroup... mergeList )
+                                                      final Set<MetricOutputGroup> mergeSet )
                     throws MetricProcessorException
     {
         try
@@ -431,7 +432,7 @@ public class MetricFactory
                                                                externalThresholds,
                                                                thresholdExecutor,
                                                                metricExecutor,
-                                                               mergeList );
+                                                               mergeSet );
         }
         catch ( MetricConfigException e )
         {
@@ -455,7 +456,7 @@ public class MetricFactory
      *            {@link ForkJoinPool#commonPool()}
      * @param metricExecutor an optional {@link ExecutorService} for executing metrics. Defaults to the 
      *            {@link ForkJoinPool#commonPool()} 
-     * @param mergeList an optional list of {@link MetricOutputGroup} for which results should be retained and merged
+     * @param mergeSet an optional set of {@link MetricOutputGroup} for which results should be retained and merged
      * @return the {@link MetricProcessorByTime}
      * @throws MetricProcessorException if the metric processor could not be built
      */
@@ -464,7 +465,7 @@ public class MetricFactory
                                                                                       final ThresholdsByMetric externalThresholds,
                                                                                       final ExecutorService thresholdExecutor,
                                                                                       final ExecutorService metricExecutor,
-                                                                                      final MetricOutputGroup... mergeList )
+                                                                                      final Set<MetricOutputGroup> mergeSet )
             throws MetricProcessorException
     {
         try
@@ -474,7 +475,7 @@ public class MetricFactory
                                                            externalThresholds,
                                                            thresholdExecutor,
                                                            metricExecutor,
-                                                           mergeList );
+                                                           mergeSet );
         }
         catch ( MetricConfigException e )
         {
@@ -1640,10 +1641,10 @@ public class MetricFactory
      * @throws MetricParameterException if one or more parameter values is incorrect
      */
 
-    public TimeToPeakErrorStatistics ofTimeToPeakErrorStatistics( MetricConstants... statistics )
+    public TimeToPeakErrorStatistics ofTimeToPeakErrorStatistics( Set<MetricConstants> statistics )
             throws MetricParameterException
     {
-        return (TimeToPeakErrorStatistics) new TimeToPeakErrorStatisticBuilder().setStatistic( statistics )
+        return (TimeToPeakErrorStatistics) new TimeToPeakErrorStatisticBuilder().setStatistics( statistics )
                                                                                 .setOutputFactory( outputFactory )
                                                                                 .build();
     }
@@ -1658,7 +1659,7 @@ public class MetricFactory
      * @throws NullPointerException if the input is null
      */
 
-    private MetricOutputGroup[] getCacheListFromProjectConfig( ProjectConfig projectConfig )
+    private static Set<MetricOutputGroup> getCacheListFromProjectConfig( ProjectConfig projectConfig )
             throws MetricConfigException
     {
         // Always cache ordinary scores and paired output for timing error metrics 
@@ -1684,7 +1685,7 @@ public class MetricFactory
         // is available
         returnMe.remove( MetricOutputGroup.DURATION_SCORE );
 
-        return returnMe.toArray( new MetricOutputGroup[returnMe.size()] );
+        return Collections.unmodifiableSet( returnMe );
     }
 
     /**

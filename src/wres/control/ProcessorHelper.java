@@ -133,6 +133,9 @@ class ProcessorHelper
         long leadCount = 0;
         long basisTimes = 0;
 
+        // TODO: please move this to a utility method somewhere, out of the main processing pipeline, 
+        // because: 1) it is self-contained logic and; 2) we don't want to refer to concrete types like NETCDF in
+        // our abstract processing pipeline
         if ( ConfigHelper.getIncrementalFormats( projectConfig )
                          .contains( DestinationType.NETCDF ) )
         {
@@ -175,6 +178,8 @@ class ProcessorHelper
                                                               thresholds );
 
         // Build any writers of incremental formats that are shared across features
+        // TODO: make this call abstract. We should not be referring to DOUBLE_SCORE output here, but to all output
+        // for which writers are shared
         SharedWriters sharedWriters = ConfigHelper.getSharedWriters( projectConfig,
                                                                      resolvedProject.getFeatureCount(),
                                                                      (int) basisTimes,
@@ -347,7 +352,7 @@ class ProcessorHelper
         // During the pipeline, only write types that are not end-of-pipeline types unless they refer to
         // a format that can be written incrementally
         BiPredicate<MetricOutputGroup, DestinationType> onlyWriteTheseTypes =
-                ( type, format ) -> !processor.getCachedMetricOutputTypes().contains( type )
+                ( type, format ) -> !processor.getMetricOutputTypesToCache().contains( type )
                                     || ConfigHelper.getIncrementalFormats( projectConfig ).contains( format );
 
         try
@@ -409,19 +414,24 @@ class ProcessorHelper
         // Generate cached output if available
         if ( processor.hasCachedMetricOutput() )
         {
-            // Only process cached types that were not written incrementally
-            BiPredicate<MetricOutputGroup, DestinationType> nowWriteTheseTypes =
-                    ( type, format ) -> processor.getCachedMetricOutputTypes().contains( type )
-                                        && !ConfigHelper.getIncrementalFormats( projectConfig ).contains( format );
-            try ( // End of pipeline processor
-                  ProductProcessor endOfPipeline =
-                          new ProductProcessor( resolvedProject,
-                                                nowWriteTheseTypes,
-                                                sharedWriters ) )
+            try
             {
-                // Generate output
-                endOfPipeline.accept( processor.getCachedMetricOutput() );
-
+                // Determine the cached types
+                Set<MetricOutputGroup> cachedTypes = processor.getCachedMetricOutputTypes();
+                
+                // Only process cached types that were not written incrementally
+                BiPredicate<MetricOutputGroup, DestinationType> nowWriteTheseTypes =
+                        ( type, format ) -> cachedTypes.contains( type )
+                                            && !ConfigHelper.getIncrementalFormats( projectConfig ).contains( format );
+                try ( // End of pipeline processor
+                      ProductProcessor endOfPipeline =
+                              new ProductProcessor( resolvedProject,
+                                                    nowWriteTheseTypes,
+                                                    sharedWriters ) )
+                {
+                    // Generate output
+                    endOfPipeline.accept( processor.getCachedMetricOutput() );
+                }
             }
             catch ( MetricOutputAccessException e )
             {

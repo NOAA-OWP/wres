@@ -173,8 +173,10 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
 
         //Process and return the result       
         MetricFuturesByTime futureResults = futures.build();
+        
         //Add for merge with existing futures, if required
         addToMergeList( futureResults );
+        
         return futureResults.getMetricOutput();
     }
 
@@ -188,7 +190,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
      *            {@link ForkJoinPool#commonPool()}
      * @param metricExecutor an optional {@link ExecutorService} for executing metrics. Defaults to the 
      *            {@link ForkJoinPool#commonPool()} 
-     * @param mergeList a list of {@link MetricOutputGroup} whose outputs should be retained and merged across calls to
+     * @param mergeSet a list of {@link MetricOutputGroup} whose outputs should be retained and merged across calls to
      *            {@link #apply(EnsemblePairs)}
      * @throws MetricConfigException if the metrics are configured incorrectly
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
@@ -199,10 +201,10 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                                                final ThresholdsByMetric externalThresholds,
                                                final ExecutorService thresholdExecutor,
                                                final ExecutorService metricExecutor,
-                                               final MetricOutputGroup... mergeList )
+                                               final Set<MetricOutputGroup> mergeSet )
             throws MetricConfigException, MetricParameterException
     {
-        super( dataFactory, config, externalThresholds, thresholdExecutor, metricExecutor, mergeList );
+        super( dataFactory, config, externalThresholds, thresholdExecutor, metricExecutor, mergeSet );
 
         //Construct the metrics
         //Discrete probability input, vector output
