@@ -170,14 +170,22 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         }
         catch (SQLException e)
         {
-            throw new SQLException( "Avaliable Features could not be determined "
-                                    + "when none were specified.", e );
+            throw new SQLException( "Available Features could not be determined.",
+                                    e );
         }
         finally
         {
             if (resultSet != null)
             {
-                resultSet.close();
+                try
+                {
+                    resultSet.close();
+                }
+                catch ( SQLException se )
+                {
+                    // Exception on close should not affect primary outputs.
+                    LOGGER.warn( "Failed to close result set {}.", resultSet, se );
+                }
             }
 
             if (connection != null)
