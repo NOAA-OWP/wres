@@ -819,21 +819,26 @@ public class ConfigHelper
      * opportunity, which may be well before this point.</p>
      * 
      * @param projectDetails the project configuration
-     * @param lead the earliest and latest lead time
+     * @param firstLead the earliest lead time
+     * @param lastLead the last lead time
      * @param sequenceStep the position of the window within a sequence
      * @return a time window 
      * @throws NullPointerException if the config is null
      * @throws DateTimeParseException if the configuration contains dates that cannot be parsed
      */
-    public static TimeWindow getTimeWindow( ProjectDetails projectDetails, long lead, int sequenceStep )
+    public static TimeWindow getTimeWindow( ProjectDetails projectDetails, long firstLead, long lastLead, int sequenceStep )
     {
         Objects.requireNonNull( projectDetails );
         TimeWindow windowMetadata;
 
         Duration beginningLead;
-        Duration endingLead = Duration.ofHours( lead );
+        Duration endingLead = Duration.ofHours( lastLead );
 
-        if ( projectDetails.getProjectConfig().getPair().getLeadTimesPoolingWindow() != null )
+        if (projectDetails.usesTimeSeriesMetrics())
+        {
+            beginningLead = Duration.ofHours( firstLead );
+        }
+        else if ( projectDetails.getProjectConfig().getPair().getLeadTimesPoolingWindow() != null )
         {
             PoolingWindowConfig leadPoolingWindow =
                     projectDetails.getProjectConfig().getPair().getLeadTimesPoolingWindow();

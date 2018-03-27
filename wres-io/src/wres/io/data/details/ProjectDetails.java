@@ -739,7 +739,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
 
     public Double getDefaultMaximumValue()
     {
-        Double maximum = Double.NaN;
+        Double maximum = null;
 
         if (this.projectConfig.getPair().getValues() != null &&
             this.projectConfig.getPair().getValues().getDefaultMaximum() != null)
@@ -768,7 +768,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
 
     public Double getDefaultMinimumValue()
     {
-        Double defaultMinimum = Double.NaN;
+        Double defaultMinimum = null;
 
         if (this.projectConfig.getPair().getValues() != null &&
                 this.projectConfig.getPair().getValues().getDefaultMinimum() != null)
@@ -1349,7 +1349,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
                 script.addTab().addLine( "(" );
                 script.addTab( 2 )
                       .addLine(
-                              "COUNT(E.ensemble_id) * 8 + 20 * -- This determines the size of a single row" );
+                              "(COUNT(E.ensemble_id) * 8 + 20) * -- This determines the size of a single row" );
                 script.addTab( 3 )
                       .addLine(
                               "(  -- This determines the number of expected rows" );

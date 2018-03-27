@@ -280,6 +280,7 @@ public final class Database {
         if (indexTasks.peek() != null)
         {
             LOGGER.info("Restoring Indices...");
+            ProgressMonitor.setSteps( (long)indexTasks.size() );
         }
 
 		Future<?> task;
@@ -288,6 +289,7 @@ public final class Database {
             try
             {
                 task.get();
+                ProgressMonitor.completeStep();
             }
             catch (InterruptedException | ExecutionException e)
             {
@@ -615,51 +617,6 @@ public final class Database {
 	public static void execute(final String query) throws SQLException
 	{
 	    Database.execute( query, false );
-		/*Connection connection = null;
-		Statement statement = null;
-		Timer timer = null;
-
-        LOGGER.trace( "{}{}{}", NEWLINE, query, NEWLINE );
-
-		try
-		{
-		    if (LOGGER.isDebugEnabled())
-            {
-                timer = createScriptTimer( query );
-            }
-			connection = getConnection();
-			statement = connection.createStatement();
-			statement.execute(query);
-			if (LOGGER.isDebugEnabled() && timer != null)
-            {
-                timer.cancel();
-            }
-		}
-		catch (SQLException error)
-        {
-            String message = query;
-            if (query.length() > 1000)
-            {
-                message = query.substring( 0, 1000 );
-            }
-            LOGGER.error( "The following SQL call failed:{}{}",
-                          NEWLINE,
-                          message,
-                          error );
-			throw error;
-		}
-		finally
-		{
-            if (statement != null)
-            {
-                statement.close();
-            }
-
-			if (connection != null)
-			{
-				returnConnection(connection);
-			}
-		}*/
 	}
 
     /**

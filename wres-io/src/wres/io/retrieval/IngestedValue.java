@@ -88,7 +88,7 @@ class IngestedValue implements Comparable<IngestedValue>
         return this.referenceEpoch;
     }
 
-    TemporalAccessor getReferenceTime()
+    private TemporalAccessor getReferenceTime()
     {
         return Instant.ofEpochSecond( this.referenceEpoch );
     }
@@ -110,6 +110,11 @@ class IngestedValue implements Comparable<IngestedValue>
             else if (value > projectDetails.getMaximumValue())
             {
                 value = projectDetails.getDefaultMaximumValue();
+            }
+
+            if (value == null)
+            {
+                value = Double.NaN;
             }
 
             this.measurements[index] = value;

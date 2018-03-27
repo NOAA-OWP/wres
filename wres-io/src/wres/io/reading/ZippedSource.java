@@ -300,8 +300,8 @@ public class ZippedSource extends BasicSource {
                                            this.getSpecifiedFeatures(),
                                            this.getProjectConfig() );
 
-            //ingest.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
-            //ProgressMonitor.increment();
+            ingest.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
+            ProgressMonitor.increment();
             this.addIngestTask(ingest);
         }
         else
@@ -316,9 +316,9 @@ public class ZippedSource extends BasicSource {
                                          originalSource,
                                          this.getSpecifiedFeatures());
 
-                //ingest.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
+                ingest.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
 
-                //ProgressMonitor.increment();
+                ProgressMonitor.increment();
                 Future<List<IngestResult>> task = Executor.submit( ingest );
                 this.addIngestTask(task);
             }

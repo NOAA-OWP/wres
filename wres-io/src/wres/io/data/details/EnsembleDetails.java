@@ -171,9 +171,25 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
 	{
 	    public EnsembleKey(String ensembleName, String qualifierID, String memberIndex)
 	    {
-	        this.ensembleName = ensembleName;
+	    	if (ensembleName == null)
+			{
+				this.ensembleName = "default";
+			}
+			else
+			{
+				this.ensembleName = ensembleName;
+			}
+
 	        this.qualifierID = qualifierID;
-	        this.memberIndex = memberIndex;
+
+	    	if (memberIndex == null)
+            {
+                this.memberIndex = "0";
+            }
+            else
+            {
+                this.memberIndex = memberIndex;
+            }
 	    }
 
         @Override

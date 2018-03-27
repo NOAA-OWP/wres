@@ -4,6 +4,7 @@ import java.io.PrintStream;
 import java.text.DecimalFormat;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 import org.slf4j.Logger;
@@ -24,15 +25,6 @@ public class ProgressMonitor
     public static void deactivate()
     {
         MONITOR.shutdown();
-    }
-
-    public static void activate()
-    {
-        if (MONITOR != null)
-        {
-            MONITOR.shutdown();
-        }
-        MONITOR = new ProgressMonitor();
     }
 
     public static void increment()
@@ -160,35 +152,43 @@ public class ProgressMonitor
     
     private void UpdateMonitor()
     {
-
-        if (completedSteps <= totalSteps)
+        synchronized ( MONITOR_LOCK )
         {
-            completedSteps++;
-            executeOutput();
+            if ( completedSteps <= totalSteps && !this.reachedCompletion.get() )
+            {
+                completedSteps++;
+                executeOutput();
+            }
         }
     }
     
     private void addStep()
     {
-        if (this.totalSteps == 0)
+        synchronized ( MONITOR_LOCK )
         {
-            this.startTime = System.currentTimeMillis();
-        }
+            if ( this.totalSteps == 0 )
+            {
+                this.startTime = System.currentTimeMillis();
+            }
 
-        this.totalSteps++;
-        executeOutput();
+            this.totalSteps++;
+            executeOutput();
+        }
     }
     
     public static void setSteps(Long steps)
     {
-        if (!MONITOR.shouldUpdate())
-        {
-            return;
-        }
-
         synchronized ( MONITOR_LOCK )
         {
-            MONITOR.setTotalSteps( steps );
+            if ( !MONITOR.shouldUpdate() )
+            {
+                return;
+            }
+
+            synchronized ( MONITOR_LOCK )
+            {
+                MONITOR.setTotalSteps( steps );
+            }
         }
     }
 
@@ -217,7 +217,7 @@ public class ProgressMonitor
     {
         this.totalSteps = 0L;
         this.completedSteps = 0L;
-        this.reachedCompletion = false;
+        this.reachedCompletion.set(false);
         this.startTime = System.currentTimeMillis();
     }
 
@@ -238,8 +238,12 @@ public class ProgressMonitor
 
     private String getProgressMessage()
     {
-        String builder = "\r  ";
+        if (reachedCompletion.get())
+        {
+            return "";
+        }
 
+        String builder = "\r  ";
         if ( this.showStepDescription )
         {
             builder += mainFormat.format( completedSteps );
@@ -268,7 +272,7 @@ public class ProgressMonitor
             if (completion == 100.0)
             {
                 builder += System.lineSeparator() + System.lineSeparator();
-                reachedCompletion = true;
+                reachedCompletion.set( true);
             }
         }
 
@@ -281,7 +285,7 @@ public class ProgressMonitor
             this.ASYNC_UPDATER == null ||
             this.ASYNC_UPDATER.isTerminated() ||
             this.ASYNC_UPDATER.isShutdown() ||
-            this.reachedCompletion)
+            this.reachedCompletion.get())
         {
             return false;
         }
@@ -292,7 +296,7 @@ public class ProgressMonitor
                 lastUpdate != null &&
             ((System.currentTimeMillis() - this.lastUpdate) < (this.updateFrequency * 1000)))
         {
-                update = false;
+                update = totalSteps - completedSteps < 3;
         }
 
 
@@ -376,7 +380,7 @@ public class ProgressMonitor
     private Long lastUpdate;
     private Long updateFrequency;
     private Long startTime;
-    private boolean reachedCompletion = false;
+    private AtomicBoolean reachedCompletion = new AtomicBoolean( false );
     private final DecimalFormat percentFormat;
     private final DecimalFormat mainFormat;
     private PrintStream printer;

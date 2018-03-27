@@ -47,7 +47,7 @@ final class BackToBackMetricInputIterator extends MetricInputIterator
                                                         .getValue() +
                                                     " could not be determined.");
             }
-            else if (start >= last)
+            else if (start > last)
             {
                 throw new NoDataException( "No data can be retrieved because " +
                                            "the first requested lead time " +

@@ -88,15 +88,29 @@ class TimeSeriesScripter extends Scripter
         }
 
         this.addTab().addLine("WHERE ", this.getVariablePositionClause());
-        this.addTab(  2  ).addLine(
-                "AND TS.initialization_date >= ", this.getMinimumForecastDate(),
-                "::timestamp without time zone + (INTERVAL '", this.getForecastLag(), " HOUR') * ",
-                this.getProjectDetails().getNumberOfSeriesToRetrieve() * this.getSequenceStep()
-        );
-        this.addTab(  2  ).addLine(
-                "AND TS.initialization_date < ", this.getMinimumForecastDate(),
-                "::timestamp without time zone + (INTERVAL '", this.getForecastLag(), " HOUR') * ",
-                this.getProjectDetails().getNumberOfSeriesToRetrieve() * (this.getSequenceStep() + 1));
+
+        // Handles the case when every value lies on the exact initialization date
+        if (this.getForecastLag() != 0)
+        {
+            this.addTab( 2 ).addLine(
+                    "AND TS.initialization_date >= ",
+                    this.getMinimumForecastDate(),
+                    "::timestamp without time zone + (INTERVAL '",
+                    this.getForecastLag(),
+                    " HOUR') * ",
+                    this.getProjectDetails().getNumberOfSeriesToRetrieve()
+                    * this.getSequenceStep()
+            );
+            this.addTab( 2 ).addLine(
+                    "AND TS.initialization_date < ",
+                    this.getMinimumForecastDate(),
+                    "::timestamp without time zone + (INTERVAL '",
+                    this.getForecastLag(),
+                    " HOUR') * ",
+                    this.getProjectDetails().getNumberOfSeriesToRetrieve() * (
+                            this.getSequenceStep() + 1 ) );
+        }
+
         this.addTab(  2  ).addLine("AND EXISTS (");
         this.addTab(   3   ).addLine( "SELECT 1");
         this.addTab(   3   ).addLine( "FROM wres.ProjectSource PS");
