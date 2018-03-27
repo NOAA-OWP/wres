@@ -119,7 +119,9 @@ public class Projects extends Cache<ProjectDetails, Integer> {
         }
         catch (SQLException error)
         {
-            LOGGER.error("An error was encountered when trying to populate the Project cache.");
+            // Failure to pre-populate cache should not affect primary outputs.
+            LOGGER.warn( "An error was encountered when trying to populate the Project cache.",
+                         error );
         }
         finally
         {
@@ -131,7 +133,9 @@ public class Projects extends Cache<ProjectDetails, Integer> {
                 }
                 catch (SQLException error)
                 {
-                    LOGGER.error("The result set containing projects could not be closed.");
+                    // Exception on close should not affect primary outputs.
+                    LOGGER.warn( "The result set {} containing projects could not be closed.",
+                                 projects, error );
                 }
             }
 
