@@ -551,7 +551,16 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
                 {
                     if ( resultSet != null )
                     {
-                        resultSet.close();
+                        try
+                        {
+                            resultSet.close();
+                        }
+                        catch ( SQLException se )
+                        {
+                            // Failure to close shouldn't affect primary output.
+                            LOGGER.warn( "Failed to close result set {}.",
+                                         resultSet, se );
+                        }
                     }
 
                     if ( connection != null )
