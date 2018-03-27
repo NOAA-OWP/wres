@@ -44,7 +44,7 @@ class ClimatologyBuilder
      */
     private static class DateRange implements Comparable<DateRange>
     {
-        public DateRange(String beginning, String end)
+        DateRange(String beginning, String end)
         {
             this.startDate = beginning;
             this.endDate = end;
@@ -207,7 +207,7 @@ class ClimatologyBuilder
     private final DataSourceConfig dataSourceConfig;
     private final Feature feature;
 
-    public ClimatologyBuilder(ProjectDetails projectDetails, DataSourceConfig dataSourceConfig, Feature feature)
+    ClimatologyBuilder(ProjectDetails projectDetails, DataSourceConfig dataSourceConfig, Feature feature)
             throws IOException
     {
         this.projectDetails = projectDetails;
@@ -322,7 +322,7 @@ class ClimatologyBuilder
         } );
     }
 
-    public VectorOfDoubles getClimatology() throws IOException
+    VectorOfDoubles getClimatology() throws IOException
     {
         if (this.climatology == null)
         {
@@ -507,7 +507,20 @@ class ClimatologyBuilder
                 value = this.getConversion( results.getInt(
                         "measurementunit_id" ) ).convert( value );
 
-                if ( value >= this.projectDetails.getMinimumValue()
+                if (value < this.projectDetails.getMinimumValue() &&
+                    this.projectDetails.getDefaultMinimumValue() != null)
+                {
+
+                    this.addValue( results.getString( "observation_time" ),
+                                   this.projectDetails.getDefaultMinimumValue() );
+                }
+                else if (value > this.projectDetails.getMaximumValue() &&
+                         this.projectDetails.getDefaultMaximumValue() != null)
+                {
+                    this.addValue( results.getString( "observation_time" ),
+                                   this.projectDetails.getDefaultMaximumValue() );
+                }
+                else if ( value >= this.projectDetails.getMinimumValue()
                      && value <= this.projectDetails.getMaximumValue() )
                 {
                     this.addValue( results.getString( "observation_time" ),

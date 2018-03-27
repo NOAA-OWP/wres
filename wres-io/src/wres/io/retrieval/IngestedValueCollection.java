@@ -220,7 +220,7 @@ class IngestedValueCollection
         if (canAdd)
         {
             this.values.add( value );
-            this.values.sort( Comparator.naturalOrder() );
+            //this.values.sort( Comparator.naturalOrder() );
         }
         else
         {

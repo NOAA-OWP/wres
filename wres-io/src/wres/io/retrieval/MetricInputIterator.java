@@ -261,12 +261,22 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
                                                                .getDesiredMeasurementUnit());
                 }
 
-                if (measurement == null ||
-                    ( measurement >= this.getProjectDetails().getMinimumValue() &&
-                      measurement <= this.getProjectDetails().getMaximumValue() ))
+                if (measurement != null && measurement < this.projectDetails.getMinimumValue())
                 {
-                    this.addLeftHandValue( date,
-                                           measurement );
+                    measurement = this.projectDetails.getDefaultMinimumValue();
+                }
+                else if (measurement != null && measurement > this.projectDetails.getMaximumValue())
+                {
+                    measurement = this.projectDetails.getDefaultMaximumValue();
+                }
+                else if (measurement == null)
+                {
+                    measurement = Double.NaN;
+                }
+
+                if (measurement != null)
+                {
+                    this.addLeftHandValue( date, measurement );
                 }
             }
         }

@@ -70,6 +70,12 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
      */
     private int issueDatesPool;
 
+    private long lastLead = Long.MIN_VALUE;
+    private long lastBaselineLead = Long.MIN_VALUE;
+
+    private long firstLead = Long.MAX_VALUE;
+    private long firstBaselineLead = Long.MAX_VALUE;
+
     /**
      * The total specifications for what data to retrieve
      */
@@ -592,7 +598,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         IngestedValueCollection ingestedValues = new IngestedValueCollection(  );
         long reference = -1;
 
-        /**
+        /*
          * Maps returned values to their position in their returned array.
          *
          * Say we retrieve:
@@ -649,6 +655,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
 
                     while (condensedValue != null)
                     {
+
                         pairs = this.addPair( pairs, condensedValue, dataSourceConfig );
                         aggregationStep++;
                         condensedValue = ingestedValues.condense(
@@ -995,9 +1002,8 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
     }
 
     /**
-     * Pairs retrieved values with their observed equivalent, aggregates them
-     * (if necessary), adds them to the overarching list of packaged pairs,
-     * and writes them to the pair output
+     * Pairs retrieved values with their observed equivalent, adds them to the
+     * overarching list of packaged pairs, and writes them to the pair output
      *
      * <p>
      *     A pair will not be added if no values were retrieved in the first
@@ -1005,38 +1011,13 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
      * </p>
      *
      * @param pairs The overarching list of pairs
-     * @param valueDate The date of the most recent value added to rightValues
-     * @param rightValues A mapping of values mapped to their position in the
-     *                    set of retrieved data (such as ensemble position)
+     * @param condensedIngestedValue A set of values read in from the database
      * @param dataSourceConfig The configuration that is driving this pair
      *                         generation
-     * @param lead The lead time of the most recently added value
      * @return The list of packaged pairs with a possible new pair added
-     * @throws NoDataException
+     * @throws NoDataException Thrown if there wasn't enough data to determine
+     * if a pair is viable
      */
-    private List<ForecastedPair> addPair( List<ForecastedPair> pairs,
-                                          Instant valueDate,
-                                          Map<Integer, List<Double>> rightValues,
-                                          DataSourceConfig dataSourceConfig,
-                                          int lead )
-            throws NoDataException
-    {
-        if ( !rightValues.isEmpty() )
-        {
-            PairOfDoubleAndVectorOfDoubles pair = this.getPair( valueDate, rightValues );
-
-            if (pair != null)
-            {
-                ForecastedPair packagedPair = new ForecastedPair( lead,
-                                                              valueDate,
-                                                              pair );
-                writePair( valueDate, packagedPair, dataSourceConfig );
-                pairs.add( packagedPair );
-            }
-        }
-        return pairs;
-    }
-
     private List<ForecastedPair> addPair(
             List<ForecastedPair> pairs,
             CondensedIngestedValue condensedIngestedValue,
@@ -1049,6 +1030,17 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
 
             if (pair != null)
             {
+                if (this.projectDetails.getInputName( dataSourceConfig ).equals(ProjectDetails.RIGHT_MEMBER))
+                {
+                    this.lastLead = Math.max(this.lastLead, condensedIngestedValue.lead);
+                    this.firstLead = Math.min(this.firstLead, condensedIngestedValue.lead);
+                }
+                else
+                {
+                    this.lastBaselineLead = Math.max(this.lastBaselineLead, condensedIngestedValue.lead);
+                    this.firstBaselineLead = Math.min(this.firstBaselineLead, condensedIngestedValue.lead);
+                }
+
                 ForecastedPair packagedPair = new ForecastedPair(
                         condensedIngestedValue.lead,
                         condensedIngestedValue.validTime,
@@ -1098,30 +1090,47 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         DatasetIdentifier datasetIdentifier = metadataFactory.getDatasetIdentifier(geospatialIdentifier,
                                                                                    variableIdentifier,
                                                                                    sourceConfig.getLabel());
-        Double lastLead = 0.0;
+        long firstLead = 0;
+        long lastLead = 0;
 
-        if ( ConfigHelper.isForecast( sourceConfig )
+        if ( (ConfigHelper.isForecast( sourceConfig ) && !isBaseline)
                 // Persistence forecast meta is based on the forecast meta
                 || ConfigHelper.isPersistence( projectDetails.getProjectConfig(),
                                                sourceConfig ) )
         {
-            Integer offset = this.projectDetails.getLeadOffset( this.feature );
-
-            if (offset == null)
+            if (this.primaryPairs.size() > 0)
             {
-                throw new IOException( "The last lead of the window could not "
-                                       + "be determined because the offset for "
-                                       + "the window could not be determined." );
+                lastLead = this.lastLead;
+                firstLead = this.firstLead;
             }
+            else
+            {
+                // This is only helpful for debugging purposes.
+                Integer offset = this.projectDetails.getLeadOffset( this.feature );
 
-            lastLead = this.leadIteration *
-                       this.projectDetails.getLeadFrequency() +
-                       this.projectDetails.getWindowWidth() * 1.0 +
-                       offset;
+                if (offset == null)
+                {
+                    throw new IOException( "The last lead of the window could not "
+                                           + "be determined because the offset for "
+                                           + "the window could not be determined." );
+                }
+
+                lastLead = ((Double)(this.leadIteration *
+                           this.projectDetails.getLeadFrequency() +
+                           this.projectDetails.getWindowWidth() * 1.0 +
+                           offset)).longValue();
+                firstLead = lastLead;
+            }
+        }
+        else if (ConfigHelper.isForecast( sourceConfig ))
+        {
+            firstLead = this.firstBaselineLead;
+            lastLead = this.lastBaselineLead;
         }
 
         TimeWindow timeWindow = ConfigHelper.getTimeWindow( this.projectDetails,
-                                                            lastLead.longValue(),
+                                                            firstLead,
+                                                            lastLead,
                                                             this.issueDatesPool );
 
         return metadataFactory.getMetadata( dim,
@@ -1198,7 +1207,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             return null;
         }
 
-        double leftAggregation;
+        Double leftAggregation;
 
         if (this.projectDetails.shouldScale())
         {
@@ -1211,14 +1220,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         }
         else
         {
-            if (leftValues.get( 0 ) == null)
-            {
-                leftAggregation = Double.NaN;
-            }
-            else
-            {
-                leftAggregation = leftValues.get( 0 );
-            }
+            leftAggregation = leftValues.get( 0 );
         }
 
         return leftAggregation;

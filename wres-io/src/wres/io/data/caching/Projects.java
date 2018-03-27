@@ -148,7 +148,7 @@ public class Projects extends Cache<ProjectDetails, Integer> {
      * @param ingestResults the ingest results
      * @return the ProjectDetails to use
      * @throws SQLException when ProjectDetails construction goes wrong
-     * @throws IllegalArgumentException when an IngestResult does not have left/right/baseline information
+     * @throws IOException Thrown when the ID for a data source cannot be determined
      */
     public static ProjectDetails getProjectFromIngest( ProjectConfig projectConfig,
                                                        List<IngestResult> ingestResults )

@@ -43,6 +43,12 @@ public class TimeSeriesMetricInputIterator extends MetricInputIterator
     {
         String minimumDate = this.getProjectDetails().getInitialForecastDate( this.getRight(), this.getFeature() );
         Integer lag = this.getProjectDetails().getForecastLag( this.getRight(), this.getFeature() );
+
+        if (lag == 0)
+        {
+            return 1;
+        }
+
         Integer seriesToRetrieve = this.getProjectDetails().getNumberOfSeriesToRetrieve();
         String variablePosition = ConfigHelper.getVariablePositionClause(
                 this.getFeature(),
