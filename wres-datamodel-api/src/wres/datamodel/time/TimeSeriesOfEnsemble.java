@@ -11,8 +11,6 @@ import java.util.function.Predicate;
  * @param <S> the trace-decomposed atomic type of data
  * @param <T> the composed atomic type of data
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.4
  */
 public interface TimeSeriesOfEnsemble<S,T> extends TimeSeries<T>
 {
