@@ -103,9 +103,9 @@ public abstract class XMLReader
             reader.close();
             completeParsing();
         }
-        catch ( XMLStreamException | FileNotFoundException error )
+        catch ( XMLStreamException error )
         {
-            throw new IOException( "Could not parse file", error );
+            throw new IOException( "Could not parse file " + this.filename, error );
         }
         finally
         {
@@ -118,7 +118,7 @@ public abstract class XMLReader
                 catch ( XMLStreamException xse )
                 {
                     // not much we can do at this point
-                    this.getLogger().warn( "Exception while closing file {}: {}",
+                    this.getLogger().warn( "Exception while closing file {}.",
                                            this.filename,
                                            xse );
                 }
@@ -142,20 +142,9 @@ public abstract class XMLReader
         }
 
         //Return the system resource reader if its found as a system resource.
-        try
+        if ( findOnClasspath )
         {
-            if ( findOnClasspath )
-            {
-                return factory.createXMLStreamReader( getFile() );
-            }
-        }
-        catch ( XMLStreamException | IOException error )
-        {
-            this.getLogger().debug( "An XMLStreamReader could not be created "
-                                    + "by looking for the source on the class "
-                                    + "path. A reader will need to be created "
-                                    + "by evaluating the file name or given "
-                                    + "input stream." );
+            return factory.createXMLStreamReader( getFile() );
         }
 
         //If its not a system resource, or the resource cannot be read, then find on the file system.
