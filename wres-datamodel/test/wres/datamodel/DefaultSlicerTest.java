@@ -3,6 +3,7 @@ package wres.datamodel;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -13,6 +14,7 @@ import java.util.function.Function;
 
 import org.junit.Test;
 
+import wres.datamodel.SafeTimeSeriesOfSingleValuedPairs.SafeTimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.ThresholdConstants.Operator;
 import wres.datamodel.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.inputs.MetricInputSliceException;
@@ -22,9 +24,12 @@ import wres.datamodel.inputs.pairs.PairOfBooleans;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.metadata.Metadata;
+import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
+import wres.datamodel.time.Event;
 
 /**
  * Tests the {@link DefaultSlicer}.
@@ -852,5 +857,152 @@ public final class DefaultSlicerTest
         {
         }
     }
+
+    /**
+     * Tests the {@link Slicer#filter(TimeSeriesOfSingleValuedPairs, java.util.function.Predicate, java.util.function.DoublePredicate)}.
+    
+     * @throws MetricInputSliceException if slicing results in an unexpected exception
+     */
+
+    @Test
+    public void test17FilterTimeSeriesOfSingleValuedPairs() throws MetricInputSliceException
+    {
+        //Build a time-series with three basis times 
+        List<Event<PairOfDoubles>> first = new ArrayList<>();
+        List<Event<PairOfDoubles>> second = new ArrayList<>();
+        List<Event<PairOfDoubles>> third = new ArrayList<>();
+        SafeTimeSeriesOfSingleValuedPairsBuilder b = new SafeTimeSeriesOfSingleValuedPairsBuilder();
+        DataFactory metIn = DefaultDataFactory.getInstance();
+        MetadataFactory metaFac = metIn.getMetadataFactory();
+
+        Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
+        first.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), metIn.pairOf( 1, 10 ) ) );
+        first.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), metIn.pairOf( 2, 11 ) ) );
+        first.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ), metIn.pairOf( 3, 12 ) ) );
+
+        Instant secondBasisTime = Instant.parse( "1985-01-02T00:00:00Z" );
+        second.add( Event.of( Instant.parse( "1985-01-02T01:00:00Z" ), metIn.pairOf( 4, 13 ) ) );
+        second.add( Event.of( Instant.parse( "1985-01-02T02:00:00Z" ), metIn.pairOf( 5, 14 ) ) );
+        second.add( Event.of( Instant.parse( "1985-01-02T03:00:00Z" ), metIn.pairOf( 6, 15 ) ) );
+
+        Instant thirdBasisTime = Instant.parse( "1985-01-03T00:00:00Z" );
+        third.add( Event.of( Instant.parse( "1985-01-03T01:00:00Z" ), metIn.pairOf( 7, 16 ) ) );
+        third.add( Event.of( Instant.parse( "1985-01-03T02:00:00Z" ), metIn.pairOf( 8, 17 ) ) );
+        third.add( Event.of( Instant.parse( "1985-01-03T03:00:00Z" ), metIn.pairOf( 9, 18 ) ) );
+        Metadata meta = metaFac.getMetadata();
+
+        //Add the time-series
+        TimeSeriesOfSingleValuedPairs firstSeries =
+                (TimeSeriesOfSingleValuedPairs) b.addTimeSeriesData( firstBasisTime, first )
+                                                 .addTimeSeriesData( secondBasisTime, second )
+                                                 .addTimeSeriesData( thirdBasisTime, third )
+                                                 .setMetadata( meta )
+                                                 .build();
+
+        // Filter all values where the left side is greater than 0
+        TimeSeriesOfSingleValuedPairs firstResult =
+                slicer.filter( firstSeries,
+                               Slicer.anyOfLeftInTimeSeriesOfSingleValuedPairs( value -> value > 0 ),
+                               null );
+
+        assertTrue( "The filtered time-series does not match the benchmark.",
+                    firstResult.getData().equals( firstSeries.getData() ) );
+
+        // Filter all values where the left side is greater than 3
+        TimeSeriesOfSingleValuedPairs secondResult =
+                slicer.filter( firstSeries,
+                               Slicer.anyOfLeftInTimeSeriesOfSingleValuedPairs( value -> value > 3 ),
+                               clim -> clim > 0 );
+
+        List<Event<PairOfDoubles>> secondData = new ArrayList<>();
+        secondResult.timeIterator().forEach( secondData::add );
+        List<Event<PairOfDoubles>> secondBenchmark = new ArrayList<>();
+        secondBenchmark.addAll( second );
+        secondBenchmark.addAll( third );
+
+        assertTrue( "The filtered time-series does not match the benchmark.",
+                    secondData.equals( secondBenchmark ) );
+
+        // Add climatology for later
+        VectorOfDoubles climatology = metIn.vectorOf( new double[] { 1, 2, 3, 4, 5, Double.NaN } );
+        VectorOfDoubles climatologyExpected = metIn.vectorOf( new double[] { 1, 2, 3, 4, 5 } );
+
+        b.setClimatology( climatology );
+
+        // Filter all values where the left and right sides are both greater than 7
+        TimeSeriesOfSingleValuedPairs thirdResult =
+                slicer.filter( firstSeries,
+                               Slicer.anyOfLeftAndAnyOfRightInTimeSeriesOfSingleValuedPairs( value -> value > 7 ),
+                               null );
+
+        List<Event<PairOfDoubles>> thirdData = new ArrayList<>();
+        thirdResult.timeIterator().forEach( thirdData::add );
+        List<Event<PairOfDoubles>> thirdBenchmark = new ArrayList<>();
+        thirdBenchmark.addAll( third );
+
+        assertTrue( "The filtered time-series does not match the benchmark.",
+                    thirdData.equals( thirdBenchmark ) );
+
+        // Filter on climatology simultaneously
+        TimeSeriesOfSingleValuedPairs fourthResult =
+                slicer.filter( b.build(),
+                               Slicer.anyOfLeftAndAnyOfRightInTimeSeriesOfSingleValuedPairs( value -> value > 7 ),
+                               Double::isFinite );
+        assertTrue( "The climatology in the fitlered time-series does not match the benchmark.",
+                    fourthResult.getClimatology().equals( climatologyExpected ) );
+
+        // Also filter baseline data
+        b.addTimeSeriesDataForBaseline( firstBasisTime, first )
+         .addTimeSeriesDataForBaseline( secondBasisTime, second )
+         .setMetadataForBaseline( meta );
+
+        // Filter all values where both sides are greater than 4
+        TimeSeriesOfSingleValuedPairs fifthResult =
+                slicer.filter( b.build(),
+                               Slicer.anyOfLeftInTimeSeriesOfSingleValuedPairs( value -> value > 4 ),
+                               clim -> clim > 0 );
+
+        List<Event<PairOfDoubles>> fifthData = new ArrayList<>();
+        fifthResult.timeIterator().forEach( fifthData::add );
+
+        // Same as second benchmark for main data
+        assertTrue( "The filtered time-series does not match the benchmark.",
+                    fifthData.equals( secondBenchmark ) );
+
+        // Baseline data
+        List<Event<PairOfDoubles>> fifthDataBase = new ArrayList<>();
+        fifthResult.getBaselineData().timeIterator().forEach( fifthDataBase::add );
+        List<Event<PairOfDoubles>> fifthBenchmarkBase = new ArrayList<>();
+        fifthBenchmarkBase.addAll( second );
+
+        assertTrue( "The filtered time-series does not match the benchmark.",
+                    fifthDataBase.equals( fifthBenchmarkBase ) );
+
+        //Test exceptions
+        //No pairs in main
+        try
+        {
+            slicer.filter( firstSeries,
+                           Slicer.anyOfLeftAndAnyOfRightInTimeSeriesOfSingleValuedPairs( value -> value > 10 ),
+                           null );
+            fail( "Expected an exception on attempting to filter with no data." );
+        }
+        catch ( MetricInputSliceException e )
+        {
+        }
+        //No pairs in baseline
+        try
+        {
+            slicer.filter( b.build(),
+                           Slicer.anyOfLeftAndAnyOfRightInTimeSeriesOfSingleValuedPairs( value -> value > 7 ),
+                           null );
+            fail( "Expected an exception on attempting to filter with no baseline data." );
+        }
+        catch ( MetricInputSliceException e )
+        {
+        }
+
+    }
+
 
 }

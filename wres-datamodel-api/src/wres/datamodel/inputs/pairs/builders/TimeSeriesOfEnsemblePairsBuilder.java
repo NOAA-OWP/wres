@@ -75,7 +75,7 @@ public interface TimeSeriesOfEnsemblePairsBuilder extends PairedInputBuilder<Pai
             addTimeSeriesDataForBaseline( List<Event<List<Event<PairOfDoubleAndVectorOfDoubles>>>> timeSeries );
 
     /**
-     * Adds a time-series to the builder.
+     * Adds a time-series to the builder, including any baseline.
      * 
      * @param timeSeries the time-series
      * @return the builder
@@ -83,6 +83,17 @@ public interface TimeSeriesOfEnsemblePairsBuilder extends PairedInputBuilder<Pai
      */
 
     TimeSeriesOfEnsemblePairsBuilder addTimeSeries( TimeSeriesOfEnsemblePairs timeSeries );
+    
+    /**
+     * Adds a time-series to the builder as a baseline dataset only. Any data associated with the 
+     * {@link TimeSeriesOfEnsemblePairs#getBaselineData()} of the input is ignored.
+     * 
+     * @param timeSeries the time-series
+     * @return the builder
+     * @throws MetricInputException if the specified input is inconsistent with any existing input
+     */
+
+    TimeSeriesOfEnsemblePairsBuilder addTimeSeriesForBaseline( TimeSeriesOfEnsemblePairs timeSeries );    
 
     /**
      * Builds a time-series.

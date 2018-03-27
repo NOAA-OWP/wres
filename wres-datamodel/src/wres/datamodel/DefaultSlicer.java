@@ -28,9 +28,12 @@ import wres.datamodel.inputs.pairs.PairOfBooleans;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
+import wres.datamodel.inputs.pairs.builders.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.ScoreOutput;
+import wres.datamodel.time.TimeSeries;
 
 /**
  * Default implementation of a utility class for slicing/dicing and transforming datasets associated with verification
@@ -299,6 +302,70 @@ class DefaultSlicer implements Slicer
         return dataFac.ofEnsemblePairs( mainPairsSubset, input.getMetadata(), climatology );
     }
 
+
+    @Override
+    public TimeSeriesOfSingleValuedPairs filter( TimeSeriesOfSingleValuedPairs input,
+                                                 Predicate<TimeSeriesOfSingleValuedPairs> condition,
+                                                 DoublePredicate applyToClimatology )
+            throws MetricInputSliceException
+    {
+        Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
+
+        Objects.requireNonNull( condition, NULL_PREDICATE_EXCEPTION );
+
+        TimeSeriesOfSingleValuedPairsBuilder builder = dataFac.ofTimeSeriesOfSingleValuedPairsBuilder();
+        
+        // Filter the main pairs and add them
+        int count = 0;
+        for( TimeSeries<PairOfDoubles> next : input.basisTimeIterator() )
+        {
+            TimeSeriesOfSingleValuedPairs nextPair = (TimeSeriesOfSingleValuedPairs) next;
+            if( condition.test( nextPair ) )
+            {
+                builder.addTimeSeries( nextPair );
+                count++;
+            }
+        }
+
+        //No pairs in the subset
+        if ( count == 0 )
+        {
+            throw new MetricInputSliceException( NO_DATA_FOR_MAIN_PAIRS_EXCEPTION );
+        }
+
+        //Filter climatology as required
+        if ( input.hasClimatology() && Objects.nonNull( applyToClimatology ) )
+        {
+            VectorOfDoubles climatology =
+                    this.filter( input.getClimatology(), applyToClimatology, NO_DATA_FOR_CLIMATOLOGY_EXCEPTION );
+            
+            builder.setClimatology( climatology );
+        }
+
+        //Filter baseline pairs as required
+        if ( input.hasBaseline() )
+        {
+            int baseCount = 0;
+            for( TimeSeries<PairOfDoubles> next : input.getBaselineData().basisTimeIterator() )
+            {
+                TimeSeriesOfSingleValuedPairs nextPair = (TimeSeriesOfSingleValuedPairs) next;
+                if( condition.test( nextPair ) )
+                {
+                    builder.addTimeSeriesForBaseline( nextPair );
+                    baseCount++;
+                }
+            }
+
+            //No pairs in the subset
+            if ( baseCount == 0 )
+            {
+                throw new MetricInputSliceException( NO_DATA_FOR_BASELINE_PAIRS_EXCEPTION );
+            }
+        }
+
+        return builder.build();
+    }    
+    
     @Override
     public Map<Integer, List<PairOfDoubleAndVectorOfDoubles>>
             filterByRightSize( List<PairOfDoubleAndVectorOfDoubles> input )
