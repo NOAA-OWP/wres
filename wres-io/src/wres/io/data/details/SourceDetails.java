@@ -198,7 +198,15 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
         {
             if (connection != null)
             {
-                connection.rollback();
+                try
+                {
+                    connection.rollback();
+                }
+                catch ( SQLException se )
+                {
+                    // Failure to roll back should not affect primary outputs.
+                    LOGGER.warn( "Failed to rollback on connection {}.", connection, se );
+                }
             }
 
             throw e;
@@ -207,7 +215,15 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
         {
             if (resultSet != null)
             {
-                resultSet.close();
+                try
+                {
+                    resultSet.close();
+                }
+                catch ( SQLException se )
+                {
+                    // Failure to close should not affect primary outputs.
+                    LOGGER.warn( "Failed to close result set {}.", resultSet, se );
+                }
             }
 
             if (connection != null)
