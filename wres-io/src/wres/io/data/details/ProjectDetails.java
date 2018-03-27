@@ -1621,7 +1621,9 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
                 }
                 catch (SQLException e)
                 {
-                    LOGGER.debug("A database result set could not be closed.", e);
+                    // Exception on close should not affect primary outputs.
+                    LOGGER.warn( "A database result set {} could not be closed.",
+                                 resultSet, e );
                 }
             }
 
@@ -1909,7 +1911,9 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
                 }
                 catch ( SQLException e )
                 {
-                    LOGGER.warn("A database result set could not be closed.", e);
+                    // Exception on close should not affect primary outputs.
+                    LOGGER.warn( "Database result set {} could not be closed.",
+                                 resultSet, e);
                 }
             }
 
