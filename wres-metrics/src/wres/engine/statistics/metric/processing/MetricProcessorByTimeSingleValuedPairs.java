@@ -3,9 +3,7 @@ package wres.engine.statistics.metric.processing;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -30,7 +28,6 @@ import wres.datamodel.Slicer;
 import wres.datamodel.Threshold;
 import wres.datamodel.ThresholdConstants.ThresholdGroup;
 import wres.datamodel.ThresholdsByMetric;
-import wres.datamodel.inputs.InsufficientDataException;
 import wres.datamodel.inputs.MetricInputSliceException;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.PairOfBooleans;
@@ -348,36 +345,28 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
         Set<Threshold> union = filtered.union();
 
         double[] sorted = getSortedClimatology( input, union );
-        Map<OneOrTwoThresholds, MetricCalculationException> failures = new HashMap<>();
-        union.forEach( threshold -> {
+
+        // Iterate the thresholds
+        for ( Threshold threshold : union )
+        {
 
             Threshold useMe = addQuantilesToThreshold( threshold, sorted );
             Set<MetricConstants> ignoreTheseMetrics = filtered.doesNotHaveTheseMetricsForThisThreshold( threshold );
-            try
-            {
-                //Define a mapper to convert the single-valued pairs to dichotomous pairs
-                Function<PairOfDoubles, PairOfBooleans> mapper =
-                        pair -> dataFactory.pairOf( useMe.test( pair.getItemOne() ),
-                                                    useMe.test( pair.getItemTwo() ) );
-                //Transform the pairs
-                DichotomousPairs transformed = dataFactory.getSlicer().transform( input, mapper );
 
-                processDichotomousPairs( Pair.of( timeWindow, OneOrTwoThresholds.of( useMe ) ),
-                                         transformed,
-                                         futures,
-                                         outGroup,
-                                         ignoreTheseMetrics );
+            //Define a mapper to convert the single-valued pairs to dichotomous pairs
+            Function<PairOfDoubles, PairOfBooleans> mapper =
+                    pair -> dataFactory.pairOf( useMe.test( pair.getItemOne() ),
+                                                useMe.test( pair.getItemTwo() ) );
+            //Transform the pairs
+            DichotomousPairs transformed = dataFactory.getSlicer().transform( input, mapper );
 
-            }
-            //Insufficient data for one threshold: log, but allow
-            catch ( InsufficientDataException e )
-            {
-                failures.put( OneOrTwoThresholds.of( useMe ), new MetricCalculationException( e.getMessage(), e ) );
-            }
+            processDichotomousPairs( Pair.of( timeWindow, OneOrTwoThresholds.of( useMe ) ),
+                                     transformed,
+                                     futures,
+                                     outGroup,
+                                     ignoreTheseMetrics );
 
-        } );
-        //Handle any failures
-        logThresholdFailures( failures, union.size(), input.getMetadata(), MetricInputGroup.DICHOTOMOUS );
+        }
     }
 
     /**

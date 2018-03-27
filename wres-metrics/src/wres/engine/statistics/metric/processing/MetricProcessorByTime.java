@@ -78,7 +78,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
     {
         return futures.stream().anyMatch( MetricFuturesByTime::hasFutureOutputs );
     }
-    
+
     @Override
     MetricOutputForProjectByTimeAndThreshold getCachedMetricOutputInternal()
     {
@@ -107,7 +107,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
     void addToMergeList( MetricFuturesByTime mergeFutures )
     {
         Objects.requireNonNull( mergeFutures, "Specify non-null futures for merging." );
-        
+
         //Merge futures if cached outputs identified
         Set<MetricOutputGroup> cacheMe = this.getMetricOutputTypesToCache();
         if ( !cacheMe.isEmpty() )
@@ -196,50 +196,50 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
             matrix.forEach( ( key, list ) -> list.forEach( value -> builder.addMatrixOutput( key, value ) ) );
             return builder.build();
         }
-       
+
         /**
          * Returns the {@link MetricOutputGroup} for which futures exist.
          * 
          * @return the set of output types for which futures exist
          */
-        
+
         Set<MetricOutputGroup> getOutputTypes()
         {
             Set<MetricOutputGroup> returnMe = new HashSet<>();
-            
-            if( ! this.doubleScore.isEmpty() )
+
+            if ( !this.doubleScore.isEmpty() )
             {
                 returnMe.add( MetricOutputGroup.DOUBLE_SCORE );
             }
-            
-            if( ! this.durationScore.isEmpty() )
+
+            if ( !this.durationScore.isEmpty() )
             {
                 returnMe.add( MetricOutputGroup.DURATION_SCORE );
             }
-            
-            if( ! this.multiVector.isEmpty() )
+
+            if ( !this.multiVector.isEmpty() )
             {
                 returnMe.add( MetricOutputGroup.MULTIVECTOR );
             }
-            
-            if( ! this.boxplot.isEmpty() )
+
+            if ( !this.boxplot.isEmpty() )
             {
                 returnMe.add( MetricOutputGroup.BOXPLOT );
             }
-            
-            if( ! this.paired.isEmpty() )
+
+            if ( !this.paired.isEmpty() )
             {
                 returnMe.add( MetricOutputGroup.PAIRED );
             }
-            
-            if( ! this.matrix.isEmpty() )
+
+            if ( !this.matrix.isEmpty() )
             {
                 returnMe.add( MetricOutputGroup.MATRIX );
             }
-            
+
             return Collections.unmodifiableSet( returnMe );
-        }        
-        
+        }
+
         /**
          * Returns true if one or more future outputs is available, false otherwise.
          * 
@@ -248,7 +248,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
 
         boolean hasFutureOutputs()
         {
-            return ! this.getOutputTypes().isEmpty();
+            return !this.getOutputTypes().isEmpty();
         }
 
         /**
@@ -449,7 +449,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
             {
                 return new MetricFuturesByTime( this );
             }
-            
+
             /**
              * Adds the outputs from an existing {@link MetricFuturesByTime} for the outputs that are included in the
              * merge list.
@@ -464,7 +464,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
                 this.addFutures( futures, MetricOutputGroup.set() );
                 return this;
             }
-            
+
             /**
              * Adds the outputs from an existing {@link MetricFuturesByTime} for the outputs that are included in the
              * merge list.
@@ -703,7 +703,10 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
 
         double[] sorted = getSortedClimatology( input, union );
         Map<OneOrTwoThresholds, MetricCalculationException> failures = new HashMap<>();
-        union.forEach( threshold -> {
+
+        // Iterate the thresholds
+        for ( Threshold threshold : union )
+        {
             Set<MetricConstants> ignoreTheseMetrics = filtered.doesNotHaveTheseMetricsForThisThreshold( threshold );
 
             // Add quantiles to threshold
@@ -729,15 +732,21 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
                                           ignoreTheseMetrics );
 
             }
-            //Insufficient data for one threshold: log, but allow
+            // Insufficient data for one threshold: log failures collectively and proceed
+            // Such failures are routine and should not be propagated
             catch ( MetricInputSliceException | InsufficientDataException e )
             {
-                failures.put( OneOrTwoThresholds.of( useMe ), new MetricCalculationException( e.getMessage(), e ) );
+                // Decorate failure
+                failures.put( OneOrTwoThresholds.of( useMe ),
+                              new MetricCalculationException( "While processing threshold " + threshold + ":", e ) );
             }
+        }
 
-        } );
-        //Handle any failures
-        logThresholdFailures( failures, union.size(), input.getMetadata(), MetricInputGroup.SINGLE_VALUED );
+        // Log failures collectively
+        logThresholdFailures( Collections.unmodifiableMap( failures ),
+                              union.size(),
+                              input.getMetadata(),
+                              MetricInputGroup.SINGLE_VALUED );
     }
 
     /**
