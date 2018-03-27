@@ -41,9 +41,6 @@ import wres.io.writing.PairWriter;
 public final class Operations {
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(Operations.class);
 
-    private static final boolean SUCCESS = true;
-    private static final boolean FAILURE = false;
-
     private Operations ()
     {
     }
@@ -104,6 +101,7 @@ public final class Operations {
                 List<IngestResult> ingested = task.get();
                 projectSources.addAll( ingested );
             }
+            PIXMLReader.saveLeftoverForecasts();
         }
         catch ( InterruptedException ie )
         {
@@ -114,9 +112,12 @@ public final class Operations {
             String message = "An ingest task could not be completed.";
             throw new IngestException( message, e );
         }
+        catch ( SQLException se )
+        {
+            throw new IngestException( "Failed to save leftover forecasts", se );
+        }
         finally
         {
-            PIXMLReader.saveLeftoverForecasts();
             TimeSeriesValues.complete();
             List<IngestResult> leftovers = Database.completeAllIngestTasks();
             if ( LOGGER.isDebugEnabled() )
@@ -271,14 +272,12 @@ public final class Operations {
 
     /**
      * Updates the statistics and removes all dead rows from the database
-     * @return Whether or not the operation was a success
      * @throws SQLException if the orphaned data could not be removed or the refreshing of statistics fails
      */
-    public static boolean refreshDatabase() throws SQLException
+    public static void refreshDatabase() throws SQLException
     {
         Database.removeOrphanedData();
         Database.refreshStatistics(true);
-        return SUCCESS;
     }
 
 
