@@ -24,7 +24,6 @@ import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.io.concurrency.WRESCallable;
 import wres.io.config.ConfigHelper;
 import wres.io.data.details.ProjectDetails;
-import wres.io.utilities.NoDataException;
 
 public class PairWriter extends WRESCallable<Boolean>
 {
@@ -150,9 +149,9 @@ public class PairWriter extends WRESCallable<Boolean>
             }
             catch ( SQLException e )
             {
-                LOGGER.error("Pairs could not be written for " +
-                             ConfigHelper.getFeatureDescription( this.feature ),
-                             e);
+                 throw new IOException( "Pairs could not be written for " +
+                                        ConfigHelper.getFeatureDescription( this.feature ),
+                                        e );
             }
         }
 
@@ -211,7 +210,7 @@ public class PairWriter extends WRESCallable<Boolean>
         return this.feature;
     }
 
-    private String getWindow() throws SQLException, NoDataException
+    private String getWindow() throws SQLException
     {
 
         int window = this.getWindowNum();
@@ -334,6 +333,8 @@ public class PairWriter extends WRESCallable<Boolean>
             }
             catch ( IOException e )
             {
+                // Failure to close should not affect primary outputs, still
+                // should also attempt to close other writers that may succeed.
                 LOGGER.warn( "Failed to flush and close pairs file, " + entry.getKey() + ".", e);
             }
         }
