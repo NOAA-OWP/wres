@@ -2,6 +2,7 @@ package wres.vis;
 
 import java.awt.geom.Point2D;
 import java.io.File;
+import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -14,6 +15,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.function.Supplier;
 
+import ohd.hseb.hefs.utils.xml.GenericXMLReadingHandlerException;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jfree.chart.JFreeChart;
 import org.jfree.data.xy.XYDataset;
@@ -935,6 +937,13 @@ public abstract class ChartEngineFactory
                                     null );
     }
 
+    private static class WRESVisXMLReadingException extends IOException
+    {
+        public WRESVisXMLReadingException( String message, Throwable t )
+        {
+            super( message, t );
+        }
+    }
 
     /**
      * @param input The pairs to plot.
@@ -946,11 +955,12 @@ public abstract class ChartEngineFactory
      *         passed to {@link ChartTools#generateOutputImageFile(java.io.File, JFreeChart, int, int)} in order to
      *         construct the image file.
      * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
+     * @throws WRESVisXMLReadingException when reading or parsing the xml fails.
      */
     public static ChartEngine buildSingleValuedPairsChartEngine( final SingleValuedPairs input,
                                                                  final String userSpecifiedTemplateResourceName,
                                                                  final String overrideParametersStr )
-            throws ChartEngineException
+            throws ChartEngineException, WRESVisXMLReadingException
     {
 
         String templateName = "singleValuedPairsTemplate.xml";
@@ -977,10 +987,14 @@ public abstract class ChartEngineFactory
                 {
                     XMLTools.readXMLFromString( usedStr, override );
                 }
-                catch ( final Exception t )
+                catch ( GenericXMLReadingHandlerException e )
                 {
-                    LOGGER.warn( "Unable to parse XML provided by user for chart drawing: " + t.getMessage() );
-                    LOGGER.trace( "Unable to parse XML provided by user for chart drawing", t );
+                    String message = "Unable to parse XML provided by user for chart drawing: "
+                                     + System.lineSeparator()
+                                     + usedStr
+                                     + System.lineSeparator()
+                                     + override;
+                    throw new WRESVisXMLReadingException( message, e );
                 }
             }
         }
