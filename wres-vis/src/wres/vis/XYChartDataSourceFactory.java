@@ -1,10 +1,13 @@
 package wres.vis;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -43,6 +46,12 @@ public abstract class XYChartDataSourceFactory
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( XYChartDataSourceFactory.class );
 
+    /**
+     * Number of milliseconds in an hour for conversion of {@link Duration} to decimal hours for plotting.
+     */
+    
+    private static final BigDecimal MILLIS_PER_HOUR = BigDecimal.valueOf( TimeUnit.HOURS.toMillis( 1 ) );
+    
     /**
      * Factory method for box-plot output for a box-plot of errors.
      * @param orderIndex Order index of the data source; lower index sources are drawn on top of higher index sources.
@@ -163,8 +172,12 @@ public abstract class XYChartDataSourceFactory
                             new TimeSeries( threshold.toStringWithoutUnits(), FixedMillisecond.class );  
                     for ( Pair<Instant, Duration> oneValue : entry.getValue() )
                     {
+                        // Find the decimal hours
+                        BigDecimal result = BigDecimal.valueOf( oneValue.getRight().toMillis() )
+                                                      .divide( MILLIS_PER_HOUR, 2, RoundingMode.HALF_DOWN ); 
+                        
                         next.add( new FixedMillisecond( oneValue.getLeft().toEpochMilli() ),
-                                  oneValue.getRight().toHours() );
+                                  result.doubleValue() );
                     }
                     returnMe.addSeries( next );
                 }
@@ -451,7 +464,12 @@ public abstract class XYChartDataSourceFactory
                 }
 
                 Duration durationStat = output.getComponent( metric ).getData();
-                yValues[index] = durationStat.toHours();
+                
+                // Find the decimal hours
+                BigDecimal result = BigDecimal.valueOf( durationStat.toMillis() )
+                                              .divide( MILLIS_PER_HOUR, 2, RoundingMode.HALF_DOWN ); 
+                
+                yValues[index] = result.doubleValue();
                 index++;
             }
             yAxisValuesBySeries.add( yValues );
@@ -468,7 +486,6 @@ public abstract class XYChartDataSourceFactory
 //                          + "]";
 //            }
             legendEntryBySeries.add( entry.getKey().getRight().toStringWithoutUnits());
-            populateCategories = false;
         }
 
         //Creates the source.
@@ -560,4 +577,13 @@ public abstract class XYChartDataSourceFactory
         WRESTools.applyDefaultJFreeChartColorSequence( source.getDefaultFullySpecifiedDataSourceDrawingParameters() );
         WRESTools.applyDefaultJFreeChartShapeSequence( source.getDefaultFullySpecifiedDataSourceDrawingParameters() );
     }
+    
+    /**
+     * Prevent construction.
+     */
+    
+    private XYChartDataSourceFactory()
+    {       
+    }
+    
 }
