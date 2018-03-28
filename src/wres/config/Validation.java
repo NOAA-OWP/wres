@@ -31,7 +31,6 @@ import wres.config.generated.Format;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
 import wres.config.generated.MetricsConfig;
-import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.PairConfig;
 import wres.config.generated.PoolingWindowConfig;
 import wres.config.generated.ProjectConfig;
@@ -552,40 +551,6 @@ public class Validation
         for ( DestinationConfig d : projectConfig.getOutputs()
                                                  .getDestination() )
         {
-            // Check that the plot type is consistent with other configuration
-            if ( projectConfig.getPair().getIssuedDatesPoolingWindow() != null
-                 && d.getOutputType() != null
-                 && d.getOutputType() != OutputTypeSelection.POOLING_WINDOW )
-            {
-                result = false;
-                if ( LOGGER.isWarnEnabled() )
-                {
-                    LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                                 + " Cannot use poolingWindow configuration with a plot type of {}.",
-                                 projectConfigPlus.getPath(),
-                                 d.sourceLocation().getLineNumber(),
-                                 d.sourceLocation()
-                                  .getColumnNumber(),
-                                 d.getOutputType() );
-                }
-            }
-            else if ( projectConfig.getPair().getIssuedDatesPoolingWindow() == null
-                      && d.getOutputType() != null
-                      && d.getOutputType() == OutputTypeSelection.POOLING_WINDOW )
-            {
-                result = false;
-                if ( LOGGER.isWarnEnabled() )
-                {
-                    LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                                 + " Cannot define a plot type of {} without poolingWindow configuration.",
-                                 projectConfigPlus.getPath(),
-                                 d.sourceLocation().getLineNumber(),
-                                 d.sourceLocation()
-                                  .getColumnNumber(),
-                                 d.getOutputType() );
-                }
-            }
-
             String customString = projectConfigPlus.getGraphicsStrings()
                                                    .get( d );
 
