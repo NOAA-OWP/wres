@@ -15,7 +15,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.function.Supplier;
 
-import ohd.hseb.hefs.utils.xml.GenericXMLReadingHandlerException;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jfree.chart.JFreeChart;
 import org.jfree.data.xy.XYDataset;
@@ -36,6 +35,7 @@ import ohd.hseb.charter.datasource.instances.DataSetXYChartDataSource;
 import ohd.hseb.charter.datasource.instances.NumericalXYChartDataSource;
 import ohd.hseb.charter.parameters.ChartDrawingParameters;
 import ohd.hseb.hefs.utils.arguments.ArgumentsProcessor;
+import ohd.hseb.hefs.utils.xml.GenericXMLReadingHandlerException;
 import ohd.hseb.hefs.utils.xml.XMLTools;
 import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.ProjectConfig;
@@ -75,7 +75,7 @@ public abstract class ChartEngineFactory
         UNIQUE( null ),
         LEAD_THRESHOLD( OutputTypeSelection.LEAD_THRESHOLD ),
         THRESHOLD_LEAD( OutputTypeSelection.THRESHOLD_LEAD ),
-        POOLING_WINDOW( null ), //OutputTypeSelection.POOLING_WINDOW will go away.
+        POOLING_WINDOW( null ), // Internal type only, not configured
         SINGLE_VALUED_PAIRS( OutputTypeSelection.SINGLE_VALUED_PAIRS );
 
         private final OutputTypeSelection basis;
@@ -110,7 +110,7 @@ public abstract class ChartEngineFactory
                     }
                 }
             }
-            throw new IllegalArgumentException( "OutputTypeSelection " + v.toString()
+            throw new IllegalArgumentException( "OutputTypeSelection " + v
                                                 + " cannot be translated to a ChartEngineFactory ChartType." );
         }
     }
