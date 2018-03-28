@@ -1,17 +1,24 @@
 package wres.engine.statistics.metric;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.FutureTask;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
@@ -22,90 +29,99 @@ import wres.datamodel.outputs.MatrixOutput;
  * Tests the {@link CollectableTask}.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
+ * @author jesse.bickel@***REMOVED***
  */
 public final class CollectableTaskTest
 {
+    private static final double DOUBLE_COMPARE_THRESHOLD = 0.00001;
 
-    /**
-     * Constructs a {@link CollectableTask} and checks for exceptions.
-     * @throws MetricParameterException if the metric construction fails
-     */
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
 
-    @Test
-    public void test1CollectableTask() throws MetricParameterException
+    private DataFactory outF;
+    private MetadataFactory metaFac;
+    private MetricFactory metF;
+    private ExecutorService pairPool;
+    private Collectable<DichotomousPairs, MatrixOutput, DoubleScoreOutput> m;
+
+    /** Metadata for the output */
+    private MetricOutputMetadata m1;
+
+    @Before
+    public void setupBeforeEachTest() throws MetricParameterException
     {
+        outF = DefaultDataFactory.getInstance();
+        metaFac = outF.getMetadataFactory();
+        metF = MetricFactory.getInstance( outF );
+        // Tests can run simultaneously, use only 1 (additional) Thread per test
+        pairPool = Executors.newFixedThreadPool( 1 );
+        //Add some appropriate metrics to the collection
+        m = metF.ofCriticalSuccessIndex();
 
-        final DataFactory outF = DefaultDataFactory.getInstance();
-        final MetadataFactory metaFac = outF.getMetadataFactory();
-        final MetricFactory metF = MetricFactory.getInstance( outF );
-        final ExecutorService pairPool = Executors.newFixedThreadPool( Runtime.getRuntime().availableProcessors() );
-        try
-        {
-
-            //Add some appropriate metrics to the collection
-            final Collectable<DichotomousPairs, MatrixOutput, DoubleScoreOutput> m = metF.ofCriticalSuccessIndex();
-
-            //Metadata for the output
-            final MetricOutputMetadata m1 = metaFac.getOutputMetadata( 100,
-                                                                       metaFac.getDimension(),
-                                                                       metaFac.getDimension(),
-                                                                       MetricConstants.CONTINGENCY_TABLE,
-                                                                       MetricConstants.MAIN );
-
-            //Wrap an input in a future
-            final FutureTask<MatrixOutput> futureInput = new FutureTask<MatrixOutput>( new Callable<MatrixOutput>()
-            {
-                public MatrixOutput call()
-                {
-                    final double[][] returnMe = new double[][] { { 1.0, 1.0 }, { 1.0, 1.0 } };
-                    return outF.ofMatrixOutput( returnMe, m1 );
-                }
-            } );
-            final FutureTask<MatrixOutput> futureInputNull = new FutureTask<MatrixOutput>( new Callable<MatrixOutput>()
-            {
-                public MatrixOutput call()
-                {
-                    return null;
-                }
-            } );
-
-            final CollectableTask<DichotomousPairs, MatrixOutput, DoubleScoreOutput> task =
-                    new CollectableTask<>( m,
-                                           futureInput );
-
-            //Compute the pairs
-            pairPool.submit( futureInput );
-            pairPool.submit( futureInputNull );
-
-            //Should not throw an exception
-            try
-            {
-                task.call();
-            }
-            catch ( final Exception e )
-            {
-                fail( "Unexpected exception on calling metric task: " + e.getMessage() + "." );
-            }
-            //Should throw an exception
-            try
-            {
-                final CollectableTask<DichotomousPairs, MatrixOutput, DoubleScoreOutput> task2 =
-                        new CollectableTask<>( m,
-                                               futureInputNull );
-                task2.call();
-                fail( "Expected an exception on calling metric task with null future input." );
-            }
-            catch ( final Exception e )
-            {
-            }
-        }
-        finally
-        {
-            pairPool.shutdown();
-        }
-
+        m1 = metaFac.getOutputMetadata( 100,
+                                        metaFac.getDimension(),
+                                        metaFac.getDimension(),
+                                        MetricConstants.CONTINGENCY_TABLE,
+                                        MetricConstants.MAIN );
     }
 
+
+    @Test
+    public void testCollectableTask() throws ExecutionException, InterruptedException
+    {
+        //Wrap an input in a future
+        final FutureTask<MatrixOutput> futureInput =
+                new FutureTask<MatrixOutput>( new Callable<MatrixOutput>()
+                {
+                    public MatrixOutput call()
+                    {
+                        final double[][] returnMe =
+                                new double[][] { { 1.0, 1.0 }, { 1.0, 1.0 } };
+                        return outF.ofMatrixOutput( returnMe, m1 );
+                    }
+                } );
+
+        CollectableTask<DichotomousPairs, MatrixOutput, DoubleScoreOutput> task =
+                new CollectableTask<>( m,
+                                       futureInput );
+
+        //Compute the pairs
+        pairPool.submit( futureInput );
+
+        //Should not throw an exception
+        DoubleScoreOutput output = task.call();
+
+        assertEquals( 0.333333, output.getData(), DOUBLE_COMPARE_THRESHOLD );
+    }
+
+
+    @Test
+    public void testExceptionOnNullInput() throws ExecutionException, InterruptedException
+    {
+        final FutureTask<MatrixOutput> futureInputNull =
+                new FutureTask<MatrixOutput>(new Callable<MatrixOutput>()
+                {
+                    public MatrixOutput call()
+                    {
+                        return null;
+                    }
+                });
+
+        pairPool.submit( futureInputNull );
+
+        final CollectableTask<DichotomousPairs, MatrixOutput, DoubleScoreOutput>
+                task2 =
+                new CollectableTask<>( m,
+                                       futureInputNull );
+
+        //Should throw an exception
+        exception.expect( MetricInputException.class );
+        task2.call();
+    }
+
+    @After
+    public void tearDownAfterEachTest()
+    {
+        pairPool.shutdownNow();
+    }
 }
