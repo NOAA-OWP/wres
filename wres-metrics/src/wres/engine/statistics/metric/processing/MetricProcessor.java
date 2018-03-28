@@ -214,10 +214,10 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
     public T getCachedMetricOutput() throws MetricOutputAccessException
     {
         //Complete any end-of-pipeline processing
-        completeCachedOutput();
+        this.completeCachedOutput();
 
         //Return the results
-        return getCachedMetricOutputInternal();
+        return this.getCachedMetricOutputInternal();
     }
 
     /**
@@ -310,7 +310,8 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
 
     /**
      * Completes any processing of cached output at the end of a processing pipeline. This may be required when 
-     * computing results that rely on other cached results (e.g. summary statistics). 
+     * computing results that rely on other cached results (e.g. summary statistics). Note that this method may be
+     * called more than once.
      * 
      * @throws MetricOutputAccessException if the cached output cannot be completed because the cached outputs on 
      *            which completion depends cannot be accessed

@@ -21,6 +21,7 @@ import java.util.concurrent.Future;
 import java.util.function.Predicate;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.slf4j.event.Level;
 
 import wres.config.MetricConfigException;
 import wres.config.generated.ProjectConfig;
@@ -39,6 +40,7 @@ import wres.datamodel.inputs.MetricInputSliceException;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
@@ -598,31 +600,55 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
      * @param meta the {@link Metadata} used to help focus messaging
      * @param inGroup the {@link MetricInputGroup} consumed by the metrics on which the failure occurred, used to 
      *            focus messaging
+     * @param level the logging level           
      */
 
     static void logThresholdFailures( Map<OneOrTwoThresholds, MetricCalculationException> failures,
                                       int thresholdCount,
                                       Metadata meta,
-                                      MetricInputGroup inGroup )
+                                      MetricInputGroup inGroup,
+                                      Level level )
     {
         if ( Objects.isNull( failures ) || failures.isEmpty() )
         {
             return;
         }
 
-        LOGGER.warn( "WARN: failed to compute {} of {} thresholds at time window {} for metrics that consume {} "
-                     + "inputs. "
-                     +
-                     failures.get( failures.keySet().iterator().next() ).getMessage(),
-                     failures.size(),
-                     thresholdCount,
-                     meta.getTimeWindow(),
-                     inGroup );
+        // Prepare log
+        String message = "WARN: failed to compute {} of {} thresholds at time window {} for metrics that consume {} "
+                + "inputs. ";
+        
+        Object[] arguments = new Object[] { failures.get( failures.keySet().iterator().next() ).getMessage(),
+                                            failures.size(),
+                                            thresholdCount,
+                                            meta.getTimeWindow(),
+                                            inGroup };
+        // Log
+        switch ( level )
+        {
+            case DEBUG:
+                LOGGER.debug( message, arguments );
+                break;
+            case ERROR:
+                LOGGER.error( message, arguments );
+                break;
+            case INFO:
+                LOGGER.info( message, arguments );
+                break;
+            case TRACE:
+                LOGGER.trace( message, arguments );
+                break;
+            case WARN:
+                LOGGER.warn( message, arguments );
+                break;
+            default:
+                break;
+        }
     }
 
     /**
-     * Helper that returns a predicate for filtering pairs based on the {@link Threshold#getDataType()}
-     * of the input threshold.
+     * Helper that returns a predicate for filtering {@link SingleValuedPairs} based on the 
+     * {@link Threshold#getDataType()} of the input threshold.
      * 
      * @param threshold the threshold
      * @return the predicate for filtering pairs
@@ -649,6 +675,36 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
                                                          + "'." );
         }
     }
+    
+    /**
+     * Helper that returns a predicate for filtering {@link TimeSeriesOfSinglevaluedPairs} based on the 
+     * {@link Threshold#getDataType()} of the input threshold.
+     * 
+     * @param threshold the threshold
+     * @return the predicate for filtering pairs
+     * @throws UnsupportedOperationException if the threshold data type is unrecognized
+     */
+
+    static Predicate<TimeSeriesOfSingleValuedPairs> getFilterForTimeSeriesOfSingleValuedPairs( Threshold input )
+    {
+        switch ( input.getDataType() )
+        {
+            case LEFT:
+                return Slicer.anyOfLeftInTimeSeriesOfSingleValuedPairs( input::test );
+            case LEFT_AND_RIGHT:
+            case LEFT_AND_ANY_RIGHT:
+            case LEFT_AND_RIGHT_MEAN:
+                return Slicer.anyOfLeftAndAnyOfRightInTimeSeriesOfSingleValuedPairs( input::test );
+            case RIGHT:
+            case ANY_RIGHT:
+            case RIGHT_MEAN:
+                return Slicer.anyOfRightInTimeSeriesOfSingleValuedPairs( input::test );
+            default:
+                throw new UnsupportedOperationException( "Cannot map the threshold data type '"
+                                                         + input.getDataType()
+                                                         + "'." );
+        }
+    }    
 
     /**
      * Constructor.
@@ -746,7 +802,8 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
         logThresholdFailures( Collections.unmodifiableMap( failures ),
                               union.size(),
                               input.getMetadata(),
-                              MetricInputGroup.SINGLE_VALUED );
+                              MetricInputGroup.SINGLE_VALUED,
+                              Level.WARN );
     }
 
     /**
