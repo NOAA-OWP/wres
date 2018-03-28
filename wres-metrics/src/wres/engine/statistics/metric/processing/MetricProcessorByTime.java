@@ -21,6 +21,7 @@ import java.util.concurrent.Future;
 import java.util.function.Predicate;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.slf4j.event.Level;
 
 import wres.config.MetricConfigException;
 import wres.config.generated.ProjectConfig;
@@ -39,6 +40,7 @@ import wres.datamodel.inputs.MetricInputSliceException;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
@@ -78,7 +80,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
     {
         return futures.stream().anyMatch( MetricFuturesByTime::hasFutureOutputs );
     }
-    
+
     @Override
     MetricOutputForProjectByTimeAndThreshold getCachedMetricOutputInternal()
     {
@@ -107,7 +109,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
     void addToMergeList( MetricFuturesByTime mergeFutures )
     {
         Objects.requireNonNull( mergeFutures, "Specify non-null futures for merging." );
-        
+
         //Merge futures if cached outputs identified
         Set<MetricOutputGroup> cacheMe = this.getMetricOutputTypesToCache();
         if ( !cacheMe.isEmpty() )
@@ -196,50 +198,50 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
             matrix.forEach( ( key, list ) -> list.forEach( value -> builder.addMatrixOutput( key, value ) ) );
             return builder.build();
         }
-       
+
         /**
          * Returns the {@link MetricOutputGroup} for which futures exist.
          * 
          * @return the set of output types for which futures exist
          */
-        
+
         Set<MetricOutputGroup> getOutputTypes()
         {
             Set<MetricOutputGroup> returnMe = new HashSet<>();
-            
-            if( ! this.doubleScore.isEmpty() )
+
+            if ( !this.doubleScore.isEmpty() )
             {
                 returnMe.add( MetricOutputGroup.DOUBLE_SCORE );
             }
-            
-            if( ! this.durationScore.isEmpty() )
+
+            if ( !this.durationScore.isEmpty() )
             {
                 returnMe.add( MetricOutputGroup.DURATION_SCORE );
             }
-            
-            if( ! this.multiVector.isEmpty() )
+
+            if ( !this.multiVector.isEmpty() )
             {
                 returnMe.add( MetricOutputGroup.MULTIVECTOR );
             }
-            
-            if( ! this.boxplot.isEmpty() )
+
+            if ( !this.boxplot.isEmpty() )
             {
                 returnMe.add( MetricOutputGroup.BOXPLOT );
             }
-            
-            if( ! this.paired.isEmpty() )
+
+            if ( !this.paired.isEmpty() )
             {
                 returnMe.add( MetricOutputGroup.PAIRED );
             }
-            
-            if( ! this.matrix.isEmpty() )
+
+            if ( !this.matrix.isEmpty() )
             {
                 returnMe.add( MetricOutputGroup.MATRIX );
             }
-            
+
             return Collections.unmodifiableSet( returnMe );
-        }        
-        
+        }
+
         /**
          * Returns true if one or more future outputs is available, false otherwise.
          * 
@@ -248,7 +250,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
 
         boolean hasFutureOutputs()
         {
-            return ! this.getOutputTypes().isEmpty();
+            return !this.getOutputTypes().isEmpty();
         }
 
         /**
@@ -449,7 +451,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
             {
                 return new MetricFuturesByTime( this );
             }
-            
+
             /**
              * Adds the outputs from an existing {@link MetricFuturesByTime} for the outputs that are included in the
              * merge list.
@@ -464,7 +466,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
                 this.addFutures( futures, MetricOutputGroup.set() );
                 return this;
             }
-            
+
             /**
              * Adds the outputs from an existing {@link MetricFuturesByTime} for the outputs that are included in the
              * merge list.
@@ -598,31 +600,55 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
      * @param meta the {@link Metadata} used to help focus messaging
      * @param inGroup the {@link MetricInputGroup} consumed by the metrics on which the failure occurred, used to 
      *            focus messaging
+     * @param level the logging level           
      */
 
     static void logThresholdFailures( Map<OneOrTwoThresholds, MetricCalculationException> failures,
                                       int thresholdCount,
                                       Metadata meta,
-                                      MetricInputGroup inGroup )
+                                      MetricInputGroup inGroup,
+                                      Level level )
     {
         if ( Objects.isNull( failures ) || failures.isEmpty() )
         {
             return;
         }
 
-        LOGGER.warn( "WARN: failed to compute {} of {} thresholds at time window {} for metrics that consume {} "
-                     + "inputs. "
-                     +
-                     failures.get( failures.keySet().iterator().next() ).getMessage(),
-                     failures.size(),
-                     thresholdCount,
-                     meta.getTimeWindow(),
-                     inGroup );
+        // Prepare log
+        String message = "WARN: failed to compute {} of {} thresholds at time window {} for metrics that consume {} "
+                + "inputs. ";
+        
+        Object[] arguments = new Object[] { failures.get( failures.keySet().iterator().next() ).getMessage(),
+                                            failures.size(),
+                                            thresholdCount,
+                                            meta.getTimeWindow(),
+                                            inGroup };
+        // Log
+        switch ( level )
+        {
+            case DEBUG:
+                LOGGER.debug( message, arguments );
+                break;
+            case ERROR:
+                LOGGER.error( message, arguments );
+                break;
+            case INFO:
+                LOGGER.info( message, arguments );
+                break;
+            case TRACE:
+                LOGGER.trace( message, arguments );
+                break;
+            case WARN:
+                LOGGER.warn( message, arguments );
+                break;
+            default:
+                break;
+        }
     }
 
     /**
-     * Helper that returns a predicate for filtering pairs based on the {@link Threshold#getDataType()}
-     * of the input threshold.
+     * Helper that returns a predicate for filtering {@link SingleValuedPairs} based on the 
+     * {@link Threshold#getDataType()} of the input threshold.
      * 
      * @param threshold the threshold
      * @return the predicate for filtering pairs
@@ -649,6 +675,36 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
                                                          + "'." );
         }
     }
+    
+    /**
+     * Helper that returns a predicate for filtering {@link TimeSeriesOfSinglevaluedPairs} based on the 
+     * {@link Threshold#getDataType()} of the input threshold.
+     * 
+     * @param threshold the threshold
+     * @return the predicate for filtering pairs
+     * @throws UnsupportedOperationException if the threshold data type is unrecognized
+     */
+
+    static Predicate<TimeSeriesOfSingleValuedPairs> getFilterForTimeSeriesOfSingleValuedPairs( Threshold input )
+    {
+        switch ( input.getDataType() )
+        {
+            case LEFT:
+                return Slicer.anyOfLeftInTimeSeriesOfSingleValuedPairs( input::test );
+            case LEFT_AND_RIGHT:
+            case LEFT_AND_ANY_RIGHT:
+            case LEFT_AND_RIGHT_MEAN:
+                return Slicer.anyOfLeftAndAnyOfRightInTimeSeriesOfSingleValuedPairs( input::test );
+            case RIGHT:
+            case ANY_RIGHT:
+            case RIGHT_MEAN:
+                return Slicer.anyOfRightInTimeSeriesOfSingleValuedPairs( input::test );
+            default:
+                throw new UnsupportedOperationException( "Cannot map the threshold data type '"
+                                                         + input.getDataType()
+                                                         + "'." );
+        }
+    }    
 
     /**
      * Constructor.
@@ -703,7 +759,10 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
 
         double[] sorted = getSortedClimatology( input, union );
         Map<OneOrTwoThresholds, MetricCalculationException> failures = new HashMap<>();
-        union.forEach( threshold -> {
+
+        // Iterate the thresholds
+        for ( Threshold threshold : union )
+        {
             Set<MetricConstants> ignoreTheseMetrics = filtered.doesNotHaveTheseMetricsForThisThreshold( threshold );
 
             // Add quantiles to threshold
@@ -729,15 +788,26 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
                                           ignoreTheseMetrics );
 
             }
-            //Insufficient data for one threshold: log, but allow
+            // Insufficient data for one threshold: log failures collectively and proceed
+            // Such failures are routine and should not be propagated
             catch ( MetricInputSliceException | InsufficientDataException e )
             {
-                failures.put( OneOrTwoThresholds.of( useMe ), new MetricCalculationException( e.getMessage(), e ) );
-            }
+                // TODO: is there a way to prevent the above exceptions from
+                // occurring in the first place? Then can remove the
+                // logThresholdFailures method too. Refs #46369
 
-        } );
-        //Handle any failures
-        logThresholdFailures( failures, union.size(), input.getMetadata(), MetricInputGroup.SINGLE_VALUED );
+                // Decorate failure
+                failures.put( OneOrTwoThresholds.of( useMe ),
+                              new MetricCalculationException( "While processing threshold " + threshold + ":", e ) );
+            }
+        }
+
+        // Log failures collectively
+        logThresholdFailures( Collections.unmodifiableMap( failures ),
+                              union.size(),
+                              input.getMetadata(),
+                              MetricInputGroup.SINGLE_VALUED,
+                              Level.WARN );
     }
 
     /**

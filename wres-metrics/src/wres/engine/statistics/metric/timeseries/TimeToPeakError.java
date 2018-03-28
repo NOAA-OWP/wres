@@ -103,6 +103,7 @@ public class TimeToPeakError implements Metric<TimeSeriesOfSingleValuedPairs, Pa
                                                                                              MetricConstants.MAIN,
                                                                                              in.getIdentifier(),
                                                                                              in.getTimeWindow() );
+
         return getDataFactory().ofPairedOutput( returnMe, meta );
     }
 

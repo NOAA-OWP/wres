@@ -9,6 +9,7 @@ import java.nio.file.StandardOpenOption;
 import java.text.Format;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -126,16 +127,18 @@ abstract class CommaSeparatedWriter
      * @param values the values to add, one for each column
      * @param formatter an optional formatter
      * @param append is true to add the values to an existing row with the same time window, false otherwise
+     * @param additionalComaprators one or more additional strings to use in aligning rows
      */
 
     static <T> void addRowToInput( List<RowCompareByLeft> rows,
                                    TimeWindow timeWindow,
                                    List<T> values,
                                    Format formatter,
-                                   boolean append )
+                                   boolean append,
+                                   String... additionalComparators )
     {
         StringJoiner row = null;
-        int rowIndex = rows.indexOf( RowCompareByLeft.of( timeWindow, null ) );
+        int rowIndex = rows.indexOf( RowCompareByLeft.of( timeWindow, null, additionalComparators ) );
         // Set the row to append if it exists and appending is required
         if ( rowIndex > -1 && append )
         {
@@ -149,7 +152,7 @@ abstract class CommaSeparatedWriter
             row.add( timeWindow.getLatestTime().toString() );
             row.add( Long.toString( timeWindow.getEarliestLeadTimeInHours() ) );
             row.add( Long.toString( timeWindow.getLatestLeadTimeInHours() ) );
-            rows.add( RowCompareByLeft.of( timeWindow, row ) );
+            rows.add( RowCompareByLeft.of( timeWindow, row, additionalComparators ) );
         }
 
         for ( T nextColumn : values )
@@ -175,11 +178,9 @@ abstract class CommaSeparatedWriter
 
     /**
      * A helper class that contains a single row whose natural order is based on the {@link TimeWindow} of the row
-     * and not the contents. All comparisons are based on the left value only.
+     * and one or more additional strings, not the contents of the row value.
      * 
      * @author james.brown@hydrosolved.com
-     * @version 0.1
-     * @since version 0.4
      */
 
     static class RowCompareByLeft implements Comparable<RowCompareByLeft>
@@ -188,6 +189,12 @@ abstract class CommaSeparatedWriter
          * The row time window.
          */
         private final TimeWindow left;
+
+        /**
+         * Optional further comparators.
+         */
+
+        private final String[] leftOptions;
 
         /**
          * The row value.
@@ -200,12 +207,13 @@ abstract class CommaSeparatedWriter
          * 
          * @param timeWindow the time window
          * @param value the row value
+         * @param leftOptions the optional additional values for comparison
          * @return an instance 
          */
 
-        static RowCompareByLeft of( TimeWindow timeWindow, StringJoiner value )
+        static RowCompareByLeft of( TimeWindow timeWindow, StringJoiner value, String... leftOptions )
         {
-            return new RowCompareByLeft( timeWindow, value );
+            return new RowCompareByLeft( timeWindow, value, leftOptions );
         }
 
         /**
@@ -214,9 +222,20 @@ abstract class CommaSeparatedWriter
          * @return the left value
          */
 
-        TimeWindow getLeft()
+        private TimeWindow getLeft()
         {
             return left;
+        }
+
+        /**
+         * Returns the left options, may be null
+         * 
+         * @return the left options, may be null
+         */
+
+        private String[] getLeftOptions()
+        {
+            return leftOptions;
         }
 
         /**
@@ -225,7 +244,7 @@ abstract class CommaSeparatedWriter
          * @return the right value
          */
 
-        StringJoiner getRight()
+        private StringJoiner getRight()
         {
             return right;
         }
@@ -234,7 +253,45 @@ abstract class CommaSeparatedWriter
         public int compareTo( RowCompareByLeft compareTo )
         {
             Objects.requireNonNull( compareTo, "Specify a non-null input row for comparison." );
-            return getLeft().compareTo( compareTo.getLeft() );
+
+            int returnMe = this.getLeft().compareTo( compareTo.getLeft() );
+            if ( returnMe != 0 )
+            {
+                return returnMe;
+            }
+
+            // Check options
+            if ( Objects.nonNull( this.getLeftOptions() ) && Objects.isNull( compareTo.getLeftOptions() ) )
+            {
+                return -1;
+            }
+            else if ( Objects.nonNull( compareTo.getLeftOptions() ) && Objects.isNull( this.getLeftOptions() ) )
+            {
+                return 1;
+            }
+            // Both have non-null options
+            else if ( Objects.nonNull( this.getLeftOptions() ) )
+            {
+                if ( compareTo.getLeftOptions().length < this.getLeftOptions().length )
+                {
+                    return -1;
+                }
+                else if ( compareTo.getLeftOptions().length > this.getLeftOptions().length )
+                {
+                    return 1;
+                }
+                // Check options
+                for ( int i = 0; i < this.getLeftOptions().length; i++ )
+                {
+                    returnMe = this.getLeftOptions()[i].compareTo( compareTo.getLeftOptions()[i] );
+                    if ( returnMe != 0 )
+                    {
+                        return returnMe;
+                    }
+                }
+            }
+
+            return 0;
         }
 
         @Override
@@ -244,14 +301,17 @@ abstract class CommaSeparatedWriter
             {
                 return false;
             }
+
             RowCompareByLeft in = (RowCompareByLeft) o;
-            return Objects.equals( in.getLeft(), getLeft() );
+
+            return Objects.equals( in.getLeft(), this.getLeft() )
+                   && Arrays.equals( in.getLeftOptions(), this.getLeftOptions() );
         }
 
         @Override
         public int hashCode()
         {
-            return Objects.hashCode( left );
+            return Objects.hash( this.getLeft(), this.getLeftOptions() );
         }
 
         /**
@@ -259,13 +319,15 @@ abstract class CommaSeparatedWriter
          * 
          * @param timeWindow the time window
          * @param value the row value
+         * @param leftOptions additional comparators for the left
          */
 
-        private RowCompareByLeft( TimeWindow timeWindow, StringJoiner value )
+        private RowCompareByLeft( TimeWindow timeWindow, StringJoiner value, String[] leftOptions )
         {
             Objects.requireNonNull( timeWindow, "Specify a non-null time window for the row." );
-            left = timeWindow;
-            right = value;
+            this.left = timeWindow;
+            this.leftOptions = leftOptions;
+            this.right = value;
         }
     }
 

@@ -157,10 +157,10 @@ public abstract class XYChartDataSourceFactory
                 // Filter by lead time and then by threshold
                 for ( Entry<Pair<TimeWindow, OneOrTwoThresholds>, PairedOutput<Instant, Duration>> entry : input.entrySet() )
                 {
-                    Long time = entry.getKey().getLeft().getLatestLeadTimeInHours();
+//                    Long time = entry.getKey().getLeft().getLatestLeadTimeInHours();  We decided not to include this:
                     OneOrTwoThresholds threshold = entry.getKey().getRight();
                     TimeSeries next =
-                            new TimeSeries( time + ", " + threshold.toStringWithoutUnits(), FixedMillisecond.class );
+                            new TimeSeries( threshold.toStringWithoutUnits(), FixedMillisecond.class );  
                     for ( Pair<Instant, Duration> oneValue : entry.getValue() )
                     {
                         next.add( new FixedMillisecond( oneValue.getLeft().toEpochMilli() ),
@@ -420,6 +420,7 @@ public abstract class XYChartDataSourceFactory
     {
         String[] xCategories = null;
         List<double[]> yAxisValuesBySeries = new ArrayList<>();
+        List<String> legendEntryBySeries = new ArrayList<>();
         boolean populateCategories = false;
 
         //Build the categories and category values to be passed into the categorical source.
@@ -453,8 +454,20 @@ public abstract class XYChartDataSourceFactory
                 yValues[index] = durationStat.toHours();
                 index++;
             }
-
             yAxisValuesBySeries.add( yValues );
+            
+            //Define the legend entry.  The commented out code specifies the lead time.  But we decided
+            //not to include it for this plot.
+//            TimeWindow timeWindow = entry.getKey().getLeft();
+//            String leadKey = Long.toString( timeWindow.getLatestLeadTime().toHours() );
+//            if ( !timeWindow.getEarliestLeadTime().equals( timeWindow.getLatestLeadTime() ) )
+//            {
+//                leadKey = "(" + timeWindow.getEarliestLeadTime().toHours()
+//                          + ","
+//                          + timeWindow.getLatestLeadTime().toHours()
+//                          + "]";
+//            }
+            legendEntryBySeries.add( entry.getKey().getRight().toStringWithoutUnits());
             populateCategories = false;
         }
 
@@ -477,6 +490,7 @@ public abstract class XYChartDataSourceFactory
                     return newSource;
                 }
             };
+            
         }
         catch ( XYChartDataSourceException e )
         {
@@ -492,6 +506,14 @@ public abstract class XYChartDataSourceFactory
         source.getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultDomainAxisTitle( "@metricName@" );
         source.getDefaultFullySpecifiedDataSourceDrawingParameters()
               .setDefaultRangeAxisTitle( "@metricShortName@@metricComponentNameSuffix@@outputUnitsLabelSuffix@" );
+        
+        //Pass in the legend entries here.
+        int index = 0;
+        for (String legendEntry : legendEntryBySeries)
+        {
+            source.getDefaultFullySpecifiedDataSourceDrawingParameters().getSeriesDrawingParametersForSeriesIndex( index ).setNameInLegend( legendEntry );
+            index ++;
+        }
 
         return source;
     }

@@ -696,6 +696,7 @@ public interface DataFactory
         {
             unionWindow = TimeWindow.unionOf( combinedWindows );
         }
+
         MetadataFactory mDF = getMetadataFactory();
         MetricOutputMetadata combinedMeta =
                 mDF.getOutputMetadata( mDF.getOutputMetadata( sourceMeta, combined.size() ), unionWindow );
