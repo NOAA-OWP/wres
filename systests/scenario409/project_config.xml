@@ -28,7 +28,7 @@
 
     <metrics>
         <timeSeriesMetric>
-            <name>all valid</name>
+            <name>time to peak error</name>
         </timeSeriesMetric>
     </metrics>
     <outputs>
