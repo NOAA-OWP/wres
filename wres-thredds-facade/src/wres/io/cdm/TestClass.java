@@ -36,17 +36,10 @@ public class TestClass
 // Opening a Gridset        
 
 //    GridDataset gds = ucar.nc2.dt.grid.GridDataset.open("localhost:8080//thredds/fileServer/short_range/nwm.t00z.short_range.terrain_rt.f001.conus.nc");       
- 
+
     String filename= "/home/sanian.gaffar/short_range/20170821/nwm.t23z.short_range.terrain_rt.f018.conus.nc";
     GridDataset gds= null;
-    try 
-    {
         gds = ucar.nc2.dt.grid.GridDataset.open(filename);
-    } 
-    catch (IOException ioe) 
-    {
-        System.out.println(ioe.toString());
-    }
 
 // -----------------------------------------------------------------------
 // GridCoordSystem to find the value of a grid a a specific lat, lon point
