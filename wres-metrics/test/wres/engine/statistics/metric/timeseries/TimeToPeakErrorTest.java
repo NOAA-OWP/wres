@@ -9,7 +9,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
@@ -35,6 +37,9 @@ import wres.engine.statistics.metric.timeseries.TimeToPeakError.TimeToPeakErrorB
  */
 public final class TimeToPeakErrorTest
 {
+
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
 
     /**
      * Constructs a {@link TimeToPeakError} and compares the actual result to the expected result. Also, checks 
@@ -153,14 +158,9 @@ public final class TimeToPeakErrorTest
         final TimeToPeakError ttp = b.build();
 
         //Check the exceptions
-        try
-        {
-            ttp.apply( null );
-            fail( "Expected an exception on null input." );
-        }
-        catch ( MetricInputException e )
-        {
-        }
+        exception.expect( MetricInputException.class );
+
+        ttp.apply( null );
     }
 
 }
