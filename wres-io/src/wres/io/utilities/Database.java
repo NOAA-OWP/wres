@@ -1504,7 +1504,15 @@ public final class Database {
             {
                 if ( resultSet != null )
                 {
-                    resultSet.close();
+                    try
+                    {
+                        resultSet.close();
+                    }
+                    catch ( SQLException se )
+                    {
+                        // Exception on close should not affect primary outputs.
+                        LOGGER.warn( "Could not close result set {}.", resultSet, se );
+                    }
                 }
 
                 if (connection != null)

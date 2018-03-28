@@ -9,12 +9,16 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import wres.io.concurrency.SQLExecutor;
 import wres.io.concurrency.StatementRunner;
 import wres.io.concurrency.ValueRetriever;
 
 public class ScriptBuilder
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger( ScriptBuilder.class );
     private static final String NEWLINE = System.lineSeparator();
     private final StringBuilder script;
 
@@ -130,7 +134,8 @@ public class ScriptBuilder
         }
         catch ( InterruptedException e )
         {
-            throw new SQLException( "Script execution was interrupted.", e );
+            LOGGER.warn( "Script execution was interrupted.", e );
+            Thread.currentThread().interrupt();
         }
         catch ( ExecutionException e )
         {
@@ -152,7 +157,8 @@ public class ScriptBuilder
         }
         catch ( InterruptedException e )
         {
-            throw new SQLException( "Script execution was interrupted.", e );
+            LOGGER.warn( "Script execution was interrupted.", e );
+            Thread.currentThread().interrupt();
         }
         catch ( ExecutionException e )
         {
@@ -174,7 +180,8 @@ public class ScriptBuilder
         }
         catch ( InterruptedException e )
         {
-            throw new SQLException( "Script execution was interrupted.", e );
+            LOGGER.warn( "Script execution was interrupted.", e );
+            Thread.currentThread().interrupt();
         }
         catch ( ExecutionException e )
         {
@@ -246,11 +253,18 @@ public class ScriptBuilder
         }
         catch ( InterruptedException e )
         {
-            throw new SQLException( "Script execution was interrupted.", e );
+            String message = "Script execution to get label '" + label
+                             + "' was interrupted.";
+            LOGGER.warn( message, e );
+            Thread.currentThread().interrupt();
+
+            // Following throw only needed to avoid "value "being uninitialized.
+            throw new SQLException( message, e );
         }
         catch ( ExecutionException e )
         {
-            throw new SQLException( "An error occurred while executing the script.", e );
+            throw new SQLException( "An error occurred while executing the script to get label '"
+                                    + label + "'.", e );
         }
 
         return value;
