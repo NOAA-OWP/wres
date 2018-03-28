@@ -174,7 +174,8 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
                                                             timeWindow,
                                                             Arrays.asList( nextPair.getLeft(), nextPair.getRight() ),
                                                             formatter,
-                                                            false );
+                                                            true,
+                                                            nextPair.getLeft().toString() );
                     }
                 }
             }

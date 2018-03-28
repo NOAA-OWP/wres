@@ -16,6 +16,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.slf4j.event.Level;
 
 import wres.config.MetricConfigException;
 import wres.config.generated.ProjectConfig;
@@ -461,7 +462,8 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         logThresholdFailures( Collections.unmodifiableMap( failures ),
                               union.size(),
                               input.getMetadata(),
-                              MetricInputGroup.ENSEMBLE );
+                              MetricInputGroup.ENSEMBLE,
+                              Level.WARN );
     }
 
     /**

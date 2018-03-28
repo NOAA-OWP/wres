@@ -318,13 +318,15 @@ class SafeTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
                         }
                         SafeTimeSeriesOfSingleValuedPairsBuilder builder =
                                 new SafeTimeSeriesOfSingleValuedPairsBuilder();
-                        Instant nextTime = iterator.next();
+                        
+                        // Iterate
+                        iterator.next();
+                        
                         builder.addTimeSeriesData( Arrays.asList( bP.getData().get( returned ) ) );
 
-                        //Adjust the time window for the metadata
-                        builder.setMetadata( TimeSeriesHelper.getBasisTimeAdjustedMetadata( getMetadata(),
-                                                                                            nextTime,
-                                                                                            nextTime ) );
+                        // Propagate the metadata without adjustment because the input period is canonical
+                        builder.setMetadata( getMetadata() );
+                        
                         // Set the climatology
                         builder.setClimatology( getClimatology() );
                         returned++;
@@ -375,6 +377,8 @@ class SafeTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
                         }
                         SafeTimeSeriesOfSingleValuedPairsBuilder builder =
                                 new SafeTimeSeriesOfSingleValuedPairsBuilder();
+                        
+                        // Iterate
                         Duration nextDuration = iterator.next();
 
                         //Adjust the time window for the metadata
