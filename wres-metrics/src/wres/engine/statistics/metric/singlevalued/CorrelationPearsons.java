@@ -16,7 +16,6 @@ import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.FunctionFactory;
-import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricCollection;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.OrdinaryScore;
@@ -47,33 +46,27 @@ implements Collectable<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput>
         {
             throw new MetricInputException("Specify non-null input to the '"+this+"'.");
         }
-        try
+
+        DataFactory d = getDataFactory();
+        MetadataFactory mF = d.getMetadataFactory();
+        Slicer slicer = d.getSlicer();
+        Metadata in = s.getMetadata();
+        // Set the metadata explicitly since this class implements Collectable and getID() may be overridden
+        MetricOutputMetadata meta = mF.getOutputMetadata( s.getData().size(),
+                                                          mF.getDimension(),
+                                                          in.getDimension(),
+                                                          MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
+                                                          MetricConstants.MAIN,
+                                                          in.getIdentifier() );
+        double returnMe = Double.NaN;
+        // Minimum sample size of 1
+        if ( s.getData().size() > 1 )
         {
-            DataFactory d = getDataFactory();
-            MetadataFactory mF = d.getMetadataFactory();
-            Slicer slicer = d.getSlicer();
-            Metadata in = s.getMetadata();
-            // Set the metadata explicitly since this class implements Collectable and getID() may be overridden
-            MetricOutputMetadata meta = mF.getOutputMetadata( s.getData().size(),
-                                                              mF.getDimension(),
-                                                              in.getDimension(),
-                                                              MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
-                                                              MetricConstants.MAIN,
-                                                              in.getIdentifier() );
-            double returnMe = Double.NaN;
-            // Minimum sample size of 1
-            if ( s.getData().size() > 1 )
-            {
-                returnMe = FunctionFactory.finiteOrNaN()
-                                          .applyAsDouble( correlation.correlation( slicer.getLeftSide( s ),
-                                                                                   slicer.getRightSide( s ) ) );
-            }
-            return getDataFactory().ofDoubleScoreOutput( returnMe, meta );
+            returnMe = FunctionFactory.finiteOrNaN()
+                                      .applyAsDouble( correlation.correlation( slicer.getLeftSide( s ),
+                                                                               slicer.getRightSide( s ) ) );
         }
-        catch ( Exception e )
-        {
-            throw new MetricCalculationException( "While processing Pearson's correlation coefficient:", e );
-        }
+        return getDataFactory().ofDoubleScoreOutput( returnMe, meta );
     }
 
     @Override
