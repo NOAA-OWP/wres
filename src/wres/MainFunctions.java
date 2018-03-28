@@ -12,7 +12,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -24,11 +23,11 @@ import java.util.function.Function;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import ucar.ma2.Array;
 import ucar.nc2.Attribute;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
-
 import wres.config.generated.Format;
 import wres.config.generated.ProjectConfig;
 import wres.control.Control;
@@ -214,13 +213,16 @@ final class MainFunctions
 	 */
 	private static Function<String[], Integer> connectToDB () {
 		return (final String[] args) -> {
-			Integer result = FAILURE;
-			boolean successfullyConnected = Operations.testConnection();
-			if (successfullyConnected)
+		    try
             {
-                result = SUCCESS;
+                Operations.testConnection();
+                return SUCCESS;
             }
-            return result;
+            catch ( SQLException se )
+            {
+                LOGGER.warn( "Could not connect to database.", se );
+                return FAILURE;
+            }
 		};
 	}
 
@@ -997,7 +999,7 @@ final class MainFunctions
 
                                 Connection connection = null;
                                 PreparedStatement statement = null;
-                                LinkedList<Future<?>> updates = new LinkedList<>();
+
                                 final String script = "UPDATE wres.Feature SET nwm_index = ? WHERE comid = ?;";
                                 try
                                 {
@@ -1171,7 +1173,6 @@ final class MainFunctions
             Integer valueCount = 10;
             boolean includeFailures = true;
             String projectName = null;
-            String newline = System.lineSeparator();
 
             ScriptBuilder script = new ScriptBuilder(  );
             script.addLine("SELECT 'Arguments: ' || arguments || '");

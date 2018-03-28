@@ -655,7 +655,6 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
 
                     while (condensedValue != null)
                     {
-
                         pairs = this.addPair( pairs, condensedValue, dataSourceConfig );
                         aggregationStep++;
                         condensedValue = ingestedValues.condense(
@@ -1022,7 +1021,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             List<ForecastedPair> pairs,
             CondensedIngestedValue condensedIngestedValue,
             DataSourceConfig dataSourceConfig)
-            throws NoDataException
+            throws NoDataException, SQLException
     {
         if (!condensedIngestedValue.isEmpty())
         {
@@ -1139,7 +1138,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
     }
 
     private PairOfDoubleAndVectorOfDoubles getPair(CondensedIngestedValue condensedIngestedValue)
-            throws NoDataException
+            throws NoDataException, SQLException
     {
         if (condensedIngestedValue.isEmpty())
         {
@@ -1174,7 +1173,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
      * @throws NoDataException
      */
     private Double getLeftAggregation(Instant end)
-            throws NoDataException
+            throws NoDataException, SQLException
     {
 
         Instant firstDate;
@@ -1237,7 +1236,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
      */
     private PairOfDoubleAndVectorOfDoubles getPair( Instant lastDate,
                                                     Map<Integer, List<Double>> rightValues)
-            throws NoDataException
+            throws NoDataException, SQLException
     {
         if (rightValues == null || rightValues.isEmpty() )
         {

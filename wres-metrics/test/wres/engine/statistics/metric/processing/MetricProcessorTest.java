@@ -11,6 +11,7 @@ import java.util.Set;
 
 import org.junit.Test;
 
+import wres.config.MetricConfigException;
 import wres.config.ProjectConfigPlus;
 import wres.config.generated.PairConfig;
 import wres.config.generated.ProjectConfig;
@@ -29,7 +30,6 @@ import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
-import wres.engine.statistics.metric.config.MetricConfigurationException;
 
 /**
  * Tests the {@link MetricProcessor}.
@@ -46,13 +46,13 @@ public final class MetricProcessorTest
      * 
      * @throws IOException if the input data could not be read
      * @throws MetricProcessorException if the metric processor could not be built
-     * @throws MetricConfigurationException if the metric configuration is incorrect
+     * @throws MetricConfigException if the metric configuration is incorrect
      * @throws MetricParameterException if a metric parameter is incorrect
      */
 
     @Test
     public void test1WillStoreMetricOutput()
-            throws IOException, MetricConfigurationException, MetricParameterException, MetricProcessorException
+            throws IOException, MetricConfigException, MetricParameterException, MetricProcessorException
     {
         final DataFactory metIn = DefaultDataFactory.getInstance();
         String configPath = "testinput/metricProcessorTest/test1AllValid.xml";
@@ -60,15 +60,15 @@ public final class MetricProcessorTest
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> trueProcessor =
                 MetricFactory.getInstance( metIn )
                              .ofMetricProcessorByTimeSingleValuedPairs( config,
-                                                                        MetricOutputGroup.values() );
+                                                                        MetricOutputGroup.set() );
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> falseProcessor =
                 MetricFactory.getInstance( metIn )
-                             .ofMetricProcessorByTimeSingleValuedPairs( config );
+                             .ofMetricProcessorByTimeSingleValuedPairs( config, null );
         //Check for storage
-        assertTrue( "Expected a metric processor that stores metric outputs.",
-                    trueProcessor.willCacheMetricOutput() );
-        assertFalse( "Expected a metric processor that does not store metric outputs.",
-                     falseProcessor.willCacheMetricOutput() );
+        assertFalse( "Expected a metric processor that stores metric outputs.",
+                    trueProcessor.getMetricOutputTypesToCache().isEmpty() );
+        assertTrue( "Expected a metric processor that does not store metric outputs.",
+                     falseProcessor.getMetricOutputTypesToCache().isEmpty() );
     }
 
     /**
@@ -84,13 +84,13 @@ public final class MetricProcessorTest
      * 
      * @throws IOException if the input data could not be read
      * @throws MetricProcessorException if the metric processor could not be built
-     * @throws MetricConfigurationException if the metric configuration is incorrect
+     * @throws MetricConfigException if the metric configuration is incorrect
      * @throws MetricParameterException if a metric parameter is incorrect
      */
 
     @Test
     public void test2HasMetrics()
-            throws IOException, MetricConfigurationException, MetricParameterException, MetricProcessorException
+            throws IOException, MetricConfigException, MetricParameterException, MetricProcessorException
     {
         final DataFactory metIn = DefaultDataFactory.getInstance();
         String configPath = "testinput/metricProcessorTest/test1AllValid.xml";
@@ -98,7 +98,7 @@ public final class MetricProcessorTest
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
                 MetricFactory.getInstance( metIn )
                              .ofMetricProcessorByTimeSingleValuedPairs( config,
-                                                                        MetricOutputGroup.values() );
+                                                                        MetricOutputGroup.set() );
         //Check for existence of metrics
         assertTrue( "Expected metrics for '" + MetricInputGroup.SINGLE_VALUED
                     + "' and '"
@@ -122,13 +122,13 @@ public final class MetricProcessorTest
      * 
      * @throws IOException if the input data could not be read
      * @throws MetricProcessorException if the metric processor could not be built
-     * @throws MetricConfigurationException if the metric configuration is incorrect
+     * @throws MetricConfigException if the metric configuration is incorrect
      * @throws MetricParameterException if a metric parameter is incorrect
      */
 
     @Test
     public void test3DisallowNonScores()
-            throws IOException, MetricConfigurationException, MetricParameterException, MetricProcessorException
+            throws IOException, MetricConfigException, MetricParameterException, MetricProcessorException
     {
         final DataFactory metIn = DefaultDataFactory.getInstance();
         //Single-valued case
@@ -137,7 +137,7 @@ public final class MetricProcessorTest
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
                 MetricFactory.getInstance( metIn )
                              .ofMetricProcessorByTimeSingleValuedPairs( config,
-                                                                        MetricOutputGroup.values() );
+                                                                        MetricOutputGroup.set() );
 
         //Check that score metrics are defined 
         assertTrue( "Expected metrics for '" + MetricOutputGroup.DOUBLE_SCORE
@@ -161,7 +161,7 @@ public final class MetricProcessorTest
         MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processorEnsemble =
                 MetricFactory.getInstance( metIn )
                              .ofMetricProcessorByTimeEnsemblePairs( configEnsemble,
-                                                                    MetricOutputGroup.values() );
+                                                                    MetricOutputGroup.set() );
         //Check that score metrics are defined 
         assertTrue( "Expected metrics for '" + MetricOutputGroup.DOUBLE_SCORE
                     + "'.",
@@ -185,13 +185,13 @@ public final class MetricProcessorTest
      * 
      * @throws IOException if the input data could not be read
      * @throws MetricProcessorException if the metric processor could not be built
-     * @throws MetricConfigurationException if the metric configuration is incorrect
+     * @throws MetricConfigException if the metric configuration is incorrect
      * @throws MetricParameterException if a metric parameter is incorrect
      */
 
     @Test
     public void test4DoNotComputeTheseMetricsForThisThreshold()
-            throws IOException, MetricConfigurationException, MetricParameterException, MetricProcessorException
+            throws IOException, MetricConfigException, MetricParameterException, MetricProcessorException
     {
         final DataFactory metIn = DefaultDataFactory.getInstance();
         final MetadataFactory metFac = metIn.getMetadataFactory();
@@ -202,7 +202,7 @@ public final class MetricProcessorTest
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
                 MetricFactory.getInstance( metIn )
                              .ofMetricProcessorByTimeSingleValuedPairs( config,
-                                                                        MetricOutputGroup.values() );
+                                                                        MetricOutputGroup.set() );
 
         ThresholdsByMetric thresholds =
                 processor.getThresholdsByMetric().filterByGroup( MetricInputGroup.SINGLE_VALUED,
@@ -261,13 +261,13 @@ public final class MetricProcessorTest
      * 
      * @throws IOException if the input data could not be read
      * @throws MetricProcessorException if the metric processor could not be built
-     * @throws MetricConfigurationException if the metric configuration is incorrect
+     * @throws MetricConfigException if the metric configuration is incorrect
      * @throws MetricParameterException if a metric parameter is incorrect
      */
 
     @Test
     public void test5DoNotComputeTheseMetricsForThisThreshold()
-            throws IOException, MetricConfigurationException, MetricParameterException, MetricProcessorException
+            throws IOException, MetricConfigException, MetricParameterException, MetricProcessorException
     {
         final DataFactory metIn = DefaultDataFactory.getInstance();
 
@@ -277,7 +277,7 @@ public final class MetricProcessorTest
         MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
                 MetricFactory.getInstance( metIn )
                              .ofMetricProcessorByTimeEnsemblePairs( config,
-                                                                    MetricOutputGroup.values() );
+                                                                    MetricOutputGroup.set() );
         Threshold firstTest = metIn.ofProbabilityThreshold( metIn.ofOneOrTwoDoubles( 0.1 ),
                                                             Operator.GREATER,
                                                             ThresholdDataType.LEFT );

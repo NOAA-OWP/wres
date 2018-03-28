@@ -31,8 +31,6 @@ import java.util.function.Predicate;
  * views should not allow {@link Iterator#remove()} to remove an element from the underlying time-series.</p>
  * 
  * @param <T> the atomic type of data
- * @version 0.1
- * @since 0.3
  * @author james.brown@hydrosolved.com
  */
 
@@ -133,12 +131,7 @@ public interface TimeSeries<T>
      * atomic time-series must have a constant {@link Duration} between times, as revealed by this method. However, 
      * when the container stores forecasts, the basis/issue time may not be regular and the time-step between 
      * basis/issue times may differ from the {@link #getRegularDuration}. For example, the container may store 
-     * forecasts that are issued once per day with a regular time-step of 6 hours. If the timeline is viewed as a 
-     * function of the unit duration, f(h)=6h, the first derivative of the timeline is 6h, and 
-     * {@link #getRegularDuration} will return a {@link Duration} of 6h. 
-     *  
-     * 
-     * The regular duration is the first derivative of the timeline   
+     * forecasts that are issued once per day with a regular time-step of 6 hours.
      * 
      * @return a duration for a regular time-series or null
      */

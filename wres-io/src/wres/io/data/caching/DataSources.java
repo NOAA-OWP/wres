@@ -1,6 +1,5 @@
 package wres.io.data.caching;
 
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -60,13 +59,13 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
     }
 
 	public static boolean hasSource(String hash)
-            throws SQLException, IOException
+            throws SQLException
     {
         return DataSources.getActiveSourceID( hash ) != null;
     }
 
     public static Integer getActiveSourceID(String hash)
-            throws SQLException, IOException
+            throws SQLException
     {
         Integer id = null;
 
@@ -114,7 +113,15 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
             {
                 if (results != null)
                 {
-                    results.close();
+                    try
+                    {
+                        results.close();
+                    }
+                    catch ( SQLException se )
+                    {
+                        // Exception on close should not affect primary outputs.
+                        LOGGER.warn( "Failed to close result set {}.", results, se );
+                    }
                 }
 
                 if (connection != null)

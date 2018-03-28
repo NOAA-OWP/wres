@@ -3,7 +3,6 @@ package wres.engine.statistics.metric.processing;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -14,7 +13,7 @@ import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.generated.MetricConfigName;
+import wres.config.MetricConfigException;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
@@ -25,7 +24,6 @@ import wres.datamodel.ThresholdConstants.Operator;
 import wres.datamodel.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.ThresholdConstants.ThresholdType;
 import wres.datamodel.ThresholdsByMetric;
-import wres.datamodel.ThresholdsByType;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
@@ -44,7 +42,6 @@ import wres.engine.statistics.metric.MetricCollection;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.config.MetricConfigHelper;
-import wres.engine.statistics.metric.config.MetricConfigurationException;
 
 /**
  * <p>
@@ -72,7 +69,7 @@ import wres.engine.statistics.metric.config.MetricConfigurationException;
  * {@link SingleValuedPairs} may be computed for {@link EnsemblePairs} if an appropriate transformation is configured.
  * Subclasses must define and apply any transformation required. If inappropriate {@link MetricInput} are provided to
  * {@link #apply(Object)} for the {@link MetricCollection} configured, an unchecked {@link MetricCalculationException}
- * will be thrown. If metrics are configured incorrectly, a checked {@link MetricConfigurationException} will be thrown.
+ * will be thrown. If metrics are configured incorrectly, a checked {@link MetricConfigException} will be thrown.
  * </p>
  * <p>
  * Upon calling {@link #apply(Object)} with a concrete {@link MetricInput}, the configured {@link Metric} are computed
@@ -169,7 +166,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
      * An array of {@link MetricOutputGroup} that should be retained and merged across calls. May be null.
      */
 
-    final MetricOutputGroup[] mergeList;
+    final Set<MetricOutputGroup> mergeSet;
 
     /**
      * An {@link ExecutorService} used to process the thresholds.
@@ -192,6 +189,21 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
     public abstract boolean hasCachedMetricOutput();
 
     /**
+     * Returns the (possibly empty) set of {@link MetricOutputGroup} that were cached across successive calls to 
+     * {@link #apply(Object)}. This may differ from the set of cached outputs that were declared on construction, 
+     * because some outputs are cached automatically. For the set of cached outputs declared on construction, 
+     * see: {@link #getMetricOutputTypesToCache()}.
+     * 
+     * @return the output types that were cached
+     * @throws MetricOutputAccessException if the cached types could not be determined
+     */
+
+    public Set<MetricOutputGroup> getCachedMetricOutputTypes() throws MetricOutputAccessException
+    {
+        return this.getCachedMetricOutput().getOutputTypes();
+    }
+
+    /**
      * Returns a {@link MetricOutputForProject} for the last available results or null if
      * {@link #hasCachedMetricOutput()} returns false.
      * 
@@ -203,46 +215,25 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
     {
         //Complete any end-of-pipeline processing
         completeCachedOutput();
+
         //Return the results
         return getCachedMetricOutputInternal();
     }
 
     /**
-     * Returns true if one or more metric outputs will be cached across successive calls to {@link #apply(Object)},
-     * false otherwise.
-     * 
-     * @return true if results will be cached, false otherwise
-     */
-
-    public boolean willCacheMetricOutput()
-    {
-        return Objects.nonNull( mergeList ) && mergeList.length > 0;
-    }
-
-    /**
-     * Returns true if a named {@link MetricOutputGroup} will be cached across successive calls to 
-     * {@link #apply(Object)}, false otherwise.
-     * 
-     * @param outputGroup the metric output group
-     * @return true if results will be cached for the outputGroup, false otherwise
-     */
-
-    public boolean willCacheMetricOutput( MetricOutputGroup outputGroup )
-    {
-        return Objects.nonNull( mergeList ) && Arrays.stream( mergeList ).anyMatch( a -> a.equals( outputGroup ) );
-    }
-
-    /**
      * Returns the (possibly empty) set of {@link MetricOutputGroup} that will be cached across successive calls to 
-     * {@link #apply(Object)}.
+     * {@link #apply(Object)}. This contains the set of types to cache that were declared on construction of the 
+     * {@link MetricProcessor}. It may differ from the actual set of cached outputs, because some outputs are
+     * cached automatically. For the full set of cached outputs, post-computation, 
+     * see: {@link #getCachedMetricOutputTypes()}.
      * 
      * @return the output types that will be cached
      */
 
-    public Set<MetricOutputGroup> getMetricOutputToCache()
+    public Set<MetricOutputGroup> getMetricOutputTypesToCache()
     {
-        return Objects.nonNull( mergeList ) ? Collections.unmodifiableSet( new HashSet<>( Arrays.asList( mergeList ) ) )
-                                            : Collections.emptySet();
+        return Objects.nonNull( this.mergeSet ) ? Collections.unmodifiableSet( new HashSet<>( this.mergeSet ) )
+                                                : Collections.emptySet();
     }
 
     /**
@@ -257,7 +248,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
 
     public boolean hasMetrics( MetricInputGroup inGroup, MetricOutputGroup outGroup )
     {
-        return getMetrics( metrics, inGroup, outGroup ).length > 0;
+        return this.getMetrics( this.metrics, inGroup, outGroup ).length > 0;
     }
 
     /**
@@ -306,16 +297,16 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
     }
 
     /**
-     * Validates the configuration and throws a {@link MetricConfigurationException} if the configuration is invalid.
+     * Validates the configuration and throws a {@link MetricConfigException} if the configuration is invalid.
      * When validating parameters that are set locally, ensure that: 1) this method is called on completion of the 
      * subclass constructor; and 2) that it checks for the presence of local parameters, because this method is 
      * initially called within the superclass constructor, i.e. before any local parameters have been set.
      * 
      * @param config the configuration to validate
-     * @throws MetricConfigurationException if the configuration is invalid
+     * @throws MetricConfigException if the configuration is invalid
      */
 
-    abstract void validate( ProjectConfig config ) throws MetricConfigurationException;
+    abstract void validate( ProjectConfig config ) throws MetricConfigException;
 
     /**
      * Completes any processing of cached output at the end of a processing pipeline. This may be required when 
@@ -341,24 +332,24 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
      * 
      * @param dataFactory the data factory
      * @param config the project configuration
-     * @param externalThresholds an optional set of external thresholds (one per metric), may be null
+     * @param externalThresholds an optional set of external thresholds, may be null
      * @param thresholdExecutor an optional {@link ExecutorService} for executing thresholds. Defaults to the 
      *            {@link ForkJoinPool#commonPool()}
      * @param metricExecutor an optional {@link ExecutorService} for executing metrics. Defaults to the 
      *            {@link ForkJoinPool#commonPool()}                    
-     * @param mergeList a list of {@link MetricOutputGroup} whose outputs should be retained and merged across calls to
+     * @param mergeSet a list of {@link MetricOutputGroup} whose outputs should be retained and merged across calls to
      *            {@link #apply(Object)}
-     * @throws MetricConfigurationException if the metrics are configured incorrectly
+     * @throws MetricConfigException if the metrics are configured incorrectly
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      */
 
     MetricProcessor( final DataFactory dataFactory,
                      final ProjectConfig config,
-                     final Map<MetricConfigName, ThresholdsByType> externalThresholds,
+                     final ThresholdsByMetric externalThresholds,
                      final ExecutorService thresholdExecutor,
                      final ExecutorService metricExecutor,
-                     final MetricOutputGroup... mergeList )
-            throws MetricConfigurationException, MetricParameterException
+                     final Set<MetricOutputGroup> mergeSet )
+            throws MetricConfigException, MetricParameterException
     {
 
         Objects.requireNonNull( config, MetricConfigHelper.NULL_CONFIGURATION_ERROR );
@@ -366,13 +357,13 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         Objects.requireNonNull( dataFactory, MetricConfigHelper.NULL_DATA_FACTORY_ERROR );
 
         this.dataFactory = dataFactory;
-        metrics = MetricConfigHelper.getMetricsFromConfig( config );
-        metricFactory = MetricFactory.getInstance( dataFactory );
+        this.metrics = MetricConfigHelper.getMetricsFromConfig( config );
+        this.metricFactory = MetricFactory.getInstance( dataFactory );
 
         //Construct the metrics that are common to more than one type of input pairs
-        if ( hasMetrics( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.DOUBLE_SCORE ) )
+        if ( this.hasMetrics( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.DOUBLE_SCORE ) )
         {
-            singleValuedScore =
+            this.singleValuedScore =
                     metricFactory.ofSingleValuedScoreCollection( metricExecutor,
                                                                  getMetrics( metrics,
                                                                              MetricInputGroup.SINGLE_VALUED,
@@ -380,52 +371,59 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         }
         else
         {
-            singleValuedScore = null;
+            this.singleValuedScore = null;
         }
-        if ( hasMetrics( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.MULTIVECTOR ) )
+        if ( this.hasMetrics( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.MULTIVECTOR ) )
         {
-            singleValuedMultiVector =
-                    metricFactory.ofSingleValuedMultiVectorCollection( metricExecutor,
-                                                                       getMetrics( metrics,
-                                                                                   MetricInputGroup.SINGLE_VALUED,
-                                                                                   MetricOutputGroup.MULTIVECTOR ) );
+            this.singleValuedMultiVector =
+                    this.metricFactory.ofSingleValuedMultiVectorCollection( metricExecutor,
+                                                                            getMetrics( metrics,
+                                                                                        MetricInputGroup.SINGLE_VALUED,
+                                                                                        MetricOutputGroup.MULTIVECTOR ) );
         }
         else
         {
-            singleValuedMultiVector = null;
+            this.singleValuedMultiVector = null;
         }
 
         //Dichotomous scores
-        if ( hasMetrics( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.DOUBLE_SCORE ) )
+        if ( this.hasMetrics( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.DOUBLE_SCORE ) )
         {
-            dichotomousScalar =
-                    metricFactory.ofDichotomousScoreCollection( metricExecutor,
-                                                                getMetrics( metrics,
-                                                                            MetricInputGroup.DICHOTOMOUS,
-                                                                            MetricOutputGroup.DOUBLE_SCORE ) );
+            this.dichotomousScalar =
+                    this.metricFactory.ofDichotomousScoreCollection( metricExecutor,
+                                                                     getMetrics( metrics,
+                                                                                 MetricInputGroup.DICHOTOMOUS,
+                                                                                 MetricOutputGroup.DOUBLE_SCORE ) );
         }
         else
         {
-            dichotomousScalar = null;
+            this.dichotomousScalar = null;
         }
         // Contingency table
-        if ( hasMetrics( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.MATRIX ) )
+        if ( this.hasMetrics( MetricInputGroup.DICHOTOMOUS, MetricOutputGroup.MATRIX ) )
         {
-            dichotomousMatrix =
-                    metricFactory.ofDichotomousMatrixCollection( metricExecutor,
-                                                                 getMetrics( metrics,
-                                                                             MetricInputGroup.DICHOTOMOUS,
-                                                                             MetricOutputGroup.MATRIX ) );
+            this.dichotomousMatrix =
+                    this.metricFactory.ofDichotomousMatrixCollection( metricExecutor,
+                                                                      getMetrics( metrics,
+                                                                                  MetricInputGroup.DICHOTOMOUS,
+                                                                                  MetricOutputGroup.MATRIX ) );
         }
         else
         {
-            dichotomousMatrix = null;
+            this.dichotomousMatrix = null;
         }
 
         //Set the thresholds: canonical --> metric-local overrides --> global        
-        thresholdsByMetric = MetricConfigHelper.getThresholdsFromConfig( config, dataFactory, externalThresholds );
+        this.thresholdsByMetric = MetricConfigHelper.getThresholdsFromConfig( config, dataFactory, externalThresholds );
 
-        this.mergeList = mergeList;
+        if ( Objects.nonNull( mergeSet ) )
+        {
+            this.mergeSet = Collections.unmodifiableSet( new HashSet<>( mergeSet ) );
+        }
+        else
+        {
+            this.mergeSet = Collections.emptySet();
+        }
 
         //Set the executor for processing thresholds
         if ( Objects.nonNull( thresholdExecutor ) )
@@ -439,10 +437,10 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
 
         this.allDataThreshold = dataFactory.ofThreshold( dataFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
                                                          Operator.GREATER,
-                                                         ThresholdDataType.ALL );
+                                                         ThresholdDataType.LEFT_AND_RIGHT );
 
         //Finally, validate the configuration against the parameters set
-        validate( config );
+        this.validate( config );
     }
 
     /**
@@ -461,12 +459,12 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
      * 
      * @return the all data threshold
      */
-    
+
     Threshold getAllDataThreshold()
     {
         return this.allDataThreshold;
     }
-    
+
     /**
      * Returns true if the input list of thresholds contains one or more probability thresholds, false otherwise.
      * 

@@ -10,8 +10,6 @@ import org.apache.commons.lang3.tuple.Pair;
  * a {@link Pair} of {@link Instant} and the event value.
  * 
  * @param <T> the the type of event
- * @version 0.1
- * @since 0.4
  * @author james.brown@hydrosolved.com
  */
 
