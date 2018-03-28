@@ -866,7 +866,7 @@ public abstract class ChartEngineFactory
         //Setup plot specific arguments.
         arguments.addBaselineArguments( meta );
         arguments.addDurationMetricArguments();
-        arguments.addPoolingWindowArguments( input );
+        arguments.addTimeToPeakArguments( input );
 
         //Build the source.
         XYChartDataSource source = null;
@@ -919,7 +919,7 @@ public abstract class ChartEngineFactory
         //Setup plot specific arguments.
         arguments.addBaselineArguments( meta );
         arguments.addDurationMetricArguments();
-        arguments.addPoolingWindowArguments( input );
+        arguments.addTimeToPeakArguments( input );
 
         //Setup the assumed source and arguments.
         CategoricalXYChartDataSource source =
