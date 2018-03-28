@@ -12,7 +12,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
@@ -38,6 +40,9 @@ import wres.engine.statistics.metric.timeseries.TimeToPeakErrorStatistics.TimeTo
  */
 public final class TimeToPeakErrorStatisticsTest
 {
+
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
 
     /**
      * Tests the {@link TimeToPeakErrorStatistics#apply(TimeSeriesOfSingleValuedPairs)} and compares the actual result 
@@ -187,80 +192,100 @@ public final class TimeToPeakErrorStatisticsTest
      */
 
     @Test
-    public void test3Exceptions() throws MetricParameterException
+    public void test3ExceptionOnMissingStatistic() throws MetricParameterException
+    {
+        //Build the metric
+        final DataFactory outF = DefaultDataFactory.getInstance();
+        final TimeToPeakErrorStatisticBuilder b =
+                new TimeToPeakErrorStatisticBuilder();
+        b.setOutputFactory( outF );
+
+        // Missing statistic
+        exception.expect( MetricParameterException.class );
+        b.build();
+    }
+
+    @Test
+    public void test3ExceptionOnEmptyStatistic() throws MetricParameterException
     {
         //Build the metric
         final DataFactory outF = DefaultDataFactory.getInstance();
         final TimeToPeakErrorStatisticBuilder b = new TimeToPeakErrorStatisticBuilder();
         b.setOutputFactory( outF );
-        // Missing statistic
-        try
-        {
-            b.build();
-            fail( "Expected an exception on a missing statistic." );
-        }
-        catch ( MetricParameterException e )
-        {
-        }
-        // Empty statistic
-        try
-        {
-            TimeToPeakErrorStatisticBuilder c = new TimeToPeakErrorStatisticBuilder();
-            c.setOutputFactory( outF );
-            c.setStatistics( Collections.emptySet() ).build();
-            fail( "Expected an exception on a missing statistic." );
-        }
-        catch ( MetricParameterException e )
-        {
-        }
-        // Null statistic
-        try
-        {
-            TimeToPeakErrorStatisticBuilder c = new TimeToPeakErrorStatisticBuilder();
-            c.setStatistics( Collections.singleton( null ) );
-            c.build();
-            fail( "Expected an exception on a missing statistic." );
-        }
-        catch ( MetricParameterException e )
-        {
-        }
-        // Unrecognized statistic
-        try
-        {
-            TimeToPeakErrorStatisticBuilder c = new TimeToPeakErrorStatisticBuilder();
-            c.setOutputFactory( outF );
-            c.setStatistics( Collections.singleton( MetricConstants.NONE ) );
-            c.build();
-            fail( "Expected an exception on a missing statistic." );
-        }
-        catch ( MetricParameterException e )
-        {
-        }
-        // Null input to apply
-        try
-        {
-            TimeToPeakErrorStatisticBuilder c = new TimeToPeakErrorStatisticBuilder();
-            c.setOutputFactory( outF );
-            c.setStatistics( Collections.singleton( MetricConstants.MEAN ) );
-            c.build().apply( null );
-            fail( "Expected an exception on null input." );
-        }
-        catch ( MetricInputException e )
-        {
-        }
-        // Null input to aggregate
-        try
-        {
-            TimeToPeakErrorStatisticBuilder c = new TimeToPeakErrorStatisticBuilder();
-            c.setOutputFactory( outF );
-            c.setStatistics( Collections.singleton( MetricConstants.MEAN ) );
-            c.build().aggregate( null );
-            fail( "Expected an exception on null input." );
-        }
-        catch ( MetricInputException e )
-        {
-        }
 
+        // Empty statistic
+        exception.expect( MetricParameterException.class );
+
+        TimeToPeakErrorStatisticBuilder c = new TimeToPeakErrorStatisticBuilder();
+        c.setOutputFactory( outF );
+        c.setStatistics( Collections.emptySet() ).build();
+    }
+
+    @Test
+    public void test3ExceptionOnNullStatistic() throws MetricParameterException
+    {
+        //Build the metric
+        final DataFactory outF = DefaultDataFactory.getInstance();
+        final TimeToPeakErrorStatisticBuilder b = new TimeToPeakErrorStatisticBuilder();
+        b.setOutputFactory( outF );
+
+        // Null statistic
+        exception.expect( MetricParameterException.class );
+
+        TimeToPeakErrorStatisticBuilder c = new TimeToPeakErrorStatisticBuilder();
+        c.setStatistics( Collections.singleton( null ) );
+        c.build();
+    }
+
+    @Test
+    public void test3ExceptionOnUnrecognizedStatistic() throws MetricParameterException
+    {
+        //Build the metric
+        final DataFactory outF = DefaultDataFactory.getInstance();
+        final TimeToPeakErrorStatisticBuilder b = new TimeToPeakErrorStatisticBuilder();
+        b.setOutputFactory( outF );
+
+        // Unrecognized statistic
+        exception.expect( IllegalArgumentException.class );
+
+        TimeToPeakErrorStatisticBuilder c = new TimeToPeakErrorStatisticBuilder();
+        c.setOutputFactory( outF );
+        c.setStatistics( Collections.singleton( MetricConstants.NONE ) );
+        c.build();
+    }
+
+    @Test
+    public void test3ExceptionOnNullInputToApply() throws MetricParameterException
+    {
+        //Build the metric
+        final DataFactory outF = DefaultDataFactory.getInstance();
+        final TimeToPeakErrorStatisticBuilder b = new TimeToPeakErrorStatisticBuilder();
+        b.setOutputFactory( outF );
+
+        // Null input to apply
+        exception.expect( MetricInputException.class );
+
+        TimeToPeakErrorStatisticBuilder c = new TimeToPeakErrorStatisticBuilder();
+        c.setOutputFactory( outF );
+        c.setStatistics( Collections.singleton( MetricConstants.MEAN ) );
+        c.build().apply( null );
+    }
+
+    @Test
+    public void test3ExceptionOnNullInputToAggregate() throws MetricParameterException
+    {
+        //Build the metric
+        final DataFactory outF = DefaultDataFactory.getInstance();
+        final TimeToPeakErrorStatisticBuilder b = new TimeToPeakErrorStatisticBuilder();
+        b.setOutputFactory( outF );
+
+        // Null input to aggregate
+        exception.expect( MetricInputException.class );
+
+        TimeToPeakErrorStatisticBuilder c = new TimeToPeakErrorStatisticBuilder();
+        c.setOutputFactory( outF );
+        c.setStatistics( Collections.singleton( MetricConstants.MEAN ) );
+        c.build().aggregate( null );
     }
 
 }
