@@ -413,7 +413,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
      * configuration obtained from 
      * testinput/metricProcessorSingleValuedPairsByTimeTest/test6ApplyTimeSeriesSummaryStats.xml and pairs obtained 
      * from {@link MetricTestDataFactory#getTimeSeriesOfSingleValuedPairsOne()}. Tests the summary statistics generated 
-     * at the end of multiple calls with subsets of t ime-series data.
+     * at the end of multiple calls with subsets of time-series data.
      * 
      * @throws IOException if the input data could not be read
      * @throws MetricOutputAccessException if the outputs could not be accessed
