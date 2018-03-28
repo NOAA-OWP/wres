@@ -13,8 +13,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Future;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
@@ -139,9 +142,22 @@ public class SourceLoader
                 }
                 else if ( sourceFile.isFile() )
                 {
+                    List<Feature> specifiedFeatureses;
+
+                    try
+                    {
+                        specifiedFeatureses = this.getSpecifiedFeatures();
+                    }
+                    catch ( SQLException se )
+                    {
+                        throw new IOException( "Could not get specified features.", se );
+                    }
+
                     Future<List<IngestResult>> task = saveFile( sourcePath,
                                                                 source,
-                                                                config );
+                                                                config,
+                                                                specifiedFeatureses,
+                                                                this.projectConfig );
 
                     if (task != null)
                     {
@@ -177,7 +193,6 @@ public class SourceLoader
                                                             DataSourceConfig dataSourceConfig )
     {
         List<Future<List<IngestResult>>> results = new ArrayList<>();
-        Stream<Path> files;
 
         //Define path matcher based on the source's pattern, if provided.
         final PathMatcher matcher;
@@ -191,43 +206,30 @@ public class SourceLoader
         }
 
         ProgressMonitor.increment();
-        
+
+        List<Feature> specifiedFeatureses;
+
         try
         {
-            
-            files = Files.walk(directory);
+            specifiedFeatureses = this.getSpecifiedFeatures();
+        }
+        catch ( SQLException se )
+        {
+            throw new PreIngestException( "Failed to get list of features.", se );
+        }
 
-            files.forEach(path -> {
+        Function<Path,Future<List<IngestResult>>> fileSaver =
+                new FileSaver( matcher,
+                               source,
+                               dataSourceConfig,
+                               specifiedFeatureses,
+                               this.projectConfig );
 
-                File file = path.toFile();
-
-                if ( !file.exists() )
-                {
-                    files.close();
-                    throw new IllegalArgumentException( "The source path of " +
-                                                        path.toAbsolutePath().toString() +
-                                                        " does not exist and is therefore not a valid source.");
-                }
-
-                if (directory.equals( path ))
-                {
-                    return;
-                }
-
-                //File must be a file and match the pattern, if the pattern is defined.
-                if ( file.isFile() && ((matcher == null) || matcher.matches( file.toPath())))
-                {
-                    Future<List<IngestResult>> task = saveFile( path,
-                                                                source,
-                                                                dataSourceConfig );
-                    if (task != null)
-                    {
-                        results.add(task);
-                    }
-                }
-            });
-
-            files.close();
+        try ( Stream<Path> files = Files.walk( directory ) )
+        {
+            results.addAll( files.map( fileSaver )
+                                 .filter( Objects::nonNull )
+                                 .collect( Collectors.toList() ) );
         }
         catch ( IOException e )
         {
@@ -239,8 +241,8 @@ public class SourceLoader
         //none of the files.  
         if (results.isEmpty())
         {
-            throw new IllegalArgumentException( "The pattern of \"" + source.getPattern() 
-                                                + "\" does not yield any files within the provided source path and is therefore not a valid source.");
+            throw new PreIngestException( "The pattern of \"" + source.getPattern()
+                                          + "\" does not yield any files within the provided source path and is therefore not a valid source.");
         }
         
         ProgressMonitor.completeStep();
@@ -248,7 +250,54 @@ public class SourceLoader
         return Collections.unmodifiableList( results );
     }
 
+    private static class FileSaver implements Function<Path,Future<List<IngestResult>>>
+    {
+        private final PathMatcher matcher;
+        private final DataSourceConfig.Source source;
+        private final DataSourceConfig dataSourceConfig;
+        private final List<Feature> specifiedFeatures;
+        private final ProjectConfig projectConfig;
 
+        FileSaver( PathMatcher pathMatcher,
+                   DataSourceConfig.Source source,
+                   DataSourceConfig dataSourceConfig,
+                   List<Feature> specifiedFeatures,
+                   ProjectConfig projectConfig )
+        {
+            this.matcher = pathMatcher;
+            this.source = source;
+            this.dataSourceConfig = dataSourceConfig;
+            this.specifiedFeatures = specifiedFeatures;
+            this.projectConfig = projectConfig;
+        }
+
+        @Override
+        public Future<List<IngestResult>> apply( Path path )
+        {
+            File file = path.toFile();
+
+            if ( file.isDirectory() )
+            {
+                return null;
+            }
+
+            //File must be a file and match the pattern, if the pattern is defined.
+            if ( file.isFile() && ((matcher == null) || matcher.matches( file.toPath())))
+            {
+                return SourceLoader.saveFile( path,
+                                              this.source,
+                                              this.dataSourceConfig,
+                                              this.specifiedFeatures,
+                                              this.projectConfig );
+            }
+            else
+            {
+                LOGGER.warn( "Skipping file {} because it does not match {}.",
+                             file, matcher );
+                return null;
+            }
+        }
+    }
 
     /**
      * saveFile returns Future on success, null in several cases.
@@ -256,10 +305,14 @@ public class SourceLoader
      *
      * @param filePath
      * @return Future if task was created, null otherwise.
+     * @throws SQLException if getting specified features fails
      */
-    private Future<List<IngestResult>> saveFile( Path filePath,
-                                                 DataSourceConfig.Source source,
-                                                 DataSourceConfig dataSourceConfig )
+
+    private static Future<List<IngestResult>> saveFile( Path filePath,
+                                                        DataSourceConfig.Source source,
+                                                        DataSourceConfig dataSourceConfig,
+                                                        List<Feature> specifiedFeatures,
+                                                        ProjectConfig projectConfig )
     {
         String absolutePath = filePath.toAbsolutePath().toString();
         Future<List<IngestResult>> task = null;
@@ -271,30 +324,23 @@ public class SourceLoader
 
         if ( checkIngest.shouldIngest() )
         {
-            try
+            if (ConfigHelper.isForecast(dataSourceConfig))
             {
-                if (ConfigHelper.isForecast(dataSourceConfig))
-                {
-                    LOGGER.trace("Loading {} as forecast data...", absolutePath);
-                    task = Executor.submit( new IngestSaver( absolutePath,
-                                                             this.projectConfig,
-                                                             dataSourceConfig,
-                                                             source,
-                                                             this.getSpecifiedFeatures() ) );
-                }
-                else
-                {
-                    LOGGER.trace("Loading {} as Observation data...");
-                    task = Executor.submit( new IngestSaver( absolutePath,
-                                                                  this.projectConfig,
-                                                                 dataSourceConfig,
-                                                                 source,
-                                                                 this.getSpecifiedFeatures() ));
-                }
+                LOGGER.trace("Loading {} as forecast data...", absolutePath);
+                task = Executor.submit( new IngestSaver( absolutePath,
+                                                         projectConfig,
+                                                         dataSourceConfig,
+                                                         source,
+                                                         specifiedFeatures ) );
             }
-            catch (SQLException sqlException)
+            else
             {
-                LOGGER.error("'" + absolutePath + "' could not be queued for ingest.");
+                LOGGER.trace("Loading {} as Observation data...");
+                task = Executor.submit( new IngestSaver( absolutePath,
+                                                         projectConfig,
+                                                         dataSourceConfig,
+                                                         source,
+                                                         specifiedFeatures ));
             }
         }
         else
@@ -337,8 +383,8 @@ public class SourceLoader
      * @return Whether or not data within the file should be ingested (and hash)
      * @throws PreIngestException when hashing or id lookup cause some exception
      */
-    private FileEvaluation shouldIngest( String filePath,
-                                         DataSourceConfig.Source source )
+    private static FileEvaluation shouldIngest( String filePath,
+                                                DataSourceConfig.Source source )
     {
         Format specifiedFormat = source.getFormat();
         Format pathFormat = ReaderFactory.getFiletype( filePath );
@@ -400,8 +446,8 @@ public class SourceLoader
      * @throws SQLException Thrown if communcation with the database failed in
      * some way
      */
-    private boolean dataExists( String hash )
-            throws SQLException, IOException
+    private static boolean dataExists( String hash )
+            throws SQLException
     {
         return DataSources.hasSource( hash );
     }
@@ -458,13 +504,14 @@ public class SourceLoader
     {
         if (this.specifiedFeatures == null)
         {
-            Set<Feature> atomicFeatures = new HashSet<>();
+            List<Feature> atomicFeatures = new ArrayList<>();
 
             for ( FeatureDetails details : Features.getAllDetails( projectConfig ) )
             {
                 atomicFeatures.add( details.toFeature() );
             }
-            this.specifiedFeatures = new ArrayList<>(atomicFeatures);
+
+            this.specifiedFeatures = Collections.unmodifiableList( atomicFeatures );
         }
         return this.specifiedFeatures;
     }
