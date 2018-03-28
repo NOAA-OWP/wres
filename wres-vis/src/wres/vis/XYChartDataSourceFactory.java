@@ -420,6 +420,7 @@ public abstract class XYChartDataSourceFactory
     {
         String[] xCategories = null;
         List<double[]> yAxisValuesBySeries = new ArrayList<>();
+        List<String> legendEntryBySeries = new ArrayList<>();
         boolean populateCategories = false;
 
         //Build the categories and category values to be passed into the categorical source.
@@ -453,8 +454,20 @@ public abstract class XYChartDataSourceFactory
                 yValues[index] = durationStat.toHours();
                 index++;
             }
-
             yAxisValuesBySeries.add( yValues );
+            
+            //Define the legend entry.
+            TimeWindow timeWindow = entry.getKey().getLeft();
+            String leadKey = Long.toString( timeWindow.getLatestLeadTime().toHours() );
+            if ( !timeWindow.getEarliestLeadTime().equals( timeWindow.getLatestLeadTime() ) )
+            {
+                leadKey = "(" + timeWindow.getEarliestLeadTime().toHours()
+                          + ","
+                          + timeWindow.getLatestLeadTime().toHours()
+                          + "]";
+            }
+            legendEntryBySeries.add( leadKey + ", "
+                                              + entry.getKey().getRight().toStringWithoutUnits());
             populateCategories = false;
         }
 
@@ -477,6 +490,7 @@ public abstract class XYChartDataSourceFactory
                     return newSource;
                 }
             };
+            
         }
         catch ( XYChartDataSourceException e )
         {
@@ -492,6 +506,14 @@ public abstract class XYChartDataSourceFactory
         source.getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultDomainAxisTitle( "@metricName@" );
         source.getDefaultFullySpecifiedDataSourceDrawingParameters()
               .setDefaultRangeAxisTitle( "@metricShortName@@metricComponentNameSuffix@@outputUnitsLabelSuffix@" );
+        
+        //Pass in the legend entries here.
+        int index = 0;
+        for (String legendEntry : legendEntryBySeries)
+        {
+            source.getDefaultFullySpecifiedDataSourceDrawingParameters().getSeriesDrawingParametersForSeriesIndex( index ).setNameInLegend( legendEntry );
+            index ++;
+        }
 
         return source;
     }
