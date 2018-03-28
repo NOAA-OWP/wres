@@ -84,6 +84,8 @@ import wres.engine.statistics.metric.timeseries.TimeToPeakError;
 import wres.engine.statistics.metric.timeseries.TimeToPeakError.TimeToPeakErrorBuilder;
 import wres.engine.statistics.metric.timeseries.TimeToPeakErrorStatistics;
 import wres.engine.statistics.metric.timeseries.TimeToPeakErrorStatistics.TimeToPeakErrorStatisticBuilder;
+import wres.engine.statistics.metric.timeseries.TimeToPeakRelativeError;
+import wres.engine.statistics.metric.timeseries.TimeToPeakRelativeError.TimeToPeakRelativeErrorBuilder;
 
 /**
  * <p>
@@ -1630,6 +1632,19 @@ public class MetricFactory
         buildSingleValuedTimeSeriesStore();
         return (TimeToPeakError) singleValuedTimeSeries.get( MetricConstants.TIME_TO_PEAK_ERROR );
     }
+    
+    /**
+     * Return a default {@link TimeToPeakRelativeError} function.
+     * 
+     * @return a default {@link TimeToPeakRelativeError} function
+     * @throws MetricParameterException if one or more parameter values is incorrect
+     */
+
+    public TimeToPeakError ofTimeToPeakRelativeError() throws MetricParameterException
+    {
+        buildSingleValuedTimeSeriesStore();
+        return (TimeToPeakError) singleValuedTimeSeries.get( MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR );
+    }    
 
     /**
      * Return a default {@link TimeToPeakErrorStatistics} function for a prescribed set of {@link MetricConstants}.
@@ -1878,6 +1893,9 @@ public class MetricFactory
             singleValuedTimeSeries = new EnumMap<>( MetricConstants.class );
             singleValuedTimeSeries.put( MetricConstants.TIME_TO_PEAK_ERROR,
                                         new TimeToPeakErrorBuilder().setOutputFactory( outputFactory ).build() );
+            singleValuedTimeSeries.put( MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR,
+                                        new TimeToPeakRelativeErrorBuilder().setOutputFactory( outputFactory )
+                                                                            .build() );
         }
     }
 

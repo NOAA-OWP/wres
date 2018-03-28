@@ -2,7 +2,6 @@ package wres.engine.statistics.metric.timeseries;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -51,7 +50,7 @@ public final class TimeToPeakErrorStatisticsTest
      */
 
     @Test
-    public void test1ApplyOneStatisticPerInstance() throws MetricParameterException
+    public void testApplyOneStatisticPerInstance() throws MetricParameterException
     {
         // Obtain the factories
         final DataFactory outF = DefaultDataFactory.getInstance();
@@ -138,7 +137,7 @@ public final class TimeToPeakErrorStatisticsTest
      */
 
     @Test
-    public void test2ApplyMultipleStatisticInOneInstance() throws MetricParameterException
+    public void testApplyMultipleStatisticInOneInstance() throws MetricParameterException
     {
         // Obtain the factories
         final DataFactory outF = DefaultDataFactory.getInstance();
@@ -192,7 +191,7 @@ public final class TimeToPeakErrorStatisticsTest
      */
 
     @Test
-    public void test3ExceptionOnMissingStatistic() throws MetricParameterException
+    public void testExceptionOnMissingStatistic() throws MetricParameterException
     {
         //Build the metric
         final DataFactory outF = DefaultDataFactory.getInstance();
@@ -206,7 +205,7 @@ public final class TimeToPeakErrorStatisticsTest
     }
 
     @Test
-    public void test3ExceptionOnEmptyStatistic() throws MetricParameterException
+    public void testExceptionOnEmptyStatistic() throws MetricParameterException
     {
         //Build the metric
         final DataFactory outF = DefaultDataFactory.getInstance();
@@ -222,7 +221,7 @@ public final class TimeToPeakErrorStatisticsTest
     }
 
     @Test
-    public void test3ExceptionOnNullStatistic() throws MetricParameterException
+    public void testExceptionOnNullStatistic() throws MetricParameterException
     {
         //Build the metric
         final DataFactory outF = DefaultDataFactory.getInstance();
@@ -238,7 +237,7 @@ public final class TimeToPeakErrorStatisticsTest
     }
 
     @Test
-    public void test3ExceptionOnUnrecognizedStatistic() throws MetricParameterException
+    public void testExceptionOnUnrecognizedStatistic() throws MetricParameterException
     {
         //Build the metric
         final DataFactory outF = DefaultDataFactory.getInstance();
@@ -255,7 +254,7 @@ public final class TimeToPeakErrorStatisticsTest
     }
 
     @Test
-    public void test3ExceptionOnNullInputToApply() throws MetricParameterException
+    public void testExceptionOnNullInputToApply() throws MetricParameterException
     {
         //Build the metric
         final DataFactory outF = DefaultDataFactory.getInstance();
@@ -272,7 +271,7 @@ public final class TimeToPeakErrorStatisticsTest
     }
 
     @Test
-    public void test3ExceptionOnNullInputToAggregate() throws MetricParameterException
+    public void testExceptionOnNullInputToAggregate() throws MetricParameterException
     {
         //Build the metric
         final DataFactory outF = DefaultDataFactory.getInstance();

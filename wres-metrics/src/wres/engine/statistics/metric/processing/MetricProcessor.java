@@ -248,7 +248,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
 
     public boolean hasMetrics( MetricInputGroup inGroup, MetricOutputGroup outGroup )
     {
-        return this.getMetrics( this.metrics, inGroup, outGroup ).length > 0;
+        return this.getMetrics( inGroup, outGroup ).length > 0;
     }
 
     /**
@@ -366,9 +366,8 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         {
             this.singleValuedScore =
                     metricFactory.ofSingleValuedScoreCollection( metricExecutor,
-                                                                 getMetrics( metrics,
-                                                                             MetricInputGroup.SINGLE_VALUED,
-                                                                             MetricOutputGroup.DOUBLE_SCORE ) );
+                                                                 this.getMetrics( MetricInputGroup.SINGLE_VALUED,
+                                                                                  MetricOutputGroup.DOUBLE_SCORE ) );
         }
         else
         {
@@ -378,9 +377,8 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         {
             this.singleValuedMultiVector =
                     this.metricFactory.ofSingleValuedMultiVectorCollection( metricExecutor,
-                                                                            getMetrics( metrics,
-                                                                                        MetricInputGroup.SINGLE_VALUED,
-                                                                                        MetricOutputGroup.MULTIVECTOR ) );
+                                                                            this.getMetrics( MetricInputGroup.SINGLE_VALUED,
+                                                                                             MetricOutputGroup.MULTIVECTOR ) );
         }
         else
         {
@@ -392,9 +390,8 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         {
             this.dichotomousScalar =
                     this.metricFactory.ofDichotomousScoreCollection( metricExecutor,
-                                                                     getMetrics( metrics,
-                                                                                 MetricInputGroup.DICHOTOMOUS,
-                                                                                 MetricOutputGroup.DOUBLE_SCORE ) );
+                                                                     this.getMetrics( MetricInputGroup.DICHOTOMOUS,
+                                                                                      MetricOutputGroup.DOUBLE_SCORE ) );
         }
         else
         {
@@ -405,9 +402,8 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
         {
             this.dichotomousMatrix =
                     this.metricFactory.ofDichotomousMatrixCollection( metricExecutor,
-                                                                      getMetrics( metrics,
-                                                                                  MetricInputGroup.DICHOTOMOUS,
-                                                                                  MetricOutputGroup.MATRIX ) );
+                                                                      this.getMetrics( MetricInputGroup.DICHOTOMOUS,
+                                                                                       MetricOutputGroup.MATRIX ) );
         }
         else
         {
@@ -484,37 +480,37 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
      * computing single-valued metrics, then the {@link MetricConstants#SAMPLE_SIZE} is removed from the returned set,
      * in order to avoid duplication, since the {@link MetricConstants#SAMPLE_SIZE} belongs to both groups.
      * 
-     * @param input the input constants
      * @param inGroup the {@link MetricInputGroup}, may be null
      * @param outGroup the {@link MetricOutputGroup}, may be null
      * @return a set of {@link MetricConstants} for a specified {@link MetricInputGroup} and {@link MetricOutputGroup}
      *         or an empty array if both inputs are defined and no corresponding metrics are present
      */
 
-    MetricConstants[] getMetrics( Set<MetricConstants> input,
-                                  MetricInputGroup inGroup,
+    MetricConstants[] getMetrics( MetricInputGroup inGroup,
                                   MetricOutputGroup outGroup )
     {
-        Objects.requireNonNull( input, "Specify a non-null array of metric identifiers from which to select metrics." );
 
         // Unconditional set
-        Set<MetricConstants> metrics = new HashSet<>( input );
+        Set<MetricConstants> metrics = new HashSet<>( this.metrics );
 
         // Remove metrics not in the input group
         if ( Objects.nonNull( inGroup ) )
         {
             metrics.removeIf( a -> !a.isInGroup( inGroup ) );
         }
-        // REmove metrics not in the output group
+
+        // Remove metrics not in the output group
         if ( Objects.nonNull( outGroup ) )
         {
             metrics.removeIf( a -> !a.isInGroup( outGroup ) );
         }
+
         //Remove duplicate sample size
         if ( inGroup == MetricInputGroup.ENSEMBLE && hasMetrics( MetricInputGroup.SINGLE_VALUED ) )
         {
             metrics.remove( MetricConstants.SAMPLE_SIZE );
         }
+
         return metrics.toArray( new MetricConstants[metrics.size()] );
     }
 
