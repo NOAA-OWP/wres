@@ -866,13 +866,13 @@ public abstract class ChartEngineFactory
         //Setup plot specific arguments.
         arguments.addBaselineArguments( meta );
         arguments.addDurationMetricArguments();
+        arguments.addPoolingWindowArguments( input );
 
         //Build the source.
         XYChartDataSource source = null;
 
         //Setup the assumed source and arguments.
         source = XYChartDataSourceFactory.ofPairedOutputInstantDuration( 0, input );
-        arguments.addPoolingWindowArguments( input );
 
         //Build the ChartEngine instance.
         return generateChartEngine( Lists.newArrayList( source ),
@@ -919,6 +919,7 @@ public abstract class ChartEngineFactory
         //Setup plot specific arguments.
         arguments.addBaselineArguments( meta );
         arguments.addDurationMetricArguments();
+        arguments.addPoolingWindowArguments( input );
 
         //Setup the assumed source and arguments.
         CategoricalXYChartDataSource source =
