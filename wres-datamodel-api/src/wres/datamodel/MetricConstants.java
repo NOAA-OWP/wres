@@ -217,6 +217,12 @@ public enum MetricConstants
      */
 
     TIME_TO_PEAK_ERROR_STATISTIC( MetricInputGroup.SINGLE_VALUED_TIME_SERIES, MetricOutputGroup.DURATION_SCORE ),
+    
+    /**
+     * Identifier for the Time-to-Peak Relative Error.
+     */
+
+    TIME_TO_PEAK_RELATIVE_ERROR( MetricInputGroup.SINGLE_VALUED_TIME_SERIES, MetricOutputGroup.PAIRED ),    
 
     /**
      * Mean statistic.
@@ -274,7 +280,7 @@ public enum MetricConstants
     CR_POT( ScoreOutputGroup.CR_POT ),
 
     /**
-     * Identifier for a Likeilihood-Base-Rate (LBR) factorization.
+     * Identifier for a Likelihood-Base-Rate (LBR) factorization.
      */
 
     LBR( ScoreOutputGroup.LBR ),

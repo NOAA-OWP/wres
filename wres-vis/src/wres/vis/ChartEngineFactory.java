@@ -147,6 +147,7 @@ public abstract class ChartEngineFactory
         metricSpecificTemplateMap.put( MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE, "boxPlotOfErrorsTemplate.xml" );
         metricSpecificTemplateMap.put( MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE, "boxPlotOfErrorsTemplate.xml" );
         metricSpecificTemplateMap.put( MetricConstants.TIME_TO_PEAK_ERROR, "timeToPeakErrorTemplate.xml" );
+        metricSpecificTemplateMap.put( MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR, "timeToPeakErrorTemplate.xml" );
         metricSpecificTemplateMap.put( MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC, "timeToPeakSummaryStatsTemplate.xml" );
     }
 
