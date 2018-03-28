@@ -214,8 +214,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         {
             discreteProbabilityScore =
                     metricFactory.ofDiscreteProbabilityScoreCollection( metricExecutor,
-                                                                        getMetrics( metrics,
-                                                                                    MetricInputGroup.DISCRETE_PROBABILITY,
+                                                                        this.getMetrics( MetricInputGroup.DISCRETE_PROBABILITY,
                                                                                     MetricOutputGroup.DOUBLE_SCORE ) );
         }
         else
@@ -227,8 +226,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         {
             discreteProbabilityMultiVector =
                     metricFactory.ofDiscreteProbabilityMultiVectorCollection( metricExecutor,
-                                                                              getMetrics( metrics,
-                                                                                          MetricInputGroup.DISCRETE_PROBABILITY,
+                                                                              this.getMetrics( MetricInputGroup.DISCRETE_PROBABILITY,
                                                                                           MetricOutputGroup.MULTIVECTOR ) );
         }
         else
@@ -239,8 +237,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.DOUBLE_SCORE ) )
         {
             ensembleScore = metricFactory.ofEnsembleScoreCollection( metricExecutor,
-                                                                     getMetrics( metrics,
-                                                                                 MetricInputGroup.ENSEMBLE,
+                                                                     this.getMetrics( MetricInputGroup.ENSEMBLE,
                                                                                  MetricOutputGroup.DOUBLE_SCORE ) );
         }
         else
@@ -252,8 +249,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.MULTIVECTOR ) )
         {
             ensembleMultiVector = metricFactory.ofEnsembleMultiVectorCollection( metricExecutor,
-                                                                                 getMetrics( metrics,
-                                                                                             MetricInputGroup.ENSEMBLE,
+                                                                                 this.getMetrics( MetricInputGroup.ENSEMBLE,
                                                                                              MetricOutputGroup.MULTIVECTOR ) );
         }
         else
@@ -264,8 +260,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         if ( hasMetrics( MetricInputGroup.ENSEMBLE, MetricOutputGroup.BOXPLOT ) )
         {
             ensembleBoxPlot = metricFactory.ofEnsembleBoxPlotCollection( metricExecutor,
-                                                                         getMetrics( metrics,
-                                                                                     MetricInputGroup.ENSEMBLE,
+                                                                         this.getMetrics( MetricInputGroup.ENSEMBLE,
                                                                                      MetricOutputGroup.BOXPLOT ) );
         }
         else
@@ -769,7 +764,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         // Dichotomous
         if ( this.hasMetrics( MetricInputGroup.DICHOTOMOUS ) )
         {
-            MetricConstants[] check = this.getMetrics( this.metrics, MetricInputGroup.DICHOTOMOUS, null );
+            MetricConstants[] check = this.getMetrics( MetricInputGroup.DICHOTOMOUS, null );
 
 
             if ( !Arrays.stream( check ).allMatch( next -> probabilityClassifiers.containsKey( next )
@@ -786,7 +781,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         // Multicategory
         if ( this.hasMetrics( MetricInputGroup.MULTICATEGORY ) )
         {
-            MetricConstants[] check = this.getMetrics( this.metrics, MetricInputGroup.MULTICATEGORY, null );
+            MetricConstants[] check = this.getMetrics( MetricInputGroup.MULTICATEGORY, null );
             if ( !Arrays.stream( check ).allMatch( next -> probabilityClassifiers.containsKey( next )
                                                            && !probabilityClassifiers.get( next ).isEmpty() ) )
             {

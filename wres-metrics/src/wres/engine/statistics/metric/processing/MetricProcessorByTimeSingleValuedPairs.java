@@ -127,9 +127,9 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
         if ( this.hasMetrics( MetricInputGroup.SINGLE_VALUED_TIME_SERIES ) )
         {
             this.processTimeSeriesPairs( timeWindow,
-                                    (TimeSeriesOfSingleValuedPairs) inputNoMissing,
-                                    futures,
-                                    MetricOutputGroup.PAIRED );
+                                         (TimeSeriesOfSingleValuedPairs) inputNoMissing,
+                                         futures,
+                                         MetricOutputGroup.PAIRED );
         }
 
         // Log
@@ -180,28 +180,27 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
         //Time-series 
         if ( hasMetrics( MetricInputGroup.SINGLE_VALUED_TIME_SERIES, MetricOutputGroup.PAIRED ) )
         {
-            timeSeries = metricFactory.ofSingleValuedTimeSeriesCollection( metricExecutor,
-                                                                           getMetrics( metrics,
-                                                                                       MetricInputGroup.SINGLE_VALUED_TIME_SERIES,
-                                                                                       MetricOutputGroup.PAIRED ) );
+            this.timeSeries = metricFactory.ofSingleValuedTimeSeriesCollection( metricExecutor,
+                                                                                this.getMetrics( MetricInputGroup.SINGLE_VALUED_TIME_SERIES,
+                                                                                                 MetricOutputGroup.PAIRED ) );
             //Summary statistics, currently done for time-to-peak only
             //TODO: replace with a collection if/when other measures of the same type are added                    
             if ( MetricConfigHelper.hasSummaryStatisticsFor( config, TimeSeriesMetricConfigName.TIME_TO_PEAK_ERROR ) )
             {
                 Set<MetricConstants> ts = MetricConfigHelper.getSummaryStatisticsFor( config,
                                                                                       TimeSeriesMetricConfigName.TIME_TO_PEAK_ERROR );
-                timeToPeakErrorStats =
-                        metricFactory.ofTimeToPeakErrorStatistics( ts );
+                this.timeToPeakErrorStats =
+                        this.metricFactory.ofTimeToPeakErrorStatistics( ts );
             }
             else
             {
-                timeToPeakErrorStats = null;
+                this.timeToPeakErrorStats = null;
             }
         }
         else
         {
-            timeSeries = null;
-            timeToPeakErrorStats = null;
+            this.timeSeries = null;
+            this.timeToPeakErrorStats = null;
         }
     }
 
@@ -266,14 +265,14 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                           && this.getCachedMetricOutputInternal().hasOutput( MetricOutputGroup.PAIRED )
                           && this.getCachedMetricOutputInternal()
                                  .getPairedOutput()
-                                 .containsKey( dataFactory.getMapKey( MetricConstants.TIME_TO_PEAK_ERROR ) );    
+                                 .containsKey( dataFactory.getMapKey( MetricConstants.TIME_TO_PEAK_ERROR ) );
 
         // Summary statistics required
         proceed = proceed && Objects.nonNull( this.timeToPeakErrorStats );
-        
+
         // Summary statistics not already computed
-        proceed = proceed && ! this.getCachedMetricOutputInternal().hasOutput( MetricOutputGroup.DURATION_SCORE );   
-        
+        proceed = proceed && !this.getCachedMetricOutputInternal().hasOutput( MetricOutputGroup.DURATION_SCORE );
+
         //Add the summary statistics for the cached time-to-peak errors if these statistics do not already exist
         if ( proceed )
         {
@@ -288,7 +287,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                 // Slice  
                 MetricOutputMapByTimeAndThreshold<PairedOutput<Instant, Duration>> sliced =
                         output.filterByThreshold( threshold );
-                
+
                 // Find the union of the paired output
                 PairedOutput<Instant, Duration> union = dataFactory.unionOf( sliced.values() );
 
