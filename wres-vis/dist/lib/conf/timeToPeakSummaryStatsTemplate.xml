@@ -8,6 +8,15 @@
 at @locationName@@baselineLabelSuffix@
 @referenceTime@ Evaluation Period: @dataPoolingWindow(yyyy-MM-dd;GMT)@</text>
 	</plotTitle>
+	
+	<!-- Set the bar parameters. -->
+	<datasourceDrawingParameters sourceIndex="0">
+		<seriesDrawingParameters
+			createdIndexOfSeriesToModify="-1">
+			<boxWidth>0.5</boxWidth>
+			<barWidth>0.9</barWidth>
+		</seriesDrawingParameters>
+	</datasourceDrawingParameters>
 
 	<!-- Range axis must always include zero because it is a bar plot. -->
 	<subPlot subPlotIndex="0">
