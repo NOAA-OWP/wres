@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="scenario1000">  
+  
+    <inputs>
+        <left>
+            <type>observations</type>
+            <source>../smalldata/25510317T00_FAKE3_observations.xml</source>
+            <variable>DISCHARGE</variable>
+        </left>
+        <right>
+            <type>single valued forecasts</type>
+            <source>../smalldata/25510317T12_FAKE3_forecast.xml</source>
+            <source>../smalldata/25510318T00_FAKE3_forecast.xml</source>
+            <source>../smalldata/25510318T12_FAKE3_forecast.xml</source>
+            <source>../smalldata/25510319T00_FAKE3_forecast.xml</source>
+            <variable>STREAMFLOW</variable>
+        </right>
+    </inputs>
+
+    <pair>
+        <unit>CMS</unit>
+
+        <!--TODO: there should be no need to specify a desiredTimeScale here, because no rescaling 
+            is required, only pairing. However, as of 95d6d00b4868e5f09e5e57409056529bc859aa23, 
+            this is not possible without exception. Also, the "none" function should be removed.-->
+
+        <desiredTimeScale>
+            <function>none</function>
+            <period>3</period>
+            <unit>hours</unit>
+        </desiredTimeScale>
+
+    </pair>
+
+    <metrics>
+        <thresholds>
+            <type>value</type>
+            <applyTo>left and right</applyTo>
+            <commaSeparatedValues>184</commaSeparatedValues>
+            <operator>greater than</operator>
+        </thresholds>   
+        <timeSeriesMetric>
+            <name>time to peak error</name>
+            <summaryStatistics>
+                <name>mean</name>
+                <name>median</name>
+                <name>minimum</name>
+                <name>maximum</name>
+                <name>standard deviation</name>
+                <name>mean absolute</name>
+            </summaryStatistics>
+        </timeSeriesMetric>
+    </metrics>
+
+    <outputs>
+        <destination type="pairs" decimalFormat="0.000000">
+            <path>output/</path>
+        </destination>
+        <destination type="numeric" decimalFormat="0.000000">
+            <path>output/</path>
+        </destination>
+        <destination type="graphic">
+            <path>output/</path>
+            <graphical width="800" height="600">
+            </graphical>
+        </destination>
+    </outputs>
+
+</project>

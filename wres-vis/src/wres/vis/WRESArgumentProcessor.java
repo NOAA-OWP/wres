@@ -308,6 +308,17 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
     {
         addArgument( "outputUnitsLabelSuffix", " [HOURS]" );
     }
+    
+    /**
+     * Custom method created for the time-to-peak plots.
+     * @param displayedPlotInput the plot input
+     */
+    public void addTimeToPeakArguments(MetricOutputMapByTimeAndThreshold<?> displayedPlotInput )
+    {
+        final MetricOutputMetadata meta = displayedPlotInput.getMetadata();
+        addArgument( "legendTitle", "Threshold " );
+        addArgument( "legendUnitsText", "[" + meta.getInputDimension() + "]" );
+    }
 
     /**
      * Adds arguments related to the baseline forecasts for skill scores.

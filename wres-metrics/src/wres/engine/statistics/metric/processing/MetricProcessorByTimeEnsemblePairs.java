@@ -1,6 +1,7 @@
 package wres.engine.statistics.metric.processing;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -15,6 +16,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.slf4j.event.Level;
 
 import wres.config.MetricConfigException;
 import wres.config.generated.ProjectConfig;
@@ -173,10 +175,10 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
 
         //Process and return the result       
         MetricFuturesByTime futureResults = futures.build();
-        
+
         //Add for merge with existing futures, if required
         addToMergeList( futureResults );
-        
+
         return futureResults.getMetricOutput();
     }
 
@@ -309,7 +311,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
             case RIGHT_MEAN:
                 return Slicer.right( input::test, right -> Arrays.stream( right ).average().getAsDouble() );
             case LEFT_AND_RIGHT_MEAN:
-                return Slicer.leftAndRight( input::test, right -> Arrays.stream( right ).average().getAsDouble() );                
+                return Slicer.leftAndRight( input::test, right -> Arrays.stream( right ).average().getAsDouble() );
             default:
                 throw new UnsupportedOperationException( "Cannot map the threshold data type '" + input.getDataType()
                                                          + "'." );
@@ -336,10 +338,10 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                                                                                                ThresholdGroup.VALUE ) )
                 {
                     throw new MetricConfigException( "Cannot configure '" + next
-                                                            + "' without thresholds to define the events: correct the "
-                                                            + "configuration labelled '"
-                                                            + config.getLabel()
-                                                            + "'." );
+                                                     + "' without thresholds to define the events: correct the "
+                                                     + "configuration labelled '"
+                                                     + config.getLabel()
+                                                     + "'." );
                 }
             }
 
@@ -351,8 +353,8 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                  && Objects.isNull( config.getInputs().getBaseline() ) )
             {
                 throw new MetricConfigException( "Specify a non-null baseline from which to generate the '"
-                                                        + MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE.name()
-                                                        + "'." );
+                                                 + MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE.name()
+                                                 + "'." );
             }
         }
     }
@@ -400,7 +402,6 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
      * @param futures the metric futures
      * @param outGroup the metric output type
      * @throws MetricCalculationException if the metrics cannot be computed
-     * @throws InsufficientDataException if there is insufficient data to compute any metrics
      */
 
     private void processEnsemblePairsByThreshold( TimeWindow timeWindow,
@@ -418,14 +419,17 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
 
         double[] sorted = getSortedClimatology( input, union );
         Map<OneOrTwoThresholds, MetricCalculationException> failures = new HashMap<>();
-        union.forEach( threshold -> {
+
+        // Iterate the thresholds
+        for ( Threshold threshold : union )
+        {
             Set<MetricConstants> ignoreTheseMetrics = filtered.doesNotHaveTheseMetricsForThisThreshold( threshold );
 
             // Add quantiles to threshold
             Threshold useMe = addQuantilesToThreshold( threshold, sorted );
 
             try
-            {         
+            {
                 EnsemblePairs pairs = input;
 
                 //Filter the pairs if required
@@ -444,14 +448,22 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                                       ignoreTheseMetrics );
 
             }
-            //Insufficient data for one threshold: log, but allow
+            // Insufficient data for one threshold: log failures collectively and proceed
+            // Such failures are routine and should not be propagated
             catch ( MetricInputSliceException | InsufficientDataException e )
             {
-                failures.put( OneOrTwoThresholds.of( useMe ), new MetricCalculationException( e.getMessage(), e ) );
+                // Decorate failure
+                failures.put( OneOrTwoThresholds.of( useMe ),
+                              new MetricCalculationException( "While computing threshold " + threshold + ":", e ) );
             }
-        } );
-        //Handle any failures
-        logThresholdFailures( failures, union.size(), input.getMetadata(), MetricInputGroup.ENSEMBLE );
+        }
+
+        // Log failures collectively
+        logThresholdFailures( Collections.unmodifiableMap( failures ),
+                              union.size(),
+                              input.getMetadata(),
+                              MetricInputGroup.ENSEMBLE,
+                              Level.WARN );
     }
 
     /**
@@ -565,40 +577,28 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         Set<Threshold> union = filtered.union();
 
         double[] sorted = getSortedClimatology( input, union );
-        Map<OneOrTwoThresholds, MetricCalculationException> failures = new HashMap<>();
-        union.forEach( threshold -> {
+
+        // Iterate the thresholds
+        for ( Threshold threshold : union )
+        {
             Set<MetricConstants> ignoreTheseMetrics = filtered.doesNotHaveTheseMetricsForThisThreshold( threshold );
 
             // Add quantiles to threshold
             Threshold useMe = addQuantilesToThreshold( threshold, sorted );
 
-            try
-            {
-                // Transform the pairs
-                DiscreteProbabilityPairs transformed = dataFactory.getSlicer()
-                                                                  .transform( input,
-                                                                              useMe,
-                                                                              toDiscreteProbabilities );
+            // Transform the pairs
+            DiscreteProbabilityPairs transformed = dataFactory.getSlicer()
+                                                              .transform( input,
+                                                                          useMe,
+                                                                          toDiscreteProbabilities );
 
-                processDiscreteProbabilityPairs( Pair.of( timeWindow, OneOrTwoThresholds.of( useMe ) ),
-                                                 transformed,
-                                                 futures,
-                                                 outGroup,
-                                                 ignoreTheseMetrics );
+            processDiscreteProbabilityPairs( Pair.of( timeWindow, OneOrTwoThresholds.of( useMe ) ),
+                                             transformed,
+                                             futures,
+                                             outGroup,
+                                             ignoreTheseMetrics );
 
-            }
-            //Insufficient data for one threshold: log, but allow
-            catch ( InsufficientDataException e )
-            {
-                failures.put( OneOrTwoThresholds.of( useMe ), new MetricCalculationException( e.getMessage(), e ) );
-            }
-
-        } );
-        //Handle any failures
-        logThresholdFailures( failures,
-                              union.size(),
-                              input.getMetadata(),
-                              MetricInputGroup.DISCRETE_PROBABILITY );
+        }
     }
 
     /**
@@ -704,65 +704,50 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         Set<Threshold> union = filteredByOuter.union();
 
         double[] sorted = getSortedClimatology( input, union );
-        Map<OneOrTwoThresholds, MetricCalculationException> failures = new HashMap<>();
-        union.forEach( threshold -> {
 
+        // Iterate the thresholds
+        for ( Threshold threshold : union )
+        {
             Set<MetricConstants> ignoreTheseMetrics =
                     filteredByOuter.doesNotHaveTheseMetricsForThisThreshold( threshold );
 
             // Add quantiles to threshold
             Threshold outerThreshold = addQuantilesToThreshold( threshold, sorted );
 
-            try
+            // Transform the pairs to probabilities first
+            DiscreteProbabilityPairs transformed = dataFactory.getSlicer()
+                                                              .transform( input,
+                                                                          outerThreshold,
+                                                                          toDiscreteProbabilities );
+
+            // Find the union of classifiers across all metrics   
+            Set<Threshold> classifiers = filteredByInner.union();
+
+            for ( Threshold innerThreshold : classifiers )
             {
-                // Transform the pairs to probabilities first
-                DiscreteProbabilityPairs transformed = dataFactory.getSlicer()
-                                                                  .transform( input,
-                                                                              outerThreshold,
-                                                                              toDiscreteProbabilities );
+                // Metrics for which the current classifier is not required
+                Set<MetricConstants> innerIgnoreTheseMetrics =
+                        filteredByInner.doesNotHaveTheseMetricsForThisThreshold( innerThreshold );
 
-                // Find the union of classifiers across all metrics   
-                Set<Threshold> classifiers = filteredByInner.union();
+                // Union of metrics to ignore, either because the threshold is not required or
+                // because the classifier is not required
+                Set<MetricConstants> unionToIgnore = new HashSet<>( ignoreTheseMetrics );
+                unionToIgnore.addAll( innerIgnoreTheseMetrics );
 
-                for ( Threshold innerThreshold : classifiers )
-                {
-                    // Metrics for which the current classifier is not required
-                    Set<MetricConstants> innerIgnoreTheseMetrics =
-                            filteredByInner.doesNotHaveTheseMetricsForThisThreshold( innerThreshold );
+                // Derive compound threshold from outerThreshold and innerThreshold
+                OneOrTwoThresholds compound = OneOrTwoThresholds.of( outerThreshold, innerThreshold );
 
-                    // Union of metrics to ignore, either because the threshold is not required or
-                    // because the classifier is not required
-                    Set<MetricConstants> unionToIgnore = new HashSet<>( ignoreTheseMetrics );
-                    unionToIgnore.addAll( innerIgnoreTheseMetrics );
+                Pair<TimeWindow, OneOrTwoThresholds> nextKey = Pair.of( timeWindow, compound );
 
-                    // Derive compound threshold from outerThreshold and innerThreshold
-                    OneOrTwoThresholds compound = OneOrTwoThresholds.of( outerThreshold, innerThreshold );
-
-                    Pair<TimeWindow, OneOrTwoThresholds> nextKey = Pair.of( timeWindow, compound );
-
-                    //Define a mapper to convert the discrete probability pairs to dichotomous pairs
-                    Function<PairOfDoubles, PairOfBooleans> mapper =
-                            pair -> dataFactory.pairOf( innerThreshold.test( pair.getItemOne() ),
-                                                        innerThreshold.test( pair.getItemTwo() ) );
-                    //Transform the pairs
-                    DichotomousPairs dichotomous = dataFactory.getSlicer().transform( transformed, mapper );
-                    processDichotomousPairs( nextKey, dichotomous, futures, outGroup, unionToIgnore );
-                }
-
+                //Define a mapper to convert the discrete probability pairs to dichotomous pairs
+                Function<PairOfDoubles, PairOfBooleans> mapper =
+                        pair -> dataFactory.pairOf( innerThreshold.test( pair.getItemOne() ),
+                                                    innerThreshold.test( pair.getItemTwo() ) );
+                //Transform the pairs
+                DichotomousPairs dichotomous = dataFactory.getSlicer().transform( transformed, mapper );
+                processDichotomousPairs( nextKey, dichotomous, futures, outGroup, unionToIgnore );
             }
-            //Insufficient data for one threshold: log, but allow
-            catch ( InsufficientDataException e )
-            {
-                failures.put( OneOrTwoThresholds.of( outerThreshold ),
-                              new MetricCalculationException( e.getMessage(), e ) );
-            }
-
-        } );
-        //Handle any failures
-        logThresholdFailures( failures,
-                              union.size(),
-                              input.getMetadata(),
-                              MetricInputGroup.DISCRETE_PROBABILITY );
+        }
     }
 
     /**
@@ -791,10 +776,10 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                                                            && !probabilityClassifiers.get( next ).isEmpty() ) )
             {
                 throw new MetricConfigException( "In order to configure dichotomous metrics for ensemble "
-                                                        + "inputs, every metric group that contains dichotomous "
-                                                        + "metrics must also contain thresholds for classifying "
-                                                        + "the forecast probabilities into occurrences and "
-                                                        + "non-occurrences." );
+                                                 + "inputs, every metric group that contains dichotomous "
+                                                 + "metrics must also contain thresholds for classifying "
+                                                 + "the forecast probabilities into occurrences and "
+                                                 + "non-occurrences." );
             }
         }
 
@@ -806,10 +791,10 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
                                                            && !probabilityClassifiers.get( next ).isEmpty() ) )
             {
                 throw new MetricConfigException( "In order to configure multicategory metrics for ensemble "
-                                                        + "inputs, every metric group that contains dichotomous "
-                                                        + "metrics must also contain thresholds for classifying "
-                                                        + "the forecast probabilities into occurrences and "
-                                                        + "non-occurrences." );
+                                                 + "inputs, every metric group that contains dichotomous "
+                                                 + "metrics must also contain thresholds for classifying "
+                                                 + "the forecast probabilities into occurrences and "
+                                                 + "non-occurrences." );
             }
         }
     }

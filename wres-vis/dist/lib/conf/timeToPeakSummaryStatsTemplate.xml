@@ -39,7 +39,15 @@ at @locationName@@baselineLabelSuffix@
 			<labelAnchor>auto</labelAnchor>
 		</threshold>
 	</thresholdList>
-	
-	<legend visible="false"/>
+	    
+    <!-- Put the legend on the bottom with an appropriate title. -->
+    <legend visible="true">
+        <position>BOTTOM</position>
+        <title>
+            <font family="Dialog" size="12" style="1" />
+            <text>@legendTitle@@legendUnitsText@:</text>
+        </title>
+        <borderLineWidth>0.0</borderLineWidth>
+    </legend>
 
 </chartDrawingParameters>
