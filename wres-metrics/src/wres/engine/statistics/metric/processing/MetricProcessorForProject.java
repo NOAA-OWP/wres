@@ -1,15 +1,13 @@
 package wres.engine.statistics.metric.processing;
 
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
 import wres.config.generated.DatasourceType;
-import wres.config.generated.MetricConfigName;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.datamodel.ThresholdsByType;
+import wres.datamodel.ThresholdsByMetric;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.outputs.MetricOutputAccessException;
@@ -43,7 +41,7 @@ public class MetricProcessorForProject
      * 
      * @param metricFactory an instance of a metric factory
      * @param projectConfig the project configuration
-     * @param externalThresholds an optional set of external thresholds (one per metric), may be null
+     * @param externalThresholds an optional set of external thresholds, may be null
      * @param thresholdExecutor an executor service for processing thresholds
      * @param metricExecutor an executor service for processing metrics
      * @throws MetricProcessorException if the metric processor could not be built
@@ -51,7 +49,7 @@ public class MetricProcessorForProject
 
     public MetricProcessorForProject( final MetricFactory metricFactory,
                                       final ProjectConfig projectConfig,
-                                      final Map<MetricConfigName,ThresholdsByType> externalThresholds,
+                                      final ThresholdsByMetric externalThresholds,
                                       final ExecutorService thresholdExecutor,
                                       final ExecutorService metricExecutor )
             throws MetricProcessorException
@@ -138,15 +136,36 @@ public class MetricProcessorForProject
      * @return the output types to cache
      */
 
-    public Set<MetricOutputGroup> getCachedMetricOutputTypes()
+    public Set<MetricOutputGroup> getMetricOutputTypesToCache()
     {
         if ( Objects.nonNull( singleValuedProcessor ) )
         {
-            return singleValuedProcessor.getMetricOutputToCache();
+            return singleValuedProcessor.getMetricOutputTypesToCache();
         }
         else
         {
-            return ensembleProcessor.getMetricOutputToCache();
+            return ensembleProcessor.getMetricOutputTypesToCache();
+        }
+    }
+
+    /**
+     * Returns the set of {@link MetricOutputGroup} that were actually cached across successive executions of a 
+     * {@link MetricProcessor}. This may differ from {@link #getMetricOutputTypesToCache()}, as some end-of-pipeline 
+     * outputs are computed and cached automatically.
+     * 
+     * @return the output types to cache
+     * @throws MetricOutputAccessException if the cached types could not be determined
+     */
+
+    public Set<MetricOutputGroup> getCachedMetricOutputTypes() throws MetricOutputAccessException
+    {
+        if ( Objects.nonNull( singleValuedProcessor ) )
+        {
+            return singleValuedProcessor.getCachedMetricOutputTypes();
+        }
+        else
+        {
+            return ensembleProcessor.getCachedMetricOutputTypes();
         }
     }
 

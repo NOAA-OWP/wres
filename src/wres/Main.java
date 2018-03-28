@@ -41,7 +41,7 @@ public class Main {
 
         if (LOGGER.isInfoEnabled())
         {
-            LOGGER.info(getVersion());
+            LOGGER.info( Main.getVersionDescription() );
         }
 
         final String operation = ((Supplier<String>) () -> {
@@ -106,7 +106,8 @@ public class Main {
                                      startTime,
                                      duration,
                                      exitCode.get() == MainFunctions.FAILURE,
-                                     Main.combineExceptions() );
+                                     Main.combineExceptions(),
+                                     Main.getVersion() );
         }
         catch ( Exception e )
         {
@@ -117,7 +118,8 @@ public class Main {
                                      startTime,
                                      duration,
                                      exitCode.get() == MainFunctions.FAILURE,
-                                     Main.combineExceptions( ) );
+                                     Main.combineExceptions( ),
+                                     Main.getVersion() );
         }
         watch.stop();
 
@@ -132,6 +134,11 @@ public class Main {
     public static String getVersion()
     {
         return version.toString();
+    }
+
+    public static String getVersionDescription()
+    {
+        return version.getDescription();
     }
 
     /**

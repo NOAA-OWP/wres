@@ -175,10 +175,11 @@ public final class Variables extends Cache<VariableDetails, String>
                     this.getDetails().put(detail.getId(), detail);
                 }
             }
-            catch (SQLException error)
+            catch ( SQLException sqlException )
             {
-                LOGGER.error("An error was encountered when trying to populate "
-                             + "the Variable cache.", error);
+				// Failure to pre-populate cache should not affect primary outputs.
+                LOGGER.warn( "An error was encountered when trying to populate "
+                             + "the Variable cache.", sqlException );
             }
             finally
             {
@@ -190,9 +191,10 @@ public final class Variables extends Cache<VariableDetails, String>
                     }
                     catch(SQLException e)
                     {
-                        LOGGER.error("An error was encountered when trying to"
+						// Exception on close should not affect primary outputs.
+                        LOGGER.warn( "An error was encountered when trying to"
                                      + "close the result set containing Variable "
-                                     + "information.", e);
+                                     + "information.", e );
                     }
                 }
 

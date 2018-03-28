@@ -3,6 +3,7 @@ package wres.datamodel;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
@@ -42,18 +43,18 @@ public enum MetricConstants
      */
 
     BRIER_SKILL_SCORE( MetricInputGroup.DISCRETE_PROBABILITY, MetricOutputGroup.DOUBLE_SCORE ),
-    
+
     /**
      * Identifier for a box plot of errors by observed value.
      */
-    
+
     BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE( MetricInputGroup.ENSEMBLE, MetricOutputGroup.BOXPLOT ),
-    
+
     /**
      * Identifier for a box plot of errors by forecast value.
      */
-    
-    BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE( MetricInputGroup.ENSEMBLE, MetricOutputGroup.BOXPLOT ),    
+
+    BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE( MetricInputGroup.ENSEMBLE, MetricOutputGroup.BOXPLOT ),
 
     /**
      * Identifier for coefficient of determination.
@@ -202,57 +203,57 @@ public enum MetricConstants
     /**
      * Identifier for the Volumetric Efficiency.
      */
-    
-    VOLUMETRIC_EFFICIENCY ( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.DOUBLE_SCORE ),
-    
+
+    VOLUMETRIC_EFFICIENCY( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.DOUBLE_SCORE ),
+
     /**
      * Identifier for the Time-to-Peak Error.
      */
-    
-    TIME_TO_PEAK_ERROR ( MetricInputGroup.SINGLE_VALUED_TIME_SERIES, MetricOutputGroup.PAIRED ),    
-    
+
+    TIME_TO_PEAK_ERROR( MetricInputGroup.SINGLE_VALUED_TIME_SERIES, MetricOutputGroup.PAIRED ),
+
     /**
      * Identifier for a statistic derived from the Time-to-Peak Error.
      */
-    
-    TIME_TO_PEAK_ERROR_STATISTIC ( MetricInputGroup.SINGLE_VALUED_TIME_SERIES, MetricOutputGroup.DURATION_SCORE ),    
+
+    TIME_TO_PEAK_ERROR_STATISTIC( MetricInputGroup.SINGLE_VALUED_TIME_SERIES, MetricOutputGroup.DURATION_SCORE ),
 
     /**
      * Mean statistic.
      */
-    
-    MEAN (ScoreOutputGroup.UNIVARIATE_STATISTIC ), 
-    
+
+    MEAN( ScoreOutputGroup.UNIVARIATE_STATISTIC ),
+
     /**
      * Median statistic.
      */
-    
-    MEDIAN (ScoreOutputGroup.UNIVARIATE_STATISTIC ),    
-    
+
+    MEDIAN( ScoreOutputGroup.UNIVARIATE_STATISTIC ),
+
     /**
      * Standard deviation statistic.
      */
-    
-    STANDARD_DEVIATION (ScoreOutputGroup.UNIVARIATE_STATISTIC ),     
-    
+
+    STANDARD_DEVIATION( ScoreOutputGroup.UNIVARIATE_STATISTIC ),
+
     /**
      * Minimum statistic.
      */
-    
-    MINIMUM (ScoreOutputGroup.UNIVARIATE_STATISTIC ), 
-    
+
+    MINIMUM( ScoreOutputGroup.UNIVARIATE_STATISTIC ),
+
     /**
      * Maximum statistic.
      */
-    
-    MAXIMUM (ScoreOutputGroup.UNIVARIATE_STATISTIC ), 
-    
+
+    MAXIMUM( ScoreOutputGroup.UNIVARIATE_STATISTIC ),
+
     /**
      * Mean absolute statistic.
      */
-    
-    MEAN_ABSOLUTE (ScoreOutputGroup.UNIVARIATE_STATISTIC ), 
-    
+
+    MEAN_ABSOLUTE( ScoreOutputGroup.UNIVARIATE_STATISTIC ),
+
     /**
      * Indicator for no decomposition.
      */
@@ -415,7 +416,7 @@ public enum MetricConstants
     {
         return Arrays.asList( this.inGroup ).contains( inGroup );
     }
-    
+
     /**
      * Returns true if the input {@link MetricOutputGroup} contains the current {@link MetricConstants}, false
      * otherwise.
@@ -439,8 +440,8 @@ public enum MetricConstants
     public boolean isInGroup( ScoreOutputGroup inGroup )
     {
         return Arrays.asList( this.scoreTypeGroup ).contains( inGroup );
-    }    
-    
+    }
+
     /**
      * Returns true if the input {@link MetricInputGroup} and {@link MetricOutputGroup} both contain the current
      * {@link MetricConstants}, false otherwise.
@@ -455,7 +456,7 @@ public enum MetricConstants
     {
         return isInGroup( inGroup ) && isInGroup( outGroup );
     }
-    
+
     /**
      * Returns the {@link MetricOutputGroup} associated with the {@link MetricConstants}.
      * 
@@ -466,7 +467,7 @@ public enum MetricConstants
     {
         return outGroup;
     }
-    
+
     /**
      * Returns all metric components in the {@link ScoreOutputGroup} with which this constant is associated or
      * null if none is defined.
@@ -495,7 +496,7 @@ public enum MetricConstants
                            || a.outGroup != outGroup );
         return Collections.unmodifiableSet( all );
     }
-    
+
     /**
      * Returns all {@link MetricConstants} associated with the specified {@link MetricInputGroup}.
      * 
@@ -508,7 +509,7 @@ public enum MetricConstants
         Set<MetricConstants> all = EnumSet.allOf( MetricConstants.class );
         all.removeIf( a -> Objects.isNull( a.inGroup ) || !Arrays.asList( a.inGroup ).contains( inGroup ) );
         return Collections.unmodifiableSet( all );
-    }    
+    }
 
     /**
      * Returns all {@link MetricConstants} associated with the specified {@link MetricOutputGroup}.
@@ -522,8 +523,8 @@ public enum MetricConstants
         Set<MetricConstants> all = EnumSet.allOf( MetricConstants.class );
         all.removeIf( a -> Objects.isNull( a.outGroup ) || a.outGroup != outGroup );
         return Collections.unmodifiableSet( all );
-    }    
-    
+    }
+
     /**
      * Returns a string representation.
      * 
@@ -548,7 +549,7 @@ public enum MetricConstants
          */
 
         SINGLE_VALUED,
-        
+
         /**
          * Metrics that consume single-valued time-series inputs.
          */
@@ -603,6 +604,17 @@ public enum MetricConstants
         {
             return getMetrics().contains( input );
         }
+        
+        /**
+         * Returns a set representation of the enumeration. Contains all elements in {@link MetricInputGroup#values()}.
+         * 
+         * @return a set representation of the elements in this enumeration
+         */
+
+        public static Set<MetricInputGroup> set()
+        {
+            return Collections.unmodifiableSet( new HashSet<>( Arrays.asList( MetricInputGroup.values() ) ) );
+        }        
 
     }
 
@@ -624,30 +636,30 @@ public enum MetricConstants
          */
 
         MATRIX,
-        
+
         /**
          * Metrics that produce a {@link BoxPlotOutput}.
          */
 
         BOXPLOT,
-        
+
         /**
          * Metrics that produce a {@link PairedOutput}.
          */
 
         PAIRED,
-        
+
         /**
          * Metrics that produce a {@link DoubleScoreOutput}.
          */
 
-        DOUBLE_SCORE,       
-        
+        DOUBLE_SCORE,
+
         /**
          * Metrics that produce a {@link DurationScoreOutput}.
          */
 
-        DURATION_SCORE;                 
+        DURATION_SCORE;
 
         /**
          * Returns all {@link MetricConstants} associated with the current {@link MetricOutputGroup}.
@@ -674,8 +686,19 @@ public enum MetricConstants
             return getMetrics().contains( input );
         }
 
+        /**
+         * Returns a set representation of the enumeration. Contains all elements in {@link MetricOutputGroup#values()}.
+         * 
+         * @return a set representation of the elements in this enumeration
+         */
+
+        public static Set<MetricOutputGroup> set()
+        {
+            return Collections.unmodifiableSet( new HashSet<>( Arrays.asList( MetricOutputGroup.values() ) ) );
+        }
+
     }
-    
+
     /**
      * A template associated with one or more scalar values that compose a score.
      */
@@ -716,11 +739,11 @@ public enum MetricConstants
          */
 
         CR_AND_LBR,
-        
+
         /**
          * Identifier for a univariate statistic, such as the mean or median.
          */
-        
+
         UNIVARIATE_STATISTIC;
 
         /**
@@ -753,35 +776,35 @@ public enum MetricConstants
         }
 
     }
-    
+
     /**
      * A dimension associated with a verification metric. The natural order of an enum type is dictated by the order 
      * of declaration. The general rule for diagram outputs is to specify the domain axis first and the range axis 
      * second, i.e. the declaration order should reflect the desired order of the outputs for storage in a map, for 
      * example.
-     */    
-    
+     */
+
     public enum MetricDimension
     {
-        
+
         /**
          * Identifier for probability of false detection.
          */
-        
+
         PROBABILITY_OF_FALSE_DETECTION,
-        
+
         /**
          * Identifier for probability of detection.
          */
-        
+
         PROBABILITY_OF_DETECTION,
 
         /**
          * Identifier for a rank ordering.
          */
 
-        RANK_ORDER,        
-        
+        RANK_ORDER,
+
         /**
          * Identifier for a forecast probability.
          */
@@ -798,74 +821,74 @@ public enum MetricConstants
          * Identifier for observed quantiles.
          */
 
-        OBSERVED_QUANTILES,   
-        
+        OBSERVED_QUANTILES,
+
         /**
          * Identifier for predicted quantiles.
          */
 
-        PREDICTED_QUANTILES, 
-        
+        PREDICTED_QUANTILES,
+
         /**
          * Identifier for forecast error.
          */
-        
+
         FORECAST_ERROR,
-        
+
         /**
          * Identifier for observed value. 
          */
-        
+
         OBSERVED_VALUE,
-        
+
         /**
          * Identifier for forecast value. 
          */
-        
-        FORECAST_VALUE,        
-        
+
+        FORECAST_VALUE,
+
         /**
          * Identifier for ensemble mean. 
          */
-        
+
         ENSEMBLE_MEAN,
-        
+
         /**
          * Identifier for ensemble median. 
          */
-        
+
         ENSEMBLE_MEDIAN,
-        
+
         /**
          * Identifier for a sample size.
          */
-        
+
         SAMPLE_SIZE,
-        
+
         /**
          * Identifier for true positives.
          */
-         
+
         TRUE_POSITIVES,
-        
+
         /**
          * Identifier for false positives.
          */
-        
+
         FALSE_POSITIVES,
-        
+
         /**
          * Identifier for false negatives.
          */
-        
+
         FALSE_NEGATIVES,
-        
+
         /**
          * Identifier for true negatives.
          */
-        
+
         TRUE_NEGATIVES;
-        
+
         /**
          * Returns a string representation.
          * 
@@ -877,6 +900,6 @@ public enum MetricConstants
         {
             return name().replaceAll( "_", " " );
         }
-        
+
     }
 }

@@ -227,13 +227,6 @@ class SafeThreshold implements Threshold
         {
             return returnMe;
         }
-
-       //Compare data type
-        returnMe = this.getDataType().compareTo( o.getDataType() );
-        if ( returnMe != 0 )
-        {
-            return returnMe;
-        }
         
         //Check for status of optional elements
         returnMe = comparePresenceAbsence( o );
@@ -262,6 +255,13 @@ class SafeThreshold implements Threshold
                 return returnMe;
             }
         }
+        
+        //Compare data type
+        returnMe = this.getDataType().compareTo( o.getDataType() );
+        if ( returnMe != 0 )
+        {
+            return returnMe;
+        }        
 
         //Compare labels
         if ( hasLabel() )
@@ -526,14 +526,8 @@ class SafeThreshold implements Threshold
         }
 
         //Check the probability
-        if ( this.hasProbabilities()
-             && !this.getProbabilities().first().equals( Double.NEGATIVE_INFINITY )
-             && ( this.getProbabilities().first() < 0.0 || this.getProbabilities().first() > 1.0 ) )
-        {
-            throw new IllegalArgumentException( "The threshold probability is out of bounds [0,1]: "
-                                                + this.getProbabilities().first() );
-        }
-
+        this.validateProbabilities();
+        
         //Check a two-sided threshold
         if ( this.hasBetweenCondition() )
         {
@@ -551,6 +545,38 @@ class SafeThreshold implements Threshold
         {
             throw new IllegalArgumentException( "Cannot set a label for an infinite threshold, as the label is "
                                                 + "reserved." );
+        }
+    }
+    
+    /**
+     * Validates the probabilities.  
+     * 
+     * @throws IllegalArgumentException if the validation fails
+     */
+
+    void validateProbabilities()
+    {
+        if ( this.hasProbabilities() )
+        {
+            if ( !this.getProbabilities().first().equals( Double.NEGATIVE_INFINITY )
+                 && ( this.getProbabilities().first() < 0.0 || this.getProbabilities().first() > 1.0 ) )
+            {
+                throw new IllegalArgumentException( "The threshold probability is out of bounds [0,1]: "
+                                                    + this.getProbabilities().first() );
+            }
+            
+            // Cannot have LESS_THAN on the lower bound
+            if( Math.abs( this.getProbabilities().first() - 0.0 ) <.00000001 && this.getCondition() == Operator.LESS )
+            {
+                throw new IllegalArgumentException( "Cannot apply a threshold operator of '<' to the lower bound "
+                        + "probability of 0.0."); 
+            }
+            // Cannot have GREATER_THAN on the upper bound
+            if( Math.abs( this.getProbabilities().first() - 1.0 ) <.00000001 && this.getCondition() == Operator.GREATER )
+            {
+                throw new IllegalArgumentException( "Cannot apply a threshold operator of '>' to the upper bound "
+                        + "probability of 1.0."); 
+            }
         }
     }
 

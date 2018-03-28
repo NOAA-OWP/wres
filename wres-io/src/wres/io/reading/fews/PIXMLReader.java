@@ -287,7 +287,7 @@ public final class PIXMLReader extends XMLReader
      * @throws ProjectConfigException when a forecast is missing a forecast date
 	 */
 	private void parseEvent(XMLStreamReader reader)
-			throws SQLException, ProjectConfigException, IOException
+			throws SQLException, ProjectConfigException
 	{
 		this.incrementLead();
 		String value = null;
@@ -425,7 +425,7 @@ public final class PIXMLReader extends XMLReader
 	 * @throws SQLException Any possible error encountered while trying to retrieve the variable position id or the id of the measurement uni
 	 */
 	private void addObservedEvent(String observedTime, String observedValue)
-			throws SQLException, IOException
+			throws SQLException
 	{
 		if (insertCount > 0)
 		{
@@ -451,7 +451,7 @@ public final class PIXMLReader extends XMLReader
 	}
 
 	// TODO: Move the saving to TimeSeriesValues so this doesn't have to be called
-	public static void saveLeftoverForecasts()
+    public static void saveLeftoverForecasts() throws SQLException
     {
         synchronized (groupLock)
         {
@@ -463,15 +463,7 @@ public final class PIXMLReader extends XMLReader
                 if ( PIXMLReader.copyCount.get( key ) > 0 )
                 {
                     String header;
-                    try
-                    {
-                        header = PIXMLReader.getForecastInsertHeader( key );
-                    }
-                    catch ( SQLException e )
-                    {
-                        LOGGER.error( "While saving leftover forecasts:", e );
-                        continue;
-                    }
+                    header = PIXMLReader.getForecastInsertHeader( key );
                     CopyExecutor copier =
                             new CopyExecutor( header,
                                               builderPair.getValue().toString(),
@@ -756,7 +748,7 @@ public final class PIXMLReader extends XMLReader
 	 * with the database failed.
 	 */
 	private int getTimeSeriesID()
-			throws SQLException, IOException
+			throws SQLException
 	{
 		if (currentTimeSeriesID == null)
 		{
@@ -769,7 +761,7 @@ public final class PIXMLReader extends XMLReader
 	}
 
 	private TimeSeries getCurrentTimeSeries()
-			throws SQLException, IOException
+			throws SQLException
 	{
         if (this.currentTimeSeries == null)
         {
@@ -805,7 +797,7 @@ public final class PIXMLReader extends XMLReader
 	 * @throws SQLException Thrown if an ID could not be retrieved from the database
 	 */
 	private int getSourceID()
-			throws SQLException, IOException
+			throws SQLException
 	{
 		if (currentSourceID == null)
 		{
@@ -855,17 +847,7 @@ public final class PIXMLReader extends XMLReader
             }
 
             // Regardless of whether we were the ones or not, get it from cache
-			try
-			{
-				currentSourceID = DataSources.getActiveSourceID( this.getHash() );
-			}
-			catch ( IOException e )
-			{
-				throw new IOException("The hash of the file named '" +
-									  this.getFilename() + "' could not be "
-									  + "determined, meaning that it cannot be "
-									  + "properly ingested.", e);
-			}
+            currentSourceID = DataSources.getActiveSourceID( this.getHash() );
 
 			// Mark whether this reader is the one to perform ingest or yield.
             inChargeOfIngest = wasThisReaderTheOneThatInserted;

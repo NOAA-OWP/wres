@@ -75,7 +75,7 @@ public interface TimeSeriesOfSingleValuedPairsBuilder extends PairedInputBuilder
             addTimeSeriesDataForBaseline( List<Event<List<Event<PairOfDoubles>>>> timeSeries );
 
     /**
-     * Adds a time-series to the builder.
+     * Adds a time-series to the builder, including any baseline.
      * 
      * @param timeSeries the time-series
      * @return the builder
@@ -83,7 +83,18 @@ public interface TimeSeriesOfSingleValuedPairsBuilder extends PairedInputBuilder
      */
 
     TimeSeriesOfSingleValuedPairsBuilder addTimeSeries( TimeSeriesOfSingleValuedPairs timeSeries );
+    
+    /**
+     * Adds a time-series to the builder as a baseline dataset only. Any data associated with the 
+     * {@link TimeSeriesOfSingleValuedPairs#getBaselineData()} of the input is ignored.
+     * 
+     * @param timeSeries the time-series
+     * @return the builder
+     * @throws MetricInputException if the specified input is inconsistent with any existing input
+     */
 
+    TimeSeriesOfSingleValuedPairsBuilder addTimeSeriesForBaseline( TimeSeriesOfSingleValuedPairs timeSeries );
+    
     /**
      * Builds a time-series.
      * 

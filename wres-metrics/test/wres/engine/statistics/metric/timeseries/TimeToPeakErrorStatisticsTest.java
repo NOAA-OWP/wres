@@ -6,7 +6,10 @@ import static org.junit.Assert.fail;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 
 import org.junit.Test;
@@ -68,7 +71,7 @@ public final class TimeToPeakErrorStatisticsTest
                                                                    window );
         // Build the metric
         final TimeToPeakErrorStatisticBuilder b = new TimeToPeakErrorStatisticBuilder();
-        b.setStatistic( MetricConstants.MEAN ).setOutputFactory( outF );
+        b.setStatistics( Collections.singleton( MetricConstants.MEAN ) ).setOutputFactory( outF );
         final TimeToPeakErrorStatistics ttps = b.build();
 
         // Check the parameters
@@ -95,7 +98,7 @@ public final class TimeToPeakErrorStatisticsTest
 
         // Check some additional statistics
         // Maximum error = 12
-        DurationScoreOutput max = b.setStatistic( MetricConstants.MAXIMUM )
+        DurationScoreOutput max = b.setStatistics( Collections.singleton( MetricConstants.MAXIMUM ) )
                                    .build()
                                    .apply( input );
         assertTrue( "Actual: " + max.getComponent( MetricConstants.MAXIMUM ).getData()
@@ -104,7 +107,7 @@ public final class TimeToPeakErrorStatisticsTest
                     + ".",
                     max.getComponent( MetricConstants.MAXIMUM ).getData().equals( Duration.ofHours( 12 ) ) );
         // Minimum error = -6
-        DurationScoreOutput min = b.setStatistic( MetricConstants.MINIMUM )
+        DurationScoreOutput min = b.setStatistics( Collections.singleton( MetricConstants.MINIMUM ) )
                                    .build()
                                    .apply( input );
         assertTrue( "Actual: " + min.getComponent( MetricConstants.MINIMUM ).getData()
@@ -113,7 +116,7 @@ public final class TimeToPeakErrorStatisticsTest
                     + ".",
                     min.getComponent( MetricConstants.MINIMUM ).getData().equals( Duration.ofHours( -6 ) ) );
         // Mean absolute error = 9
-        DurationScoreOutput meanAbs = b.setStatistic( MetricConstants.MEAN_ABSOLUTE )
+        DurationScoreOutput meanAbs = b.setStatistics( Collections.singleton( MetricConstants.MEAN_ABSOLUTE ) )
                                        .build()
                                        .apply( input );
         assertTrue( "Actual: " + meanAbs.getComponent( MetricConstants.MEAN_ABSOLUTE ).getData()
@@ -155,10 +158,10 @@ public final class TimeToPeakErrorStatisticsTest
                                                                    window );
         // Build the metric
         final TimeToPeakErrorStatisticBuilder b = new TimeToPeakErrorStatisticBuilder();
-        b.setStatistic( MetricConstants.MEAN,
-                        MetricConstants.MAXIMUM,
-                        MetricConstants.MINIMUM,
-                        MetricConstants.MEAN_ABSOLUTE )
+        b.setStatistics( new HashSet<>( Arrays.asList( MetricConstants.MEAN,
+                                                       MetricConstants.MAXIMUM,
+                                                       MetricConstants.MINIMUM,
+                                                       MetricConstants.MEAN_ABSOLUTE ) ) )
          .setOutputFactory( outF );
         final TimeToPeakErrorStatistics ttps = b.build();
 
@@ -202,28 +205,32 @@ public final class TimeToPeakErrorStatisticsTest
         // Empty statistic
         try
         {
-            b.setStatistic( new MetricConstants[0] );
-            b.build();
+            TimeToPeakErrorStatisticBuilder c = new TimeToPeakErrorStatisticBuilder();
+            c.setOutputFactory( outF );
+            c.setStatistics( Collections.emptySet() ).build();
             fail( "Expected an exception on a missing statistic." );
         }
         catch ( MetricParameterException e )
         {
-        }      
+        }
         // Null statistic
         try
         {
-            b.setStatistic( new MetricConstants[1] );
-            b.build();
+            TimeToPeakErrorStatisticBuilder c = new TimeToPeakErrorStatisticBuilder();
+            c.setStatistics( Collections.singleton( null ) );
+            c.build();
             fail( "Expected an exception on a missing statistic." );
         }
         catch ( MetricParameterException e )
         {
-        }  
+        }
         // Unrecognized statistic
         try
         {
-            b.setStatistic( MetricConstants.NONE );
-            b.build();
+            TimeToPeakErrorStatisticBuilder c = new TimeToPeakErrorStatisticBuilder();
+            c.setOutputFactory( outF );
+            c.setStatistics( Collections.singleton( MetricConstants.NONE ) );
+            c.build();
             fail( "Expected an exception on a missing statistic." );
         }
         catch ( MetricParameterException e )
@@ -232,8 +239,10 @@ public final class TimeToPeakErrorStatisticsTest
         // Null input to apply
         try
         {
-            b.setStatistic( MetricConstants.MEAN );
-            b.build().apply( null );
+            TimeToPeakErrorStatisticBuilder c = new TimeToPeakErrorStatisticBuilder();
+            c.setOutputFactory( outF );
+            c.setStatistics( Collections.singleton( MetricConstants.MEAN ) );
+            c.build().apply( null );
             fail( "Expected an exception on null input." );
         }
         catch ( MetricInputException e )
@@ -242,8 +251,10 @@ public final class TimeToPeakErrorStatisticsTest
         // Null input to aggregate
         try
         {
-            b.setStatistic( MetricConstants.MEAN );
-            b.build().aggregate( null );
+            TimeToPeakErrorStatisticBuilder c = new TimeToPeakErrorStatisticBuilder();
+            c.setOutputFactory( outF );
+            c.setStatistics( Collections.singleton( MetricConstants.MEAN ) );
+            c.build().aggregate( null );
             fail( "Expected an exception on null input." );
         }
         catch ( MetricInputException e )

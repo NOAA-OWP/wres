@@ -3,7 +3,6 @@ package wres.control;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -22,17 +21,15 @@ import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationType;
 import wres.config.generated.Feature;
-import wres.config.generated.MetricConfigName;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.datamodel.ThresholdsByType;
+import wres.datamodel.ThresholdsByMetric;
 import wres.datamodel.inputs.InsufficientDataException;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.outputs.MetricOutputAccessException;
 import wres.engine.statistics.metric.MetricFactory;
-import wres.engine.statistics.metric.config.MetricConfigurationException;
 import wres.engine.statistics.metric.processing.MetricProcessorException;
 import wres.engine.statistics.metric.processing.MetricProcessorForProject;
 import wres.io.Operations;
@@ -85,8 +82,7 @@ class ProcessorHelper
                                       final ExecutorService pairExecutor,
                                       final ExecutorService thresholdExecutor,
                                       final ExecutorService metricExecutor )
-            throws IOException, ProjectConfigException,
-            MetricConfigurationException
+            throws IOException, ProjectConfigException
     {
 
         final ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
@@ -110,9 +106,7 @@ class ProcessorHelper
         }
         catch ( SQLException e )
         {
-            IOException ioe = new IOException( "Failed to retrieve the set of features.", e );
-            ProcessorHelper.addException( ioe );
-            throw ioe;
+            throw new IOException( "Failed to retrieve the set of features.", e );
         }
 
         List<Feature> successfulFeatures = new ArrayList<>();
@@ -123,7 +117,7 @@ class ProcessorHelper
         // to wres-metrics, given that they are resolved by project configuration that is
         // passed separately to wres-metrics. Options include moving MetricProcessor* to 
         // wres-control, since they make processing decisions, or passing ResolvedProject onwards
-        final Map<FeaturePlus, Map<MetricConfigName, ThresholdsByType>> thresholds =
+        final Map<FeaturePlus, ThresholdsByMetric> thresholds =
                 new TreeMap<>( FeaturePlus::compareByLocationId );
         thresholds.putAll( ConfigHelper.readExternalThresholdsFromProjectConfig( projectConfig ) );
 
@@ -134,6 +128,9 @@ class ProcessorHelper
         long leadCount = 0;
         long basisTimes = 0;
 
+        // TODO: please move this to a utility method somewhere, out of the main processing pipeline, 
+        // because: 1) it is self-contained logic and; 2) we don't want to refer to concrete types like NETCDF in
+        // our abstract processing pipeline
         if ( ConfigHelper.getIncrementalFormats( projectConfig )
                          .contains( DestinationType.NETCDF ) )
         {
@@ -176,11 +173,13 @@ class ProcessorHelper
                                                               thresholds );
 
         // Build any writers of incremental formats that are shared across features
+        // TODO: make this call abstract. We should not be referring to DOUBLE_SCORE output here, but to all output
+        // for which writers are shared
         SharedWriters sharedWriters = ConfigHelper.getSharedWriters( projectConfig,
                                                                      resolvedProject.getFeatureCount(),
                                                                      (int) basisTimes,
                                                                      (int) leadCount,
-                                                                     resolvedProject.getThresholdCount(),
+                                                                     resolvedProject.getThresholdCount( MetricOutputGroup.DOUBLE_SCORE ),
                                                                      resolvedProject.getDoubleScoreMetrics() );
 
         // Reduce our triad of executors to one object
@@ -316,7 +315,7 @@ class ProcessorHelper
     {
 
         final ProjectConfig projectConfig = resolvedProject.getProjectConfig();
-        final Map<MetricConfigName, ThresholdsByType> thresholds =
+        final ThresholdsByMetric thresholds =
                 resolvedProject.getThresholdForFeature( feature );
 
         final String featureDescription = ConfigHelper.getFeatureDescription( feature );
@@ -348,7 +347,7 @@ class ProcessorHelper
         // During the pipeline, only write types that are not end-of-pipeline types unless they refer to
         // a format that can be written incrementally
         BiPredicate<MetricOutputGroup, DestinationType> onlyWriteTheseTypes =
-                ( type, format ) -> !processor.getCachedMetricOutputTypes().contains( type )
+                ( type, format ) -> !processor.getMetricOutputTypesToCache().contains( type )
                                     || ConfigHelper.getIncrementalFormats( projectConfig ).contains( format );
 
         try
@@ -376,16 +375,16 @@ class ProcessorHelper
         }
         catch ( IterationFailedException re )
         {
+            // If there was not enough data for this feature, OK
             if ( ProcessorHelper.wasInsufficientDataOrNoDataInThisStack( re ) )
             {
                 return new FeatureProcessingResult( feature.getFeature(),
                                                     false,
                                                     re );
             }
-            else
-            {
-                ProcessorHelper.addException( re );
-            }
+
+            // Otherwise, chain and propagate the exception up to the top.
+            throw new WresProcessingException( "Iteration failed", re );
         }
 
         // Complete all tasks or one exceptionally: join() is blocking, representing a final sink for the results
@@ -410,19 +409,24 @@ class ProcessorHelper
         // Generate cached output if available
         if ( processor.hasCachedMetricOutput() )
         {
-            // Only process cached types that were not written incrementally
-            BiPredicate<MetricOutputGroup, DestinationType> nowWriteTheseTypes =
-                    ( type, format ) -> processor.getCachedMetricOutputTypes().contains( type )
-                                        && !ConfigHelper.getIncrementalFormats( projectConfig ).contains( format );
-            try ( // End of pipeline processor
-                  ProductProcessor endOfPipeline =
-                          new ProductProcessor( resolvedProject,
-                                                nowWriteTheseTypes,
-                                                sharedWriters ) )
+            try
             {
-                // Generate output
-                endOfPipeline.accept( processor.getCachedMetricOutput() );
-
+                // Determine the cached types
+                Set<MetricOutputGroup> cachedTypes = processor.getCachedMetricOutputTypes();
+                
+                // Only process cached types that were not written incrementally
+                BiPredicate<MetricOutputGroup, DestinationType> nowWriteTheseTypes =
+                        ( type, format ) -> cachedTypes.contains( type )
+                                            && !ConfigHelper.getIncrementalFormats( projectConfig ).contains( format );
+                try ( // End of pipeline processor
+                      ProductProcessor endOfPipeline =
+                              new ProductProcessor( resolvedProject,
+                                                    nowWriteTheseTypes,
+                                                    sharedWriters ) )
+                {
+                    // Generate output
+                    endOfPipeline.accept( processor.getCachedMetricOutput() );
+                }
             }
             catch ( MetricOutputAccessException e )
             {
@@ -490,45 +494,6 @@ class ProcessorHelper
             cause = cause.getCause();
         }
         return false;
-    }
-
-    /**
-     * List of exceptions encountered during processing.
-     */
-    private static final List<Exception> exceptionList = new ArrayList<>();
-
-    /**
-     * A lock to use when mutating the list of exceptions.
-     */
-
-    private static final Object EXCEPTION_LOCK = new Object();
-
-    /**
-     * Add an exception to the list of exceptions.
-     * 
-     * @param exception the exception to add
-     */
-
-    private static void addException( Exception exception )
-    {
-        synchronized ( EXCEPTION_LOCK )
-        {
-            ProcessorHelper.exceptionList.add( exception );
-        }
-    }
-
-    /**
-     * Return a list of processing exceptions encountered.
-     * 
-     * @return a list of processing exceptions
-     */
-
-    public static List<Exception> getEncounteredExceptions()
-    {
-        synchronized ( EXCEPTION_LOCK )
-        {
-            return Collections.unmodifiableList( ProcessorHelper.exceptionList );
-        }
     }
 
 

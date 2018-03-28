@@ -13,8 +13,8 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.io.config.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
+import wres.io.config.LeftOrRightOrBaseline;
 import wres.io.data.details.ProjectDetails;
 import wres.io.reading.IngestResult;
 import wres.io.utilities.Database;
@@ -119,7 +119,9 @@ public class Projects extends Cache<ProjectDetails, Integer> {
         }
         catch (SQLException error)
         {
-            LOGGER.error("An error was encountered when trying to populate the Project cache.");
+            // Failure to pre-populate cache should not affect primary outputs.
+            LOGGER.warn( "An error was encountered when trying to populate the Project cache.",
+                         error );
         }
         finally
         {
@@ -131,7 +133,9 @@ public class Projects extends Cache<ProjectDetails, Integer> {
                 }
                 catch (SQLException error)
                 {
-                    LOGGER.error("The result set containing projects could not be closed.");
+                    // Exception on close should not affect primary outputs.
+                    LOGGER.warn( "The result set {} containing projects could not be closed.",
+                                 projects, error );
                 }
             }
 
@@ -148,7 +152,8 @@ public class Projects extends Cache<ProjectDetails, Integer> {
      * @param ingestResults the ingest results
      * @return the ProjectDetails to use
      * @throws SQLException when ProjectDetails construction goes wrong
-     * @throws IOException Thrown when the ID for a data source cannot be determined
+     * @throws IllegalArgumentException when an IngestResult does not have left/right/baseline information
+     * @throws IOException when a source identifier cannot be determined
      */
     public static ProjectDetails getProjectFromIngest( ProjectConfig projectConfig,
                                                        List<IngestResult> ingestResults )

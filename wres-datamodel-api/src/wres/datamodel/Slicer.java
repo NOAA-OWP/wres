@@ -19,8 +19,10 @@ import wres.datamodel.inputs.pairs.PairOfBooleans;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.ScoreOutput;
+import wres.datamodel.time.Event;
 
 /**
  * A utility class for slicing/dicing and transforming datasets associated with verification metrics.
@@ -34,111 +36,284 @@ public interface Slicer
 {
 
     /**
-     * Composes the input predicate as applying to the left side of a pair.
+     * <p>Composes the input predicate as applying to the left side of a pair. 
+     * 
+     * <p>Also see {@link #filter(SingleValuedPairs, Predicate, DoublePredicate)}.
      * 
      * @param predicate the input predicate
      * @return a composed predicate
+     * @throws NullPointerException if the input is null
      */
 
     static Predicate<PairOfDoubles> left( DoublePredicate predicate )
     {
+        Objects.requireNonNull( predicate, "Specify non-null input when slicing by left." );
+        
         return pair -> predicate.test( pair.getItemOne() );
     }
 
     /**
-     * Composes the input predicate as applying to the right side of a pair.
+     * <p>Composes the input predicate as applying to the right side of a pair.
+     * 
+     * <p>Also see {@link #filter(SingleValuedPairs, Predicate, DoublePredicate)}.
      * 
      * @param predicate the input predicate
      * @return a composed predicate
+     * @throws NullPointerException if the input is null
      */
 
     static Predicate<PairOfDoubles> right( DoublePredicate predicate )
     {
+        Objects.requireNonNull( predicate, "Specify non-null input when slicing by right." );
+        
         return pair -> predicate.test( pair.getItemTwo() );
     }
 
     /**
-     * Composes the input predicate as applying to the both the left and right sides of a pair.
+     * <p>Composes the input predicate as applying to the both the left and right sides of a pair.
+     * 
+     * <p>Also see {@link #filter(SingleValuedPairs, Predicate, DoublePredicate)}
      * 
      * @param predicate the input predicate
      * @return a composed predicate
+     * @throws NullPointerException if the input is null
      */
 
     static Predicate<PairOfDoubles> leftAndRight( DoublePredicate predicate )
     {
+        Objects.requireNonNull( predicate, "Specify non-null input when slicing by left and right." );
+        
         return pair -> predicate.test( pair.getItemOne() ) && predicate.test( pair.getItemTwo() );
     }
 
     /**
-     * Composes the input predicate as applying to the either the left side or to the right side of a pair.
+     * <p>Composes the input predicate as applying to the either the left side or to the right side of a pair.
+     * 
+     * <p>Also see {@link #filter(SingleValuedPairs, Predicate, DoublePredicate)}.
      * 
      * @param predicate the input predicate
      * @return a composed predicate
+     * @throws NullPointerException if the input is null
      */
 
     static Predicate<PairOfDoubles> leftOrRight( DoublePredicate predicate )
     {
+        Objects.requireNonNull( predicate, "Specify non-null input when slicing by left or right." );
+        
         return pair -> predicate.test( pair.getItemOne() ) || predicate.test( pair.getItemTwo() );
     }
 
     /**
-     * Composes the input predicate as applying to the left side of a pair.
+     * <p>Composes the input predicate as applying to the left side of a pair.
+     * 
+     * <p>Also see {@link #filter(EnsemblePairs, Predicate, DoublePredicate)}
      * 
      * @param predicate the input predicate
      * @return a composed predicate
+     * @throws NullPointerException if the input is null
      */
 
     static Predicate<PairOfDoubleAndVectorOfDoubles> leftVector( DoublePredicate predicate )
     {
+        Objects.requireNonNull( predicate, "Specify non-null input when slicing by left." );
+        
         return pair -> predicate.test( pair.getItemOne() );
     }
 
     /**
-     * Composes the input predicate as applying to all elements of the right side of a pair.
+     * <p>Composes the input predicate as applying to all elements of the right side of a pair.
+     * 
+     * <p>Also see {@link #filter(EnsemblePairs, Predicate, DoublePredicate)}
      * 
      * @param predicate the input predicate
      * @return a composed predicate
+     * @throws NullPointerException if the input is null
      */
 
     static Predicate<PairOfDoubleAndVectorOfDoubles> allOfRight( DoublePredicate predicate )
     {
+        Objects.requireNonNull( predicate, "Specify non-null input when slicing by all of right." );
+        
         return pair -> Arrays.stream( pair.getItemTwo() ).allMatch( predicate );
     }
 
     /**
-     * Composes the input predicate as applying to one or more elements of the right side of a pair.
+     * <p>Composes the input predicate as applying to one or more elements of the right side of a pair.
+     * 
+     * <p>Also see {@link #filter(EnsemblePairs, Predicate, DoublePredicate)}
      * 
      * @param predicate the input predicate
      * @return a composed predicate
+     * @throws NullPointerException if the input is null
      */
 
     static Predicate<PairOfDoubleAndVectorOfDoubles> anyOfRight( DoublePredicate predicate )
     {
+        Objects.requireNonNull( predicate, "Specify non-null input when slicing by any of right." );
+        
         return pair -> Arrays.stream( pair.getItemTwo() ).anyMatch( predicate );
     }
 
     /**
-     * Composes the input predicate as applying to the left side of a pair and all elements of the right side of a pair.
+     * <p>Composes the input predicate as applying to the left side of a pair and all elements of the right side of a pair.
+     * 
+     * <p>Also see {@link #filter(EnsemblePairs, Predicate, DoublePredicate)}
      * 
      * @param predicate the input predicate
      * @return a composed predicate
+     * @throws NullPointerException if the input is null
      */
 
     static Predicate<PairOfDoubleAndVectorOfDoubles> leftAndAllOfRight( DoublePredicate predicate )
     {
+        Objects.requireNonNull( predicate, "Specify non-null input when slicing by left and all of right." );
+        
         return pair -> predicate.test( pair.getItemOne() ) && Arrays.stream( pair.getItemTwo() ).allMatch( predicate );
     }
 
     /**
-     * Composes the input predicate as applying to the left side of a pair and any element of the right side of a pair.
+     * <p>Composes the input predicate as applying to the left side of a pair and any element of the right side of a pair.
+     * 
+     * <p>Also see {@link #filter(EnsemblePairs, Predicate, DoublePredicate)}
      * 
      * @param predicate the input predicate
      * @return a composed predicate
+     * @throws NullPointerException if the input is null
      */
 
     static Predicate<PairOfDoubleAndVectorOfDoubles> leftAndAnyOfRight( DoublePredicate predicate )
     {
+        Objects.requireNonNull( predicate, "Specify non-null input when slicing by left and any of right." );
+        
         return pair -> predicate.test( pair.getItemOne() ) && Arrays.stream( pair.getItemTwo() ).anyMatch( predicate );
+    }
+
+    /**
+     * <p>Composes the input predicate as applying to the transformed value of the right side of a pair.</p>
+     * 
+     * <p>Also see {@link #filter(EnsemblePairs, Predicate, DoublePredicate)}
+     * 
+     * @param predicate the input predicate
+     * @param transformer the transformer
+     * @return a composed predicate
+     * @throws NullPointerException if the input is null
+     */
+
+    static Predicate<PairOfDoubleAndVectorOfDoubles> right( DoublePredicate predicate,
+                                                            ToDoubleFunction<double[]> transformer )
+    {
+        Objects.requireNonNull( predicate, "Specify non-null input when slicing by right." );
+        
+        Objects.requireNonNull( transformer, "Specify a non-null transformer when slicing by right." );
+        
+        return pair -> predicate.test( transformer.applyAsDouble( pair.getItemTwo() ) );
+    }
+
+    /**
+     * <p>Composes the input predicate as applying to the left side of a pair and to the transformed value of the 
+     * right side of a pair.</p>
+     * 
+     * <p>Also see {@link #filter(EnsemblePairs, Predicate, DoublePredicate)}
+     * 
+     * @param predicate the input predicate
+     * @param transformer the transformer
+     * @return a composed predicate
+     * @throws NullPointerException if the input is null
+     */
+
+    static Predicate<PairOfDoubleAndVectorOfDoubles> leftAndRight( DoublePredicate predicate,
+                                                                   ToDoubleFunction<double[]> transformer )
+    {
+        Objects.requireNonNull( predicate, "Specify non-null input when slicing by left and right." );
+        
+        Objects.requireNonNull( transformer, "Specify a non-null transformer when slicing by left and right." );
+        
+        return pair -> predicate.test( pair.getItemOne() )
+                       && predicate.test( transformer.applyAsDouble( pair.getItemTwo() ) );
+    }
+    
+    /**
+     * <p>Composes the input predicate as applying to the left side of any paired value within a time-series.
+     * 
+     * <p>Also see {@link #filter(TimeSeriesOfSingleValuedPairs, Predicate, DoublePredicate)}.
+     * 
+     * @param predicate the input predicate
+     * @return a composed predicate
+     * @throws NullPointerException if the input is null
+     */
+
+    static Predicate<TimeSeriesOfSingleValuedPairs>
+            anyOfLeftInTimeSeriesOfSingleValuedPairs( DoublePredicate predicate )
+    {
+        Objects.requireNonNull( predicate, "Specify non-null input when slicing a time-series by any of left." );
+
+        return times -> {
+
+            // Iterate the times
+            for ( Event<PairOfDoubles> next : times.timeIterator() )
+            {
+                // Condition is met for one time
+                if ( predicate.test( next.getValue().getItemOne() ) )
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        };
+    }
+    
+    /**
+     * <p>Composes the input predicate as applying to the right side of any paired value within a time-series.
+     * 
+     * <p>Also see {@link #filter(TimeSeriesOfSingleValuedPairs, Predicate, DoublePredicate)}.
+     * 
+     * @param predicate the input predicate
+     * @return a composed predicate
+     * @throws NullPointerException if the input is null
+     */
+
+    static Predicate<TimeSeriesOfSingleValuedPairs>
+            anyOfRightInTimeSeriesOfSingleValuedPairs( DoublePredicate predicate )
+    {
+        Objects.requireNonNull( predicate, "Specify non-null input when slicing a time-series by any of right." );
+
+        return times -> {
+
+            // Iterate the times
+            for ( Event<PairOfDoubles> next : times.timeIterator() )
+            {
+                // Condition is met for one time
+                if ( predicate.test( next.getValue().getItemTwo() ) )
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        };
+    }   
+    
+    /**
+     * <p>Composes the input predicate as applying to the left side of any paired value within a time-series and,
+     * separately, to the right side of any paired value within that time-series.</p>
+     * 
+     * <p>Also see {@link #filter(TimeSeriesOfSingleValuedPairs, Predicate, DoublePredicate)}.
+     * 
+     * @param predicate the input predicate
+     * @return a composed predicate
+     * @throws NullPointerException if the input is null
+     */
+
+    static Predicate<TimeSeriesOfSingleValuedPairs>
+            anyOfLeftAndAnyOfRightInTimeSeriesOfSingleValuedPairs( DoublePredicate predicate )
+    {
+        Objects.requireNonNull( predicate, "Specify non-null input when slicing a time-series by any of left"
+                + "and any of right." );
+
+        // Compose independently
+        return times -> Slicer.anyOfLeftInTimeSeriesOfSingleValuedPairs( predicate ).test( times )
+                        && Slicer.anyOfRightInTimeSeriesOfSingleValuedPairs( predicate ).test( times );
     }
 
     /**
@@ -146,18 +321,21 @@ public interface Slicer
      * for which the {@link Predicate} returns <code>true</code> for both sides of the pairing, false otherwise. 
      * 
      * @param pairs the input pairs
-     * @param condition the predicate to apply
+     * @param predicate the predicate to apply
      * @return true if one or more inputs meet the predicate condition on both sides of the pairing, false otherwise
      * @throws NullPointerException if either input is null
      */
 
-    static boolean hasOneOrMoreOf( List<PairOfDoubles> pairs, DoublePredicate condition )
+    static boolean hasOneOrMoreOf( List<PairOfDoubles> pairs, DoublePredicate predicate )
     {
-        Objects.requireNonNull( pairs, "Expected non-null pairs." );
-        Objects.requireNonNull( condition, "Expected a non-null condition." );
+        
+        Objects.requireNonNull( pairs, "Specify non-null pairs when checking for one or more of the input." );
+        
+        Objects.requireNonNull( predicate, "Specify non-null predicate when checking for one or more of the input." );
+        
         for ( PairOfDoubles next : pairs )
         {
-            if ( condition.test( next.getItemOne() ) && condition.test( next.getItemTwo() ) )
+            if ( predicate.test( next.getItemOne() ) && predicate.test( next.getItemTwo() ) )
             {
                 return true;
             }
@@ -171,18 +349,20 @@ public interface Slicer
      * for one or more values on the right side, false otherwise. 
      * 
      * @param pairs the input pairs
-     * @param condition the predicate to apply
+     * @param predicate the predicate to apply
      * @return true if one or more inputs meet the predicate condition on both sides of the pairing, false otherwise
      * @throws NullPointerException if either input is null
      */
 
-    static boolean hasOneOrMoreOfVectorRight( List<PairOfDoubleAndVectorOfDoubles> pairs, DoublePredicate condition )
+    static boolean hasOneOrMoreOfVectorRight( List<PairOfDoubleAndVectorOfDoubles> pairs, DoublePredicate predicate )
     {
-        Objects.requireNonNull( pairs, "Expected non-null pairs." );
-        Objects.requireNonNull( condition, "Expected a non-null condition." );
+        Objects.requireNonNull( pairs, "Specify non-null pairs when checking for one or more of the input." );
+        
+        Objects.requireNonNull( predicate, "Specify non-null predicate when checking for one or more of the input." );
+        
         for ( PairOfDoubleAndVectorOfDoubles next : pairs )
         {
-            if ( condition.test( next.getItemOne() ) && Arrays.stream( next.getItemTwo() ).anyMatch( condition ) )
+            if ( predicate.test( next.getItemOne() ) && Arrays.stream( next.getItemTwo() ).anyMatch( predicate ) )
             {
                 return true;
             }
@@ -197,13 +377,18 @@ public interface Slicer
      * @param sorted the sorted input array
      * @param threshold the probability threshold from which the quantile is determined
      * @return the quantile threshold
+     * @throws NullPointerException if either input is null
      */
 
     default Threshold getQuantileFromProbability( Threshold threshold, double[] sorted )
     {
+        Objects.requireNonNull( threshold, "Specify a non-null probability whose quantile value is required." );
+        
+        Objects.requireNonNull( sorted, "Specify a non-null array of sorted values to determine the quantile." );
+        
         return this.getQuantileFromProbability( threshold, sorted, null );
-    }    
-    
+    }
+
     /**
      * Returns the left side of {@link SingleValuedPairs#getData()} as a primitive array of doubles.
      * 
@@ -238,7 +423,7 @@ public interface Slicer
      * @param condition the condition on which to slice
      * @param applyToClimatology an optional filter for the climatology, may be null
      * @return the subset of pairs that meet the condition
-     * @throws MetricInputSliceException if the slice contains no elements
+     * @throws MetricInputSliceException if the slice contains no elements, either for the main pairs or baseline
      * @throws NullPointerException if either the input or condition is null
      */
 
@@ -254,7 +439,7 @@ public interface Slicer
      * @param condition the condition on which to slice
      * @param applyToClimatology an optional filter for the climatology, may be null
      * @return the subset of pairs that meet the condition
-     * @throws MetricInputSliceException if the slice contains no elements
+     * @throws MetricInputSliceException if the slice contains no elements, either for the main pairs or baseline
      * @throws NullPointerException if either the input or condition is null
      */
 
@@ -262,42 +447,41 @@ public interface Slicer
                           Predicate<PairOfDoubleAndVectorOfDoubles> condition,
                           DoublePredicate applyToClimatology )
             throws MetricInputSliceException;
-    
-    /**
-     * Applies a transformer, inline, and then filters the transformed pairs according to the supplied condition, 
-     * returning the untransformed pairs where the condition is met.
-     * 
-     * @param input the pairs to slice
-     * @param condition the condition on which to slice
-     * @param transformer the transformer
-     * @param applyToClimatology an optional filter for the climatology, may be null
-     * @return the subset of pairs that meet the condition
-     * @throws MetricInputSliceException if the slice contains no elements
-     * @throws NullPointerException if either the input, transformer or condition is null
-     */
 
-    EnsemblePairs filter( EnsemblePairs input,
-                          Predicate<PairOfDoubles> condition,
-                          Function<PairOfDoubleAndVectorOfDoubles,PairOfDoubles> transformer, 
-                          DoublePredicate applyToClimatology )
-            throws MetricInputSliceException;    
-    
     /**
      * Filters {@link EnsemblePairs} by applying a mapper function to the input. This allows for fine-grain filtering
-     * of specific elements of the right side of a pair.
+     * of specific elements of the right side of a pair. For example, filter all elements of the right side that 
+     * correspond to {@link Double#isNaN()}.
      * 
      * @param input the {@link EnsemblePairs}
      * @param mapper the function that maps from {@link EnsemblePairs} to a new {@link EnsemblePairs}
      * @param applyToClimatology an optional filter for the climatology, may be null
      * @return the filtered {@link EnsemblePairs}
-     * @throws MetricInputSliceException if the output could not be transformed
+     * @throws MetricInputSliceException if the slice contains no elements, either for the main pairs or baseline
      * @throws NullPointerException if either the input or condition is null
      */
 
     EnsemblePairs filter( EnsemblePairs input,
                           Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubleAndVectorOfDoubles> mapper,
                           DoublePredicate applyToClimatology )
-            throws MetricInputSliceException; 
+            throws MetricInputSliceException;
+
+    /**
+     * Returns a subset of pairs where the condition is met for each atomic time-series in the container. Applies to 
+     * both the main pairs and any baseline pairs.
+     * 
+     * @param input the pairs to slice
+     * @param condition the condition on which to slice
+     * @param applyToClimatology an optional filter for the climatology, may be null
+     * @return the subset of pairs that meet the condition
+     * @throws MetricInputSliceException if the slice contains no elements, either for the main pairs or baseline
+     * @throws NullPointerException if either the input or condition is null
+     */
+
+    TimeSeriesOfSingleValuedPairs filter( TimeSeriesOfSingleValuedPairs input,
+                                          Predicate<TimeSeriesOfSingleValuedPairs> condition,
+                                          DoublePredicate applyToClimatology )
+            throws MetricInputSliceException;
 
     /**
      * Returns as many lists of {@link PairOfDoubleAndVectorOfDoubles} as groups of atomic pairs in the input with an
@@ -381,7 +565,7 @@ public interface Slicer
      */
 
     PairOfDoubles transform( PairOfDoubleAndVectorOfDoubles pair, Threshold threshold );
-    
+
     /**
      * Returns a function that converts a {@link PairOfDoubleAndVectorOfDoubles} to a {@link PairOfDoubles} by 
      * applying the specified transformer to the {@link PairOfDoubleAndVectorOfDoubles#getItemTwo()}.
@@ -390,7 +574,7 @@ public interface Slicer
      * @return a composed function
      */
 
-    Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> transform( ToDoubleFunction<double[]> transformer );       
+    Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubles> transform( ToDoubleFunction<double[]> transformer );
 
     /**
      * A transformer that applies a predicate to the left and each of the right separately, returning a transformed

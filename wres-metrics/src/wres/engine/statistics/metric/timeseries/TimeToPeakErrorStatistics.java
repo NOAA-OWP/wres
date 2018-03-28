@@ -2,10 +2,11 @@ package wres.engine.statistics.metric.timeseries;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.ToDoubleFunction;
 
@@ -148,7 +149,7 @@ public class TimeToPeakErrorStatistics extends OrdinaryScore<TimeSeriesOfSingleV
          * The identifier for the summary statistic.
          */
 
-        private MetricConstants[] statistics;
+        private Set<MetricConstants> statistics = new HashSet<>();
 
         /**
          * Sets the statistic.
@@ -157,9 +158,9 @@ public class TimeToPeakErrorStatistics extends OrdinaryScore<TimeSeriesOfSingleV
          * @return the builder
          */
 
-        public TimeToPeakErrorStatisticBuilder setStatistic( MetricConstants... statistics )
+        public TimeToPeakErrorStatisticBuilder setStatistics( Set<MetricConstants> statistics )
         {
-            this.statistics = statistics;
+            this.statistics.addAll( statistics );
             return this;
         }
 
@@ -181,13 +182,18 @@ public class TimeToPeakErrorStatistics extends OrdinaryScore<TimeSeriesOfSingleV
     private TimeToPeakErrorStatistics( final TimeToPeakErrorStatisticBuilder builder ) throws MetricParameterException
     {
         super( builder );
-        if ( Objects.isNull( builder.statistics ) || builder.statistics.length == 0 )
+        
+        // Copy locally
+        Set<MetricConstants> input = new HashSet<>( builder.statistics );
+        
+        // Validate
+        if ( input.isEmpty() )
         {
             throw new MetricParameterException( "Specify one or more summary statistics." );
         }
-        // Copy
-        MetricConstants[] input = Arrays.copyOf( builder.statistics, builder.statistics.length );
+
         this.statistics = new TreeMap<>();
+        
         // Set and validate the copy
         try
         {
@@ -197,14 +203,15 @@ public class TimeToPeakErrorStatistics extends OrdinaryScore<TimeSeriesOfSingleV
                 {
                     throw new MetricParameterException( "Cannot build the metric with a null statistic." );
                 }
-                statistics.put( next, FunctionFactory.ofStatistic( next ) );
+                this.statistics.put( next, FunctionFactory.ofStatistic( next ) );
             }
         }
-        catch ( Exception e )
+        catch ( NullPointerException | IllegalArgumentException e )
         {
             throw new MetricParameterException( "While constructing the timing error summary statistic: "
                                                 + e.getMessage(), e );
         }
+        
         // Build the metric of which this is a collection
         timeToPeakError = MetricFactory.getInstance( getDataFactory() ).ofTimeToPeakError();
     }

@@ -22,7 +22,6 @@ import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigPlus;
 import wres.config.Validation;
 import wres.config.generated.ProjectConfig;
-import wres.engine.statistics.metric.config.MetricConfigurationException;
 import wres.io.config.SystemSettings;
 
 /**
@@ -132,7 +131,7 @@ public class Control implements Function<String[], Integer>
             Control.addException( internalException );
             return -1; // Or return 500 - Internal Server Error (see #41467)
         }
-        catch ( ProjectConfigException | MetricConfigurationException userException )
+        catch ( ProjectConfigException userException )
         {
             LOGGER.error( "Please correct the project configuration. Details:", userException );
             Control.addException( userException );
@@ -246,9 +245,6 @@ public class Control implements Function<String[], Integer>
             {
                 Control.encounteredExceptions = new ArrayList<>(  );
             }
-
-            Control.encounteredExceptions.addAll( WresProcessingException.getOccurrences() );
-            Control.encounteredExceptions.addAll(ProcessorHelper.getEncounteredExceptions());
 
             return Collections.unmodifiableList(Control.encounteredExceptions);
         }

@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collections;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
@@ -63,7 +64,8 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         String configPath = "testinput/metricProcessorEnsemblePairsByTimeTest/test1ApplyNoThresholds.xml";
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessorByTime<EnsemblePairs> processor = MetricFactory.getInstance( dataFactory )
-                                                                      .ofMetricProcessorByTimeEnsemblePairs( config );
+                                                                      .ofMetricProcessorByTimeEnsemblePairs( config,
+                                                                                                             null );
         MetricOutputForProjectByTimeAndThreshold results =
                 processor.apply( MetricTestDataFactory.getEnsemblePairsOne() );
         MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> bias = results.getDoubleScoreOutput()
@@ -122,11 +124,12 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
                 MetricFactory.getInstance( metIn )
                              .ofMetricProcessorByTimeEnsemblePairs( config,
-                                                                    MetricOutputGroup.values() );
+                                                                    MetricOutputGroup.set() );
         processor.apply( MetricTestDataFactory.getEnsemblePairsOne() );
         //Obtain the results
         MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> results = processor.getCachedMetricOutput()
                                                                                      .getDoubleScoreOutput();
+
         //Validate bias
         MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> bias = results.get( MetricConstants.BIAS_FRACTION );
         assertTrue( "Expected results differ from actual results for " + MetricConstants.BIAS_FRACTION
@@ -322,9 +325,9 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
                 MetricFactory.getInstance( metIn )
                              .ofMetricProcessorByTimeEnsemblePairs( config,
-                                                                    MetricOutputGroup.DOUBLE_SCORE );
+                                                                    Collections.singleton( MetricOutputGroup.DOUBLE_SCORE ) );
         processor.apply( MetricTestDataFactory.getEnsemblePairsOne() );
-        
+
         //Obtain the results
         MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> results = processor.getCachedMetricOutput()
                                                                                      .getDoubleScoreOutput();
@@ -511,7 +514,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
      */
 
     @Test
-    public void test4Exceptions() throws IOException
+    public void test4Exceptions() throws IOException, MetricProcessorException
     {
         final DataFactory metIn = DefaultDataFactory.getInstance();
         String testOne = "testinput/metricProcessorEnsemblePairsByTimeTest/test4ExceptionsOne.xml";
@@ -523,7 +526,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
             MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
                                  .ofMetricProcessorByTimeEnsemblePairs( config,
-                                                                        MetricOutputGroup.DOUBLE_SCORE );
+                                                                        Collections.singleton( MetricOutputGroup.DOUBLE_SCORE ) );
             processor.apply( null );
             fail( "Expected a checked exception on processing the project configuration '" + testOne + "'." );
         }
@@ -540,7 +543,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
             MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
                                  .ofMetricProcessorByTimeEnsemblePairs( config,
-                                                                        MetricOutputGroup.DOUBLE_SCORE );
+                                                                        Collections.singleton( MetricOutputGroup.DOUBLE_SCORE ) );
             processor.apply( MetricTestDataFactory.getEnsemblePairsThree() );
             fail( "Expected a checked exception on processing the project configuration '" + testFour
                   + "' with a dichotomous metric." );
@@ -558,7 +561,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
             MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
                                  .ofMetricProcessorByTimeEnsemblePairs( config,
-                                                                        MetricOutputGroup.DOUBLE_SCORE );
+                                                                        Collections.singleton( MetricOutputGroup.DOUBLE_SCORE ) );
             processor.apply( MetricTestDataFactory.getEnsemblePairsThree() );
             fail( "Expected a checked exception on processing the project configuration '" + testFive
                   + "' with a multicategory metric." );
@@ -576,7 +579,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
             MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
                     MetricFactory.getInstance( metIn )
                                  .ofMetricProcessorByTimeEnsemblePairs( config,
-                                                                        MetricOutputGroup.DOUBLE_SCORE );
+                                                                        Collections.singleton( MetricOutputGroup.DOUBLE_SCORE ) );
             processor.apply( MetricTestDataFactory.getEnsemblePairsThree() );
             fail( "Expected a checked exception on processing the project configuration '" + testSix
                   + "' with a skill metric that requires a baseline, in the absence of a baseline." );
@@ -604,7 +607,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
                 MetricFactory.getInstance( metIn )
                              .ofMetricProcessorByTimeEnsemblePairs( config,
-                                                                    MetricOutputGroup.values() );
+                                                                    MetricOutputGroup.set() );
         //Check for the expected number of metrics
         //One fewer than total, as sample size appears in both ensemble and single-valued
         assertTrue( processor.metrics.size() == MetricInputGroup.ENSEMBLE.getMetrics().size()
@@ -635,7 +638,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
                 MetricFactory.getInstance( metIn )
                              .ofMetricProcessorByTimeEnsemblePairs( config,
-                                                                    MetricOutputGroup.values() );
+                                                                    MetricOutputGroup.set() );
         processor.apply( MetricTestDataFactory.getEnsemblePairsOne() );
         //Obtain the results
         MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> results = processor.getCachedMetricOutput()
@@ -812,7 +815,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                     + rmse.getKey( 5 ),
                     rmse.getValue( 5 ).getData().equals( 61.12163959516186 ) );
     }
-    
+
     /**
      * Tests the construction of a {@link MetricProcessorByTimeEnsemblePairs} and application of
      * {@link MetricProcessorByTimeEnsemblePairs#apply(EnsemblePairs)} to configuration obtained from
@@ -834,8 +837,7 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
                 MetricFactory.getInstance( metIn )
-                             .ofMetricProcessorByTimeEnsemblePairs( config,
-                                                                    MetricOutputGroup.values() );
+                             .ofMetricProcessorByTimeEnsemblePairs( config, MetricOutputGroup.set() );
         processor.apply( MetricTestDataFactory.getEnsemblePairsTwo() );
         //Obtain the results
         MetricOutputMultiMapByTimeAndThreshold<MatrixOutput> results = processor.getCachedMetricOutput()
@@ -852,86 +854,97 @@ public final class MetricProcessorByTimeEnsemblePairsTest
         Pair<TimeWindow, OneOrTwoThresholds> first =
                 Pair.of( expectedWindow,
                          OneOrTwoThresholds.of( metIn.ofThreshold( metIn.ofOneOrTwoDoubles( 50.0 ),
-                                                                   Operator.GREATER, ThresholdDataType.LEFT ),
+                                                                   Operator.GREATER,
+                                                                   ThresholdDataType.LEFT ),
                                                 metIn.ofProbabilityThreshold( metIn.ofOneOrTwoDoubles( 0.05 ),
-                                                                   Operator.GREATER, ThresholdDataType.LEFT ) ) );
+                                                                              Operator.GREATER,
+                                                                              ThresholdDataType.LEFT ) ) );
 
         assertTrue( "Unexpected results for the contingency table.",
                     expectedFirst.equals( results.get( MetricConstants.CONTINGENCY_TABLE )
-                                            .get( first )
-                                            .getData() ) );       
-        
+                                                 .get( first )
+                                                 .getData() ) );
+
         // Exceeds 50.0 with occurrences > 0.25
         MatrixOfDoubles expectedSecond = metIn.matrixOf( new double[][] { { 39.0, 17.0 }, { 3.0, 106.0 } } );
         Pair<TimeWindow, OneOrTwoThresholds> second =
                 Pair.of( expectedWindow,
                          OneOrTwoThresholds.of( metIn.ofThreshold( metIn.ofOneOrTwoDoubles( 50.0 ),
-                                                                   Operator.GREATER, ThresholdDataType.LEFT ),
+                                                                   Operator.GREATER,
+                                                                   ThresholdDataType.LEFT ),
                                                 metIn.ofProbabilityThreshold( metIn.ofOneOrTwoDoubles( 0.25 ),
-                                                                   Operator.GREATER, ThresholdDataType.LEFT ) ) );
+                                                                              Operator.GREATER,
+                                                                              ThresholdDataType.LEFT ) ) );
 
         assertTrue( "Unexpected results for the contingency table.",
                     expectedSecond.equals( results.get( MetricConstants.CONTINGENCY_TABLE )
-                                            .get( second )
-                                            .getData() ) );       
-        
+                                                  .get( second )
+                                                  .getData() ) );
+
         // Exceeds 50.0 with occurrences > 0.5
         MatrixOfDoubles expectedThird = metIn.matrixOf( new double[][] { { 39.0, 15.0 }, { 3.0, 108.0 } } );
         Pair<TimeWindow, OneOrTwoThresholds> third =
                 Pair.of( expectedWindow,
                          OneOrTwoThresholds.of( metIn.ofThreshold( metIn.ofOneOrTwoDoubles( 50.0 ),
-                                                                   Operator.GREATER, ThresholdDataType.LEFT ),
+                                                                   Operator.GREATER,
+                                                                   ThresholdDataType.LEFT ),
                                                 metIn.ofProbabilityThreshold( metIn.ofOneOrTwoDoubles( 0.5 ),
-                                                                   Operator.GREATER, ThresholdDataType.LEFT ) ) );
+                                                                              Operator.GREATER,
+                                                                              ThresholdDataType.LEFT ) ) );
 
         assertTrue( "Unexpected results for the contingency table.",
                     expectedThird.equals( results.get( MetricConstants.CONTINGENCY_TABLE )
-                                            .get( third )
-                                            .getData() ) );                 
-        
+                                                 .get( third )
+                                                 .getData() ) );
+
         // Exceeds 50.0 with occurrences > 0.75
         MatrixOfDoubles expectedFourth = metIn.matrixOf( new double[][] { { 37.0, 14.0 }, { 5.0, 109.0 } } );
         Pair<TimeWindow, OneOrTwoThresholds> fourth =
                 Pair.of( expectedWindow,
                          OneOrTwoThresholds.of( metIn.ofThreshold( metIn.ofOneOrTwoDoubles( 50.0 ),
-                                                                   Operator.GREATER, ThresholdDataType.LEFT ),
+                                                                   Operator.GREATER,
+                                                                   ThresholdDataType.LEFT ),
                                                 metIn.ofProbabilityThreshold( metIn.ofOneOrTwoDoubles( 0.75 ),
-                                                                   Operator.GREATER, ThresholdDataType.LEFT ) ) );
+                                                                              Operator.GREATER,
+                                                                              ThresholdDataType.LEFT ) ) );
 
         assertTrue( "Unexpected results for the contingency table.",
                     expectedFourth.equals( results.get( MetricConstants.CONTINGENCY_TABLE )
-                                            .get( fourth )
-                                            .getData() ) );    
-        
+                                                  .get( fourth )
+                                                  .getData() ) );
+
         // Exceeds 50.0 with occurrences > 0.9
         MatrixOfDoubles expectedFifth = metIn.matrixOf( new double[][] { { 37.0, 11.0 }, { 5.0, 112.0 } } );
         Pair<TimeWindow, OneOrTwoThresholds> fifth =
                 Pair.of( expectedWindow,
                          OneOrTwoThresholds.of( metIn.ofThreshold( metIn.ofOneOrTwoDoubles( 50.0 ),
-                                                                   Operator.GREATER, ThresholdDataType.LEFT ),
+                                                                   Operator.GREATER,
+                                                                   ThresholdDataType.LEFT ),
                                                 metIn.ofProbabilityThreshold( metIn.ofOneOrTwoDoubles( 0.9 ),
-                                                                   Operator.GREATER, ThresholdDataType.LEFT ) ) );
+                                                                              Operator.GREATER,
+                                                                              ThresholdDataType.LEFT ) ) );
 
         assertTrue( "Unexpected results for the contingency table.",
                     expectedFifth.equals( results.get( MetricConstants.CONTINGENCY_TABLE )
-                                            .get( fifth )
-                                            .getData() ) );    
-        
+                                                 .get( fifth )
+                                                 .getData() ) );
+
         // Exceeds 50.0 with occurrences > 0.95
         MatrixOfDoubles expectedSixth = metIn.matrixOf( new double[][] { { 36.0, 10.0 }, { 6.0, 113.0 } } );
         Pair<TimeWindow, OneOrTwoThresholds> sixth =
                 Pair.of( expectedWindow,
                          OneOrTwoThresholds.of( metIn.ofThreshold( metIn.ofOneOrTwoDoubles( 50.0 ),
-                                                                   Operator.GREATER, ThresholdDataType.LEFT ),
+                                                                   Operator.GREATER,
+                                                                   ThresholdDataType.LEFT ),
                                                 metIn.ofProbabilityThreshold( metIn.ofOneOrTwoDoubles( 0.95 ),
                                                                               Operator.GREATER,
                                                                               ThresholdDataType.LEFT ) ) );
 
         assertTrue( "Unexpected results for the contingency table.",
                     expectedSixth.equals( results.get( MetricConstants.CONTINGENCY_TABLE )
-                                            .get( sixth )
-                                            .getData() ) ); 
-        
-    }    
+                                                 .get( sixth )
+                                                 .getData() ) );
+
+    }
 
 }

@@ -144,7 +144,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
 
         //I could create a helper method to handle this wrapping, but I don't think this will be used outside of this context,
         //so why bother?  (This relates to an email James wrote.)
-        if ( meta.getMetricComponentID().equals( MetricConstants.MAIN ) )
+        if ( ! meta.hasMetricComponentID() || meta.getMetricComponentID().equals( MetricConstants.MAIN ) )
         {
             addArgument( "metricComponentNameSuffix", "" );
         }

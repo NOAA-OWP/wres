@@ -273,7 +273,7 @@ public final class SafeThresholdTest
                                       .build();
         Threshold twelfth =
                 new ThresholdBuilder().setValues( FACTORY.ofOneOrTwoDoubles( 0.0 ) )
-                                      .setProbabilities( FACTORY.ofOneOrTwoDoubles( 1.0 ) )
+                                      .setProbabilities( FACTORY.ofOneOrTwoDoubles( 0.9 ) )
                                       .setCondition( Operator.GREATER )
                                       .setDataType( ThresholdDataType.LEFT )
                                       .build();
@@ -372,6 +372,16 @@ public final class SafeThresholdTest
 
         assertFalse( "Expected unequal values.", twentyFirst.compareTo( twentySecond ) == 0 );
 
+        // Different data types
+        Threshold twentyThird =
+                new ThresholdBuilder().setProbabilities( FACTORY.ofOneOrTwoDoubles( 0.1 ) )
+                                      .setCondition( Operator.GREATER )
+                                      .setDataType( ThresholdDataType.RIGHT )
+                                      .setUnits( fac.getDimension( "CFS" ) )
+                                      .build();
+
+        assertFalse( "Expected unequal values.", twentySecond.compareTo( twentyThird ) == 0 );        
+        
         //Nullity
         //Check nullity contract
         try
@@ -558,6 +568,16 @@ public final class SafeThresholdTest
         assertFalse( "Expected unequal units.", cfs.equals( cms ) );
         assertTrue( "Expected equal units.", cfs.equals( cfs ) );
         assertFalse( "Expected unequal units.", cfs.equals( noUnits ) );
+        
+        // Different data types
+        Threshold noUnitsRightData =
+                new ThresholdBuilder().setValues( FACTORY.ofOneOrTwoDoubles( 23.0, 57.0 ) )
+                                      .setProbabilities( FACTORY.ofOneOrTwoDoubles( 0.2, 0.8 ) )
+                                      .setCondition( Operator.BETWEEN )
+                                      .setDataType( ThresholdDataType.RIGHT )
+                                      .build();        
+        assertFalse( "Expected unequal data types.", noUnits.equals( noUnitsRightData ) );
+        
     }
 
     /**
@@ -1012,6 +1032,30 @@ public final class SafeThresholdTest
                                   .setDataType( ThresholdDataType.LEFT )
                                   .build();
             fail( "Expected exception on constructing a probability threshold with an invalid upper bound." );
+        }
+        catch ( IllegalArgumentException e )
+        {
+        }
+        try
+        {
+            new ThresholdBuilder().setProbabilities( FACTORY.ofOneOrTwoDoubles( 0.0 ) )
+                                  .setCondition( Operator.LESS )
+                                  .setDataType( ThresholdDataType.LEFT )
+                                  .build();
+            fail( "Expected exception on constructing a probability threshold with an invalid operator on the "
+                    + "lower bound." );
+        }
+        catch ( IllegalArgumentException e )
+        {
+        }
+        try
+        {
+            new ThresholdBuilder().setProbabilities( FACTORY.ofOneOrTwoDoubles( 1.0 ) )
+                                  .setCondition( Operator.GREATER )
+                                  .setDataType( ThresholdDataType.LEFT )
+                                  .build();
+            fail( "Expected exception on constructing a probability threshold with an invalid operator on the "
+                    + "upper bound." );
         }
         catch ( IllegalArgumentException e )
         {
