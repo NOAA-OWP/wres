@@ -792,6 +792,10 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
             // Such failures are routine and should not be propagated
             catch ( MetricInputSliceException | InsufficientDataException e )
             {
+                // TODO: is there a way to prevent the above exceptions from
+                // occurring in the first place? Then can remove the
+                // logThresholdFailures method too. Refs #46369
+
                 // Decorate failure
                 failures.put( OneOrTwoThresholds.of( useMe ),
                               new MetricCalculationException( "While processing threshold " + threshold + ":", e ) );
