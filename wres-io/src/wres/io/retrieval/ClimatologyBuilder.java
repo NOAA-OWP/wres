@@ -36,6 +36,8 @@ class ClimatologyBuilder
     private static final Logger
             LOGGER = LoggerFactory.getLogger( ClimatologyBuilder.class );
     private static final String NEWLINE = System.lineSeparator();
+
+    // TODO: Put into its own file
     /**
      * Serves as a fuzzy key for date values. The idea is that, given a date,
      * the value should match if it is contained within the range
@@ -188,11 +190,7 @@ class ClimatologyBuilder
         @Override
         public int hashCode()
         {
-            // The hash code is a constant to force all equality checks to
-            // bypass the hash check and instead
-            // force use of #equals
             throw new UnsupportedOperationException( "Cannot call hashCode" );
-            //return 1268475648;
         }
     }
 
@@ -242,6 +240,7 @@ class ClimatologyBuilder
         this.futureClimatologicalDates = Database.submit( loadTask );
     }
 
+    // TODO: put into its own file
     private static final class PrepareDateLoad
             extends WRESCallable<SortedMap<DateRange, List<Double>>>
     {

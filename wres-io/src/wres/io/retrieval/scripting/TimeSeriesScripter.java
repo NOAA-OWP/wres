@@ -14,7 +14,7 @@ import wres.util.Strings;
 
 class TimeSeriesScripter extends Scripter
 {
-    protected TimeSeriesScripter( ProjectDetails projectDetails,
+    TimeSeriesScripter( ProjectDetails projectDetails,
                                   DataSourceConfig dataSourceConfig,
                                   Feature feature,
                                   int progress,
