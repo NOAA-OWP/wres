@@ -194,6 +194,12 @@ class SafeTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
     }
 
     @Override
+    public Instant getLatestBasisTime()
+    {
+        return TimeSeriesHelper.getLatestBasisTime( this.getBasisTimes() );
+    }     
+    
+    @Override
     public String toString()
     {
         return TimeSeriesHelper.toString( this );
