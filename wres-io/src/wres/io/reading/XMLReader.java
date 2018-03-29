@@ -142,9 +142,20 @@ public abstract class XMLReader
         }
 
         //Return the system resource reader if its found as a system resource.
-        if ( findOnClasspath )
+        try
         {
-            return factory.createXMLStreamReader( getFile() );
+            if ( findOnClasspath )
+            {
+                return factory.createXMLStreamReader( getFile() );
+            }
+        }
+        catch ( XMLStreamException | IOException error )
+        {
+            this.getLogger().debug( "An XMLStreamReader could not be created "
+                                    + "by looking for the source on the class "
+                                    + "path. A reader will need to be created "
+                                    + "by evaluating the file name or given "
+                                    + "input stream." );
         }
 
         //If its not a system resource, or the resource cannot be read, then find on the file system.
@@ -164,6 +175,11 @@ public abstract class XMLReader
             {
                 reader = factory.createXMLStreamReader( new FileReader( getFilename() ) );
             }
+        }
+
+        if (reader == null)
+        {
+            throw new IOException( "No XMLReader could be created; XML could not be found." );
         }
 
         return reader;

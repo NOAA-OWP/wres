@@ -296,7 +296,7 @@ public class ProgressMonitor
                 lastUpdate != null &&
             ((System.currentTimeMillis() - this.lastUpdate) < (this.updateFrequency * 1000)))
         {
-                update = totalSteps - completedSteps < 3;
+                update = false;
         }
 
 

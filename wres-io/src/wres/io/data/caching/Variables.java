@@ -118,6 +118,12 @@ public final class Variables extends Cache<VariableDetails, String>
 		return getCache().getKey(variableId);
 	}
 
+	public static int getMeasurementUnitId(Integer variableId)
+	{
+		VariableDetails details = getCache().get( variableId );
+		return details.getMeasurementunitId();
+	}
+
 	public String getKey(Integer variableId)
 	{
 		String name = null;
