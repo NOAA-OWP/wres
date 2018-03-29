@@ -937,6 +937,7 @@ public abstract class ChartEngineFactory
                                     null );
     }
 
+    @SuppressWarnings( "serial" )
     private static class WRESVisXMLReadingException extends IOException
     {
         public WRESVisXMLReadingException( String message, Throwable t )

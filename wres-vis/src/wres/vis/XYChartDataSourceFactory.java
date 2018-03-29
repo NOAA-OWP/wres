@@ -49,9 +49,9 @@ public abstract class XYChartDataSourceFactory
     /**
      * Number of milliseconds in an hour for conversion of {@link Duration} to decimal hours for plotting.
      */
-    
+
     private static final BigDecimal MILLIS_PER_HOUR = BigDecimal.valueOf( TimeUnit.HOURS.toMillis( 1 ) );
-    
+
     /**
      * Factory method for box-plot output for a box-plot of errors.
      * @param orderIndex Order index of the data source; lower index sources are drawn on top of higher index sources.
@@ -169,13 +169,13 @@ public abstract class XYChartDataSourceFactory
 //                    Long time = entry.getKey().getLeft().getLatestLeadTimeInHours();  We decided not to include this:
                     OneOrTwoThresholds threshold = entry.getKey().getRight();
                     TimeSeries next =
-                            new TimeSeries( threshold.toStringWithoutUnits(), FixedMillisecond.class );  
+                            new TimeSeries( threshold.toStringWithoutUnits(), FixedMillisecond.class );
                     for ( Pair<Instant, Duration> oneValue : entry.getValue() )
                     {
                         // Find the decimal hours
                         BigDecimal result = BigDecimal.valueOf( oneValue.getRight().toMillis() )
-                                                      .divide( MILLIS_PER_HOUR, 2, RoundingMode.HALF_DOWN ); 
-                        
+                                                      .divide( MILLIS_PER_HOUR, 2, RoundingMode.HALF_DOWN );
+
                         next.add( new FixedMillisecond( oneValue.getLeft().toEpochMilli() ),
                                   result.doubleValue() );
                     }
@@ -296,7 +296,7 @@ public abstract class XYChartDataSourceFactory
                     // multiple issued time windows and thresholds.
                     MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> slice =
                             input.filterByLeadTime( nextTime );
-                    
+
                     // Filter by threshold
                     for ( OneOrTwoThresholds nextThreshold : input.setOfThresholdKey() )
                     {
@@ -304,7 +304,7 @@ public abstract class XYChartDataSourceFactory
                         // multiple issued time pooling windows.
                         MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> finalSlice =
                                 slice.filterByThreshold( nextThreshold );
-                        
+
                         // Create the time series with a label determined by whether the lead time is a 
                         // single value or window.
                         String leadKey = Long.toString( nextTime.getLatestLeadTime().toHours() );
@@ -318,7 +318,7 @@ public abstract class XYChartDataSourceFactory
                         TimeSeries next = new TimeSeries( leadKey + ", "
                                                           + nextThreshold.toStringWithoutUnits(),
                                                           FixedMillisecond.class );
-                        
+
                         // Loop through the slice, forming a time series from the issued time pooling windows
                         // and corresponding values.
                         for ( Pair<TimeWindow, OneOrTwoThresholds> key : finalSlice.keySet() )
@@ -464,16 +464,16 @@ public abstract class XYChartDataSourceFactory
                 }
 
                 Duration durationStat = output.getComponent( metric ).getData();
-                
+
                 // Find the decimal hours
                 BigDecimal result = BigDecimal.valueOf( durationStat.toMillis() )
-                                              .divide( MILLIS_PER_HOUR, 2, RoundingMode.HALF_DOWN ); 
-                
+                                              .divide( MILLIS_PER_HOUR, 2, RoundingMode.HALF_DOWN );
+
                 yValues[index] = result.doubleValue();
                 index++;
             }
             yAxisValuesBySeries.add( yValues );
-            
+
             //Define the legend entry.  The commented out code specifies the lead time.  But we decided
             //not to include it for this plot.
 //            TimeWindow timeWindow = entry.getKey().getLeft();
@@ -485,7 +485,7 @@ public abstract class XYChartDataSourceFactory
 //                          + timeWindow.getLatestLeadTime().toHours()
 //                          + "]";
 //            }
-            legendEntryBySeries.add( entry.getKey().getRight().toStringWithoutUnits());
+            legendEntryBySeries.add( entry.getKey().getRight().toStringWithoutUnits() );
         }
 
         //Creates the source.
@@ -507,7 +507,7 @@ public abstract class XYChartDataSourceFactory
                     return newSource;
                 }
             };
-            
+
         }
         catch ( XYChartDataSourceException e )
         {
@@ -523,16 +523,36 @@ public abstract class XYChartDataSourceFactory
         source.getDefaultFullySpecifiedDataSourceDrawingParameters().setDefaultDomainAxisTitle( "@metricName@" );
         source.getDefaultFullySpecifiedDataSourceDrawingParameters()
               .setDefaultRangeAxisTitle( "@metricShortName@@metricComponentNameSuffix@@outputUnitsLabelSuffix@" );
-        
+        applyEvenNonOverlappingBarDistribution( source.getDefaultFullySpecifiedDataSourceDrawingParameters() );
+
         //Pass in the legend entries here.
         int index = 0;
-        for (String legendEntry : legendEntryBySeries)
+        for ( String legendEntry : legendEntryBySeries )
         {
-            source.getDefaultFullySpecifiedDataSourceDrawingParameters().getSeriesDrawingParametersForSeriesIndex( index ).setNameInLegend( legendEntry );
-            index ++;
+            source.getDefaultFullySpecifiedDataSourceDrawingParameters()
+                  .getSeriesDrawingParametersForSeriesIndex( index )
+                  .setNameInLegend( legendEntry );
+            index++;
         }
 
         return source;
+    }
+
+    /**
+     * Applies parameters that will force the bars in the categorical plot to fill in all available space, 
+     * each bar being equal width (if multiple chart series), and no overlap between bars. This should be 
+     * moved to the CHPS code base, ChartTools class, I think.
+     * @param dataSourceParms The parameters to be modified, which must have already had their series 
+     *     drawing parameters initialized for the number of series.
+     */
+    private static void applyEvenNonOverlappingBarDistribution( DataSourceDrawingParameters dataSourceParms )
+    {
+        int count = dataSourceParms.getSeriesParametersCount();
+        for ( SeriesDrawingParameters seriesParms : dataSourceParms.getSeriesDrawingParameters() )
+        {
+            seriesParms.setBarWidth( (float) ( 1.0 / count ) );
+            seriesParms.setBoxWidth( 0.0d );
+        }
     }
 
 
@@ -577,13 +597,13 @@ public abstract class XYChartDataSourceFactory
         WRESTools.applyDefaultJFreeChartColorSequence( source.getDefaultFullySpecifiedDataSourceDrawingParameters() );
         WRESTools.applyDefaultJFreeChartShapeSequence( source.getDefaultFullySpecifiedDataSourceDrawingParameters() );
     }
-    
+
     /**
      * Prevent construction.
      */
-    
+
     private XYChartDataSourceFactory()
-    {       
+    {
     }
-    
+
 }
