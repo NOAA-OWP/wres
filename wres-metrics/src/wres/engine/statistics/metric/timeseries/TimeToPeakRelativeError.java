@@ -78,7 +78,7 @@ public class TimeToPeakRelativeError extends TimingError
             // If the horizon is zero, the relative error is undefined
             // TODO: consider how to represent a NaN outcome within the framework of Duration, rather
             // than swallowing the outcome here
-            if ( denominatorHours > 0 )
+            if ( denominatorHours != 0 )
             {
                 returnMe.add( Pair.of( next.getEarliestBasisTime(),
                                        Duration.between( peakLeftTime, peakRightTime )
@@ -97,7 +97,7 @@ public class TimeToPeakRelativeError extends TimingError
                                                                                              in.getIdentifier(),
                                                                                              in.getTimeWindow() );
 
-        return getDataFactory().ofPairedOutput( returnMe, meta );
+        return this.getDataFactory().ofPairedOutput( returnMe, meta );
     }
 
     @Override

@@ -129,8 +129,13 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
         }
         if ( this.hasMetrics( MetricInputGroup.SINGLE_VALUED_TIME_SERIES ) )
         {
+            // Use the actual time period as the time window, as time-series are processed incrementally
+            // This should avoid unnecessary merge exceptions when the caller is using the same metadata to
+            // identify different data
+            TimeSeriesOfSingleValuedPairs data = (TimeSeriesOfSingleValuedPairs) inputNoMissing;
+            
             this.processTimeSeriesPairs( timeWindow,
-                                         (TimeSeriesOfSingleValuedPairs) inputNoMissing,
+                                         data,
                                          futures,
                                          MetricOutputGroup.PAIRED );
         }
