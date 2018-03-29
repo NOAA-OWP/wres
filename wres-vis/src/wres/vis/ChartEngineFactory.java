@@ -2,6 +2,7 @@ package wres.vis;
 
 import java.awt.geom.Point2D;
 import java.io.File;
+import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -34,6 +35,7 @@ import ohd.hseb.charter.datasource.instances.DataSetXYChartDataSource;
 import ohd.hseb.charter.datasource.instances.NumericalXYChartDataSource;
 import ohd.hseb.charter.parameters.ChartDrawingParameters;
 import ohd.hseb.hefs.utils.arguments.ArgumentsProcessor;
+import ohd.hseb.hefs.utils.xml.GenericXMLReadingHandlerException;
 import ohd.hseb.hefs.utils.xml.XMLTools;
 import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.ProjectConfig;
@@ -73,7 +75,7 @@ public abstract class ChartEngineFactory
         UNIQUE( null ),
         LEAD_THRESHOLD( OutputTypeSelection.LEAD_THRESHOLD ),
         THRESHOLD_LEAD( OutputTypeSelection.THRESHOLD_LEAD ),
-        POOLING_WINDOW( null ), //OutputTypeSelection.POOLING_WINDOW will go away.
+        POOLING_WINDOW( null ), // Internal type only, not configured
         SINGLE_VALUED_PAIRS( OutputTypeSelection.SINGLE_VALUED_PAIRS );
 
         private final OutputTypeSelection basis;
@@ -108,7 +110,7 @@ public abstract class ChartEngineFactory
                     }
                 }
             }
-            throw new IllegalArgumentException( "OutputTypeSelection " + v.toString()
+            throw new IllegalArgumentException( "OutputTypeSelection " + v
                                                 + " cannot be translated to a ChartEngineFactory ChartType." );
         }
     }
@@ -935,6 +937,14 @@ public abstract class ChartEngineFactory
                                     null );
     }
 
+    @SuppressWarnings( "serial" )
+    private static class WRESVisXMLReadingException extends IOException
+    {
+        public WRESVisXMLReadingException( String message, Throwable t )
+        {
+            super( message, t );
+        }
+    }
 
     /**
      * @param input The pairs to plot.
@@ -946,11 +956,12 @@ public abstract class ChartEngineFactory
      *         passed to {@link ChartTools#generateOutputImageFile(java.io.File, JFreeChart, int, int)} in order to
      *         construct the image file.
      * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
+     * @throws WRESVisXMLReadingException when reading or parsing the xml fails.
      */
     public static ChartEngine buildSingleValuedPairsChartEngine( final SingleValuedPairs input,
                                                                  final String userSpecifiedTemplateResourceName,
                                                                  final String overrideParametersStr )
-            throws ChartEngineException
+            throws ChartEngineException, WRESVisXMLReadingException
     {
 
         String templateName = "singleValuedPairsTemplate.xml";
@@ -977,10 +988,14 @@ public abstract class ChartEngineFactory
                 {
                     XMLTools.readXMLFromString( usedStr, override );
                 }
-                catch ( final Exception t )
+                catch ( GenericXMLReadingHandlerException e )
                 {
-                    LOGGER.warn( "Unable to parse XML provided by user for chart drawing: " + t.getMessage() );
-                    LOGGER.trace( "Unable to parse XML provided by user for chart drawing", t );
+                    String message = "Unable to parse XML provided by user for chart drawing: "
+                                     + System.lineSeparator()
+                                     + usedStr
+                                     + System.lineSeparator()
+                                     + override;
+                    throw new WRESVisXMLReadingException( message, e );
                 }
             }
         }
