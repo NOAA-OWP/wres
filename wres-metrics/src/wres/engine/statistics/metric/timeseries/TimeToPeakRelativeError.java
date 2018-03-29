@@ -75,9 +75,15 @@ public class TimeToPeakRelativeError extends TimingError
             long denominatorHours = denominator.toHours();
 
             // Add the relative time-to-peak error against the basis time
-            // Duration.between is negative if the predicted/right or "end" is before the observed/left or "start"
-            returnMe.add( Pair.of( next.getEarliestBasisTime(),
-                                   Duration.between( peakLeftTime, peakRightTime ).dividedBy( denominatorHours ) ) );
+            // If the horizon is zero, the relative error is undefined
+            // TODO: consider how to represent a NaN outcome within the framework of Duration, rather
+            // than swallowing the outcome here
+            if ( denominatorHours > 0 )
+            {
+                returnMe.add( Pair.of( next.getEarliestBasisTime(),
+                                       Duration.between( peakLeftTime, peakRightTime )
+                                               .dividedBy( denominatorHours ) ) );
+            }
         }
 
         // Create output metadata with the identifier of the statistic as the component identifier
@@ -98,8 +104,8 @@ public class TimeToPeakRelativeError extends TimingError
     public MetricConstants getID()
     {
         return MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR;
-    } 
-    
+    }
+
     /**
      * A {@link MetricBuilder} to build the metric.
      */
