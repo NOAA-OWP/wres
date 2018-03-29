@@ -1108,10 +1108,10 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                 || ConfigHelper.isPersistence( projectDetails.getProjectConfig(),
                                                sourceConfig ) )
         {
-            if (this.primaryPairs.size() > 0)
+            if (this.projectDetails.usesTimeSeriesMetrics())
             {
-                lastLead = this.lastLead;
                 firstLead = this.firstLead;
+                lastLead = this.lastLead;
             }
             else
             {

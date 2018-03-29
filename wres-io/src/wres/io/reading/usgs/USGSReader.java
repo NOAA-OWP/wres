@@ -105,14 +105,14 @@ public class USGSReader extends BasicSource
 
     private class UpsertValue
     {
-        public UpsertValue(String gageID, String observationTime, Double value)
+        UpsertValue(String gageID, String observationTime, Double value)
         {
             this.gageID = gageID;
             this.observationTime = TimeHelper.standardize( observationTime );
             this.value = value;
         }
 
-        public Object[] getParameters() throws SQLException
+        Object[] getParameters() throws SQLException
         {
             return new Object[] {
                     this.value,

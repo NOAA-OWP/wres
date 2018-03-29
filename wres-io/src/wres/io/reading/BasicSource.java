@@ -19,6 +19,8 @@ import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.Executor;
 import wres.io.concurrency.WRESCallable;
 import wres.io.config.ConfigHelper;
+import wres.io.config.LeftOrRightOrBaseline;
+import wres.io.data.caching.Variables;
 import wres.io.utilities.Database;
 import wres.util.Strings;
 
@@ -518,6 +520,26 @@ public abstract class BasicSource
         return Database.getResult( script.toString(), "exists");
     }
 
+    protected int getVariableId() throws SQLException
+    {
+        // We can compare to 0 because the ids in the database are > 0
+        if (this.variableId == 0)
+        {
+            this.variableId = Variables.getVariableID(this.getDataSourceConfig());
+        }
+
+        return this.variableId;
+    }
+
+    protected int getMeasurementunitId() throws SQLException
+    {
+        if (this.measurementunitId == 0)
+        {
+            this.measurementunitId = Variables.getMeasurementUnitId( this.getVariableId() );
+        }
+        return this.measurementunitId;
+    }
+
     /**
      * The configuration of the data source indicating that this file might
      * need to be ingested
@@ -534,6 +556,16 @@ public abstract class BasicSource
      * The listing of features to ingest
      */
 	private List<Feature> specifiedFeatures;
+
+    /**
+     * The ID of the variable being ingested
+     */
+	private int variableId;
+
+    /**
+     * The ID of the unit that the variable is measured in
+     */
+	private int measurementunitId;
 
 	protected abstract Logger getLogger();
 }
