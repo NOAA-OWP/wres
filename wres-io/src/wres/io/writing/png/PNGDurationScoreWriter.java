@@ -113,7 +113,7 @@ public class PNGDurationScoreWriter extends PNGWriter
             PNGWriter.writeChart( outputImage, engine, destinationConfig );
 
         }
-        catch ( XYChartDataSourceException | ChartEngineException | IOException e )
+        catch ( ChartEngineException | IOException e )
         {
             throw new PNGWriteException( "Error while generating multi-vector charts: ", e );
         }

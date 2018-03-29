@@ -499,7 +499,6 @@ public abstract class XYChartDataSourceFactory
             {
                 @Override
                 public CategoricalXYChartDataSource returnNewInstanceWithCopyOfInitialParameters()
-                        throws XYChartDataSourceException
                 {
                     CategoricalXYChartDataSource newSource =
                             ofDurationScoreCategoricalOutput( getDataSourceOrderIndex(), input );
@@ -507,13 +506,15 @@ public abstract class XYChartDataSourceFactory
                     return newSource;
                 }
             };
-
         }
         catch ( XYChartDataSourceException e )
         {
-            LOGGER.error( "Well, how the hell did that happen?  Nothing within CategoricalXYChartDataSource even throws the exception, so this should have been impossible!",
-                          e );
-            throw new IllegalStateException( "Something very bad happened: CategoricalXYChartDataSource threw an XYChartDataSourceException when it should have been impossible." );
+            String message = "Construction of CategoricalXYChartDataSource "
+                             + "with null generator, orderIndex '" + orderIndex
+                             + "', xCategories '" + String.valueOf( xCategories )
+                             + "', and yAxisValuesBySeries '" + yAxisValuesBySeries
+                             + "' failed when it shouldn't have.";
+            throw new IllegalStateException( message, e );
         }
 
         //Some appearance options specific to the input provided.
@@ -550,7 +551,7 @@ public abstract class XYChartDataSourceFactory
         int count = dataSourceParms.getSeriesParametersCount();
         for ( SeriesDrawingParameters seriesParms : dataSourceParms.getSeriesDrawingParameters() )
         {
-            seriesParms.setBarWidth( (float) ( 1.0 / count ) );
+            seriesParms.setBarWidth( (float) ( 0.9 / count ) );
             seriesParms.setBoxWidth( 0.0d );
         }
     }
