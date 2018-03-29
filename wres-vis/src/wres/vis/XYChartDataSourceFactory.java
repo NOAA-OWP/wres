@@ -550,7 +550,7 @@ public abstract class XYChartDataSourceFactory
         int count = dataSourceParms.getSeriesParametersCount();
         for ( SeriesDrawingParameters seriesParms : dataSourceParms.getSeriesDrawingParameters() )
         {
-            seriesParms.setBarWidth( (float) ( 1.0 / count ) );
+            seriesParms.setBarWidth( (float) ( 0.9 / count ) );
             seriesParms.setBoxWidth( 0.0d );
         }
     }

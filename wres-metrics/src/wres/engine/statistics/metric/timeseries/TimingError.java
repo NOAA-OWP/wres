@@ -1,21 +1,22 @@
-package wres.engine.statistics.metric;
+package wres.engine.statistics.metric.timeseries;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Objects;
 
 import wres.datamodel.DataFactory;
-import wres.datamodel.inputs.MetricInput;
+import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.outputs.MetricOutput;
-import wres.datamodel.outputs.ScoreOutput;
+import wres.datamodel.outputs.PairedOutput;
+import wres.engine.statistics.metric.Metric;
+import wres.engine.statistics.metric.MetricParameterException;
 
 /**
- * An abstract score.
+ * Abstract base class for timing error metrics.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
-
-public abstract class OrdinaryScore<S extends MetricInput<?>, T extends ScoreOutput<?,T>> implements Score<S, T>
+public abstract class TimingError implements Metric<TimeSeriesOfSingleValuedPairs, PairedOutput<Instant, Duration>>
 {
 
     /**
@@ -23,7 +24,7 @@ public abstract class OrdinaryScore<S extends MetricInput<?>, T extends ScoreOut
      */
 
     private final DataFactory dataFactory;
-
+    
     @Override
     public DataFactory getDataFactory()
     {
@@ -36,13 +37,18 @@ public abstract class OrdinaryScore<S extends MetricInput<?>, T extends ScoreOut
         return getID().toString();
     }
 
+    @Override
+    public boolean hasRealUnits()
+    {
+        return true;
+    }
+
     /**
      * A {@link MetricBuilder} to build the metric.
      */
 
-    public static abstract class OrdinaryScoreBuilder<S extends MetricInput<?>, T extends ScoreOutput<?,T>>
-            implements
-            MetricBuilder<S, T>
+    public abstract static class TimingErrorBuilder
+            implements MetricBuilder<TimeSeriesOfSingleValuedPairs, PairedOutput<Instant, Duration>>
     {
 
         /**
@@ -59,7 +65,7 @@ public abstract class OrdinaryScore<S extends MetricInput<?>, T extends ScoreOut
          */
 
         @Override
-        public OrdinaryScoreBuilder<S, T> setOutputFactory( final DataFactory dataFactory )
+        public TimingErrorBuilder setOutputFactory( final DataFactory dataFactory )
         {
             this.dataFactory = dataFactory;
             return this;
@@ -67,15 +73,14 @@ public abstract class OrdinaryScore<S extends MetricInput<?>, T extends ScoreOut
 
     }
 
-
     /**
      * Hidden constructor.
      * 
      * @param builder the builder
-     * @throws MetricParameterException if one or more parameters is invalid
+     * @throws MetricParameterException if one or more parameters is invalid 
      */
 
-    protected OrdinaryScore( final OrdinaryScoreBuilder<S, T> builder ) throws MetricParameterException
+    protected TimingError( final TimingErrorBuilder builder ) throws MetricParameterException
     {
         if ( Objects.isNull( builder ) )
         {
@@ -88,6 +93,7 @@ public abstract class OrdinaryScore<S extends MetricInput<?>, T extends ScoreOut
         {
             throw new MetricParameterException( "Specify a data factory with which to build the metric." );
         }
-    }
+
+    }      
 
 }

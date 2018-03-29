@@ -155,16 +155,16 @@ class SafeSingleValuedPairs implements SingleValuedPairs
     {
         //Ensure safe types
         DefaultDataFactory factory = (DefaultDataFactory) DefaultDataFactory.getInstance();
-        mainInput = factory.safePairOfDoublesList( b.mainInput );
-        baselineInput = b.baselineInput.isEmpty() ? null : factory.safePairOfDoublesList( b.baselineInput );
-        mainMeta = b.mainMeta;
-        baselineMeta = b.baselineMeta;
-        climatology = b.climatology;
+        this.mainInput = factory.safePairOfDoublesList( b.mainInput );
+        this.baselineInput = b.baselineInput.isEmpty() ? null : factory.safePairOfDoublesList( b.baselineInput );
+        this.mainMeta = b.mainMeta;
+        this.baselineMeta = b.baselineMeta;
+        this.climatology = b.climatology;
 
         //Validate
-        validateMainInput();
-        validateBaselineInput();
-        validateClimatologicalInput();
+        this.validateMainInput();
+        this.validateBaselineInput();
+        this.validateClimatologicalInput();
     }
 
     /**

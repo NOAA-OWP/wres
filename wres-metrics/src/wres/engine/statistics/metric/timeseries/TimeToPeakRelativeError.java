@@ -8,7 +8,6 @@ import java.util.Objects;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-import wres.datamodel.DataFactory;
 import wres.datamodel.Dimension;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.MetricInputException;
@@ -16,11 +15,9 @@ import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetricOutputMetadata;
-import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.PairedOutput;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
-import wres.engine.statistics.metric.Collectable;
 import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricParameterException;
 
@@ -36,35 +33,10 @@ import wres.engine.statistics.metric.MetricParameterException;
  * is divided by a <code>long</code> value of hours using {@link Duration#dividedBy(long)}. A negative {@link Duration} 
  * indicates that the predicted peak is after the observed peak.</p>
  * 
- * <p><b>Implementation Notes:</b></p>
- * 
- * <p>There is no value in this class overriding {@link TimeToPeakError} or implementing {@link Collectable} with that 
- * class because the denominator used to compute the relative error is different for each time-series in the input and 
- * this information is not available in the output from {@link TimeToPeakError}. TODO: there may be some value in
- * composing both classes with a shared abstraction to minimize overlaps.</p>
- * 
  * @author james.brown@hydrosolved.com
  */
-public class TimeToPeakRelativeError implements Metric<TimeSeriesOfSingleValuedPairs, PairedOutput<Instant, Duration>>
+public class TimeToPeakRelativeError extends TimingError
 {
-
-    /**
-     * The data factory.
-     */
-
-    private final DataFactory dataFactory;
-
-    @Override
-    public DataFactory getDataFactory()
-    {
-        return dataFactory;
-    }
-
-    @Override
-    public String toString()
-    {
-        return getID().toString();
-    }
 
     @Override
     public PairedOutput<Instant, Duration> apply( TimeSeriesOfSingleValuedPairs s )
@@ -126,41 +98,14 @@ public class TimeToPeakRelativeError implements Metric<TimeSeriesOfSingleValuedP
     public MetricConstants getID()
     {
         return MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR;
-    }
-
-    @Override
-    public boolean hasRealUnits()
-    {
-        return true;
-    }
-
+    } 
+    
     /**
      * A {@link MetricBuilder} to build the metric.
      */
 
-    public static class TimeToPeakRelativeErrorBuilder
-            implements MetricBuilder<TimeSeriesOfSingleValuedPairs, PairedOutput<Instant, Duration>>
+    public static class TimeToPeakRelativeErrorBuilder extends TimingErrorBuilder
     {
-
-        /**
-         * The data factory.
-         */
-
-        private DataFactory dataFactory;
-
-        /**
-         * Sets the {@link DataFactory} for constructing a {@link MetricOutput}.
-         * 
-         * @param dataFactory the {@link DataFactory}
-         * @return the builder
-         */
-
-        @Override
-        public TimeToPeakRelativeErrorBuilder setOutputFactory( final DataFactory dataFactory )
-        {
-            this.dataFactory = dataFactory;
-            return this;
-        }
 
         @Override
         public TimeToPeakRelativeError build() throws MetricParameterException
@@ -179,17 +124,7 @@ public class TimeToPeakRelativeError implements Metric<TimeSeriesOfSingleValuedP
 
     protected TimeToPeakRelativeError( final TimeToPeakRelativeErrorBuilder builder ) throws MetricParameterException
     {
-        if ( Objects.isNull( builder ) )
-        {
-            throw new MetricParameterException( "Cannot construct the metric with a null builder." );
-        }
-
-        this.dataFactory = builder.dataFactory;
-
-        if ( Objects.isNull( this.dataFactory ) )
-        {
-            throw new MetricParameterException( "Specify a data factory with which to build the metric." );
-        }
+        super( builder );
     }
 
 }
