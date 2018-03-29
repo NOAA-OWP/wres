@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import wres.config.MetricConfigException;
@@ -262,12 +263,12 @@ public final class MetricConfigHelper
      * statistics are defined, false otherwise.
      * 
      * @param config the project configuration
-     * @param metric the metric to check
+     * @param metric the predicate to find a metric whose summary statistics are required
      * @return true if the configuration contains the specified type of metric, false otherwise
      * @throws MetricConfigException if the configuration is invalid
      */
 
-    public static boolean hasSummaryStatisticsFor( ProjectConfig config, TimeSeriesMetricConfigName metric )
+    public static boolean hasSummaryStatisticsFor( ProjectConfig config, Predicate<TimeSeriesMetricConfigName> metric )
             throws MetricConfigException
     {
         return !MetricConfigHelper.getSummaryStatisticsFor( config, metric ).isEmpty();
@@ -279,20 +280,20 @@ public final class MetricConfigHelper
      * {@link TimeSeriesMetricConfigName#ALL_VALID}.
      * 
      * @param config the project configuration
-     * @param metric the metric whose summary statistics are required
+     * @param metric the predicate to find a metric whose summary statistics are required
      * @return the summary statistics associated with the named metric
      * @throws MetricConfigException if the project contains an unmapped summary statistic
      */
 
     public static Set<MetricConstants> getSummaryStatisticsFor( ProjectConfig config,
-                                                                TimeSeriesMetricConfigName metric )
+                                                                Predicate<TimeSeriesMetricConfigName> metric )
             throws MetricConfigException
     {
         Objects.requireNonNull( config, "Specify a non-null project configuration to check for summary statistics" );
 
         Objects.requireNonNull( metric, "Specify a non null metric to check for summary statistics." );
 
-        if ( metric == TimeSeriesMetricConfigName.ALL_VALID )
+        if ( metric.test( TimeSeriesMetricConfigName.ALL_VALID ) )
         {
             throw new IllegalArgumentException( "Cannot obtain summary statistics for the general type 'all valid' "
                                                 + "when a specific type is required: instead, provide a time-series metric that is specific." );
@@ -307,7 +308,7 @@ public final class MetricConfigHelper
             for ( TimeSeriesMetricConfig next : nextGroup.getTimeSeriesMetric() )
             {
                 // Match the name
-                if ( ( next.getName() == TimeSeriesMetricConfigName.ALL_VALID || next.getName() == metric )
+                if ( ( next.getName() == TimeSeriesMetricConfigName.ALL_VALID || metric.test( next.getName() ) )
                      && Objects.nonNull( next.getSummaryStatistics() ) )
                 {
                     // Return the summary statistics

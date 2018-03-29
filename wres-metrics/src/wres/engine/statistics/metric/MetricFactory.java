@@ -82,10 +82,10 @@ import wres.engine.statistics.metric.singlevalued.VolumetricEfficiency;
 import wres.engine.statistics.metric.singlevalued.VolumetricEfficiency.VolumetricEfficiencyBuilder;
 import wres.engine.statistics.metric.timeseries.TimeToPeakError;
 import wres.engine.statistics.metric.timeseries.TimeToPeakError.TimeToPeakErrorBuilder;
-import wres.engine.statistics.metric.timeseries.TimeToPeakErrorStatistics;
-import wres.engine.statistics.metric.timeseries.TimeToPeakErrorStatistics.TimeToPeakErrorStatisticBuilder;
 import wres.engine.statistics.metric.timeseries.TimeToPeakRelativeError;
 import wres.engine.statistics.metric.timeseries.TimeToPeakRelativeError.TimeToPeakRelativeErrorBuilder;
+import wres.engine.statistics.metric.timeseries.TimingErrorSummaryStatistics;
+import wres.engine.statistics.metric.timeseries.TimingErrorSummaryStatistics.TimingErrorSummaryStatisticsBuilder;
 
 /**
  * <p>
@@ -110,7 +110,7 @@ public class MetricFactory
      * String used in several error messages to denote an unrecognized metric.
      */
 
-    private static final String UNRECOGNIZED_METRIC_ERROR = "Unrecognized metric for identifier";
+    private static final String UNRECOGNIZED_METRIC_ERROR = "Unrecognized metric for identifier.";
 
     /**
      * String used in several error messages to denote a configuration error.
@@ -703,7 +703,7 @@ public class MetricFactory
             }
             else
             {
-                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
+                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + next + "'." );
             }
         }
         builder.setOutputFactory( outputFactory ).setExecutorService( executor );
@@ -760,7 +760,7 @@ public class MetricFactory
         {
             if ( !discreteProbabilityScore.containsKey( next ) )
             {
-                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
+                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + next + "'." );
             }
             builder.add( discreteProbabilityScore.get( next ) );
         }
@@ -792,7 +792,7 @@ public class MetricFactory
         {
             if ( !dichotomousScoreCol.containsKey( next ) )
             {
-                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
+                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + next + "'." );
             }
             builder.add( dichotomousScoreCol.get( next ) );
         }
@@ -824,7 +824,7 @@ public class MetricFactory
         {
             if ( !discreteProbabilityMultiVector.containsKey( next ) )
             {
-                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
+                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + next + "'." );
             }
             builder.add( discreteProbabilityMultiVector.get( next ) );
         }
@@ -882,7 +882,7 @@ public class MetricFactory
         {
             if ( !ensembleScore.containsKey( next ) )
             {
-                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
+                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + next + "'." );
             }
             builder.add( ensembleScore.get( next ) );
         }
@@ -940,7 +940,7 @@ public class MetricFactory
         {
             if ( !ensembleBoxPlot.containsKey( next ) )
             {
-                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
+                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + next + "'." );
             }
             builder.add( ensembleBoxPlot.get( next ) );
         }
@@ -1000,7 +1000,7 @@ public class MetricFactory
         {
             if ( !singleValuedTimeSeries.containsKey( next ) )
             {
-                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
+                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + next + "'." );
             }
             builder.add( singleValuedTimeSeries.get( next ) );
         }
@@ -1632,7 +1632,7 @@ public class MetricFactory
         buildSingleValuedTimeSeriesStore();
         return (TimeToPeakError) singleValuedTimeSeries.get( MetricConstants.TIME_TO_PEAK_ERROR );
     }
-    
+
     /**
      * Return a default {@link TimeToPeakRelativeError} function.
      * 
@@ -1640,29 +1640,57 @@ public class MetricFactory
      * @throws MetricParameterException if one or more parameter values is incorrect
      */
 
-    public TimeToPeakError ofTimeToPeakRelativeError() throws MetricParameterException
+    public TimeToPeakRelativeError ofTimeToPeakRelativeError() throws MetricParameterException
     {
         buildSingleValuedTimeSeriesStore();
-        return (TimeToPeakError) singleValuedTimeSeries.get( MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR );
-    }    
+        return (TimeToPeakRelativeError) singleValuedTimeSeries.get( MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR );
+    }
 
     /**
-     * Return a default {@link TimeToPeakErrorStatistics} function for a prescribed set of {@link MetricConstants}.
+     * Return a {@link TimingErrorSummaryStatistics} function for a prescribed set of {@link MetricConstants}.
      * For each of the {@link MetricConstants}, the {@link MetricConstants#isInGroup(ScoreOutputGroup)} should return 
      * <code>true</code> when supplied with {@link ScoreOutputGroup#UNIVARIATE_STATISTIC}.
      * 
+     * @param identifier the named metric for which summary statistics are required
      * @param statistics the identifiers for summary statistics
-     * @return a default {@link TimeToPeakErrorStatistics} function
+     * @return a default {@link TimingErrorSummaryStatistics} function
      * @throws MetricParameterException if one or more parameter values is incorrect
      */
 
-    public TimeToPeakErrorStatistics ofTimeToPeakErrorStatistics( Set<MetricConstants> statistics )
+    public TimingErrorSummaryStatistics ofTimingErrorSummaryStatistics( MetricConstants identifier,
+                                                                        Set<MetricConstants> statistics )
             throws MetricParameterException
     {
-        return (TimeToPeakErrorStatistics) new TimeToPeakErrorStatisticBuilder().setStatistics( statistics )
-                                                                                .setOutputFactory( outputFactory )
-                                                                                .build();
+        return new TimingErrorSummaryStatisticsBuilder().setStatistics( statistics )
+                                                        .setID( identifier )
+                                                        .setOutputFactory( outputFactory )
+                                                        .build();
     }
+ 
+    /**
+     * Helper that returns the name of the summary statistics associated with the timing metric.
+     * 
+     * @param timingMetric the named timing metric
+     * @return the summary statistics name or null if no identifier is defined
+     * @throws NullPointerException if the input is null
+     */
+    
+    public static MetricConstants getSummaryStatisticsForTimingErrorMetric( MetricConstants timingMetric )
+    {       
+        Objects.requireNonNull( timingMetric, "Specify a non-null metric identifier to map." );
+        
+        if( timingMetric ==  MetricConstants.TIME_TO_PEAK_ERROR )
+        {
+            return MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC;
+        }
+        
+        if( timingMetric ==  MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR )
+        {
+            return MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR_STATISTIC;
+        }
+        
+        return null;
+    }    
 
     /**
      * Helper that interprets the input configuration and returns a list of {@link MetricOutputGroup} whose results 

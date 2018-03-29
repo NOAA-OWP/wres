@@ -244,6 +244,15 @@ public class CommaSeparatedScoreWriter<T extends ScoreOutput<?, T>> extends Comm
                                                         formatter,
                                                         true );
                 }
+                // Write no data in place: see #48387
+                else
+                {
+                    CommaSeparatedWriter.addRowToInput( rows,
+                                                        timeWindow,
+                                                        Arrays.asList( (Object) null ),
+                                                        formatter,
+                                                        true );
+                }
             }
         }
     }
