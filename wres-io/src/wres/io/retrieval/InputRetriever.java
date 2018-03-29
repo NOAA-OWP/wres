@@ -52,6 +52,7 @@ import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
 import wres.io.writing.PairWriter;
 import wres.util.NotImplementedException;
+import wres.util.TimeHelper;
 
 /**
  * Created by ctubbs on 7/17/17.
@@ -635,6 +636,16 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             int minimumLead = this.projectDetails.getLeadRange( this.feature, this.leadIteration ).getLeft();
             int period = this.projectDetails.getScale().getPeriod();
             int frequency = this.projectDetails.getScale().getFrequency();
+
+            period = (int)TimeHelper.unitsToLeadUnits(
+                    this.projectDetails.getScale().getUnit().value(),
+                    period
+            );
+
+            frequency = (int)TimeHelper.unitsToLeadUnits(
+                    this.projectDetails.getScale().getUnit().value(),
+                    frequency
+            );
 
             while(resultSet.next())
             {

@@ -41,7 +41,7 @@ public class Projects extends Cache<ProjectDetails, Integer> {
         }
     }
 
-    public static Pair<ProjectDetails,Boolean> getProject( ProjectConfig projectConfig,
+    private static Pair<ProjectDetails,Boolean> getProject( ProjectConfig projectConfig,
                                                            List<String> leftHashes,
                                                            List<String> rightHashes,
                                                            List<String> baselineHashes )

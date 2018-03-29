@@ -66,7 +66,7 @@ public abstract class BasicSource
      * @return the ingest results
      * @throws IOException always, because this is not implemented
      */
-    protected List<IngestResult> saveForecast() throws IOException
+    private List<IngestResult> saveForecast() throws IOException
 	{
 		throw new IOException("Forecasts may not be saved using this type of source.");
 	}
@@ -428,7 +428,7 @@ public abstract class BasicSource
             }
 
             private byte[] contentsToHash;
-            public WRESCallable<String> init(byte[] contentsToHash)
+            WRESCallable<String> init(byte[] contentsToHash)
             {
                 this.contentsToHash = contentsToHash;
                 return this;
@@ -457,7 +457,7 @@ public abstract class BasicSource
             }
 
             private String fileNameToHash;
-            public WRESCallable<String> init(String fileNameToHash)
+            WRESCallable<String> init(String fileNameToHash)
             {
                 this.fileNameToHash = fileNameToHash;
                 return this;
@@ -528,7 +528,7 @@ public abstract class BasicSource
      * The precise configuration of the data source indicating that this file
      * might need to be ingested
      */
-    protected DataSourceConfig.Source sourceConfig;
+    private DataSourceConfig.Source sourceConfig;
 
     /**
      * The listing of features to ingest

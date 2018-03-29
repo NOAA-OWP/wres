@@ -139,11 +139,11 @@ public class SourceLoader
                 }
                 else if ( sourceFile.isFile() )
                 {
-                    List<Feature> specifiedFeatureses;
+                    List<Feature> specifiedFeatures;
 
                     try
                     {
-                        specifiedFeatureses = this.getSpecifiedFeatures();
+                        specifiedFeatures = this.getSpecifiedFeatures();
                     }
                     catch ( SQLException se )
                     {
@@ -153,7 +153,7 @@ public class SourceLoader
                     Future<List<IngestResult>> task = saveFile( sourcePath,
                                                                 source,
                                                                 config,
-                                                                specifiedFeatureses,
+                                                                specifiedFeatures,
                                                                 this.projectConfig );
 
                     if (task != null)

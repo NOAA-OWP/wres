@@ -1080,6 +1080,9 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
             long left = this.getLeftScale();
             long right = this.getRightScale();
 
+            long maxScale = Math.max(left, right);
+            long minScale = Math.min(left, right);
+
             if (left == right)
             {
                 commonScale = left;
@@ -1091,18 +1094,17 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
             // This logic will attempt to reconcile the two to find a possible
             // desired scale; i.e. if the left is in a scale of 4 hours and the
             // right in 3, the needed scale would be 12 hours.
-            else if (Math.max(left, right) % Math.min(left, right) == 0)
+            else if (minScale != 0 && maxScale % minScale == 0)
             {
-                commonScale = Math.max(left, right);
                 String message = "The temporal scales of the left and right hand data "
                                  + "don't match. The left hand data is in a "
                                  + "scale of %d hours and the scale on the "
                                  + "right is in %d hours. If the data is "
                                  + "compatible, a scale of %d hours should "
                                  + "suffice.";
-                throw new NoDataException( String.format( message, left, right, commonScale ) );
+                throw new NoDataException( String.format( message, left, right, maxScale ) );
             }
-            else
+            else if (!(minScale == 0 || maxScale == 0))
             {
 
                 BigInteger bigLeft = BigInteger.valueOf( left );
@@ -1123,6 +1125,12 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
                                  + "there is enough data and an appropriate "
                                  + "scaling function is supplied.";
                 throw new NoDataException( String.format( message, left, right, commonScale ) );
+            }
+            else
+            {
+                throw new NoDataException( "Not enough data was supplied to "
+                                           + "evaluate a correct scale between "
+                                           + "data sources." );
             }
         }
         catch ( NoDataException e )
@@ -2178,7 +2186,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
      * @throws SQLException Thrown if an error was encountered while retrieving
      * scale information from the database
      */
-    public long getRightScale() throws NoDataException, SQLException
+    private long getRightScale() throws NoDataException, SQLException
     {
         synchronized ( RIGHT_LEAD_LOCK )
         {
