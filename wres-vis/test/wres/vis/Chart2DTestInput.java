@@ -67,7 +67,7 @@ public class Chart2DTestInput extends TestCase
 
     }
 
-    public static void main( final String[] args ) throws ChartEngineException
+    public static void main( final String[] args ) throws ChartEngineException, IOException
     {
         //Construct some single-valued pairs
         final DataFactory metIn = DefaultDataFactory.getInstance();
