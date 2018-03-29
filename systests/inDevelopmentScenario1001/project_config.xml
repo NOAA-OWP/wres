@@ -50,6 +50,17 @@
                 <name>mean absolute</name>
             </summaryStatistics>
         </timeSeriesMetric>
+        <timeSeriesMetric>
+            <name>time to peak relative error</name>
+            <summaryStatistics>
+                <name>mean</name>
+                <name>median</name>
+                <name>minimum</name>
+                <name>maximum</name>
+                <name>standard deviation</name>
+                <name>mean absolute</name>
+            </summaryStatistics>
+        </timeSeriesMetric> 
     </metrics>
 
     <outputs>

@@ -4,9 +4,11 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -23,7 +25,6 @@ import org.slf4j.event.Level;
 import wres.config.MetricConfigException;
 import wres.config.ProjectConfigs;
 import wres.config.generated.ProjectConfig;
-import wres.config.generated.TimeSeriesMetricConfigName;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
@@ -50,10 +51,11 @@ import wres.datamodel.outputs.PairedOutput;
 import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricCollection;
+import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.config.MetricConfigHelper;
 import wres.engine.statistics.metric.processing.MetricProcessorByTime.MetricFuturesByTime.MetricFuturesByTimeBuilder;
-import wres.engine.statistics.metric.timeseries.TimeToPeakErrorStatistics;
+import wres.engine.statistics.metric.timeseries.TimingErrorSummaryStatistics;
 
 /**
  * Builds and processes all {@link MetricCollection} associated with a {@link ProjectConfig} for metrics that consume
@@ -77,10 +79,11 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
     private final MetricCollection<TimeSeriesOfSingleValuedPairs, PairedOutput<Instant, Duration>, PairedOutput<Instant, Duration>> timeSeries;
 
     /**
-     * An instance of {@link TimeToPeakErrorStatistics}.
+     * An instance of {@link TimingErrorSummaryStatistics} for each timing error metric that requires 
+     * summary statistics.
      */
 
-    private final TimeToPeakErrorStatistics timeToPeakErrorStats;
+    private final Map<MetricConstants, TimingErrorSummaryStatistics> timingErrorSummaryStatistics;
 
     @Override
     public MetricOutputForProjectByTimeAndThreshold apply( SingleValuedPairs input )
@@ -178,29 +181,41 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
         //Construct the metrics
 
         //Time-series 
-        if ( hasMetrics( MetricInputGroup.SINGLE_VALUED_TIME_SERIES, MetricOutputGroup.PAIRED ) )
+        if ( this.hasMetrics( MetricInputGroup.SINGLE_VALUED_TIME_SERIES, MetricOutputGroup.PAIRED ) )
         {
+            MetricConstants[] timingErrorMetrics = this.getMetrics( MetricInputGroup.SINGLE_VALUED_TIME_SERIES,
+                                                                    MetricOutputGroup.PAIRED );
             this.timeSeries = metricFactory.ofSingleValuedTimeSeriesCollection( metricExecutor,
-                                                                                this.getMetrics( MetricInputGroup.SINGLE_VALUED_TIME_SERIES,
-                                                                                                 MetricOutputGroup.PAIRED ) );
-            //Summary statistics, currently done for time-to-peak only
-            //TODO: replace with a collection if/when other measures of the same type are added                    
-            if ( MetricConfigHelper.hasSummaryStatisticsFor( config, TimeSeriesMetricConfigName.TIME_TO_PEAK_ERROR ) )
+                                                                                timingErrorMetrics );
+            //Summary statistics
+            Map<MetricConstants, TimingErrorSummaryStatistics> localStatistics = new EnumMap<>( MetricConstants.class );
+
+            // Iterate the timing error metrics
+            for ( MetricConstants nextMetric : timingErrorMetrics )
             {
-                Set<MetricConstants> ts = MetricConfigHelper.getSummaryStatisticsFor( config,
-                                                                                      TimeSeriesMetricConfigName.TIME_TO_PEAK_ERROR );
-                this.timeToPeakErrorStats =
-                        this.metricFactory.ofTimeToPeakErrorStatistics( ts );
+
+                if ( MetricConfigHelper.hasSummaryStatisticsFor( config,
+                                                                 name -> nextMetric.name().equals( name.name() ) ) )
+                {
+                    Set<MetricConstants> ts = MetricConfigHelper.getSummaryStatisticsFor( config,
+                                                                                          name -> nextMetric.name()
+                                                                                                            .equals( name.name() ) );
+                    // Find the identifier for the summary statistics
+                    MetricConstants identifier = MetricFactory.getSummaryStatisticsForTimingErrorMetric( nextMetric );
+
+                    TimingErrorSummaryStatistics stats =
+                            this.metricFactory.ofTimingErrorSummaryStatistics( identifier, ts );
+
+                    localStatistics.put( nextMetric, stats );
+                }
             }
-            else
-            {
-                this.timeToPeakErrorStats = null;
-            }
+            
+            this.timingErrorSummaryStatistics = Collections.unmodifiableMap( localStatistics );
         }
         else
         {
             this.timeSeries = null;
-            this.timeToPeakErrorStats = null;
+            this.timingErrorSummaryStatistics = Collections.unmodifiableMap( new EnumMap<>( MetricConstants.class ) );
         }
     }
 
@@ -262,13 +277,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
     {
         // Determine whether to compute summary statistics
         boolean proceed = this.hasCachedMetricOutput()
-                          && this.getCachedMetricOutputInternal().hasOutput( MetricOutputGroup.PAIRED )
-                          && this.getCachedMetricOutputInternal()
-                                 .getPairedOutput()
-                                 .containsKey( dataFactory.getMapKey( MetricConstants.TIME_TO_PEAK_ERROR ) );
-
-        // Summary statistics required
-        proceed = proceed && Objects.nonNull( this.timeToPeakErrorStats );
+                          && this.getCachedMetricOutputInternal().hasOutput( MetricOutputGroup.PAIRED );
 
         // Summary statistics not already computed
         proceed = proceed && !this.getCachedMetricOutputInternal().hasOutput( MetricOutputGroup.DURATION_SCORE );
@@ -277,42 +286,55 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
         if ( proceed )
         {
 
-            // Obtain the paired output
-            MetricOutputMapByTimeAndThreshold<PairedOutput<Instant, Duration>> output =
-                    getCachedMetricOutputInternal().getPairedOutput().get( MetricConstants.TIME_TO_PEAK_ERROR );
-
-            // Iterate through the thresholds
-            for ( OneOrTwoThresholds threshold : output.setOfThresholdKey() )
+            MetricFuturesByTimeBuilder addFutures = new MetricFuturesByTimeBuilder();
+            
+            // Iterate through the timing error statistics
+            for ( Entry<MetricConstants, TimingErrorSummaryStatistics> nextStats : this.timingErrorSummaryStatistics.entrySet() )
             {
-                // Slice  
-                MetricOutputMapByTimeAndThreshold<PairedOutput<Instant, Duration>> sliced =
-                        output.filterByThreshold( threshold );
+                // Output available
+                if ( this.getCachedMetricOutputInternal()
+                         .getPairedOutput()
+                         .containsKey( dataFactory.getMapKey( nextStats.getKey() ) ) )
+                {
+                    // Obtain the paired output
+                    MetricOutputMapByTimeAndThreshold<PairedOutput<Instant, Duration>> output =
+                            getCachedMetricOutputInternal().getPairedOutput().get( nextStats.getKey() );
 
-                // Find the union of the paired output
-                PairedOutput<Instant, Duration> union = dataFactory.unionOf( sliced.values() );
+                    TimingErrorSummaryStatistics timeToPeakErrorStats = nextStats.getValue();
+                    
+                    // Iterate through the thresholds
+                    for ( OneOrTwoThresholds threshold : output.setOfThresholdKey() )
+                    {
+                        // Slice  
+                        MetricOutputMapByTimeAndThreshold<PairedOutput<Instant, Duration>> sliced =
+                                output.filterByThreshold( threshold );
 
-                // Find the union of the metadata
-                TimeWindow unionWindow = union.getMetadata().getTimeWindow();
+                        // Find the union of the paired output
+                        PairedOutput<Instant, Duration> union = dataFactory.unionOf( sliced.values() );
 
-                Pair<TimeWindow, OneOrTwoThresholds> key =
-                        Pair.of( unionWindow, threshold );
+                        // Find the union of the metadata
+                        TimeWindow unionWindow = union.getMetadata().getTimeWindow();
 
-                //Build the future result
-                Supplier<MetricOutputMapByMetric<DurationScoreOutput>> supplier = () -> {
-                    DurationScoreOutput result = timeToPeakErrorStats.aggregate( union );
-                    List<DurationScoreOutput> in = new ArrayList<>();
-                    in.add( result );
-                    return dataFactory.ofMap( in );
-                };
-                Future<MetricOutputMapByMetric<DurationScoreOutput>> addMe =
-                        CompletableFuture.supplyAsync( supplier, thresholdExecutor );
+                        Pair<TimeWindow, OneOrTwoThresholds> key =
+                                Pair.of( unionWindow, threshold );
 
-                //Add the future result to the store
-                //Metric futures 
-                MetricFuturesByTimeBuilder addFutures = new MetricFuturesByTimeBuilder();
-                addFutures.addDataFactory( dataFactory );
-                addFutures.addDurationScoreOutput( key, addMe );
-                futures.add( addFutures.build() );
+                        //Build the future result
+                        Supplier<MetricOutputMapByMetric<DurationScoreOutput>> supplier = () -> {
+                            DurationScoreOutput result = timeToPeakErrorStats.apply( union );
+                            List<DurationScoreOutput> in = new ArrayList<>();
+                            in.add( result );
+                            return dataFactory.ofMap( in );
+                        };
+                        Future<MetricOutputMapByMetric<DurationScoreOutput>> addMe =
+                                CompletableFuture.supplyAsync( supplier, thresholdExecutor );
+
+                        //Add the future result to the store
+                        //Metric futures 
+                        addFutures.addDataFactory( dataFactory );
+                        addFutures.addDurationScoreOutput( key, addMe );
+                        futures.add( addFutures.build() );
+                    }
+                }
             }
         }
     }

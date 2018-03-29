@@ -217,12 +217,18 @@ public enum MetricConstants
      */
 
     TIME_TO_PEAK_ERROR_STATISTIC( MetricInputGroup.SINGLE_VALUED_TIME_SERIES, MetricOutputGroup.DURATION_SCORE ),
-    
+
     /**
      * Identifier for the Time-to-Peak Relative Error.
      */
 
-    TIME_TO_PEAK_RELATIVE_ERROR( MetricInputGroup.SINGLE_VALUED_TIME_SERIES, MetricOutputGroup.PAIRED ),    
+    TIME_TO_PEAK_RELATIVE_ERROR( MetricInputGroup.SINGLE_VALUED_TIME_SERIES, MetricOutputGroup.PAIRED ),
+
+    /**
+     * Identifier for a statistic derived from the Time-to-Peak Relative Error.
+     */
+
+    TIME_TO_PEAK_RELATIVE_ERROR_STATISTIC( MetricInputGroup.SINGLE_VALUED_TIME_SERIES, MetricOutputGroup.DURATION_SCORE ),
 
     /**
      * Mean statistic.
@@ -610,7 +616,7 @@ public enum MetricConstants
         {
             return getMetrics().contains( input );
         }
-        
+
         /**
          * Returns a set representation of the enumeration. Contains all elements in {@link MetricInputGroup#values()}.
          * 
@@ -620,7 +626,7 @@ public enum MetricConstants
         public static Set<MetricInputGroup> set()
         {
             return Collections.unmodifiableSet( new HashSet<>( Arrays.asList( MetricInputGroup.values() ) ) );
-        }        
+        }
 
     }
 

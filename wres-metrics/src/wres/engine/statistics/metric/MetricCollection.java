@@ -81,6 +81,12 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
      */
 
     private final Future<S> input;
+    
+    /**
+     * Executor service. By default, the {@link ForkJoinPool#commonPool()}
+     */
+
+    private final ExecutorService metricPool;    
 
     /**
      * Applies the input to the collection for all metrics in the collection.
@@ -95,13 +101,14 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
     }
 
     /**
-     * Executor service. By default, the {@link ForkJoinPool#commonPool()}
+     * Computes all metrics except the metrics in the ignore set.
+     * 
+     * @param input the input
+     * @param ignoreTheseMetrics the set of metrics to ignore
      */
-
-    private final ExecutorService metricPool;
-
+    
     @Override
-    public MetricOutputMapByMetric<U> apply( final S input, Set<MetricConstants> ignoreTheseMetrics )
+    public MetricOutputMapByMetric<U> apply( final S input, final Set<MetricConstants> ignoreTheseMetrics )
     {
         return applyParallel( input, ignoreTheseMetrics );
     }
