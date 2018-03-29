@@ -23,11 +23,12 @@ import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
-import wres.datamodel.inputs.pairs.builders.RegularTimeSeriesOfSingleValuedPairsBuilder;
+import wres.datamodel.inputs.pairs.builders.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
+import wres.datamodel.time.Event;
 
 /**
  * Factory class for generating test datasets for metric calculations.
@@ -933,26 +934,24 @@ public final class MetricTestDataFactory
         // Build an immutable regular time-series of single-valued pairs
         DataFactory dataFactory = DefaultDataFactory.getInstance();
         MetadataFactory metaFac = dataFactory.getMetadataFactory();
-        RegularTimeSeriesOfSingleValuedPairsBuilder builder =
-                dataFactory.ofRegularTimeSeriesOfSingleValuedPairsBuilder();
+        TimeSeriesOfSingleValuedPairsBuilder builder =
+                dataFactory.ofTimeSeriesOfSingleValuedPairsBuilder();
         // Create a regular time-series with an issue date/time, a series of paired values, and a timestep
         Instant firstId = Instant.parse( "1985-01-01T00:00:00Z" );
-        List<PairOfDoubles> firstValues = new ArrayList<>();
+        List<Event<PairOfDoubles>> firstValues = new ArrayList<>();
         // Add some values
-        firstValues.add( dataFactory.pairOf( 1, 1 ) );
-        firstValues.add( dataFactory.pairOf( 1, 5 ) );
-        firstValues.add( dataFactory.pairOf( 5, 1 ) );
+        firstValues.add( Event.of( Instant.parse( "1985-01-01T06:00:00Z" ), dataFactory.pairOf( 1, 1 ) ) );
+        firstValues.add( Event.of( Instant.parse( "1985-01-01T12:00:00Z" ), dataFactory.pairOf( 1, 5 ) ) );
+        firstValues.add( Event.of( Instant.parse( "1985-01-01T18:00:00Z" ), dataFactory.pairOf( 5, 1 ) ) );
 
         // Add another time-series
         Instant secondId = Instant.parse( "1985-01-02T00:00:00Z" );
-        List<PairOfDoubles> secondValues = new ArrayList<>();
+        List<Event<PairOfDoubles>> secondValues = new ArrayList<>();
         // Add some values
-        secondValues.add( dataFactory.pairOf( 10, 1 ) );
-        secondValues.add( dataFactory.pairOf( 1, 1 ) );
-        secondValues.add( dataFactory.pairOf( 1, 10 ) );
+        secondValues.add( Event.of( Instant.parse( "1985-01-02T06:00:00Z" ), dataFactory.pairOf( 10, 1 ) ) );
+        secondValues.add( Event.of( Instant.parse( "1985-01-02T12:00:00Z" ), dataFactory.pairOf( 1, 1 ) ) );
+        secondValues.add( Event.of( Instant.parse( "1985-01-02T18:00:00Z" ), dataFactory.pairOf( 1, 10 ) ) );
 
-        // Set the timestep for the time-series to 6h
-        Duration timeStep = Duration.ofHours( 6 );
         // Create some default metadata for the time-series
         final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                  Instant.parse( "1985-01-02T00:00:00Z" ),
@@ -966,10 +965,84 @@ public final class MetricTestDataFactory
         // Build the time-series
         return (TimeSeriesOfSingleValuedPairs) builder.addTimeSeriesData( firstId, firstValues )
                                                       .addTimeSeriesData( secondId, secondValues )
-                                                      .setTimeStep( timeStep )
                                                       .setMetadata( metaData )
                                                       .build();
     }
+    
+    /**
+     * Returns a {@link TimeSeriesOfSingleValuedPairs} containing fake data.
+     * 
+     * @return a time-series of single-valued pairs
+     */
 
+    public static TimeSeriesOfSingleValuedPairs getTimeSeriesOfSingleValuedPairsTwo()
+    {
+        // Build an immutable regular time-series of single-valued pairs
+        DataFactory dataFactory = DefaultDataFactory.getInstance();
+        MetadataFactory metaFac = dataFactory.getMetadataFactory();
+        TimeSeriesOfSingleValuedPairsBuilder builder =
+                dataFactory.ofTimeSeriesOfSingleValuedPairsBuilder();
+        // Create a regular time-series with an issue date/time, a series of paired values, and a timestep
+        Instant firstId = Instant.parse( "1985-01-01T00:00:00Z" );
+        List<Event<PairOfDoubles>> firstValues = new ArrayList<>();
+        // Add some values
+        firstValues.add( Event.of( Instant.parse( "1985-01-01T06:00:00Z" ), dataFactory.pairOf( 1, 1 ) ) );
+        firstValues.add( Event.of( Instant.parse( "1985-01-01T12:00:00Z" ), dataFactory.pairOf( 1, 5 ) ) );
+        firstValues.add( Event.of( Instant.parse( "1985-01-01T18:00:00Z" ), dataFactory.pairOf( 5, 1 ) ) );
+
+        // Create some default metadata for the time-series
+        final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                 Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                 ReferenceTime.ISSUE_TIME,
+                                                 Duration.ofHours( 6 ),
+                                                 Duration.ofHours( 18 ) );
+        final Metadata metaData = metaFac.getMetadata( metaFac.getDimension( "CMS" ),
+                                                       metaFac.getDatasetIdentifier( "A",
+                                                                                     "Streamflow" ),
+                                                       window );
+        // Build the time-series
+        return (TimeSeriesOfSingleValuedPairs) builder.addTimeSeriesData( firstId, firstValues )
+                                                      .setMetadata( metaData )
+                                                      .build();
+    }    
+
+    /**
+     * Returns a {@link TimeSeriesOfSingleValuedPairs} containing fake data.
+     * 
+     * @return a time-series of single-valued pairs
+     */
+
+    public static TimeSeriesOfSingleValuedPairs getTimeSeriesOfSingleValuedPairsThree()
+    {
+        // Build an immutable regular time-series of single-valued pairs
+        DataFactory dataFactory = DefaultDataFactory.getInstance();
+        MetadataFactory metaFac = dataFactory.getMetadataFactory();
+        TimeSeriesOfSingleValuedPairsBuilder builder =
+                dataFactory.ofTimeSeriesOfSingleValuedPairsBuilder();
+        // Create a regular time-series with an issue date/time, a series of paired values, and a timestep
+
+        // Add another time-series
+        Instant secondId = Instant.parse( "1985-01-02T00:00:00Z" );
+        List<Event<PairOfDoubles>> secondValues = new ArrayList<>();
+        // Add some values
+        secondValues.add( Event.of( Instant.parse( "1985-01-02T06:00:00Z" ), dataFactory.pairOf( 10, 1 ) ) );
+        secondValues.add( Event.of( Instant.parse( "1985-01-02T12:00:00Z" ), dataFactory.pairOf( 1, 1 ) ) );
+        secondValues.add( Event.of( Instant.parse( "1985-01-02T18:00:00Z" ), dataFactory.pairOf( 1, 10 ) ) );
+
+        // Create some default metadata for the time-series
+        final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-02T00:00:00Z" ),
+                                                 Instant.parse( "1985-01-02T00:00:00Z" ),
+                                                 ReferenceTime.ISSUE_TIME,
+                                                 Duration.ofHours( 6 ),
+                                                 Duration.ofHours( 18 ) );
+        final Metadata metaData = metaFac.getMetadata( metaFac.getDimension( "CMS" ),
+                                                       metaFac.getDatasetIdentifier( "A",
+                                                                                     "Streamflow" ),
+                                                       window );
+        // Build the time-series
+        return (TimeSeriesOfSingleValuedPairs) builder.addTimeSeriesData( secondId, secondValues )
+                                                      .setMetadata( metaData )
+                                                      .build();
+    }    
 
 }

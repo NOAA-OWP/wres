@@ -116,7 +116,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
 
         //Metric futures 
         MetricFuturesByTimeBuilder futures = new MetricFuturesByTimeBuilder();
-        futures.addDataFactory( dataFactory );
+        futures.setDataFactory( dataFactory );
 
         //Process the metrics that consume single-valued pairs
         if ( this.hasMetrics( MetricInputGroup.SINGLE_VALUED ) )
@@ -287,8 +287,9 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
         {
 
             MetricFuturesByTimeBuilder addFutures = new MetricFuturesByTimeBuilder();
+            addFutures.setDataFactory( dataFactory );
             
-            // Iterate through the timing error statistics
+            // Iterate through the timing error metrics
             for ( Entry<MetricConstants, TimingErrorSummaryStatistics> nextStats : this.timingErrorSummaryStatistics.entrySet() )
             {
                 // Output available
@@ -300,6 +301,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                     MetricOutputMapByTimeAndThreshold<PairedOutput<Instant, Duration>> output =
                             getCachedMetricOutputInternal().getPairedOutput().get( nextStats.getKey() );
 
+                    // Compute the collection of statistics for the next timing error metric
                     TimingErrorSummaryStatistics timeToPeakErrorStats = nextStats.getValue();
                     
                     // Iterate through the thresholds
@@ -325,17 +327,19 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                             in.add( result );
                             return dataFactory.ofMap( in );
                         };
+                        
+                        // Execute
                         Future<MetricOutputMapByMetric<DurationScoreOutput>> addMe =
                                 CompletableFuture.supplyAsync( supplier, thresholdExecutor );
 
-                        //Add the future result to the store
-                        //Metric futures 
-                        addFutures.addDataFactory( dataFactory );
+                        // Add the future result to the store
                         addFutures.addDurationScoreOutput( key, addMe );
-                        futures.add( addFutures.build() );
                     }
                 }
             }
+            
+            // Build the store of futures
+            futures.add( addFutures.build() );
         }
     }
 

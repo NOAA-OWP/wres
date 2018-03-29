@@ -209,6 +209,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
      * 
      * @return a {@link MetricOutputForProject} or null
      * @throws MetricOutputAccessException if the cached output cannot be completed
+     * @throws MetricOutputMergeException if the cached output cannot be merged across calls
      */
 
     public T getCachedMetricOutput() throws MetricOutputAccessException
@@ -324,6 +325,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
      * {@link #hasCachedMetricOutput()} returns false.
      * 
      * @return a {@link MetricOutputForProject} or null
+     * @throws MetricOutputMergeException if the outputs cannot be merged across calls
      */
 
     abstract T getCachedMetricOutputInternal();
