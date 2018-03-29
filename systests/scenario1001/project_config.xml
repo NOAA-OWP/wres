@@ -36,7 +36,7 @@
         <thresholds>
             <type>value</type>
             <applyTo>left and right</applyTo>
-            <commaSeparatedValues>184</commaSeparatedValues>
+            <commaSeparatedValues>183, 184</commaSeparatedValues>
             <operator>greater than</operator>
         </thresholds>   
         <timeSeriesMetric>
