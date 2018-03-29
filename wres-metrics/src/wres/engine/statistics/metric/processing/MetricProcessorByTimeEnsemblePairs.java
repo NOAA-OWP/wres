@@ -122,7 +122,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
 
         //Metric futures 
         MetricFuturesByTimeBuilder futures = new MetricFuturesByTimeBuilder();
-        futures.addDataFactory( dataFactory );
+        futures.setDataFactory( dataFactory );
 
         //Slicer
         Slicer slicer = dataFactory.getSlicer();
