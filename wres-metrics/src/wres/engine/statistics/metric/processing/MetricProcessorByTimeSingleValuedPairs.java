@@ -129,12 +129,17 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
         }
         if ( this.hasMetrics( MetricInputGroup.SINGLE_VALUED_TIME_SERIES ) )
         {
-            // Use the actual time period as the time window, as time-series are processed incrementally
-            // This should avoid unnecessary merge exceptions when the caller is using the same metadata to
-            // identify different data
+            // For time-series inputs, use the actual time period as the time window; there is no need to trust the 
+            // metadata. This should avoid unnecessary merge exceptions when the caller is using the same metadata to
+            // identify different data across multiple, incremental, calls. Such calls are common for time-series.
             TimeSeriesOfSingleValuedPairs data = (TimeSeriesOfSingleValuedPairs) inputNoMissing;
-            
-            this.processTimeSeriesPairs( timeWindow,
+            TimeWindow actualTimeWindow = TimeWindow.of( data.getEarliestBasisTime(),
+                                                  data.getLatestBasisTime(),
+                                                  timeWindow.getReferenceTime(),
+                                                  timeWindow.getEarliestLeadTime(),
+                                                  timeWindow.getLatestLeadTime() );
+
+            this.processTimeSeriesPairs( actualTimeWindow,
                                          data,
                                          futures,
                                          MetricOutputGroup.PAIRED );
@@ -214,7 +219,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                     localStatistics.put( nextMetric, stats );
                 }
             }
-            
+
             this.timingErrorSummaryStatistics = Collections.unmodifiableMap( localStatistics );
         }
         else
@@ -293,7 +298,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
 
             MetricFuturesByTimeBuilder addFutures = new MetricFuturesByTimeBuilder();
             addFutures.setDataFactory( dataFactory );
-            
+
             // Iterate through the timing error metrics
             for ( Entry<MetricConstants, TimingErrorSummaryStatistics> nextStats : this.timingErrorSummaryStatistics.entrySet() )
             {
@@ -308,7 +313,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
 
                     // Compute the collection of statistics for the next timing error metric
                     TimingErrorSummaryStatistics timeToPeakErrorStats = nextStats.getValue();
-                    
+
                     // Iterate through the thresholds
                     for ( OneOrTwoThresholds threshold : output.setOfThresholdKey() )
                     {
@@ -332,7 +337,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                             in.add( result );
                             return dataFactory.ofMap( in );
                         };
-                        
+
                         // Execute
                         Future<MetricOutputMapByMetric<DurationScoreOutput>> addMe =
                                 CompletableFuture.supplyAsync( supplier, thresholdExecutor );
@@ -342,7 +347,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                     }
                 }
             }
-            
+
             // Build the store of futures
             futures.add( addFutures.build() );
         }
