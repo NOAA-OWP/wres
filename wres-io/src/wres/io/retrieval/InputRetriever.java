@@ -1115,7 +1115,6 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             }
             else
             {
-                // This is only helpful for debugging purposes.
                 Integer offset = this.projectDetails.getLeadOffset( this.feature );
 
                 if (offset == null)
@@ -1234,62 +1233,6 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         }
 
         return leftAggregation;
-    }
-
-    /**
-     * Pairs a collection of values with their left hand counter part and performs
-     * any needed aggregation
-     * @param lastDate The last valid date for the data contained within rightValues
-     * @param rightValues A mapping of values to where they were retrieved in
-     *                    the data retrieved from the database
-     * @return A raw pair that may be used to build up a MetricInput
-     * @throws NoDataException
-     */
-    private PairOfDoubleAndVectorOfDoubles getPair( Instant lastDate,
-                                                    Map<Integer, List<Double>> rightValues)
-            throws NoDataException, SQLException
-    {
-        if (rightValues == null || rightValues.isEmpty() )
-        {
-            throw new NoDataException( "No values could be retrieved to pair "
-                                       + "with with any possible set of left "
-                                       + "values." );
-        }
-
-        Double leftAggregation = this.getLeftAggregation( lastDate );
-
-        if (leftAggregation == null)
-        {
-            LOGGER.trace( "No values from the left could be retrieved to pair with the retrieved right values." );
-            return null;
-        }
-
-        List<Double> validAggregations = new ArrayList<>();
-
-        for (List<Double> values : rightValues.values())
-        {
-            if (this.projectDetails.shouldScale())
-            {
-                validAggregations.add(
-                        wres.util.Collections.aggregate(
-                                values,
-                                this.projectDetails.getScale()
-                                                   .getFunction()
-                                                   .value()
-                        )
-                );
-            }
-            // If we aren't aggregating, just throw it in the collection and move on
-            else
-            {
-                validAggregations.addAll( values );
-            }
-        }
-
-        return DefaultDataFactory.getInstance().pairOf(
-                leftAggregation,
-                validAggregations.toArray(new Double[validAggregations.size()] )
-        );
     }
 
     /**

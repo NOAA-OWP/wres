@@ -1486,9 +1486,11 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
 
         if (this.shouldCalculateLeads())
         {
+            int frequency = (int)TimeHelper.unitsToLeadUnits( this.getLeadUnit(), this.getLeadFrequency() );
+            int period = (int)TimeHelper.unitsToLeadUnits( this.getLeadUnit(), this.getLeadPeriod() );
             Integer offset = this.getLeadOffset( feature );
-            beginning = windowNumber * this.getLeadFrequency() + offset;
-            end = beginning + this.getLeadPeriod();
+            beginning = windowNumber * frequency + offset;
+            end = beginning + period;
         }
         else
         {
