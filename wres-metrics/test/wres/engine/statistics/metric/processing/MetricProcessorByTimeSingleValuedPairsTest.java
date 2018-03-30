@@ -46,6 +46,7 @@ import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.DurationScoreOutput;
 import wres.datamodel.outputs.MetricOutputAccessException;
+import wres.datamodel.outputs.MetricOutputException;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
@@ -74,12 +75,13 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
      * obtained from {@link MetricTestDataFactory#getSingleValuedPairsFour()}.
      * 
      * @throws IOException if the input data could not be read
-     * @throws MetricOutputAccessException if the outputs could not be accessed
-     * @throws MetricProcessorException if the metric processor could not be built 
+     * @throws InterruptedException if the outputs were interrupted
+     * @throws MetricProcessorException if the metric processor could not be built
+     * @throws MetricOutputException if the results could not be generated 
      */
 
     @Test
-    public void test1ApplyNoThresholds() throws IOException, MetricOutputAccessException, MetricProcessorException
+    public void test1ApplyNoThresholds() throws IOException, MetricProcessorException, InterruptedException
     {
         String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/test1ApplyNoThresholds.xml";
 
@@ -134,12 +136,13 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
      * calls with separate forecast lead times.
      * 
      * @throws IOException if the input data could not be read
-     * @throws MetricOutputAccessException if the outputs could not be accessed
+     * @throws InterruptedException if the outputs were interrupted
      * @throws MetricProcessorException if the metric processor could not be built
+     * @throws MetricOutputException if the results could not be generated 
      */
 
     @Test
-    public void test2ApplyThresholds() throws IOException, MetricOutputAccessException, MetricProcessorException
+    public void test2ApplyThresholds() throws IOException, MetricProcessorException, InterruptedException
     {
         final DataFactory metIn = DefaultDataFactory.getInstance();
         String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/test2ApplyThresholds.xml";
@@ -330,12 +333,13 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
      * multiple calls with subsets of data, caching the results across calls.
      * 
      * @throws IOException if the input data could not be read
-     * @throws MetricOutputAccessException if the outputs could not be accessed
+     * @throws InterruptedException if the outputs were interrupted
      * @throws MetricProcessorException if the metric processor could not be built
+     * @throws MetricOutputException if the results could not be generated 
      */
 
     @Test
-    public void test5ApplyTimeSeriesMetrics() throws IOException, MetricOutputAccessException, MetricProcessorException
+    public void test5ApplyTimeSeriesMetrics() throws IOException, MetricProcessorException, InterruptedException
     {
         DataFactory metIn = DefaultDataFactory.getInstance();
         MetadataFactory metaFac = DefaultMetadataFactory.getInstance();
@@ -417,13 +421,14 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
      * at the end of multiple calls with subsets of time-series data.
      * 
      * @throws IOException if the input data could not be read
-     * @throws MetricOutputAccessException if the outputs could not be accessed
+     * @throws InterruptedException if the outputs were interrupted
      * @throws MetricProcessorException if the metric processor could not be built
+     * @throws MetricOutputException if the results could not be generated 
      */
 
     @Test
     public void test6ApplyTimeSeriesSummaryStats()
-            throws IOException, MetricOutputAccessException, MetricProcessorException
+            throws IOException, MetricProcessorException, InterruptedException
     {
         DataFactory metIn = DefaultDataFactory.getInstance();
         MetadataFactory metaFac = DefaultMetadataFactory.getInstance();
@@ -494,13 +499,14 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
      * forecast lead times.
      * 
      * @throws IOException if the input data could not be read
-     * @throws MetricOutputAccessException if the outputs could not be accessed
+     * @throws InterruptedException if the outputs were interrupted
      * @throws MetricProcessorException if the metric processor could not be built
+     * @throws MetricOutputException if the results could not be generated 
      */
 
     @Test
     public void test7ApplyThresholdsFromSource()
-            throws IOException, MetricOutputAccessException, MetricProcessorException
+            throws IOException, MetricOutputAccessException, MetricProcessorException, InterruptedException
     {
         final DataFactory metIn = DefaultDataFactory.getInstance();
         String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/test2ApplyThresholds.xml";

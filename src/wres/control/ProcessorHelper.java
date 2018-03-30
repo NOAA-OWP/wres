@@ -28,7 +28,6 @@ import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.ThresholdsByMetric;
 import wres.datamodel.inputs.InsufficientDataException;
 import wres.datamodel.inputs.MetricInput;
-import wres.datamodel.outputs.MetricOutputAccessException;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.processing.MetricProcessorException;
 import wres.engine.statistics.metric.processing.MetricProcessorForProject;
@@ -428,8 +427,10 @@ class ProcessorHelper
                     endOfPipeline.accept( processor.getCachedMetricOutput() );
                 }
             }
-            catch ( MetricOutputAccessException e )
+            catch ( InterruptedException e )
             {
+                Thread.currentThread().interrupt();
+                
                 throw new WresProcessingException( errorMessage, e );
             }
         }

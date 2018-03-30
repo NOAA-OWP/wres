@@ -81,12 +81,12 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
      */
 
     private final Future<S> input;
-    
+
     /**
      * Executor service. By default, the {@link ForkJoinPool#commonPool()}
      */
 
-    private final ExecutorService metricPool;    
+    private final ExecutorService metricPool;
 
     /**
      * Applies the input to the collection for all metrics in the collection.
@@ -106,7 +106,7 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
      * @param input the input
      * @param ignoreTheseMetrics the set of metrics to ignore
      */
-    
+
     @Override
     public MetricOutputMapByMetric<U> apply( final S input, final Set<MetricConstants> ignoreTheseMetrics )
     {
@@ -284,7 +284,7 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
         if ( ignoreTheseMetrics.size() == count )
         {
             throw new MetricCalculationException( "Cannot ignore all metrics in the store: specify some metrics "
-                    + "to process." );
+                                                  + "to process." );
         }
 
         //Compute only the required metrics
@@ -307,9 +307,9 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
             if ( iterator.hasNext() )
             {
                 Collectable<S, T, U> baseMetric = iterator.next();
-                final CompletableFuture<T> baseFuture = CompletableFuture.supplyAsync(
-                                                                                       () -> baseMetric.getCollectionInput( input ),
-                                                                                       metricPool );
+                final CompletableFuture<T> baseFuture =
+                        CompletableFuture.supplyAsync( () -> baseMetric.getCollectionInput( input ),
+                                                       metricPool );
                 //Using the future dependent result, compute a future of each of the independent results
                 next.forEach( ( id, metric ) -> metricFutures.put( id,
                                                                    baseFuture.thenApplyAsync( metric::aggregate,
@@ -340,7 +340,7 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
             Thread.currentThread().interrupt();
             throw new MetricCalculationException( "While processing metric '" + nextMetric + "'.", e );
         }
-        
+
         return dataFactory.ofMap( returnMe );
     }
 

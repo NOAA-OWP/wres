@@ -29,6 +29,7 @@ import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MatrixOutput;
 import wres.datamodel.outputs.MetricOutputAccessException;
+import wres.datamodel.outputs.MetricOutputException;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
@@ -54,12 +55,13 @@ public final class MetricProcessorByTimeEnsemblePairsTest
      * {@link MetricTestDataFactory#getEnsemblePairsOne()}.
      * 
      * @throws IOException if the input data could not be read
-     * @throws MetricOutputAccessException if the outputs could not be accessed
+     * @throws InterruptedException if the outputs were interrupted
      * @throws MetricProcessorException if the metric processor could not be built
+     * @throws MetricOutputException if the results could not be generated 
      */
 
     @Test
-    public void test1ApplyNoThresholds() throws IOException, MetricOutputAccessException, MetricProcessorException
+    public void test1ApplyNoThresholds() throws IOException, MetricProcessorException, InterruptedException
     {
         String configPath = "testinput/metricProcessorEnsemblePairsByTimeTest/test1ApplyNoThresholds.xml";
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
@@ -109,13 +111,14 @@ public final class MetricProcessorByTimeEnsemblePairsTest
      * {@link MetricTestDataFactory#getEnsemblePairsOne()}.
      * 
      * @throws IOException if the input data could not be read
-     * @throws MetricOutputAccessException if the outputs could not be accessed
+     * @throws InterruptedException if the outputs were interrupted
      * @throws MetricProcessorException if the metric processor could not be built
+     * @throws MetricOutputException if the results could not be generated 
      */
 
     @Test
     public void test2ApplyWithValueThresholds()
-            throws IOException, MetricOutputAccessException, MetricProcessorException
+            throws IOException, MetricProcessorException, InterruptedException
     {
         final DataFactory metIn = DefaultDataFactory.getInstance();
         String configPath = "testinput/metricProcessorEnsemblePairsByTimeTest/test2ApplyWithValueThresholds.xml";
@@ -310,13 +313,14 @@ public final class MetricProcessorByTimeEnsemblePairsTest
      * {@link MetricTestDataFactory#getEnsemblePairsOne()}.
      * 
      * @throws IOException if the input data could not be read
-     * @throws MetricOutputAccessException if the outputs could not be accessed
+     * @throws InterruptedException if the outputs were interrupted
      * @throws MetricProcessorException if the metric processor could not be built
+     * @throws MetricOutputException if the results could not be generated 
      */
 
     @Test
     public void test3ApplyWithProbabilityThresholds()
-            throws IOException, MetricOutputAccessException, MetricProcessorException
+            throws IOException, MetricProcessorException, InterruptedException
     {
         final DataFactory metIn = DefaultDataFactory.getInstance();
         String configPath = "testinput/metricProcessorEnsemblePairsByTimeTest/test3ApplyWithProbabilityThresholds.xml";
@@ -623,13 +627,14 @@ public final class MetricProcessorByTimeEnsemblePairsTest
      * from {@link MetricTestDataFactory#getEnsemblePairsOneWithMissings()}.
      * 
      * @throws IOException if the input data could not be read
-     * @throws MetricOutputAccessException if the outputs could not be accessed
+     * @throws InterruptedException if the outputs were interrupted
      * @throws MetricProcessorException if the metric processor could not be built
+     * @throws MetricOutputException if the results could not be generated 
      */
 
     @Test
     public void test6ApplyWithValueThresholdsAndMissings()
-            throws IOException, MetricOutputAccessException, MetricProcessorException
+            throws IOException, MetricProcessorException, InterruptedException
     {
         final DataFactory metIn = DefaultDataFactory.getInstance();
         String configPath = "testinput/metricProcessorEnsemblePairsByTimeTest/test2ApplyWithValueThresholds.xml";
@@ -823,13 +828,14 @@ public final class MetricProcessorByTimeEnsemblePairsTest
      * {@link MetricTestDataFactory#getEnsemblePairsTwo()}.
      * 
      * @throws IOException if the input data could not be read
-     * @throws MetricOutputAccessException if the outputs could not be accessed
+     * @throws InterruptedException if the outputs were interrupted
      * @throws MetricProcessorException if the metric processor could not be built
+     * @throws MetricOutputException if the results could not be generated 
      */
 
     @Test
     public void test7ContingencyTable()
-            throws IOException, MetricOutputAccessException, MetricProcessorException
+            throws IOException, MetricOutputAccessException, MetricProcessorException, InterruptedException
     {
         final DataFactory metIn = DefaultDataFactory.getInstance();
         String configPath = "testinput/metricProcessorEnsemblePairsByTimeTest/test7ContingencyTable.xml";
