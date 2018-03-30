@@ -71,7 +71,7 @@ public class TimeToPeakRelativeError extends TimingError
                 }
             }
             // Compute the denominator
-            Duration denominator = Duration.between( peakLeftTime, next.getEarliestBasisTime() );
+            Duration denominator = Duration.between( next.getEarliestBasisTime(), peakLeftTime );
             long denominatorHours = denominator.toHours();
 
             // Add the relative time-to-peak error against the basis time
