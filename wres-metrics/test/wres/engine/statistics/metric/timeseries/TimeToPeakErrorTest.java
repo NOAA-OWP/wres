@@ -30,8 +30,6 @@ import wres.engine.statistics.metric.timeseries.TimeToPeakError.TimeToPeakErrorB
  * Tests the {@link TimeToPeakError}.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.4
  */
 public final class TimeToPeakErrorTest
 {

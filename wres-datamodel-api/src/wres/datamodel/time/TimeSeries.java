@@ -148,4 +148,12 @@ public interface TimeSeries<T>
 
     Instant getEarliestBasisTime();
 
+    /**
+     * Returns the latest basis time associated with the {@link TimeSeries}.
+     * 
+     * @return the latest basis time associated with any time-series
+     */
+
+    Instant getLatestBasisTime();    
+    
 }

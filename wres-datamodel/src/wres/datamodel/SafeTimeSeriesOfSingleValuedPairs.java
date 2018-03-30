@@ -146,8 +146,14 @@ class SafeTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
     @Override
     public Instant getEarliestBasisTime()
     {
-        return TimeSeriesHelper.getEarliestBasisTime( getBasisTimes() );
+        return TimeSeriesHelper.getEarliestBasisTime( this.getBasisTimes() );
     }
+    
+    @Override
+    public Instant getLatestBasisTime()
+    {
+        return TimeSeriesHelper.getLatestBasisTime( this.getBasisTimes() );
+    }    
 
     @Override
     public String toString()

@@ -116,7 +116,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
 
         //Metric futures 
         MetricFuturesByTimeBuilder futures = new MetricFuturesByTimeBuilder();
-        futures.addDataFactory( dataFactory );
+        futures.setDataFactory( dataFactory );
 
         //Process the metrics that consume single-valued pairs
         if ( this.hasMetrics( MetricInputGroup.SINGLE_VALUED ) )
@@ -129,8 +129,18 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
         }
         if ( this.hasMetrics( MetricInputGroup.SINGLE_VALUED_TIME_SERIES ) )
         {
-            this.processTimeSeriesPairs( timeWindow,
-                                         (TimeSeriesOfSingleValuedPairs) inputNoMissing,
+            // For time-series inputs, use the actual time period as the time window; there is no need to trust the 
+            // metadata. This should avoid unnecessary merge exceptions when the caller is using the same metadata to
+            // identify different data across multiple, incremental, calls. Such calls are common for time-series.
+            TimeSeriesOfSingleValuedPairs data = (TimeSeriesOfSingleValuedPairs) inputNoMissing;
+            TimeWindow actualTimeWindow = TimeWindow.of( data.getEarliestBasisTime(),
+                                                  data.getLatestBasisTime(),
+                                                  timeWindow.getReferenceTime(),
+                                                  timeWindow.getEarliestLeadTime(),
+                                                  timeWindow.getLatestLeadTime() );
+
+            this.processTimeSeriesPairs( actualTimeWindow,
+                                         data,
                                          futures,
                                          MetricOutputGroup.PAIRED );
         }
@@ -209,7 +219,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                     localStatistics.put( nextMetric, stats );
                 }
             }
-            
+
             this.timingErrorSummaryStatistics = Collections.unmodifiableMap( localStatistics );
         }
         else
@@ -287,8 +297,9 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
         {
 
             MetricFuturesByTimeBuilder addFutures = new MetricFuturesByTimeBuilder();
-            
-            // Iterate through the timing error statistics
+            addFutures.setDataFactory( dataFactory );
+
+            // Iterate through the timing error metrics
             for ( Entry<MetricConstants, TimingErrorSummaryStatistics> nextStats : this.timingErrorSummaryStatistics.entrySet() )
             {
                 // Output available
@@ -300,8 +311,9 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                     MetricOutputMapByTimeAndThreshold<PairedOutput<Instant, Duration>> output =
                             getCachedMetricOutputInternal().getPairedOutput().get( nextStats.getKey() );
 
+                    // Compute the collection of statistics for the next timing error metric
                     TimingErrorSummaryStatistics timeToPeakErrorStats = nextStats.getValue();
-                    
+
                     // Iterate through the thresholds
                     for ( OneOrTwoThresholds threshold : output.setOfThresholdKey() )
                     {
@@ -325,17 +337,19 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                             in.add( result );
                             return dataFactory.ofMap( in );
                         };
+
+                        // Execute
                         Future<MetricOutputMapByMetric<DurationScoreOutput>> addMe =
                                 CompletableFuture.supplyAsync( supplier, thresholdExecutor );
 
-                        //Add the future result to the store
-                        //Metric futures 
-                        addFutures.addDataFactory( dataFactory );
+                        // Add the future result to the store
                         addFutures.addDurationScoreOutput( key, addMe );
-                        futures.add( addFutures.build() );
                     }
                 }
             }
+
+            // Build the store of futures
+            futures.add( addFutures.build() );
         }
     }
 
