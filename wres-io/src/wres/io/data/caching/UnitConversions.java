@@ -154,7 +154,7 @@ public final class UnitConversions
         private final double initialOffset;
         private final double finalOffset;
 
-        public Conversion (ResultSet row) throws SQLException
+        Conversion (ResultSet row) throws SQLException
         {
             this.factor = row.getDouble("factor");
             this.initialOffset = row.getDouble("initial_offset");
