@@ -68,7 +68,7 @@ public final class SystemSettings extends XMLReader
 	 */
     private SystemSettings(String configPath) throws IOException
     {
-        super(configPath, true);
+        super( configPath, null );
         parse();
     }
 
@@ -77,7 +77,7 @@ public final class SystemSettings extends XMLReader
      */
     private SystemSettings()
     {
-        super(null, false);
+        super();
 		databaseConfiguration = new DatabaseSettings();
     }
 
