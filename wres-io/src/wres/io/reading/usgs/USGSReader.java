@@ -8,11 +8,13 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 import java.util.TreeMap;
+import java.util.function.Consumer;
 
 import org.apache.commons.math3.util.Precision;
 import org.slf4j.Logger;
@@ -41,10 +43,12 @@ import wres.io.reading.BasicSource;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
 import wres.io.reading.waterml.Response;
+import wres.io.reading.waterml.WaterMLSource;
 import wres.io.reading.waterml.timeseries.TimeSeries;
 import wres.io.reading.waterml.timeseries.TimeSeriesValue;
 import wres.io.reading.waterml.timeseries.TimeSeriesValues;
 import wres.io.utilities.Database;
+import wres.io.utilities.IOExceptionalConsumer;
 import wres.io.utilities.NoDataException;
 import wres.util.FormattedStopwatch;
 import wres.util.ProgressMonitor;
@@ -65,10 +69,11 @@ public class USGSReader extends BasicSource
 
     // There's a chance this operation will output the time in the wrong format
     public static final String LATEST_DATE = TimeHelper.convertDateToString( OffsetDateTime.now( ZoneId.of( "UTC" ) ) );
+
     /**
-     * Epsilon value used to test floating point equivalency
+     * The amount of features that may be retrieved in a single USGS request
      */
-    private static final double EPSILON = 0.0000001;
+    private static final int FEATURE_REQUEST_LIMIT = 100;
 
     private static final String UPSERT =
             "WITH upsert AS" + System.lineSeparator() +
@@ -140,38 +145,93 @@ public class USGSReader extends BasicSource
     @Override
     protected List<IngestResult> saveObservation() throws IOException
     {
+        // This is saved as the output time for the source
         this.operationStartTime = TimeHelper.convertDateToString( OffsetDateTime.now() );
-        this.load();
 
-        if (this.response == null ||
-            wres.util.Collections.exists(
-                    this.response.getValue().getTimeSeries(), (TimeSeries series) ->
-                            series.getValues() == null || series.getValues().length == 0 ) )
-        {
-            throw new IOException( "No USGS data could be loaded with the given configuration." );
-        }
-
-        List<String> foundLocations = new ArrayList<>(  );
+        int featuresSaved = 0;
+        List<Collection<FeatureDetails>> featureDetails;
 
         try
         {
-            LOGGER.debug( "There are a grand total of {} different locations that we want to save data to.",
-                          this.getFeatureDetailsSet().size());
+            // Break down locations to request in easily digestible blocks
+            featureDetails = this.getFeatureRequestBlocks();
+
+            if (featureDetails.size() == 0)
+            {
+                throw new IngestException( "No features to ingest from USGS "
+                                           + "could be found." );
+            }
         }
         catch ( SQLException e )
         {
-            throw new IOException( "Features for the project could not be accessed.", e );
+            throw new IOException( "The process used to determine what "
+                                   + "features to request failed.", e );
         }
 
-        for (TimeSeries series : this.response.getValue().getTimeSeries())
+        // Request Observation data for each block of locations
+        for (Collection<FeatureDetails> details : featureDetails)
         {
-            foundLocations.add(series.getSourceInfo().getSiteCode()[0].getValue());
-            this.readSeries( series );
+            // Request observation data from USGS
+            Response usgsResponse = this.load(details);
+
+            // Throw an error if absolutely nothing came back from USGS (this
+            // is unlikely to ever happen, considering that an error should
+            // have been hit in "load(..)")
+            if (usgsResponse == null )
+            {
+                throw new IOException( "No USGS data could be loaded with the given configuration." );
+            }
+
+            // Since we're sending many requests instead of one, there's a
+            // chance a single request might not values but requests before
+            // and after will. In that case, we should continue.
+            if (wres.util.Collections.exists(
+                    usgsResponse.getValue().getTimeSeries(), (TimeSeries series) ->
+                            series.getValues() == null || series.getValues().length == 0 ))
+            {
+                LOGGER.debug("No timeseries were returned from the query:");
+                LOGGER.debug(usgsResponse.getValue().getQueryInfo().getQueryURL());
+                continue;
+            }
+
+            LOGGER.debug( "There are a grand total of {} different locations "
+                          + "that we want to save data to.",
+                          details.size());
+
+            // Despite the code lying within the following class looking
+            // identical to the code within this reader, the following results
+            // in consistent database deadlocks. This should eventually be used,
+            // but it is unable for now.
+            /*try
+            {
+                WaterMLSource source = new WaterMLSource( this.projectConfig,
+                                                          usgsResponse,
+                                                          this.getSourceID(),
+                                                          this.parameter.getMeasurementUnitID() );
+                source.setDataSourceConfig( this.getDataSourceConfig() );
+                source.setSourceConfig( this.getSourceConfig() );
+                source.setSpecifiedFeatures( this.getSpecifiedFeatures() );
+                source.setInvalidSeriesHandler( this.createInvalidTimeSeriesHandler() );
+                return source.save();
+            }
+            catch ( SQLException e )
+            {
+                throw new IOException("Information about USGS source data could not "
+                                      + "be saved to the database.", e);
+            }*/
+
+            // Save data from the response and record the number of saved features
+            featuresSaved += this.saveResponse( usgsResponse );
         }
 
-        LOGGER.debug( "Data for {} different locations have been saved.",
-                      foundLocations.size() );
+        // Throw an error if nothing was saved
+        if (featuresSaved == 0)
+        {
+            throw new IngestException( "No data from any USGS features could "
+                                       + "be saved for evaluation." );
+        }
 
+        // Complete lingering upserts
         try
         {
             this.performUpserts();
@@ -187,10 +247,68 @@ public class USGSReader extends BasicSource
                                                 false );
     }
 
-    private void load() throws IOException
+    private List<Collection<FeatureDetails>> getFeatureRequestBlocks()
+            throws SQLException
+    {
+        List<Collection<FeatureDetails>> requestBlocks = new ArrayList<>();
+
+        Collection<FeatureDetails> details = Features.getAllDetails( this.getProjectConfig() );
+
+        if (details.size() > USGSReader.FEATURE_REQUEST_LIMIT)
+        {
+            List<FeatureDetails> block = new ArrayList<>();
+
+            for (FeatureDetails featureDetails : details)
+            {
+                block.add(featureDetails);
+
+                if (block.size() > USGSReader.FEATURE_REQUEST_LIMIT)
+                {
+                    requestBlocks.add( block );
+                    block = new ArrayList<>();
+                }
+            }
+
+            if (block.size() > 0)
+            {
+                requestBlocks.add( block );
+            }
+        }
+        else
+        {
+            requestBlocks.add( details );
+        }
+
+        return requestBlocks;
+    }
+
+    private int saveResponse(Response usgsResponse) throws IOException
+    {
+        int readSeriesCount = 0;
+
+
+        for (TimeSeries series : usgsResponse.getValue().getTimeSeries())
+        {
+            boolean validSeries = this.readSeries( series );
+
+            if (validSeries)
+            {
+                readSeriesCount++;
+            }
+        }
+
+        LOGGER.debug( "Data for {} different locations have been saved.",
+                      readSeriesCount );
+
+        return readSeriesCount;
+    }
+
+    private Response load(Collection<FeatureDetails> featureDetails) throws IOException
     {
         String requestURL = USGS_URL;
         Client client = null;
+
+        Response usgsResponse;
         try
         {
 
@@ -211,7 +329,7 @@ public class USGSReader extends BasicSource
             // The current object tree supports JSON; additional work will
             // need to be done to support XML.
             webTarget = webTarget.queryParam( "format", "json" );
-            webTarget = webTarget.queryParam( "sites", this.getGageID() );
+            webTarget = webTarget.queryParam( "sites", this.getGageIdParameter( featureDetails ) );
             webTarget = webTarget.queryParam( "startDT", this.getStartDate() );
             webTarget = webTarget.queryParam( "endDT", this.getEndDate() );
 
@@ -222,13 +340,15 @@ public class USGSReader extends BasicSource
 
             requestURL = webTarget.getUri().toURL().toString();
 
+            LOGGER.debug("Requesting data from: {}", requestURL);
+
             Invocation.Builder invocationBuilder =
                     webTarget.request( MediaType.APPLICATION_JSON );
 
             FormattedStopwatch stopwatch = new FormattedStopwatch();
             stopwatch.start();
 
-            this.response = invocationBuilder.get( Response.class );
+            usgsResponse = invocationBuilder.get( Response.class );
 
             stopwatch.stop();
 
@@ -255,33 +375,33 @@ public class USGSReader extends BasicSource
         }
 
         LOGGER.debug("A set of time series has been downloaded from USGS.");
+
+        return usgsResponse;
     }
 
-    // This is specifically for gages; we also need to support selecting by
-    // latitude and longitude (WGS84; that is what is used by USGS)
-    // TODO: It may make sense to do a gage at a time in order to fire off shorter requests more often
-    private String getGageID() throws SQLException, NoDataException
+    private String getGageIdParameter(Collection<FeatureDetails> features)
+            throws NoDataException
     {
-        String ID = null;
+        String parameter = null;
 
-        for ( FeatureDetails feature : Features.getAllDetails( this.getProjectConfig() ) )
+        for (FeatureDetails feature : features)
         {
-            if ( Strings.hasValue( feature.getGageID()) && !Strings.hasValue( ID ))
+            if ( Strings.hasValue( feature.getGageID()) && !Strings.hasValue( parameter ))
             {
-                ID = feature.getGageID();
+                parameter = feature.getGageID();
             }
             else if (Strings.hasValue( feature.getGageID() ))
             {
-                ID += "," + feature.getGageID();
+                parameter += "," + feature.getGageID();
             }
         }
 
-        if (!Strings.hasValue( ID ))
+        if (!Strings.hasValue( parameter ))
         {
             throw new NoDataException( "No valid gageIDs could be found. USGS data could not be ingested." );
         }
 
-        return ID;
+        return parameter;
     }
 
     private String getParameterCode() throws SQLException, IngestException
@@ -560,9 +680,42 @@ public class USGSReader extends BasicSource
         }
     }
 
-    private void readSeries(TimeSeries series) throws IOException
+    private IOExceptionalConsumer<TimeSeries> createInvalidTimeSeriesHandler()
+    {
+        return series -> {
+            String gageId = series.getSourceInfo().getSiteCode()[0].getValue();
+
+            FeatureDetails invalidFeature = null;
+
+            try
+            {
+                for (FeatureDetails feature : this.getFeatureDetailsSet())
+                {
+                    if (Strings.hasValue( feature.getGageID()) && feature.getGageID().equalsIgnoreCase( gageId ) )
+                    {
+                        invalidFeature = feature;
+                        break;
+                    }
+                }
+
+                this.getFeatureDetailsSet().remove( invalidFeature );
+                LOGGER.trace("The location '{}' was removed from the project because it didn't have valid USGS data.",
+                             String.valueOf(invalidFeature));
+            }
+            catch ( SQLException e )
+            {
+                throw new IOException( "Could not iterate through available " +
+                                       "features in order to avoid processing " +
+                                       "the invalid location '" + gageId + "'" ,
+                                       e);
+            }
+        };
+    }
+
+    private boolean readSeries(TimeSeries series) throws IOException
     {
         String gageID = series.getSourceInfo().getSiteCode()[0].getValue();
+        int validSeriesCount = 0;
 
         if (series.getValues().length == 0)
         {
@@ -582,7 +735,7 @@ public class USGSReader extends BasicSource
                 this.getFeatureDetailsSet().remove( invalidFeature );
                 LOGGER.trace("The location '{}' was removed from the project because it didn't have valid USGS data.",
                              String.valueOf(invalidFeature));
-                return;
+                return false;
             }
             catch ( SQLException e )
             {
@@ -597,31 +750,7 @@ public class USGSReader extends BasicSource
         {
             if (valueSet.getValue().length == 0)
             {
-                FeatureDetails invalidFeature = null;
-
-                try
-                {
-                    for (FeatureDetails feature : this.getFeatureDetailsSet() )
-                    {
-                        if (Strings.hasValue( feature.getGageID() ) && feature.getGageID().equalsIgnoreCase( gageID ))
-                        {
-                            invalidFeature = feature;
-                            break;
-                        }
-                    }
-
-                    this.getFeatureDetailsSet().remove( invalidFeature );
-                    LOGGER.trace("The location '{}' was removed from the project because it didn't have valid USGS data.",
-                                 String.valueOf(invalidFeature));
-                    continue;
-                }
-                catch ( SQLException e )
-                {
-                    throw new IOException( "Could not iterate through available " +
-                                           "features in order to avoid processing " +
-                                           "the invalid location '" + gageID + "'" ,
-                                           e);
-                }
+                continue;
             }
 
             for (TimeSeriesValue value : valueSet.getValue())
@@ -645,10 +774,43 @@ public class USGSReader extends BasicSource
                     throw new IOException( e );
                 }
             }
+
+            validSeriesCount++;
+        }
+
+        if (validSeriesCount == 0)
+        {
+            FeatureDetails invalidFeature = null;
+
+            try
+            {
+                for (FeatureDetails feature : this.getFeatureDetailsSet() )
+                {
+                    if (Strings.hasValue( feature.getGageID() ) && feature.getGageID().equalsIgnoreCase( gageID ))
+                    {
+                        invalidFeature = feature;
+                        break;
+                    }
+                }
+
+                this.getFeatureDetailsSet().remove( invalidFeature );
+                LOGGER.trace("The location '{}' was removed from the project because it didn't have valid USGS data.",
+                             String.valueOf(invalidFeature));
+                return false;
+            }
+            catch ( SQLException e )
+            {
+                throw new IOException( "Could not iterate through available " +
+                                       "features in order to avoid processing " +
+                                       "the invalid location '" + gageID + "'" ,
+                                       e);
+            }
         }
 
         LOGGER.info("A USGS time series has been parsed for location '{}'",
                     series.getSourceInfo().getSiteName());
+
+        return true;
     }
 
     private void performUpserts() throws SQLException
@@ -677,6 +839,14 @@ public class USGSReader extends BasicSource
         if (this.hash == null)
         {
             // TODO: hash the contents, not the name
+            // Currently, the NWIS url along with the service (instantaneous or
+            // daily) is saved, representing "yeah, this data came from NWIS".
+            // This benefits us by only saving unique data to the database.
+            // If I have one project asking for May through July and June
+            // through August, this prevents us from saving duplicate data.
+
+            // If we accept the duplicate data, we'll need to generate a
+            // source_id per request instead of per ingest
             this.hash = Strings.getMD5Checksum(
                     (USGSReader.USGS_URL + "/" + getValueType() ).getBytes()
             );
@@ -733,7 +903,6 @@ public class USGSReader extends BasicSource
     private String parameterCode;
 
     private USGSParameters.USGSParameter parameter;
-    private Response response;
 
     private String operationStartTime;
     private Set<FeatureDetails> featureDetailsSet;

@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import wres.io.data.details.SourceDetails;
 import wres.io.data.details.SourceDetails.SourceKey;
 import wres.io.utilities.Database;
+import wres.util.Collections;
 
 /**
  * Caches information about the source of forecast and observation data
@@ -62,6 +63,20 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
             throws SQLException
     {
         return DataSources.getActiveSourceID( hash ) != null;
+    }
+
+    public static String getHash(int sourceId)
+    {
+        String hash = null;
+
+        SourceKey key = Collections.getKeyByValue( DataSources.getCache().getKeyIndex(), sourceId );
+
+        if (key != null)
+        {
+            hash = key.getHash();
+        }
+
+        return hash;
     }
 
     public static Integer getActiveSourceID(String hash)
