@@ -9,8 +9,6 @@ import java.util.function.Consumer;
 
 import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
-import ohd.hseb.charter.datasource.XYChartDataSourceException;
-
 import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationConfig;

@@ -346,13 +346,11 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                 MetricFactory.getInstance( metIn )
                              .ofMetricProcessorByTimeSingleValuedPairs( config,
                                                                         MetricOutputGroup.set() );
-        TimeSeriesOfSingleValuedPairs pairs = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsOne();
-        //Break into two time-series to test sequential calls
-        TimeSeriesOfSingleValuedPairs first =
-                (TimeSeriesOfSingleValuedPairs) pairs.filterByBasisTime( a -> a.equals( Instant.parse( "1985-01-01T00:00:00Z" ) ) );
-        TimeSeriesOfSingleValuedPairs second =
-                (TimeSeriesOfSingleValuedPairs) pairs.filterByBasisTime( a -> a.equals( Instant.parse( "1985-01-02T00:00:00Z" ) ) );
 
+        //Break into two time-series to test sequential calls
+        TimeSeriesOfSingleValuedPairs first = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsTwo();
+        TimeSeriesOfSingleValuedPairs second = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsThree();
+        
         //Compute the metrics
         processor.apply( first );
         processor.apply( second );
@@ -361,6 +359,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         //Compare the errors against the benchmark
         MetricOutputMultiMapByTimeAndThreshold<PairedOutput<Instant, Duration>> actual =
                 processor.getCachedMetricOutput().getPairedOutput();
+
         //Build the expected output
         List<Pair<Instant, Duration>> expectedFirst = new ArrayList<>();
         List<Pair<Instant, Duration>> expectedSecond = new ArrayList<>();
@@ -385,6 +384,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                              metaFac.getDatasetIdentifier( "A",
                                                                                            "Streamflow" ),
                                                              firstWindow );
+        
         PairedOutput<Instant, Duration> expectedErrorsFirst = metIn.ofPairedOutput( expectedFirst, m1 );
         PairedOutput<Instant, Duration> expectedErrorsSecond =
                 metIn.ofPairedOutput( expectedSecond, metaFac.getOutputMetadata( m1, secondWindow ) );
@@ -404,6 +404,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         builder.put( metIn.getMapKey( MetricConstants.TIME_TO_PEAK_ERROR ), mapped );
         MetricOutputMultiMapByTimeAndThreshold<PairedOutput<Instant, Duration>> expected =
                 (MetricOutputMultiMapByTimeAndThreshold<PairedOutput<Instant, Duration>>) builder.build();
+        
         assertTrue( "Actual output differs from expected output for time-series metrics. ", actual.equals( expected ) );
     }
 

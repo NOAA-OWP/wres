@@ -14,8 +14,8 @@ import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
-import wres.datamodel.inputs.pairs.builders.RegularTimeSeriesOfEnsemblePairsBuilder;
-import wres.datamodel.inputs.pairs.builders.RegularTimeSeriesOfSingleValuedPairsBuilder;
+import wres.datamodel.inputs.pairs.builders.TimeSeriesOfEnsemblePairsBuilder;
+import wres.datamodel.inputs.pairs.builders.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.time.Event;
@@ -41,23 +41,21 @@ public class TimeSeriesDemo
 
         //Build an immutable regular time-series of single-valued pairs
         DataFactory dataFactory = DefaultDataFactory.getInstance();
-        RegularTimeSeriesOfSingleValuedPairsBuilder builder =
-                dataFactory.ofRegularTimeSeriesOfSingleValuedPairsBuilder();
+        TimeSeriesOfSingleValuedPairsBuilder builder =
+                dataFactory.ofTimeSeriesOfSingleValuedPairsBuilder();
         //Create a regular time-series with an issue date/time, a series of paired values, and a timestep
         Instant firstId = Instant.parse( "1985-01-01T00:00:00Z" );
-        List<PairOfDoubles> firstValues = new ArrayList<>();
+        List<Event<PairOfDoubles>> firstValues = new ArrayList<>();
         //Add some values
-        firstValues.add( dataFactory.pairOf( 1, 2 ) );
-        firstValues.add( dataFactory.pairOf( 3, 4 ) );
-        firstValues.add( dataFactory.pairOf( 5, 6 ) );
-        //Set the timestep for the time-series to 6h
-        Duration timeStep = Duration.ofHours( 6 );
+        firstValues.add( Event.of( Instant.parse( "1985-01-01T06:00:00Z" ), dataFactory.pairOf( 1, 2 ) ) );
+        firstValues.add( Event.of( Instant.parse( "1985-01-01T12:00:00Z" ), dataFactory.pairOf( 3, 4 ) ) );
+        firstValues.add( Event.of( Instant.parse( "1985-01-01T18:00:00Z" ), dataFactory.pairOf( 5, 6 ) ) );
+
         //Create some default metadata for the time-series
         Metadata metaData = dataFactory.getMetadataFactory().getMetadata();
         //Build the atomic time-series
         TimeSeriesOfSingleValuedPairs timeSeries =
                 (TimeSeriesOfSingleValuedPairs) builder.addTimeSeriesData( firstId, firstValues )
-                                                       .setTimeStep( timeStep )
                                                        .setMetadata( metaData )
                                                        .build();
         //Take a look at the time-series
@@ -105,11 +103,11 @@ public class TimeSeriesDemo
 //PT6H        
         //Add another atomic time-series to the builder and rebuild
         Instant secondId = Instant.parse( "1985-01-02T00:00:00Z" );
-        List<PairOfDoubles> secondValues = new ArrayList<>();
+        List<Event<PairOfDoubles>> secondValues = new ArrayList<>();
         //Add some values
-        secondValues.add( dataFactory.pairOf( 7, 8 ) );
-        secondValues.add( dataFactory.pairOf( 9, 10 ) );
-        secondValues.add( dataFactory.pairOf( 11, 12 ) );
+        secondValues.add( Event.of( Instant.parse( "1985-01-02T06:00:00Z" ), dataFactory.pairOf( 7, 8 ) ) );
+        secondValues.add( Event.of( Instant.parse( "1985-01-02T12:00:00Z" ), dataFactory.pairOf( 9, 10 ) ) );
+        secondValues.add( Event.of( Instant.parse( "1985-01-02T18:00:00Z" ), dataFactory.pairOf( 11, 12 ) ) );
         //Build the atomic time-series
         timeSeries = builder.addTimeSeriesData( secondId, secondValues ).build();
 
@@ -246,23 +244,32 @@ public class TimeSeriesDemo
 
         //Build a regular time-series of ensemble pairs and filter to include only a trace index of 0 or 3
         //Build a time-series with three basis times 
-        List<PairOfDoubleAndVectorOfDoubles> first = new ArrayList<>();
-        List<PairOfDoubleAndVectorOfDoubles> second = new ArrayList<>();
-        List<PairOfDoubleAndVectorOfDoubles> third = new ArrayList<>();
-        RegularTimeSeriesOfEnsemblePairsBuilder b = dataFactory.ofRegularTimeSeriesOfEnsemblePairsBuilder();
+        List<Event<PairOfDoubleAndVectorOfDoubles>> first = new ArrayList<>();
+        List<Event<PairOfDoubleAndVectorOfDoubles>> second = new ArrayList<>();
+        List<Event<PairOfDoubleAndVectorOfDoubles>> third = new ArrayList<>();
+        TimeSeriesOfEnsemblePairsBuilder b = dataFactory.ofTimeSeriesOfEnsemblePairsBuilder();
         DataFactory metIn = DefaultDataFactory.getInstance();
         Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
-        first.add( metIn.pairOf( 1, new double[] { 1, 2, 3, 4, 5 } ) );
-        first.add( metIn.pairOf( 2, new double[] { 1, 2, 3, 4, 5 } ) );
-        first.add( metIn.pairOf( 3, new double[] { 1, 2, 3, 4, 5 } ) );
+        first.add( Event.of( Instant.parse( "1985-01-02T00:00:00Z" ),
+                             metIn.pairOf( 1, new double[] { 1, 2, 3, 4, 5 } ) ) );
+        first.add( Event.of( Instant.parse( "1985-01-03T00:00:00Z" ),
+                             metIn.pairOf( 2, new double[] { 1, 2, 3, 4, 5 } ) ) );
+        first.add( Event.of( Instant.parse( "1985-01-04T00:00:00Z" ),
+                             metIn.pairOf( 3, new double[] { 1, 2, 3, 4, 5 } ) ) );
         Instant secondBasisTime = Instant.parse( "1985-01-02T00:00:00Z" );
-        second.add( metIn.pairOf( 4, new double[] { 6, 7, 8, 9, 10 } ) );
-        second.add( metIn.pairOf( 5, new double[] { 6, 7, 8, 9, 10 } ) );
-        second.add( metIn.pairOf( 6, new double[] { 6, 7, 8, 9, 10 } ) );
+        second.add( Event.of( Instant.parse( "1985-01-03T06:00:00Z" ),
+                              metIn.pairOf( 4, new double[] { 6, 7, 8, 9, 10 } ) ) );
+        second.add( Event.of( Instant.parse( "1985-01-04T06:00:00Z" ),
+                              metIn.pairOf( 5, new double[] { 6, 7, 8, 9, 10 } ) ) );
+        second.add( Event.of( Instant.parse( "1985-01-05T06:00:00Z" ),
+                              metIn.pairOf( 6, new double[] { 6, 7, 8, 9, 10 } ) ) );
         Instant thirdBasisTime = Instant.parse( "1985-01-03T00:00:00Z" );
-        third.add( metIn.pairOf( 7, new double[] { 11, 12, 13, 14, 15 } ) );
-        third.add( metIn.pairOf( 8, new double[] { 11, 12, 13, 14, 15 } ) );
-        third.add( metIn.pairOf( 9, new double[] { 11, 12, 13, 14, 15 } ) );
+        third.add( Event.of( Instant.parse( "1985-01-01T04:00:00Z" ),
+                             metIn.pairOf( 7, new double[] { 11, 12, 13, 14, 15 } ) ) );
+        third.add( Event.of( Instant.parse( "1985-01-01T05:00:00Z" ),
+                             metIn.pairOf( 8, new double[] { 11, 12, 13, 14, 15 } ) ) );
+        third.add( Event.of( Instant.parse( "1985-01-01T06:00:00Z" ),
+                             metIn.pairOf( 9, new double[] { 11, 12, 13, 14, 15 } ) ) );
         //Build some metadata
         MetadataFactory metaFac = metIn.getMetadataFactory();
         Metadata meta = metaFac.getMetadata();
@@ -271,7 +278,6 @@ public class TimeSeriesDemo
                 (TimeSeriesOfEnsemblePairs) b.addTimeSeriesData( firstBasisTime, first )
                                              .addTimeSeriesData( secondBasisTime, second )
                                              .addTimeSeriesData( thirdBasisTime, third )
-                                             .setTimeStep( Duration.ofDays( 1 ) )
                                              .setMetadata( meta )
                                              .build();
         //Iterate and test
