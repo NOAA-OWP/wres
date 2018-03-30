@@ -33,6 +33,7 @@ import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MatrixOutput;
 import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.MetricOutputAccessException;
+import wres.datamodel.outputs.MetricOutputException;
 import wres.datamodel.outputs.MetricOutputForProject;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.ScoreOutput;
@@ -195,10 +196,12 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
      * see: {@link #getMetricOutputTypesToCache()}.
      * 
      * @return the output types that were cached
-     * @throws MetricOutputAccessException if the cached types could not be determined
+     * @throws InterruptedException if the retrieval was interrupted
+     * @throws MetricOutputException if the output could not be retrieved
+     * @throws MetricOutputMergeException if the cached output cannot be merged across calls
      */
 
-    public Set<MetricOutputGroup> getCachedMetricOutputTypes() throws MetricOutputAccessException
+    public Set<MetricOutputGroup> getCachedMetricOutputTypes() throws InterruptedException
     {
         return this.getCachedMetricOutput().getOutputTypes();
     }
@@ -208,11 +211,12 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
      * {@link #hasCachedMetricOutput()} returns false.
      * 
      * @return a {@link MetricOutputForProject} or null
-     * @throws MetricOutputAccessException if the cached output cannot be completed
+     * @throws InterruptedException if the retrieval was interrupted
+     * @throws MetricOutputException if the output could not be retrieved
      * @throws MetricOutputMergeException if the cached output cannot be merged across calls
      */
 
-    public T getCachedMetricOutput() throws MetricOutputAccessException
+    public T getCachedMetricOutput() throws InterruptedException
     {
         //Complete any end-of-pipeline processing
         this.completeCachedOutput();
@@ -318,7 +322,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
      *            which completion depends cannot be accessed
      */
 
-    abstract void completeCachedOutput() throws MetricOutputAccessException;
+    abstract void completeCachedOutput() throws InterruptedException;
 
     /**
      * Returns a {@link MetricOutputForProject} for the last available results or null if

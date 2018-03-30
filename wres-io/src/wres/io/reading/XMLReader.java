@@ -1,12 +1,10 @@
 package wres.io.reading;
 
-import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
+import java.util.Objects;
 import java.util.zip.GZIPInputStream;
 
 import javax.xml.stream.XMLInputFactory;
@@ -20,6 +18,7 @@ import javax.xml.transform.stax.StAXSource;
 import javax.xml.transform.stream.StreamResult;
 
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import wres.util.Strings;
 
@@ -29,36 +28,92 @@ import wres.util.Strings;
  */
 public abstract class XMLReader
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger( XMLReader.class );
+
     private final String filename;
-    private final boolean findOnClasspath;
     private final InputStream inputStream;
-    private XMLInputFactory factory = null;
+    private final XMLInputFactory factory;
 
     /**
-     * 
-     * @param filename the file name
+     * Convenience constructor - finds in either the classpath or filesystem.
+     * @param filename the file name to look for on the classpath or filesystem.
+     * @throws IOException when the file cannot be found.
      */
     protected XMLReader( String filename )
+            throws IOException
     {
-        this( filename, false );
+        this( filename, null );
     }
 
+    /**
+     * Create an XMLReader.
+     * <br>
+     * By the time this constructor is finished, we have an open InputStream
+     * for the file name specified.
+     * @param fileName the name of the file to read, non-null
+     * @param inputStream null or optionat inputstream to read from
+     * @throws IOException when anything goes wrong
+     */
     protected XMLReader( String fileName, InputStream inputStream )
+            throws IOException
     {
-        this.findOnClasspath = false;
+        Objects.requireNonNull( fileName );
+
         this.filename = fileName;
-        this.inputStream = inputStream;
+        this.factory = XMLInputFactory.newFactory();
+
+        InputStream possibleInputStream = inputStream;
+
+        if ( possibleInputStream != null )
+        {
+            // Caller set up the input stream in advance, use it.
+            this.inputStream = inputStream;
+            LOGGER.debug( "Caller set an InputStream" );
+        }
+        else
+        {
+            // No input stream was passed in, attempt to get from the classpath.
+            possibleInputStream = XMLReader.getFile( this.filename );
+
+            // possibleInputStream can still be null at this point, meaning that
+            // the resource could not be found on the classpath.
+            if ( possibleInputStream != null )
+            {
+                // Successfully found on classpath.
+                this.inputStream = possibleInputStream;
+                LOGGER.debug( "Found {} on classpath.", this.filename );
+            }
+            else
+            {
+                // Not found on classpath.
+                // Therefore, attempt to create one from the filesystem now.
+                possibleInputStream = new FileInputStream( this.filename );
+
+                if ( this.filename.endsWith( ".gz" ) )
+                {
+                    this.inputStream =
+                            new GZIPInputStream( possibleInputStream );
+                    LOGGER.debug( "Found gzip file {}.", this.filename );
+                }
+                else
+                {
+                    this.inputStream = possibleInputStream;
+                    LOGGER.debug( "Found file {}.", this.filename );
+                }
+            }
+        }
     }
 
-    protected XMLReader( String filename, boolean findOnClasspath )
-    {
-        this.filename = filename;
-        this.findOnClasspath = findOnClasspath;
-        this.inputStream = null;
 
-        this.getLogger().trace( "Created XMLReader for file: {} findOnClasspath={}",
-                                filename,
-                                findOnClasspath );
+    /**
+     * A no-op constructor so that SystemSettings can successfully inherit
+     * from this class but not use its functionality (due to failed reading).
+     */
+    protected XMLReader()
+    {
+        this.filename = null;
+        this.inputStream = null;
+        this.factory = null;
     }
 
     protected String getFilename()
@@ -66,10 +121,18 @@ public abstract class XMLReader
         return filename;
     }
 
-    private InputStream getFile() throws IOException
+    /**
+     * Attempt to find a resource on the classpath. If not found, return null.
+     * @param resourceName the resource name
+     * @return InputStream on success, null on failure to find.
+     * @throws IOException when getting a gzipped resource fails
+     */
+    private static InputStream getFile( String resourceName ) throws IOException
     {
-        InputStream stream = ClassLoader.getSystemResourceAsStream( filename );
-        if ( filename.endsWith( ".gz" ) )
+        InputStream stream = XMLReader.class.getClassLoader()
+                                            .getResourceAsStream( resourceName );
+
+        if ( stream != null && resourceName.endsWith( ".gz" ) )
         {
             stream = new GZIPInputStream( stream );
         }
@@ -134,55 +197,7 @@ public abstract class XMLReader
 
     private XMLStreamReader createReader() throws IOException, XMLStreamException
     {
-        XMLStreamReader reader = null;
-
-        if ( factory == null )
-        {
-            factory = XMLInputFactory.newFactory();
-        }
-
-        //Return the system resource reader if its found as a system resource.
-        try
-        {
-            if ( findOnClasspath )
-            {
-                return factory.createXMLStreamReader( getFile() );
-            }
-        }
-        catch ( XMLStreamException | IOException error )
-        {
-            this.getLogger().debug( "An XMLStreamReader could not be created "
-                                    + "by looking for the source on the class "
-                                    + "path. A reader will need to be created "
-                                    + "by evaluating the file name or given "
-                                    + "input stream." );
-        }
-
-        //If its not a system resource, or the resource cannot be read, then find on the file system.
-        if ( this.inputStream != null )
-        {
-            reader = factory.createXMLStreamReader( inputStream );
-        }
-        else if ( this.filename != null )
-        {
-            if ( getFilename().endsWith( ".gz" ) )
-            {
-                InputStream fileStream = new FileInputStream( new File( getFilename() ) );
-                GZIPInputStream gzipStream = new GZIPInputStream( fileStream );
-                reader = factory.createXMLStreamReader( gzipStream );
-            }
-            else
-            {
-                reader = factory.createXMLStreamReader( new FileReader( getFilename() ) );
-            }
-        }
-
-        if (reader == null)
-        {
-            throw new IOException( "No XMLReader could be created; XML could not be found." );
-        }
-
-        return reader;
+        return factory.createXMLStreamReader( inputStream );
     }
 
     public String getRawXML() throws IOException, XMLStreamException, TransformerException

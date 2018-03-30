@@ -37,58 +37,64 @@ public interface MetricOutputForProjectByTimeAndThreshold
      * Returns a {@link MetricOutputMultiMap} of {@link DoubleScoreOutput} or null if no output exists.
      * 
      * @return the scalar output or null
-     * @throws MetricOutputAccessException if the retrieval fails for any reason
+     * @throws MetricOutputException if the output could not be retrieved
+     * @throws InterruptedException if the retrieval was interrupted
      */
 
-    MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> getDoubleScoreOutput() throws MetricOutputAccessException;
+    MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> getDoubleScoreOutput() throws InterruptedException;
 
     /**
      * Returns a {@link MetricOutputMultiMap} of {@link DurationScoreOutput} or null if no output exists.
      * 
      * @return the scalar output or null
-     * @throws MetricOutputAccessException if the retrieval fails for any reason
+     * @throws MetricOutputException if the output could not be retrieved
+     * @throws InterruptedException if the retrieval was interrupted
      */
 
     MetricOutputMultiMapByTimeAndThreshold<DurationScoreOutput> getDurationScoreOutput()
-            throws MetricOutputAccessException;
+            throws InterruptedException;
 
     /**
      * Returns a {@link MetricOutputMultiMap} of {@link MultiVectorOutput} or null if no output exists.
      * 
      * @return the multi-vector output or null
-     * @throws MetricOutputAccessException if the retrieval fails for any reason
+     * @throws MetricOutputException if the output could not be retrieved
+     * @throws InterruptedException if the retrieval was interrupted
      */
 
     MetricOutputMultiMapByTimeAndThreshold<MultiVectorOutput> getMultiVectorOutput()
-            throws MetricOutputAccessException;
+            throws InterruptedException;
 
     /**
      * Returns a {@link MetricOutputMultiMap} of {@link MatrixOutput} or null if no output exists.
      * 
      * @return the matrix output or null
-     * @throws MetricOutputAccessException if the retrieval fails for any reason
+     * @throws MetricOutputException if the output could not be retrieved
+     * @throws InterruptedException if the retrieval was interrupted
      */
 
-    MetricOutputMultiMapByTimeAndThreshold<MatrixOutput> getMatrixOutput() throws MetricOutputAccessException;
+    MetricOutputMultiMapByTimeAndThreshold<MatrixOutput> getMatrixOutput() throws InterruptedException;
 
     /**
      * Returns a {@link MetricOutputMultiMap} of {@link BoxPlotOutput} or null if no output exists.
      * 
      * @return the matrix output or null
-     * @throws MetricOutputAccessException if the retrieval fails for any reason
+     * @throws MetricOutputException if the output could not be retrieved
+     * @throws InterruptedException if the retrieval was interrupted
      */
 
-    MetricOutputMultiMapByTimeAndThreshold<BoxPlotOutput> getBoxPlotOutput() throws MetricOutputAccessException;
+    MetricOutputMultiMapByTimeAndThreshold<BoxPlotOutput> getBoxPlotOutput() throws InterruptedException;
 
     /**
      * Returns a {@link MetricOutputMultiMap} of {@link PairedOutput} or null if no output exists.
      * 
      * @return the matrix output or null
-     * @throws MetricOutputAccessException if the retrieval fails for any reason
+     * @throws MetricOutputException if the output could not be retrieved
+     * @throws InterruptedException if the retrieval was interrupted
      */
 
     MetricOutputMultiMapByTimeAndThreshold<PairedOutput<Instant, Duration>> getPairedOutput()
-            throws MetricOutputAccessException;
+            throws InterruptedException;
 
     /**
      * Builder.

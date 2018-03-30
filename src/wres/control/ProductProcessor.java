@@ -33,7 +33,6 @@ import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.DurationScoreOutput;
 import wres.datamodel.outputs.MatrixOutput;
-import wres.datamodel.outputs.MetricOutputAccessException;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
 import wres.datamodel.outputs.MultiVectorOutput;
@@ -258,13 +257,15 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
                 processPairedOutputByInstantDuration( input.getPairedOutput() );
             }
         }
-        catch ( final MetricOutputAccessException | IOException e )
+        catch ( InterruptedException e)
         {
-            // TODO: James, is this still necessary? Why or why not?
-            if ( Thread.currentThread().isInterrupted() )
-            {
-                LOGGER.warn( "Interrupted while processing intermediate results:", e );
-            }
+            // Notify
+            Thread.currentThread().interrupt();
+            
+            throw new WresProcessingException( "Interrupted while processing intermediate results:", e );         
+        }
+        catch ( IOException e )
+        {
             throw new WresProcessingException( "Error while processing intermediate results:", e );
         }
     }

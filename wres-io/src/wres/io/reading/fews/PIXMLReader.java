@@ -99,9 +99,11 @@ public final class PIXMLReader extends XMLReader
 	 * Constructor for a reader that may be for forecasts or observations
 	 * @param filename The path to the file to read
 	 * @param hash the hash code for the source
+     * @throws IOException when an attempt to get the file from classpath fails.
 	 */
     public PIXMLReader( String filename,
                         String hash )
+            throws IOException
 	{
 		super(filename);
 		this.hash = hash;
@@ -110,6 +112,7 @@ public final class PIXMLReader extends XMLReader
     public PIXMLReader( String filename,
                         InputStream inputStream,
                         String hash )
+            throws IOException
 	{
 		super(filename, inputStream);
 		this.hash = hash;
