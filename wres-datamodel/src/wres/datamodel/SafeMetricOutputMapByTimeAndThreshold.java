@@ -29,8 +29,6 @@ import wres.datamodel.outputs.MetricOutputMapWithBiKey;
  * Immutable map of {@link MetricOutput} stored by {@link TimeWindow} and {@link OneOrTwoThresholds} in their natural order.
  *
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implements MetricOutputMapByTimeAndThreshold<T>
 {
@@ -44,9 +42,9 @@ class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implement
     /**
      * Null threshold.
      */
-    
+
     private static final String NULL_THRESHOLD_ERROR = "Specify a non-null threshold by which to slice the map.";
-    
+
     /**
      * Metadata.
      */
@@ -142,7 +140,7 @@ class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implement
              .forEach( ( key, value ) -> returnMe.add( value.get( 0 ).getLeft() ) );
         return returnMe;
     }
-    
+
 
     @Override
     public Set<Threshold> setOfThresholdOne()
@@ -157,10 +155,10 @@ class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implement
     public Set<Threshold> setOfThresholdTwo()
     {
         return Collections.unmodifiableSet( store.keySet()
-                                            .stream()
-                                            .filter( next -> next.getRight().hasTwo() )
-                                            .map( next -> next.getValue().second() )
-                                            .collect( Collectors.toSet() ) );
+                                                 .stream()
+                                                 .filter( next -> next.getRight().hasTwo() )
+                                                 .map( next -> next.getValue().second() )
+                                                 .collect( Collectors.toSet() ) );
     }
 
     @Override
@@ -171,10 +169,10 @@ class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implement
 
     @Override
     public SortedMap<Pair<TimeWindow, OneOrTwoThresholds>, T> subMap( Pair<TimeWindow, OneOrTwoThresholds> fromKey,
-                                                             Pair<TimeWindow, OneOrTwoThresholds> toKey )
+                                                                      Pair<TimeWindow, OneOrTwoThresholds> toKey )
     {
         return (SortedMap<Pair<TimeWindow, OneOrTwoThresholds>, T>) Collections.unmodifiableMap( store.subMap( fromKey,
-                                                                                                      toKey ) );
+                                                                                                               toKey ) );
     }
 
     @Override
@@ -225,7 +223,7 @@ class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implement
         {
             throw new MetricOutputException( NULL_THRESHOLD_ERROR );
         }
-        final Builder<T> b = new Builder<>();
+        final SafeMetricOutputMapByTimeAndThresholdBuilder<T> b = new SafeMetricOutputMapByTimeAndThresholdBuilder<>();
         store.forEach( ( key, value ) -> {
             if ( first.equals( key.getLeft() ) )
             {
@@ -240,13 +238,14 @@ class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implement
     }
 
     @Override
-    public MetricOutputMapWithBiKey<TimeWindow, OneOrTwoThresholds, T> filterBySecondKey( final OneOrTwoThresholds second )
+    public MetricOutputMapWithBiKey<TimeWindow, OneOrTwoThresholds, T>
+            filterBySecondKey( final OneOrTwoThresholds second )
     {
         if ( Objects.isNull( second ) )
         {
             throw new MetricOutputException( NULL_THRESHOLD_ERROR );
         }
-        final Builder<T> b = new Builder<>();
+        final SafeMetricOutputMapByTimeAndThresholdBuilder<T> b = new SafeMetricOutputMapByTimeAndThresholdBuilder<>();
         store.forEach( ( key, value ) -> {
             if ( second.equals( key.getRight() ) )
             {
@@ -267,7 +266,7 @@ class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implement
         {
             throw new MetricOutputException( "Specify a non-null time window by which to slice the map." );
         }
-        final Builder<T> b = new Builder<>();
+        final SafeMetricOutputMapByTimeAndThresholdBuilder<T> b = new SafeMetricOutputMapByTimeAndThresholdBuilder<>();
         store.forEach( ( key, value ) -> {
             if ( key.getKey().getEarliestLeadTime().equals( window.getEarliestLeadTime() )
                  && key.getKey().getLatestLeadTime().equals( window.getLatestLeadTime() ) )
@@ -281,7 +280,7 @@ class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implement
         }
         return b.build();
     }
-    
+
     @Override
     public MetricOutputMapByTimeAndThreshold<T> filterByThresholdOne( Threshold threshold )
     {
@@ -289,7 +288,7 @@ class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implement
         {
             throw new MetricOutputException( NULL_THRESHOLD_ERROR );
         }
-        final Builder<T> b = new Builder<>();
+        final SafeMetricOutputMapByTimeAndThresholdBuilder<T> b = new SafeMetricOutputMapByTimeAndThresholdBuilder<>();
         store.forEach( ( key, value ) -> {
             if ( threshold.equals( key.getRight().first() ) )
             {
@@ -310,7 +309,7 @@ class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implement
         {
             throw new MetricOutputException( NULL_THRESHOLD_ERROR );
         }
-        final Builder<T> b = new Builder<>();
+        final SafeMetricOutputMapByTimeAndThresholdBuilder<T> b = new SafeMetricOutputMapByTimeAndThresholdBuilder<>();
         store.forEach( ( key, value ) -> {
             if ( threshold.equals( key.getRight().second() ) )
             {
@@ -353,7 +352,7 @@ class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implement
      * @param <T> the metric output
      */
 
-    protected static class Builder<T extends MetricOutput<?>>
+    static class SafeMetricOutputMapByTimeAndThresholdBuilder<T extends MetricOutput<?>>
     {
 
         /**
@@ -381,7 +380,8 @@ class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implement
          * @return the builder
          */
 
-        protected Builder<T> put( final Pair<TimeWindow, OneOrTwoThresholds> key, final T value )
+        protected SafeMetricOutputMapByTimeAndThresholdBuilder<T> put( final Pair<TimeWindow, OneOrTwoThresholds> key,
+                                                                       final T value )
         {
             if ( Objects.isNull( referenceMetadata ) )
             {
@@ -398,7 +398,8 @@ class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implement
          * @return the builder
          */
 
-        protected Builder<T> setOverrideMetadata( final MetricOutputMetadata overrideMeta )
+        protected SafeMetricOutputMapByTimeAndThresholdBuilder<T>
+                setOverrideMetadata( final MetricOutputMetadata overrideMeta )
         {
             this.overrideMeta = overrideMeta;
             return this;
@@ -424,7 +425,7 @@ class SafeMetricOutputMapByTimeAndThreshold<T extends MetricOutput<?>> implement
      * @throws MetricOutputException if any of the inputs are invalid
      */
 
-    private SafeMetricOutputMapByTimeAndThreshold( final Builder<T> builder )
+    private SafeMetricOutputMapByTimeAndThreshold( final SafeMetricOutputMapByTimeAndThresholdBuilder<T> builder )
     {
         //Set then check
         store = new TreeMap<>();

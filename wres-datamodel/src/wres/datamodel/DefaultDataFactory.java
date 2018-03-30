@@ -13,6 +13,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.SafeMetricOutputMapByMetric.SafeMetricOutputMapByMetricBuilder;
+import wres.datamodel.SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapByTimeAndThresholdBuilder;
 import wres.datamodel.SafeMetricOutputMultiMapByTimeAndThreshold.SafeMetricOutputMultiMapByTimeAndThresholdBuilder;
 import wres.datamodel.SafeThresholdsByMetric.SafeThresholdsByMetricBuilder;
 import wres.datamodel.SafeThresholdsByType.SafeThresholdsByTypeBuilder;
@@ -371,8 +372,8 @@ public class DefaultDataFactory implements DataFactory
             ofMap( final Map<Pair<TimeWindow, OneOrTwoThresholds>, T> input )
     {
         Objects.requireNonNull( input, "Specify a non-null map of inputs by lead time and threshold." );
-        final SafeMetricOutputMapByTimeAndThreshold.Builder<T> builder =
-                new SafeMetricOutputMapByTimeAndThreshold.Builder<>();
+        final SafeMetricOutputMapByTimeAndThresholdBuilder<T> builder =
+                new SafeMetricOutputMapByTimeAndThresholdBuilder<>();
         input.forEach( builder::put );
         return builder.build();
     }
@@ -452,8 +453,8 @@ public class DefaultDataFactory implements DataFactory
             combine( final List<MetricOutputMapByTimeAndThreshold<T>> input )
     {
         Objects.requireNonNull( input, "Specify a non-null map of inputs to combine." );
-        final SafeMetricOutputMapByTimeAndThreshold.Builder<T> builder =
-                new SafeMetricOutputMapByTimeAndThreshold.Builder<>();
+        final SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapByTimeAndThresholdBuilder<T> builder =
+                new SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapByTimeAndThresholdBuilder<>();
         //If the input contains time windows, find the union of them
         List<TimeWindow> windows = new ArrayList<>();
         for ( MetricOutputMapByTimeAndThreshold<T> next : input )
