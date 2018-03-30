@@ -289,8 +289,8 @@ public class SourceLoader
             }
             else
             {
-                LOGGER.warn( "Skipping file {} because it does not match {}.",
-                             file, matcher );
+                LOGGER.warn( "Skipping file {} because it does not match pattern \"{}\".",
+                             file, this.source.getPattern() );
                 return null;
             }
         }
