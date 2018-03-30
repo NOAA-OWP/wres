@@ -27,7 +27,7 @@ import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.DurationScoreOutput;
 import wres.datamodel.outputs.MatrixOutput;
 import wres.datamodel.outputs.MetricOutput;
-import wres.datamodel.outputs.MetricOutputAccessException;
+import wres.datamodel.outputs.MetricOutputException;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMapByMetric;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
@@ -54,13 +54,13 @@ class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForPro
 
     private final ConcurrentMap<Pair<TimeWindow, OneOrTwoThresholds>, List<Future<MetricOutputMapByMetric<DoubleScoreOutput>>>> doubleScore =
             new ConcurrentHashMap<>();
-    
+
     /**
      * Thread safe map for {@link DurationScoreOutput}.
      */
 
     private final ConcurrentMap<Pair<TimeWindow, OneOrTwoThresholds>, List<Future<MetricOutputMapByMetric<DurationScoreOutput>>>> durationScore =
-            new ConcurrentHashMap<>();    
+            new ConcurrentHashMap<>();
 
     /**
      * Thread safe map for {@link MultiVectorOutput}.
@@ -114,7 +114,7 @@ class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForPro
 
     @Override
     public MetricOutputMultiMapByTimeAndThreshold<MetricOutput<?>> getOutput( MetricOutputGroup... outGroup )
-            throws MetricOutputAccessException
+            throws InterruptedException
     {
         Objects.requireNonNull( outGroup, "Specify one or more output types to return." );
         SafeMetricOutputMultiMapByTimeAndThresholdBuilder<MetricOutput<?>> builder =
@@ -156,76 +156,76 @@ class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForPro
     public Set<MetricOutputGroup> getOutputTypes()
     {
         Set<MetricOutputGroup> returnMe = new HashSet<>();
-        
+
         if ( hasOutput( MetricOutputGroup.DOUBLE_SCORE ) )
         {
             returnMe.add( MetricOutputGroup.DOUBLE_SCORE );
         }
-        
+
         if ( hasOutput( MetricOutputGroup.DURATION_SCORE ) )
         {
             returnMe.add( MetricOutputGroup.DURATION_SCORE );
         }
-        
+
         if ( hasOutput( MetricOutputGroup.MULTIVECTOR ) )
         {
             returnMe.add( MetricOutputGroup.MULTIVECTOR );
         }
-        
+
         if ( hasOutput( MetricOutputGroup.MATRIX ) )
         {
             returnMe.add( MetricOutputGroup.MATRIX );
         }
-        
+
         if ( hasOutput( MetricOutputGroup.BOXPLOT ) )
         {
             returnMe.add( MetricOutputGroup.BOXPLOT );
         }
-        
+
         if ( hasOutput( MetricOutputGroup.PAIRED ) )
         {
             returnMe.add( MetricOutputGroup.PAIRED );
         }
-        
+
         return Collections.unmodifiableSet( returnMe );
     }
 
     @Override
     public MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> getDoubleScoreOutput()
-            throws MetricOutputAccessException
+            throws InterruptedException
     {
         return unwrap( MetricOutputGroup.DOUBLE_SCORE, doubleScore );
     }
 
     @Override
     public MetricOutputMultiMapByTimeAndThreshold<DurationScoreOutput> getDurationScoreOutput()
-            throws MetricOutputAccessException
+            throws InterruptedException
     {
         return unwrap( MetricOutputGroup.DURATION_SCORE, durationScore );
-    }    
-    
+    }
+
     @Override
     public MetricOutputMultiMapByTimeAndThreshold<MultiVectorOutput> getMultiVectorOutput()
-            throws MetricOutputAccessException
+            throws InterruptedException
     {
         return unwrap( MetricOutputGroup.MULTIVECTOR, multiVector );
     }
 
     @Override
-    public MetricOutputMultiMapByTimeAndThreshold<MatrixOutput> getMatrixOutput() throws MetricOutputAccessException
+    public MetricOutputMultiMapByTimeAndThreshold<MatrixOutput> getMatrixOutput() throws InterruptedException
     {
         return unwrap( MetricOutputGroup.MATRIX, matrix );
     }
 
     @Override
-    public MetricOutputMultiMapByTimeAndThreshold<BoxPlotOutput> getBoxPlotOutput() throws MetricOutputAccessException
+    public MetricOutputMultiMapByTimeAndThreshold<BoxPlotOutput> getBoxPlotOutput() throws InterruptedException
     {
         return unwrap( MetricOutputGroup.BOXPLOT, boxplot );
     }
 
     @Override
     public MetricOutputMultiMapByTimeAndThreshold<PairedOutput<Instant, Duration>> getPairedOutput()
-            throws MetricOutputAccessException
+            throws InterruptedException
     {
         return unwrap( MetricOutputGroup.PAIRED, paired );
     }
@@ -420,12 +420,13 @@ class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForPro
      * @param outGroup the {@link MetricOutputGroup} for error logging
      * @param wrapped the map of values wrapped in {@link Future}
      * @return the unwrapped map or null if the input is empty
-     * @throws MetricOutputAccessException if the retrieval of {@link MetricOutput} fails
+     * @throws InterruptedException if the retrieval is interrupted
+     * @throws MetricOutputException if the result could not be produced
      */
 
     private <T extends MetricOutput<?>> MetricOutputMultiMapByTimeAndThreshold<T> unwrap( MetricOutputGroup outGroup,
                                                                                           Map<Pair<TimeWindow, OneOrTwoThresholds>, List<Future<MetricOutputMapByMetric<T>>>> wrapped )
-            throws MetricOutputAccessException
+            throws InterruptedException
     {
         if ( wrapped.isEmpty() )
         {
@@ -449,25 +450,28 @@ class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForPro
             }
             catch ( InterruptedException e )
             {
+                // Propagate status
                 Thread.currentThread().interrupt();
-                throw new MetricOutputAccessException( "Interrupted while retrieving the results for group " + outGroup
-                                                       + " "
-                                                       + "at lead time "
-                                                       + next.getKey().getLeft()
-                                                       + " and threshold "
-                                                       + next.getKey().getRight()
-                                                       + ".",
-                                                       e );
+
+                // Decorate for context
+                throw new InterruptedException( "Interrupted while retrieving the results for group " + outGroup
+                                                + " "
+                                                + "at lead time "
+                                                + next.getKey().getLeft()
+                                                + " and threshold "
+                                                + next.getKey().getRight()
+                                                + "." );
             }
             catch ( ExecutionException e )
             {
-                throw new MetricOutputAccessException( "While retrieving the results for group " + outGroup
-                                                       + " at lead time "
-                                                       + next.getKey().getLeft()
-                                                       + " and threshold "
-                                                       + next.getKey().getRight()
-                                                       + ".",
-                                                       e );
+                // Throw an unchecked exception here, as this is not recoverable
+                throw new MetricOutputException( "While retrieving the results for group " + outGroup
+                                                 + " at lead time "
+                                                 + next.getKey().getLeft()
+                                                 + " and threshold "
+                                                 + next.getKey().getRight()
+                                                 + ".",
+                                                 e );
             }
         }
         return d.ofMultiMap( unwrapped );

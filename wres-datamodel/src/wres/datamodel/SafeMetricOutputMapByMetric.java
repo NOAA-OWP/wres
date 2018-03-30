@@ -163,7 +163,7 @@ class SafeMetricOutputMapByMetric<T extends MetricOutput<?>> implements MetricOu
          * @param key the key
          * @param value the value
          * @return the builder
-         * @throws MetricOutputException if one or more of the inputs already exist in this store
+         * @throws MetricOutputException if the input already exists in this store
          */
 
         SafeMetricOutputMapByMetricBuilder<T> put( final MapKey<MetricConstants> key, final T value )
