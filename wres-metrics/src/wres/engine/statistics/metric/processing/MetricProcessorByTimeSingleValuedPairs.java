@@ -43,7 +43,6 @@ import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.DurationScoreOutput;
-import wres.datamodel.outputs.MetricOutputAccessException;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMapByMetric;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
@@ -283,7 +282,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
     }
 
     @Override
-    void completeCachedOutput() throws MetricOutputAccessException
+    void completeCachedOutput() throws InterruptedException
     {
         // Determine whether to compute summary statistics
         boolean proceed = this.hasCachedMetricOutput()

@@ -10,7 +10,7 @@ import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.ThresholdsByMetric;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
-import wres.datamodel.outputs.MetricOutputAccessException;
+import wres.datamodel.outputs.MetricOutputException;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.engine.statistics.metric.MetricFactory;
 
@@ -154,10 +154,11 @@ public class MetricProcessorForProject
      * outputs are computed and cached automatically.
      * 
      * @return the output types to cache
-     * @throws MetricOutputAccessException if the cached types could not be determined
+     * @throws InterruptedException if the retrieval was interrupted
+     * @throws MetricOutputException if the output could not be retrieved
      */
 
-    public Set<MetricOutputGroup> getCachedMetricOutputTypes() throws MetricOutputAccessException
+    public Set<MetricOutputGroup> getCachedMetricOutputTypes() throws InterruptedException
     {
         if ( Objects.nonNull( singleValuedProcessor ) )
         {
@@ -173,10 +174,11 @@ public class MetricProcessorForProject
      * Returns the cached metric output or null if {@link #hasCachedMetricOutput()} returns <code>false</code>.
      * 
      * @return the cached output or null
-     * @throws MetricOutputAccessException if the metric output could not be accessed
+     * @throws InterruptedException if the retrieval was interrupted
+     * @throws MetricOutputException if the output could not be retrieved
      */
 
-    public MetricOutputForProjectByTimeAndThreshold getCachedMetricOutput() throws MetricOutputAccessException
+    public MetricOutputForProjectByTimeAndThreshold getCachedMetricOutput() throws InterruptedException
     {
         if ( Objects.nonNull( singleValuedProcessor ) )
         {

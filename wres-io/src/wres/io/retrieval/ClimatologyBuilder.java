@@ -282,8 +282,18 @@ class ClimatologyBuilder
                   .append(projectDetails.getScale().getUnit())
                   .append("')::INTERVAL)::TEXT AS start_date,").append(NEWLINE);
             script.append("    (")
-                  .append(earliestDate).append("::timestamp without time zone")
-                  .append(" + ( ( member_number + ").append(projectDetails.getScale().getPeriod())
+                  .append(earliestDate).append("::timestamp without time zone");
+
+            if (dataSourceConfig.getTimeShift() != null)
+            {
+                script.append(" + '")
+                      .append(dataSourceConfig.getTimeShift().getWidth())
+                      .append(" ")
+                      .append(dataSourceConfig.getTimeShift().getUnit())
+                      .append("'");
+            }
+
+            script.append(" + ( ( member_number + ").append(projectDetails.getScale().getPeriod())
                   .append(" ) || ' ").append(projectDetails.getScale().getUnit()).append("')::INTERVAL)::TEXT AS end_date")
                   .append(NEWLINE);
             script.append("FROM generate_series(0, ")
