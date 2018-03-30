@@ -254,6 +254,8 @@ public class USGSReader extends BasicSource
 
         Collection<FeatureDetails> details = Features.getAllDetails( this.getProjectConfig() );
 
+        this.totalLocationCount = details.size();
+
         if (details.size() > USGSReader.FEATURE_REQUEST_LIMIT)
         {
             List<FeatureDetails> block = new ArrayList<>();
@@ -716,6 +718,7 @@ public class USGSReader extends BasicSource
     {
         String gageID = series.getSourceInfo().getSiteCode()[0].getValue();
         int validSeriesCount = 0;
+        this.parsedLocationCount++;
 
         if (series.getValues().length == 0)
         {
@@ -733,8 +736,10 @@ public class USGSReader extends BasicSource
                 }
 
                 this.getFeatureDetailsSet().remove( invalidFeature );
-                LOGGER.trace("The location '{}' was removed from the project because it didn't have valid USGS data.",
-                             String.valueOf(invalidFeature));
+                LOGGER.debug("The location '{}' was removed from the project because it didn't have valid USGS data. ({}/{})",
+                             String.valueOf(invalidFeature),
+                             this.parsedLocationCount,
+                             this.totalLocationCount);
                 return false;
             }
             catch ( SQLException e )
@@ -794,8 +799,10 @@ public class USGSReader extends BasicSource
                 }
 
                 this.getFeatureDetailsSet().remove( invalidFeature );
-                LOGGER.trace("The location '{}' was removed from the project because it didn't have valid USGS data.",
-                             String.valueOf(invalidFeature));
+                LOGGER.debug("The location '{}' was removed from the project because it didn't have valid USGS data. ({}/{})",
+                             String.valueOf(invalidFeature),
+                             this.parsedLocationCount,
+                             this.totalLocationCount);
                 return false;
             }
             catch ( SQLException e )
@@ -807,8 +814,10 @@ public class USGSReader extends BasicSource
             }
         }
 
-        LOGGER.info("A USGS time series has been parsed for location '{}'",
-                    series.getSourceInfo().getSiteName());
+        LOGGER.info("A USGS time series has been parsed for location '{}' ({}/{})",
+                    series.getSourceInfo().getSiteName(),
+                    this.parsedLocationCount,
+                    this.totalLocationCount);
 
         return true;
     }
@@ -894,6 +903,8 @@ public class USGSReader extends BasicSource
     private Map<String, Integer> variablePositionIDs;
     private Integer sourceID;
     private String hash;
+    private int totalLocationCount;
+    private int parsedLocationCount;
 
     private final Stack<UpsertValue> upsertValues = new Stack<>();
 

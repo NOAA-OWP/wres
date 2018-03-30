@@ -302,11 +302,13 @@ public final class ScriptGenerator
         }
 
         script.addLine("SELECT FLOOR(((EXTRACT( epoch FROM AGE(LEAST(MAX(initialization_date), '",
-                       projectDetails.getLatestIssueDate(), "'), '",
+                       projectDetails.getLatestIssueDate(), "') - INTERVAL '",
+                       period - frequency,
+                       " HOURS', '",
                        projectDetails.getEarliestIssueDate(),
                        "')) / 3600) / (",
                        distanceBetween,
-                       ")) - 1)::int AS window_count");
+                       ")))::int AS window_count");
         script.addLine("FROM wres.TimeSeries TS");
         script.addLine("WHERE ", timeSeriesVariablePosition);
         script.addLine("    AND EXISTS (");
