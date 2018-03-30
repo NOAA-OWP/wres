@@ -784,15 +784,24 @@ public class ConfigHelper
      */
     public static TimeWindow getTimeWindow( ProjectDetails projectDetails, long firstLead, long lastLead, int sequenceStep )
     {
+        // TODO: simplify this method, if possible
+        
         Objects.requireNonNull( projectDetails );
-        TimeWindow windowMetadata;
+
+        Instant earliestTime;
+        Instant latestTime;
 
         Duration beginningLead;
         Duration endingLead = Duration.ofHours( lastLead );
 
-        if (projectDetails.usesTimeSeriesMetrics())
+        // Default reference time
+        ReferenceTime referenceTime = ReferenceTime.VALID_TIME;
+
+        if ( projectDetails.usesTimeSeriesMetrics() )
         {
             beginningLead = Duration.ofHours( firstLead );
+            
+            referenceTime = ReferenceTime.ISSUE_TIME;
         }
         else if ( projectDetails.getProjectConfig().getPair().getLeadTimesPoolingWindow() != null )
         {
@@ -814,64 +823,50 @@ public class ConfigHelper
                                                                 projectDetails.getIssuePoolingWindowFrequency() )
                                    * sequenceStep;
 
-            Instant first = Instant.parse( projectDetails.getEarliestIssueDate() );
-            first = first.plus( frequencyOffset, ChronoUnit.HOURS );
-            Instant second;
+            earliestTime = Instant.parse( projectDetails.getEarliestIssueDate() );
+            earliestTime = earliestTime.plus( frequencyOffset, ChronoUnit.HOURS );
 
             if ( projectDetails.getIssuePoolingWindowPeriod() > 0 )
             {
-                second = first.plus( projectDetails.getIssuePoolingWindowPeriod(),
-                                     ChronoUnit.valueOf( projectDetails.getIssuePoolingWindowUnit().toUpperCase() ) );
+                latestTime = earliestTime.plus( projectDetails.getIssuePoolingWindowPeriod(),
+                                                ChronoUnit.valueOf( projectDetails.getIssuePoolingWindowUnit()
+                                                                                  .toUpperCase() ) );
             }
             else
             {
-                second = first;
+                latestTime = earliestTime;
             }
 
-            windowMetadata = TimeWindow.of( first,
-                                            second,
-                                            ReferenceTime.ISSUE_TIME,
-                                            beginningLead,
-                                            endingLead
-            );
+            referenceTime = ReferenceTime.ISSUE_TIME;
+
         }
         //Valid dates available
         else if ( projectDetails.getEarliestDate() != null && projectDetails.getLatestDate() != null )
         {
-            windowMetadata = TimeWindow.of( Instant.parse( projectDetails.getEarliestDate() ),
-                                            Instant.parse( projectDetails.getLatestDate() ),
-                                            ReferenceTime.VALID_TIME,
-                                            beginningLead,
-                                            endingLead
-            );
+            earliestTime = Instant.parse( projectDetails.getEarliestDate() );
+            latestTime = Instant.parse( projectDetails.getLatestDate() );
         }
         //Issue dates available
         else if ( projectDetails.getEarliestIssueDate() != null && projectDetails.getLatestIssueDate() != null )
         {
-            return TimeWindow.of( Instant.parse( projectDetails.getEarliestIssueDate() ),
-                                  Instant.parse( projectDetails.getLatestIssueDate() ),
-                                  ReferenceTime.ISSUE_TIME,
-                                  beginningLead,
-                                  endingLead
-            //Duration.ofHours( lead ),
-            //Duration.ofHours( lead )
-            );
+            earliestTime = Instant.parse( projectDetails.getEarliestIssueDate() );
+            latestTime = Instant.parse( projectDetails.getLatestIssueDate() );
+
+            referenceTime = ReferenceTime.ISSUE_TIME;
+
         }
         //No dates available
         else
         {
-            //Duration leadTime = Duration.ofHours( lead );
-            return TimeWindow.of( Instant.MIN,
-                                  Instant.MAX,
-                                  ReferenceTime.VALID_TIME,
-                                  beginningLead,
-                                  endingLead
-            //Duration.ofHours( lead ),
-            //Duration.ofHours( lead )
-            );
-        }
+            earliestTime = Instant.MIN;
+            latestTime = Instant.MAX;
+        }       
 
-        return windowMetadata;
+        return TimeWindow.of( earliestTime,
+                              latestTime,
+                              referenceTime,
+                              beginningLead,
+                              endingLead );
     }
 
     /**
