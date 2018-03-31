@@ -1,10 +1,9 @@
 package wres.engine.statistics.metric;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -15,7 +14,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 import java.util.function.BiFunction;
-import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -332,7 +330,7 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
                                                                    CompletableFuture.supplyAsync( () -> value.apply( input ),
                                                                                                   this.metricPool ) ) );
         //Compute the results
-        List<U> returnMe = new ArrayList<>();
+        Map<MetricConstants, U> returnMe = new HashMap<>();
         MetricConstants nextMetric = null;
 
         this.logStartOfCalculation();
@@ -342,7 +340,7 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
             for ( Map.Entry<MetricConstants, CompletableFuture<U>> nextResult : metricFutures.entrySet() )
             {
                 nextMetric = nextResult.getKey();
-                returnMe.add( nextResult.getValue().get() ); //This is blocking
+                returnMe.put( nextMetric, nextResult.getValue().get() ); //This is blocking
             }
         }
         catch ( ExecutionException e )
@@ -358,7 +356,7 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
 
         this.logEndOfCalculation( returnMe );
 
-        return this.dataFactory.ofMap( returnMe );
+        return this.dataFactory.ofMetricOutputMapByMetric( returnMe );
     }
 
     /**
@@ -466,15 +464,14 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
      * @param results the results to log
      */
 
-    private void logEndOfCalculation( List<U> results )
+    private void logEndOfCalculation( Map<MetricConstants,U> results )
     {
         if ( LOGGER.isDebugEnabled() )
         {
             // Determine the metrics computed
             Set<MetricConstants> collected = new TreeSet<>();
             collectableMetrics.values().forEach( next -> collected.addAll( next.keySet() ) );
-            List<MetricConstants> completed =
-                    results.stream().map( next -> next.getMetadata().getMetricID() ).collect( Collectors.toList() );
+            Set<MetricConstants> completed = results.keySet();
 
             LOGGER.debug( "Finished computing metrics for a collection that contains {} ordinary metric(s) and {} "
                           + "collectable metric(s). Obtained {} result(s) of the {} result(s) expected. Results were "

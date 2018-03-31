@@ -403,8 +403,8 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                       Operator.GREATER,
                                                                       ThresholdDataType.LEFT_AND_RIGHT ) ) ),
                    expectedErrorsSecond );
-        MetricOutputMapByTimeAndThreshold<PairedOutput<Instant, Duration>> mapped = metIn.ofMap( inMap );
-        MetricOutputMultiMapByTimeAndThresholdBuilder<PairedOutput<Instant, Duration>> builder = metIn.ofMultiMap();
+        MetricOutputMapByTimeAndThreshold<PairedOutput<Instant, Duration>> mapped = metIn.ofMetricOutputMapByTimeAndThreshold( inMap );
+        MetricOutputMultiMapByTimeAndThresholdBuilder<PairedOutput<Instant, Duration>> builder = metIn.ofMetricOutputMultiMapByTimeAndThresholdBuilder();
         builder.put( metIn.getMapKey( MetricConstants.TIME_TO_PEAK_ERROR ), mapped );
         MetricOutputMultiMapByTimeAndThreshold<PairedOutput<Instant, Duration>> expected =
                 (MetricOutputMultiMapByTimeAndThreshold<PairedOutput<Instant, Duration>>) builder.build();
@@ -482,8 +482,8 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                            Operator.GREATER,
                                                                            ThresholdDataType.LEFT_AND_RIGHT ) ) ),
                         expectedScoresSource );
-        MetricOutputMapByTimeAndThreshold<DurationScoreOutput> mappedScores = metIn.ofMap( scoreInMap );
-        MetricOutputMultiMapByTimeAndThresholdBuilder<DurationScoreOutput> scoreBuilder = metIn.ofMultiMap();
+        MetricOutputMapByTimeAndThreshold<DurationScoreOutput> mappedScores = metIn.ofMetricOutputMapByTimeAndThreshold( scoreInMap );
+        MetricOutputMultiMapByTimeAndThresholdBuilder<DurationScoreOutput> scoreBuilder = metIn.ofMetricOutputMultiMapByTimeAndThresholdBuilder();
         scoreBuilder.put( metIn.getMapKey( MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC ), mappedScores );
         MetricOutputMultiMapByTimeAndThreshold<DurationScoreOutput> expectedScores =
                 (MetricOutputMultiMapByTimeAndThreshold<DurationScoreOutput>) scoreBuilder.build();

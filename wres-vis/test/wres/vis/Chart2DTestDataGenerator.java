@@ -168,7 +168,7 @@ public abstract class Chart2DTestDataGenerator
             }
         }
 
-        return FACTORY.ofMap( rawData );
+        return FACTORY.ofMetricOutputMapByTimeAndThreshold( rawData );
     }
 
     /**
@@ -235,7 +235,7 @@ public abstract class Chart2DTestDataGenerator
             }
         }
 
-        return FACTORY.ofMap( rawData );
+        return FACTORY.ofMetricOutputMapByTimeAndThreshold( rawData );
     }
 
     /**
@@ -352,7 +352,7 @@ public abstract class Chart2DTestDataGenerator
         }
 
         //Return the results
-        return FACTORY.ofMap( rawData );
+        return FACTORY.ofMetricOutputMapByTimeAndThreshold( rawData );
     }
 
     /**
@@ -452,7 +452,7 @@ public abstract class Chart2DTestDataGenerator
         }
 
         //Return the results
-        return FACTORY.ofMap( rawData );
+        return FACTORY.ofMetricOutputMapByTimeAndThreshold( rawData );
     }
 
     /**
@@ -545,7 +545,7 @@ public abstract class Chart2DTestDataGenerator
         }
 
         //Return the results
-        return FACTORY.ofMap( rawData );
+        return FACTORY.ofMetricOutputMapByTimeAndThreshold( rawData );
     }
 
     /**
@@ -615,7 +615,7 @@ public abstract class Chart2DTestDataGenerator
         }
 
         //Return the results
-        return FACTORY.ofMap( rawData );
+        return FACTORY.ofMetricOutputMapByTimeAndThreshold( rawData );
     }
 
     /**
@@ -687,7 +687,7 @@ public abstract class Chart2DTestDataGenerator
         }
 
         //Return the results
-        return FACTORY.ofMap( rawData );
+        return FACTORY.ofMetricOutputMapByTimeAndThreshold( rawData );
     }
 
     /**
@@ -760,7 +760,7 @@ public abstract class Chart2DTestDataGenerator
         }
 
         //Return the results
-        return FACTORY.ofMap( rawData );
+        return FACTORY.ofMetricOutputMapByTimeAndThreshold( rawData );
     }
 
     /**
@@ -845,7 +845,7 @@ public abstract class Chart2DTestDataGenerator
             rawData.put( Pair.of( twentyFourHourWindow, OneOrTwoThresholds.of( threshold ) ), twentyFourHourOutput );
         }
 
-        return FACTORY.ofMap( rawData );
+        return FACTORY.ofMetricOutputMapByTimeAndThreshold( rawData );
     }
 
     /**
@@ -909,7 +909,7 @@ public abstract class Chart2DTestDataGenerator
                                   OneOrTwoThresholds.of( threshold ) ),
                          FACTORY.ofDoubleScoreOutput( scores[i], meta ) );
         }
-        return FACTORY.ofMap( rawData );
+        return FACTORY.ofMetricOutputMapByTimeAndThreshold( rawData );
     }
 
     /**
@@ -959,7 +959,7 @@ public abstract class Chart2DTestDataGenerator
                               OneOrTwoThresholds.of( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
                                                                   Operator.GREATER, ThresholdDataType.LEFT ) ) ),
                      FACTORY.ofPairedOutput( input, meta ) );
-        return FACTORY.ofMap( rawData );
+        return FACTORY.ofMetricOutputMapByTimeAndThreshold( rawData );
     }
 
     /**
@@ -1010,7 +1010,7 @@ public abstract class Chart2DTestDataGenerator
                               OneOrTwoThresholds.of( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
                                                                   Operator.GREATER, ThresholdDataType.LEFT ) ) ),
                      FACTORY.ofDurationScoreOutput( returnMe, meta ) );
-        return FACTORY.ofMap( rawData );
+        return FACTORY.ofMetricOutputMapByTimeAndThreshold( rawData );
     }
 
 }

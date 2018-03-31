@@ -9,7 +9,7 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -107,11 +107,12 @@ public class CommaSeparatedBoxPlotWriterTest extends CommaSeparatedWriterTest
 
         // Fake output wrapper.
         MetricOutputMapByMetric<BoxPlotOutput> fakeOutputData =
-                outputFactory.ofMap( Arrays.asList( outputFactory.ofBoxPlotOutput( fakeOutputs,
-                                                                                   probs,
-                                                                                   fakeMetadata,
-                                                                                   MetricDimension.OBSERVED_VALUE,
-                                                                                   MetricDimension.FORECAST_ERROR ) ) );
+                outputFactory.ofMetricOutputMapByMetric( Collections.singletonMap( MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
+                                                                                   outputFactory.ofBoxPlotOutput( fakeOutputs,
+                                                                                                                  probs,
+                                                                                                                  fakeMetadata,
+                                                                                                                  MetricDimension.OBSERVED_VALUE,
+                                                                                                                  MetricDimension.FORECAST_ERROR ) ) );
         // wrap outputs in future
         Future<MetricOutputMapByMetric<BoxPlotOutput>> outputMapByMetricFuture =
                 CompletableFuture.completedFuture( fakeOutputData );

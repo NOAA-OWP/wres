@@ -177,7 +177,7 @@ public final class SafeMetricOutputMapByTimeAndThresholdTest
                                              Duration.ofHours( 2 ) ),
                               threshold ),
                      outputFactory.ofDoubleScoreOutput( 4.0, meta ) );
-        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> test = outputFactory.ofMap( testMap );
+        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> test = outputFactory.ofMetricOutputMapByTimeAndThreshold( testMap );
         Set<TimeWindow> benchmarkTimes = new TreeSet<>();
         benchmarkTimes.add( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                            Instant.parse( "1985-01-02T00:00:00Z" ),

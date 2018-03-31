@@ -104,7 +104,7 @@ public interface Threshold extends Comparable<Threshold>, Predicate<Double>
         }
         return ThresholdType.VALUE_ONLY;
     }
-    
+
     /**
      * Returns the {@link ThresholdDataType} to which the threshold applies.
      * 
@@ -112,7 +112,7 @@ public interface Threshold extends Comparable<Threshold>, Predicate<Double>
      */
 
     ThresholdDataType getDataType();
-    
+
     /**
      * Returns the threshold values or null if no threshold values are defined. If no threshold values are defined,
      * {@link #getProbabilities()} always returns non-null.
