@@ -8,8 +8,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -122,14 +121,14 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTest
                                            MetricConstants.MAIN,
                                            datasetIdentifier );
 
-        List<DoubleScoreOutput> fakeOutputs = new ArrayList<>();
-        fakeOutputs.add( outputFactory.ofDoubleScoreOutput( 1.0, fakeMetadataA ) );
-        fakeOutputs.add( outputFactory.ofDoubleScoreOutput( 2.0, fakeMetadataB ) );
-        fakeOutputs.add( outputFactory.ofDoubleScoreOutput( 3.0, fakeMetadataC ) );
+        Map<MetricConstants, DoubleScoreOutput> fakeOutputs = new HashMap<>();
+        fakeOutputs.put( MetricConstants.MEAN_SQUARE_ERROR, outputFactory.ofDoubleScoreOutput( 1.0, fakeMetadataA ) );
+        fakeOutputs.put( MetricConstants.MEAN_ERROR, outputFactory.ofDoubleScoreOutput( 2.0, fakeMetadataB ) );
+        fakeOutputs.put( MetricConstants.MEAN_ABSOLUTE_ERROR, outputFactory.ofDoubleScoreOutput( 3.0, fakeMetadataC ) );
 
         // Fake output wrapper.
         MetricOutputMapByMetric<DoubleScoreOutput> fakeOutputData =
-                outputFactory.ofMap( fakeOutputs );
+                outputFactory.ofMetricOutputMapByMetric( fakeOutputs );
 
         // wrap outputs in future
         Future<MetricOutputMapByMetric<DoubleScoreOutput>> outputMapByMetricFuture =
@@ -248,8 +247,9 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTest
 
         // Fake output wrapper.
         MetricOutputMapByMetric<DurationScoreOutput> fakeOutputData =
-                outputFactory.ofMap( Arrays.asList( outputFactory.ofDurationScoreOutput( fakeOutputs,
-                                                                                         fakeMetadata ) ) );
+                outputFactory.ofMetricOutputMapByMetric( Collections.singletonMap( MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
+                                                                                   outputFactory.ofDurationScoreOutput( fakeOutputs,
+                                                                                                                        fakeMetadata ) ) );
 
         // wrap outputs in future
         Future<MetricOutputMapByMetric<DurationScoreOutput>> outputMapByMetricFuture =
@@ -336,12 +336,13 @@ public class CommaSeparatedScoreWriterTest extends CommaSeparatedWriterTest
                                            MetricConstants.MAIN,
                                            datasetIdentifier );
 
-        List<DoubleScoreOutput> fakeOutputs = new ArrayList<>();
-        fakeOutputs.add( outputFactory.ofDoubleScoreOutput( 1.0, fakeMetadataA ) );
+        Map<MetricConstants, DoubleScoreOutput> fakeOutputs =
+                Collections.singletonMap( MetricConstants.MEAN_SQUARE_ERROR,
+                                          outputFactory.ofDoubleScoreOutput( 1.0, fakeMetadataA ) );
 
         // Fake output wrapper.
         MetricOutputMapByMetric<DoubleScoreOutput> fakeOutputData =
-                outputFactory.ofMap( fakeOutputs );
+                outputFactory.ofMetricOutputMapByMetric( fakeOutputs );
 
         // wrap outputs in future
         Future<MetricOutputMapByMetric<DoubleScoreOutput>> outputMapByMetricFuture =

@@ -1085,7 +1085,7 @@ public interface DataFactory
      */
 
     <T extends MetricOutput<?>> MetricOutputMapByTimeAndThreshold<T>
-            ofMap( Map<Pair<TimeWindow, OneOrTwoThresholds>, T> input );
+            ofMetricOutputMapByTimeAndThreshold( Map<Pair<TimeWindow, OneOrTwoThresholds>, T> input );
 
     /**
      * Returns a {@link MetricOutputMultiMapByTimeAndThreshold} from a map of inputs by {@link TimeWindow} and 
@@ -1098,7 +1098,7 @@ public interface DataFactory
      */
 
     <T extends MetricOutput<?>> MetricOutputMultiMapByTimeAndThreshold<T>
-            ofMultiMap( Map<Pair<TimeWindow, OneOrTwoThresholds>, List<MetricOutputMapByMetric<T>>> input );
+            ofMetricOutputMultiMapByTimeAndThreshold( Map<Pair<TimeWindow, OneOrTwoThresholds>, List<MetricOutputMapByMetric<T>>> input );
 
     /**
      * Returns a builder for a {@link MetricOutputMultiMapByTimeAndThreshold} that allows for the incremental addition of
@@ -1109,7 +1109,8 @@ public interface DataFactory
      *         threshold
      */
 
-    <T extends MetricOutput<?>> MetricOutputMultiMapByTimeAndThresholdBuilder<T> ofMultiMap();
+    <T extends MetricOutput<?>> MetricOutputMultiMapByTimeAndThresholdBuilder<T>
+            ofMetricOutputMultiMapByTimeAndThresholdBuilder();
 
     /**
      * Returns a builder for a {@link MetricOutputForProjectByTimeAndThreshold}.
@@ -1172,14 +1173,14 @@ public interface DataFactory
     TimeSeriesOfEnsemblePairsBuilder ofTimeSeriesOfEnsemblePairsBuilder();
 
     /**
-     * Returns a {@link MetricOutputMapByMetric} from the raw list of inputs.
+     * Returns a {@link MetricOutputMapByMetric} from the raw map of inputs.
      * 
      * @param <T> the type of output
-     * @param input the list of metric outputs
+     * @param input the map of metric outputs
      * @return a {@link MetricOutputMapByMetric} of metric outputs
      */
 
-    <T extends MetricOutput<?>> MetricOutputMapByMetric<T> ofMap( List<T> input );
+    <T extends MetricOutput<?>> MetricOutputMapByMetric<T> ofMetricOutputMapByMetric( Map<MetricConstants, T> input );
 
     /**
      * Combines a list of {@link MetricOutputMapByTimeAndThreshold} into a single map.
