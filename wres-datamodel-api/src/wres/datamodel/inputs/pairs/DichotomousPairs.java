@@ -7,8 +7,6 @@ import wres.datamodel.inputs.MetricInput;
  * recorded as occurring (true) or not occurring (false). 
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 
 public interface DichotomousPairs extends MulticategoryPairs

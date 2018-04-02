@@ -100,6 +100,10 @@ class SafeMulticategoryPairs implements MulticategoryPairs
     @Override
     public int getCategoryCount()
     {
+        if( mainInput.isEmpty() )
+        {
+            return 0;
+        }
         final int elements = mainInput.get(0).getBooleans().length;
         return elements == 2 ? 2 : elements / 2;
     }
@@ -183,21 +187,10 @@ class SafeMulticategoryPairs implements MulticategoryPairs
         {
             throw new MetricInputException( "One or more of the pairs is null." );
         }
-        if ( mainInput.isEmpty() )
+
+        if ( Objects.nonNull( baselineInput ) &&  baselineInput.contains( null ) )
         {
-            throw new MetricInputException( "Cannot build the paired data with an empty input: add one or more pairs." );
-        }
-        if ( Objects.nonNull( baselineInput ) )
-        {
-            if ( baselineInput.contains( null ) )
-            {
-                throw new MetricInputException( "One or more of the baseline pairs is null." );
-            }
-            if ( baselineInput.isEmpty() )
-            {
-                throw new MetricInputException( "Cannot build the paired data with an empty baseline: add one or more "
-                                                + "pairs." );
-            }
+            throw new MetricInputException( "One or more of the baseline pairs is null." );
         }
         if ( Objects.nonNull( climatology ) && climatology.size() == 0 )
         {            

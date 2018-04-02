@@ -1,6 +1,7 @@
 package wres.engine.statistics.metric.discreteprobability;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -11,6 +12,7 @@ import org.apache.commons.math3.util.Precision;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
+import wres.datamodel.MetricConstants.MissingValues;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
@@ -49,56 +51,44 @@ public class ReliabilityDiagram extends Diagram<DiscreteProbabilityPairs, MultiV
     @Override
     public MultiVectorOutput apply( final DiscreteProbabilityPairs s )
     {
-        if(Objects.isNull(s))
+        if ( Objects.isNull( s ) )
         {
-            throw new MetricInputException("Specify non-null input to the '"+this+"'.");
+            throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
         }
-        //Determine the probabilities and sample sizes 
+        // Determine the probabilities and sample sizes 
         double constant = 1.0 / bins;
         double[] fProb = new double[bins];
         double[] oProb = new double[bins];
         double[] samples = new double[bins];
-        //Consumer that increments the probabilities and sample size
-        Consumer<PairOfDoubles> mapper = pair -> {
-            //Determine forecast bin
+
+        // Some data available
+        if ( !s.getData().isEmpty() )
+        {
+            //Compute the average probabilities for samples > 0
+            s.getData().forEach( this.getIncrementor( fProb, oProb, samples, constant ) );
+            List<Double> fProbFinal = new ArrayList<>(); //Forecast probs for samples > 0
+            List<Double> oProbFinal = new ArrayList<>(); //Observed probs for samples > 0
             for ( int i = 0; i < bins; i++ )
             {
-                //Define the bin
-                double lower = Precision.round( i * constant, 5 );
-                double upper = Precision.round( lower + constant, 5 );
-                if ( i == 0 )
+                if ( samples[i] > 0 )
                 {
-                    lower = -1.0; //Catch forecast probabilities of zero in the first bin
-                }
-                //Establish whether the forecast probability falls inside it
-                if ( pair.getItemTwo() > lower && pair.getItemTwo() <= upper )
-                {
-                    fProb[i] += pair.getItemTwo();
-                    oProb[i] += pair.getItemOne();
-                    samples[i] += 1;
-                    break;
+                    fProbFinal.add( fProb[i] / samples[i] );
+                    oProbFinal.add( oProb[i] / samples[i] );
                 }
             }
-        };
-        //Compute the average probabilities for samples > 0
-        s.getData().forEach( mapper );
-        List<Double> fProbFinal = new ArrayList<>(); //Forecast probs for samples > 0
-        List<Double> oProbFinal = new ArrayList<>(); //Observed probs for samples > 0
-        for ( int i = 0; i < bins; i++ )
+            fProb = fProbFinal.stream().mapToDouble( Double::doubleValue ).toArray();
+            oProb = oProbFinal.stream().mapToDouble( Double::doubleValue ).toArray();
+        }
+        else
         {
-            if ( samples[i] > 0 )
-            {
-                fProbFinal.add( fProb[i] / samples[i] );
-                oProbFinal.add( oProb[i] / samples[i] );
-            }
+            Arrays.fill( fProb, MissingValues.MISSING_DOUBLE );
+            Arrays.fill( oProb, MissingValues.MISSING_DOUBLE );            
         }
 
-        //Set the results
+        // Set the results
         Map<MetricDimension, double[]> output = new EnumMap<>( MetricDimension.class );
-        output.put( MetricDimension.FORECAST_PROBABILITY,
-                    fProbFinal.stream().mapToDouble( Double::doubleValue ).toArray() );
-        output.put( MetricDimension.OBSERVED_RELATIVE_FREQUENCY,
-                    oProbFinal.stream().mapToDouble( Double::doubleValue ).toArray() );
+        output.put( MetricDimension.FORECAST_PROBABILITY, fProb );
+        output.put( MetricDimension.OBSERVED_RELATIVE_FREQUENCY, oProb );
         output.put( MetricDimension.SAMPLE_SIZE, samples );
         final MetricOutputMetadata metOut = getMetadata( s, s.getData().size(), MetricConstants.MAIN, null );
         return getDataFactory().ofMultiVectorOutput( output, metOut );
@@ -144,4 +134,42 @@ public class ReliabilityDiagram extends Diagram<DiscreteProbabilityPairs, MultiV
         //Set the default bins
         bins = 10;
     }
+
+    /**
+     * Consumer that increments the input probabilities and sample sizes.
+     * 
+     * @param fProb the forecast probabilities to increment
+     * @param oProb the observed relative frequencies to increment
+     * @param constant the fraction occupied by each bin
+     */
+
+    private Consumer<PairOfDoubles>
+            getIncrementor( final double[] fProb, final double[] oProb, final double[] samples, final double constant )
+    {
+        //Consumer that increments the probabilities and sample size
+        return pair -> {
+            
+            //Determine forecast bin
+            for ( int i = 0; i < bins; i++ )
+            {
+                //Define the bin
+                double lower = Precision.round( i * constant, 5 );
+                double upper = Precision.round( lower + constant, 5 );
+                if ( i == 0 )
+                {
+                    lower = -1.0; //Catch forecast probabilities of zero in the first bin
+                }
+                //Establish whether the forecast probability falls inside it
+                if ( pair.getItemTwo() > lower && pair.getItemTwo() <= upper )
+                {
+                    fProb[i] += pair.getItemTwo();
+                    oProb[i] += pair.getItemOne();
+                    samples[i] += 1;
+                    break;
+                }
+            }
+        };
+    }
+
+
 }

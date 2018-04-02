@@ -232,10 +232,21 @@ class SafeTimeSeriesOfPairs<T>
 
         // Set then validate
         this.data = TimeSeriesHelper.getImmutableTimeSeries( data );
-        this.baselineData = TimeSeriesHelper.getImmutableTimeSeries( baselineData );
+        
+        // Baseline data?
+        if( Objects.nonNull( baselineData ) )
+        {
+            this.baselineData = TimeSeriesHelper.getImmutableTimeSeries( baselineData );
+        }
+        else 
+        {
+            this.baselineData = null;
+        }
+        
         // Set the iterators
         this.basisTimeIterator = basisTimeIterator;
         this.durationIterator = durationIterator;
+        
         // Set the durations
         this.durations = new TreeSet<>();
         int eventCount = 0;
@@ -250,7 +261,7 @@ class SafeTimeSeriesOfPairs<T>
         }
         // Set the basis times
         this.basisTimes = this.data.stream().map( Event::getTime ).collect( Collectors.toList() );
-        if (! this.baselineData.isEmpty() )
+        if ( Objects.nonNull( baselineData ) )
         {
             this.durationsBaseline = new TreeSet<>();
             for ( Event<List<Event<T>>> nextSeries : this.baselineData )

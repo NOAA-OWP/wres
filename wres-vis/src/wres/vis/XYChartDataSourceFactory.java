@@ -7,6 +7,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
@@ -466,10 +467,14 @@ public abstract class XYChartDataSourceFactory
                 Duration durationStat = output.getComponent( metric ).getData();
 
                 // Find the decimal hours
-                BigDecimal result = BigDecimal.valueOf( durationStat.toMillis() )
-                                              .divide( MILLIS_PER_HOUR, 2, RoundingMode.HALF_DOWN );
-
-                yValues[index] = result.doubleValue();
+                double doubleResult = Double.NaN;
+                if ( Objects.nonNull( durationStat ) )
+                {
+                    BigDecimal result = BigDecimal.valueOf( durationStat.toMillis() )
+                                                  .divide( MILLIS_PER_HOUR, 2, RoundingMode.HALF_DOWN );
+                    doubleResult = result.doubleValue();
+                }
+                yValues[index] = doubleResult;
                 index++;
             }
             yAxisValuesBySeries.add( yValues );

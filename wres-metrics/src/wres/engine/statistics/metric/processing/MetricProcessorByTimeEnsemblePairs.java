@@ -1,8 +1,6 @@
 package wres.engine.statistics.metric.processing;
 
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
@@ -16,7 +14,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.apache.commons.lang3.tuple.Pair;
-import org.slf4j.event.Level;
 
 import wres.config.MetricConfigException;
 import wres.config.generated.ProjectConfig;
@@ -29,8 +26,6 @@ import wres.datamodel.Slicer;
 import wres.datamodel.Threshold;
 import wres.datamodel.ThresholdConstants.ThresholdGroup;
 import wres.datamodel.ThresholdsByMetric;
-import wres.datamodel.inputs.InsufficientDataException;
-import wres.datamodel.inputs.MetricInputSliceException;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
@@ -129,15 +124,8 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
 
         //Remove missing values. 
         //TODO: when time-series metrics are supported, leave missings in place for time-series
-        EnsemblePairs inputNoMissing = input;
-        try
-        {
-            inputNoMissing = slicer.filter( input, slicer.leftAndEachOfRight( ADMISSABLE_DATA ), ADMISSABLE_DATA );
-        }
-        catch ( MetricInputSliceException e )
-        {
-            throw new MetricCalculationException( "While attempting to remove missing values: ", e );
-        }
+        EnsemblePairs inputNoMissing =
+                slicer.filter( input, slicer.leftAndEachOfRight( ADMISSABLE_DATA ), ADMISSABLE_DATA );
 
         //Process the metrics that consume ensemble pairs
         if ( hasMetrics( MetricInputGroup.ENSEMBLE ) )
@@ -215,7 +203,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
             discreteProbabilityScore =
                     metricFactory.ofDiscreteProbabilityScoreCollection( metricExecutor,
                                                                         this.getMetrics( MetricInputGroup.DISCRETE_PROBABILITY,
-                                                                                    MetricOutputGroup.DOUBLE_SCORE ) );
+                                                                                         MetricOutputGroup.DOUBLE_SCORE ) );
         }
         else
         {
@@ -227,7 +215,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
             discreteProbabilityMultiVector =
                     metricFactory.ofDiscreteProbabilityMultiVectorCollection( metricExecutor,
                                                                               this.getMetrics( MetricInputGroup.DISCRETE_PROBABILITY,
-                                                                                          MetricOutputGroup.MULTIVECTOR ) );
+                                                                                               MetricOutputGroup.MULTIVECTOR ) );
         }
         else
         {
@@ -238,7 +226,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         {
             ensembleScore = metricFactory.ofEnsembleScoreCollection( metricExecutor,
                                                                      this.getMetrics( MetricInputGroup.ENSEMBLE,
-                                                                                 MetricOutputGroup.DOUBLE_SCORE ) );
+                                                                                      MetricOutputGroup.DOUBLE_SCORE ) );
         }
         else
         {
@@ -250,7 +238,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         {
             ensembleMultiVector = metricFactory.ofEnsembleMultiVectorCollection( metricExecutor,
                                                                                  this.getMetrics( MetricInputGroup.ENSEMBLE,
-                                                                                             MetricOutputGroup.MULTIVECTOR ) );
+                                                                                                  MetricOutputGroup.MULTIVECTOR ) );
         }
         else
         {
@@ -261,7 +249,7 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         {
             ensembleBoxPlot = metricFactory.ofEnsembleBoxPlotCollection( metricExecutor,
                                                                          this.getMetrics( MetricInputGroup.ENSEMBLE,
-                                                                                     MetricOutputGroup.BOXPLOT ) );
+                                                                                          MetricOutputGroup.BOXPLOT ) );
         }
         else
         {
@@ -413,7 +401,6 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
         Set<Threshold> union = filtered.union();
 
         double[] sorted = getSortedClimatology( input, union );
-        Map<OneOrTwoThresholds, MetricCalculationException> failures = new HashMap<>();
 
         // Iterate the thresholds
         for ( Threshold threshold : union )
@@ -423,42 +410,24 @@ public class MetricProcessorByTimeEnsemblePairs extends MetricProcessorByTime<En
             // Add quantiles to threshold
             Threshold useMe = addQuantilesToThreshold( threshold, sorted );
 
-            try
+            EnsemblePairs pairs = input;
+
+            //Filter the pairs if required
+            if ( threshold.isFinite() )
             {
-                EnsemblePairs pairs = input;
+                Predicate<PairOfDoubleAndVectorOfDoubles> filter =
+                        MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( useMe );
 
-                //Filter the pairs if required
-                if ( threshold.isFinite() )
-                {
-                    Predicate<PairOfDoubleAndVectorOfDoubles> filter =
-                            MetricProcessorByTimeEnsemblePairs.getFilterForEnsemblePairs( useMe );
-
-                    pairs = dataFactory.getSlicer().filter( input, filter, null );
-                }
-
-                processEnsemblePairs( Pair.of( timeWindow, OneOrTwoThresholds.of( useMe ) ),
-                                      pairs,
-                                      futures,
-                                      outGroup,
-                                      ignoreTheseMetrics );
-
+                pairs = dataFactory.getSlicer().filter( input, filter, null );
             }
-            // Insufficient data for one threshold: log failures collectively and proceed
-            // Such failures are routine and should not be propagated
-            catch ( MetricInputSliceException | InsufficientDataException e )
-            {
-                // Decorate failure
-                failures.put( OneOrTwoThresholds.of( useMe ),
-                              new MetricCalculationException( "While computing threshold " + threshold + ":", e ) );
-            }
+
+            processEnsemblePairs( Pair.of( timeWindow, OneOrTwoThresholds.of( useMe ) ),
+                                  pairs,
+                                  futures,
+                                  outGroup,
+                                  ignoreTheseMetrics );
+
         }
-
-        // Log failures collectively
-        logThresholdFailures( Collections.unmodifiableMap( failures ),
-                              union.size(),
-                              input.getMetadata(),
-                              MetricInputGroup.ENSEMBLE,
-                              Level.WARN );
     }
 
     /**

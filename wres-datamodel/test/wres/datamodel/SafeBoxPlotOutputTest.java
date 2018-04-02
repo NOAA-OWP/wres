@@ -317,19 +317,6 @@ public final class SafeBoxPlotOutputTest
         }
         try
         {
-            List<PairOfDoubleAndVectorOfDoubles> emptyList = new ArrayList<>();
-            new SafeBoxPlotOutput( emptyList,
-                                   d.vectorOf( new double[] { 0.1, 0.5, 1.0 } ),
-                                   m1,
-                                   MetricDimension.OBSERVED_VALUE,
-                                   MetricDimension.FORECAST_ERROR );
-            fail( "Expected an exception on an empty list of input data." );
-        }
-        catch ( MetricOutputException e )
-        {
-        }
-        try
-        {
             new SafeBoxPlotOutput( values,
                                    d.vectorOf( new double[] { 0.1, 0.5, 1.0 } ),
                                    null,

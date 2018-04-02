@@ -7,7 +7,6 @@ package wres.datamodel.inputs.pairs;
  * any/all time information, and containing only the values, i.e. {obs, fcst}.</p>
  *
  * @author jesse
- *
  */
 public interface PairOfDoubles
 extends Comparable<PairOfDoubles>

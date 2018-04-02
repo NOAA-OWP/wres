@@ -404,8 +404,7 @@ public class DefaultDataFactory implements DataFactory
     }
 
     @Override
-    public TimeSeriesOfSingleValuedPairs ofTimeSeriesOfSingleValuedPairs(
-                                                                          List<Event<List<Event<PairOfDoubles>>>> timeSeries,
+    public TimeSeriesOfSingleValuedPairs ofTimeSeriesOfSingleValuedPairs( List<Event<List<Event<PairOfDoubles>>>> timeSeries,
                                                                           Metadata mainMeta,
                                                                           List<Event<List<Event<PairOfDoubles>>>> timeSeriesBaseline,
                                                                           Metadata baselineMeta )
@@ -421,8 +420,7 @@ public class DefaultDataFactory implements DataFactory
     }
 
     @Override
-    public TimeSeriesOfEnsemblePairs ofTimeSeriesOfEnsemblePairs(
-                                                                  List<Event<List<Event<PairOfDoubleAndVectorOfDoubles>>>> timeSeries,
+    public TimeSeriesOfEnsemblePairs ofTimeSeriesOfEnsemblePairs( List<Event<List<Event<PairOfDoubleAndVectorOfDoubles>>>> timeSeries,
                                                                   Metadata mainMeta,
                                                                   List<Event<List<Event<PairOfDoubleAndVectorOfDoubles>>>> timeSeriesBaseline,
                                                                   Metadata baselineMeta )
