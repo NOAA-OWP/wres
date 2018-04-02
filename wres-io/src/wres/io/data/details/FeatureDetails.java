@@ -1072,12 +1072,12 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
             {
                 if (Strings.hasValue( this.lid ) && Strings.hasValue( featureKey.lid ))
                 {
-                    comparison = this.lid.compareTo( featureKey.lid );
+                    comparison = this.lid.compareToIgnoreCase( featureKey.lid );
                 }
 
                 if (comparison == 0 && Strings.hasValue( this.gageID ) && Strings.hasValue( featureKey.gageID ))
                 {
-                    comparison = this.gageID.compareTo( featureKey.gageID );
+                    comparison = this.gageID.compareToIgnoreCase( featureKey.gageID );
                 }
 
                 if (comparison == 0 && this.comid != null && featureKey.comid != null)

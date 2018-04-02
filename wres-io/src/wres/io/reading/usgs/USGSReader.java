@@ -18,6 +18,8 @@ import java.util.function.Consumer;
 
 import org.apache.commons.math3.util.Precision;
 import org.slf4j.Logger;
+
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Invocation;
@@ -248,11 +250,17 @@ public class USGSReader extends BasicSource
     }
 
     private List<Collection<FeatureDetails>> getFeatureRequestBlocks()
-            throws SQLException
+            throws SQLException, IngestException
     {
         List<Collection<FeatureDetails>> requestBlocks = new ArrayList<>();
 
         Collection<FeatureDetails> details = Features.getAllDetails( this.getProjectConfig() );
+
+        if (details.isEmpty())
+        {
+            throw new IngestException( "There are no USGS gages available to "
+                                       + "ingest with the given configuration." );
+        }
 
         this.totalLocationCount = details.size();
 
@@ -262,6 +270,11 @@ public class USGSReader extends BasicSource
 
             for (FeatureDetails featureDetails : details)
             {
+                if (!Strings.isNumeric( featureDetails.getGageID() ))
+                {
+                    LOGGER.warn( "{} has an invalid gage id", featureDetails );
+                }
+
                 block.add(featureDetails);
 
                 if (block.size() > USGSReader.FEATURE_REQUEST_LIMIT)
@@ -309,13 +322,14 @@ public class USGSReader extends BasicSource
     {
         String requestURL = USGS_URL;
         Client client = null;
+        WebTarget webTarget = null;
 
         Response usgsResponse;
         try
         {
 
             client = ClientBuilder.newClient();
-            WebTarget webTarget = client.target( USGS_URL );
+            webTarget = client.target( USGS_URL );
 
             if (this.dataSourceConfig.getExistingTimeScale() == null)
             {
@@ -356,7 +370,7 @@ public class USGSReader extends BasicSource
 
             LOGGER.debug( "It took {} to load the USGS data.", stopwatch.getFormattedDuration() );
         }
-        catch (IOException e)
+        catch ( WebApplicationException | IOException e)
         {
             String message = "Data from the location '" +
                              String.valueOf(requestURL) +
