@@ -132,7 +132,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         return Features.getCache().get( id );
     }
 
-    public static Set<FeatureDetails> getUnspecifiedDetails( ProjectConfig projectConfig )
+    private static Set<FeatureDetails> getUnspecifiedDetails( ProjectConfig projectConfig )
             throws SQLException
     {
         Set<FeatureDetails> features = new HashSet<>(  );
@@ -147,6 +147,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
 
         if (hasNetCDF)
         {
+            script.addTab().addLine("AND comid != -999");
             script.addTab().addLine("AND nwm_index IS NOT NULL");
         }
 
@@ -247,7 +248,8 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
                                   "information available to link it to a NetCDF " +
                                   "source file.";
                     }
-                    else if (hasUSGS && !Strings.hasValue( details.getGageID() ))
+                    else if (hasUSGS &&
+                             !(Strings.hasValue( details.getGageID() ) || details.getGageID().length() < 8))
                     {
                         message = "Since this project uses USGS data, the " +
                                   "location {} cannot be used for " +
@@ -275,7 +277,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         // If we are using both NetCDF and USGS data, we need both Gage IDs
         // and indexes for NetCDF files to be able to load any sort of
         // data for evaluation
-        else if ((usesNetCDF && feature.getNwmIndex() != null) &&
+        else if ((usesNetCDF && feature.getComid() != -999) &&
                  (usesUSGS && Strings.hasValue( feature.getGageID() )))
         {
             // gage ids must have 8 or more characters
@@ -283,22 +285,22 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         }
         // If we are using NetCDF data, we need indexes to determine what
         // data to retrieve
-        else if (usesNetCDF && feature.getNwmIndex() != null)
+        else if (usesNetCDF && feature.getComid() != -999 && !usesUSGS)
         {
             return true;
         }
         // If we are using USGS data, we need a gageID or we won't be
-        // able to retrieve data
-        else if (usesUSGS && Strings.hasValue( feature.getGageID() ))
+        // able to retrieve data. Gages must have at least 8 digits
+        else if (usesUSGS && Strings.hasValue( feature.getGageID() ) &&
+                 feature.getGageID().length() >= 8 && !usesNetCDF)
         {
-            // gage ids must have 8 or more characters
-            return feature.getGageID().length() >= 8;
+            return true;
         }
 
         return false;
     }
 
-    public static Set<FeatureDetails> getAllDetails(Feature feature)
+    private static Set<FeatureDetails> getAllDetails(Feature feature)
             throws SQLException
     {
         Set<FeatureDetails> details = new HashSet<>(  );
