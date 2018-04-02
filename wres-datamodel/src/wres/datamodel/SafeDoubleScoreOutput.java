@@ -12,8 +12,6 @@ import wres.datamodel.outputs.MetricOutputException;
  * An immutable output that contains <code>double</code> values associated with a score.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.4
  */
 
 class SafeDoubleScoreOutput extends SafeScoreOutput<Double,DoubleScoreOutput> implements DoubleScoreOutput

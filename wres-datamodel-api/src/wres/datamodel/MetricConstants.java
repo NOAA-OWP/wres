@@ -1,5 +1,6 @@
 package wres.datamodel;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -19,8 +20,6 @@ import wres.datamodel.outputs.PairedOutput;
  * {@link MetricInputGroup} and {@link MetricOutputGroup}, respectively.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 
 public enum MetricConstants
@@ -914,4 +913,34 @@ public enum MetricConstants
         }
 
     }
+    
+    /**
+     * Class for representing missing values associated with different data types.
+     */
+    
+    public static class MissingValues
+    {
+        
+        /**
+         * Default output for {@link Duration} when missing.
+         */
+        
+        public static final Duration MISSING_DURATION = null;
+        
+        /**
+         * Default output for {@link Double} when missing.
+         */
+        
+        public static final double MISSING_DOUBLE = Double.NaN;
+        
+        /**
+         * Do not construct.
+         */
+        
+        private MissingValues()
+        {           
+        }
+        
+    }
+    
 }

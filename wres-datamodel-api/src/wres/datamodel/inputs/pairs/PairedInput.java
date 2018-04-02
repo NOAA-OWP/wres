@@ -8,15 +8,13 @@ import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.metadata.Metadata;
 
 /**
- * <p>A list of pairs to be iterated over by a metric. A {@link PairedInput} may contain a baseline dataset to be used in 
- * the same context (e.g. for skill scores). Optionally, a climatological dataset may be associated with the 
+ * <p>A list of pairs to be iterated over by a metric. A {@link PairedInput} may contain a baseline dataset to be used 
+ * in the same context (e.g. for skill scores). Optionally, a climatological dataset may be associated with the 
  * {@link PairedInput}. This may be used to derive quantiles from climatological probabilities, for example.</p>
  * 
  * <p>For convenience, a builder is included.</p>.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 public interface PairedInput<S> extends MetricInput<List<S>>, Iterable<S>
 {

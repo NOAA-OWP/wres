@@ -41,12 +41,7 @@
       <type>value</type>
       <commaSeparatedValues>0,5,10,15,20</commaSeparatedValues>
     </thresholds>
-    <metric label="ME"><name>mean error</name></metric>
-    <metric><name>pearson correlation coefficient</name></metric>
-    <metric><name>mean absolute error</name></metric>
-    <metric><name>bias fraction</name></metric>
-    <metric><name>coefficient of determination</name></metric>
-    <metric><name>root mean square error</name></metric>
+    <metric><name>all valid</name></metric>
   </metrics>
   <outputs>
     <destination type="numeric">/home/jesse/text_output"</destination>

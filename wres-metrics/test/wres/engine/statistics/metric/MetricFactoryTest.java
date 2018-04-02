@@ -3,6 +3,7 @@ package wres.engine.statistics.metric;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Paths;
@@ -15,6 +16,7 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.engine.statistics.metric.processing.MetricProcessor;
+import wres.engine.statistics.metric.processing.MetricProcessorException;
 
 /**
  * Tests the {@link MetricFactory}.
@@ -183,7 +185,7 @@ public final class MetricFactoryTest
         {
         }
     }
-    
+
     /**
      * Tests {@link MetricFactory#ofEnsembleBoxPlot(MetricConstants)}. 
      * @throws MetricParameterException if the metric construction fails 
@@ -201,7 +203,7 @@ public final class MetricFactoryTest
         {
         }
     }
-    
+
 
     /**
      * Tests {@link MetricFactory#ofSingleValuedScoreCollection(MetricConstants...)}. 
@@ -233,7 +235,7 @@ public final class MetricFactoryTest
         metF.ofDichotomousScoreCollection( MetricConstants.THREAT_SCORE );
         metF.ofDichotomousScoreCollection( MetricConstants.FREQUENCY_BIAS );
     }
-    
+
     /**
      * Tests {@link MetricFactory#ofSingleValuedMultiVectorCollection(MetricConstants...)}. 
      * @throws MetricParameterException if the metric construction fails 
@@ -249,9 +251,9 @@ public final class MetricFactoryTest
         }
         catch ( IllegalArgumentException e )
         {
-        }        
-    }    
-    
+        }
+    }
+
     /**
      * Tests {@link MetricFactory#ofDiscreteProbabilityMultiVectorCollection(MetricConstants...)}. 
      * @throws MetricParameterException if the metric collection could not be constructed
@@ -268,9 +270,9 @@ public final class MetricFactoryTest
         }
         catch ( IllegalArgumentException e )
         {
-        }        
-    }    
-    
+        }
+    }
+
     /**
      * Tests {@link MetricFactory#ofDichotomousMatrixCollection(MetricConstants...)}. 
      * @throws MetricParameterException if the metric construction fails 
@@ -279,8 +281,8 @@ public final class MetricFactoryTest
     public void test13OfMulticategoryMatrixCollection() throws MetricParameterException
     {
         metF.ofDichotomousMatrixCollection( MetricConstants.CONTINGENCY_TABLE );
-    }    
-    
+    }
+
     /**
      * Tests {@link MetricFactory#ofEnsembleScoreCollection(MetricConstants...)}. 
      * @throws MetricParameterException if the metric construction fails 
@@ -296,9 +298,9 @@ public final class MetricFactoryTest
         }
         catch ( IllegalArgumentException e )
         {
-        }        
-    }    
-    
+        }
+    }
+
     /**
      * Tests {@link MetricFactory#ofEnsembleScoreCollection(MetricConstants...)}. 
      * @throws MetricParameterException if the metric construction fails 
@@ -315,9 +317,9 @@ public final class MetricFactoryTest
         }
         catch ( IllegalArgumentException e )
         {
-        }        
-    }    
-    
+        }
+    }
+
     /**
      * Tests {@link MetricFactory#ofEnsembleMultiVectorCollection(MetricConstants...)}. 
      * @throws MetricParameterException if the metric construction fails 
@@ -333,8 +335,8 @@ public final class MetricFactoryTest
         }
         catch ( IllegalArgumentException e )
         {
-        }        
-    }  
+        }
+    }
 
     /**
      * Tests {@link MetricFactory#ofEnsembleBoxPlotCollection(MetricConstants...)}. 
@@ -351,8 +353,8 @@ public final class MetricFactoryTest
         }
         catch ( IllegalArgumentException e )
         {
-        }        
-    } 
+        }
+    }
 
     /**
      * Tests for exceptions in {@link MetricFactory}.
@@ -388,36 +390,26 @@ public final class MetricFactoryTest
 
     /**
      * Tests the construction of {@link MetricProcessor}. 
+     * @throws IOException if the input configuration could not be read
+     * @throws MetricProcessorException if the metric processor could not be constructed
      */
 
     @Test
-    public void test19MetricProcessor()
+    public void test19MetricProcessor() throws IOException, MetricProcessorException
     {
         //Single-valued processor
         String configPathSingleValued =
-                "testinput/metricProcessorSingleValuedPairsByTimeTest/test1ApplyNoThresholds.xml";
-        try
-        {
-            ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathSingleValued ) ).getProjectConfig();
-            MetricFactory.getInstance( DefaultDataFactory.getInstance() )
-                         .ofMetricProcessorByTimeSingleValuedPairs( config, null );
-        }
-        catch ( Exception e )
-        {
-            fail( "Unexpected exception on processing project configuration '" + configPathSingleValued + "'." );
-        }
+                "testinput/metricProcessorSingleValuedPairsByTimeTest/test1ApplyWithoutThresholds.xml";
+
+        ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathSingleValued ) ).getProjectConfig();
+        MetricFactory.getInstance( DefaultDataFactory.getInstance() )
+                     .ofMetricProcessorByTimeSingleValuedPairs( config, null );
+
         //Ensemble processor        
-        String configPathEnsemble = "testinput/metricProcessorEnsemblePairsByTimeTest/test1ApplyNoThresholds.xml";
-        try
-        {
-            ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathEnsemble ) ).getProjectConfig();
-            MetricFactory.getInstance( DefaultDataFactory.getInstance() )
-                         .ofMetricProcessorByTimeEnsemblePairs( config, null );
-        }
-        catch ( Exception e )
-        {
-            fail( "Unexpected exception on processing project configuration '" + configPathEnsemble + "'." );
-        }
+        String configPathEnsemble = "testinput/metricProcessorEnsemblePairsByTimeTest/test1ApplyWithoutThresholds.xml";
+        ProjectConfig configTwo = ProjectConfigPlus.from( Paths.get( configPathEnsemble ) ).getProjectConfig();
+        MetricFactory.getInstance( DefaultDataFactory.getInstance() )
+                     .ofMetricProcessorByTimeEnsemblePairs( configTwo, null );
     }
 
 }

@@ -8,8 +8,6 @@ import wres.datamodel.inputs.MetricInput;
  * outcomes may be ordered or unordered.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 public interface MulticategoryPairs extends PairedInput<VectorOfBooleans>
 {

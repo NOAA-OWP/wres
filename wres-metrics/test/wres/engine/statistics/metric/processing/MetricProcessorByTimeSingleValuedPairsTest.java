@@ -81,9 +81,9 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
      */
 
     @Test
-    public void test1ApplyNoThresholds() throws IOException, MetricProcessorException, InterruptedException
+    public void test1ApplyWithoutThresholds() throws IOException, MetricProcessorException, InterruptedException
     {
-        String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/test1ApplyNoThresholds.xml";
+        String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/test1ApplyWithoutThresholds.xml";
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
@@ -142,10 +142,10 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
      */
 
     @Test
-    public void test2ApplyThresholds() throws IOException, MetricProcessorException, InterruptedException
+    public void test2ApplyWithThresholds() throws IOException, MetricProcessorException, InterruptedException
     {
         final DataFactory metIn = DefaultDataFactory.getInstance();
-        String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/test2ApplyThresholds.xml";
+        String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/test2ApplyWithThresholds.xml";
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
@@ -354,7 +354,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         //Break into two time-series to test sequential calls
         TimeSeriesOfSingleValuedPairs first = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsTwo();
         TimeSeriesOfSingleValuedPairs second = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsThree();
-        
+
         //Compute the metrics
         processor.apply( first );
         processor.apply( second );
@@ -388,7 +388,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                              metaFac.getDatasetIdentifier( "A",
                                                                                            "Streamflow" ),
                                                              firstWindow );
-        
+
         PairedOutput<Instant, Duration> expectedErrorsFirst = metIn.ofPairedOutput( expectedFirst, m1 );
         PairedOutput<Instant, Duration> expectedErrorsSecond =
                 metIn.ofPairedOutput( expectedSecond, metaFac.getOutputMetadata( m1, secondWindow ) );
@@ -403,12 +403,14 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                       Operator.GREATER,
                                                                       ThresholdDataType.LEFT_AND_RIGHT ) ) ),
                    expectedErrorsSecond );
-        MetricOutputMapByTimeAndThreshold<PairedOutput<Instant, Duration>> mapped = metIn.ofMetricOutputMapByTimeAndThreshold( inMap );
-        MetricOutputMultiMapByTimeAndThresholdBuilder<PairedOutput<Instant, Duration>> builder = metIn.ofMetricOutputMultiMapByTimeAndThresholdBuilder();
+        MetricOutputMapByTimeAndThreshold<PairedOutput<Instant, Duration>> mapped =
+                metIn.ofMetricOutputMapByTimeAndThreshold( inMap );
+        MetricOutputMultiMapByTimeAndThresholdBuilder<PairedOutput<Instant, Duration>> builder =
+                metIn.ofMetricOutputMultiMapByTimeAndThresholdBuilder();
         builder.put( metIn.getMapKey( MetricConstants.TIME_TO_PEAK_ERROR ), mapped );
         MetricOutputMultiMapByTimeAndThreshold<PairedOutput<Instant, Duration>> expected =
                 (MetricOutputMultiMapByTimeAndThreshold<PairedOutput<Instant, Duration>>) builder.build();
-        
+
         assertTrue( "Actual output differs from expected output for time-series metrics. ", actual.equals( expected ) );
     }
 
@@ -482,8 +484,10 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                                                            Operator.GREATER,
                                                                            ThresholdDataType.LEFT_AND_RIGHT ) ) ),
                         expectedScoresSource );
-        MetricOutputMapByTimeAndThreshold<DurationScoreOutput> mappedScores = metIn.ofMetricOutputMapByTimeAndThreshold( scoreInMap );
-        MetricOutputMultiMapByTimeAndThresholdBuilder<DurationScoreOutput> scoreBuilder = metIn.ofMetricOutputMultiMapByTimeAndThresholdBuilder();
+        MetricOutputMapByTimeAndThreshold<DurationScoreOutput> mappedScores =
+                metIn.ofMetricOutputMapByTimeAndThreshold( scoreInMap );
+        MetricOutputMultiMapByTimeAndThresholdBuilder<DurationScoreOutput> scoreBuilder =
+                metIn.ofMetricOutputMultiMapByTimeAndThresholdBuilder();
         scoreBuilder.put( metIn.getMapKey( MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC ), mappedScores );
         MetricOutputMultiMapByTimeAndThreshold<DurationScoreOutput> expectedScores =
                 (MetricOutputMultiMapByTimeAndThreshold<DurationScoreOutput>) scoreBuilder.build();
@@ -509,7 +513,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
             throws IOException, MetricOutputAccessException, MetricProcessorException, InterruptedException
     {
         final DataFactory metIn = DefaultDataFactory.getInstance();
-        String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/test2ApplyThresholds.xml";
+        String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/test2ApplyWithThresholds.xml";
 
         // Define the external thresholds to use
         Map<MetricConstants, Set<Threshold>> canonical = new HashMap<>();
@@ -529,6 +533,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         canonical.put( MetricConstants.COEFFICIENT_OF_DETERMINATION, thresholds );
         canonical.put( MetricConstants.ROOT_MEAN_SQUARE_ERROR, thresholds );
         canonical.put( MetricConstants.THREAT_SCORE, thresholds );
+        canonical.put( MetricConstants.SAMPLE_SIZE, thresholds );
         canonical.put( MetricConstants.CONTINGENCY_TABLE, thresholds );
         canonical.put( MetricConstants.QUANTILE_QUANTILE_DIAGRAM, thresholds );
 
@@ -592,6 +597,157 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
                                               .get( MetricConstants.CONTINGENCY_TABLE )
                                               .get( key )
                                               .getData() ) );
+    }
+
+    /**
+     * Tests the construction of a {@link MetricProcessorByTimeSingleValuedPairs} and application of
+     * {@link MetricProcessorByTimeSingleValuedPairs#apply(SingleValuedPairs)} to 
+     * configuration obtained from testinput/metricProcessorSingleValuedPairsByTimeTest/test2ApplyNoThresholds.xml and 
+     * pairs obtained from {@link MetricTestDataFactory#getSingleValuedPairsSeven()}. Tests the output for multiple 
+     * calls with separate forecast lead times.
+     * 
+     * @throws IOException if the input data could not be read
+     * @throws InterruptedException if the outputs were interrupted
+     * @throws MetricProcessorException if the metric processor could not be built
+     * @throws MetricOutputException if the results could not be generated 
+     */
+
+    @Test
+    public void test8ApplyWithThresholdsAndNoData() throws IOException, MetricProcessorException, InterruptedException
+    {
+        final DataFactory metIn = DefaultDataFactory.getInstance();
+        String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/test2ApplyWithThresholds.xml";
+
+        ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
+        MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
+                MetricFactory.getInstance( metIn )
+                             .ofMetricProcessorByTimeSingleValuedPairs( config, MetricOutputGroup.set() );
+        SingleValuedPairs pairs = MetricTestDataFactory.getSingleValuedPairsSeven();
+        final MetadataFactory metFac = metIn.getMetadataFactory();
+        // Generate results for 10 nominal lead times
+        for ( int i = 1; i < 11; i++ )
+        {
+            final TimeWindow window = TimeWindow.of( Instant.MIN,
+                                                     Instant.MAX,
+                                                     ReferenceTime.VALID_TIME,
+                                                     Duration.ofHours( i ) );
+            final Metadata meta = metFac.getMetadata( metFac.getDimension( "CMS" ),
+                                                      metFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ),
+                                                      window );
+            processor.apply( metIn.ofSingleValuedPairs( pairs.getData(), meta ) );
+        }
+
+        // Validate a subset of the data            
+        processor.getCachedMetricOutput().getDoubleScoreOutput().forEach( ( key, value ) -> {
+            if ( key.getKey() == MetricConstants.THREAT_SCORE )
+            {
+                assertTrue( "Expected ten results for the " + key.getKey()
+                            + ": "
+                            + value.size(),
+                            value.size() == 10 );
+            }
+            else
+            {
+                assertTrue( "Expected twenty results for the " + key.getKey()
+                            + ": "
+                            + value.size(),
+                            value.size() == 20 );
+            }
+        } );
+
+        // Expected result
+        MatrixOfDoubles expected = metIn.matrixOf( new double[][] { { 0.0, 0.0 }, { 0.0, 0.0 } } );
+        final TimeWindow expectedWindow = TimeWindow.of( Instant.MIN,
+                                                         Instant.MAX,
+                                                         ReferenceTime.VALID_TIME,
+                                                         Duration.ofHours( 1 ) );
+        Pair<TimeWindow, OneOrTwoThresholds> key =
+                Pair.of( expectedWindow,
+                         OneOrTwoThresholds.of( metIn.ofThreshold( metIn.ofOneOrTwoDoubles( 1.0 ),
+                                                                   Operator.GREATER,
+                                                                   ThresholdDataType.LEFT,
+                                                                   metFac.getDimension( "CMS" ) ) ) );
+        assertTrue( "Unexpected results for the contingency table.",
+                    expected.equals( processor.getCachedMetricOutput()
+                                              .getMatrixOutput()
+                                              .get( MetricConstants.CONTINGENCY_TABLE )
+                                              .get( key )
+                                              .getData() ) );
+    }
+
+    /**
+     * Tests the construction of a {@link MetricProcessorByTimeSingleValuedPairs} and application of
+     * {@link MetricProcessorByTimeSingleValuedPairs#apply(SingleValuedPairs)} to 
+     * configuration obtained from 
+     * testinput/metricProcessorSingleValuedPairsByTimeTest/test6ApplyTimeSeriesSummaryStats.xml and pairs obtained 
+     * from {@link MetricTestDataFactory#getTimeSeriesOfSingleValuedPairsFour()}. Tests the summary statistics generated 
+     * at the end of multiple calls with subsets of time-series data.
+     * 
+     * @throws IOException if the input data could not be read
+     * @throws InterruptedException if the outputs were interrupted
+     * @throws MetricProcessorException if the metric processor could not be built
+     * @throws MetricOutputException if the results could not be generated 
+     */
+
+    @Test
+    public void test9ApplyTimeSeriesSummaryStatsWithNoData()
+            throws IOException, MetricProcessorException, InterruptedException
+    {
+        DataFactory metIn = DefaultDataFactory.getInstance();
+        MetadataFactory metaFac = DefaultMetadataFactory.getInstance();
+        String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/test6ApplyTimeSeriesSummaryStats.xml";
+
+        ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
+        MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
+                MetricFactory.getInstance( metIn )
+                             .ofMetricProcessorByTimeSingleValuedPairs( config,
+                                                                        MetricOutputGroup.set() );
+        TimeSeriesOfSingleValuedPairs pairs = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsFour();
+
+        //Compute the metrics
+        processor.apply( pairs );
+
+        //Validate the outputs
+        //Compare the errors against the benchmark
+        MetricOutputMultiMapByTimeAndThreshold<DurationScoreOutput> actualScores =
+                processor.getCachedMetricOutput().getDurationScoreOutput();
+
+        //Build the expected statistics
+        Map<MetricConstants, Duration> expectedSource = new HashMap<>();
+        expectedSource.put( MetricConstants.MEAN, null );
+        expectedSource.put( MetricConstants.MEDIAN, null );
+        expectedSource.put( MetricConstants.MINIMUM, null );
+        expectedSource.put( MetricConstants.MAXIMUM, null );
+        expectedSource.put( MetricConstants.MEAN_ABSOLUTE, null );
+
+        //Metadata
+        TimeWindow combinedWindow = TimeWindow.of( Instant.MIN,
+                                                   Instant.MAX );
+        MetricOutputMetadata scoreMeta = metaFac.getOutputMetadata( 0,
+                                                                    metaFac.getDimension( "DURATION" ),
+                                                                    metaFac.getDimension( "CMS" ),
+                                                                    MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
+                                                                    null,
+                                                                    metaFac.getDatasetIdentifier( "A",
+                                                                                                  "Streamflow" ),
+                                                                    combinedWindow );
+        DurationScoreOutput expectedScoresSource = metIn.ofDurationScoreOutput( expectedSource, scoreMeta );
+        Map<Pair<TimeWindow, OneOrTwoThresholds>, DurationScoreOutput> scoreInMap = new HashMap<>();
+        scoreInMap.put( Pair.of( combinedWindow,
+                                 OneOrTwoThresholds.of( metIn.ofThreshold( metIn.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
+                                                                           Operator.GREATER,
+                                                                           ThresholdDataType.LEFT_AND_RIGHT ) ) ),
+                        expectedScoresSource );
+        MetricOutputMapByTimeAndThreshold<DurationScoreOutput> mappedScores =
+                metIn.ofMetricOutputMapByTimeAndThreshold( scoreInMap );
+        MetricOutputMultiMapByTimeAndThresholdBuilder<DurationScoreOutput> scoreBuilder =
+                metIn.ofMetricOutputMultiMapByTimeAndThresholdBuilder();
+        scoreBuilder.put( metIn.getMapKey( MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC ), mappedScores );
+        MetricOutputMultiMapByTimeAndThreshold<DurationScoreOutput> expectedScores =
+                (MetricOutputMultiMapByTimeAndThreshold<DurationScoreOutput>) scoreBuilder.build();
+
+        assertTrue( "Actual output differs from expected output for time-series metrics. ",
+                    actualScores.equals( expectedScores ) );
     }
 
 

@@ -3,6 +3,7 @@ package wres.engine.statistics.metric.singlevalued;
 import java.util.Objects;
 
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.MissingValues;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
@@ -34,27 +35,34 @@ public class IndexOfAgreement extends DoubleErrorScore<SingleValuedPairs>
     @Override
     public DoubleScoreOutput apply( final SingleValuedPairs s )
     {
-        if(Objects.isNull(s))
+        if ( Objects.isNull( s ) )
         {
-            throw new MetricInputException("Specify non-null input to the '"+this+"'.");
+            throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
         }
-        //Compute the average observation
-        double oBar = s.getData().stream().mapToDouble( PairOfDoubles::getItemOne ).average().getAsDouble();
-        //Compute the score
-        double numerator = 0.0;
-        double denominator = 0.0;
-        for ( PairOfDoubles nextPair : s.getData() )
+
+        double returnMe = MissingValues.MISSING_DOUBLE;
+
+        // Data available
+        if ( !s.getData().isEmpty() )
         {
-            numerator += Math.pow( Math.abs( nextPair.getItemOne() - nextPair.getItemTwo() ), exponent );
-            denominator += ( Math.abs( nextPair.getItemTwo() - oBar )
-                             + Math.pow( Math.abs( nextPair.getItemOne() - oBar ), exponent ) );
+            //Compute the average observation
+            double oBar = s.getData().stream().mapToDouble( PairOfDoubles::getItemOne ).average().getAsDouble();
+            //Compute the score
+            double numerator = 0.0;
+            double denominator = 0.0;
+            for ( PairOfDoubles nextPair : s.getData() )
+            {
+                numerator += Math.pow( Math.abs( nextPair.getItemOne() - nextPair.getItemTwo() ), exponent );
+                denominator += ( Math.abs( nextPair.getItemTwo() - oBar )
+                                 + Math.pow( Math.abs( nextPair.getItemOne() - oBar ), exponent ) );
+            }
+            returnMe = FunctionFactory.skill().applyAsDouble( numerator, denominator );
         }
 
         //Metadata
         final MetricOutputMetadata metOut = getMetadata( s, s.getData().size(), MetricConstants.MAIN, null );
-        //Compute the atomic errors in a stream
-        return getDataFactory().ofDoubleScoreOutput( FunctionFactory.skill().applyAsDouble( numerator, denominator ),
-                                                metOut );
+
+        return getDataFactory().ofDoubleScoreOutput( returnMe, metOut );
     }
 
     @Override
