@@ -3,10 +3,7 @@ package wres.datamodel;
 import java.io.File;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Assert;
@@ -19,8 +16,7 @@ import evs.metric.results.MetricResultByLeadTime;
 import evs.metric.results.MetricResultByThreshold;
 import evs.metric.results.MetricResultKey;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
-import wres.datamodel.SafeMetricOutputForProjectByTimeAndThreshold.SafeMetricOutputForProjectByTimeAndThresholdBuilder;
-import wres.datamodel.SafeMetricOutputMapByTimeAndThreshold.Builder;
+import wres.datamodel.SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapByTimeAndThresholdBuilder;
 import wres.datamodel.ThresholdConstants.Operator;
 import wres.datamodel.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.metadata.MetadataFactory;
@@ -28,8 +24,6 @@ import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.DoubleScoreOutput;
-import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
-import wres.datamodel.outputs.MetricOutputMapByMetric;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.ScoreOutput;
 
@@ -55,7 +49,7 @@ public final class DataModelTestDataFactory
     {
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
         final MetadataFactory metaFactory = outputFactory.getMetadataFactory();
-        final Builder<DoubleScoreOutput> builder = new SafeMetricOutputMapByTimeAndThreshold.Builder<>();
+        final SafeMetricOutputMapByTimeAndThresholdBuilder<DoubleScoreOutput> builder = new SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapByTimeAndThresholdBuilder<>();
         try
         {
             //Create the input file
@@ -132,7 +126,7 @@ public final class DataModelTestDataFactory
     {
         DataFactory outF = DefaultDataFactory.getInstance();
         MetadataFactory metaFactory = outF.getMetadataFactory();
-        Builder<DoubleScoreOutput> builder = new SafeMetricOutputMapByTimeAndThreshold.Builder<>();
+        SafeMetricOutputMapByTimeAndThresholdBuilder<DoubleScoreOutput> builder = new SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapByTimeAndThresholdBuilder<>();
 
         //Fake metadata
         MetricOutputMetadata meta = metaFactory.getOutputMetadata( 1000,
@@ -217,7 +211,7 @@ public final class DataModelTestDataFactory
     {
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
         final MetadataFactory metaFactory = outputFactory.getMetadataFactory();
-        final Builder<DoubleScoreOutput> builder = new SafeMetricOutputMapByTimeAndThreshold.Builder<>();
+        final SafeMetricOutputMapByTimeAndThresholdBuilder<DoubleScoreOutput> builder = new SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapByTimeAndThresholdBuilder<>();
         try
         {
             //Create the input file
@@ -281,51 +275,6 @@ public final class DataModelTestDataFactory
         {
             Assert.fail( "Test failed : " + e.getMessage() );
         }
-        return builder.build();
-    }
-
-    /**
-     * Returns a {@link MetricOutputForProjectByTimeAndThreshold} with fake data.
-     * 
-     * @return a {@link MetricOutputForProjectByTimeAndThreshold} with fake data
-     */
-
-    public static MetricOutputForProjectByTimeAndThreshold getMetricOutputForProjectByLeadThreshold()
-    {
-        //Prep
-        SafeMetricOutputForProjectByTimeAndThresholdBuilder builder =
-                new SafeMetricOutputForProjectByTimeAndThresholdBuilder();
-        DataFactory factory = DefaultDataFactory.getInstance();
-        MetadataFactory metaFactory = factory.getMetadataFactory();
-        final MetricOutputMetadata fakeMeta =
-                factory.getMetadataFactory()
-                       .getOutputMetadata( 1000,
-                                           metaFactory.getDimension(),
-                                           metaFactory.getDimension( "CMS" ),
-                                           MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE );
-        List<DoubleScoreOutput> fakeData = new ArrayList<>();
-
-        //Add some fake numbers
-        fakeData.add( factory.ofDoubleScoreOutput( 10.0, fakeMeta ) );
-        fakeData.add( factory.ofDoubleScoreOutput( 6.0, fakeMeta ) );
-        fakeData.add( factory.ofDoubleScoreOutput( 7.0, fakeMeta ) );
-        fakeData.add( factory.ofDoubleScoreOutput( 16.0, fakeMeta ) );
-
-        //Build the input map
-        MetricOutputMapByMetric<DoubleScoreOutput> in = factory.ofMap( fakeData );
-
-        final TimeWindow timeWindow = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                     Instant.parse( "2010-12-31T11:59:59Z" ),
-                                                     ReferenceTime.VALID_TIME,
-                                                     Duration.ofHours( 1 ) );
-        //Fake lead time and threshold
-        builder.addDoubleScoreOutput( factory.ofMapKeyByTimeThreshold( timeWindow,
-                                                                       SafeOneOrTwoDoubles.of( 23.0 ),
-                                                                       Operator.GREATER,
-                                                                       ThresholdDataType.LEFT ),
-                                      CompletableFuture.completedFuture( in ) );
-
-        //Return data
         return builder.build();
     }
 

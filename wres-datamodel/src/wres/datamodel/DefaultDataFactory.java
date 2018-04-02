@@ -13,6 +13,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.SafeMetricOutputMapByMetric.SafeMetricOutputMapByMetricBuilder;
+import wres.datamodel.SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapByTimeAndThresholdBuilder;
 import wres.datamodel.SafeMetricOutputMultiMapByTimeAndThreshold.SafeMetricOutputMultiMapByTimeAndThresholdBuilder;
 import wres.datamodel.SafeThresholdsByMetric.SafeThresholdsByMetricBuilder;
 import wres.datamodel.SafeThresholdsByType.SafeThresholdsByTypeBuilder;
@@ -102,19 +103,19 @@ public class DefaultDataFactory implements DataFactory
     {
         return SafeOneOrTwoDoubles.of( first, second );
     }
-    
+
     @Override
     public ThresholdsByMetricBuilder ofThresholdsByMetricBuilder()
     {
         return new SafeThresholdsByMetricBuilder();
     }
-    
+
     @Override
     public ThresholdsByTypeBuilder ofThresholdsByTypeBuilder()
     {
         return new SafeThresholdsByTypeBuilder();
     }
-    
+
     @Override
     public DichotomousPairs ofDichotomousPairs( List<VectorOfBooleans> pairs,
                                                 List<VectorOfBooleans> basePairs,
@@ -355,31 +356,32 @@ public class DefaultDataFactory implements DataFactory
     }
 
     @Override
-    public <T extends MetricOutput<?>> MetricOutputMapByMetric<T> ofMap( final List<T> input )
+    public <T extends MetricOutput<?>> MetricOutputMapByMetric<T>
+            ofMetricOutputMapByMetric( final Map<MetricConstants, T> input )
     {
         Objects.requireNonNull( input, "Specify a non-null list of inputs." );
         final SafeMetricOutputMapByMetricBuilder<T> builder = new SafeMetricOutputMapByMetricBuilder<>();
-        input.forEach( a -> {
-            final MapKey<MetricConstants> key = getMapKey( a.getMetadata().getMetricID() );
-            builder.put( key, a );
-        } );
+        
+        input.forEach( ( key, value ) -> builder.put( this.getMapKey( value.getMetadata().getMetricID() ), value ) );
+        
+        //input.forEach( ( key, value ) -> builder.put( this.getMapKey( key ), value ) );
         return builder.build();
     }
 
     @Override
     public <T extends MetricOutput<?>> MetricOutputMapByTimeAndThreshold<T>
-            ofMap( final Map<Pair<TimeWindow, OneOrTwoThresholds>, T> input )
+            ofMetricOutputMapByTimeAndThreshold( final Map<Pair<TimeWindow, OneOrTwoThresholds>, T> input )
     {
         Objects.requireNonNull( input, "Specify a non-null map of inputs by lead time and threshold." );
-        final SafeMetricOutputMapByTimeAndThreshold.Builder<T> builder =
-                new SafeMetricOutputMapByTimeAndThreshold.Builder<>();
+        final SafeMetricOutputMapByTimeAndThresholdBuilder<T> builder =
+                new SafeMetricOutputMapByTimeAndThresholdBuilder<>();
         input.forEach( builder::put );
         return builder.build();
     }
 
     @Override
     public <T extends MetricOutput<?>> MetricOutputMultiMapByTimeAndThreshold<T>
-            ofMultiMap( final Map<Pair<TimeWindow, OneOrTwoThresholds>, List<MetricOutputMapByMetric<T>>> input )
+            ofMetricOutputMultiMapByTimeAndThreshold( final Map<Pair<TimeWindow, OneOrTwoThresholds>, List<MetricOutputMapByMetric<T>>> input )
     {
         Objects.requireNonNull( input, "Specify a non-null map of inputs by threshold." );
         final SafeMetricOutputMultiMapByTimeAndThresholdBuilder<T> builder =
@@ -396,7 +398,7 @@ public class DefaultDataFactory implements DataFactory
     @Override
     public <S extends MetricOutput<?>>
             MetricOutputMultiMapByTimeAndThreshold.MetricOutputMultiMapByTimeAndThresholdBuilder<S>
-            ofMultiMap()
+            ofMetricOutputMultiMapByTimeAndThresholdBuilder()
     {
         return new SafeMetricOutputMultiMapByTimeAndThresholdBuilder<>();
     }
@@ -452,8 +454,8 @@ public class DefaultDataFactory implements DataFactory
             combine( final List<MetricOutputMapByTimeAndThreshold<T>> input )
     {
         Objects.requireNonNull( input, "Specify a non-null map of inputs to combine." );
-        final SafeMetricOutputMapByTimeAndThreshold.Builder<T> builder =
-                new SafeMetricOutputMapByTimeAndThreshold.Builder<>();
+        final SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapByTimeAndThresholdBuilder<T> builder =
+                new SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapByTimeAndThresholdBuilder<>();
         //If the input contains time windows, find the union of them
         List<TimeWindow> windows = new ArrayList<>();
         for ( MetricOutputMapByTimeAndThreshold<T> next : input )

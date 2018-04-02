@@ -40,8 +40,6 @@ import wres.datamodel.time.TimeSeries;
  * metrics.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 
 class DefaultSlicer implements Slicer
@@ -404,7 +402,7 @@ class DefaultSlicer implements Slicer
         //Build the score result
         Map<MetricConstants, MetricOutputMapByTimeAndThreshold<T>> returnMe =
                 new EnumMap<>( MetricConstants.class );
-        sourceMap.forEach( ( key, value ) -> returnMe.put( key, dataFac.ofMap( value ) ) );
+        sourceMap.forEach( ( key, value ) -> returnMe.put( key, dataFac.ofMetricOutputMapByTimeAndThreshold( value ) ) );
         return returnMe;
     }
 

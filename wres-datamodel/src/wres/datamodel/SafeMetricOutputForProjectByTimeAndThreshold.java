@@ -408,7 +408,7 @@ class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForPro
         addMe.forEach( ( key, value ) -> {
             Map<Pair<TimeWindow, OneOrTwoThresholds>, MetricOutput<?>> map = new TreeMap<>();
             value.forEach( map::put );
-            builder.put( key, d.ofMap( map ) );
+            builder.put( key, d.ofMetricOutputMapByTimeAndThreshold( map ) );
         } );
     }
 
@@ -474,7 +474,7 @@ class SafeMetricOutputForProjectByTimeAndThreshold implements MetricOutputForPro
                                                  e );
             }
         }
-        return d.ofMultiMap( unwrapped );
+        return d.ofMetricOutputMultiMapByTimeAndThreshold( unwrapped );
     }
 
 }

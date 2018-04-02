@@ -14,7 +14,7 @@ import java.util.TreeSet;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
-import wres.datamodel.SafeMetricOutputMapByTimeAndThreshold.Builder;
+import wres.datamodel.SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapByTimeAndThresholdBuilder;
 import wres.datamodel.ThresholdConstants.Operator;
 import wres.datamodel.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.metadata.MetadataFactory;
@@ -177,7 +177,7 @@ public final class SafeMetricOutputMapByTimeAndThresholdTest
                                              Duration.ofHours( 2 ) ),
                               threshold ),
                      outputFactory.ofDoubleScoreOutput( 4.0, meta ) );
-        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> test = outputFactory.ofMap( testMap );
+        MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> test = outputFactory.ofMetricOutputMapByTimeAndThreshold( testMap );
         Set<TimeWindow> benchmarkTimes = new TreeSet<>();
         benchmarkTimes.add( TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                            Instant.parse( "1985-01-02T00:00:00Z" ),
@@ -415,7 +415,7 @@ public final class SafeMetricOutputMapByTimeAndThresholdTest
                                                                 Operator.GREATER,
                                                                 ThresholdDataType.LEFT ) );
 
-        Builder<DoubleScoreOutput> benchmarkOne = new SafeMetricOutputMapByTimeAndThreshold.Builder<>();
+        SafeMetricOutputMapByTimeAndThresholdBuilder<DoubleScoreOutput> benchmarkOne = new SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapByTimeAndThresholdBuilder<>();
 
         //Metadata
         MetricOutputMetadata meta = metaF.getOutputMetadata( 1000,
@@ -477,7 +477,7 @@ public final class SafeMetricOutputMapByTimeAndThresholdTest
                                                                 Operator.GREATER,
                                                                 ThresholdDataType.LEFT ) );
 
-        Builder<DoubleScoreOutput> benchmarkTwo = new SafeMetricOutputMapByTimeAndThreshold.Builder<>();
+        SafeMetricOutputMapByTimeAndThresholdBuilder<DoubleScoreOutput> benchmarkTwo = new SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapByTimeAndThresholdBuilder<>();
 
         //Iterate through the lead times
         for ( int leadTime : leadTimes )

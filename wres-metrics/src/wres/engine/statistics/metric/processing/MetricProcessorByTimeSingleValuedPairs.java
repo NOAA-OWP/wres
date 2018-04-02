@@ -2,11 +2,9 @@ package wres.engine.statistics.metric.processing;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -133,10 +131,10 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
             // identify different data across multiple, incremental, calls. Such calls are common for time-series.
             TimeSeriesOfSingleValuedPairs data = (TimeSeriesOfSingleValuedPairs) inputNoMissing;
             TimeWindow actualTimeWindow = TimeWindow.of( data.getEarliestBasisTime(),
-                                                  data.getLatestBasisTime(),
-                                                  timeWindow.getReferenceTime(),
-                                                  timeWindow.getEarliestLeadTime(),
-                                                  timeWindow.getLatestLeadTime() );
+                                                         data.getLatestBasisTime(),
+                                                         timeWindow.getReferenceTime(),
+                                                         timeWindow.getEarliestLeadTime(),
+                                                         timeWindow.getLatestLeadTime() );
 
             this.processTimeSeriesPairs( actualTimeWindow,
                                          data,
@@ -332,9 +330,9 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                         //Build the future result
                         Supplier<MetricOutputMapByMetric<DurationScoreOutput>> supplier = () -> {
                             DurationScoreOutput result = timeToPeakErrorStats.apply( union );
-                            List<DurationScoreOutput> in = new ArrayList<>();
-                            in.add( result );
-                            return dataFactory.ofMap( in );
+                            Map<MetricConstants, DurationScoreOutput> input =
+                                    Collections.singletonMap( result.getMetadata().getMetricID(), result );
+                            return dataFactory.ofMetricOutputMapByMetric( input );
                         };
 
                         // Execute
