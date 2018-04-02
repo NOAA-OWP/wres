@@ -9,6 +9,7 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -100,12 +101,13 @@ public class CommaSeparatedMatrixWriterTest extends CommaSeparatedWriterTest
 
         // Fake output wrapper.
         MetricOutputMapByMetric<MatrixOutput> fakeOutputData =
-                outputFactory.ofMap( Arrays.asList( outputFactory.ofMatrixOutput( fakeOutputs,
-                                                                                  Arrays.asList( MetricDimension.TRUE_POSITIVES,
-                                                                                                 MetricDimension.FALSE_POSITIVES,
-                                                                                                 MetricDimension.FALSE_NEGATIVES,
-                                                                                                 MetricDimension.TRUE_NEGATIVES ),
-                                                                                  fakeMetadata ) ) );
+                outputFactory.ofMetricOutputMapByMetric( Collections.singletonMap( MetricConstants.CONTINGENCY_TABLE,
+                                                                                   outputFactory.ofMatrixOutput( fakeOutputs,
+                                                                                                                 Arrays.asList( MetricDimension.TRUE_POSITIVES,
+                                                                                                                                MetricDimension.FALSE_POSITIVES,
+                                                                                                                                MetricDimension.FALSE_NEGATIVES,
+                                                                                                                                MetricDimension.TRUE_NEGATIVES ),
+                                                                                                                 fakeMetadata ) ) );
         // wrap outputs in future
         Future<MetricOutputMapByMetric<MatrixOutput>> outputMapByMetricFuture =
                 CompletableFuture.completedFuture( fakeOutputData );
@@ -115,8 +117,8 @@ public class CommaSeparatedMatrixWriterTest extends CommaSeparatedWriterTest
         Pair<TimeWindow, OneOrTwoThresholds> mapKeyByLeadThreshold =
                 Pair.of( timeOne,
                          OneOrTwoThresholds.of( outputFactory.ofThreshold( outputFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
-                                                                   Operator.GREATER,
-                                                                   ThresholdDataType.LEFT ) ) );
+                                                                           Operator.GREATER,
+                                                                           ThresholdDataType.LEFT ) ) );
 
         outputBuilder.addMatrixOutput( mapKeyByLeadThreshold,
                                        outputMapByMetricFuture );

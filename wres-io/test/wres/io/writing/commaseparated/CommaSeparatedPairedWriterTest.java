@@ -9,7 +9,7 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -103,7 +103,9 @@ public class CommaSeparatedPairedWriterTest extends CommaSeparatedWriterTest
 
         // Fake output wrapper.
         MetricOutputMapByMetric<PairedOutput<Instant, Duration>> fakeOutputData =
-                outputFactory.ofMap( Arrays.asList( outputFactory.ofPairedOutput( fakeOutputs, fakeMetadata ) ) );
+                outputFactory.ofMetricOutputMapByMetric( Collections.singletonMap( MetricConstants.TIME_TO_PEAK_ERROR,
+                                                                                   outputFactory.ofPairedOutput( fakeOutputs,
+                                                                                                                 fakeMetadata ) ) );
 
         // wrap outputs in future
         Future<MetricOutputMapByMetric<PairedOutput<Instant, Duration>>> outputMapByMetricFuture =

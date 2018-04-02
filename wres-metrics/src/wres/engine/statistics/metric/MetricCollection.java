@@ -1,19 +1,22 @@
 package wres.engine.statistics.metric;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 import java.util.function.BiFunction;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
@@ -56,6 +59,12 @@ import wres.engine.statistics.metric.categorical.ContingencyTable;
 public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?>, U extends MetricOutput<?>>
         implements BiFunction<S, Set<MetricConstants>, MetricOutputMapByMetric<U>>
 {
+
+    /**
+     * Logger.
+     */
+
+    static final Logger LOGGER = LoggerFactory.getLogger( MetricCollection.class );
 
     /**
      * Instance of a {@link DataFactory} for constructing a {@link MetricOutput}.
@@ -179,7 +188,7 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
 
         protected MetricCollectionBuilder<S, T, U> add( final Metric<S, U> metric )
         {
-            metrics.put( metric.getID(), metric );
+            this.metrics.put( metric.getID(), metric );
             return this;
         }
 
@@ -192,7 +201,7 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
 
         protected MetricCollectionBuilder<S, T, U> add( final Collectable<S, T, U> metric )
         {
-            collectableMetrics.put( metric.getID(), metric );
+            this.collectableMetrics.put( metric.getID(), metric );
             return this;
         }
 
@@ -280,7 +289,7 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
                                                   + "set." );
         }
         // Count elements in metrics and collected metrics
-        int count = metrics.size() + collectableMetrics.values().stream().mapToInt( Map::size ).sum();
+        int count = this.metrics.size() + this.collectableMetrics.values().stream().mapToInt( Map::size ).sum();
         if ( ignoreTheseMetrics.size() == count )
         {
             throw new MetricCalculationException( "Cannot ignore all metrics in the store: specify some metrics "
@@ -288,9 +297,9 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
         }
 
         //Compute only the required metrics
-        Map<MetricConstants, Metric<S, U>> localMetrics = new EnumMap<>( metrics );
+        Map<MetricConstants, Metric<S, U>> localMetrics = new EnumMap<>( this.metrics );
         Map<MetricConstants, Map<MetricConstants, Collectable<S, T, U>>> localCollectableMetrics =
-                new EnumMap<>( collectableMetrics );
+                new EnumMap<>( this.collectableMetrics );
         localMetrics.keySet().removeAll( ignoreTheseMetrics );
         localCollectableMetrics.keySet().removeAll( ignoreTheseMetrics );
         //Remove from each map in the collection
@@ -309,26 +318,29 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
                 Collectable<S, T, U> baseMetric = iterator.next();
                 final CompletableFuture<T> baseFuture =
                         CompletableFuture.supplyAsync( () -> baseMetric.getCollectionInput( input ),
-                                                       metricPool );
+                                                       this.metricPool );
                 //Using the future dependent result, compute a future of each of the independent results
                 next.forEach( ( id, metric ) -> metricFutures.put( id,
                                                                    baseFuture.thenApplyAsync( metric::aggregate,
-                                                                                              metricPool ) ) );
+                                                                                              this.metricPool ) ) );
             }
         }
         //Create the futures for the ordinary metrics
         localMetrics.forEach( ( key, value ) -> metricFutures.put( key,
                                                                    CompletableFuture.supplyAsync( () -> value.apply( input ),
-                                                                                                  metricPool ) ) );
+                                                                                                  this.metricPool ) ) );
         //Compute the results
-        List<U> returnMe = new ArrayList<>();
+        Map<MetricConstants, U> returnMe = new HashMap<>();
         MetricConstants nextMetric = null;
+
+        this.logStartOfCalculation();
+
         try
         {
             for ( Map.Entry<MetricConstants, CompletableFuture<U>> nextResult : metricFutures.entrySet() )
             {
                 nextMetric = nextResult.getKey();
-                returnMe.add( nextResult.getValue().get() ); //This is blocking
+                returnMe.put( nextMetric, nextResult.getValue().get() ); //This is blocking
             }
         }
         catch ( ExecutionException e )
@@ -338,10 +350,13 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
         catch ( InterruptedException e )
         {
             Thread.currentThread().interrupt();
+
             throw new MetricCalculationException( "While processing metric '" + nextMetric + "'.", e );
         }
 
-        return dataFactory.ofMap( returnMe );
+        this.logEndOfCalculation( returnMe );
+
+        return this.dataFactory.ofMetricOutputMapByMetric( returnMe );
     }
 
     /**
@@ -354,24 +369,26 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
     private MetricCollection( final MetricCollectionBuilder<S, T, U> builder ) throws MetricParameterException
     {
         //Set 
-        input = builder.input;
-        dataFactory = builder.dataFactory;
-        metricPool = builder.metricPool;
-        metrics = new EnumMap<>( builder.metrics );
-        collectableMetrics = new EnumMap<>( MetricConstants.class );
+        this.input = builder.input;
+        this.dataFactory = builder.dataFactory;
+        this.metricPool = builder.metricPool;
+        this.metrics = new EnumMap<>( builder.metrics );
+        this.collectableMetrics = new EnumMap<>( MetricConstants.class );
+
         //Set the collectable metrics
         builder.collectableMetrics.forEach( ( id, metric ) -> {
             if ( collectableMetrics.containsKey( metric.getCollectionOf() ) )
             {
-                collectableMetrics.get( metric.getCollectionOf() ).put( id, metric );
+                this.collectableMetrics.get( metric.getCollectionOf() ).put( id, metric );
             }
             else
             {
                 Map<MetricConstants, Collectable<S, T, U>> addMe = new EnumMap<>( MetricConstants.class );
                 addMe.put( id, metric );
-                collectableMetrics.put( metric.getCollectionOf(), addMe );
+                this.collectableMetrics.put( metric.getCollectionOf(), addMe );
             }
         } );
+
         validate();
     }
 
@@ -417,4 +434,54 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
             }
         }
     }
+
+    /**
+     * Logs the start of a calculation.
+     */
+
+    private void logStartOfCalculation()
+    {
+        if ( LOGGER.isDebugEnabled() )
+        {
+            // Determine the metrics to compute
+            Set<MetricConstants> started = new TreeSet<>();
+            Set<MetricConstants> collected = new TreeSet<>();
+            collectableMetrics.values().forEach( next -> collected.addAll( next.keySet() ) );
+            started.addAll( metrics.keySet() );
+            started.addAll( collected );
+
+            LOGGER.debug( "Attempting to compute metrics for a collection that contains {} ordinary metric(s) and {} "
+                          + "collectable metric(s). The metrics include {}.",
+                          metrics.size(),
+                          collected.size(),
+                          started );
+        }
+    }
+
+    /**
+     * Logs the end of a calculation.
+     * 
+     * @param results the results to log
+     */
+
+    private void logEndOfCalculation( Map<MetricConstants,U> results )
+    {
+        if ( LOGGER.isDebugEnabled() )
+        {
+            // Determine the metrics computed
+            Set<MetricConstants> collected = new TreeSet<>();
+            collectableMetrics.values().forEach( next -> collected.addAll( next.keySet() ) );
+            Set<MetricConstants> completed = results.keySet();
+
+            LOGGER.debug( "Finished computing metrics for a collection that contains {} ordinary metric(s) and {} "
+                          + "collectable metric(s). Obtained {} result(s) of the {} result(s) expected. Results were "
+                          + "obtained for these metrics {}.",
+                          metrics.size(),
+                          collected.size(),
+                          results.size(),
+                          metrics.size() + collected.size(),
+                          completed );
+        }
+    }
+
 }

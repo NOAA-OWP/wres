@@ -217,6 +217,7 @@ class SafeMetricOutputMapByMetric<T extends MetricOutput<?>> implements MetricOu
         store = new TreeMap<>();
         store.putAll( builder.store );
         internal = new ArrayList<>( store.keySet() );
+        
         //Bounds checks
         if ( store.isEmpty() )
         {

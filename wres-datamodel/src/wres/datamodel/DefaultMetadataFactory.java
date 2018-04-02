@@ -1,7 +1,6 @@
 package wres.datamodel;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.StringJoiner;
@@ -11,14 +10,11 @@ import wres.datamodel.metadata.MetadataException;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
-import wres.datamodel.outputs.MetricOutput;
 
 /**
  * A factory class for constructing {@link Metadata} and associated objects.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 
 public class DefaultMetadataFactory implements MetadataFactory
@@ -29,20 +25,6 @@ public class DefaultMetadataFactory implements MetadataFactory
      */
 
     private static MetadataFactory instance = null;
-
-    /**
-     * For safety, set a limit on the number of objects allowed in the cache.
-     */
-
-    private static final int outputMetaCacheLimit = 1000000;
-
-    /**
-     * Cache of instances of {@link MetricOutputMetadata} by hash code. Typically, there will be relatively few unique
-     * instances of {@link MetricOutputMetadata} that are common to a large number of {@link MetricOutput}. Caching
-     * these instances will provide a substantial memory saving for a small CPU cost in retrieving them.
-     */
-
-    private final HashMap<Integer, MetricOutputMetadata> outputMetaCache;
 
     /**
      * Returns an instance of a {@link DataFactory}.
@@ -158,21 +140,8 @@ public class DefaultMetadataFactory implements MetadataFactory
             }
 
         }
-        //Return from cache if available
-        final MetricOutputMetadata testMe = new MetricOutputMetadataImpl();
-        final MetricOutputMetadata returnMe = outputMetaCache.get(testMe.hashCode());
-        if(!Objects.isNull(returnMe))
-        {
-            return returnMe;
-        }
-        //Clear the cache if required
-        if(outputMetaCache.size() > outputMetaCacheLimit)
-        {
-            outputMetaCache.clear();
-        }
-        //Increment the cache and return
-        outputMetaCache.put(testMe.hashCode(), testMe);
-        return testMe;
+
+        return new MetricOutputMetadataImpl();
     }
     
     @Override
@@ -487,7 +456,6 @@ public class DefaultMetadataFactory implements MetadataFactory
 
     private DefaultMetadataFactory()
     {
-        outputMetaCache = new HashMap<>();
     }
     
 }

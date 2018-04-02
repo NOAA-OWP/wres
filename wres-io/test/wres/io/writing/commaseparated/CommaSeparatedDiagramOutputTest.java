@@ -8,7 +8,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -106,7 +106,9 @@ public class CommaSeparatedDiagramOutputTest extends CommaSeparatedWriterTest
 
         // Fake output wrapper.
         MetricOutputMapByMetric<MultiVectorOutput> fakeOutputData =
-                outputFactory.ofMap( Arrays.asList( outputFactory.ofMultiVectorOutput( fakeOutputs, fakeMetadata ) ) );
+                outputFactory.ofMetricOutputMapByMetric( Collections.singletonMap( MetricConstants.RELIABILITY_DIAGRAM,
+                                                                                   outputFactory.ofMultiVectorOutput( fakeOutputs,
+                                                                                                                      fakeMetadata ) ) );
 
         // wrap outputs in future
         Future<MetricOutputMapByMetric<MultiVectorOutput>> outputMapByMetricFuture =
@@ -117,9 +119,9 @@ public class CommaSeparatedDiagramOutputTest extends CommaSeparatedWriterTest
         Pair<TimeWindow, OneOrTwoThresholds> mapKeyByLeadThreshold =
                 Pair.of( timeOne,
                          OneOrTwoThresholds.of( outputFactory.ofQuantileThreshold( outputFactory.ofOneOrTwoDoubles( 11.94128 ),
-                                                                           outputFactory.ofOneOrTwoDoubles( 0.9 ),
-                                                                           Operator.GREATER_EQUAL,
-                                                                           ThresholdDataType.LEFT ) ) );
+                                                                                   outputFactory.ofOneOrTwoDoubles( 0.9 ),
+                                                                                   Operator.GREATER_EQUAL,
+                                                                                   ThresholdDataType.LEFT ) ) );
 
         outputBuilder.addMultiVectorOutput( mapKeyByLeadThreshold,
                                             outputMapByMetricFuture );
