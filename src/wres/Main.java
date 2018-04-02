@@ -42,6 +42,7 @@ public class Main {
         if (LOGGER.isInfoEnabled())
         {
             LOGGER.info( Main.getVersionDescription() );
+            LOGGER.info( Main.getVerboseRuntimeDescription() );
         }
 
         final String operation = ((Supplier<String>) () -> {
@@ -139,6 +140,11 @@ public class Main {
     public static String getVersionDescription()
     {
         return version.getDescription();
+    }
+
+    private static String getVerboseRuntimeDescription()
+    {
+        return version.getVerboseRuntimeDescription();
     }
 
     /**
