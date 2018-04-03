@@ -609,7 +609,7 @@ public final class PIXMLReader extends XMLReader
                 else if (localName.equalsIgnoreCase( "lon" ) || localName.equalsIgnoreCase( "x" ))
                 {
                     // TODO: Store the value as the Longitude on a FeatureDetails Object
-                }/* This absolutely breaks scenario303 (as it should). uncomment when necessary
+                }
 				else if ( localName.equalsIgnoreCase("forecastDate") )
 				{
 					if (!this.isForecast)
@@ -619,7 +619,7 @@ public final class PIXMLReader extends XMLReader
 											  + "observation since it is a forecast.");
 					}
 					this.forecastDate = PIXMLReader.parseDateTime( reader );
-				}*/
+				}
 
 			}
 			reader.next();
