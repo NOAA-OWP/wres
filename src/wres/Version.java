@@ -100,7 +100,8 @@ public class Version
                  && !lowerCaseName.contains( "user.country" )
                  && !lowerCaseName.startsWith( "java.vendor" )
                  && !lowerCaseName.startsWith( "java.e" )
-                 && !lowerCaseName.contains( "java.vm.specification" )
+                 && !lowerCaseName.startsWith( "java.vm.specification" )
+                 && !lowerCaseName.startsWith( "java.specification" )
                  && !lowerCaseName.contains( "printer" ) )
             {
                 s.add( propertyName + ": " + System.getProperty( propertyName ) );
