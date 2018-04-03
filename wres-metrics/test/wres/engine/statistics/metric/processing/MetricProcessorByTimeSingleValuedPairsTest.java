@@ -444,9 +444,9 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         TimeSeriesOfSingleValuedPairs pairs = MetricTestDataFactory.getTimeSeriesOfSingleValuedPairsOne();
         //Break into two time-series to test sequential calls
         TimeSeriesOfSingleValuedPairs first =
-                (TimeSeriesOfSingleValuedPairs) pairs.filterByBasisTime( a -> a.equals( Instant.parse( "1985-01-01T00:00:00Z" ) ) );
+                metIn.getSlicer().filterByBasisTime( pairs, a -> a.equals( Instant.parse( "1985-01-01T00:00:00Z" ) ) );
         TimeSeriesOfSingleValuedPairs second =
-                (TimeSeriesOfSingleValuedPairs) pairs.filterByBasisTime( a -> a.equals( Instant.parse( "1985-01-02T00:00:00Z" ) ) );
+                metIn.getSlicer().filterByBasisTime( pairs, a -> a.equals( Instant.parse( "1985-01-02T00:00:00Z" ) ) );
 
         //Compute the metrics
         processor.apply( first );

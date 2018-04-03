@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.SortedSet;
-import java.util.function.Predicate;
 
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
@@ -67,50 +66,6 @@ class SafeTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
     public Iterable<TimeSeries<PairOfDoubles>> durationIterator()
     {
         return bP.durationIterator();
-    }
-
-    @Override
-    public TimeSeries<PairOfDoubles> filterByDuration( Predicate<Duration> duration )
-    {
-        Objects.requireNonNull( duration, "Provide a non-null predicate on which to filter by duration." );
-        //Iterate through the durations and append to the builder
-        //Throw an exception if attempting to construct an irregular time-series
-        SafeTimeSeriesOfSingleValuedPairsBuilder builder = new SafeTimeSeriesOfSingleValuedPairsBuilder();
-        for ( TimeSeries<PairOfDoubles> a : durationIterator() )
-        {
-            TimeSeriesOfSingleValuedPairs next = (TimeSeriesOfSingleValuedPairs) a;
-            if ( duration.test( a.getDurations().first() ) )
-            {
-                builder.addTimeSeries( next );
-            }
-        }
-        //Build if something to build
-        if ( !builder.data.isEmpty() )
-        {
-            return builder.build();
-        }
-        return null;
-    }
-
-    @Override
-    public TimeSeries<PairOfDoubles> filterByBasisTime( Predicate<Instant> basisTime )
-    {
-        Objects.requireNonNull( basisTime, "Provide a non-null predicate on which to filter by basis time." );
-        SafeTimeSeriesOfSingleValuedPairsBuilder builder = new SafeTimeSeriesOfSingleValuedPairsBuilder();
-        //Add the filtered data
-        for ( TimeSeries<PairOfDoubles> a : basisTimeIterator() )
-        {
-            if ( basisTime.test( a.getEarliestBasisTime() ) )
-            {
-                builder.addTimeSeries( (TimeSeriesOfSingleValuedPairs) a );
-            }
-        }
-        //Build if something to build
-        if ( !builder.data.isEmpty() )
-        {
-            return builder.build();
-        }
-        return null;
     }
 
     @Override

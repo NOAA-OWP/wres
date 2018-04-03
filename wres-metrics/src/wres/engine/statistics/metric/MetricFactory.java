@@ -84,8 +84,8 @@ import wres.engine.statistics.metric.timeseries.TimeToPeakError;
 import wres.engine.statistics.metric.timeseries.TimeToPeakError.TimeToPeakErrorBuilder;
 import wres.engine.statistics.metric.timeseries.TimeToPeakRelativeError;
 import wres.engine.statistics.metric.timeseries.TimeToPeakRelativeError.TimeToPeakRelativeErrorBuilder;
-import wres.engine.statistics.metric.timeseries.TimingErrorSummaryStatistics;
-import wres.engine.statistics.metric.timeseries.TimingErrorSummaryStatistics.TimingErrorSummaryStatisticsBuilder;
+import wres.engine.statistics.metric.timeseries.TimingErrorDurationStatistics;
+import wres.engine.statistics.metric.timeseries.TimingErrorDurationStatistics.TimingErrorDurationStatisticsBuilder;
 
 /**
  * <p>
@@ -949,34 +949,6 @@ public class MetricFactory
     }
 
     /**
-     * Returns a {@link Metric} that consumes {@link SingleValuedPairs} and produces {@link DoubleScoreOutput}.
-     * 
-     * @param metric the metric identifier
-     * @return the metric
-     * @throws MetricParameterException if one or more parameter values is incorrect
-     * @throws IllegalArgumentException if the metric identifier is not recognized
-     */
-
-    public Metric<SingleValuedPairs, DoubleScoreOutput> ofSingleValuedScore( MetricConstants metric )
-            throws MetricParameterException
-    {
-        // Build store if required
-        buildSingleValuedScoreStore();
-        if ( singleValuedScoreCol.containsKey( metric ) )
-        {
-            return singleValuedScoreCol.get( metric );
-        }
-        else if ( singleValuedScore.containsKey( metric ) )
-        {
-            return singleValuedScore.get( metric );
-        }
-        else
-        {
-            throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
-        }
-    }
-
-    /**
      * Returns a {@link MetricCollection} of metrics that consume {@link TimeSeriesOfSingleValuedPairs} and produce
      * {@link PairedOutput}.
      * 
@@ -1006,6 +978,34 @@ public class MetricFactory
         }
         builder.setOutputFactory( outputFactory ).setExecutorService( executor );
         return builder.build();
+    }  
+
+    /**
+     * Returns a {@link Metric} that consumes {@link SingleValuedPairs} and produces {@link DoubleScoreOutput}.
+     * 
+     * @param metric the metric identifier
+     * @return the metric
+     * @throws MetricParameterException if one or more parameter values is incorrect
+     * @throws IllegalArgumentException if the metric identifier is not recognized
+     */
+
+    public Metric<SingleValuedPairs, DoubleScoreOutput> ofSingleValuedScore( MetricConstants metric )
+            throws MetricParameterException
+    {
+        // Build store if required
+        buildSingleValuedScoreStore();
+        if ( singleValuedScoreCol.containsKey( metric ) )
+        {
+            return singleValuedScoreCol.get( metric );
+        }
+        else if ( singleValuedScore.containsKey( metric ) )
+        {
+            return singleValuedScore.get( metric );
+        }
+        else
+        {
+            throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
+        }
     }
 
     /**
@@ -1551,7 +1551,7 @@ public class MetricFactory
      * @throws MetricParameterException if one or more parameter values is incorrect
      */
 
-    <T extends PairedInput<?>> SampleSize<T> ofSampleSize() throws MetricParameterException
+    public <T extends PairedInput<?>> SampleSize<T> ofSampleSize() throws MetricParameterException
     {
         return (SampleSize<T>) new SampleSizeBuilder<T>().setOutputFactory( outputFactory ).build();
     }
@@ -1647,50 +1647,51 @@ public class MetricFactory
     }
 
     /**
-     * Return a {@link TimingErrorSummaryStatistics} function for a prescribed set of {@link MetricConstants}.
+     * Return a {@link TimingErrorDurationStatistics} function for a prescribed set of {@link MetricConstants}.
      * For each of the {@link MetricConstants}, the {@link MetricConstants#isInGroup(ScoreOutputGroup)} should return 
      * <code>true</code> when supplied with {@link ScoreOutputGroup#UNIVARIATE_STATISTIC}.
      * 
      * @param identifier the named metric for which summary statistics are required
      * @param statistics the identifiers for summary statistics
-     * @return a default {@link TimingErrorSummaryStatistics} function
+     * @return a default {@link TimingErrorDurationStatistics} function
      * @throws MetricParameterException if one or more parameter values is incorrect
      */
 
-    public TimingErrorSummaryStatistics ofTimingErrorSummaryStatistics( MetricConstants identifier,
+    public TimingErrorDurationStatistics ofTimingErrorDurationStatistics( MetricConstants identifier,
                                                                         Set<MetricConstants> statistics )
             throws MetricParameterException
     {
-        return new TimingErrorSummaryStatisticsBuilder().setStatistics( statistics )
+        return new TimingErrorDurationStatisticsBuilder().setStatistics( statistics )
                                                         .setID( identifier )
                                                         .setOutputFactory( outputFactory )
                                                         .build();
     }
- 
+
     /**
-     * Helper that returns the name of the summary statistics associated with the timing metric.
+     * Helper that returns the name of the summary statistics associated with the timing metric or null if no 
+     * summary statistics are defined for the specified input.
      * 
      * @param timingMetric the named timing metric
      * @return the summary statistics name or null if no identifier is defined
      * @throws NullPointerException if the input is null
      */
-    
+
     public static MetricConstants getSummaryStatisticsForTimingErrorMetric( MetricConstants timingMetric )
-    {       
+    {
         Objects.requireNonNull( timingMetric, "Specify a non-null metric identifier to map." );
-        
-        if( timingMetric ==  MetricConstants.TIME_TO_PEAK_ERROR )
+
+        if ( timingMetric == MetricConstants.TIME_TO_PEAK_ERROR )
         {
             return MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC;
         }
-        
-        if( timingMetric ==  MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR )
+
+        if ( timingMetric == MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR )
         {
             return MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR_STATISTIC;
         }
-        
+
         return null;
-    }    
+    }
 
     /**
      * Helper that interprets the input configuration and returns a list of {@link MetricOutputGroup} whose results 
