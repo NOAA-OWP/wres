@@ -17,7 +17,6 @@ import org.junit.Test;
 import wres.datamodel.SafeTimeSeriesOfSingleValuedPairs.SafeTimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.ThresholdConstants.Operator;
 import wres.datamodel.ThresholdConstants.ThresholdDataType;
-import wres.datamodel.inputs.MetricInputSliceException;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.PairOfBooleans;
@@ -118,12 +117,10 @@ public final class DefaultSlicerTest
 
     /**
      * Tests the {@link Slicer#filter(SingleValuedPairs, java.util.function.Predicate, java.util.function.DoublePredicate)}.
-     * 
-     * @throws MetricInputSliceException if the filtering fails
      */
 
     @Test
-    public void test4FilterByLeft() throws MetricInputSliceException
+    public void test4FilterByLeft()
     {
         DataFactory metIn = DefaultDataFactory.getInstance();
         final List<PairOfDoubles> values = new ArrayList<>();
@@ -150,46 +147,14 @@ public final class DefaultSlicerTest
                 slicer.filter( pairsNoBase, Slicer.left( threshold::test ), clim -> threshold.test( clim ) );
         assertTrue( "The left side of the test data does not match the benchmark.",
                     Arrays.equals( slicer.getLeftSide( slicedNoBase ), expected ) );
-        //Test exception
-        try
-        {
-            Threshold next = metIn.ofThreshold( SafeOneOrTwoDoubles.of( 1.0 ),
-                                                Operator.GREATER,
-                                                ThresholdDataType.LEFT );
-            slicer.filter( pairs, Slicer.left( next::test ), null );
-            fail( "Expected an exception on attempting to return an empty subset." );
-        }
-        catch ( Exception e )
-        {
-        }
-
-        //Test null return on baseline
-        final List<PairOfDoubles> nullValuesBase = new ArrayList<>();
-        nullValuesBase.add( metIn.pairOf( 0, 3.0 / 5.0 ) );
-        nullValuesBase.add( metIn.pairOf( 0, 1.0 / 5.0 ) );
-        nullValuesBase.add( metIn.pairOf( 0, 2.0 / 5.0 ) );
-        nullValuesBase.add( metIn.pairOf( 0, 3.0 / 5.0 ) );
-        nullValuesBase.add( metIn.pairOf( 0, 0.0 / 5.0 ) );
-        nullValuesBase.add( metIn.pairOf( 0, 1.0 / 5.0 ) );
-        SingleValuedPairs pairsNullBase = metIn.ofSingleValuedPairs( values, nullValuesBase, meta, meta, null );
-        try
-        {
-            slicer.filter( pairsNullBase, Slicer.left( threshold::test ), null );
-            fail( "Expected an exception on attempting to return an empty subset for the baseline." );
-        }
-        catch ( Exception e )
-        {
-        }
     }
 
     /**
      * Tests the {@link Slicer#filter(EnsemblePairs, java.util.function.Predicate, java.util.function.DoublePredicate)}.
-     * 
-     * @throws MetricInputSliceException if the filtering fails
      */
 
     @Test
-    public void test5FilterByLeft() throws MetricInputSliceException
+    public void test5FilterByLeft()
     {
         DataFactory metIn = DefaultDataFactory.getInstance();
         final List<PairOfDoubleAndVectorOfDoubles> values = new ArrayList<>();
@@ -216,37 +181,6 @@ public final class DefaultSlicerTest
                 slicer.filter( pairsNoBase, Slicer.leftVector( threshold::test ), clim -> threshold.test( clim ) );
         assertTrue( "The left side of the test data does not match the benchmark.",
                     Arrays.equals( slicer.getLeftSide( slicedNoBase ), expected ) );
-        //Test exception
-        try
-        {
-
-            Threshold next = metIn.ofThreshold( SafeOneOrTwoDoubles.of( 1.0 ),
-                                                Operator.GREATER,
-                                                ThresholdDataType.LEFT );
-            slicer.filter( pairs, Slicer.leftVector( next::test ), null );
-            fail( "Expected an exception on attempting to return an empty subset." );
-        }
-        catch ( Exception e )
-        {
-        }
-
-        //Test exception on baseline
-        final List<PairOfDoubleAndVectorOfDoubles> nullValuesBase = new ArrayList<>();
-        nullValuesBase.add( metIn.pairOf( 0, new double[] { 1, 2, 3 } ) );
-        nullValuesBase.add( metIn.pairOf( 0, new double[] { 1, 2, 3 } ) );
-        nullValuesBase.add( metIn.pairOf( 0, new double[] { 1, 2, 3 } ) );
-        nullValuesBase.add( metIn.pairOf( 0, new double[] { 1, 2, 3 } ) );
-        nullValuesBase.add( metIn.pairOf( 0, new double[] { 1, 2, 3 } ) );
-        nullValuesBase.add( metIn.pairOf( 0, new double[] { 1, 2, 3 } ) );
-        EnsemblePairs pairsNullBase = metIn.ofEnsemblePairs( values, nullValuesBase, meta, meta, null );
-        try
-        {
-            slicer.filter( pairsNullBase, Slicer.leftVector( threshold::test ), null );
-            fail( "Expected an exception on attempting to return an empty subset for the baseline." );
-        }
-        catch ( Exception e )
-        {
-        }
     }
 
     /**
@@ -470,14 +404,6 @@ public final class DefaultSlicerTest
         catch ( Exception e )
         {
         }
-        try
-        {
-            slicer.getQuantileFunction( new double[] {} ).applyAsDouble( 0.0 );
-            fail( "Expected and exception on using an empty test array." );
-        }
-        catch ( Exception e )
-        {
-        }
     }
 
     /**
@@ -673,12 +599,10 @@ public final class DefaultSlicerTest
 
     /**
      * Tests the {@link Slicer#filter(SingleValuedPairs, java.util.function.Predicate, java.util.function.DoublePredicate)}.
-    
-     * @throws MetricInputSliceException if slicing results in an unexpected exception
      */
 
     @Test
-    public void test15FilterSingleValuedPairs() throws MetricInputSliceException
+    public void test15FilterSingleValuedPairs()
     {
         DataFactory metIn = DefaultDataFactory.getInstance();
         List<PairOfDoubles> values = new ArrayList<>();
@@ -720,58 +644,14 @@ public final class DefaultSlicerTest
 
         assertTrue( "The sliced data without a baseline does not match the benchmark.",
                     slicedNoBase.getData().equals( expectedValues ) );
-
-        //Test exceptions
-        //No pairs in main
-        try
-        {
-            List<PairOfDoubles> none = new ArrayList<>();
-            none.add( metIn.pairOf( 1, 1 ) );
-            none.add( metIn.pairOf( Double.NaN, Double.NaN ) );
-            slicer.filter( metIn.ofSingleValuedPairs( none, meta ), Slicer.leftAndRight( a -> a > 1 ), null );
-            fail( "Expected an exception on attempting to filter with no data." );
-        }
-        catch ( MetricInputSliceException e )
-        {
-        }
-        //No pairs in baseline
-        try
-        {
-            List<PairOfDoubles> none = new ArrayList<>();
-            none.add( metIn.pairOf( 1, 1 ) );
-            none.add( metIn.pairOf( Double.NaN, Double.NaN ) );
-            slicer.filter( metIn.ofSingleValuedPairs( values, none, meta, meta ),
-                           Slicer.leftAndRight( a -> a > 1 ),
-                           null );
-            fail( "Expected an exception on attempting to filter with no baseline data." );
-        }
-        catch ( MetricInputSliceException e )
-        {
-        }
-
-        //No climatological data
-        try
-        {
-            SingleValuedPairs test =
-                    metIn.ofSingleValuedPairs( values,
-                                               meta,
-                                               metIn.vectorOf( new double[] { 1, Double.NaN } ) );
-            slicer.filter( test, Slicer.leftAndRight( a -> a > 1 ), a -> a > 1 );
-            fail( "Expected an exception on attempting to filter with no climatological data." );
-        }
-        catch ( MetricInputSliceException e )
-        {
-        }
     }
 
     /**
      * Tests the {@link Slicer#filter(EnsemblePairs, Function)}.
-    
-     * @throws MetricInputSliceException if slicing results in an unexpected exception
      */
 
     @Test
-    public void test16FilterEnsemblePairs() throws MetricInputSliceException
+    public void test16FilterEnsemblePairs()
     {
         DataFactory metIn = DefaultDataFactory.getInstance();
         final List<PairOfDoubleAndVectorOfDoubles> values = new ArrayList<>();
@@ -814,58 +694,14 @@ public final class DefaultSlicerTest
 
         assertTrue( "The sliced data without a baseline does not match the benchmark.",
                     slicedNoBase.getData().equals( expectedValues ) );
-
-        //Test exceptions
-        //No pairs in main
-        try
-        {
-            List<PairOfDoubleAndVectorOfDoubles> none = new ArrayList<>();
-            none.add( metIn.pairOf( 1, new double[] { 1 } ) );
-            none.add( metIn.pairOf( Double.NaN, new double[] { Double.NaN } ) );
-            slicer.filter( metIn.ofEnsemblePairs( none, meta ), slicer.leftAndEachOfRight( a -> a > 1 ), null );
-            fail( "Expected an exception on attempting to filter with no data." );
-        }
-        catch ( MetricInputSliceException e )
-        {
-        }
-        //No pairs in baseline
-        try
-        {
-            List<PairOfDoubleAndVectorOfDoubles> none = new ArrayList<>();
-            none.add( metIn.pairOf( 1, new double[] { 1 } ) );
-            none.add( metIn.pairOf( Double.NaN, new double[] { Double.NaN } ) );
-            slicer.filter( metIn.ofEnsemblePairs( values, none, meta, meta ),
-                           slicer.leftAndEachOfRight( a -> a > 1 ),
-                           null );
-            fail( "Expected an exception on attempting to filter with no baseline data." );
-        }
-        catch ( MetricInputSliceException e )
-        {
-        }
-
-        //No climatological data
-        try
-        {
-            EnsemblePairs test =
-                    metIn.ofEnsemblePairs( values,
-                                           meta,
-                                           metIn.vectorOf( new double[] { 1, Double.NaN } ) );
-            slicer.filter( test, slicer.leftAndEachOfRight( a -> a > 1 ), a -> a > 1 );
-            fail( "Expected an exception on attempting to filter with no climatological data." );
-        }
-        catch ( MetricInputSliceException e )
-        {
-        }
     }
 
     /**
      * Tests the {@link Slicer#filter(TimeSeriesOfSingleValuedPairs, java.util.function.Predicate, java.util.function.DoublePredicate)}.
-    
-     * @throws MetricInputSliceException if slicing results in an unexpected exception
      */
 
     @Test
-    public void test17FilterTimeSeriesOfSingleValuedPairs() throws MetricInputSliceException
+    public void test17FilterTimeSeriesOfSingleValuedPairs()
     {
         //Build a time-series with three basis times 
         List<Event<PairOfDoubles>> first = new ArrayList<>();
@@ -977,30 +813,6 @@ public final class DefaultSlicerTest
 
         assertTrue( "The filtered time-series does not match the benchmark.",
                     fifthDataBase.equals( fifthBenchmarkBase ) );
-
-        //Test exceptions
-        //No pairs in main
-        try
-        {
-            slicer.filter( firstSeries,
-                           Slicer.anyOfLeftAndAnyOfRightInTimeSeriesOfSingleValuedPairs( value -> value > 10 ),
-                           null );
-            fail( "Expected an exception on attempting to filter with no data." );
-        }
-        catch ( MetricInputSliceException e )
-        {
-        }
-        //No pairs in baseline
-        try
-        {
-            slicer.filter( b.build(),
-                           Slicer.anyOfLeftAndAnyOfRightInTimeSeriesOfSingleValuedPairs( value -> value > 7 ),
-                           null );
-            fail( "Expected an exception on attempting to filter with no baseline data." );
-        }
-        catch ( MetricInputSliceException e )
-        {
-        }
 
     }
 

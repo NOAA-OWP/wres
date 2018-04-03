@@ -197,8 +197,8 @@ class SafeTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
     public Instant getLatestBasisTime()
     {
         return TimeSeriesHelper.getLatestBasisTime( this.getBasisTimes() );
-    }     
-    
+    }
+
     @Override
     public String toString()
     {
@@ -223,7 +223,7 @@ class SafeTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
          * The raw data for the baseline
          */
 
-        private List<Event<List<Event<PairOfDoubleAndVectorOfDoubles>>>> baselineData = new ArrayList<>();
+        private List<Event<List<Event<PairOfDoubleAndVectorOfDoubles>>>> baselineData = null;
 
         @Override
         public SafeTimeSeriesOfEnsemblePairsBuilder
@@ -239,9 +239,16 @@ class SafeTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
         public SafeTimeSeriesOfEnsemblePairsBuilder
                 addTimeSeriesDataForBaseline( List<Event<List<Event<PairOfDoubleAndVectorOfDoubles>>>> values )
         {
-            List<Event<List<Event<PairOfDoubleAndVectorOfDoubles>>>> sorted = TimeSeriesHelper.sort( values );
-            baselineData.addAll( sorted );
-            addDataForBaseline( TimeSeriesHelper.unwrap( sorted ) );
+            if ( Objects.nonNull( values ) )
+            {
+                if ( Objects.isNull( this.baselineData ) )
+                {
+                    this.baselineData = new ArrayList<>();
+                }
+                List<Event<List<Event<PairOfDoubleAndVectorOfDoubles>>>> sorted = TimeSeriesHelper.sort( values );
+                this.baselineData.addAll( sorted );
+                this.addDataForBaseline( TimeSeriesHelper.unwrap( sorted ) );
+            }
             return this;
         }
 
@@ -249,9 +256,7 @@ class SafeTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
         public SafeTimeSeriesOfEnsemblePairsBuilder
                 addTimeSeries( TimeSeriesOfEnsemblePairs timeSeries )
         {
-            List<Metadata> mainMeta = new ArrayList<>();
             VectorOfDoubles climatology = null;
-            MetadataFactory metaFac = DefaultMetadataFactory.getInstance();
             for ( TimeSeries<PairOfDoubleAndVectorOfDoubles> a : timeSeries.basisTimeIterator() )
             {
                 //Add the main data
@@ -263,15 +268,24 @@ class SafeTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
                 {
                     nextSource.add( nextEvent );
                 }
-                addTimeSeriesData( Arrays.asList( Event.of( next.getEarliestBasisTime(), nextSource ) ) );
-                mainMeta.add( next.getMetadata() );
+                this.addTimeSeriesData( Arrays.asList( Event.of( next.getEarliestBasisTime(), nextSource ) ) );
+
                 //Add climatology if available
                 if ( next.hasClimatology() )
                 {
                     climatology = next.getClimatology();
                 }
             }
-            setMetadata( metaFac.unionOf( mainMeta ) );
+
+            // Set the union of the current metadata and any previously added time-series
+            MetadataFactory metaFac = DefaultMetadataFactory.getInstance();
+            List<Metadata> mainMeta = new ArrayList<>();  
+            mainMeta.add( timeSeries.getMetadata() );
+            if ( Objects.nonNull( this.mainMeta ) )
+            {
+                mainMeta.add( this.mainMeta );
+            }
+            this.setMetadata( metaFac.unionOf( mainMeta ) );
 
             //Add the baseline data if required
             if ( timeSeries.hasBaseline() )
@@ -279,15 +293,13 @@ class SafeTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
                 this.addTimeSeriesForBaseline( timeSeries.getBaselineData() );
             }
 
-            setClimatology( climatology );
+            this.setClimatology( climatology );
             return this;
         }
-        
+
         @Override
         public TimeSeriesOfEnsemblePairsBuilder addTimeSeriesForBaseline( TimeSeriesOfEnsemblePairs timeSeries )
         {
-            List<Metadata> baselineMeta = new ArrayList<>();
-            MetadataFactory metaFac = DefaultMetadataFactory.getInstance();
             for ( TimeSeries<PairOfDoubleAndVectorOfDoubles> a : timeSeries.basisTimeIterator() )
             {
                 //Add the main data
@@ -299,16 +311,24 @@ class SafeTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
                 {
                     nextSource.add( nextEvent );
                 }
-                addTimeSeriesDataForBaseline( Arrays.asList( Event.of( next.getEarliestBasisTime(), nextSource ) ) );
-
-                baselineMeta.add( next.getMetadata() );
+                this.addTimeSeriesDataForBaseline( Arrays.asList( Event.of( next.getEarliestBasisTime(), nextSource ) ) );
             }
 
-            setMetadataForBaseline( metaFac.unionOf( baselineMeta ) );
+            // Set the union of the current metadata and any previously added time-series
+            MetadataFactory metaFac = DefaultMetadataFactory.getInstance();
+            List<Metadata> baselineMeta = new ArrayList<>();
+            
+            // Metadata, as with data, is taken from the main input
+            baselineMeta.add( timeSeries.getMetadata() );
+            if ( Objects.nonNull( this.baselineMeta ) )
+            {
+                baselineMeta.add( this.baselineMeta );
+            }
+            this.setMetadataForBaseline( metaFac.unionOf( baselineMeta ) );
 
             return this;
-        }        
-        
+        }
+
         @Override
         public SafeTimeSeriesOfEnsemblePairs build()
         {
@@ -367,10 +387,10 @@ class SafeTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
                         }
                         SafeTimeSeriesOfEnsemblePairsBuilder builder =
                                 new SafeTimeSeriesOfEnsemblePairsBuilder();
-                        
+
                         // Iterate
                         iterator.next();
-                        
+
                         builder.addTimeSeriesData( Arrays.asList( bP.getData().get( returned ) ) );
 
                         // Propagate the metadata without adjustment because the input period is canonical
@@ -426,7 +446,7 @@ class SafeTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
                         }
                         SafeTimeSeriesOfEnsemblePairsBuilder builder =
                                 new SafeTimeSeriesOfEnsemblePairsBuilder();
-                        
+
                         // Iterate
                         Duration nextDuration = iterator.next();
 

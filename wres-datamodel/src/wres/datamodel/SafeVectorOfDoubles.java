@@ -106,4 +106,11 @@ class SafeVectorOfDoubles implements VectorOfDoubles
     {
         return Arrays.hashCode(this.getDoubles());
     }
+    
+    @Override
+    public String toString()
+    {
+        return Arrays.toString( doubles );
+    }
+    
 }

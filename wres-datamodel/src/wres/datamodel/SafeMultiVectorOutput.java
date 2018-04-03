@@ -3,6 +3,7 @@ package wres.datamodel;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.StringJoiner;
 
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.metadata.MetricOutputMetadata;
@@ -70,6 +71,14 @@ class SafeMultiVectorOutput implements MultiVectorOutput
     public int hashCode()
     {
         return Objects.hash( meta, output );
+    }
+
+    @Override
+    public String toString()
+    {
+        StringJoiner joiner = new StringJoiner( System.lineSeparator() );
+        output.forEach( ( key, value ) -> joiner.add( key + ": " + value ) );
+        return joiner.toString();
     }
 
     /**

@@ -13,6 +13,7 @@ import java.util.function.ToDoubleFunction;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.MissingValues;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.metadata.MetricOutputMetadata;
@@ -67,14 +68,23 @@ public class TimingErrorSummaryStatistics implements Function<PairedOutput<Insta
         {
             nextIdentifier = next.getKey();
 
-            // Convert the input to double ms
-            double[] input = pairs.getData().stream().mapToDouble( a -> a.getValue().toMillis() ).toArray();
+            // Some data available
+            if ( !pairs.getData().isEmpty() )
+            {
+                // Convert the input to double ms
+                double[] input = pairs.getData().stream().mapToDouble( a -> a.getValue().toMillis() ).toArray();
 
-            // Some loss of precision here, not consequential
-            returnMe.put( nextIdentifier,
-                          Duration.ofMillis( (long) statistics.get( nextIdentifier )
-                                                              .applyAsDouble( this.getDataFactory()
-                                                                                  .vectorOf( input ) ) ) );
+                // Some loss of precision here, not consequential
+                returnMe.put( nextIdentifier,
+                              Duration.ofMillis( (long) statistics.get( nextIdentifier )
+                                                                  .applyAsDouble( this.getDataFactory()
+                                                                                      .vectorOf( input ) ) ) );
+            }
+            // No data available
+            else
+            {
+                returnMe.put( nextIdentifier, MissingValues.MISSING_DURATION );
+            }
         }
 
         // Create output metadata with the identifier of the statistic as the component identifier

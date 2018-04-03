@@ -1,5 +1,6 @@
 package wres.engine.statistics.metric.discreteprobability;
 
+import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
@@ -9,6 +10,7 @@ import org.apache.commons.math3.util.Precision;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
+import wres.datamodel.MetricConstants.MissingValues;
 import wres.datamodel.Slicer;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
@@ -62,27 +64,40 @@ public class RelativeOperatingCharacteristicDiagram extends Diagram<DiscreteProb
         double constant = 1.0 / points;
         double[] pOD = new double[points + 1];
         double[] pOFD = new double[points + 1];
+        
+        // Initialize arrays
+        Arrays.fill( pOD, MissingValues.MISSING_DOUBLE );
+        Arrays.fill( pOFD, MissingValues.MISSING_DOUBLE );
+        
         DataFactory d = getDataFactory();
-        Slicer slice = d.getSlicer();
-
-        for ( int i = 1; i < points; i++ )
+        
+        // Some data to process        
+        if ( !s.getData().isEmpty() )
         {
-            double prob = Precision.round( 1.0 - ( i * constant ), 5 );
-            //Compute the PoD/PoFD using the probability threshold to determine whether the event occurred
-            //according to the probability on the RHS
-            MetricOutputMapByMetric<DoubleScoreOutput> out =
-                    roc.apply( slice.transform( s,
-                                                     in -> d.pairOf( Double.compare( in.getItemOne(),
-                                                                                     1.0 ) == 0,
-                                                                     in.getItemTwo() > prob ) ) );
-            //Store
-            pOD[i] = out.get( MetricConstants.PROBABILITY_OF_DETECTION ).getData();
-            pOFD[i] = out.get( MetricConstants.PROBABILITY_OF_FALSE_DETECTION ).getData();
-        }
-        //Set the upper point to (1.0, 1.0)
-        pOD[points] = 1.0;
-        pOFD[points] = 1.0;
+            Slicer slice = d.getSlicer();
 
+            for ( int i = 1; i < points; i++ )
+            {
+                double prob = Precision.round( 1.0 - ( i * constant ), 5 );
+                //Compute the PoD/PoFD using the probability threshold to determine whether the event occurred
+                //according to the probability on the RHS
+                MetricOutputMapByMetric<DoubleScoreOutput> out =
+                        roc.apply( slice.transform( s,
+                                                    in -> d.pairOf( Double.compare( in.getItemOne(),
+                                                                                    1.0 ) == 0,
+                                                                    in.getItemTwo() > prob ) ) );
+                //Store
+                pOD[i] = out.get( MetricConstants.PROBABILITY_OF_DETECTION ).getData();
+                pOFD[i] = out.get( MetricConstants.PROBABILITY_OF_FALSE_DETECTION ).getData();
+            }
+            
+            //Set the lower and upper margins to (0.0, 0.0) and (1.0, 1.0), respectively            
+            pOD[0] = 0.0;
+            pOFD[0] = 0.0;            
+            pOD[points] = 1.0;
+            pOFD[points] = 1.0;
+        }
+        
         //Set the results
         Map<MetricDimension, double[]> output = new EnumMap<>( MetricDimension.class );
         output.put( MetricDimension.PROBABILITY_OF_DETECTION, pOD );

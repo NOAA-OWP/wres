@@ -71,47 +71,7 @@ public final class SafeSingleValuedPairsTest
         catch(final Exception e)
         {
         }
-        //Null pair list
-        try
-        {
-            final SingleValuedPairsBuilder c = new SingleValuedPairsBuilder();
-            c.addData(null).setMetadata(meta).build();
-            fail("Expected a checked exception on invalid inputs: null pair list.");
-        }
-        catch(final Exception e)
-        {
-        }
         
-        //Only non-finite main pairs
-        try
-        {
-            values.clear();
-            values.add( metIn.pairOf( Double.NaN, 1 ) );
-            final SingleValuedPairsBuilder c = new SingleValuedPairsBuilder();
-            c.addData( values ).setMetadata( meta ).build();
-            fail( "Expected a checked exception on invalid inputs: all data missing." );
-        }
-        catch ( final InsufficientDataException e )
-        {
-        }
-        //Only non-finite baseline pairs
-        try
-        {
-            values.clear();
-            values.add( metIn.pairOf( 1, 1 ) );
-            final List<PairOfDoubles> baselineValues = new ArrayList<>();
-            baselineValues.add( metIn.pairOf( Double.NaN, 1 ) );
-            final SingleValuedPairsBuilder c = new SingleValuedPairsBuilder();
-            c.addData( values )
-             .setMetadata( meta )
-             .addDataForBaseline( baselineValues )
-             .setMetadataForBaseline( meta )
-             .build();
-            fail( "Expected a checked exception on invalid inputs: all baseline data missing." );
-        }
-        catch ( final InsufficientDataException e )
-        {
-        }
         //Only non-finite climatology
         try
         {

@@ -5,7 +5,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -22,7 +21,6 @@ import java.util.concurrent.Future;
 import java.util.function.Predicate;
 
 import org.apache.commons.lang3.tuple.Pair;
-import org.slf4j.event.Level;
 
 import wres.config.MetricConfigException;
 import wres.config.generated.ProjectConfig;
@@ -35,14 +33,11 @@ import wres.datamodel.Slicer;
 import wres.datamodel.Threshold;
 import wres.datamodel.ThresholdConstants.ThresholdGroup;
 import wres.datamodel.ThresholdsByMetric;
-import wres.datamodel.inputs.InsufficientDataException;
 import wres.datamodel.inputs.MetricInput;
-import wres.datamodel.inputs.MetricInputSliceException;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
-import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.DoubleScoreOutput;
@@ -62,8 +57,6 @@ import wres.engine.statistics.metric.MetricParameterException;
  * A {@link MetricProcessor} that processes and stores metric results by {@link TimeWindow}.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 
 public abstract class MetricProcessorByTime<S extends MetricInput<?>>
@@ -563,7 +556,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
         {
             Objects.requireNonNull( builder.dataFactory,
                                     "Specify a non-null data factory from which to construct the metric futures." );
-            
+
             // Builder does not allow for overwrites.
             // Thus, putAll is safe in this context.
             doubleScore.putAll( builder.doubleScore );
@@ -633,59 +626,6 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
                                                                    ignoreTheseMetrics ) );
         }
 
-    }
-
-    /**
-     * Logs failures at individual thresholds due to insufficient data.
-     * 
-     * @param failures a map of failures and associated {@link MetricCalculationException}
-     * @param thresholdCount the total number of thresholds attempted
-     * @param meta the {@link Metadata} used to help focus messaging
-     * @param inGroup the {@link MetricInputGroup} consumed by the metrics on which the failure occurred, used to 
-     *            focus messaging
-     * @param level the logging level           
-     */
-
-    static void logThresholdFailures( Map<OneOrTwoThresholds, MetricCalculationException> failures,
-                                      int thresholdCount,
-                                      Metadata meta,
-                                      MetricInputGroup inGroup,
-                                      Level level )
-    {
-        if ( Objects.isNull( failures ) || failures.isEmpty() )
-        {
-            return;
-        }
-
-        // Prepare log
-        String message = "WARN: failed to compute {} of {} thresholds at time window {} for metrics that consume {} "
-                         + "inputs. ";
-
-        Object[] arguments = new Object[] { failures.size(),
-                                            thresholdCount,
-                                            meta.getTimeWindow(),
-                                            inGroup };
-        // Log
-        switch ( level )
-        {
-            case DEBUG:
-                LOGGER.debug( message, arguments );
-                break;
-            case ERROR:
-                LOGGER.error( message, arguments );
-                break;
-            case INFO:
-                LOGGER.info( message, arguments );
-                break;
-            case TRACE:
-                LOGGER.trace( message, arguments );
-                break;
-            case WARN:
-                LOGGER.warn( message, arguments );
-                break;
-            default:
-                break;
-        }
     }
 
     /**
@@ -800,7 +740,6 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
         Set<Threshold> union = filtered.union();
 
         double[] sorted = getSortedClimatology( input, union );
-        Map<OneOrTwoThresholds, MetricCalculationException> failures = new HashMap<>();
 
         // Iterate the thresholds
         for ( Threshold threshold : union )
@@ -810,46 +749,23 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
             // Add quantiles to threshold
             Threshold useMe = this.addQuantilesToThreshold( threshold, sorted );
 
-            try
+            SingleValuedPairs pairs = input;
+
+            // Filter the data if required
+            if ( useMe.isFinite() )
             {
-                SingleValuedPairs pairs = input;
+                Predicate<PairOfDoubles> filter = MetricProcessorByTime.getFilterForSingleValuedPairs( useMe );
 
-                // Filter the data if required
-                if ( useMe.isFinite() )
-                {
-                    Predicate<PairOfDoubles> filter = MetricProcessorByTime.getFilterForSingleValuedPairs( useMe );
-
-                    pairs = dataFactory.getSlicer().filter( input, filter, null );
-
-                }
-
-                processSingleValuedPairs( Pair.of( timeWindow, OneOrTwoThresholds.of( useMe ) ),
-                                          pairs,
-                                          futures,
-                                          outGroup,
-                                          ignoreTheseMetrics );
+                pairs = dataFactory.getSlicer().filter( input, filter, null );
 
             }
-            // Insufficient data for one threshold: log failures collectively and proceed
-            // Such failures are routine and should not be propagated
-            catch ( MetricInputSliceException | InsufficientDataException e )
-            {
-                // TODO: is there a way to prevent the above exceptions from
-                // occurring in the first place? Then can remove the
-                // logThresholdFailures method too. Refs #46369
 
-                // Decorate failure
-                failures.put( OneOrTwoThresholds.of( useMe ),
-                              new MetricCalculationException( "While processing threshold " + threshold + ":", e ) );
-            }
+            processSingleValuedPairs( Pair.of( timeWindow, OneOrTwoThresholds.of( useMe ) ),
+                                      pairs,
+                                      futures,
+                                      outGroup,
+                                      ignoreTheseMetrics );
         }
-
-        // Log failures collectively
-        logThresholdFailures( Collections.unmodifiableMap( failures ),
-                              union.size(),
-                              input.getMetadata(),
-                              MetricInputGroup.SINGLE_VALUED,
-                              Level.WARN );
     }
 
     /**

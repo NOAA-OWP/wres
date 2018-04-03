@@ -114,7 +114,7 @@ class SafeSingleValuedPairs implements SingleValuedPairs
         /**
          * Pairs for baseline.
          */
-        List<PairOfDoubles> baselineInput = new ArrayList<>();
+        List<PairOfDoubles> baselineInput = null;
 
         @Override
         public SingleValuedPairsBuilder addData( final List<PairOfDoubles> mainInput )
@@ -131,6 +131,10 @@ class SafeSingleValuedPairs implements SingleValuedPairs
         {
             if ( Objects.nonNull( baselineInput ) )
             {
+                if( Objects.isNull( this.baselineInput ) )
+                {
+                    this.baselineInput = new ArrayList<>();
+                }
                 this.baselineInput.addAll( baselineInput );
             }
             return this;
@@ -148,7 +152,7 @@ class SafeSingleValuedPairs implements SingleValuedPairs
      * 
      * @param b the builder
      * @throws MetricInputException if the pairs are invalid
-     * @throws InsufficientDataException if all inputs are non-finite
+     * @throws InsufficientDataException if the climatological data is both non-null and without finite values
      */
 
     SafeSingleValuedPairs( final SingleValuedPairsBuilder b )
@@ -156,10 +160,21 @@ class SafeSingleValuedPairs implements SingleValuedPairs
         //Ensure safe types
         DefaultDataFactory factory = (DefaultDataFactory) DefaultDataFactory.getInstance();
         this.mainInput = factory.safePairOfDoublesList( b.mainInput );
-        this.baselineInput = b.baselineInput.isEmpty() ? null : factory.safePairOfDoublesList( b.baselineInput );
         this.mainMeta = b.mainMeta;
-        this.baselineMeta = b.baselineMeta;
         this.climatology = b.climatology;
+        
+        // Baseline data?
+        if( Objects.nonNull( b.baselineInput ) )
+        {
+            this.baselineInput = factory.safePairOfDoublesList( b.baselineInput );
+        }
+        else 
+        {
+            this.baselineInput = null;
+        }
+        
+        // Always set baseline metadata because null-status is validated
+        this.baselineMeta = b.baselineMeta;
 
         //Validate
         this.validateMainInput();
@@ -171,7 +186,6 @@ class SafeSingleValuedPairs implements SingleValuedPairs
      * Validates the main pairs and associated metadata after the constructor has copied it.
      * 
      * @throws MetricInputException if the input is invalid
-     * @throws InsufficientDataException if all inputs are non-finite
      */
 
     private void validateMainInput()
@@ -190,23 +204,12 @@ class SafeSingleValuedPairs implements SingleValuedPairs
         {
             throw new MetricInputException( "One or more of the pairs is null." );
         }
-
-        if ( mainInput.isEmpty() )
-        {
-            throw new MetricInputException( "Cannot build the paired data with an empty input: add one or more pairs." );
-        }
-
-        if ( !Slicer.hasOneOrMoreOf( mainInput, Double::isFinite ) )
-        {
-            throw new InsufficientDataException( "Must have at least one non-missing pair in main input." );
-        }
     }
 
     /**
      * Validates the baseline pairs and associated metadata after the constructor has copied it.
      * 
      * @throws MetricInputException if the baseline input is invalid
-     * @throws InsufficientDataException if all baseline inputs are non-finite
      */
 
     private void validateBaselineInput()
@@ -214,7 +217,7 @@ class SafeSingleValuedPairs implements SingleValuedPairs
         if ( Objects.isNull( baselineInput ) != Objects.isNull( baselineMeta ) )
         {
             throw new MetricInputException( "Specify a non-null baseline input and associated metadata or leave both "
-                                            + "null." );
+                                            + "unspecified." );
         }
 
         if ( Objects.nonNull( baselineInput ) )
@@ -222,17 +225,6 @@ class SafeSingleValuedPairs implements SingleValuedPairs
             if ( baselineInput.contains( null ) )
             {
                 throw new MetricInputException( "One or more of the baseline pairs is null." );
-            }
-
-            if ( baselineInput.isEmpty() )
-            {
-                throw new MetricInputException( "Cannot build the paired data with an empty baseline: add one or more "
-                                                + "pairs." );
-            }
-
-            if ( !Slicer.hasOneOrMoreOf( baselineInput, Double::isFinite ) )
-            {
-                throw new InsufficientDataException( "Must have at least one non-missing pair in baseline input." );
             }
         }
     }

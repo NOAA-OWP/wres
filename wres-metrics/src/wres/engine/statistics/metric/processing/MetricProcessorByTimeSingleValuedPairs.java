@@ -4,7 +4,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -18,7 +17,6 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.apache.commons.lang3.tuple.Pair;
-import org.slf4j.event.Level;
 
 import wres.config.MetricConfigException;
 import wres.config.ProjectConfigs;
@@ -32,8 +30,6 @@ import wres.datamodel.Slicer;
 import wres.datamodel.Threshold;
 import wres.datamodel.ThresholdConstants.ThresholdGroup;
 import wres.datamodel.ThresholdsByMetric;
-import wres.datamodel.inputs.InsufficientDataException;
-import wres.datamodel.inputs.MetricInputSliceException;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.PairOfBooleans;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
@@ -94,21 +90,15 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
 
         //Remove missing values, except for ordered input, such as time-series
         SingleValuedPairs inputNoMissing = input;
-        try
+
+        if ( ! ( input instanceof TimeSeriesOfSingleValuedPairs ) )
         {
-            if ( ! ( input instanceof TimeSeriesOfSingleValuedPairs ) )
+            if ( this.hasMetrics( MetricInputGroup.SINGLE_VALUED_TIME_SERIES ) )
             {
-                if ( this.hasMetrics( MetricInputGroup.SINGLE_VALUED_TIME_SERIES ) )
-                {
-                    throw new MetricCalculationException( " The project configuration includes time-series metrics. "
-                                                          + "Expected a time-series of single-valued pairs as input." );
-                }
-                inputNoMissing = slicer.filter( input, Slicer.leftAndRight( ADMISSABLE_DATA ), ADMISSABLE_DATA );
+                throw new MetricCalculationException( " The project configuration includes time-series metrics. "
+                                                      + "Expected a time-series of single-valued pairs as input." );
             }
-        }
-        catch ( MetricInputSliceException e )
-        {
-            throw new MetricCalculationException( "While attempting to remove missing values: ", e );
+            inputNoMissing = slicer.filter( input, Slicer.leftAndRight( ADMISSABLE_DATA ), ADMISSABLE_DATA );
         }
 
         //Metric futures 
@@ -447,7 +437,6 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
         Set<Threshold> union = filtered.union();
 
         double[] sorted = getSortedClimatology( input, union );
-        Map<OneOrTwoThresholds, MetricCalculationException> failures = new HashMap<>();
 
         // Iterate the thresholds
         for ( Threshold threshold : union )
@@ -457,50 +446,30 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
             // Add quantiles to threshold
             Threshold useMe = this.addQuantilesToThreshold( threshold, sorted );
 
-            try
+            final TimeSeriesOfSingleValuedPairs pairs;
+
+            // Filter the data if required
+            if ( useMe.isFinite() )
             {
-                final TimeSeriesOfSingleValuedPairs pairs;
+                Predicate<TimeSeriesOfSingleValuedPairs> filter =
+                        MetricProcessorByTime.getFilterForTimeSeriesOfSingleValuedPairs( useMe );
 
-                // Filter the data if required
-                if ( useMe.isFinite() )
-                {
-                    Predicate<TimeSeriesOfSingleValuedPairs> filter =
-                            MetricProcessorByTime.getFilterForTimeSeriesOfSingleValuedPairs( useMe );
-
-                    pairs = dataFactory.getSlicer().filter( input, filter, null );
-                }
-                else
-                {
-                    pairs = input;
-                }
-
-                // Build the future result
-                Future<MetricOutputMapByMetric<PairedOutput<Instant, Duration>>> output =
-                        CompletableFuture.supplyAsync( () -> timeSeries.apply( pairs, ignoreTheseMetrics ),
-                                                       thresholdExecutor );
-
-                // Add the future result to the store
-                futures.addPairedOutput( Pair.of( timeWindow, OneOrTwoThresholds.of( threshold ) ),
-                                         output );
-
+                pairs = dataFactory.getSlicer().filter( input, filter, null );
             }
-            // Insufficient data for one threshold: log failures collectively and proceed
-            // Such failures are routine and should not be propagated
-            catch ( MetricInputSliceException | InsufficientDataException e )
+            else
             {
-                // Decorate failure
-                failures.put( OneOrTwoThresholds.of( useMe ),
-                              new MetricCalculationException( "While processing threshold " + threshold + ":", e ) );
+                pairs = input;
             }
+
+            // Build the future result
+            Future<MetricOutputMapByMetric<PairedOutput<Instant, Duration>>> output =
+                    CompletableFuture.supplyAsync( () -> timeSeries.apply( pairs, ignoreTheseMetrics ),
+                                                   thresholdExecutor );
+
+            // Add the future result to the store
+            futures.addPairedOutput( Pair.of( timeWindow, OneOrTwoThresholds.of( threshold ) ),
+                                     output );
         }
-
-        // Log failures collectively at DEBUG level, because time-series metrics are
-        // processed iteratively and failures will be extremely common
-        logThresholdFailures( Collections.unmodifiableMap( failures ),
-                              union.size(),
-                              input.getMetadata(),
-                              MetricInputGroup.SINGLE_VALUED_TIME_SERIES,
-                              Level.DEBUG );
 
     }
 
