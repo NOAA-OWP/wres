@@ -1,8 +1,10 @@
 package wres.io.data.details;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -10,6 +12,7 @@ import java.util.concurrent.ConcurrentMap;
 
 import wres.config.generated.Feature;
 import wres.io.utilities.Database;
+import wres.io.utilities.ScriptBuilder;
 import wres.util.Strings;
 
 /**
@@ -420,11 +423,13 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
 
         Connection connection = null;
         ResultSet feature = null;
+        PreparedStatement statement = null;
 
         try
         {
             connection = Database.getHighPriorityConnection();
-            feature = Database.getResults( connection, this.getInsertSelectStatement() );
+            statement = this.getInsertSelect( connection );
+            feature = statement.executeQuery();
 
             while (feature.next())
             {
@@ -438,11 +443,505 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
                 feature.close();
             }
 
+            if (statement != null)
+            {
+                statement.close();
+            }
+
             if (connection != null)
             {
                 Database.returnHighPriorityConnection( connection );
             }
         }
+    }
+
+    private PreparedStatement getInsertSelect(Connection connection)
+            throws SQLException
+    {
+        List<Object> arguments = new ArrayList<>();
+        ScriptBuilder script = new ScriptBuilder(  );
+
+        script.addLine( this.getInsert( arguments ) );
+        script.addLine();
+        script.addLine("UNION");
+        script.addLine();
+        script.add(this.getSelect( arguments ));
+
+        return script.getPreparedStatement( connection, arguments.toArray( new Object[arguments.size()] ) );
+    }
+
+    private String getInsert(final List<Object> args)
+    {
+        ScriptBuilder script = new ScriptBuilder(  );
+
+        // Keeps track of whether or not a field has been added.
+        // When true, there needs to be a comma to separate the upcoming field
+        // from the previous field, along with a newline
+        boolean lineAdded = false;
+
+        script.addLine( "WITH new_feature AS" );
+        script.addLine("(");
+        script.addTab().addLine("INSERT INTO wres.Feature (");
+
+        if (this.getComid() != null)
+        {
+            script.addTab(  2  ).add("comid");
+
+            // A field has been added
+            lineAdded = true;
+        }
+
+        if (this.getLid() != null)
+        {
+            if (lineAdded)
+            {
+                // Add a separator between this and the previously added field
+                script.addLine(",");
+            }
+            else
+            {
+                // A field has been added
+                lineAdded = true;
+            }
+
+            script.addTab(2).addLine("lid,");
+            script.addTab(2).add("parent_feature_id");
+        }
+
+        if (this.getGageID() != null)
+        {
+            if (lineAdded)
+            {
+                // Add a separator between this and the previously added field
+                script.addLine(",");
+            }
+            else
+            {
+                // A field has been added
+                lineAdded = true;
+            }
+            script.addTab(2).add("gage_id");
+        }
+
+        if (this.getRfc() != null)
+        {
+            if (lineAdded)
+            {
+                // Add a separator between this and the previously added field
+                script.addLine(",");
+            }
+            else
+            {
+                // A field has been added
+                lineAdded = true;
+            }
+
+            script.addTab(2).add("rfc");
+        }
+
+        if (this.getState() != null)
+        {
+            if (lineAdded)
+            {
+                // Add a separator between this and the previously added field
+                script.addLine(",");
+            }
+            else
+            {
+                // A field has been added
+                lineAdded = true;
+            }
+
+            script.addTab(2).add("st");
+        }
+
+        if (this.getStateCode() != null)
+        {
+            if (lineAdded)
+            {
+                // Add a separator between this and the previously added field
+                script.addLine(",");
+            }
+            else
+            {
+                // A field has been added
+                lineAdded = true;
+            }
+
+            script.addTab(2).add("st_code");
+        }
+
+        if (this.getHuc() != null)
+        {
+            if (lineAdded)
+            {
+                // Add a separator between this and the previously added field
+                script.addLine(",");
+            }
+            else
+            {
+                // A field has been added
+                lineAdded = true;
+            }
+
+            script.addTab(2).add("huc");
+        }
+
+        if (this.getFeatureName() != null)
+        {
+            if (lineAdded)
+            {
+                // Add a separator between this and the previously added field
+                script.addLine(",");
+            }
+            else
+            {
+                // A field has been added
+                lineAdded = true;
+            }
+
+            script.addTab(2).add("feature_name");
+        }
+
+        if (this.getLatitude() != null)
+        {
+            if (lineAdded)
+            {
+                // Add a separator between this and the previously added field
+                script.addLine(",");
+            }
+            else
+            {
+                // A field has been added
+                lineAdded = true;
+            }
+
+            script.addTab(2).add("latitude");
+        }
+
+        if (this.getLongitude() != null)
+        {
+            if (lineAdded)
+            {
+                // Add a separator between this and the previously added field
+                script.addLine(",");
+            }
+
+            script.addTab(2).add("longitude");
+        }
+
+        script.addLine();
+        script.addTab().addLine(")");
+
+        // Now keeps track if we've added a line for a value
+        // If true, we need to add a separator between encountered values
+        lineAdded = false;
+
+        script.addTab().addLine("SELECT");
+
+        if (this.getComid() != null)
+        {
+            script.addTab(2).add("?");
+
+            args.add(this.getComid());
+
+            // A value has now been added
+            lineAdded = true;
+        }
+
+        if (this.getLid() != null)
+        {
+            if (lineAdded)
+            {
+                // Separate this value from the previous one
+                script.addLine(",");
+            }
+            else
+            {
+                // A value will be added
+                lineAdded = true;
+            }
+
+            script.addTab(2).addLine("?,");
+            script.addTab(2).addLine("(");
+            script.addTab(  3  ).addLine("SELECT feature_id");
+            script.addTab(  3  ).addLine("FROM wres.Feature F");
+            script.addTab(  3  ).addLine("WHERE ? LIKE F.lid || '%'");
+            script.addTab(2).add(")");
+
+            args.add(this.getLid());
+            args.add(this.getLid());
+        }
+
+        if (this.getGageID() != null)
+        {
+            if (lineAdded)
+            {
+                // Separate this value from the previous one
+                script.addLine(",");
+            }
+            else
+            {
+                // A value will be added
+                lineAdded = true;
+            }
+
+
+            script.addTab(2).add("?");
+            args.add(this.getGageID());
+        }
+
+        if (this.getRfc() != null)
+        {
+            if (lineAdded)
+            {
+                // Separate this value from the previous one
+                script.addLine(",");
+            }
+            else
+            {
+                // A value will be added
+                lineAdded = true;
+            }
+
+            script.addTab(2).add("?");
+            args.add(this.getRfc());
+        }
+
+        if (this.getState() != null)
+        {
+            if (lineAdded)
+            {
+                // Separate this value from the previous one
+                script.addLine(",");
+            }
+            else
+            {
+                // A value will be added
+                lineAdded = true;
+            }
+
+            script.addTab(2).add("?");
+            args.add(this.getState());
+        }
+
+        if (this.getStateCode() != null)
+        {
+            if (lineAdded)
+            {
+                // Separate this value from the previous one
+                script.addLine(",");
+            }
+            else
+            {
+                // A value will be added
+                lineAdded = true;
+            }
+
+            script.addTab(2).add("?");
+            args.add(this.getStateCode());
+        }
+
+        if (this.getHuc() != null)
+        {
+            if (lineAdded)
+            {
+                // Separate this value from the previous one
+                script.addLine(",");
+            }
+            else
+            {
+                // A value will be added
+                lineAdded = true;
+            }
+
+            script.addTab(2).add("?");
+            args.add(this.getHuc());
+        }
+
+        if (this.getFeatureName() != null)
+        {
+            if (lineAdded)
+            {
+                // Seperate this value from the previous one
+                script.addLine(",");
+            }
+            else
+            {
+                // A value will be added
+                lineAdded = true;
+            }
+
+            script.addTab(2).add("?");
+            args.add(this.getFeatureName());
+        }
+
+        if (this.getLatitude() != null)
+        {
+            if (lineAdded)
+            {
+                // Separate this value from the previous one
+                script.addLine(",");
+            }
+            else
+            {
+                // A value will be added
+                lineAdded = true;
+            }
+
+            script.addTab(2).add("?");
+            args.add(this.getLatitude());
+        }
+
+        if (this.getLongitude() != null)
+        {
+            if (lineAdded)
+            {
+                // Separate this value from the previous one
+                script.addLine(",");
+            }
+
+            script.addTab(2).add("?");
+            args.add(this.getLongitude());
+        }
+
+        script.addLine();
+        script.addTab().addLine("WHERE NOT EXISTS (");
+        script.addTab(  2  ).addLine("SELECT 1");
+        script.addTab(  2  ).addLine("FROM wres.Feature");
+        script.addTab(  2  ).add("WHERE ");
+
+        // Indicates whether or not a where clause has been added
+        // If true, an 'OR' operator needs to be added
+        lineAdded = false;
+
+        if (this.getComid() != null)
+        {
+            script.add("comid = ?");
+            args.add( this.getComid() );
+
+            // A clause was added
+            lineAdded = true;
+        }
+
+        if (Strings.hasValue( this.getLid() ))
+        {
+            if (lineAdded)
+            {
+                // Separate this clause from the previous with an OR operator
+                script.addLine();
+                script.addTab(3).add("OR ");
+            }
+            else
+            {
+                // A clause will be added
+                lineAdded = true;
+            }
+
+            script.add("lid = ?");
+            args.add( this.getLid() );
+        }
+
+        if (Strings.hasValue( this.getGageID() ))
+        {
+            if (lineAdded)
+            {
+                // Separate this clause from the previous with an OR operator
+                script.addLine();
+                script.addTab(3).add("OR ");
+            }
+
+            script.add("gage_id = ?");
+            args.add(this.getGageID());
+        }
+
+        script.addLine();
+        script.addTab().addLine(")");
+        script.addTab().addLine("RETURNING feature_id,");
+        script.addTab(  2  ).addLine("comid,");
+        script.addTab(  2  ).addLine("lid,");
+        script.addTab(  2  ).addLine("gage_id,");
+        script.addTab(  2  ).addLine("rfc,");
+        script.addTab(  2  ).addLine("st,");
+        script.addTab(  2  ).addLine("st_code,");
+        script.addTab(  2  ).addLine("huc,");
+        script.addTab(  2  ).addLine("feature_name,");
+        script.addTab(  2  ).addLine("latitude,");
+        script.addTab(  2  ).addLine("longitude,");
+        script.addTab(  2  ).addLine("nwm_index");
+        script.addLine(")");
+        script.addLine("SELECT *");
+        script.addLine("FROM new_feature");
+
+        return script.toString();
+    }
+
+    private String getSelect(final List<Object> args)
+    {
+        ScriptBuilder script = new ScriptBuilder(  );
+
+        script.addLine("SELECT feature_id,");
+        script.addTab().addLine("comid,");
+        script.addTab().addLine("lid,");
+        script.addTab().addLine("gage_id,");
+        script.addTab().addLine("rfc,");
+        script.addTab().addLine("st,");
+        script.addTab().addLine("st_code,");
+        script.addTab().addLine("huc,");
+        script.addTab().addLine("feature_name,");
+        script.addTab().addLine("latitude,");
+        script.addTab().addLine("longitude,");
+        script.addTab().addLine("nwm_index");
+        script.addLine("FROM wres.Feature");
+        script.add("WHERE ");
+
+        // Determines if an OR operator needs to be added to separate clauses
+        boolean clauseAdded = false;
+
+        if (this.getComid() != null)
+        {
+            script.add("comid = ?");
+            args.add(this.getComid());
+
+            // A clause was added
+            clauseAdded = true;
+        }
+
+        if (Strings.hasValue( this.getLid() ))
+        {
+            if (clauseAdded)
+            {
+                // Separate clauses by an OR operator
+                script.addLine();
+                script.addTab().add("OR ");
+            }
+            else
+            {
+                // A clause will be added
+                clauseAdded = true;
+            }
+
+            script.add("lid = ?");
+            args.add(this.getLid());
+        }
+
+        if (Strings.hasValue( this.getGageID() ))
+        {
+            if (clauseAdded)
+            {
+                // Separate clauses by an OR operator
+                script.addLine();
+                script.addTab().add("OR ");
+            }
+
+            script.add("gage_id = ?");
+            args.add(this.getGageID());
+        }
+
+        script.addLine();
+        script.add("LIMIT 1;");
+
+        return script.toString();
     }
 
     @Override
@@ -766,7 +1265,8 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
                 lineAdded = true;
             }
 
-            script += twoTab + "'" + this.getFeatureName() + "'";
+            // This is not a good solution. This needs to be cleaned up ASAP and is temporary
+            script += twoTab + "'" + this.getFeatureName().replaceAll( "\'", "\\'" ) + "'";
         }
 
         if (this.getLatitude() != null)
@@ -904,7 +1404,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
                 clauseAdded = true;
             }
 
-            script += "lid = '" + this.getLid() + "'" + NEWLINE;
+            script += "lid = '" + this.getLid() + "'";
         }
 
         if (Strings.hasValue( this.getGageID() ))
@@ -916,9 +1416,10 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
                 script += "    OR ";
             }
 
-            script += "gage_id = '" + this.getGageID() + "'" + NEWLINE;
+            script += "gage_id = '" + this.getGageID() + "'";
         }
 
+        script += NEWLINE;
         script += "LIMIT 1;";
 
         return script;
