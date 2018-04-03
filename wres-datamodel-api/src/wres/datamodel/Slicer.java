@@ -1,5 +1,7 @@
 package wres.datamodel;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -18,10 +20,12 @@ import wres.datamodel.inputs.pairs.PairOfBooleans;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.ScoreOutput;
 import wres.datamodel.time.Event;
+import wres.datamodel.time.TimeSeries;
 
 /**
  * A utility class for slicing/dicing and transforming datasets associated with verification metrics.
@@ -47,7 +51,7 @@ public interface Slicer
     static Predicate<PairOfDoubles> left( DoublePredicate predicate )
     {
         Objects.requireNonNull( predicate, "Specify non-null input when slicing by left." );
-        
+
         return pair -> predicate.test( pair.getItemOne() );
     }
 
@@ -64,7 +68,7 @@ public interface Slicer
     static Predicate<PairOfDoubles> right( DoublePredicate predicate )
     {
         Objects.requireNonNull( predicate, "Specify non-null input when slicing by right." );
-        
+
         return pair -> predicate.test( pair.getItemTwo() );
     }
 
@@ -81,7 +85,7 @@ public interface Slicer
     static Predicate<PairOfDoubles> leftAndRight( DoublePredicate predicate )
     {
         Objects.requireNonNull( predicate, "Specify non-null input when slicing by left and right." );
-        
+
         return pair -> predicate.test( pair.getItemOne() ) && predicate.test( pair.getItemTwo() );
     }
 
@@ -98,7 +102,7 @@ public interface Slicer
     static Predicate<PairOfDoubles> leftOrRight( DoublePredicate predicate )
     {
         Objects.requireNonNull( predicate, "Specify non-null input when slicing by left or right." );
-        
+
         return pair -> predicate.test( pair.getItemOne() ) || predicate.test( pair.getItemTwo() );
     }
 
@@ -115,7 +119,7 @@ public interface Slicer
     static Predicate<PairOfDoubleAndVectorOfDoubles> leftVector( DoublePredicate predicate )
     {
         Objects.requireNonNull( predicate, "Specify non-null input when slicing by left." );
-        
+
         return pair -> predicate.test( pair.getItemOne() );
     }
 
@@ -132,7 +136,7 @@ public interface Slicer
     static Predicate<PairOfDoubleAndVectorOfDoubles> allOfRight( DoublePredicate predicate )
     {
         Objects.requireNonNull( predicate, "Specify non-null input when slicing by all of right." );
-        
+
         return pair -> Arrays.stream( pair.getItemTwo() ).allMatch( predicate );
     }
 
@@ -149,7 +153,7 @@ public interface Slicer
     static Predicate<PairOfDoubleAndVectorOfDoubles> anyOfRight( DoublePredicate predicate )
     {
         Objects.requireNonNull( predicate, "Specify non-null input when slicing by any of right." );
-        
+
         return pair -> Arrays.stream( pair.getItemTwo() ).anyMatch( predicate );
     }
 
@@ -166,7 +170,7 @@ public interface Slicer
     static Predicate<PairOfDoubleAndVectorOfDoubles> leftAndAllOfRight( DoublePredicate predicate )
     {
         Objects.requireNonNull( predicate, "Specify non-null input when slicing by left and all of right." );
-        
+
         return pair -> predicate.test( pair.getItemOne() ) && Arrays.stream( pair.getItemTwo() ).allMatch( predicate );
     }
 
@@ -183,7 +187,7 @@ public interface Slicer
     static Predicate<PairOfDoubleAndVectorOfDoubles> leftAndAnyOfRight( DoublePredicate predicate )
     {
         Objects.requireNonNull( predicate, "Specify non-null input when slicing by left and any of right." );
-        
+
         return pair -> predicate.test( pair.getItemOne() ) && Arrays.stream( pair.getItemTwo() ).anyMatch( predicate );
     }
 
@@ -202,9 +206,9 @@ public interface Slicer
                                                             ToDoubleFunction<double[]> transformer )
     {
         Objects.requireNonNull( predicate, "Specify non-null input when slicing by right." );
-        
+
         Objects.requireNonNull( transformer, "Specify a non-null transformer when slicing by right." );
-        
+
         return pair -> predicate.test( transformer.applyAsDouble( pair.getItemTwo() ) );
     }
 
@@ -224,13 +228,13 @@ public interface Slicer
                                                                    ToDoubleFunction<double[]> transformer )
     {
         Objects.requireNonNull( predicate, "Specify non-null input when slicing by left and right." );
-        
+
         Objects.requireNonNull( transformer, "Specify a non-null transformer when slicing by left and right." );
-        
+
         return pair -> predicate.test( pair.getItemOne() )
                        && predicate.test( transformer.applyAsDouble( pair.getItemTwo() ) );
     }
-    
+
     /**
      * <p>Composes the input predicate as applying to the left side of any paired value within a time-series.
      * 
@@ -261,7 +265,7 @@ public interface Slicer
             return false;
         };
     }
-    
+
     /**
      * <p>Composes the input predicate as applying to the right side of any paired value within a time-series.
      * 
@@ -291,8 +295,8 @@ public interface Slicer
 
             return false;
         };
-    }   
-    
+    }
+
     /**
      * <p>Composes the input predicate as applying to the left side of any paired value within a time-series and,
      * separately, to the right side of any paired value within that time-series.</p>
@@ -308,7 +312,7 @@ public interface Slicer
             anyOfLeftAndAnyOfRightInTimeSeriesOfSingleValuedPairs( DoublePredicate predicate )
     {
         Objects.requireNonNull( predicate, "Specify non-null input when slicing a time-series by any of left"
-                + "and any of right." );
+                                           + "and any of right." );
 
         // Compose independently
         return times -> Slicer.anyOfLeftInTimeSeriesOfSingleValuedPairs( predicate ).test( times )
@@ -327,11 +331,11 @@ public interface Slicer
 
     static boolean hasOneOrMoreOf( List<PairOfDoubles> pairs, DoublePredicate predicate )
     {
-        
+
         Objects.requireNonNull( pairs, "Specify non-null pairs when checking for one or more of the input." );
-        
+
         Objects.requireNonNull( predicate, "Specify non-null predicate when checking for one or more of the input." );
-        
+
         for ( PairOfDoubles next : pairs )
         {
             if ( predicate.test( next.getItemOne() ) && predicate.test( next.getItemTwo() ) )
@@ -356,9 +360,9 @@ public interface Slicer
     static boolean hasOneOrMoreOfVectorRight( List<PairOfDoubleAndVectorOfDoubles> pairs, DoublePredicate predicate )
     {
         Objects.requireNonNull( pairs, "Specify non-null pairs when checking for one or more of the input." );
-        
+
         Objects.requireNonNull( predicate, "Specify non-null predicate when checking for one or more of the input." );
-        
+
         for ( PairOfDoubleAndVectorOfDoubles next : pairs )
         {
             if ( predicate.test( next.getItemOne() ) && Arrays.stream( next.getItemTwo() ).anyMatch( predicate ) )
@@ -382,9 +386,9 @@ public interface Slicer
     default Threshold getQuantileFromProbability( Threshold threshold, double[] sorted )
     {
         Objects.requireNonNull( threshold, "Specify a non-null probability whose quantile value is required." );
-        
+
         Objects.requireNonNull( sorted, "Specify a non-null array of sorted values to determine the quantile." );
-        
+
         return this.getQuantileFromProbability( threshold, sorted, null );
     }
 
@@ -473,6 +477,68 @@ public interface Slicer
     TimeSeriesOfSingleValuedPairs filter( TimeSeriesOfSingleValuedPairs input,
                                           Predicate<TimeSeriesOfSingleValuedPairs> condition,
                                           DoublePredicate applyToClimatology );
+
+    /**
+     * Filters the input time-series by the {@link Duration} associated with each pair. Applies to both the main pairs 
+     * and any baseline pairs.
+     * 
+     * @param input the pairs to slice
+     * @param condition the condition on which to slice
+     * @return the subset of pairs that meet the condition
+     * @throws NullPointerException if either the input or condition is null
+     */
+
+    TimeSeriesOfSingleValuedPairs filterByDuration( TimeSeriesOfSingleValuedPairs input,
+                                                    Predicate<Duration> condition );
+
+    /**
+     * Filters the input time-series by basis time. Applies to both the main pairs and any baseline pairs.
+     * 
+     * @param input the pairs to slice
+     * @param condition the condition on which to slice
+     * @return the subset of pairs that meet the condition
+     * @throws NullPointerException if either the input or condition is null
+     */
+
+    TimeSeriesOfSingleValuedPairs filterByBasisTime( TimeSeriesOfSingleValuedPairs input,
+                                                     Predicate<Instant> condition );
+
+    /**
+     * Filters the input time-series by the {@link Duration} associated with each pair. Applies to both the main pairs 
+     * and any baseline pairs.
+     * 
+     * @param input the pairs to slice
+     * @param condition the condition on which to slice
+     * @return the subset of pairs that meet the condition
+     * @throws NullPointerException if either the input or condition is null
+     */
+
+    TimeSeriesOfEnsemblePairs filterByDuration( TimeSeriesOfEnsemblePairs input,
+                                                Predicate<Duration> condition );
+
+    /**
+     * Filters the input time-series by basis time. Applies to both the main pairs and any baseline pairs.
+     * 
+     * @param input the pairs to slice
+     * @param condition the condition on which to slice
+     * @return the subset of pairs that meet the condition
+     * @throws NullPointerException if either the input or condition is null
+     */
+
+    TimeSeriesOfEnsemblePairs filterByBasisTime( TimeSeriesOfEnsemblePairs input,
+                                                 Predicate<Instant> condition );
+
+    /**
+     * Returns a {@link TimeSeries} whose elements are filtered according to the zero-based index of the ensemble trace 
+     * or null if no such time-series exist.
+     * 
+     * @param input the pairs to slice
+     * @param condition the trace index filter
+     * @return a time-series associated with a specific trace index or null
+     */
+
+    TimeSeriesOfEnsemblePairs filterByTraceIndex( TimeSeriesOfEnsemblePairs input,
+                                                  Predicate<Integer> condition );
 
     /**
      * Returns as many lists of {@link PairOfDoubleAndVectorOfDoubles} as groups of atomic pairs in the input with an

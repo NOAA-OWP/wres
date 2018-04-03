@@ -1,6 +1,8 @@
 package wres.datamodel;
 
 import java.math.BigDecimal;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumMap;
@@ -19,6 +21,8 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
 
+import wres.datamodel.SafeTimeSeriesOfEnsemblePairs.SafeTimeSeriesOfEnsemblePairsBuilder;
+import wres.datamodel.SafeTimeSeriesOfSingleValuedPairs.SafeTimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.ThresholdConstants.ThresholdType;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
@@ -27,11 +31,13 @@ import wres.datamodel.inputs.pairs.PairOfBooleans;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.inputs.pairs.builders.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.ScoreOutput;
+import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 
 /**
@@ -289,6 +295,156 @@ class DefaultSlicer implements Slicer
 
         }
 
+        return builder.build();
+    }
+
+    @Override
+    public TimeSeriesOfSingleValuedPairs filterByDuration( TimeSeriesOfSingleValuedPairs input,
+                                                           Predicate<Duration> duration )
+    {
+        Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
+        
+        Objects.requireNonNull( duration, NULL_PREDICATE_EXCEPTION );
+
+        //Iterate through the durations and append to the builder
+        //Throw an exception if attempting to construct an irregular time-series
+        SafeTimeSeriesOfSingleValuedPairsBuilder builder = new SafeTimeSeriesOfSingleValuedPairsBuilder();
+        
+        // Set the metadata explicitly in case of an empty slice
+        builder.setMetadata( input.getMetadata() );
+        
+        for ( TimeSeries<PairOfDoubles> a : input.durationIterator() )
+        {
+            TimeSeriesOfSingleValuedPairs next = (TimeSeriesOfSingleValuedPairs) a;
+            if ( duration.test( a.getDurations().first() ) )
+            {
+                builder.addTimeSeries( next );
+            }
+        }
+
+        return builder.build();
+    }
+
+    @Override
+    public TimeSeriesOfSingleValuedPairs filterByBasisTime( TimeSeriesOfSingleValuedPairs input,
+                                                            Predicate<Instant> basisTime )
+    {
+        Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
+        
+        Objects.requireNonNull( basisTime, NULL_PREDICATE_EXCEPTION );
+        
+        SafeTimeSeriesOfSingleValuedPairsBuilder builder = new SafeTimeSeriesOfSingleValuedPairsBuilder();
+        
+        // Set the metadata explicitly in case of an empty slice
+        builder.setMetadata( input.getMetadata() );
+
+        //Add the filtered data
+        for ( TimeSeries<PairOfDoubles> a : input.basisTimeIterator() )
+        {
+            if ( basisTime.test( a.getEarliestBasisTime() ) )
+            {
+                builder.addTimeSeries( (TimeSeriesOfSingleValuedPairs) a );
+            }
+        }
+
+        return builder.build();
+    }
+
+    @Override
+    public TimeSeriesOfEnsemblePairs filterByDuration( TimeSeriesOfEnsemblePairs input, Predicate<Duration> condition )
+    {
+        Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
+        
+        Objects.requireNonNull( condition, NULL_PREDICATE_EXCEPTION );
+        
+        //Iterate through the durations and append to the builder
+        //Throw an exception if attempting to construct an irregular time-series
+        SafeTimeSeriesOfEnsemblePairsBuilder builder = new SafeTimeSeriesOfEnsemblePairsBuilder();
+        
+        // Set the metadata explicitly in case of an empty slice
+        builder.setMetadata( input.getMetadata() );
+        
+        for ( TimeSeries<PairOfDoubleAndVectorOfDoubles> a : input.durationIterator() )
+        {
+            TimeSeriesOfEnsemblePairs next = (TimeSeriesOfEnsemblePairs) a;
+            if ( condition.test( a.getDurations().first() ) )
+            {
+                builder.addTimeSeries( next );
+            }
+        }
+        
+        return builder.build();
+    }
+
+    @Override
+    public TimeSeriesOfEnsemblePairs filterByBasisTime( TimeSeriesOfEnsemblePairs input, Predicate<Instant> condition )
+    {
+        Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
+        
+        Objects.requireNonNull( condition, NULL_PREDICATE_EXCEPTION );
+        
+        SafeTimeSeriesOfEnsemblePairsBuilder builder = new SafeTimeSeriesOfEnsemblePairsBuilder();
+        
+        // Set the metadata explicitly in case of an empty slice
+        builder.setMetadata( input.getMetadata() );
+        
+        //Add the filtered data
+        for ( TimeSeries<PairOfDoubleAndVectorOfDoubles> a : input.basisTimeIterator() )
+        {
+            if ( condition.test( a.getEarliestBasisTime() ) )
+            {
+                builder.addTimeSeries( (TimeSeriesOfEnsemblePairs) a );
+            }
+        }
+
+        return builder.build();
+    }
+
+    @Override
+    public TimeSeriesOfEnsemblePairs filterByTraceIndex( TimeSeriesOfEnsemblePairs input, Predicate<Integer> condition )
+    {
+        Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
+        
+        Objects.requireNonNull( condition, NULL_PREDICATE_EXCEPTION );
+        
+        //Build a single-valued time-series with the trace at index currentTrace
+        SafeTimeSeriesOfEnsemblePairsBuilder builder =
+                new SafeTimeSeriesOfEnsemblePairsBuilder();
+        builder.setMetadata( input.getMetadata() );
+        DataFactory dFac = DefaultDataFactory.getInstance();
+        
+        //Iterate through the basis times
+        for ( TimeSeries<PairOfDoubleAndVectorOfDoubles> nextSeries : input.basisTimeIterator() )
+        {
+            List<Event<PairOfDoubleAndVectorOfDoubles>> rawInput = new ArrayList<>();
+
+            //Iterate through the pairs
+            for ( Event<PairOfDoubleAndVectorOfDoubles> next : nextSeries.timeIterator() )
+            {
+                //Reform the pairs with a subset of ensemble members
+                double[] allTraces = next.getValue().getItemTwo();
+                List<Double> subTraces = new ArrayList<>();
+                for ( int i = 0; i < allTraces.length; i++ )
+                {
+                    if ( condition.test( i ) )
+                    {
+                        subTraces.add( allTraces[i] );
+                    }
+                }
+                //All time-series have the same number of ensemble members, 
+                //so the first instance with no members means no traces
+                if ( subTraces.isEmpty() )
+                {
+                    return null;
+                }
+                rawInput.add( Event.of( next.getTime(),
+                                        dFac.pairOf( next.getValue().getItemOne(),
+                                                     subTraces.toArray( new Double[subTraces.size()] ) ) ) );
+            }
+            builder.addTimeSeriesData( nextSeries.getEarliestBasisTime(), rawInput );
+        }
+
+        //Return the time-series
         return builder.build();
     }
 

@@ -12,26 +12,14 @@ import java.util.NavigableMap;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.TreeSet;
-import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 
 import org.apache.commons.math3.stat.descriptive.AbstractUnivariateStatistic;
-import org.apache.commons.math3.stat.descriptive.moment.GeometricMean;
-import org.apache.commons.math3.stat.descriptive.moment.Kurtosis;
 import org.apache.commons.math3.stat.descriptive.moment.Mean;
-import org.apache.commons.math3.stat.descriptive.moment.SecondMoment;
-import org.apache.commons.math3.stat.descriptive.moment.Skewness;
-import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
-import org.apache.commons.math3.stat.descriptive.moment.Variance;
 import org.apache.commons.math3.stat.descriptive.rank.Max;
-import org.apache.commons.math3.stat.descriptive.rank.Median;
 import org.apache.commons.math3.stat.descriptive.rank.Min;
-import org.apache.commons.math3.stat.descriptive.rank.PSquarePercentile;
-import org.apache.commons.math3.stat.descriptive.summary.Product;
 import org.apache.commons.math3.stat.descriptive.summary.Sum;
-import org.apache.commons.math3.stat.descriptive.summary.SumOfLogs;
-import org.apache.commons.math3.stat.descriptive.summary.SumOfSquares;
 
 /**
  * @author Christopher Tubbs
@@ -386,9 +374,6 @@ public final class Collections
             case "avg":
                 operation = new Mean();
                 break;
-            case "median":
-                operation = new Median(  );
-                break;
             case "maximum":
             case "max":
                 operation = new Max(  );
@@ -399,43 +384,6 @@ public final class Collections
                 break;
             case "sum":
                 operation = new Sum(  );
-                break;
-            case "sum of logs":
-            case "sum_of_logs":
-            case "sumoflogs":
-                operation = new SumOfLogs(  );
-                break;
-            case "sum_of_squares":
-            case "sum of squares":
-            case "sumofsquares":
-                operation = new SumOfSquares(  );
-                break;
-            case "variance":
-                operation = new Variance(  );
-                break;
-            case "second moment":
-            case "second_moment":
-            case "secondmoment":
-                operation = new SecondMoment(  );
-                break;
-            case "skewness":
-                operation = new Skewness(  );
-                break;
-            case "standard deviation":
-            case "standard_deviation":
-            case "standarddeviation":
-                operation = new StandardDeviation(  );
-                break;
-            case "geometric_mean":
-            case "geometric mean":
-            case "geometricmean":
-                operation = new GeometricMean(  );
-                break;
-            case "product":
-                operation = new Product();
-                break;
-            case "kurtosis":
-                operation = new Kurtosis(  );
                 break;
             default:
                 throw new InvalidParameterException( "The function '" +

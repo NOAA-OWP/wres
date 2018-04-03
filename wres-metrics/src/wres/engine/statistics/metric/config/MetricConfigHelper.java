@@ -296,7 +296,8 @@ public final class MetricConfigHelper
         if ( metric.test( TimeSeriesMetricConfigName.ALL_VALID ) )
         {
             throw new IllegalArgumentException( "Cannot obtain summary statistics for the general type 'all valid' "
-                                                + "when a specific type is required: instead, provide a time-series metric that is specific." );
+                                                + "when a specific type is required: instead, provide a time-series "
+                                                + "metric that is specific." );
         }
 
         Set<MetricConstants> allStats = new HashSet<>();
