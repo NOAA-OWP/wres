@@ -92,9 +92,15 @@ public class Version
 
             // Avoid printing passphrases or passwords or passes of any kind,
             // avoid printing full classpath, ignore separators, ignore printers
+            // and ignore some extraneous sun/oracle directories
             if ( !lowerCaseName.contains( "pass" )
                  && !lowerCaseName.contains( "class.path" )
                  && !lowerCaseName.contains( "separator" )
+                 && !lowerCaseName.startsWith( "sun" )
+                 && !lowerCaseName.contains( "user.country" )
+                 && !lowerCaseName.startsWith( "java.vendor" )
+                 && !lowerCaseName.startsWith( "java.e" )
+                 && !lowerCaseName.contains( "java.vm.specification" )
                  && !lowerCaseName.contains( "printer" ) )
             {
                 s.add( propertyName + ": " + System.getProperty( propertyName ) );
