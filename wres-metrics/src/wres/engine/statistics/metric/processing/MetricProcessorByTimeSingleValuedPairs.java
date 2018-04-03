@@ -48,7 +48,7 @@ import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.config.MetricConfigHelper;
 import wres.engine.statistics.metric.processing.MetricProcessorByTime.MetricFuturesByTime.MetricFuturesByTimeBuilder;
-import wres.engine.statistics.metric.timeseries.TimingErrorSummaryStatistics;
+import wres.engine.statistics.metric.timeseries.TimingErrorDurationStatistics;
 
 /**
  * Builds and processes all {@link MetricCollection} associated with a {@link ProjectConfig} for metrics that consume
@@ -57,8 +57,6 @@ import wres.engine.statistics.metric.timeseries.TimingErrorSummaryStatistics;
  * appropriate mapping function.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 
 public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTime<SingleValuedPairs>
@@ -72,11 +70,11 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
     private final MetricCollection<TimeSeriesOfSingleValuedPairs, PairedOutput<Instant, Duration>, PairedOutput<Instant, Duration>> timeSeries;
 
     /**
-     * An instance of {@link TimingErrorSummaryStatistics} for each timing error metric that requires 
+     * An instance of {@link TimingErrorDurationStatistics} for each timing error metric that requires 
      * summary statistics.
      */
 
-    private final Map<MetricConstants, TimingErrorSummaryStatistics> timingErrorSummaryStatistics;
+    private final Map<MetricConstants, TimingErrorDurationStatistics> timingErrorDurationStatistics;
 
     @Override
     public MetricOutputForProjectByTimeAndThreshold apply( SingleValuedPairs input )
@@ -185,7 +183,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
             this.timeSeries = metricFactory.ofSingleValuedTimeSeriesCollection( metricExecutor,
                                                                                 timingErrorMetrics );
             //Summary statistics
-            Map<MetricConstants, TimingErrorSummaryStatistics> localStatistics = new EnumMap<>( MetricConstants.class );
+            Map<MetricConstants, TimingErrorDurationStatistics> localStatistics = new EnumMap<>( MetricConstants.class );
 
             // Iterate the timing error metrics
             for ( MetricConstants nextMetric : timingErrorMetrics )
@@ -197,22 +195,23 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                     Set<MetricConstants> ts = MetricConfigHelper.getSummaryStatisticsFor( config,
                                                                                           name -> nextMetric.name()
                                                                                                             .equals( name.name() ) );
+
                     // Find the identifier for the summary statistics
                     MetricConstants identifier = MetricFactory.getSummaryStatisticsForTimingErrorMetric( nextMetric );
 
-                    TimingErrorSummaryStatistics stats =
-                            this.metricFactory.ofTimingErrorSummaryStatistics( identifier, ts );
+                    TimingErrorDurationStatistics stats =
+                            this.metricFactory.ofTimingErrorDurationStatistics( identifier, ts );
 
                     localStatistics.put( nextMetric, stats );
                 }
             }
 
-            this.timingErrorSummaryStatistics = Collections.unmodifiableMap( localStatistics );
+            this.timingErrorDurationStatistics = Collections.unmodifiableMap( localStatistics );
         }
         else
         {
             this.timeSeries = null;
-            this.timingErrorSummaryStatistics = Collections.unmodifiableMap( new EnumMap<>( MetricConstants.class ) );
+            this.timingErrorDurationStatistics = Collections.unmodifiableMap( new EnumMap<>( MetricConstants.class ) );
         }
     }
 
@@ -287,7 +286,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
             addFutures.setDataFactory( dataFactory );
 
             // Iterate through the timing error metrics
-            for ( Entry<MetricConstants, TimingErrorSummaryStatistics> nextStats : this.timingErrorSummaryStatistics.entrySet() )
+            for ( Entry<MetricConstants, TimingErrorDurationStatistics> nextStats : this.timingErrorDurationStatistics.entrySet() )
             {
                 // Output available
                 if ( this.getCachedMetricOutputInternal()
@@ -299,7 +298,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                             getCachedMetricOutputInternal().getPairedOutput().get( nextStats.getKey() );
 
                     // Compute the collection of statistics for the next timing error metric
-                    TimingErrorSummaryStatistics timeToPeakErrorStats = nextStats.getValue();
+                    TimingErrorDurationStatistics timeToPeakErrorStats = nextStats.getValue();
 
                     // Iterate through the thresholds
                     for ( OneOrTwoThresholds threshold : output.setOfThresholdKey() )

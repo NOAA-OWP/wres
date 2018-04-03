@@ -2,7 +2,6 @@ package wres.datamodel;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -13,7 +12,9 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.StringJoiner;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import wres.datamodel.SafeTimeSeriesOfSingleValuedPairs.SafeTimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
@@ -33,6 +34,9 @@ import wres.datamodel.time.TimeSeries;
  */
 public final class SafeTimeSeriesOfSingleValuedPairsTest
 {
+    
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
 
     /**
      * Tests the {@link SafeTimeSeriesOfSingleValuedPairs#basisTimeIterator()} method.
@@ -268,105 +272,6 @@ public final class SafeTimeSeriesOfSingleValuedPairsTest
     }
 
     /**
-     * Tests the {@link SafeTimeSeriesOfSingleValuedPairs#filterByBasisTime(java.util.function.Predicate)} 
-     * method.
-     */
-
-    @Test
-    public void test5FilterByBasisTime()
-    {
-        //Build a time-series with three basis times 
-        List<Event<PairOfDoubles>> first = new ArrayList<>();
-        List<Event<PairOfDoubles>> second = new ArrayList<>();
-        List<Event<PairOfDoubles>> third = new ArrayList<>();
-        SafeTimeSeriesOfSingleValuedPairsBuilder b = new SafeTimeSeriesOfSingleValuedPairsBuilder();
-        DataFactory metIn = DefaultDataFactory.getInstance();
-        MetadataFactory metaFac = metIn.getMetadataFactory();
-        Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
-        first.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), metIn.pairOf( 1, 1 ) ) );
-        first.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), metIn.pairOf( 2, 2 ) ) );
-        first.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ), metIn.pairOf( 3, 3 ) ) );
-        Instant secondBasisTime = Instant.parse( "1985-01-02T00:00:00Z" );
-        second.add( Event.of( Instant.parse( "1985-01-02T01:00:00Z" ), metIn.pairOf( 4, 4 ) ) );
-        second.add( Event.of( Instant.parse( "1985-01-02T02:00:00Z" ), metIn.pairOf( 5, 5 ) ) );
-        second.add( Event.of( Instant.parse( "1985-01-02T03:00:00Z" ), metIn.pairOf( 6, 6 ) ) );
-        Instant thirdBasisTime = Instant.parse( "1985-01-03T00:00:00Z" );
-        third.add( Event.of( Instant.parse( "1985-01-03T01:00:00Z" ), metIn.pairOf( 7, 7 ) ) );
-        third.add( Event.of( Instant.parse( "1985-01-03T02:00:00Z" ), metIn.pairOf( 8, 8 ) ) );
-        third.add( Event.of( Instant.parse( "1985-01-03T03:00:00Z" ), metIn.pairOf( 9, 9 ) ) );
-        Metadata meta = metaFac.getMetadata();
-        //Add the time-series
-        TimeSeriesOfSingleValuedPairs ts =
-                (TimeSeriesOfSingleValuedPairs) b.addTimeSeriesData( firstBasisTime, first )
-                                                 .addTimeSeriesData( secondBasisTime, second )
-                                                 .addTimeSeriesData( thirdBasisTime, third )
-                                                 .setMetadata( meta )
-                                                 .build();
-        //Iterate and test
-        TimeSeries<PairOfDoubles> filtered = ts.filterByBasisTime( a -> a.equals( secondBasisTime ) );
-        assertTrue( "Unexpected number of issue times in the filtered time-series.",
-                    filtered.getBasisTimes().size() == 1 );
-        assertTrue( "Unexpected issue time in the filtered time-series.",
-                    filtered.getBasisTimes().get( 0 ).equals( secondBasisTime ) );
-        assertTrue( "Unexpected value in the filtered time-series.",
-                    filtered.timeIterator().iterator().next().getValue().equals( metIn.pairOf( 4, 4 ) ) );
-        //Check for nullity on none filter
-        assertTrue( "Expected nullity on filtering basis times.",
-                    Objects.isNull( ts.filterByBasisTime( a -> a.equals( Instant.parse( "1985-01-04T00:00:00Z" ) ) ) ) );
-
-    }
-
-    /**
-     * Tests the {@link SafeTimeSeriesOfSingleValuedPairs#filterByDuration(java.util.function.Predicate)} 
-     * method.
-     */
-
-    @Test
-    public void test6FilterByDuration()
-    {
-        //Build a time-series with three basis times 
-        List<Event<PairOfDoubles>> first = new ArrayList<>();
-        List<Event<PairOfDoubles>> second = new ArrayList<>();
-        List<Event<PairOfDoubles>> third = new ArrayList<>();
-        SafeTimeSeriesOfSingleValuedPairsBuilder b = new SafeTimeSeriesOfSingleValuedPairsBuilder();
-        DataFactory metIn = DefaultDataFactory.getInstance();
-        MetadataFactory metaFac = metIn.getMetadataFactory();
-        Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
-        first.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), metIn.pairOf( 1, 1 ) ) );
-        first.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), metIn.pairOf( 2, 2 ) ) );
-        first.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ), metIn.pairOf( 3, 3 ) ) );
-        Instant secondBasisTime = Instant.parse( "1985-01-02T00:00:00Z" );
-        second.add( Event.of( Instant.parse( "1985-01-02T01:00:00Z" ), metIn.pairOf( 4, 4 ) ) );
-        second.add( Event.of( Instant.parse( "1985-01-02T02:00:00Z" ), metIn.pairOf( 5, 5 ) ) );
-        second.add( Event.of( Instant.parse( "1985-01-02T03:00:00Z" ), metIn.pairOf( 6, 6 ) ) );
-        Instant thirdBasisTime = Instant.parse( "1985-01-03T00:00:00Z" );
-        third.add( Event.of( Instant.parse( "1985-01-03T01:00:00Z" ), metIn.pairOf( 7, 7 ) ) );
-        third.add( Event.of( Instant.parse( "1985-01-03T02:00:00Z" ), metIn.pairOf( 8, 8 ) ) );
-        third.add( Event.of( Instant.parse( "1985-01-03T03:00:00Z" ), metIn.pairOf( 9, 9 ) ) );
-        Metadata meta = metaFac.getMetadata();
-        //Add the time-series
-        TimeSeriesOfSingleValuedPairs ts =
-                (TimeSeriesOfSingleValuedPairs) b.addTimeSeriesData( firstBasisTime, first )
-                                                 .addTimeSeriesData( secondBasisTime, second )
-                                                 .addTimeSeriesData( thirdBasisTime, third )
-                                                 .setMetadata( meta )
-                                                 .build();
-        //Iterate and test
-        TimeSeries<PairOfDoubles> filtered =
-                ts.filterByBasisTime( p -> p.equals( secondBasisTime ) )
-                  .filterByDuration( q -> q.equals( Duration.ofHours( 3 ) ) );
-        assertTrue( "Unexpected number of durations in filtered time-series.", filtered.getDurations().size() == 1 );
-        assertTrue( "Unexpected duration in the filtered time-series.",
-                    filtered.getDurations().first().equals( Duration.ofHours( 3 ) ) );
-        assertTrue( "Unexpected value in the filtered time-series.",
-                    filtered.timeIterator().iterator().next().getValue().equals( metIn.pairOf( 6, 6 ) ) );
-        //Check for nullity on none filter
-        assertTrue( "Expected nullity on filtering durations.",
-                    Objects.isNull( ts.filterByDuration( p -> p.equals( Duration.ofHours( 4 ) ) ) ) );
-
-    }
-
-    /**
      * Tests for exceptional cases.
      */
 
@@ -388,63 +293,27 @@ public final class SafeTimeSeriesOfSingleValuedPairsTest
                 (TimeSeriesOfSingleValuedPairs) d.addTimeSeriesData( firstBasisTime, first )
                                                  .setMetadata( meta )
                                                  .build();
-        try
-        {
-            Iterator<TimeSeries<PairOfDoubles>> it = ts.basisTimeIterator().iterator();
-            it.forEachRemaining( a -> a.equals( null ) );
-            it.next();
-            fail( "Expected a checked exception on iterating a time-series with no more basis times left." );
-        }
-        catch ( NoSuchElementException e )
-        {
-        }
-        try
-        {
-            Iterator<TimeSeries<PairOfDoubles>> it = ts.durationIterator().iterator();
-            it.forEachRemaining( a -> a.equals( null ) );
-            it.next();
-            fail( "Expected a checked exception on iterating a time-series with no more durations left." );
-        }
-        catch ( NoSuchElementException e )
-        {
-        }
-        try
-        {
-            Iterator<TimeSeries<PairOfDoubles>> it = ts.basisTimeIterator().iterator();
-            it.next();
-            it.remove();
-            fail( "Expected a checked exception on attempting to remove a basis time from an immutable time-series." );
-        }
-        catch ( UnsupportedOperationException e )
-        {
-        }
-        try
-        {
-            Iterator<TimeSeries<PairOfDoubles>> it = ts.durationIterator().iterator();
-            it.next();
-            it.remove();
-            fail( "Expected a checked exception on attempting to remove a duration from an immutable time-series." );
-        }
-        catch ( UnsupportedOperationException e )
-        {
-        }
-        //Check for null filters
-        try
-        {
-            ts.filterByBasisTime( null );
-            fail( "Expected a checked exception on attempting to filter by basis times with a null filter." );
-        }
-        catch ( NullPointerException e )
-        {
-        }
-        try
-        {
-            ts.filterByDuration( null );
-            fail( "Expected a checked exception on attempting to filter by duration with a null filter." );
-        }
-        catch ( NullPointerException e )
-        {
-        }
+        
+        //Iterate
+        exception.expect( NoSuchElementException.class );
+        Iterator<TimeSeries<PairOfDoubles>> noneSuchBasis = ts.basisTimeIterator().iterator();
+        noneSuchBasis.forEachRemaining( a -> a.equals( null ) );
+        noneSuchBasis.next();
+
+        Iterator<TimeSeries<PairOfDoubles>> noneSuchDuration = ts.durationIterator().iterator();
+        noneSuchDuration.forEachRemaining( a -> a.equals( null ) );
+        noneSuchDuration.next();
+
+        //Mutate 
+        exception.expect( UnsupportedOperationException.class );
+
+        Iterator<TimeSeries<PairOfDoubles>> immutableBasis = ts.basisTimeIterator().iterator();
+        immutableBasis.next();
+        immutableBasis.remove();
+
+        Iterator<TimeSeries<PairOfDoubles>> immutableDuration = ts.durationIterator().iterator();
+        immutableDuration.next();
+        immutableDuration.remove();
     }
 
     /**

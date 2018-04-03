@@ -1,7 +1,5 @@
 package wres.datamodel.inputs.pairs;
 
-import java.util.function.Predicate;
-
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesOfEnsemble;
 
@@ -16,8 +14,5 @@ public interface TimeSeriesOfEnsemblePairs
     
     @Override
     TimeSeriesOfEnsemblePairs getBaselineData();
-
-    @Override
-    TimeSeriesOfEnsemblePairs filterByTraceIndex( Predicate<Integer> traceFilter );
 
 }

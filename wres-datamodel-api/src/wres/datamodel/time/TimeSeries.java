@@ -5,7 +5,6 @@ import java.time.Instant;
 import java.util.Iterator;
 import java.util.List;
 import java.util.SortedSet;
-import java.util.function.Predicate;
 
 /**
  * <p>A representation of one or more atomic time-series, each of which contains one or more {@link Event}, which 
@@ -65,27 +64,6 @@ public interface TimeSeries<T>
      */
 
     Iterable<TimeSeries<T>> durationIterator();
-
-    /**
-     * Returns a {@link TimeSeries} whose elements are filtered according to duration or null if no such time-series 
-     * exists. If the current time-series is regular, the returned time-series may be irregular, and vice versa, 
-     * depending on the filter applied. 
-     * 
-     * @param duration the duration filter
-     * @return a list of values with the same duration or null if no such duration exists
-     */
-
-    TimeSeries<T> filterByDuration( Predicate<Duration> duration );
-
-    /**
-     * Returns a {@link TimeSeries} whose elements are filtered according to basis time or null if no such time-series 
-     * exists.
-     * 
-     * @param basisTime the basis time filter
-     * @return a time-series associated with a specific basis time or null
-     */
-
-    TimeSeries<T> filterByBasisTime( Predicate<Instant> basisTime );
 
     /**
      * Returns the basis times associated with all the atomic time-series in the container. If 

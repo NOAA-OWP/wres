@@ -77,7 +77,9 @@ public enum MetricConstants
      * Identifier for a Contingency Table.
      */
 
-    CONTINGENCY_TABLE( MetricInputGroup.DICHOTOMOUS, MetricInputGroup.MULTICATEGORY, MetricOutputGroup.MATRIX ),
+    CONTINGENCY_TABLE( new MetricInputGroup[] { MetricInputGroup.DICHOTOMOUS,
+                                                MetricInputGroup.MULTICATEGORY },
+            MetricOutputGroup.MATRIX ),
 
     /**
      * Identifier for Pearson's product-moment correlation coefficient.
@@ -197,7 +199,9 @@ public enum MetricConstants
      * Identifier for the sample size.
      */
 
-    SAMPLE_SIZE( MetricInputGroup.SINGLE_VALUED, MetricInputGroup.ENSEMBLE, MetricOutputGroup.DOUBLE_SCORE ),
+    SAMPLE_SIZE( new MetricInputGroup[] { MetricInputGroup.SINGLE_VALUED,
+                                          MetricInputGroup.ENSEMBLE },
+            MetricOutputGroup.DOUBLE_SCORE, ScoreOutputGroup.UNIVARIATE_STATISTIC ),
 
     /**
      * Identifier for the Volumetric Efficiency.
@@ -369,9 +373,9 @@ public enum MetricConstants
 
     private MetricConstants()
     {
-        inGroup = null;
-        outGroup = null;
-        scoreTypeGroup = null;
+        this.inGroup = null;
+        this.outGroup = null;
+        this.scoreTypeGroup = null;
     }
 
     /**
@@ -383,24 +387,24 @@ public enum MetricConstants
 
     private MetricConstants( MetricInputGroup inGroup, MetricOutputGroup outGroup )
     {
-        this.inGroup = new MetricInputGroup[] { inGroup };
-        this.outGroup = outGroup;
-        scoreTypeGroup = null;
+        this( new MetricInputGroup[] { inGroup }, outGroup, (ScoreOutputGroup[]) null );
     }
 
     /**
-     * Construct with two {@link MetricInputGroup} and a {@link MetricOutputGroup}.
+     * Construct with multiple {@link MetricInputGroup} and a {@link MetricOutputGroup}.
      * 
-     * @param firstGroup the first input group
+     * @param inGroups the input groups
      * @param secondGroup the second input group
      * @param outputGroup the output group
      */
 
-    private MetricConstants( MetricInputGroup firstGroup, MetricInputGroup secondGroup, MetricOutputGroup outGroup )
+    private MetricConstants( MetricInputGroup[] inGroups,
+                             MetricOutputGroup outGroup,
+                             ScoreOutputGroup... scoreTypeGroup )
     {
-        this.inGroup = new MetricInputGroup[] { firstGroup, secondGroup };
+        this.inGroup = inGroups;
         this.outGroup = outGroup;
-        scoreTypeGroup = null;
+        this.scoreTypeGroup = scoreTypeGroup;
     }
 
     /**
@@ -412,8 +416,8 @@ public enum MetricConstants
     private MetricConstants( ScoreOutputGroup... decGroup )
     {
         this.scoreTypeGroup = decGroup;
-        inGroup = null;
-        outGroup = null;
+        this.inGroup = null;
+        this.outGroup = null;
     }
 
     /**
@@ -913,34 +917,34 @@ public enum MetricConstants
         }
 
     }
-    
+
     /**
      * Class for representing missing values associated with different data types.
      */
-    
+
     public static class MissingValues
     {
-        
+
         /**
          * Default output for {@link Duration} when missing.
          */
-        
+
         public static final Duration MISSING_DURATION = null;
-        
+
         /**
          * Default output for {@link Double} when missing.
          */
-        
+
         public static final double MISSING_DOUBLE = Double.NaN;
-        
+
         /**
          * Do not construct.
          */
-        
+
         private MissingValues()
-        {           
+        {
         }
-        
+
     }
-    
+
 }

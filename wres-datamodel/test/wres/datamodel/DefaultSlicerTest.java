@@ -1,19 +1,23 @@
 package wres.datamodel;
 
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.DoubleUnaryOperator;
 import java.util.function.Function;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
+import wres.datamodel.SafeTimeSeriesOfEnsemblePairs.SafeTimeSeriesOfEnsemblePairsBuilder;
 import wres.datamodel.SafeTimeSeriesOfSingleValuedPairs.SafeTimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.ThresholdConstants.Operator;
 import wres.datamodel.ThresholdConstants.ThresholdDataType;
@@ -23,22 +27,25 @@ import wres.datamodel.inputs.pairs.PairOfBooleans;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
+import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.time.Event;
+import wres.datamodel.time.TimeSeries;
 
 /**
  * Tests the {@link DefaultSlicer}.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 public final class DefaultSlicerTest
 {
+
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
 
     /**
      * Slicer.
@@ -51,7 +58,7 @@ public final class DefaultSlicerTest
      */
 
     @Test
-    public void test1GetLeftSideSingleValued()
+    public void testGetLeftSideSingleValued()
     {
         DataFactory metIn = DefaultDataFactory.getInstance();
         final List<PairOfDoubles> values = new ArrayList<>();
@@ -74,7 +81,7 @@ public final class DefaultSlicerTest
      */
 
     @Test
-    public void test2GetLeftSideEnsemble()
+    public void testGetLeftSideEnsemble()
     {
         DataFactory metIn = DefaultDataFactory.getInstance();
         final List<PairOfDoubleAndVectorOfDoubles> values = new ArrayList<>();
@@ -97,7 +104,7 @@ public final class DefaultSlicerTest
      */
 
     @Test
-    public void test3GetRightSide()
+    public void testGetRightSide()
     {
         DataFactory metIn = DefaultDataFactory.getInstance();
         final List<PairOfDoubles> values = new ArrayList<>();
@@ -120,7 +127,7 @@ public final class DefaultSlicerTest
      */
 
     @Test
-    public void test4FilterByLeft()
+    public void testFilterSingleValuedPairsByLeft()
     {
         DataFactory metIn = DefaultDataFactory.getInstance();
         final List<PairOfDoubles> values = new ArrayList<>();
@@ -154,7 +161,7 @@ public final class DefaultSlicerTest
      */
 
     @Test
-    public void test5FilterByLeft()
+    public void testFilterEnsemblePairsByLeft()
     {
         DataFactory metIn = DefaultDataFactory.getInstance();
         final List<PairOfDoubleAndVectorOfDoubles> values = new ArrayList<>();
@@ -188,7 +195,7 @@ public final class DefaultSlicerTest
      */
 
     @Test
-    public void test6TransformPairs()
+    public void testTransformEnsemblePairsToSingleValuedPairs()
     {
         DataFactory metIn = DefaultDataFactory.getInstance();
         final List<PairOfDoubleAndVectorOfDoubles> values = new ArrayList<>();
@@ -219,7 +226,7 @@ public final class DefaultSlicerTest
      */
 
     @Test
-    public void test7TransformPairs()
+    public void testTransformSingleValuedPairsToDichotomousPairs()
     {
         DataFactory metIn = DefaultDataFactory.getInstance();
         final List<PairOfDoubles> values = new ArrayList<>();
@@ -264,7 +271,7 @@ public final class DefaultSlicerTest
      */
 
     @Test
-    public void test8TransformPairs()
+    public void testTransformEnsemblePairsToDiscreteProbabilityPairs()
     {
         DataFactory metIn = DefaultDataFactory.getInstance();
         final List<PairOfDoubleAndVectorOfDoubles> values = new ArrayList<>();
@@ -295,8 +302,7 @@ public final class DefaultSlicerTest
                     Arrays.equals( actualNoBaseRight, expectedRight ) );
 
         //Test baseline
-        double[] actualBaseLeft = slicer.getLeftSide( slicer.transform(
-                                                                        metIn.ofEnsemblePairs( values,
+        double[] actualBaseLeft = slicer.getLeftSide( slicer.transform( metIn.ofEnsemblePairs( values,
                                                                                                values,
                                                                                                meta,
                                                                                                meta,
@@ -304,8 +310,7 @@ public final class DefaultSlicerTest
                                                                         threshold,
                                                                         mapper )
                                                             .getBaselineData() );
-        double[] actualBaseRight = slicer.getRightSide( slicer.transform(
-                                                                          metIn.ofEnsemblePairs( values,
+        double[] actualBaseRight = slicer.getRightSide( slicer.transform( metIn.ofEnsemblePairs( values,
                                                                                                  values,
                                                                                                  meta,
                                                                                                  meta,
@@ -324,7 +329,7 @@ public final class DefaultSlicerTest
      */
 
     @Test
-    public void test9TransformPair()
+    public void testTransformEnsemblePairToDiscreteProbabilitPair()
     {
         DataFactory metIn = DefaultDataFactory.getInstance();
         PairOfDoubleAndVectorOfDoubles a = metIn.pairOf( 3, new double[] { 1, 2, 3, 4, 5 } );
@@ -356,7 +361,7 @@ public final class DefaultSlicerTest
      */
 
     @Test
-    public void test10GetInverseCumulativeProbability()
+    public void testGetInverseCumulativeProbability()
     {
         DataFactory metIn = DefaultDataFactory.getInstance();
         double[] sorted = new double[] { 1.5, 4.9, 6.3, 27, 43.3, 433.9, 1012.6, 2009.8, 7001.4, 12038.5, 17897.2 };
@@ -387,23 +392,10 @@ public final class DefaultSlicerTest
         assertTrue( "The inverse cumulative probability does not match the benchmark",
                     metIn.doubleEquals( qFB.applyAsDouble( testE ), expectedE, 7 ) );
 
-        //Test the exception conditions
-        try
-        {
-            qFA.applyAsDouble( -0.1 );
-            fail( "Expected and exception on using an out-of-bounds probability." );
-        }
-        catch ( Exception e )
-        {
-        }
-        try
-        {
-            qFA.applyAsDouble( 1.1 );
-            fail( "Expected and exception on using an out-of-bounds probability." );
-        }
-        catch ( Exception e )
-        {
-        }
+        //Check exceptional cases
+        exception.expect( IllegalArgumentException.class );
+        qFA.applyAsDouble( -0.1 );
+        qFA.applyAsDouble( 1.1 );
     }
 
     /**
@@ -411,7 +403,7 @@ public final class DefaultSlicerTest
      */
 
     @Test
-    public void test11GetQuantileFromProbability()
+    public void testGetQuantileFromProbability()
     {
         DataFactory metIn = DefaultDataFactory.getInstance();
         double[] sorted = new double[] { 1.5, 4.9, 6.3, 27, 43.3, 433.9, 1012.6, 2009.8, 7001.4, 12038.5, 17897.2 };
@@ -491,31 +483,13 @@ public final class DefaultSlicerTest
                     slicer.getQuantileFromProbability( testF, sortedSecond ).equals( expectedF ) );
         assertTrue( "The inverse cumulative probability does not match the benchmark",
                     slicer.getQuantileFromProbability( testG, sorted ).equals( expectedG ) );
-        //Test the exception conditions
-        try
-        {
-            slicer.getQuantileFromProbability( null, sorted );
-            fail( "Expected and exception on using an out-of-bounds probability." );
-        }
-        catch ( Exception e )
-        {
-        }
-        try
-        {
-            slicer.getQuantileFromProbability( testA, null );
-            fail( "Expected and exception on using an out-of-bounds probability." );
-        }
-        catch ( Exception e )
-        {
-        }
-        try
-        {
-            slicer.getQuantileFromProbability( testA, new double[] {} );
-            fail( "Expected and exception on using an empty test array." );
-        }
-        catch ( Exception e )
-        {
-        }
+
+        //Check exceptional cases
+        exception.expect( NullPointerException.class );
+
+        slicer.getQuantileFromProbability( null, sorted );
+        slicer.getQuantileFromProbability( testA, null );
+        slicer.getQuantileFromProbability( testA, new double[] {} );
     }
 
     /**
@@ -523,7 +497,7 @@ public final class DefaultSlicerTest
      */
 
     @Test
-    public void test12TransformPair()
+    public void testTransformPair()
     {
         DataFactory metIn = DefaultDataFactory.getInstance();
         PairOfDoubleAndVectorOfDoubles a = metIn.pairOf( 3, new double[] { 1, 2, 3, 4, 5 } );
@@ -553,7 +527,7 @@ public final class DefaultSlicerTest
      */
 
     @Test
-    public void test13FilterByRight()
+    public void testFilterByRight()
     {
         List<PairOfDoubleAndVectorOfDoubles> input = new ArrayList<>();
         DataFactory metIn = DefaultDataFactory.getInstance();
@@ -583,7 +557,7 @@ public final class DefaultSlicerTest
      */
 
     @Test
-    public void test14FilterByMetricComponent()
+    public void testFilterByMetricComponent()
     {
         //Obtain input and slice
         MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> toSlice =
@@ -602,7 +576,7 @@ public final class DefaultSlicerTest
      */
 
     @Test
-    public void test15FilterSingleValuedPairs()
+    public void testFilterSingleValuedPairs()
     {
         DataFactory metIn = DefaultDataFactory.getInstance();
         List<PairOfDoubles> values = new ArrayList<>();
@@ -651,7 +625,7 @@ public final class DefaultSlicerTest
      */
 
     @Test
-    public void test16FilterEnsemblePairs()
+    public void testFilterEnsemblePairs()
     {
         DataFactory metIn = DefaultDataFactory.getInstance();
         final List<PairOfDoubleAndVectorOfDoubles> values = new ArrayList<>();
@@ -701,7 +675,7 @@ public final class DefaultSlicerTest
      */
 
     @Test
-    public void test17FilterTimeSeriesOfSingleValuedPairs()
+    public void testFilterTimeSeriesOfSingleValuedPairs()
     {
         //Build a time-series with three basis times 
         List<Event<PairOfDoubles>> first = new ArrayList<>();
@@ -816,5 +790,237 @@ public final class DefaultSlicerTest
 
     }
 
+    /**
+     * Tests the {@link Slicer#filterByBasisTime(TimeSeriesOfEnsemblePairs, java.util.function.Predicate)} 
+     * method.
+     */
+
+    @Test
+    public void testFilterEnsembleTimeSeriesByBasisTime()
+    {
+        //Build a time-series with three basis times 
+        List<Event<PairOfDoubleAndVectorOfDoubles>> first = new ArrayList<>();
+        List<Event<PairOfDoubleAndVectorOfDoubles>> second = new ArrayList<>();
+        List<Event<PairOfDoubleAndVectorOfDoubles>> third = new ArrayList<>();
+        SafeTimeSeriesOfEnsemblePairsBuilder b = new SafeTimeSeriesOfEnsemblePairsBuilder();
+        DataFactory metIn = DefaultDataFactory.getInstance();
+        MetadataFactory metaFac = metIn.getMetadataFactory();
+        Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
+        first.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), metIn.pairOf( 1, new double[] { 1 } ) ) );
+        first.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), metIn.pairOf( 2, new double[] { 2 } ) ) );
+        first.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ), metIn.pairOf( 3, new double[] { 3 } ) ) );
+        Instant secondBasisTime = Instant.parse( "1985-01-02T00:00:00Z" );
+        second.add( Event.of( Instant.parse( "1985-01-02T01:00:00Z" ), metIn.pairOf( 4, new double[] { 4 } ) ) );
+        second.add( Event.of( Instant.parse( "1985-01-02T02:00:00Z" ), metIn.pairOf( 5, new double[] { 5 } ) ) );
+        second.add( Event.of( Instant.parse( "1985-01-02T03:00:00Z" ), metIn.pairOf( 6, new double[] { 6 } ) ) );
+        Instant thirdBasisTime = Instant.parse( "1985-01-03T00:00:00Z" );
+        third.add( Event.of( Instant.parse( "1985-01-03T01:00:00Z" ), metIn.pairOf( 7, new double[] { 7 } ) ) );
+        third.add( Event.of( Instant.parse( "1985-01-03T02:00:00Z" ), metIn.pairOf( 8, new double[] { 8 } ) ) );
+        third.add( Event.of( Instant.parse( "1985-01-03T03:00:00Z" ), metIn.pairOf( 9, new double[] { 9 } ) ) );
+        Metadata meta = metaFac.getMetadata();
+        //Add the time-series
+        TimeSeriesOfEnsemblePairs ts =
+                (TimeSeriesOfEnsemblePairs) b.addTimeSeriesData( firstBasisTime, first )
+                                             .addTimeSeriesData( secondBasisTime, second )
+                                             .addTimeSeriesData( thirdBasisTime, third )
+                                             .setMetadata( meta )
+                                             .build();
+        //Iterate and test
+        TimeSeries<PairOfDoubleAndVectorOfDoubles> filtered =
+                slicer.filterByBasisTime( ts, a -> a.equals( secondBasisTime ) );
+        assertTrue( "Unexpected number of issue times in the filtered time-series.",
+                    filtered.getBasisTimes().size() == 1 );
+        assertTrue( "Unexpected issue time in the filtered time-series.",
+                    filtered.getBasisTimes().get( 0 ).equals( secondBasisTime ) );
+        assertTrue( "Unexpected value in the filtered time-series.",
+                    filtered.timeIterator()
+                            .iterator()
+                            .next()
+                            .getValue()
+                            .equals( metIn.pairOf( 4, new double[] { 4 } ) ) );
+
+        //Check for empty output on none filter
+        List<Instant> sliced = slicer.filterByBasisTime( ts, a -> a.equals( Instant.parse( "1985-01-04T00:00:00Z" ) ) )
+                                     .getBasisTimes();
+        assertTrue( "Expected nullity on filtering basis times.", sliced.isEmpty() );
+
+        //Check exceptional cases
+        exception.expect( NullPointerException.class );
+        slicer.filterByBasisTime( (TimeSeriesOfEnsemblePairs) null, null );
+        slicer.filterByBasisTime( ts, null );
+    }
+
+    /**
+     * Tests the {@link Slicer#filterByDuration(TimeSeriesOfEnsemblePairs, java.util.function.Predicate)} 
+     * method.
+     */
+
+    @Test
+    public void testFilterEnsembleTimeSeriesByDuration()
+    {
+        //Build a time-series with three basis times 
+        List<Event<PairOfDoubleAndVectorOfDoubles>> first = new ArrayList<>();
+        List<Event<PairOfDoubleAndVectorOfDoubles>> second = new ArrayList<>();
+        List<Event<PairOfDoubleAndVectorOfDoubles>> third = new ArrayList<>();
+        SafeTimeSeriesOfEnsemblePairsBuilder b = new SafeTimeSeriesOfEnsemblePairsBuilder();
+        DataFactory metIn = DefaultDataFactory.getInstance();
+        MetadataFactory metaFac = metIn.getMetadataFactory();
+        Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
+        first.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), metIn.pairOf( 1, new double[] { 1 } ) ) );
+        first.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), metIn.pairOf( 2, new double[] { 2 } ) ) );
+        first.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ), metIn.pairOf( 3, new double[] { 3 } ) ) );
+        Instant secondBasisTime = Instant.parse( "1985-01-02T00:00:00Z" );
+        second.add( Event.of( Instant.parse( "1985-01-02T01:00:00Z" ), metIn.pairOf( 4, new double[] { 4 } ) ) );
+        second.add( Event.of( Instant.parse( "1985-01-02T02:00:00Z" ), metIn.pairOf( 5, new double[] { 5 } ) ) );
+        second.add( Event.of( Instant.parse( "1985-01-02T03:00:00Z" ), metIn.pairOf( 6, new double[] { 6 } ) ) );
+        Instant thirdBasisTime = Instant.parse( "1985-01-03T00:00:00Z" );
+        third.add( Event.of( Instant.parse( "1985-01-03T01:00:00Z" ), metIn.pairOf( 7, new double[] { 7 } ) ) );
+        third.add( Event.of( Instant.parse( "1985-01-03T02:00:00Z" ), metIn.pairOf( 8, new double[] { 8 } ) ) );
+        third.add( Event.of( Instant.parse( "1985-01-03T03:00:00Z" ), metIn.pairOf( 9, new double[] { 9 } ) ) );
+        Metadata meta = metaFac.getMetadata();
+        //Add the time-series
+        TimeSeriesOfEnsemblePairs ts =
+                (TimeSeriesOfEnsemblePairs) b.addTimeSeriesData( firstBasisTime, first )
+                                             .addTimeSeriesData( secondBasisTime, second )
+                                             .addTimeSeriesData( thirdBasisTime, third )
+                                             .setMetadata( meta )
+                                             .build();
+        //Iterate and test
+        TimeSeriesOfEnsemblePairs filtered = slicer.filterByBasisTime( ts, p -> p.equals( secondBasisTime ) );
+        filtered = slicer.filterByDuration( filtered, q -> q.equals( Duration.ofHours( 3 ) ) );
+
+        assertTrue( "Unexpected number of durations in filtered time-series.", filtered.getDurations().size() == 1 );
+        assertTrue( "Unexpected duration in the filtered time-series.",
+                    filtered.getDurations().first().equals( Duration.ofHours( 3 ) ) );
+        assertTrue( "Unexpected value in the filtered time-series.",
+                    filtered.timeIterator()
+                            .iterator()
+                            .next()
+                            .getValue()
+                            .equals( metIn.pairOf( 6, new double[] { 6 } ) ) );
+
+        //Check for empty output on none filter
+        Set<Duration> sliced = slicer.filterByBasisTime( ts, p -> p.equals( Duration.ofHours( 4 ) ) ).getDurations();
+        assertTrue( "Expected nullity on filtering durations.", sliced.isEmpty() );
+
+        //Check exceptional cases
+        exception.expect( NullPointerException.class );
+        slicer.filterByDuration( (TimeSeriesOfEnsemblePairs) null, null );
+        slicer.filterByDuration( ts, null );
+
+    }
+
+
+    /**
+     * Tests the {@link Slicer#filterByBasisTime(TimeSeriesOfSingleValuedPairs, java.util.function.Predicate)} 
+     * method.
+     */
+
+    @Test
+    public void testFilterSingleValuedTimeSeriesByBasisTime()
+    {
+        //Build a time-series with three basis times 
+        List<Event<PairOfDoubles>> first = new ArrayList<>();
+        List<Event<PairOfDoubles>> second = new ArrayList<>();
+        List<Event<PairOfDoubles>> third = new ArrayList<>();
+        SafeTimeSeriesOfSingleValuedPairsBuilder b = new SafeTimeSeriesOfSingleValuedPairsBuilder();
+        DataFactory metIn = DefaultDataFactory.getInstance();
+        MetadataFactory metaFac = metIn.getMetadataFactory();
+        Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
+        first.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), metIn.pairOf( 1, 1 ) ) );
+        first.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), metIn.pairOf( 2, 2 ) ) );
+        first.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ), metIn.pairOf( 3, 3 ) ) );
+        Instant secondBasisTime = Instant.parse( "1985-01-02T00:00:00Z" );
+        second.add( Event.of( Instant.parse( "1985-01-02T01:00:00Z" ), metIn.pairOf( 4, 4 ) ) );
+        second.add( Event.of( Instant.parse( "1985-01-02T02:00:00Z" ), metIn.pairOf( 5, 5 ) ) );
+        second.add( Event.of( Instant.parse( "1985-01-02T03:00:00Z" ), metIn.pairOf( 6, 6 ) ) );
+        Instant thirdBasisTime = Instant.parse( "1985-01-03T00:00:00Z" );
+        third.add( Event.of( Instant.parse( "1985-01-03T01:00:00Z" ), metIn.pairOf( 7, 7 ) ) );
+        third.add( Event.of( Instant.parse( "1985-01-03T02:00:00Z" ), metIn.pairOf( 8, 8 ) ) );
+        third.add( Event.of( Instant.parse( "1985-01-03T03:00:00Z" ), metIn.pairOf( 9, 9 ) ) );
+        Metadata meta = metaFac.getMetadata();
+        //Add the time-series
+        TimeSeriesOfSingleValuedPairs ts =
+                (TimeSeriesOfSingleValuedPairs) b.addTimeSeriesData( firstBasisTime, first )
+                                                 .addTimeSeriesData( secondBasisTime, second )
+                                                 .addTimeSeriesData( thirdBasisTime, third )
+                                                 .setMetadata( meta )
+                                                 .build();
+        //Iterate and test
+        TimeSeries<PairOfDoubles> filtered = slicer.filterByBasisTime( ts, a -> a.equals( secondBasisTime ) );
+        assertTrue( "Unexpected number of issue times in the filtered time-series.",
+                    filtered.getBasisTimes().size() == 1 );
+        assertTrue( "Unexpected issue time in the filtered time-series.",
+                    filtered.getBasisTimes().get( 0 ).equals( secondBasisTime ) );
+        assertTrue( "Unexpected value in the filtered time-series.",
+                    filtered.timeIterator().iterator().next().getValue().equals( metIn.pairOf( 4, 4 ) ) );
+
+        //Check for empty output on none filter
+        List<Instant> sliced = slicer.filterByBasisTime( ts, p -> p.equals( Instant.parse( "1985-01-04T00:00:00Z" ) ) )
+                                     .getBasisTimes();
+        assertTrue( "Expected nullity on filtering durations.", sliced.isEmpty() );
+
+        //Check exceptional cases
+        exception.expect( NullPointerException.class );
+        slicer.filterByDuration( (TimeSeriesOfSingleValuedPairs) null, null );
+        slicer.filterByDuration( ts, null );
+    }
+
+    /**
+     * Tests the {@link Slicer#filterByDuration(TimeSeriesOfSingleValuedPairs, java.util.function.Predicate)} 
+     * method.
+     */
+
+    @Test
+    public void testSingleValuedTimeSeriesByDuration()
+    {
+        //Build a time-series with three basis times 
+        List<Event<PairOfDoubles>> first = new ArrayList<>();
+        List<Event<PairOfDoubles>> second = new ArrayList<>();
+        List<Event<PairOfDoubles>> third = new ArrayList<>();
+        SafeTimeSeriesOfSingleValuedPairsBuilder b = new SafeTimeSeriesOfSingleValuedPairsBuilder();
+        DataFactory metIn = DefaultDataFactory.getInstance();
+        MetadataFactory metaFac = metIn.getMetadataFactory();
+        Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
+        first.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), metIn.pairOf( 1, 1 ) ) );
+        first.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), metIn.pairOf( 2, 2 ) ) );
+        first.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ), metIn.pairOf( 3, 3 ) ) );
+        Instant secondBasisTime = Instant.parse( "1985-01-02T00:00:00Z" );
+        second.add( Event.of( Instant.parse( "1985-01-02T01:00:00Z" ), metIn.pairOf( 4, 4 ) ) );
+        second.add( Event.of( Instant.parse( "1985-01-02T02:00:00Z" ), metIn.pairOf( 5, 5 ) ) );
+        second.add( Event.of( Instant.parse( "1985-01-02T03:00:00Z" ), metIn.pairOf( 6, 6 ) ) );
+        Instant thirdBasisTime = Instant.parse( "1985-01-03T00:00:00Z" );
+        third.add( Event.of( Instant.parse( "1985-01-03T01:00:00Z" ), metIn.pairOf( 7, 7 ) ) );
+        third.add( Event.of( Instant.parse( "1985-01-03T02:00:00Z" ), metIn.pairOf( 8, 8 ) ) );
+        third.add( Event.of( Instant.parse( "1985-01-03T03:00:00Z" ), metIn.pairOf( 9, 9 ) ) );
+        Metadata meta = metaFac.getMetadata();
+        //Add the time-series
+        TimeSeriesOfSingleValuedPairs ts =
+                (TimeSeriesOfSingleValuedPairs) b.addTimeSeriesData( firstBasisTime, first )
+                                                 .addTimeSeriesData( secondBasisTime, second )
+                                                 .addTimeSeriesData( thirdBasisTime, third )
+                                                 .setMetadata( meta )
+                                                 .build();
+        
+        //Iterate and test
+        TimeSeriesOfSingleValuedPairs filtered = slicer.filterByBasisTime( ts, p -> p.equals( secondBasisTime ) );
+        filtered = slicer.filterByDuration( filtered, q -> q.equals( Duration.ofHours( 3 ) ) );
+
+        assertTrue( "Unexpected number of durations in filtered time-series.", filtered.getDurations().size() == 1 );
+        assertTrue( "Unexpected duration in the filtered time-series.",
+                    filtered.getDurations().first().equals( Duration.ofHours( 3 ) ) );
+        assertTrue( "Unexpected value in the filtered time-series.",
+                    filtered.timeIterator().iterator().next().getValue().equals( metIn.pairOf( 6, 6 ) ) );
+        
+        //Check for empty output on none filter
+        Set<Duration> sliced = slicer.filterByBasisTime( ts, p -> p.equals( Duration.ofHours( 4 ) ) ).getDurations();
+        assertTrue( "Expected nullity on filtering durations.", sliced.isEmpty() );
+
+        //Check exceptional cases
+        exception.expect( NullPointerException.class );
+        slicer.filterByDuration( (TimeSeriesOfEnsemblePairs) null, null );
+        slicer.filterByDuration( ts, null );
+
+    }
 
 }
