@@ -3,6 +3,7 @@ package wres.io.data.details;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.MonthDay;
@@ -2453,33 +2454,42 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
     }
 
     @Override
-    protected String getInsertSelectStatement() {
-        String script = "WITH new_project AS" + NEWLINE +
-                        "(" + NEWLINE +
-                        "     INSERT INTO wres.project (project_name, input_code)"
-                        + NEWLINE +
-                        "     SELECT '" + this.getProjectName() + "', " + this.getInputCode() + NEWLINE;
+    protected PreparedStatement getInsertSelectStatement( Connection connection )
+            throws SQLException
+    {
+        List<Object> args = new ArrayList<>();
+        ScriptBuilder script = new ScriptBuilder(  );
 
-        script +=
-                        "     WHERE NOT EXISTS (" + NEWLINE +
-                        "         SELECT 1" + NEWLINE +
-                        "         FROM wres.Project P" + NEWLINE +
-                        "         WHERE P.input_code = " + this.getInputCode() + NEWLINE;
+        script.addLine("WITH new_project AS");
+        script.addLine("(");
+        script.addTab().addLine("INSERT INTO wres.Project (project_name, input_code)");
+        script.addTab().addLine("SELECT ?, ?");
 
-        script +=
-                        "     )" + NEWLINE +
-                        "     RETURNING project_id" + NEWLINE +
-                        ")" + NEWLINE +
-                        "SELECT project_id, TRUE as wasInserted" + NEWLINE +
-                        "FROM new_project" + NEWLINE +
-                        NEWLINE +
-                        "UNION" + NEWLINE +
-                        NEWLINE +
-                        "SELECT project_id, FALSE as wasInserted" + NEWLINE +
-                        "FROM wres.Project P" + NEWLINE +
-                        "WHERE P.input_code = " + this.getInputCode() + ";";
+        args.add(this.getProjectName());
+        args.add(this.getInputCode());
 
-        return script;
+        script.addTab().addLine("WHERE NOT EXISTS (");
+        script.addTab(  2  ).addLine("SELECT 1");
+        script.addTab(  2  ).addLine("FROM wres.Project P");
+        script.addTab(  2  ).addLine("WHERE P.input_code = ?");
+
+        args.add(this.getInputCode());
+
+        script.addTab().addLine(")");
+        script.addTab().addLine("RETURNING project_id");
+        script.addLine(")");
+        script.addLine("SELECT project_id, TRUE AS wasInserted");
+        script.addLine("FROM new_project");
+        script.addLine(  );
+        script.addLine("UNION");
+        script.addLine();
+        script.addLine("SELECT project_id, FALSE AS wasInserted");
+        script.addLine("FROM wres.Project P");
+        script.addLine("WHERE P.input_code = ?;");
+
+        args.add(this.getInputCode());
+
+        return script.getPreparedStatement( connection, args );
     }
 
     @Override
@@ -2494,6 +2504,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
     {
         Connection connection = null;
         ResultSet results = null;
+        PreparedStatement statement = null;
 
         try
         {
@@ -2501,8 +2512,9 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
             connection.setAutoCommit( false );
 
             Database.lockTable( connection, "wres.Project" );
-
-            results = Database.getResults( connection, this.getInsertSelectStatement() );
+            statement = this.getInsertSelectStatement( connection );
+            results = statement.executeQuery();
+            //results = Database.getResults( connection, this.getInsertSelectStatement() );
 
             this.setID( Database.getValue( results, this.getIDName() ) );
             this.performedInsert = Database.getValue( results, "wasInserted" );
@@ -2546,12 +2558,39 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
                     LOGGER.warn( "Failed to close result set {}.", results, se );
                 }
             }
+
+            if (statement != null)
+            {
+                try
+                {
+                    statement.close();
+                }
+                catch (SQLException e)
+                {
+                    // Failure to close resource shouldn't affect primary output
+                    LOGGER.warn( "Failed to close statement {}.", statement, e );
+                }
+            }
+
             if (connection != null)
             {
                 connection.setAutoCommit( true );
                 Database.returnConnection( connection );
             }
         }
+    }
+
+    @Override
+    protected Logger getLogger()
+    {
+        return ProjectDetails.LOGGER;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "Project { Name: " + this.getProjectName() +
+               ", Code: " + this.getInputCode() + " }";
     }
 
     public boolean performedInsert()

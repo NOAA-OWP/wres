@@ -1,8 +1,11 @@
 package wres.io.data.details;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 import org.slf4j.Logger;
@@ -10,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.io.data.details.SourceDetails.SourceKey;
 import wres.io.utilities.Database;
+import wres.io.utilities.ScriptBuilder;
 
 /**
  * Details about a source of observation or forecast data
@@ -127,38 +131,44 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
 	}
 
 	@Override
-	protected String getInsertSelectStatement() throws SQLException
+	protected PreparedStatement getInsertSelectStatement( Connection connection )
+			throws SQLException
 	{
-	    if (this.hash == null)
-        {
-            throw new SQLException( "Could not save '" + this.sourcePath + "'; there was no file hash." );
-        }
+	    List<Object> args = new ArrayList<>();
+	    ScriptBuilder script = new ScriptBuilder(  );
 
-		String script = "";
-		script += "WITH new_source AS" + NEWLINE;
-		script += "(" + NEWLINE;
-		script += "		INSERT INTO wres.Source (path, output_time, lead, hash)" + NEWLINE;
-		script += "		SELECT '" + this.sourcePath + "'," + NEWLINE;
-		script += "				'" + this.outputTime + "'," + NEWLINE;
-		script += "             " + this.lead + "," + NEWLINE;
-		script += "             '" + this.hash + "'" + NEWLINE;
-		script += "		WHERE NOT EXISTS (" + NEWLINE;
-		script += "			SELECT 1" + NEWLINE;
-		script += "			FROM wres.Source" + NEWLINE;
-		script += "			WHERE hash = '" + this.hash + "'" + NEWLINE;
-		script += "		)" + NEWLINE;
-		script += "		RETURNING source_id" + NEWLINE;
-		script += ")" + NEWLINE;
-        script += "SELECT source_id, TRUE as wasInserted" + NEWLINE;
-		script += "FROM new_source" + NEWLINE + NEWLINE;
-		script += "";
-		script += "UNION" + NEWLINE + NEWLINE;
-		script += "";
-        script += "SELECT source_id, FALSE as wasInserted" + NEWLINE;
-		script += "FROM wres.Source" + NEWLINE;
-		script += "WHERE hash = '" + this.hash + "';" + NEWLINE;
+	    script.addLine("WITH new_source AS");
+	    script.addLine("(");
+	    script.addTab().addLine("INSERT INTO wres.Source (path, output_time, lead, hash)");
+	    script.addTab().addLine("SELECT ?, (?)::timestamp without time zone, ?, ?");
 
-		return script;
+	    args.add( this.sourcePath );
+	    args.add(this.outputTime);
+	    args.add(this.lead);
+	    args.add(this.hash);
+
+	    script.addTab().addLine("WHERE NOT EXISTS (");
+	    script.addTab(  2  ).addLine("SELECT 1");
+	    script.addTab(  2  ).addLine("FROM wres.Source");
+	    script.addTab(  2  ).addLine("WHERE hash = ?");
+
+	    args.add(this.hash);
+
+	    script.addTab().addLine(")");
+	    script.addTab().addLine("RETURNING source_id");
+	    script.addLine(")");
+	    script.addLine("SELECT source_id, TRUE as wasInserted");
+	    script.addLine("FROM new_source");
+	    script.addLine();
+	    script.addLine("UNION");
+	    script.addLine();
+	    script.addLine("SELECT source_id, FALSE AS wasInserted");
+	    script.addLine("FROM wres.Source");
+	    script.addLine("WHERE hash = ?;");
+
+	    args.add(this.hash);
+
+	    return script.getPreparedStatement( connection, args.toArray() );
 	}
 
 	@Override
@@ -172,6 +182,7 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
     {
         Connection connection = null;
 		ResultSet resultSet = null;
+		PreparedStatement statement = null;
 
 		try
         {
@@ -180,7 +191,9 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
 
             Database.lockTable( connection, "wres.Source" );
 
-            resultSet = Database.getResults( connection, this.getInsertSelectStatement() );
+            statement = this.getInsertSelectStatement( connection );
+            resultSet = statement.executeQuery();
+            //resultSet = Database.getResults( connection, this.getInsertSelectStatement() );
 
             this.setID( Database.getValue( resultSet, this.getIDName() ) );
             this.performedInsert = Database.getValue( resultSet, "wasInserted" );
@@ -226,6 +239,19 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
                 }
             }
 
+            if (statement != null)
+            {
+                try
+                {
+                    statement.close();
+                }
+                catch (SQLException e)
+                {
+                    // Failure to close should not affect primary outputs.
+                    LOGGER.warn( "Failed to close statement {}.", statement, e );
+                }
+            }
+
             if (connection != null)
             {
                 connection.setAutoCommit( true );
@@ -234,7 +260,21 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
         }
     }
 
-    public boolean performedInsert()
+    @Override
+    protected Logger getLogger()
+    {
+        return SourceDetails.LOGGER;
+    }
+
+    @Override
+	public String toString()
+	{
+		return "Source: { path: " + this.sourcePath +
+			   ", Lead: " + this.lead +
+			   ", Hash: " + this.hash + " }";
+	}
+
+	public boolean performedInsert()
     {
         return this.performedInsert;
     }
