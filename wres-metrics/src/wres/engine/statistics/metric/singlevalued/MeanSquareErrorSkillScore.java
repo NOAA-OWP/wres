@@ -32,26 +32,33 @@ public class MeanSquareErrorSkillScore<S extends SingleValuedPairs> extends Mean
         }
         //TODO: implement any required decompositions, based on the instance parameters and return the decomposition
         //template as the componentID in the metadata
-        double numerator = getSumOfSquareError( s );
-        double denominator = 0.0;
-        if ( s.hasBaseline() )
+
+        double result = Double.NaN;
+
+        // Some data, proceed
+        if ( !s.getData().isEmpty() )
         {
-            denominator = getSumOfSquareError( s.getBaselineData() );
-        }
-        else
-        {
-            DataFactory d = getDataFactory();
-            double meanLeft = FunctionFactory.mean().applyAsDouble( d.vectorOf( d.getSlicer().getLeftSide( s ) ) );
-            for ( PairOfDoubles next : s.getData() )
+            double numerator = this.getSumOfSquareError( s );
+            double denominator = 0.0;
+            if ( s.hasBaseline() )
             {
-                denominator += Math.pow( next.getItemOne() - meanLeft, 2 );
+                denominator = this.getSumOfSquareError( s.getBaselineData() );
             }
+            else
+            {
+                DataFactory d = getDataFactory();
+                double meanLeft = FunctionFactory.mean().applyAsDouble( d.vectorOf( d.getSlicer().getLeftSide( s ) ) );
+                for ( PairOfDoubles next : s.getData() )
+                {
+                    denominator += Math.pow( next.getItemOne() - meanLeft, 2 );
+                }
+            }
+            result = FunctionFactory.skill().applyAsDouble( numerator, denominator );
         }
-        
+
         //Metadata
-        final MetricOutputMetadata metOut = getMetadata( s );
-        return getDataFactory().ofDoubleScoreOutput( FunctionFactory.skill().applyAsDouble( numerator, denominator ),
-                                                     metOut );
+        final MetricOutputMetadata metOut = this.getMetadata( s );
+        return this.getDataFactory().ofDoubleScoreOutput( result, metOut );
     }
 
     @Override
