@@ -24,13 +24,14 @@ import wres.engine.statistics.metric.Metric.MetricBuilder;
 import wres.engine.statistics.metric.MetricParameterException;
 
 /**
- * A collection of summary statistics that operate on a {@link TimeToPeakError}.
+ * A collection of summary statistics that operate on the outputs from {@link TimingError} and are expressed as 
+ * {@link DurationScoreOutput}.
  * 
  * TODO: consider implementing an API for summary statistics that works directly with {@link Duration}.
  * 
  * @author james.brown@hydrosolved.com
  */
-public class TimingErrorSummaryStatistics implements Function<PairedOutput<Instant, Duration>, DurationScoreOutput>
+public class TimingErrorDurationStatistics implements Function<PairedOutput<Instant, Duration>, DurationScoreOutput>
 {
 
     /**
@@ -110,7 +111,7 @@ public class TimingErrorSummaryStatistics implements Function<PairedOutput<Insta
      * A {@link MetricBuilder} to build the metric.
      */
 
-    public static class TimingErrorSummaryStatisticsBuilder
+    public static class TimingErrorDurationStatisticsBuilder
     {
 
         /**
@@ -138,7 +139,7 @@ public class TimingErrorSummaryStatistics implements Function<PairedOutput<Insta
          * @return the builder
          */
 
-        public TimingErrorSummaryStatisticsBuilder setStatistics( Set<MetricConstants> statistics )
+        public TimingErrorDurationStatisticsBuilder setStatistics( Set<MetricConstants> statistics )
         {
             this.statistics.addAll( statistics );
             return this;
@@ -151,7 +152,7 @@ public class TimingErrorSummaryStatistics implements Function<PairedOutput<Insta
          * @return the builder
          */
 
-        public TimingErrorSummaryStatisticsBuilder setID( MetricConstants identifier )
+        public TimingErrorDurationStatisticsBuilder setID( MetricConstants identifier )
         {
             this.identifier = identifier;
             return this;
@@ -164,7 +165,7 @@ public class TimingErrorSummaryStatistics implements Function<PairedOutput<Insta
          * @return the builder
          */
 
-        public TimingErrorSummaryStatisticsBuilder setOutputFactory( final DataFactory dataFactory )
+        public TimingErrorDurationStatisticsBuilder setOutputFactory( final DataFactory dataFactory )
         {
             this.dataFactory = dataFactory;
             return this;
@@ -177,9 +178,9 @@ public class TimingErrorSummaryStatistics implements Function<PairedOutput<Insta
          * @throws MetricParameterException if one or more parameters is invalid
          */
 
-        public TimingErrorSummaryStatistics build() throws MetricParameterException
+        public TimingErrorDurationStatistics build() throws MetricParameterException
         {
-            return new TimingErrorSummaryStatistics( this );
+            return new TimingErrorDurationStatistics( this );
         }
 
     }
@@ -191,7 +192,7 @@ public class TimingErrorSummaryStatistics implements Function<PairedOutput<Insta
      * @throws MetricParameterException if one or more parameters is invalid
      */
 
-    TimingErrorSummaryStatistics( final TimingErrorSummaryStatisticsBuilder builder ) throws MetricParameterException
+    TimingErrorDurationStatistics( final TimingErrorDurationStatisticsBuilder builder ) throws MetricParameterException
     {
         if ( Objects.isNull( builder ) )
         {

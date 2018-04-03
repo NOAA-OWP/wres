@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.SortedSet;
-import java.util.function.Predicate;
 
 import wres.datamodel.SafeTimeSeriesOfSingleValuedPairs.SafeTimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.inputs.MetricInputException;
@@ -71,92 +70,7 @@ class SafeTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
     {
         return bP.durationIterator();
     }
-
-    @Override
-    public TimeSeries<PairOfDoubleAndVectorOfDoubles> filterByDuration( Predicate<Duration> duration )
-    {
-        Objects.requireNonNull( duration, "Provide a non-null predicate on which to filter by duration." );
-        //Iterate through the durations and append to the builder
-        //Throw an exception if attempting to construct an irregular time-series
-        SafeTimeSeriesOfEnsemblePairsBuilder builder = new SafeTimeSeriesOfEnsemblePairsBuilder();
-        for ( TimeSeries<PairOfDoubleAndVectorOfDoubles> a : durationIterator() )
-        {
-            TimeSeriesOfEnsemblePairs next = (TimeSeriesOfEnsemblePairs) a;
-            if ( duration.test( a.getDurations().first() ) )
-            {
-                builder.addTimeSeries( next );
-            }
-        }
-        //Build if something to build
-        if ( !builder.data.isEmpty() )
-        {
-            return builder.build();
-        }
-        return null;
-    }
-
-    @Override
-    public TimeSeries<PairOfDoubleAndVectorOfDoubles> filterByBasisTime( Predicate<Instant> basisTime )
-    {
-        Objects.requireNonNull( basisTime, "Provide a non-null predicate on which to filter by basis time." );
-        SafeTimeSeriesOfEnsemblePairsBuilder builder = new SafeTimeSeriesOfEnsemblePairsBuilder();
-        //Add the filtered data
-        for ( TimeSeries<PairOfDoubleAndVectorOfDoubles> a : basisTimeIterator() )
-        {
-            if ( basisTime.test( a.getEarliestBasisTime() ) )
-            {
-                builder.addTimeSeries( (TimeSeriesOfEnsemblePairs) a );
-            }
-        }
-        //Build if something to build
-        if ( !builder.data.isEmpty() )
-        {
-            return builder.build();
-        }
-        return null;
-    }
-
-    @Override
-    public TimeSeriesOfEnsemblePairs filterByTraceIndex( Predicate<Integer> traceFilter )
-    {
-        //Build a single-valued time-series with the trace at index currentTrace
-        SafeTimeSeriesOfEnsemblePairsBuilder builder =
-                new SafeTimeSeriesOfEnsemblePairsBuilder();
-        builder.setMetadata( getMetadata() );
-        DataFactory dFac = DefaultDataFactory.getInstance();
-        //Iterate through the basis times
-        for ( TimeSeries<PairOfDoubleAndVectorOfDoubles> nextSeries : basisTimeIterator() )
-        {
-            List<Event<PairOfDoubleAndVectorOfDoubles>> input = new ArrayList<>();
-            //Iterate through the pairs
-            for ( Event<PairOfDoubleAndVectorOfDoubles> next : nextSeries.timeIterator() )
-            {
-                //Reform the pairs with a subset of ensemble members
-                double[] allTraces = next.getValue().getItemTwo();
-                List<Double> subTraces = new ArrayList<>();
-                for ( int i = 0; i < allTraces.length; i++ )
-                {
-                    if ( traceFilter.test( i ) )
-                    {
-                        subTraces.add( allTraces[i] );
-                    }
-                }
-                //All time-series have the same number of ensemble members, 
-                //so the first instance with no members means no traces
-                if ( subTraces.isEmpty() )
-                {
-                    return null;
-                }
-                input.add( Event.of( next.getTime(),
-                                     dFac.pairOf( next.getValue().getItemOne(),
-                                                  subTraces.toArray( new Double[subTraces.size()] ) ) ) );
-            }
-            builder.addTimeSeriesData( nextSeries.getEarliestBasisTime(), input );
-        }
-        //Return the time-series
-        return builder.build();
-    }
-
+    
     @Override
     public List<Instant> getBasisTimes()
     {

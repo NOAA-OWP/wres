@@ -27,23 +27,23 @@ import wres.datamodel.outputs.DurationScoreOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.engine.statistics.metric.timeseries.TimeToPeakError.TimeToPeakErrorBuilder;
-import wres.engine.statistics.metric.timeseries.TimingErrorSummaryStatistics.TimingErrorSummaryStatisticsBuilder;
+import wres.engine.statistics.metric.timeseries.TimingErrorDurationStatistics.TimingErrorDurationStatisticsBuilder;
 
 /**
- * Tests the {@link TimingErrorSummaryStatistics}.
+ * Tests the {@link TimingErrorDurationStatistics}.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
  * @since 0.4
  */
-public final class TimingErrorSummaryStatisticsTest
+public final class TimingErrorDurationStatisticsTest
 {
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
     /**
-     * Tests the {@link TimingErrorSummaryStatistics#apply(TimeSeriesOfSingleValuedPairs)} and compares the actual result 
+     * Tests the {@link TimingErrorDurationStatistics#apply(TimeSeriesOfSingleValuedPairs)} and compares the actual result 
      * to the expected result when adding one summary statistic to each instance. 
      * @throws MetricParameterException if the metric could not be constructed 
      */
@@ -78,11 +78,11 @@ public final class TimingErrorSummaryStatisticsTest
         final TimeToPeakError peakError = peakErrorBuilder.build();
 
         // Build the summary statistics
-        final TimingErrorSummaryStatisticsBuilder b = new TimingErrorSummaryStatisticsBuilder();
+        final TimingErrorDurationStatisticsBuilder b = new TimingErrorDurationStatisticsBuilder();
         b.setStatistics( Collections.singleton( MetricConstants.MEAN ) )
          .setOutputFactory( outF )
          .setID( MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC );
-        final TimingErrorSummaryStatistics ttps = b.build();
+        final TimingErrorDurationStatistics ttps = b.build();
 
         // Check the results
         final DurationScoreOutput actual = ttps.apply( peakError.apply( input ) );
@@ -126,7 +126,7 @@ public final class TimingErrorSummaryStatisticsTest
     }
 
     /**
-     * Tests the {@link TimingErrorSummaryStatistics#apply(TimeSeriesOfSingleValuedPairs)} and compares the actual result 
+     * Tests the {@link TimingErrorDurationStatistics#apply(TimeSeriesOfSingleValuedPairs)} and compares the actual result 
      * to the expected result when adding multiple summary statistics to one instance. 
      * @throws MetricParameterException if the metric could not be constructed 
      */
@@ -162,8 +162,8 @@ public final class TimingErrorSummaryStatisticsTest
         final TimeToPeakError peakError = peakErrorBuilder.build();
 
         // Build the summary statistics
-        final TimingErrorSummaryStatisticsBuilder b = new TimingErrorSummaryStatisticsBuilder();
-        final TimingErrorSummaryStatistics ttps = b.setStatistics( new HashSet<>( Arrays.asList( MetricConstants.MEAN,
+        final TimingErrorDurationStatisticsBuilder b = new TimingErrorDurationStatisticsBuilder();
+        final TimingErrorDurationStatistics ttps = b.setStatistics( new HashSet<>( Arrays.asList( MetricConstants.MEAN,
                                                                                                  MetricConstants.MAXIMUM,
                                                                                                  MetricConstants.MINIMUM,
                                                                                                  MetricConstants.MEAN_ABSOLUTE ) ) )
@@ -188,7 +188,7 @@ public final class TimingErrorSummaryStatisticsTest
     }
 
     /**
-     * Constructs a {@link TimingErrorSummaryStatistics} and checks for a missing statistic.
+     * Constructs a {@link TimingErrorDurationStatistics} and checks for a missing statistic.
      * @throws MetricParameterException if the metric could not be constructed
      */
 
@@ -197,8 +197,8 @@ public final class TimingErrorSummaryStatisticsTest
     {
         //Build the metric
         final DataFactory outF = DefaultDataFactory.getInstance();
-        final TimingErrorSummaryStatisticsBuilder b =
-                new TimingErrorSummaryStatisticsBuilder();
+        final TimingErrorDurationStatisticsBuilder b =
+                new TimingErrorDurationStatisticsBuilder();
         b.setOutputFactory( outF );
 
         // Missing statistic
@@ -207,7 +207,7 @@ public final class TimingErrorSummaryStatisticsTest
     }
 
     /**
-     * Constructs a {@link TimingErrorSummaryStatistics} and checks for an empty statistic.
+     * Constructs a {@link TimingErrorDurationStatistics} and checks for an empty statistic.
      * @throws MetricParameterException if the metric could not be constructed
      */    
     
@@ -216,19 +216,19 @@ public final class TimingErrorSummaryStatisticsTest
     {
         //Build the metric
         final DataFactory outF = DefaultDataFactory.getInstance();
-        final TimingErrorSummaryStatisticsBuilder b = new TimingErrorSummaryStatisticsBuilder();
+        final TimingErrorDurationStatisticsBuilder b = new TimingErrorDurationStatisticsBuilder();
         b.setOutputFactory( outF );
 
         // Empty statistic
         exception.expect( MetricParameterException.class );
 
-        TimingErrorSummaryStatisticsBuilder c = new TimingErrorSummaryStatisticsBuilder();
+        TimingErrorDurationStatisticsBuilder c = new TimingErrorDurationStatisticsBuilder();
         c.setOutputFactory( outF );
         c.setStatistics( Collections.emptySet() ).build();
     }
 
     /**
-     * Constructs a {@link TimingErrorSummaryStatistics} and checks for a null statistic.
+     * Constructs a {@link TimingErrorDurationStatistics} and checks for a null statistic.
      * @throws MetricParameterException if the metric could not be constructed
      */    
     
@@ -237,19 +237,19 @@ public final class TimingErrorSummaryStatisticsTest
     {
         //Build the metric
         final DataFactory outF = DefaultDataFactory.getInstance();
-        final TimingErrorSummaryStatisticsBuilder b = new TimingErrorSummaryStatisticsBuilder();
+        final TimingErrorDurationStatisticsBuilder b = new TimingErrorDurationStatisticsBuilder();
         b.setOutputFactory( outF );
 
         // Null statistic
         exception.expect( MetricParameterException.class );
 
-        TimingErrorSummaryStatisticsBuilder c = new TimingErrorSummaryStatisticsBuilder();
+        TimingErrorDurationStatisticsBuilder c = new TimingErrorDurationStatisticsBuilder();
         c.setStatistics( Collections.singleton( null ) );
         c.build();
     }
 
     /**
-     * Constructs a {@link TimingErrorSummaryStatistics} and checks for an unrecognized statistic.
+     * Constructs a {@link TimingErrorDurationStatistics} and checks for an unrecognized statistic.
      * @throws MetricParameterException if the metric could not be constructed
      */    
     
@@ -258,13 +258,13 @@ public final class TimingErrorSummaryStatisticsTest
     {
         //Build the metric
         final DataFactory outF = DefaultDataFactory.getInstance();
-        final TimingErrorSummaryStatisticsBuilder b = new TimingErrorSummaryStatisticsBuilder();
+        final TimingErrorDurationStatisticsBuilder b = new TimingErrorDurationStatisticsBuilder();
         b.setOutputFactory( outF );
 
         // Unrecognized statistic
         exception.expect( IllegalArgumentException.class );
 
-        TimingErrorSummaryStatisticsBuilder c = new TimingErrorSummaryStatisticsBuilder();
+        TimingErrorDurationStatisticsBuilder c = new TimingErrorDurationStatisticsBuilder();
         c.setOutputFactory( outF )
          .setID( MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC )
          .setStatistics( Collections.singleton( MetricConstants.NONE ) )
@@ -272,7 +272,7 @@ public final class TimingErrorSummaryStatisticsTest
     }
     
     /**
-     * Constructs a {@link TimingErrorSummaryStatistics} and checks for an unrecognized identifier.
+     * Constructs a {@link TimingErrorDurationStatistics} and checks for an unrecognized identifier.
      * @throws MetricParameterException if the metric could not be constructed
      */    
     
@@ -281,21 +281,21 @@ public final class TimingErrorSummaryStatisticsTest
     {
         //Build the metric
         final DataFactory outF = DefaultDataFactory.getInstance();
-        final TimingErrorSummaryStatisticsBuilder b = new TimingErrorSummaryStatisticsBuilder();
+        final TimingErrorDurationStatisticsBuilder b = new TimingErrorDurationStatisticsBuilder();
         b.setOutputFactory( outF );
 
         // Null identifier
         exception.expect( MetricParameterException.class );
 
-        TimingErrorSummaryStatisticsBuilder c = new TimingErrorSummaryStatisticsBuilder();
+        TimingErrorDurationStatisticsBuilder c = new TimingErrorDurationStatisticsBuilder();
         c.setOutputFactory( outF )
          .setStatistics( Collections.singleton( MetricConstants.MEAN ) )
          .build();
     }  
     
     /**
-     * Constructs a {@link TimingErrorSummaryStatistics} and checks for null input when calling 
-     * {@link TimingErrorSummaryStatistics#apply(wres.datamodel.outputs.PairedOutput)}.
+     * Constructs a {@link TimingErrorDurationStatistics} and checks for null input when calling 
+     * {@link TimingErrorDurationStatistics#apply(wres.datamodel.outputs.PairedOutput)}.
      * @throws MetricParameterException if the metric could not be constructed
      */    
 
@@ -304,13 +304,13 @@ public final class TimingErrorSummaryStatisticsTest
     {
         //Build the metric
         final DataFactory outF = DefaultDataFactory.getInstance();
-        final TimingErrorSummaryStatisticsBuilder b = new TimingErrorSummaryStatisticsBuilder();
+        final TimingErrorDurationStatisticsBuilder b = new TimingErrorDurationStatisticsBuilder();
         b.setOutputFactory( outF );
 
         // Null input to apply
         exception.expect( MetricInputException.class );
 
-        TimingErrorSummaryStatisticsBuilder c = new TimingErrorSummaryStatisticsBuilder();
+        TimingErrorDurationStatisticsBuilder c = new TimingErrorDurationStatisticsBuilder();
         c.setOutputFactory( outF )
          .setID( MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC )
          .setStatistics( Collections.singleton( MetricConstants.MEAN ) );
