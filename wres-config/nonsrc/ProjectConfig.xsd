@@ -436,7 +436,6 @@
             <xs:enumeration value="avg" />
             <xs:enumeration value="max" />
             <xs:enumeration value="min" />
-            <xs:enumeration value="median" />
         </xs:restriction>
     </xs:simpleType>
 
