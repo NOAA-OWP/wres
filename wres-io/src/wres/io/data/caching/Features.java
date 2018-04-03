@@ -200,7 +200,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
 
     public static Set<FeatureDetails> getAllDetails(ProjectConfig projectConfig) throws SQLException
     {
-        Set<FeatureDetails> features = null;
+        Set<FeatureDetails> features;
 
         if (projectConfig.getPair().getFeature() == null || projectConfig.getPair().getFeature().isEmpty())
         {
@@ -214,7 +214,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         return features;
     }
 
-    public static Set<FeatureDetails> getSpecifiedDetails( ProjectConfig projectConfig ) throws SQLException
+    private static Set<FeatureDetails> getSpecifiedDetails( ProjectConfig projectConfig ) throws SQLException
     {
         Set<FeatureDetails> features = new HashSet<>();
         boolean hasNetCDF = ConfigHelper.usesNetCDFData( projectConfig );
@@ -531,7 +531,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
 	
 	@Override
 	protected int getMaxDetails() {
-		return 1000;
+		return 5000;
 	}
 
 	/**

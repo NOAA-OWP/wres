@@ -1,8 +1,11 @@
 package wres.io.data.details;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+
+import org.slf4j.Logger;
 
 import wres.io.utilities.Database;
 
@@ -36,12 +39,14 @@ public abstract class CachedDetail<U, V extends Comparable<V>> implements Compar
 	 * @param id The ID for the detail in the database
 	 */
 	protected abstract void setID( Integer id );
-	
-	/**
-	 * @return A script used to select the ID of the detail in the data base and insert it if need be
-	 * @throws SQLException if the insert select statement failed
-	 */
-	protected abstract String getInsertSelectStatement() throws SQLException;
+
+    /**
+     * @param connection The connection that the statement will belong to
+     * @return A statement that can be used to safely execute an insert and select query
+     * @throws SQLException Thrown if the connection and query cannot be used
+     * to create the statement
+     */
+	protected abstract PreparedStatement getInsertSelectStatement( Connection connection) throws SQLException;
 
 	protected abstract Object getSaveLock();
 
@@ -56,6 +61,10 @@ public abstract class CachedDetail<U, V extends Comparable<V>> implements Compar
 		{
 			this.setID( Database.getValue( databaseResults, this.getIDName() ) );
 		}
+		else
+        {
+            throw new SQLException( "No data could be loaded for " + this );
+        }
 	}
 	
 	/**
@@ -68,19 +77,43 @@ public abstract class CachedDetail<U, V extends Comparable<V>> implements Compar
 		{
 			Connection connection = null;
 			ResultSet results = null;
-
+            PreparedStatement statement = null;
 			try
 			{
 				connection = Database.getConnection();
-				results = Database.getResults( connection, this.getInsertSelectStatement() );
+				statement = this.getInsertSelectStatement( connection );
+				results = statement.executeQuery();
 				this.update( results );
 			}
 			finally
 			{
 				if ( results != null)
 				{
-					results.close();
+				    try
+                    {
+                        results.close();
+                    }
+                    catch( SQLException e )
+                    {
+                        // Failure to close should not affect primary outputs
+                        this.getLogger().warn("Failed to close result set {}.", results, e);
+                    }
 				}
+
+                if ( statement != null)
+                {
+                    try
+                    {
+                        statement.close();
+                    }
+                    catch (SQLException e)
+                    {
+                        // Failure to close should not affect primary outputs
+                        this.getLogger().warn( "Failed to close statement {}.",
+                                               statement,
+                                               e );
+                    }
+                }
 
 				if ( connection != null )
 				{
@@ -89,4 +122,9 @@ public abstract class CachedDetail<U, V extends Comparable<V>> implements Compar
 			}
 		}
 	}
+
+	protected abstract Logger getLogger();
+
+	@Override
+	public abstract String toString();
 }

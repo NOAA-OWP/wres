@@ -181,7 +181,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
 
 	@Override
 	protected int getMaxDetails() {
-		return 200;
+		return 1000;
 	}
 
     @Override

@@ -1,8 +1,17 @@
 package wres.io.data.details;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import wres.io.data.details.EnsembleDetails.EnsembleKey;
+import wres.io.utilities.ScriptBuilder;
 
 /**
  * Describes basic information used to define an Ensemble from the database
@@ -10,6 +19,9 @@ import wres.io.data.details.EnsembleDetails.EnsembleKey;
  */
 public final class EnsembleDetails extends CachedDetail<EnsembleDetails, EnsembleKey>
 {
+    private static final Logger
+            LOGGER = LoggerFactory.getLogger( EnsembleDetails.class);
+
     // Lock that will prevent the saving of the ensemble multiple times in a row
     private static final Object ENSEMBLE_SAVE_LOCK = new Object();
 	
@@ -127,39 +139,79 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
 	}
 
 	@Override
-	protected String getInsertSelectStatement() {
-		String script = "";
-		
-		script += "WITH new_ensemble AS" + NEWLINE;
-		script += "(" + NEWLINE;
-		script += "		INSERT INTO wres.Ensemble(ensemble_name, qualifier_id, ensemblemember_id)" + NEWLINE;
-		script += "		SELECT '" + ensembleName + "', " + getQualifierID() + ", " + getEnsembleMemberID() + NEWLINE;
-		script += "		WHERE NOT EXISTS (" + NEWLINE;
-		script += "			SELECT 1" + NEWLINE;
-		script += "			FROM wres.Ensemble" + NEWLINE;
-		script += "			WHERE ensemble_name = '" + ensembleName + "'" + NEWLINE;
-		script += "				AND ensemblemember_id = " + getEnsembleMemberID() + NEWLINE;
-		script += "             AND qualifier_id = " + getQualifierID() + NEWLINE;
-		script += "		)" + NEWLINE;
-		script += "		RETURNING ensemble_id" + NEWLINE;
-		script += ")" + NEWLINE;
-		script += "SELECT ensemble_id" + NEWLINE;
-		script += "FROM new_ensemble" + NEWLINE + NEWLINE;
-		script += "";
-		script += "UNION" + NEWLINE + NEWLINE;
-		script += "";
-		script += "SELECT ensemble_id" + NEWLINE;
-		script += "FROM wres.Ensemble" + NEWLINE;
-		script += "WHERE ensemble_name = '" + ensembleName + "'" + NEWLINE;
-		script += "		AND ensemblemember_id = " + getEnsembleMemberID() + NEWLINE;
-		script += "     AND qualifier_id = " + getQualifierID() + ";";
-		return script;
+	protected PreparedStatement getInsertSelectStatement( Connection connection )
+			throws SQLException
+	{
+		List<Object> args = new ArrayList<>(  );
+		ScriptBuilder script = new ScriptBuilder(  );
+
+		script.addLine("WITH new_ensemble AS");
+		script.addLine("(");
+		script.addTab().addLine("INSERT INTO wres.Ensemble(ensemble_name, qualifier_id, ensemblemember_id)");
+		script.addTab().addLine("SELECT ?, ?, ?");
+
+		args.add(this.ensembleName);
+		args.add(this.getQualifierID());
+		args.add(Integer.parseInt(this.getEnsembleMemberID()));
+
+		script.addTab().addLine("WHERE NOT EXISTS (");
+		script.addTab(  2  ).addLine("SELECT 1");
+		script.addTab(  2  ).addLine("FROM wres.Ensemble");
+		script.addTab(  2  ).addLine("WHERE ensemble_name = ?");
+
+		args.add(this.ensembleName);
+
+		script.addTab(   3   ).addLine("AND ensemblemember_id = ?");
+
+		args.add(Integer.parseInt(this.getEnsembleMemberID()));
+
+		script.addTab(   3   ).addLine("AND qualifier_id = ?");
+
+		args.add(this.getQualifierID());
+
+		script.addTab().addLine(")");
+		script.addTab().addLine("RETURNING ensemble_id");
+		script.addLine(")");
+		script.addLine("SELECT ensemble_id");
+		script.addLine("FROM new_ensemble");
+		script.addLine();
+		script.addLine("UNION");
+		script.addLine();
+		script.addLine("SELECT ensemble_id");
+		script.addLine("FROM wres.Ensemble");
+		script.addLine("WHERE ensemble_name = ?");
+
+		args.add(this.ensembleName);
+
+		script.addTab().addLine("AND ensemblemember_id = ?");
+
+		args.add(Integer.parseInt(this.getEnsembleMemberID()));
+
+		script.addTab().addLine("AND qualifier_id = ?;");
+
+		args.add(this.getQualifierID());
+
+		return script.getPreparedStatement( connection, args.toArray( new Object[args.size()] ) );
 	}
 
-    @Override
+	@Override
     protected Object getSaveLock()
     {
         return EnsembleDetails.ENSEMBLE_SAVE_LOCK;
+    }
+
+    @Override
+    protected Logger getLogger()
+    {
+        return EnsembleDetails.LOGGER;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "Ensemble: { ID: " + this.ensembleName +
+               ", Qualifier: " + this.getQualifierID() +
+               ", Member: " + this.getEnsembleMemberID() + "}";
     }
 
     public static EnsembleKey createKey(String ensembleName, String qualifierID, String memberIndex)
@@ -169,7 +221,7 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
 	
 	public static class EnsembleKey implements Comparable<EnsembleKey>
 	{
-	    public EnsembleKey(String ensembleName, String qualifierID, String memberIndex)
+	    EnsembleKey(String ensembleName, String qualifierID, String memberIndex)
 	    {
 	    	if (ensembleName == null)
 			{
@@ -197,15 +249,15 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
         {
             int equality;
 
-            if (this.ensembleName == null && other.ensembleName == null)
+            if (!this.hasName() && !other.hasName())
             {
                 equality = 0;
             }
-            else if (this.ensembleName == null && other.ensembleName != null)
+            else if (!this.hasName() && other.hasName())
             {
                 equality = -1;
             }
-            else if (this.ensembleName != null && other.ensembleName == null)
+            else if ( this.hasName() && !other.hasName())
 			{
 				equality = 1;
 			}
@@ -214,12 +266,13 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
                 equality = this.ensembleName.compareTo(other.getEnsembleName());
             }
 
-            if (equality == 0 && !(this.memberIndex == null && other.memberIndex == null)) {
-            	if (this.memberIndex == null && other.memberIndex != null)
+            if (equality == 0 && (this.hasMemberIndex() || other.hasMemberIndex()))
+            {
+            	if (!this.hasMemberIndex() && other.hasMemberIndex())
 				{
 					equality = -1;
 				}
-				else if (this.memberIndex != null && other.memberIndex == null)
+				else if (this.hasMemberIndex() && !other.hasMemberIndex())
 				{
 					equality = 1;
 				}
@@ -230,13 +283,13 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
 				}
             }
 
-            if (equality == 0 && !(this.qualifierID == null && other.qualifierID == null))
+            if (equality == 0 && !(this.qualifierIsMissing() && other.qualifierIsMissing()))
             {
-            	if (this.qualifierID == null && other.qualifierID != null)
+            	if (this.qualifierIsMissing())
 				{
 					equality = -1;
 				}
-				else if (this.qualifierID != null && other.qualifierID == null)
+				else if (other.qualifierIsMissing())
 				{
 					equality = 1;
 				}
@@ -249,16 +302,7 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
             return equality;
         }
 
-		/**
-		 * Indicates if the key has all three fields filled out
-		 * @return true if all three fields have values
-		 */
-		public boolean isComplete()
-		{
-			return this.fillCount() == 3;
-		}
-
-        public short fillCount()
+        short fillCount()
         {
             short count = 0;
 
@@ -307,12 +351,12 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
 
         private boolean hasName()
         {
-            return !(this.getEnsembleName() == null || this.getEnsembleName().isEmpty());
+            return !(this.getEnsembleName().equals( "default" ) || this.getEnsembleName().isEmpty());
         }
 
         private boolean hasMemberIndex()
         {
-            return !(this.getMemberIndex() == null || this.getMemberIndex().isEmpty());
+            return !(this.getMemberIndex().equals( "0" ) || this.getMemberIndex().isEmpty());
         }
 
         private boolean qualifierIsMissing()
