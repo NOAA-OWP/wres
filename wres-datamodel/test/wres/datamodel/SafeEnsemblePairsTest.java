@@ -70,47 +70,7 @@ public final class SafeEnsemblePairsTest
         catch(final Exception e)
         {
         }
-        //Null pair list
-        try
-        {
-            final EnsemblePairsBuilder c = new EnsemblePairsBuilder();
-            c.addData(null).setMetadata(meta).build();
-            fail("Expected a checked exception on invalid inputs: null pair list.");
-        }
-        catch(final Exception e)
-        {
-        }
 
-        //Only non-finite main pairs
-        try
-        {
-            values.clear();
-            values.add( metIn.pairOf( Double.NaN, new double[] { 1 } ) );
-            final EnsemblePairsBuilder c = new EnsemblePairsBuilder();
-            c.addData( values ).setMetadata( meta ).build();
-            fail( "Expected a checked exception on invalid inputs: all data missing." );
-        }
-        catch ( final InsufficientDataException e )
-        {
-        }
-        //Only non-finite baseline pairs
-        try
-        {
-            values.clear();
-            values.add( metIn.pairOf( 1, new double[] { 1 } ) );
-            final List<PairOfDoubleAndVectorOfDoubles> baselineValues = new ArrayList<>();
-            baselineValues.add( metIn.pairOf( Double.NaN, new double[] { 1 } ) );
-            final EnsemblePairsBuilder c = new EnsemblePairsBuilder();
-            c.addData( values )
-             .setMetadata( meta )
-             .addDataForBaseline( baselineValues )
-             .setMetadataForBaseline( meta )
-             .build();
-            fail( "Expected a checked exception on invalid inputs: all baseline data missing." );
-        }
-        catch ( final InsufficientDataException e )
-        {
-        }
         //Only non-finite climatology
         try
         {

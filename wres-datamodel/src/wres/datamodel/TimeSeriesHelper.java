@@ -101,7 +101,11 @@ class TimeSeriesHelper
 
     static Instant getEarliestBasisTime( List<Instant> basisTimes )
     {
-        if ( basisTimes.size() == 1 )
+        if( basisTimes.isEmpty() )
+        {
+            return Instant.MIN;
+        }
+        else if ( basisTimes.size() == 1 )
         {
             return ( basisTimes ).iterator().next();
         }
@@ -118,7 +122,11 @@ class TimeSeriesHelper
 
     static Instant getLatestBasisTime( List<Instant> basisTimes )
     {
-        if ( basisTimes.size() == 1 )
+        if( basisTimes.isEmpty() )
+        {
+            return Instant.MAX;
+        }
+        else if ( basisTimes.size() == 1 )
         {
             return ( basisTimes ).iterator().next();
         }

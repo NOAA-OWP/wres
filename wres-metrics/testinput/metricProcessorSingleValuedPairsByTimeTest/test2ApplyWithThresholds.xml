@@ -51,6 +51,7 @@
     <metric><name>threat score</name></metric>
     <metric><name>contingency table</name></metric>
     <metric><name>quantile quantile diagram</name></metric>
+    <metric><name>sample size</name></metric>
   </metrics>
   <outputs>
     <destination type="numeric">/home/jesse/text_output"</destination>

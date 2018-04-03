@@ -85,8 +85,6 @@ import wres.engine.statistics.metric.config.MetricConfigHelper;
  * </p>
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.2
- * @since 0.1
  */
 
 public abstract class MetricProcessor<S extends MetricInput<?>, T extends MetricOutputForProject<?>>

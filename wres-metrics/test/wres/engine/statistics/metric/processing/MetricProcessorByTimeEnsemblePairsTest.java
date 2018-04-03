@@ -8,6 +8,7 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.Map.Entry;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
@@ -61,9 +62,9 @@ public final class MetricProcessorByTimeEnsemblePairsTest
      */
 
     @Test
-    public void test1ApplyNoThresholds() throws IOException, MetricProcessorException, InterruptedException
+    public void test1ApplyWithoutThresholds() throws IOException, MetricProcessorException, InterruptedException
     {
-        String configPath = "testinput/metricProcessorEnsemblePairsByTimeTest/test1ApplyNoThresholds.xml";
+        String configPath = "testinput/metricProcessorEnsemblePairsByTimeTest/test1ApplyWithoutThresholds.xml";
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessorByTime<EnsemblePairs> processor = MetricFactory.getInstance( dataFactory )
                                                                       .ofMetricProcessorByTimeEnsemblePairs( config,
@@ -952,5 +953,53 @@ public final class MetricProcessorByTimeEnsemblePairsTest
                                                  .getData() ) );
 
     }
+
+    /**
+     * Tests the construction of a {@link MetricProcessorByTimeEnsemblePairs} and application of
+     * {@link MetricProcessorByTimeEnsemblePairs#apply(EnsemblePairs)} to configuration obtained from
+     * testinput/metricProcessorEnsemblePairsByTimeTest/test3ApplyWithValueThresholds.xml and pairs obtained from
+     * {@link MetricTestDataFactory#getEnsemblePairsFour()}.
+     * 
+     * @throws IOException if the input data could not be read
+     * @throws InterruptedException if the outputs were interrupted
+     * @throws MetricProcessorException if the metric processor could not be built
+     * @throws MetricOutputException if the results could not be generated 
+     */
+
+    @Test
+    public void test8ApplyWithValueThresholdsAndNoData()
+            throws IOException, MetricProcessorException, InterruptedException
+    {
+        final DataFactory metIn = DefaultDataFactory.getInstance();
+
+        String configPath = "testinput/metricProcessorEnsemblePairsByTimeTest/test2ApplyWithValueThresholds.xml";
+
+        ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
+        MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
+                MetricFactory.getInstance( metIn )
+                             .ofMetricProcessorByTimeEnsemblePairs( config, MetricOutputGroup.set() );
+        processor.apply( MetricTestDataFactory.getEnsemblePairsFour() );
+
+        //Obtain the results
+        MetricOutputMultiMapByTimeAndThreshold<DoubleScoreOutput> results = processor.getCachedMetricOutput()
+                                                                                     .getDoubleScoreOutput();
+
+        //Validate the score outputs
+        for ( MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> nextMetric : results.values() )
+        {
+            if ( nextMetric.getMetadata().getMetricID() != MetricConstants.SAMPLE_SIZE )
+            {
+                for ( Entry<Pair<TimeWindow, OneOrTwoThresholds>, DoubleScoreOutput> nextOutput : nextMetric.entrySet() )
+                {
+                    assertTrue( "Expected results differ from actual results for "
+                                + nextMetric.getMetadata().getMetricID()
+                                + " at "
+                                + nextOutput.getKey(),
+                                nextOutput.getValue().getData().isNaN() );
+                }
+            }
+        }
+    }
+
 
 }

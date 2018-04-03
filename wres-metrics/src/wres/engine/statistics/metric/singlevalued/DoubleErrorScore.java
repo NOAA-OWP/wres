@@ -4,6 +4,7 @@ import java.util.Objects;
 
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.MissingValues;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
@@ -79,8 +80,14 @@ public abstract class DoubleErrorScore<S extends SingleValuedPairs> extends Ordi
             id = s.getMetadataForBaseline().getIdentifier();
         }
         final MetricOutputMetadata metOut = getMetadata( s, s.getData().size(), MetricConstants.MAIN, id );
+        
         //Compute the atomic errors in a stream
-        return getDataFactory().ofDoubleScoreOutput( s.getData().stream().mapToDouble( f ).average().getAsDouble(), metOut );
+        double doubleScore = MissingValues.MISSING_DOUBLE;
+        if( ! s.getData().isEmpty() )
+        {
+            doubleScore = s.getData().stream().mapToDouble( f ).average().getAsDouble();
+        }        
+        return getDataFactory().ofDoubleScoreOutput( doubleScore, metOut );
     }
 
     @Override

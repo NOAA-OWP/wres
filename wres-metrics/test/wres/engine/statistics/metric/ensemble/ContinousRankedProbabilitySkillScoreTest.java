@@ -133,7 +133,7 @@ public final class ContinousRankedProbabilitySkillScoreTest
         }
         try
         {
-            crpss.apply( MetricTestDataFactory.getEnsemblePairsOne() );
+            crpss.apply( MetricTestDataFactory.getEnsemblePairsOneWithMissings() );
             fail( "Expected an exception on null input for the baseline." );
         }
         catch ( MetricInputException e )

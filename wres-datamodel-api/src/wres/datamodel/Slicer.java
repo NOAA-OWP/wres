@@ -11,7 +11,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.ToDoubleFunction;
 
-import wres.datamodel.inputs.MetricInputSliceException;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
@@ -423,14 +422,12 @@ public interface Slicer
      * @param condition the condition on which to slice
      * @param applyToClimatology an optional filter for the climatology, may be null
      * @return the subset of pairs that meet the condition
-     * @throws MetricInputSliceException if the slice contains no elements, either for the main pairs or baseline
      * @throws NullPointerException if either the input or condition is null
      */
 
     SingleValuedPairs filter( SingleValuedPairs input,
                               Predicate<PairOfDoubles> condition,
-                              DoublePredicate applyToClimatology )
-            throws MetricInputSliceException;
+                              DoublePredicate applyToClimatology );
 
     /**
      * Returns the subset of pairs where the condition is met. Applies to both the main pairs and any baseline pairs.
@@ -439,14 +436,12 @@ public interface Slicer
      * @param condition the condition on which to slice
      * @param applyToClimatology an optional filter for the climatology, may be null
      * @return the subset of pairs that meet the condition
-     * @throws MetricInputSliceException if the slice contains no elements, either for the main pairs or baseline
      * @throws NullPointerException if either the input or condition is null
      */
 
     EnsemblePairs filter( EnsemblePairs input,
                           Predicate<PairOfDoubleAndVectorOfDoubles> condition,
-                          DoublePredicate applyToClimatology )
-            throws MetricInputSliceException;
+                          DoublePredicate applyToClimatology );
 
     /**
      * Filters {@link EnsemblePairs} by applying a mapper function to the input. This allows for fine-grain filtering
@@ -457,14 +452,12 @@ public interface Slicer
      * @param mapper the function that maps from {@link EnsemblePairs} to a new {@link EnsemblePairs}
      * @param applyToClimatology an optional filter for the climatology, may be null
      * @return the filtered {@link EnsemblePairs}
-     * @throws MetricInputSliceException if the slice contains no elements, either for the main pairs or baseline
      * @throws NullPointerException if either the input or condition is null
      */
 
     EnsemblePairs filter( EnsemblePairs input,
                           Function<PairOfDoubleAndVectorOfDoubles, PairOfDoubleAndVectorOfDoubles> mapper,
-                          DoublePredicate applyToClimatology )
-            throws MetricInputSliceException;
+                          DoublePredicate applyToClimatology );
 
     /**
      * Returns a subset of pairs where the condition is met for each atomic time-series in the container. Applies to 
@@ -474,14 +467,12 @@ public interface Slicer
      * @param condition the condition on which to slice
      * @param applyToClimatology an optional filter for the climatology, may be null
      * @return the subset of pairs that meet the condition
-     * @throws MetricInputSliceException if the slice contains no elements, either for the main pairs or baseline
      * @throws NullPointerException if either the input or condition is null
      */
 
     TimeSeriesOfSingleValuedPairs filter( TimeSeriesOfSingleValuedPairs input,
                                           Predicate<TimeSeriesOfSingleValuedPairs> condition,
-                                          DoublePredicate applyToClimatology )
-            throws MetricInputSliceException;
+                                          DoublePredicate applyToClimatology );
 
     /**
      * Returns as many lists of {@link PairOfDoubleAndVectorOfDoubles} as groups of atomic pairs in the input with an

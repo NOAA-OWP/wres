@@ -9,6 +9,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -227,8 +228,26 @@ public final class MetricTestDataFactory
     }
 
     /**
-     * Returns a moderately-sized test dataset of ensemble pairs without a baseline. Reads the pairs from
-     * testinput/metricTestDataFactory/getEnsemblePairsOne.asc. The inputs have a lead time of 24 hours.
+     * Returns a set of single-valued pairs with a baseline, both empty.
+     * 
+     * @return single-valued pairs
+     */
+
+    public static SingleValuedPairs getSingleValuedPairsSeven()
+    {
+        //Construct some single-valued pairs
+        final DataFactory metIn = DefaultDataFactory.getInstance();
+        final MetadataFactory metFac = metIn.getMetadataFactory();
+        final Metadata main = metFac.getMetadata( metFac.getDimension( "CMS" ),
+                                                  metFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ) );
+        final Metadata base = metFac.getMetadata( metFac.getDimension( "CMS" ),
+                                                  metFac.getDatasetIdentifier( "DRRC2", "SQIN", "ESP" ) );
+        return metIn.ofSingleValuedPairs( Collections.emptyList(), Collections.emptyList(), main, base );
+    }
+
+    /**
+     * Returns a moderately-sized test dataset of ensemble pairs with the same dataset as a baseline. Reads the pairs 
+     * from testinput/metricTestDataFactory/getEnsemblePairsOne.asc. The inputs have a lead time of 24 hours.
      * 
      * @return ensemble pairs
      * @throws IOException if the read fails
@@ -261,8 +280,13 @@ public final class MetricTestDataFactory
         final Metadata meta = metFac.getMetadata( metFac.getDimension( "CMS" ),
                                                   metFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ),
                                                   window );
+        final Metadata baseMeta = metFac.getMetadata( metFac.getDimension( "CMS" ),
+                                                      metFac.getDatasetIdentifier( "DRRC2", "SQIN", "ESP" ),
+                                                      window );
         return metIn.ofEnsemblePairs( values,
+                                      values,
                                       meta,
+                                      baseMeta,
                                       metIn.vectorOf( climatology.toArray( new Double[climatology.size()] ) ) );
     }
 
@@ -310,7 +334,7 @@ public final class MetricTestDataFactory
                                       meta,
                                       metIn.vectorOf( climatology.toArray( new Double[climatology.size()] ) ) );
     }
-    
+
     /**
      * Returns a small test dataset of ensemble pairs without a baseline. Reads the pairs from
      * testinput/metricTestDataFactory/getEnsemblePairsTwo.asc. The inputs have a lead time of 24 hours.
@@ -349,11 +373,10 @@ public final class MetricTestDataFactory
         return metIn.ofEnsemblePairs( values,
                                       meta,
                                       metIn.vectorOf( climatology.toArray( new Double[climatology.size()] ) ) );
-    }    
-    
+    }
+
     /**
-     * Returns a set of ensemble pairs with a single pair and no baseline. This is useful for checking exceptional
-     * behavior due to an inadequate sample size.
+     * Returns a set of ensemble pairs with a single pair and no baseline. 
      * 
      * @return ensemble pairs
      */
@@ -373,8 +396,29 @@ public final class MetricTestDataFactory
                                                   metFac.getDatasetIdentifier( "A", "MAP" ),
                                                   window );
         return metIn.ofEnsemblePairs( values, meta );
-    }    
-    
+    }
+
+    /**
+     * Returns a set of ensemble pairs with no data in the main input or baseline. 
+     * 
+     * @return ensemble pairs
+     */
+
+    public static EnsemblePairs getEnsemblePairsFour()
+    {
+        //Construct some ensemble pairs
+        final DataFactory metIn = DefaultDataFactory.getInstance();
+        final MetadataFactory metFac = metIn.getMetadataFactory();
+        final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                 Instant.parse( "2010-12-31T11:59:59Z" ),
+                                                 ReferenceTime.VALID_TIME,
+                                                 Duration.ofHours( 24 ) );
+        final Metadata meta = metFac.getMetadata( metFac.getDimension( "MM/DAY" ),
+                                                  metFac.getDatasetIdentifier( "A", "MAP" ),
+                                                  window );
+        return metIn.ofEnsemblePairs( Collections.emptyList(), Collections.emptyList(), meta, meta );
+    }
+
     /**
      * Returns a set of dichotomous pairs based on http://www.cawcr.gov.au/projects/verification/#Contingency_table. The
      * test data comprises 83 hits, 38 false alarms, 23 misses and 222 correct negatives, i.e. N=365.
@@ -968,7 +1012,7 @@ public final class MetricTestDataFactory
                                                       .setMetadata( metaData )
                                                       .build();
     }
-    
+
     /**
      * Returns a {@link TimeSeriesOfSingleValuedPairs} containing fake data.
      * 
@@ -1004,7 +1048,7 @@ public final class MetricTestDataFactory
         return (TimeSeriesOfSingleValuedPairs) builder.addTimeSeriesData( firstId, firstValues )
                                                       .setMetadata( metaData )
                                                       .build();
-    }    
+    }
 
     /**
      * Returns a {@link TimeSeriesOfSingleValuedPairs} containing fake data.
@@ -1043,6 +1087,33 @@ public final class MetricTestDataFactory
         return (TimeSeriesOfSingleValuedPairs) builder.addTimeSeriesData( secondId, secondValues )
                                                       .setMetadata( metaData )
                                                       .build();
-    }    
+    }
 
+    /**
+     * Returns a {@link TimeSeriesOfSingleValuedPairs} containing no data.
+     * 
+     * @return a time-series of single-valued pairs
+     */
+
+    public static TimeSeriesOfSingleValuedPairs getTimeSeriesOfSingleValuedPairsFour()
+    {
+        // Build an immutable regular time-series of single-valued pairs
+        DataFactory dataFactory = DefaultDataFactory.getInstance();
+        MetadataFactory metaFac = dataFactory.getMetadataFactory();
+        TimeSeriesOfSingleValuedPairsBuilder builder =
+                dataFactory.ofTimeSeriesOfSingleValuedPairsBuilder();
+        // Create a regular time-series with an issue date/time, a series of paired values, and a timestep
+
+        // Create some default metadata for the time-series
+        final TimeWindow window = TimeWindow.of( Instant.MIN,
+                                                 Instant.MAX );
+        final Metadata metaData = metaFac.getMetadata( metaFac.getDimension( "CMS" ),
+                                                       metaFac.getDatasetIdentifier( "A",
+                                                                                     "Streamflow" ),
+                                                       window );
+        // Build the time-series
+        return (TimeSeriesOfSingleValuedPairs) builder.setMetadata( metaData )
+                                                      .build();
+    }    
+    
 }
