@@ -776,31 +776,33 @@ public class ConfigHelper
      * 
      * @param projectDetails the project configuration
      * @param firstLead the earliest lead time
-     * @param lastLead the last lead time
+     * @param lastLead the latest lead time
      * @param sequenceStep the position of the window within a sequence
      * @return a time window 
      * @throws NullPointerException if the config is null
      * @throws DateTimeParseException if the configuration contains dates that cannot be parsed
      */
-    public static TimeWindow getTimeWindow( ProjectDetails projectDetails, long firstLead, long lastLead, int sequenceStep )
+    public static TimeWindow getTimeWindow( ProjectDetails projectDetails,
+                                            Duration firstLead,
+                                            Duration lastLead,
+                                            int sequenceStep )
     {
         // TODO: simplify this method, if possible
-        
         Objects.requireNonNull( projectDetails );
 
         Instant earliestTime;
         Instant latestTime;
 
         Duration beginningLead;
-        Duration endingLead = Duration.ofHours( lastLead );
+        Duration endingLead = lastLead;
 
         // Default reference time
         ReferenceTime referenceTime = ReferenceTime.VALID_TIME;
 
         if ( projectDetails.usesTimeSeriesMetrics() )
         {
-            beginningLead = Duration.ofHours( firstLead );
-            
+            beginningLead = firstLead;
+
             referenceTime = ReferenceTime.ISSUE_TIME;
         }
         else if ( projectDetails.getProjectConfig().getPair().getLeadTimesPoolingWindow() != null )
@@ -860,7 +862,7 @@ public class ConfigHelper
         {
             earliestTime = Instant.MIN;
             latestTime = Instant.MAX;
-        }       
+        }
 
         return TimeWindow.of( earliestTime,
                               latestTime,
@@ -1740,6 +1742,35 @@ public class ConfigHelper
         }
 
         return builder.build();
+    }
+
+    /**
+     * Returns the lead time units associated with the input configuration. Returns {@link ChronoUnit#HOURS} if no
+     * desired time scale is defined in the input configuration, otherwise the units of the desired time scale.
+     * 
+     * @param projectConfig the project configuration
+     * @return the units associated with the forecast lead times
+     * @throws NullPointerException if the input is null or the lead time units are null in the configuration
+     * @throws IllegalArgumentException if the lead time units are not recognized
+     */
+
+    public static ChronoUnit getLeadTimeUnitsFromProjectConfig( ProjectConfig projectConfig )
+    {
+        Objects.requireNonNull( projectConfig, NULL_CONFIGURATION_ERROR );
+
+        ChronoUnit returnMe = ChronoUnit.HOURS;
+
+        if ( Objects.nonNull( projectConfig.getPair() )
+             && Objects.nonNull( projectConfig.getPair().getDesiredTimeScale() ) )
+        {
+            returnMe = ChronoUnit.valueOf( projectConfig.getPair()
+                                                        .getDesiredTimeScale()
+                                                        .getUnit()
+                                                        .toString()
+                                                        .toUpperCase() );
+        }
+
+        return returnMe;
     }
 
 }
