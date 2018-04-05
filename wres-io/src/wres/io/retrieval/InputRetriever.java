@@ -1100,8 +1100,13 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         DatasetIdentifier datasetIdentifier = metadataFactory.getDatasetIdentifier(geospatialIdentifier,
                                                                                    variableIdentifier,
                                                                                    sourceConfig.getLabel());
-        long firstLead = 0;
-        long lastLead = 0;
+        // Replicated from earlier declaration as long
+        // TODO: confirm that this is really intended as the default
+        Duration firstLead = Duration.ZERO;
+        Duration lastLead = Duration.ZERO;
+        
+        ChronoUnit configuredUnits =
+                ConfigHelper.getLeadTimeUnitsFromProjectConfig( this.projectDetails.getProjectConfig() );
 
         if ( (ConfigHelper.isForecast( sourceConfig ) && !isBaseline)
                 // Persistence forecast meta is based on the forecast meta
@@ -1110,8 +1115,8 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         {
             if (this.projectDetails.usesTimeSeriesMetrics())
             {
-                firstLead = this.firstLead;
-                lastLead = this.lastLead;
+                firstLead = Duration.of( this.firstLead, configuredUnits);
+                lastLead = Duration.of( this.lastLead, configuredUnits);
             }
             else
             {
@@ -1124,17 +1129,24 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                                            + "the window could not be determined." );
                 }
 
-                lastLead = ((Double)(this.leadIteration *
-                           this.projectDetails.getLeadFrequency() +
-                           this.projectDetails.getWindowWidth() * 1.0 +
-                           offset)).longValue();
-                firstLead = lastLead;
+                // The lead time offset is in fixed units of hours. TODO: confirm and 
+                // change/document API to use java.time
+                Duration offsetDuration = Duration.of( offset, ChronoUnit.HOURS );
+                // The window width is in fixed units of hours. TODO: confirm and 
+                // change/document API to use java.time
+                Duration windowWidth = Duration.of( this.projectDetails.getWindowWidth(), ChronoUnit.HOURS );
+                
+                Duration leadFrequency = Duration.of( this.projectDetails.getLeadFrequency(), configuredUnits );
+                Duration leadFrequencyMultipliedByLeadIteration = leadFrequency.multipliedBy( this.leadIteration );
+
+                lastLead = leadFrequencyMultipliedByLeadIteration.plus( windowWidth ).plus( offsetDuration );
+                firstLead = lastLead;               
             }
         }
         else if (ConfigHelper.isForecast( sourceConfig ))
         {
-            firstLead = this.firstBaselineLead;
-            lastLead = this.lastBaselineLead;
+            Duration.of( this.firstBaselineLead, configuredUnits);
+            Duration.of( this.lastBaselineLead, configuredUnits);
         }
 
         TimeWindow timeWindow = ConfigHelper.getTimeWindow( this.projectDetails,
