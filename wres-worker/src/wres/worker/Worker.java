@@ -4,6 +4,9 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeoutException;
 
 import com.rabbitmq.client.AMQP;
@@ -29,10 +32,11 @@ public class Worker
      * @throws IllegalArgumentException when the first argument is not a WRES executable
      * @throws java.net.ConnectException when connection to queue fails.
      * @throws TimeoutException when connection to the queue times out.
+     * @throws InterruptedException when interrupted while waiting for work.
      */
 
     public static void main( String[] args )
-            throws IOException, TimeoutException
+            throws IOException, TimeoutException, InterruptedException
     {
         if ( args.length != 1 )
         {
@@ -59,9 +63,16 @@ public class Worker
         {
             channel.queueDeclare( RECV_QUEUE_NAME, false, false, false, null );
             JobReceiver receiver = new JobReceiver( channel, wresExecutable );
-            channel.basicConsume( RECV_QUEUE_NAME, true, receiver );
+
+            while ( true )
+            {
+                LOGGER.info( "Waiting for work..." );
+                channel.basicConsume( RECV_QUEUE_NAME, true, receiver );
+                Thread.sleep( 2000 );
+            }
         }
     }
+
 
     private static final class JobReceiver extends DefaultConsumer
     {
@@ -88,24 +99,34 @@ public class Worker
                                     Envelope envelope,
                                     AMQP.BasicProperties properties,
                                     byte[] body )
-                throws IOException
         {
             String message = new String( body, Charset.forName( "UTF-8" ) );
             LOGGER.info( "Received job message {}", message );
 
+            // Translate the message into a command
+            ProcessBuilder processBuilder = createBuilderFromMessage( message );
+
+            // Check to see if there is any command at all.
+            if ( processBuilder == null )
+            {
+                LOGGER.warn( "Could not execute due to invalid message." );
+                return;
+            }
+
             // Do the execution requested from the queue
 
-            String command = "execute";
-            String projectFile = "project_config.xml";
 
-            ProcessBuilder processBuilder = new ProcessBuilder( this.getWresExecutable().getPath(),
-                                                                command,
-                                                                projectFile );
+            Process process;
 
-            // Cause process builder to echo the subprocess's output when started.
-            processBuilder.inheritIO();
-
-            Process process = processBuilder.start();
+            try
+            {
+                process = processBuilder.start();
+            }
+            catch ( IOException ioe )
+            {
+                LOGGER.warn( "Failed to launch process from {}.", processBuilder, ioe );
+                return;
+            }
 
             LOGGER.info( "Started subprocess {}", process );
 
@@ -120,6 +141,71 @@ public class Worker
                 LOGGER.warn( "Interrupted while waiting for {}.", process );
                 Thread.currentThread().interrupt();
             }
+        }
+
+
+        /**
+         * Translate a message from the queue into a ProcessBuilder to run
+         * @param message
+         * @return
+         */
+        ProcessBuilder createBuilderFromMessage( String message )
+        {
+            List<String> result = new ArrayList<>();
+
+            String javaOpts = null;
+            String executable = this.getWresExecutable().getPath();
+            String command = "execute";
+            String projectConfig = null;
+
+            String[] messageParts = message.split( "," );
+
+            for ( String messagePart : messageParts )
+            {
+                int indexOfEquals = messagePart.indexOf( '=' );
+
+                if ( indexOfEquals < 1 || indexOfEquals == messagePart.length() )
+                {
+                    LOGGER.warn( "Bad message, no equals here, or nothing after equals: '{}'", messagePart );
+                    return null;
+                }
+
+                String first = messagePart.substring( 0, indexOfEquals);
+                String second = messagePart.substring( indexOfEquals + 1);
+
+                if ( first.toUpperCase().equals( "JAVA_OPTS" ) )
+                {
+                    javaOpts = second;
+                }
+                else if ( first.toLowerCase().equals( "projectconfig" ) )
+                {
+                    projectConfig = second;
+                }
+            }
+
+            // Make sure we have a project config...
+            if ( projectConfig == null )
+            {
+                LOGGER.warn( "No project config specified in message." );
+                return null;
+            }
+
+            result.add( executable );
+            result.add( command );
+            result.add( projectConfig );
+
+            ProcessBuilder processBuilder = new ProcessBuilder( result );
+
+            // Cause process builder to echo the subprocess's output when started.
+            processBuilder.inheritIO();
+
+            // Cause process builder to get java options if needed
+            if ( javaOpts != null )
+            {
+                processBuilder.environment().put( "JAVA_OPTS", javaOpts );
+            }
+
+            return processBuilder;
         }
     }
 }
