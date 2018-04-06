@@ -53,11 +53,14 @@ public class Worker
         // Get work from the queue
         ConnectionFactory factory = new ConnectionFactory();
         factory.setHost( "localhost" );
-        Connection connection = factory.newConnection();
-        Channel channel = connection.createChannel();
-        channel.queueDeclare( RECV_QUEUE_NAME, false, false, false, null );
-        JobReceiver receiver = new JobReceiver( channel, wresExecutable );
-        channel.basicConsume( RECV_QUEUE_NAME, true, receiver );
+
+        try ( Connection connection = factory.newConnection();
+              Channel channel = connection.createChannel() )
+        {
+            channel.queueDeclare( RECV_QUEUE_NAME, false, false, false, null );
+            JobReceiver receiver = new JobReceiver( channel, wresExecutable );
+            channel.basicConsume( RECV_QUEUE_NAME, true, receiver );
+        }
     }
 
     private static final class JobReceiver extends DefaultConsumer
