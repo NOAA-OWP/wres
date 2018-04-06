@@ -19,12 +19,13 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
 
 	Map<U, Integer> keyIndex;
 	private ConcurrentMap<Integer, T> details;
-	private static final Object DETAIL_LOCK = new Object();
-	private static final Object KEY_LOCK = new Object();
+
+	protected abstract Object getDetailLock();
+	protected abstract Object getKeyLock();
 
 	Map<U, Integer> getKeyIndex()
     {
-    	synchronized ( KEY_LOCK )
+    	synchronized ( this.getKeyLock() )
 		{
 			if ( keyIndex == null )
 			{
@@ -42,7 +43,7 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
 
 	final ConcurrentMap<Integer, T> getDetails()
 	{
-	    synchronized ( DETAIL_LOCK )
+	    synchronized ( this.getDetailLock() )
         {
             this.initializeDetails();
             return this.details;
@@ -51,7 +52,7 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
 
 	void initializeDetails()
 	{
-		synchronized ( DETAIL_LOCK )
+		synchronized ( this.getDetailLock() )
 		{
 			if (this.details == null)
 			{
@@ -73,7 +74,7 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
 	 * Removes all items from the details and keys caches for the instance
 	 */
     void clearCache () {
-	    synchronized(KEY_LOCK)
+	    synchronized(this.getKeyLock())
 	    {
 	        this.getKeyIndex().clear();
 	    }
@@ -126,7 +127,7 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
     {
 		Integer id = null;
 		
-		synchronized (KEY_LOCK)
+		synchronized (this.getKeyLock())
 		{
     		if (this.getKeyIndex().containsKey(key))
     		{
@@ -141,7 +142,7 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
 	{
 	    boolean hasIt;
 	    
-	    synchronized (KEY_LOCK)
+	    synchronized (this.getKeyLock())
 	    {
 	        hasIt = this.getKeyIndex().containsKey(key);
 	    }
@@ -151,7 +152,7 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
 
 	void add( T element )
     {
-        synchronized (KEY_LOCK)
+        synchronized (this.getKeyLock())
         {
             this.getKeyIndex().put(element.getKey(), element.getId());
 
@@ -164,7 +165,7 @@ abstract class Cache<T extends CachedDetail<T, U>, U extends Comparable<U>> {
 	
 	void add( U key, Integer id )
 	{
-	    synchronized (KEY_LOCK)
+	    synchronized (this.getKeyLock())
         {
 	        this.getKeyIndex().put(key, id);
 	    }

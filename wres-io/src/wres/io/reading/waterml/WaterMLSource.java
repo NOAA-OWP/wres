@@ -12,92 +12,73 @@ import org.apache.commons.math3.util.Precision;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.generated.ProjectConfig;
-import wres.io.concurrency.StatementRunner;
+import static org.apache.commons.math3.util.Precision.EPSILON;
+
+import wres.io.concurrency.CopyExecutor;
 import wres.io.config.SystemSettings;
-import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Features;
 import wres.io.data.details.FeatureDetails;
-import wres.io.reading.BasicSource;
-import wres.io.reading.IngestResult;
 import wres.io.reading.waterml.timeseries.TimeSeries;
 import wres.io.reading.waterml.timeseries.TimeSeriesValue;
 import wres.io.reading.waterml.timeseries.TimeSeriesValues;
 import wres.io.utilities.Database;
 import wres.io.utilities.IOExceptionalConsumer;
-import wres.io.utilities.NoDataException;
 import wres.io.utilities.ScriptBuilder;
-import wres.util.Collections;
-import wres.util.TimeHelper;
+import wres.util.NotImplementedException;
+import wres.util.ProgressMonitor;
 
 /**
  * Saves WaterML Response objects to the database
  *
  * TODO: Fix database deadlocking issues
  */
-public class WaterMLSource extends BasicSource
+public class WaterMLSource
 {
     private static final Logger LOGGER = LoggerFactory.getLogger(WaterMLSource.class);
 
-    private static final String OBSERVATION_UPSERT = WaterMLSource.writeObservationUpsert();
-
-    private class UpsertValue
-    {
-        UpsertValue(String gageID, String observationTime, Double value)
-        {
-            this.gageID = gageID;
-            this.observationTime = TimeHelper.standardize( observationTime );
-            this.value = value;
-        }
-
-        Object[] getParameters() throws SQLException
-        {
-            return new Object[] {
-                    this.value,
-                    WaterMLSource.this.getVariablePositionID(this.gageID),
-                    this.observationTime,
-                    WaterMLSource.this.getMeasurementunitId(),
-                    WaterMLSource.this.getSourceId(),
-                    WaterMLSource.this.getVariablePositionID(this.gageID),
-                    this.observationTime,
-                    this.value,
-                    WaterMLSource.this.getMeasurementunitId(),
-                    WaterMLSource.this.getSourceId(),
-                    WaterMLSource.this.getVariablePositionID(this.gageID),
-                    this.observationTime,
-                    WaterMLSource.this.getMeasurementunitId(),
-                    WaterMLSource.this.getSourceId()
-            };
-        }
-
-        private final String observationTime;
-        private final Double value;
-        private final String gageID;
-    }
+    private static final String OBSERVATION_HEADER = "wres.Observation ("
+                                                     + "variableposition_id, "
+                                                     + "observation_id, "
+                                                     + "observation_time, "
+                                                     + "observed_value, "
+                                                     + "measurementunit_id, "
+                                                     + "source_id)";
+    private static final String FORECAST_HEADER = "";
+    private static final String DELIMITER = "|";
+    private static final String COPY_NULL = "\\N";
 
     private final int sourceId;
     private final Response waterML;
     private final SortedMap<String, Integer> variablePositionIDs;
-    private final Stack<UpsertValue> upsertValues = new Stack<>();
+    private final int variableId;
     private IOExceptionalConsumer<TimeSeries> invalidSeriesHandler;
+    private IOExceptionalConsumer<TimeSeries> seriesReadCompleteHandler;
     private final int waterMLMeasurementId;
+    private ScriptBuilder copyScript;
+    private int copyCount = 0;
+    private String copyHeader;
 
 
-    public WaterMLSource( ProjectConfig projectConfig,
-                          Response waterML,
+    public WaterMLSource( Response waterML,
                           int sourceId,
-                          int waterMLMeasurementId )
+                          int waterMLMeasurementId,
+                          int variableId)
     {
-        super( projectConfig );
         this.waterML = waterML;
         this.variablePositionIDs = new TreeMap<>();
         this.sourceId = sourceId;
         this.waterMLMeasurementId = waterMLMeasurementId;
+        this.variableId = variableId;
     }
 
     public void setInvalidSeriesHandler(IOExceptionalConsumer<TimeSeries> handler)
     {
         this.invalidSeriesHandler = handler;
+    }
+
+    public void setSeriesReadCompleteHandler(IOExceptionalConsumer<TimeSeries> handler)
+    {
+        this.seriesReadCompleteHandler = handler;
     }
 
     private void handleInvalidSeries(TimeSeries invalidSeries)
@@ -109,66 +90,72 @@ public class WaterMLSource extends BasicSource
         }
     }
 
-    @Override
-    public List<IngestResult> saveObservation() throws IOException
+    private void handleReadComplete(TimeSeries series) throws IOException
     {
-        if ( this.waterML == null ||
-             Collections.exists(this.waterML.getValue().getTimeSeries(),
-                                series -> series.getValues() == null || series.getValues().length == 0))
+        if (this.seriesReadCompleteHandler != null)
         {
-            throw new NoDataException( "No WaterML data could be loaded with "
-                                       + "the given configuration." );
+            this.seriesReadCompleteHandler.accept( series );
         }
-
-        for (TimeSeries series : this.waterML.getValue().getTimeSeries())
-        {
-            this.readObservationSeries( series );
-        }
-
-        try
-        {
-            this.performObservationUpserts();
-        }
-        catch ( SQLException e )
-        {
-            throw new IOException( "WaterML observations could not be saved.", e );
-        }
-
-        String hash = this.getHash();
-
-        return IngestResult.singleItemListFrom( this.getProjectConfig(),
-                                                this.getDataSourceConfig(),
-                                                hash,
-                                                false );
     }
 
-    private void readObservationSeries( TimeSeries series )
+    public int readForecastResponse()
+    {
+        throw new NotImplementedException( "Saving WaterML Forecasts is not supported." );
+    }
+
+    public int readObservationResponse() throws IOException
+    {
+        this.copyHeader = WaterMLSource.OBSERVATION_HEADER;
+        int readSeriesCount = 0;
+
+        if (this.waterML.getValue().getNumberOfPopulatedTimeSeries() > 0)
+        {
+
+            LOGGER.debug(
+                    "There are a grand total of {} different locations "
+                    + "that we want to save data to.",
+                    this.waterML.getValue()
+                                .getNumberOfPopulatedTimeSeries() );
+
+            for ( TimeSeries series : this.waterML.getValue().getTimeSeries() )
+            {
+                boolean validSeries = this.readObservationSeries( series );
+
+                if ( validSeries )
+                {
+                    readSeriesCount++;
+                }
+            }
+
+            LOGGER.debug( "Data for {} different locations have been saved.",
+                          readSeriesCount );
+
+            try
+            {
+                this.performCopy();
+            }
+            catch ( SQLException e )
+            {
+                e.printStackTrace();
+            }
+        }
+
+        return readSeriesCount;
+    }
+
+    private boolean readObservationSeries( TimeSeries series )
             throws IOException
     {
-        String gageID = series.getSourceInfo().getSiteCode()[0].getValue();
-
-        if (series.getValues().length == 0)
+        if (!series.isPopulated())
         {
             this.handleInvalidSeries( series );
-            System.out.println( "" );
-            System.out.println( "" );
-            System.out.println(gageID + " won't be parsed.");
-            System.out.println("");
-            System.out.println("");
-            return;
+            return false;
         }
 
         for (TimeSeriesValues valueSet : series.getValues())
         {
             if (valueSet.getValue().length == 0)
             {
-                this.handleInvalidSeries( series );
-
-                System.out.println( "" );
-                System.out.println( "" );
-                System.out.println("A set of values in " + gageID + " won't be parsed.");
-                System.out.println("");
-                System.out.println("");
                 continue;
             }
 
@@ -178,60 +165,86 @@ public class WaterMLSource extends BasicSource
                 {
                     Double readValue = value.getValue();
 
-                    if ( series.getVariable().getNoDataValue() != null &&
-                         Precision.equals( readValue,
-                                           series.getVariable()
-                                                 .getNoDataValue(),
-                                           EPSILON ) )
+                    if (series.getVariable().getNoDataValue() != null &&
+                        Precision.equals( readValue, series.getVariable().getNoDataValue(), EPSILON))
                     {
                         readValue = null;
                     }
 
-                    this.addObservationValue( gageID,
-                                              value.getDateTime(),
-                                              readValue );
+                    this.addObservationValue( series.getSourceInfo().getSiteCode()[0].getValue(),
+                                   value.getDateTime(),
+                                   readValue);
                 }
-                catch (SQLException e)
+                catch ( SQLException e )
                 {
                     throw new IOException( e );
                 }
             }
         }
 
-        LOGGER.info("A WaterML time series has been parsed for '{}'",
-                    series.getSourceInfo().getSiteName());
+        this.handleReadComplete( series );
+        return true;
     }
 
     private void addObservationValue( String gageID, String observationTime, Double value)
             throws SQLException
     {
-        this.upsertValues.add(new UpsertValue( gageID, observationTime, value ));
-
-        if ( this.upsertValues.size() >= SystemSettings.maximumDatabaseInsertStatements())
+        if (this.copyScript == null)
         {
-            this.performObservationUpserts();
+            this.copyScript = new ScriptBuilder(  );
+        }
+
+        this.copyScript.add(this.getVariablePositionID( gageID )).add(DELIMITER)
+                       .add("'" + observationTime + "'").add(DELIMITER);
+
+        if (value == null)
+        {
+            this.copyScript.add(COPY_NULL).add(DELIMITER);
+        }
+        else
+        {
+            this.copyScript.add( value ).add( DELIMITER );
+        }
+
+        this.copyScript.add(this.waterMLMeasurementId).add(DELIMITER)
+                       .addLine(this.sourceId);
+
+        this.copyCount++;
+
+        if ( this.copyCount >= SystemSettings.getMaximumCopies())
+        {
+            this.performCopy();
         }
     }
 
-    private void performObservationUpserts() throws SQLException
+    private void performCopy() throws SQLException
     {
-        if (this.upsertValues.size() > 0)
+        if (this.copyCount > 0)
         {
-            List<Object[]> values = new ArrayList<>();
+            CopyExecutor copier = new CopyExecutor( this.copyHeader, this.copyScript.toString(), DELIMITER );
 
-            while (!upsertValues.empty())
-            {
-                values.add( upsertValues.pop().getParameters() );
-            }
+            // TODO: If we want to only update the ProgressMonitor for files, remove these handlers
+            // Tell the copier to increase the number representing the
+            // total number of operations to perform when the thread starts.
+            // It is debatable whether we should increase the number in this
+            // thread or in the thread operating on the actual database copy
+            // statement
+            copier.setOnRun( ProgressMonitor.onThreadStartHandler() );
 
-            StatementRunner statementRunner = new StatementRunner(
-                    WaterMLSource.OBSERVATION_UPSERT,
-                    values
-            );
+            // Tell the copier to inform the ProgressMonitor that work has been
+            // completed when the thread has finished
+            copier.setOnComplete( ProgressMonitor.onThreadCompleteHandler() );
 
-            Database.ingest(statementRunner);
+            // Send the copier to the Database handler's task queue and add
+            // the resulting future to our list of copy operations
+            Database.ingest( copier );
 
-            LOGGER.trace("WaterML data has been submitted to the database queue");
+            // Reset the values to copy
+            this.copyScript = new ScriptBuilder(  );
+
+            // Reset the count of values to copy
+            this.copyCount = 0;
+
         }
     }
 
@@ -242,66 +255,9 @@ public class WaterMLSource extends BasicSource
             FeatureDetails feature = Features.getDetailsByGageID( gageId );
             this.variablePositionIDs.put(
                     gageId,
-                    feature.getVariablePositionID( this.getVariableId() )
+                    feature.getVariablePositionID( this.variableId )
             );
         }
         return this.variablePositionIDs.get(gageId);
-    }
-
-    private int getSourceId()
-    {
-        return this.sourceId;
-    }
-
-    @Override
-    public int getMeasurementunitId()
-    {
-        return this.waterMLMeasurementId;
-    }
-
-    @Override
-    protected String getHash() throws IOException
-    {
-        return DataSources.getHash( this.getSourceId() );
-    }
-
-    private static String writeObservationUpsert()
-    {
-        ScriptBuilder script = new ScriptBuilder(  );
-
-        script.addLine("WITH upsert AS");
-        script.addLine("(");
-        script.addTab().addLine("UPDATE wres.Observation");
-        script.addTab(  2  ).addLine("SET observed_value = ?");
-        script.addTab().addLine("WHERE variableposition_id = ?");
-        script.addTab(  2  ).addLine("AND observation_time = (?)::timestamp without time zone");
-        script.addTab(  2  ).addLine("AND measurementunit_id = ?");
-        script.addTab(  2  ).addLine("AND source_id = ?");
-        script.addTab().addLine("RETURNING *");
-        script.addLine(")");
-        script.addLine("INSERT INTO wres.Observation (");
-        script.addTab().addLine("variableposition_id,");
-        script.addTab().addLine("observation_time,");
-        script.addTab().addLine("observed_value,");
-        script.addTab().addLine("measurementunit_id,");
-        script.addTab().addLine("source_id");
-        script.addLine(")");
-        script.addLine("SELECT ?, (?)::timestamp without time zone, ?, ?, ?");
-        script.addLine("WHERE NOT EXISTS (");
-        script.addTab().addLine("SELECT 1");
-        script.addTab().addLine("FROM upsert U");
-        script.addTab().addLine("WHERE U.variableposition_id = ?");
-        script.addTab(  2  ).addLine("AND U.observation_time = (?)::timestamp without time zone");
-        script.addTab(  2  ).addLine("AND U.measurementunit_id = ?");
-        script.addTab(  2  ).addLine("AND U.source_id = ?");
-        script.add(");");
-
-        return script.toString();
-    }
-
-    @Override
-    protected Logger getLogger()
-    {
-        return WaterMLSource.LOGGER;
     }
 }

@@ -47,6 +47,22 @@ public class TimeSeries
         this.name = name;
     }
 
+    public boolean isPopulated()
+    {
+        if (this.getValues().length > 0)
+        {
+            for (TimeSeriesValues values : this.getValues())
+            {
+                if (values.getValue().length > 0)
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     TimeSeriesValues[] values;
     String name;
 }

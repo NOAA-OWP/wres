@@ -24,6 +24,21 @@ public class MeasurementUnits extends Cache<MeasurementDetails, String> {
 	private static  MeasurementUnits instance = null;
 	private static final Object CACHE_LOCK = new Object();
 
+    private static final Object DETAIL_LOCK = new Object();
+    private static final Object KEY_LOCK = new Object();
+
+    @Override
+    protected Object getDetailLock()
+    {
+        return MeasurementUnits.DETAIL_LOCK;
+    }
+
+    @Override
+    protected Object getKeyLock()
+    {
+        return MeasurementUnits.KEY_LOCK;
+    }
+
     private static MeasurementUnits getCache()
     {
         synchronized (CACHE_LOCK)

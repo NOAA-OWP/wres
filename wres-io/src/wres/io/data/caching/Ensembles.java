@@ -28,6 +28,21 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
     private static final Logger LOGGER = LoggerFactory.getLogger(Ensembles.class);
     private static final Object CACHE_LOCK = new Object();
 
+	private static final Object DETAIL_LOCK = new Object();
+	private static final Object KEY_LOCK = new Object();
+
+	@Override
+	protected Object getDetailLock()
+	{
+		return Ensembles.DETAIL_LOCK;
+	}
+
+	@Override
+	protected Object getKeyLock()
+	{
+		return Ensembles.KEY_LOCK;
+	}
+
     /**
      *  Internal cache that will store a global collection of details whose details may be accessed through static methods
      */

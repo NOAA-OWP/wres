@@ -26,6 +26,21 @@ public final class Variables extends Cache<VariableDetails, String>
 	private static Variables instance = null;
 	private static final Object CACHE_LOCK = new Object();
 
+	private static final Object DETAIL_LOCK = new Object();
+	private static final Object KEY_LOCK = new Object();
+
+	@Override
+	protected Object getDetailLock()
+	{
+		return Variables.DETAIL_LOCK;
+	}
+
+	@Override
+	protected Object getKeyLock()
+	{
+		return Variables.KEY_LOCK;
+	}
+
 	private static Variables getCache()
 	{
 		synchronized (CACHE_LOCK)

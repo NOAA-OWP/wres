@@ -41,7 +41,7 @@ final class BackToBackMetricInputIterator extends MetricInputIterator
 
             if (last == null)
             {
-                throw new IllegalArgumentException( "The final lead time for the data set for: " +
+                throw new NoDataException( "The final lead time for the data set for: " +
                                                     this.getRight()
                                                         .getVariable()
                                                         .getValue() +
