@@ -28,11 +28,11 @@
             <unit>hours</unit>
         </desiredTimeScale>
         <issuedDatesPoolingWindow>
-            <period>336</period>
+            <period>14</period>
             <!-- WITH period=168, this CAUSES A NULL PTR EXCEPTION!!! 
             <frequency>672</frequency>-->
-            <frequency>168</frequency>
-            <unit>hours</unit>
+            <frequency>7</frequency>
+            <unit>days</unit>
         </issuedDatesPoolingWindow>   
     </pair>
 
