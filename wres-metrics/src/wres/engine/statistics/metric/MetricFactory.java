@@ -89,12 +89,10 @@ import wres.engine.statistics.metric.timeseries.TimingErrorDurationStatistics.Ti
 
 /**
  * <p>
- * A factory class for constructing metrics.
+ * A factory class for constructing metrics. TODO: make thread safe.
  * </p>
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.2
- * @since 0.1
  */
 
 public class MetricFactory
@@ -130,7 +128,7 @@ public class MetricFactory
      * Instance of an {@link DataFactory} for building metric outputs.
      */
 
-    private DataFactory outputFactory = null;
+    private final DataFactory outputFactory;
 
     /**
      * Cached {@link Metric} that consume {@link SingleValuedPairs} and produce {@link DoubleScoreOutput}. 
