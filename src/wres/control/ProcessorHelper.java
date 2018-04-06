@@ -389,7 +389,7 @@ class ProcessorHelper
         // Complete all tasks or one exceptionally: join() is blocking, representing a final sink for the results
         try
         {
-            doAllOrException( listOfFutures ).join();
+            ProcessorHelper.doAllOrException( listOfFutures ).join();
         }
         catch ( CompletionException e )
         {
