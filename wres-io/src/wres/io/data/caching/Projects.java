@@ -28,6 +28,21 @@ public class Projects extends Cache<ProjectDetails, Integer> {
     private static Projects instance = null;
     private static final Object CACHE_LOCK = new Object();
 
+    private static final Object DETAIL_LOCK = new Object();
+    private static final Object KEY_LOCK = new Object();
+
+    @Override
+    protected Object getDetailLock()
+    {
+        return Projects.DETAIL_LOCK;
+    }
+
+    @Override
+    protected Object getKeyLock()
+    {
+        return Projects.KEY_LOCK;
+    }
+
     private static Projects getCache ()
     {
         synchronized (CACHE_LOCK)

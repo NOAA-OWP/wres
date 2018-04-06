@@ -31,6 +31,21 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
     private static final Logger LOGGER = LoggerFactory.getLogger(Features.class);
     private static final Object CACHE_LOCK = new Object();
 
+    private static final Object DETAIL_LOCK = new Object();
+    private static final Object KEY_LOCK = new Object();
+
+    @Override
+    protected Object getDetailLock()
+    {
+        return Features.DETAIL_LOCK;
+    }
+
+    @Override
+    protected Object getKeyLock()
+    {
+        return Features.KEY_LOCK;
+    }
+
     /**
      *  Global cache for all Features
      */
@@ -155,6 +170,8 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         {
             script.addTab(  ).addLine("AND character_length(gage_id) >= 0");
         }
+
+        script.addLine("ORDER BY feature_id");
 
         Connection connection = null;
         ResultSet resultSet = null;
@@ -352,14 +369,14 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         return details;
     }
 
-    public static FeatureDetails getDetails(Integer comid, String lid, String gageID, String huc)
+    private static FeatureDetails getDetails(Integer comid, String lid, String gageID, String huc)
             throws SQLException
     {
         Integer id = Features.getFeatureID( comid, lid, gageID, huc );
         return Features.getCache().get( id );
     }
 
-    public static FeatureDetails getDetailsByLID(String lid) throws SQLException
+    private static FeatureDetails getDetailsByLID(String lid) throws SQLException
     {
         return Features.getDetails( null, lid, null, null );
     }
@@ -369,7 +386,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         return Features.getDetails( null, null, gageID, null );
     }
 
-    public static List<FeatureDetails> getDetailsByCoordinates(Float longitude, Float latitude, Float range)
+    private static List<FeatureDetails> getDetailsByCoordinates(Float longitude, Float latitude, Float range)
             throws SQLException
     {
         Double radianLatitude = Math.toRadians( latitude );
@@ -396,7 +413,8 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         script += ")" + NEWLINE;
         script += "SELECT *" + NEWLINE;
         script += "FROM feature_and_distance" + NEWLINE;
-        script += "WHERE distance <= " + rangeInDegrees + ";";
+        script += "WHERE distance <= " + rangeInDegrees + NEWLINE;
+        script += "ORDER BY feature_id;";
 
         Connection connection = null;
         ResultSet closestFeatures = null;
@@ -432,16 +450,15 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
 
     }
 
-    public static List<FeatureDetails> getDetailsByHUC(String huc)
+    private static List<FeatureDetails> getDetailsByHUC(String huc)
             throws SQLException
     {
         String script = "";
 
         script += "SELECT *" + NEWLINE;
         script += "FROM wres.Feature" + NEWLINE;
-        script += "WHERE huc LIKE '" + huc + "%'";
-
-        script += ";";
+        script += "WHERE huc LIKE '" + huc + "%'" + NEWLINE;
+        script += "ORDER BY feature_id;";
 
         Connection connection = null;
         ResultSet hucFeatures = null;
@@ -483,7 +500,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         script += "FROM wres.Feature" + NEWLINE;
         script += "WHERE rfc = '" + rfc + "'" + NEWLINE;
 
-        script += ";";
+        script += "ORDER BY feature_id;";
 
         Connection connection = null;
         ResultSet rfcFeatures = null;

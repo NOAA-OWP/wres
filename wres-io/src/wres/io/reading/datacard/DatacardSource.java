@@ -445,6 +445,7 @@ public class DatacardSource extends BasicSource
 				this.creationDateTime = getFileCreationDateTime();
 			}
 
+			// TODO: Modify the cache to do this work
             SourceDetails.SourceKey deetsKey =
                     new SourceDetails.SourceKey( this.getFilename(),
                                                  this.creationDateTime,

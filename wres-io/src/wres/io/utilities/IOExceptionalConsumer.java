@@ -5,5 +5,5 @@ import java.io.IOException;
 @FunctionalInterface
 public interface IOExceptionalConsumer<U>
 {
-    public void accept(U value) throws IOException;
+    void accept(U value) throws IOException;
 }

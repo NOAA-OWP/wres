@@ -777,7 +777,30 @@ public class Validation
                                                        dates,
                                                        latest )
                          && result;
+
+                // If we plan on using USGS, but we want a date later than now,
+                // break; that's impossible.
+                boolean usesUSGSData = ConfigHelper.usesUSGSData( projectConfigPlus.getProjectConfig() );
+
+                if (result && usesUSGSData && Instant.parse(latest).isAfter(Instant.now()))
+                {
+                    result = false;
+                    if ( LOGGER.isWarnEnabled() )
+                    {
+                        String msg = FILE_LINE_COLUMN_BOILERPLATE
+                                     + " Data from the future cannot be"
+                                     + "requested from USGS; the latest date is"
+                                     + "invalid.";
+
+                        LOGGER.warn( msg,
+                                     projectConfigPlus.getPath(),
+                                     dates.sourceLocation().getLineNumber(),
+                                     dates.sourceLocation()
+                                              .getColumnNumber() );
+                    }
+                }
             }
+
         }
 
         return result;

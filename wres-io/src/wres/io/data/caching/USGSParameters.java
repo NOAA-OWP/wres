@@ -17,7 +17,7 @@ public class USGSParameters
 
     private static class ParameterKey implements Comparable<ParameterKey>
     {
-        public ParameterKey(String name, String measurementUnit, String aggregation)
+        ParameterKey(String name, String measurementUnit, String aggregation)
         {
             this.name = name;
             this.measurementUnit = measurementUnit;

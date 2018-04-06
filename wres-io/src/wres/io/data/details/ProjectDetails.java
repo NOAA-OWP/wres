@@ -52,6 +52,7 @@ import wres.io.utilities.ScriptBuilder;
 import wres.io.utilities.ScriptGenerator;
 import wres.util.Collections;
 import wres.util.FormattedStopwatch;
+import wres.util.ProgressMonitor;
 import wres.util.Strings;
 import wres.util.TimeHelper;
 
@@ -1918,6 +1919,8 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
 
             LOGGER.trace("Variable position metadata loaded...");
 
+            LOGGER.info("Loading preliminary metadata...");
+
             while (resultSet.next())
             {
                 ScriptBuilder finalScript = new ScriptBuilder( );
@@ -1966,6 +1969,9 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
             }
         }
 
+        ProgressMonitor.resetMonitor();
+        ProgressMonitor.setSteps( (long)futureOffsets.size() );
+
         while (!futureOffsets.isEmpty())
         {
             FeatureDetails.FeatureKey key = ( FeatureDetails.FeatureKey)futureOffsets.keySet().toArray()[0];
@@ -1996,6 +2002,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
                         offset
                 );
                 LOGGER.trace( "An offset for {} was loaded!", ConfigHelper.getFeatureDescription( feature ) );
+                ProgressMonitor.completeStep();
             }
             catch ( InterruptedException e )
             {
@@ -2023,6 +2030,8 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
             LOGGER.debug( "It took {} to get the offsets for all locations.",
                           timer.getFormattedDuration() );
         }
+
+        ProgressMonitor.resetMonitor();
     }
 
     /**
@@ -2857,6 +2866,14 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
         {
             if (!this.forecastLag.containsKey( feature ))
             {
+                // This script will tell us the maximum distance between
+                // sequential forecasts for a feature for this project.
+                // We don't need the intended distance. If we go with the
+                // intended distance (say 3 hours), but the user just doesn't
+                // have or chooses not to use a forecast, resulting in a gap of
+                // 6 hours, we'll encounter an error because we're aren't
+                // accounting for that weird gap. By going with the maximum, we
+                // ensure that we will always cover that gap.
                 ScriptBuilder script = new ScriptBuilder();
                 script.addLine("WITH initialization_lag AS");
                 script.addLine("(");
@@ -2885,6 +2902,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
                 script.addTab(    4    ).addLine("AND PS.member = ", this.getInputName( sourceConfig ));
                 script.addTab(    4    ).addLine("AND FS.forecast_id = TS.timeseries_id");
                 script.addTab(  2  ).addLine(")");
+                script.addTab().addLine("GROUP BY TS.initialization_date");
                 script.addTab().addLine("ORDER BY TS.initialization_date");
                 script.addLine(")");
                 script.addLine("SELECT max(IL.lag) AS typical_gap");

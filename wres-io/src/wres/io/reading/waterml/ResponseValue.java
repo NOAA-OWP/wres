@@ -25,6 +25,19 @@ public class ResponseValue
         this.timeSeries = timeSeries;
     }
 
+    public int getNumberOfPopulatedTimeSeries()
+    {
+        int populationCount = 0;
+        for ( TimeSeries timeSeries : this.getTimeSeries())
+        {
+            if (timeSeries.isPopulated())
+            {
+                populationCount++;
+            }
+        }
+        return populationCount;
+    }
+
     QueryInfo queryInfo;
     TimeSeries[] timeSeries;
 }

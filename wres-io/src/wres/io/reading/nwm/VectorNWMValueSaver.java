@@ -51,7 +51,7 @@ class VectorNWMValueSaver extends WRESRunnable
      */
     private static class TimeSeriesIndexKey
     {
-        public TimeSeriesIndexKey(Integer variableID,
+        TimeSeriesIndexKey(Integer variableID,
                                   String initializationDate,
                                   Integer ensembleID,
                                   Integer measurementUnitID)
@@ -279,6 +279,7 @@ class VectorNWMValueSaver extends WRESRunnable
     {
         if (this.sourceID == null)
         {
+            // TODO: Modify the cache to do this work
             SourceDetails.SourceKey sourceKey =
                     new SourceDetails.SourceKey( this.filePath.toAbsolutePath().toString(),
                                                  NetCDF.getInitializedTime( this.getSource() ),

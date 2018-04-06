@@ -1373,53 +1373,82 @@ public final class Database {
 
 		Connection connection = null;
 		ResultSet results;
+        List<String> sql = new ArrayList<>();
 
-		// TODO: Thread this operation such that each table is analyzed simultaneously
+        String optionalVacuum = "";
+
+        if (vacuum)
+        {
+            optionalVacuum = "VACUUM ";
+        }
+
+		LOGGER.info("Analyzing data for efficient execution...");
+
         try
         {
             connection = getConnection();
 
-            String optionalVacuum = "";
+            String script =
+                    "SELECT 'ANALYZE '||n.nspname ||'.'|| c.relname||';' AS alyze"
+                    + NEWLINE +
+                    "FROM pg_catalog.pg_class c" + NEWLINE +
+                    "INNER JOIN pg_catalog.pg_namespace n" + NEWLINE +
+                    "     ON N.oid = C.relnamespace" + NEWLINE +
+                    "WHERE relchecks > 0" + NEWLINE +
+                    "     AND (nspname = 'wres' OR nspname = 'partitions')"
+                    + NEWLINE +
+                    "     AND relkind = 'r';";
 
-            if (vacuum)
-            {
-                optionalVacuum = "VACUUM ";
-            }
-
-            StringBuilder script = new StringBuilder();
-
-            script.append("SELECT 'ANALYZE '||n.nspname ||'.'|| c.relname||';' AS alyze").append(NEWLINE);
-            script.append("FROM pg_catalog.pg_class c").append(NEWLINE);
-            script.append("INNER JOIN pg_catalog.pg_namespace n").append(NEWLINE);
-            script.append("     ON N.oid = C.relnamespace").append(NEWLINE);
-            script.append("WHERE relchecks > 0").append(NEWLINE);
-            script.append("     AND (nspname = 'wres' OR nspname = 'partitions')").append(NEWLINE);
-            script.append("     AND relkind = 'r';");
-
-            results = getResults(connection, script.toString());
-
-            script = new StringBuilder();
+            results = getResults( connection, script );
 
             while (results.next())
             {
-                script.append(optionalVacuum).append(results.getString("alyze")).append(NEWLINE);
+            	sql.add(optionalVacuum + results.getString( "alyze" ));
             }
-
-            script.append(optionalVacuum).append("ANALYZE wres.Observation;").append(NEWLINE);
-            script.append(optionalVacuum).append("ANALYZE wres.TimeSeries;").append(NEWLINE);
-            script.append(optionalVacuum).append("ANALYZE wres.ForecastSource;").append(NEWLINE);
-            script.append(optionalVacuum).append("ANALYZE wres.ProjectSource;").append(NEWLINE);
-            script.append(optionalVacuum).append("ANALYZE wres.Source;").append(NEWLINE);
-
-            LOGGER.info("Now refreshing the statistics within the database.");
-            Database.execute(script.toString());
 
         }
         finally
         {
-            LOGGER.info("Database statistical analysis is now complete.");
-        	Database.returnConnection(connection);
-		}
+            Database.returnConnection(connection);
+        }
+
+        sql.add(optionalVacuum + "ANALYZE wres.Observation;");
+        sql.add(optionalVacuum + "ANALYZE wres.TimeSeries;");
+        sql.add(optionalVacuum + "ANALYZE wres.ForecastSource;");
+        sql.add(optionalVacuum + "ANALYZE wres.ProjectSource;");
+        sql.add(optionalVacuum + "ANALYZE wres.Source;");
+
+        List<Future<?>> queries = new ArrayList<>();
+
+        for (String statement : sql)
+        {
+            SQLExecutor query = new SQLExecutor( statement );
+            query.setOnComplete( ProgressMonitor.onThreadCompleteHandler() );
+            queries.add( Database.execute( query ) );
+        }
+
+        boolean analyzeFailed = true;
+
+        for (Future<?> query : queries)
+        {
+            try
+            {
+                query.get();
+                analyzeFailed = false;
+            }
+            catch ( ExecutionException | InterruptedException e )
+            {
+                LOGGER.error("A data optimization statement could not be completed.", e);
+            }
+        }
+
+        if (analyzeFailed)
+        {
+            throw new SQLException( "Data in the database could not be "
+                                    + "analyzed for efficient execution." );
+        }
+
+        LOGGER.info("Database statistical analysis is now complete.");
 	}
 
 	public static boolean removeOrphanedData() throws SQLException
@@ -1557,6 +1586,11 @@ public final class Database {
                 scriptBuilder.addLine(");");
             }
 
+            // We have to run everything sequentially because the tables need
+            // to know about their parents to know what to delete.
+            // Async would be neat, but not really possible. MVCC might make it
+            // possible though; probably worth exploring since this can take a
+            // while
             scriptBuilder.executeInTransaction();
 
             LOGGER.info("Incomplete data has been removed from the system.");
