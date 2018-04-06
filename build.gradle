@@ -414,6 +414,21 @@ project(':wres-worker')
     mainClassName = 'wres.worker.Worker'
 }
 
+project(':wres-tasker')
+{
+    dependencies
+    {
+        compile 'org.slf4j:slf4j-api:1.7.25'
+        compile 'com.rabbitmq:amqp-client:5.2.0'
+        runtime 'ch.qos.logback:logback-classic:1.2.3'
+    }
+
+    apply plugin: 'application'
+
+    mainClassName = 'wres.tasker.Tasker'
+}
+
+
 /* Single report for test coverage, thanks to
 https://discuss.gradle.org/t/merge-jacoco-coverage-reports-for-multiproject-setups/12100/5
  */
