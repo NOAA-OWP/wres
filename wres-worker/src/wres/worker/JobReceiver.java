@@ -18,21 +18,37 @@ class JobReceiver extends DefaultConsumer
     private static final Logger LOGGER = LoggerFactory.getLogger( JobReceiver.class );
 
     private final File wresExecutable;
+    private final Channel responseChannel;
+    private final String responseQueueName;
+
 
     /**
      * Constructs a new instance and records its association to the passed-in channel.
      * @param channel the channel to which this consumer is attached
      * @param wresExecutable the wresExecutable to use for launching WRES
+     * @param responseChannel the response channel used to report results
      */
-    JobReceiver( Channel channel, File wresExecutable )
+    JobReceiver( Channel channel, File wresExecutable, Channel responseChannel, String responseQueueName )
     {
         super( channel );
         this.wresExecutable = wresExecutable;
+        this.responseChannel = responseChannel;
+        this.responseQueueName = responseQueueName;
     }
 
     private File getWresExecutable()
     {
         return this.wresExecutable;
+    }
+
+    private Channel getResponseChannel()
+    {
+        return this.responseChannel;
+    }
+
+    private String getResponseQueueName()
+    {
+        return this.responseQueueName;
     }
 
     @Override
@@ -44,13 +60,17 @@ class JobReceiver extends DefaultConsumer
         String message = new String( body, Charset.forName( "UTF-8" ) );
         LOGGER.info( "Received job message {}", message );
 
+        String response = "Message failed: '" + message + "'";
+
         // Translate the message into a command
         ProcessBuilder processBuilder = createBuilderFromMessage( message );
 
         // Check to see if there is any command at all.
         if ( processBuilder == null )
         {
-            LOGGER.warn( "Could not execute due to invalid message." );
+            String problem = "Could not execute due to invalid message.";
+            LOGGER.warn( problem );
+            this.sendResponse( response + " " + problem );
             return;
         }
 
@@ -64,6 +84,8 @@ class JobReceiver extends DefaultConsumer
         catch ( IOException ioe )
         {
             LOGGER.warn( "Failed to launch process from {}.", processBuilder, ioe );
+            String problem = "Failed to launch due to " + ioe.getMessage();
+            this.sendResponse( response + " " + problem );
             return;
         }
 
@@ -74,10 +96,12 @@ class JobReceiver extends DefaultConsumer
             process.waitFor();
             int exitValue = process.exitValue();
             LOGGER.info( "Subprocess {} exited {}", process, exitValue );
+            this.sendResponse( "Result of execution: " + exitValue );
         }
         catch ( InterruptedException ie )
         {
             LOGGER.warn( "Interrupted while waiting for {}.", process );
+            this.sendResponse( "Interrupted, JobReceiver dying!" );
             Thread.currentThread().interrupt();
         }
     }
@@ -146,5 +170,25 @@ class JobReceiver extends DefaultConsumer
         }
 
         return processBuilder;
+    }
+
+
+    /**
+     * Attempts to send a message with job results
+     * @param message the message to send.
+     */
+    private void sendResponse( String message )
+    {
+        try
+        {
+            this.getResponseChannel().basicPublish( "",
+                                                    this.getResponseQueueName(),
+                                                    null,
+                                                    message.getBytes() );
+        }
+        catch ( IOException ioe )
+        {
+            LOGGER.warn( "Sending this message failed: {}", message, ioe );
+        }
     }
 }

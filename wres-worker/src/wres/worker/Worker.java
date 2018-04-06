@@ -15,7 +15,8 @@ import org.slf4j.LoggerFactory;
 public class Worker
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( Worker.class );
-    private static final String RECV_QUEUE_NAME= "wres.job";
+    private static final String RECV_QUEUE_NAME = "wres.job";
+    private static final String SEND_QUEUE_NAME = "wres.jobResults";
 
     /**
      * Expects exactly one arg with a path to WRES executable
@@ -51,15 +52,20 @@ public class Worker
         factory.setHost( "localhost" );
 
         try ( Connection connection = factory.newConnection();
-              Channel channel = connection.createChannel() )
+              Channel receiveChannel = connection.createChannel();
+              Channel sendChannel = connection.createChannel() )
         {
-            channel.queueDeclare( RECV_QUEUE_NAME, false, false, false, null );
-            JobReceiver receiver = new JobReceiver( channel, wresExecutable );
+            receiveChannel.queueDeclare( RECV_QUEUE_NAME, false, false, false, null );
+            sendChannel.queueDeclare( SEND_QUEUE_NAME, false, false, false, null );
+            JobReceiver receiver = new JobReceiver( receiveChannel,
+                                                    wresExecutable,
+                                                    sendChannel,
+                                                    SEND_QUEUE_NAME );
 
             while ( true )
             {
                 LOGGER.info( "Waiting for work..." );
-                channel.basicConsume( RECV_QUEUE_NAME, true, receiver );
+                receiveChannel.basicConsume( RECV_QUEUE_NAME, true, receiver );
                 Thread.sleep( 2000 );
             }
         }
