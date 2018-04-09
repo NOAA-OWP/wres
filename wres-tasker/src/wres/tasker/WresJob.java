@@ -5,9 +5,11 @@ import java.util.StringJoiner;
 import java.util.concurrent.TimeoutException;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.FormParam;
+import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import com.rabbitmq.client.Channel;
@@ -23,13 +25,16 @@ public class WresJob
 
     private static final String SEND_QUEUE_NAME = "wres.job";
 
-    private final ConnectionFactory connectionFactory;
+    // Using a member variable fails, make it same across instances.
+    private static final ConnectionFactory CONNECTION_FACTORY = new ConnectionFactory();
 
-    WresJob()
+    @GET
+    @Produces( MediaType.TEXT_PLAIN )
+    public String getWresJob()
     {
-        this.connectionFactory = new ConnectionFactory();
-        this.connectionFactory.setHost( "localhost" );
+        return "Up";
     }
+
 
     @POST
     @Consumes( "application/x-www-form-urlencoded")
@@ -64,7 +69,7 @@ public class WresJob
     private void sendMessage( String message )
             throws IOException, TimeoutException
     {
-        try ( Connection connection = this.connectionFactory.newConnection();
+        try ( Connection connection = CONNECTION_FACTORY.newConnection();
               Channel channel = connection.createChannel() )
         {
             channel.queueDeclare( SEND_QUEUE_NAME, false, false, false, null );
