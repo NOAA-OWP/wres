@@ -1,9 +1,10 @@
 package wres.tasker;
 
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.servlet.DefaultServlet;
+import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.util.resource.Resource;
 import org.glassfish.jersey.servlet.ServletContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,31 +32,25 @@ public class Tasker
         // Following example:
         // http://nikgrozev.com/2014/10/16/rest-with-embedded-jetty-and-jersey-in-a-single-jar-step-by-step/
 
-        // TODO: What does SESSIONS mean here? Can it be changed to NO_SESSIONS?
-        ServletContextHandler context = new ServletContextHandler( ServletContextHandler.SESSIONS );
+        ServletContextHandler context = new ServletContextHandler( ServletContextHandler.NO_SESSIONS );
         context.setContextPath( "/" );
 
-        // Allow static content, use cwd
-        String currentDir = System.getProperty( "user.dir" );
-        LOGGER.info( "Current directory: ", currentDir );
-
-        context.setResourceBase( currentDir );
-
-        Server jettyServer = new Server( Tasker.SERVER_PORT );
-        jettyServer.setHandler( context );
-
         ServletHolder dynamicHolder = context.addServlet( ServletContainer.class,
-                                                                "/jobs/*" );
+                                                                "/*" );
 
         dynamicHolder.setInitParameter( "jersey.config.server.provider.classnames",
                                         WresJob.class.getCanonicalName() );
 
-        ServletHolder staticHolder = new ServletHolder( "static-home",
-                                                        DefaultServlet.class );
-        staticHolder.setInitParameter( "resourceBase", "./static/" );
-        staticHolder.setInitParameter( "dirAllowed", "true" );
-        staticHolder.setInitParameter( "pathInfoOnly", "true" );
-        context.addServlet( staticHolder, "/*" );
+        // Static handler:
+        ResourceHandler resourceHandler = new ResourceHandler();
+        resourceHandler.setBaseResource( Resource.newClassPathResource( "job_tester.html" ) );
+
+        // Have to chain/wrap the handler this way to get both static/dynamic:
+        resourceHandler.setHandler( context );
+
+        Server jettyServer = new Server( Tasker.SERVER_PORT );
+
+        jettyServer.setHandler( resourceHandler );
 
         try
         {
