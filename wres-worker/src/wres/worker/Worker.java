@@ -12,6 +12,11 @@ import com.rabbitmq.client.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * A long-running, light-weight process that takes a job from a queue, and runs
+ * a single WRES instance for the job taken from the queue, and repeats.
+ */
+
 public class Worker
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( Worker.class );
