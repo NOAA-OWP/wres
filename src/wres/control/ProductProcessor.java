@@ -1,10 +1,11 @@
 package wres.control;
 
+import java.io.Closeable;
 import java.io.IOException;
+import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
@@ -18,23 +19,26 @@ import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.MetricConfigException;
 import wres.config.ProjectConfigException;
+import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Outputs;
+import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.DurationScoreOutput;
 import wres.datamodel.outputs.MatrixOutput;
-import wres.datamodel.outputs.MetricOutputAccessException;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.PairedOutput;
-import wres.io.config.ProjectConfigPlus;
+import wres.io.Operations;
+import wres.io.writing.SharedWriters;
 import wres.io.writing.commaseparated.CommaSeparatedBoxPlotWriter;
 import wres.io.writing.commaseparated.CommaSeparatedDiagramWriter;
 import wres.io.writing.commaseparated.CommaSeparatedMatrixWriter;
@@ -61,7 +65,8 @@ import wres.io.writing.png.PNGPairedWriter;
  * @author jesse.bickel@***REMOVED***
  */
 
-class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThreshold>
+class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThreshold>,
+                                  Closeable
 {
 
     /**
@@ -76,17 +81,12 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
 
     private static final String NULL_OUTPUT_STRING = "Specify non-null outputs for product generation.";
 
-    /**
-     * The project configuration.
-     */
-
-    private final ProjectConfig projectConfig;
 
     /**
-     * The augmented project configuration.
+     * The resolved project configuration.
      */
 
-    private final ProjectConfigPlus projectConfigPlus;
+    private final ResolvedProject resolvedProject;
 
     /**
      * Only writes when the condition is true.
@@ -137,51 +137,75 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
             new EnumMap<>( DestinationType.class );
 
     /**
+     * List of resources that ProductProcessor opened that it needs to close
+     */
+    private final List<Closeable> resourcesToClose;
+
+    /**
      * Build a product processor that writes unconditionally
-     * 
-     * @param projectConfigPlus the project configuration
+     *
+     * @param resolvedProject the resolved project
      * @throws NullPointerException if any of the inputs are null
      * @throws WresProcessingException if the project is invalid for writing
      */
 
-    ProductProcessor( final ProjectConfigPlus projectConfigPlus )
+    ProductProcessor( final ResolvedProject resolvedProject )
     {
         // Write unconditionally
-        this( projectConfigPlus, ( x, y ) -> true );
+        this( resolvedProject, ( x, y ) -> true );
     }
 
     /**
      * Build a product processor that writes conditionally.
-     * 
-     * @param projectConfigPlus the project configuration
+     *
+     * @param resolvedProject the resolved project
      * @param writeWhenTrue the condition under which outputs should be written
      * @throws NullPointerException if any of the inputs are null
      * @throws WresProcessingException if the project is invalid for writing
      */
 
-    ProductProcessor( final ProjectConfigPlus projectConfigPlus,
+    ProductProcessor( final ResolvedProject resolvedProject,
                       final BiPredicate<MetricOutputGroup, DestinationType> writeWhenTrue )
     {
-        Objects.requireNonNull( projectConfigPlus,
+        this( resolvedProject, writeWhenTrue, null);
+    }    
+
+    /**
+     * Build a product processor that writes conditionally.
+     * 
+     * @param resolvedProject the resolved project
+     * @param writeWhenTrue the condition under which outputs should be written
+     * @param sharedWriters an optional set of shared writers to consume outputs
+     * @throws NullPointerException if any of the inputs are null
+     * @throws WresProcessingException if the project is invalid for writing
+     */
+
+    ProductProcessor( final ResolvedProject resolvedProject,
+                      final BiPredicate<MetricOutputGroup, DestinationType> writeWhenTrue,
+                      final SharedWriters sharedWriters )
+    {
+        Objects.requireNonNull( resolvedProject,
                                 "Specify a non-null configuration for the results processor." );
 
         Objects.requireNonNull( writeWhenTrue, "Specify a non-null condition to ignore." );
 
-        this.projectConfigPlus = projectConfigPlus;
+        this.resourcesToClose = new ArrayList<>( 1 );
 
-        this.projectConfig = this.projectConfigPlus.getProjectConfig();
+        this.resolvedProject = resolvedProject;
 
         this.writeWhenTrue = writeWhenTrue;
 
         // Register output consumers
         try
         {
-            buildConsumers();
+            // implicitly passing resolvedProject via shared state
+            buildConsumers( sharedWriters );
         }
         catch ( ProjectConfigException | IOException e )
         {
             throw new WresProcessingException( "While processing the project configuration to write output:", e );
         }
+
     }
 
     /**
@@ -233,12 +257,15 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
                 processPairedOutputByInstantDuration( input.getPairedOutput() );
             }
         }
-        catch ( final MetricOutputAccessException | IOException e )
+        catch ( InterruptedException e)
         {
-            if ( Thread.currentThread().isInterrupted() )
-            {
-                LOGGER.warn( "Interrupted while processing intermediate results:", e );
-            }
+            // Notify
+            Thread.currentThread().interrupt();
+            
+            throw new WresProcessingException( "Interrupted while processing intermediate results:", e );         
+        }
+        catch ( IOException e )
+        {
             throw new WresProcessingException( "Error while processing intermediate results:", e );
         }
     }
@@ -248,10 +275,12 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
      * 
      * <p>Edit this method as new consumer types are supported by the project configuration.</p>
      * 
+     * @param sharedWriters an optional set of shared writers
      * @throws ProjectConfigException if the project configuration is invalid for writing
      */
 
-    private void buildConsumers() throws ProjectConfigException, IOException
+    private void buildConsumers( SharedWriters sharedWriters )
+            throws ProjectConfigException, IOException, MetricConfigException
     {
         // There is one consumer per project for each type, because consumers are built
         // with projects, not destinations. The consumers must iterate destinations.
@@ -259,7 +288,8 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
         // Register consumers for the NetCDF output type
         if ( configNeedsThisTypeOfOutput( DestinationType.NETCDF ) )
         {
-            buildNetCDFConsumers();
+            // implicitly passing resolvedProject via shared state
+            buildNetCDFConsumers( sharedWriters );
         }
 
         // Register consumers for the CSV output type
@@ -284,6 +314,8 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
 
     private void buildCommaSeparatedConsumers() throws ProjectConfigException
     {
+        ProjectConfig projectConfig = this.getProjectConfig();
+
         // Build the consumers conditionally
         if ( writeWhenTrue.test( MetricOutputGroup.MULTIVECTOR, DestinationType.CSV ) )
         {
@@ -324,16 +356,14 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
 
     /**
      * Builds a set of consumers for writing files in Portable Network Graphics (PNG) format.
-     * 
-     * TODO: remove the dependence of this class on ProjectConfigPlus via the graphics strings required by 
-     * the consumers built in this method. Instead, pass on ProjectConfig together with graphics strings or an 
-     * alternative representation of project configuration. The ProjectConfigPlus is not intended for sharing.
-     * 
+     *
      * @throws ProjectConfigException if the project configuration is invalid for writing
      */
 
     private void buildPortableNetworkGraphicsConsumers() throws ProjectConfigException
     {
+        ProjectConfigPlus projectConfigPlus = this.getProjectConfigPlus();
+
         // Build the consumers conditionally
         if ( writeWhenTrue.test( MetricOutputGroup.MULTIVECTOR, DestinationType.PNG ) )
         {
@@ -370,30 +400,80 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
     /**
      * Builds a set of consumers for writing NetCDF output.
      * 
-     * @throws ProjectConfigException if the project configuration is invalid for writing
+     * @param sharedWriters an optional set of shared writers to use when consuming NetCDF
      * @throws IOException when creation or mutation of netcdf files fails
      */
 
-    private void buildNetCDFConsumers()
-            throws ProjectConfigException, IOException
+    private void buildNetCDFConsumers( SharedWriters sharedWriters )
+            throws IOException, MetricConfigException
     {
         // Build the consumers conditionally
 
         // Register consumers for the NetCDF output type
         if ( writeWhenTrue.test( MetricOutputGroup.DOUBLE_SCORE, DestinationType.NETCDF ) )
         {
-            List<String> metricNames = new ArrayList<>( 2 );
-            metricNames.add( "MEAN_ERROR" );
-            metricNames.add( "SAMPLE_SIZE" );
-            List<String> shareableMetricNames =
-                    Collections.unmodifiableList( metricNames );
-            doubleScoreConsumers.put( DestinationType.NETCDF,
-                                      NetcdfDoubleScoreWriter.of( this.getProjectConfig(),
-                                                                  1,
-                                                                  2,
-                                                                  1,
-                                                                  1,
-                                                                  metricNames ) );
+            // Use a shared writer
+            if ( Objects.nonNull( sharedWriters )
+                 && sharedWriters.contains( MetricOutputGroup.DOUBLE_SCORE, DestinationType.NETCDF ) )
+            {
+                doubleScoreConsumers.put( DestinationType.NETCDF,
+                                          sharedWriters.getNetcdfDoubleScoreWriter() );
+            }
+            // Build a writer
+            else
+            {
+                int featureCount = this.getResolvedProject().getFeatureCount();
+                int thresholdCount = this.getResolvedProject().getThresholdCount( MetricOutputGroup.DOUBLE_SCORE );
+                Set<MetricConstants> metricConstants = this.getResolvedProject()
+                                                           .getDoubleScoreMetrics();
+
+                long basisTimes;
+                long leadCount;
+
+                try
+                {
+                    leadCount = Operations.getLeadCountsForProject( this.getResolvedProject()
+                                                                        .getProjectIdentifier() );
+                }
+                catch ( SQLException se )
+                {
+                    throw new IOException( "Unable to get lead counts.", se );
+                }
+
+                if ( leadCount > Integer.MAX_VALUE )
+                {
+                    throw new IOException( "Cannot use more than "
+                                           + Integer.MAX_VALUE
+                                           + " lead times in a netCDF file." );
+                }
+
+                try
+                {
+                    basisTimes = Operations.getBasisTimeCountsForProject( this.getResolvedProject()
+                                                                              .getProjectIdentifier()  );
+                }
+                catch ( SQLException se )
+                {
+                    throw new IOException( "Unable to get basis time counts.", se );
+                }
+
+                if ( basisTimes > Integer.MAX_VALUE )
+                {
+                    throw new IOException( "Cannot use more than "
+                                           + Integer.MAX_VALUE
+                                           + " basis times in a netCDF file." );
+                }
+                NetcdfDoubleScoreWriter netcdfWriter =
+                        NetcdfDoubleScoreWriter.of( this.getProjectConfig(),
+                                                    featureCount,
+                                                    (int) basisTimes,
+                                                    (int) leadCount,
+                                                    thresholdCount,
+                                                    metricConstants );
+                this.resourcesToClose.add( netcdfWriter );
+                doubleScoreConsumers.put( DestinationType.NETCDF,
+                                          netcdfWriter );
+            }
         }
     }
 
@@ -608,6 +688,7 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
 
     private boolean configNeedsThisTypeOfOutput( DestinationType type )
     {
+        ProjectConfig projectConfig = this.getProjectConfig();
         Outputs output = projectConfig.getOutputs();
         if ( Objects.isNull( output ) || output.getDestination().isEmpty() )
         {
@@ -629,6 +710,30 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
         // Return true if any destination types appear in allTypes, otherwise false
         return output.getDestination().stream().map( DestinationConfig::getType ).anyMatch( allTypes::contains );
     }
+
+
+    /**
+     * Close resources that ProductProcessor opened
+     */
+
+    public void close()
+    {
+        for ( Closeable resource : this.resourcesToClose )
+        {
+            try
+            {
+                resource.close();
+            }
+            catch ( IOException ioe )
+            {
+                // Not much we can do at this point. We tried to close, but
+                // we need to try to close all the other resources too before
+                // the software exits.
+                LOGGER.warn( "Unable to close resource {}", resource, ioe );
+            }
+        }
+    }
+
 
     /**
      * Logs the status of product generation.
@@ -667,11 +772,31 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
 
 
     /**
+     * @return the resolved project
+     */
+
+    private ResolvedProject getResolvedProject()
+    {
+        return this.resolvedProject;
+    }
+
+    /**
+     * @return the project config with more (2nd order project config)
+     */
+
+    private ProjectConfigPlus getProjectConfigPlus()
+    {
+        return this.getResolvedProject()
+                   .getProjectConfigPlus();
+    }
+
+    /**
      * @return the project config
      */
 
     private ProjectConfig getProjectConfig()
     {
-        return this.projectConfig;
+        return this.getResolvedProject()
+                   .getProjectConfig();
     }
 }

@@ -7,7 +7,6 @@ import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.Iterator;
 import java.util.NavigableMap;
-import java.util.NoSuchElementException;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
@@ -28,7 +27,6 @@ import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
 import wres.util.Collections;
 import wres.util.ProgressMonitor;
-import wres.util.Strings;
 import wres.util.TimeHelper;
 
 abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
@@ -52,12 +50,12 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
     // Something is wrong."
     private int inputCounter;
 
-    protected int getWindowNumber()
+    private int getWindowNumber()
     {
         return this.windowNumber;
     }
 
-    protected void incrementWindowNumber()
+    private void incrementWindowNumber()
     {
         // No incrementing has been done, so we just want to roll with
         // window 0, sequence < 1
@@ -73,22 +71,22 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
         // Otherwise, we move on to the next window
         else
         {
-            this.setPoolingStep( 0 );
+            this.resetPoolingStep();
             this.windowNumber++;
         }
     }
 
-    protected void incrementSequenceStep()
+    private void incrementSequenceStep()
     {
         poolingStep++;
     }
 
-    protected void setPoolingStep( int poolingStep )
+    private void resetPoolingStep()
     {
-        this.poolingStep = poolingStep;
+        this.poolingStep = 0;
     }
 
-    protected Integer getWindowCount() throws SQLException, IOException
+    private Integer getWindowCount() throws SQLException, IOException
     {
         if (this.windowCount == null)
         {
@@ -108,7 +106,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
         return this.projectDetails;
     }
 
-    protected void addLeftHandValue(LocalDateTime date, Double measurement)
+    private void addLeftHandValue(LocalDateTime date, Double measurement)
     {
         if (this.leftHandMap == null)
         {
@@ -118,7 +116,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
         this.leftHandMap.put( date, measurement );
     }
 
-    protected VectorOfDoubles getClimatology() throws IOException
+    private VectorOfDoubles getClimatology() throws IOException
     {
         if (this.getProjectDetails().usesProbabilityThresholds() && this.climatology == null)
         {
@@ -131,8 +129,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
         return this.climatology;
     }
 
-    public MetricInputIterator( final Feature feature,
-                                final ProjectDetails projectDetails )
+    MetricInputIterator( final Feature feature, final ProjectDetails projectDetails )
             throws SQLException, IOException
     {
 
@@ -149,15 +146,18 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
                                        "Please check your specifications." );
         }
 
-        this.finalPoolingStep = this.projectDetails.getIssuePoolCount( feature );
+        this.finalPoolingStep = this.getFinalPoolingStep();
 
-        // TODO: This needs a better home
-        // x2; 1 step for retrieval, 1 step for calculation
-        ProgressMonitor.setSteps( Long.valueOf( this.getWindowCount() ) * 2 );
+        ProgressMonitor.setSteps( Long.valueOf( this.getWindowCount() ) );
+    }
+
+    protected int getFinalPoolingStep() throws SQLException
+    {
+        return this.projectDetails.getIssuePoolCount( feature );
     }
 
     // TODO: Put into its own class
-    void createLeftHandCache() throws SQLException
+    private void createLeftHandCache() throws SQLException
     {
         Integer desiredMeasurementUnitID =
                 MeasurementUnits.getMeasurementUnitID( this.getProjectDetails()
@@ -261,12 +261,22 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
                                                                .getDesiredMeasurementUnit());
                 }
 
-                if (measurement == null ||
-                    ( measurement >= this.getProjectDetails().getMinimumValue() &&
-                      measurement <= this.getProjectDetails().getMaximumValue() ))
+                if (measurement != null && measurement < this.projectDetails.getMinimumValue())
                 {
-                    this.addLeftHandValue( date,
-                                           measurement );
+                    measurement = this.projectDetails.getDefaultMinimumValue();
+                }
+                else if (measurement != null && measurement > this.projectDetails.getMaximumValue())
+                {
+                    measurement = this.projectDetails.getDefaultMaximumValue();
+                }
+                else if (measurement == null)
+                {
+                    measurement = Double.NaN;
+                }
+
+                if (measurement != null)
+                {
+                    this.addLeftHandValue( date, measurement );
                 }
             }
         }
@@ -291,7 +301,8 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
 
         try
         {
-            if (ConfigHelper.isForecast( this.getRight() ))
+            if (ConfigHelper.isForecast( this.getRight() ) &&
+                this.getProjectDetails().getPairingMode() != ProjectDetails.PairingMode.TIME_SERIES)
             {
                 next = this.finalPoolingStep > 0 && this.poolingStep + 1 < this.finalPoolingStep;
 
@@ -338,7 +349,6 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
         }
         catch ( SQLException | IOException e )
         {
-            this.getLogger().error( Strings.getStackTrace( e ));
             throw new IterationFailedException( "The data provided could not be "
                                                 + "used to determine if another "
                                                 + "object is present for "
@@ -366,12 +376,15 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
         }
         catch ( IOException e )
         {
-            throw new NoSuchElementException( Strings.getStackTrace( e ) );
+            throw new IterationFailedException( "An exception prevented iteration.", e );
         }
 
+        // Does null have a specific meaning here? Is it expected that
+        // null will be returned every time the last call to next() happens?
+        // Shouldn't the caller call hasNext() prior to calling next()?
         if (nextInput == null)
         {
-            throw new NoSuchElementException( "There are no more windows to evaluate" );
+            throw new IterationFailedException( "There are no more windows to evaluate" );
         }
 
         return nextInput;
@@ -382,7 +395,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
      * @return A callable object that will create a Metric Input
      * @throws IOException Thrown if a climatology could not be created as needed
      */
-    protected Callable<MetricInput<?>> createRetriever() throws IOException
+    Callable<MetricInput<?>> createRetriever() throws IOException
     {
         // TODO: Pass the leftHandMap instead of the function
         InputRetriever retriever = new InputRetriever(
@@ -393,14 +406,14 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
         retriever.setClimatology( this.getClimatology() );
         retriever.setLeadIteration( this.getWindowNumber() );
         retriever.setIssueDatesPool( this.poolingStep );
-        retriever.setOnRun( ProgressMonitor.onThreadStartHandler() );
-        retriever.setOnComplete( ProgressMonitor.onThreadCompleteHandler() );
         return retriever;
     }
 
     /**
      * Submits a retrieval object for asynchronous execution
      * @return A MetricInput object that will be fully formed later in the application
+     * TODO: document what returning null means so caller can decide what to do
+     * when null is returned.
      * @throws IOException Thrown if the retrieval object could not be created
      */
     protected Future<MetricInput<?>> submitForRetrieval() throws IOException
@@ -423,7 +436,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
         return this.getProjectDetails().getBaseline();
     }
 
-    protected long getFirstLeadInWindow()
+    long getFirstLeadInWindow()
             throws SQLException, IOException
     {
         Integer offset = this.getProjectDetails().getLeadOffset( feature );
@@ -434,8 +447,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
                                        + "lead time offset for the location: " +
                                        ConfigHelper.getFeatureDescription( feature ) );
         }
-        return ( this.getWindowNumber() * this.getProjectDetails().getWindowWidth()) +
-               offset;
+        return this.getProjectDetails().getWindowWidth() + offset;
     }
 
     abstract int calculateWindowCount() throws SQLException, IOException;

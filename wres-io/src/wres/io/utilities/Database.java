@@ -7,7 +7,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.sql.Connection;
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.Instant;
@@ -30,7 +29,6 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.postgresql.PGConnection;
 import org.postgresql.copy.CopyManager;
 import org.slf4j.Logger;
@@ -174,11 +172,17 @@ public final class Database {
 		return result;
 	}
 
+
 	/**
 	 * Loads the metadata for each saved index and reinstates them within the
 	 * database
+     * @throws SQLException when script execution or gets from resultsets fail
+     * @throws InterruptedException when an underlying task is interrupted
+     * @throws ExecutionException when an underlying task throws an exception
 	 */
-	public static void addNewIndexes()
+
+	public static void addNewIndexes() throws SQLException,
+            InterruptedException, ExecutionException
 	{
 	    try
         {
@@ -195,7 +199,9 @@ public final class Database {
         }
         catch ( SQLException e )
         {
-            LOGGER.error( "Invalid dynamic indexes could not be removed from the queue." );
+            // We don't rethrow here because it just means that there was some
+            // garbage floating around that we don't care about
+            LOGGER.warn( "Invalid dynamic indexes could not be removed from the queue." );
         }
 
         StringBuilder builder;
@@ -212,7 +218,7 @@ public final class Database {
 			watch.start();
 		}
 
-        ProgressMonitor.resetMonitor();
+        //ProgressMonitor.resetMonitor();
 
         try
         {
@@ -256,10 +262,6 @@ public final class Database {
                 indexTasks.add(Database.execute(restore));
             }
         }
-        catch ( SQLException e )
-        {
-            LOGGER.error(Strings.getStackTrace( e ));
-        }
         finally
         {
             if (indexes != null)
@@ -270,8 +272,10 @@ public final class Database {
                 }
                 catch ( SQLException e )
                 {
-                    LOGGER.error("The result set containing the collection of indexes could not be closed");
-                    LOGGER.error( Strings.getStackTrace(e));
+                    // Exception on close should not affect primary outputs.
+                    LOGGER.warn( "The result set containing the collection of "
+                                 + "indexes could not be closed",
+                                 e );
                 }
             }
 
@@ -284,19 +288,14 @@ public final class Database {
         if (indexTasks.peek() != null)
         {
             LOGGER.info("Restoring Indices...");
+            ProgressMonitor.setSteps( (long)indexTasks.size() );
         }
 
 		Future<?> task;
 		while ((task = indexTasks.poll()) != null)
         {
-            try
-            {
-                task.get();
-            }
-            catch (InterruptedException | ExecutionException e)
-            {
-                LOGGER.error(Strings.getStackTrace(e));
-            }
+            task.get();
+            ProgressMonitor.completeStep();
         }
 
         if (LOGGER.isTraceEnabled())
@@ -312,8 +311,10 @@ public final class Database {
      * @param tableName The name of the table to index
      * @param indexName The name of the index to instate
      * @param indexDefinition The definition of the index to instate
+     * @throws SQLException when query fails
      */
 	public static void saveIndex(String tableName, String indexName, String indexDefinition)
+            throws SQLException
 	{
 		saveIndex( tableName, indexName, indexDefinition, "btree" );
 	}
@@ -324,11 +325,13 @@ public final class Database {
      * @param indexName The name of the index to instate
      * @param indexDefinition The definition of the index
      * @param indexType The organizational method for the index
+     * @throws SQLException when query fails
      */
-	public static void saveIndex(String tableName,
-                                 String indexName,
-                                 String indexDefinition,
-                                 String indexType)
+	private static void saveIndex(String tableName,
+                                  String indexName,
+                                  String indexDefinition,
+                                  String indexType)
+            throws SQLException
     {
 		if (!indexDefinition.startsWith("("))
 		{
@@ -353,15 +356,17 @@ public final class Database {
 			  .append("');");
 
 		try
-		{
+        {
 			Database.execute( script.toString() );
 		}
 		catch ( SQLException e )
 		{
-			LOGGER.error( "Could not store metadata about the index '{}' in the database", indexName );
-			LOGGER.error(Strings.getStackTrace( e ));
+		    // Whether or not this is a failure state is debatable
+            String message = "Could not store metadata about the index '"
+                             + indexName + "' in the database.";
+            // Decorate with some additional information, propagate.
+            throw new SQLException( message, e );
 		}
-
     }
 
 	/**
@@ -395,7 +400,7 @@ public final class Database {
     /**
      * Loops through all stored ingest tasks and ensures that they all complete
 	 * @return the list of resulting ingested file identifiers
-     * @throws IngestException if the ingest fails or is interrupted
+     * @throws IngestException if the ingest fails
      */
     public static List<IngestResult> completeAllIngestTasks() throws IngestException
     {
@@ -407,45 +412,42 @@ public final class Database {
 
 		try
 		{
+		    ProgressMonitor.setShouldUpdate( true );
             task = getStoredIngestTask();
 
             while ( task != null )
             {
-				ProgressMonitor.increment();
+                ProgressMonitor.increment();
 
-				if (!task.isDone())
-				{
-					try
+                if (!task.isDone())
+                {
+                    List<IngestResult> singleResult = task.get();
+                    ProgressMonitor.completeStep();
+
+                    if ( singleResult != null )
                     {
-						List<IngestResult> singleResult = task.get();
-
-                        if ( singleResult != null )
-                        {
-                            result.addAll( singleResult );
-                        }
-                        else if ( LOGGER.isTraceEnabled() )
-                        {
-                            LOGGER.trace( "A null value was returned in the "
-                                          + "Database class. Task: {}", task );
-                        }
-					}
-					catch (ExecutionException e)
+                        result.addAll( singleResult );
+                    }
+                    else if ( LOGGER.isTraceEnabled() )
                     {
-						LOGGER.error(Strings.getStackTrace(e));
-					}
-				}
+                        LOGGER.trace( "A null value was returned in the "
+                                      + "Database class. Task: {}", task );
+                    }
+                }
 
-				ProgressMonitor.completeStep();
                 task = getStoredIngestTask();
-			}
-		}
-		catch (InterruptedException e)
+            }
+        }
+        catch ( InterruptedException ie )
         {
-		    LOGGER.error("Ingest task completion was interrupted.");
-			LOGGER.error(Strings.getStackTrace(e));
-			throw new IngestException( "The ingest could not be completed; " +
-                                       "the operation was interupted." );
-		}
+            LOGGER.warn( "Ingest task completion was interrupted." );
+            Thread.currentThread().interrupt();
+        }
+        catch ( ExecutionException ee )
+        {
+            String message = "Could not complete all ingest tasks.";
+            throw new IngestException( message, ee );
+        }
 
 
         if ( LOGGER.isDebugEnabled() )
@@ -575,10 +577,12 @@ public final class Database {
             {
                 connection.close();
             }
-            catch(SQLException error)
+            catch( SQLException se )
             {
-                LOGGER.error("A connection could not be returned to the connection pool properly." + System.lineSeparator());
-                LOGGER.error(Strings.getStackTrace(error));
+                // Exception on close should not affect primary outputs.
+               LOGGER.warn( "A connection could not be returned to the "
+                            + "connection pool properly.",
+                             se );
             }
 	    }
 	}
@@ -601,10 +605,12 @@ public final class Database {
                 connection.close();
                 LOGGER.debug("A high priority database operation has completed.");
             }
-            catch (SQLException error)
+            catch ( SQLException se )
             {
-                LOGGER.error("A high priority connection could not be returned to the connection pool properly.");
-                LOGGER.error(Strings.getStackTrace(error));
+                // Exception on close should not affect primary outputs.
+                LOGGER.warn( "A high priority connection could not be "
+                             + "returned to the connection pool properly.",
+                             se );
             }
         }
     }
@@ -617,47 +623,78 @@ public final class Database {
      */
 	public static void execute(final String query) throws SQLException
 	{
-		Connection connection = null;
-		Statement statement = null;
-		Timer timer = null;
+	    Database.execute( query, false );
+	}
+
+    /**
+     * Executes the passed in query in the current thread
+     * @param query The query to execute
+     * @param forceTransaction The force transaction state
+     * @throws SQLException Thrown if an error occurred while attempting to
+     * communicate with the database
+     */
+    public static void execute(final String query, final boolean forceTransaction) throws SQLException
+    {
+        Connection connection = null;
+        Statement statement = null;
+        Timer timer = null;
 
         LOGGER.trace( "{}{}{}", NEWLINE, query, NEWLINE );
 
-		try
-		{
-		    if (LOGGER.isDebugEnabled())
+        try
+        {
+            if (LOGGER.isDebugEnabled())
             {
-                timer = createScriptTimer( query );
+                timer = Database.createScriptTimer( query );
             }
-			connection = getConnection();
-			statement = connection.createStatement();
-			statement.execute(query);
-			if (LOGGER.isDebugEnabled())
+            connection = getConnection();
+            connection.setAutoCommit( !forceTransaction );
+            statement = connection.createStatement();
+            statement.execute(query);
+
+            if (forceTransaction)
+            {
+                connection.commit();
+            }
+
+            if (LOGGER.isDebugEnabled() && timer != null)
             {
                 timer.cancel();
             }
-		}
-		catch (SQLException error)
+        }
+        catch (SQLException error)
         {
+            String message = query;
+            if (query.length() > 1000)
+            {
+                message = query.substring( 0, 1000 );
+            }
+
+            if (forceTransaction && connection != null)
+            {
+                connection.rollback();
+            }
+
             LOGGER.error( "The following SQL call failed:{}{}",
                           NEWLINE,
-                          query,
+                          message,
                           error );
-			throw error;
-		}
-		finally
-		{
+            throw error;
+        }
+        finally
+        {
             if (statement != null)
             {
                 statement.close();
             }
 
-			if (connection != null)
-			{
-				returnConnection(connection);
-			}
-		}
-	}
+            if (connection != null)
+            {
+                connection.setAutoCommit( true );
+                returnConnection(connection);
+            }
+        }
+    }
 
     /**
      * Sends a copy statement to the indicated table within the database
@@ -715,20 +752,18 @@ public final class Database {
 			LOGGER.error(message);
 			throw new CopyException(message, noMethod);
 		}
-		catch (SQLException | IOException error)
+		catch (SQLException | IOException | IllegalAccessException error)
 		{
-			LOGGER.debug("Data could not be copied to the database:");
-			LOGGER.debug(Strings.truncate(values));
-			LOGGER.debug("");
-
-			throw new CopyException("Data could not be copied: " + error.getMessage(), error);
+		    if ( LOGGER.isDebugEnabled() )
+            {
+                LOGGER.debug( "Data could not be copied to the database:{}{}",
+                              Strings.truncate( values ), NEWLINE );
+            }
+			throw new CopyException( "Data could not be copied to the database.",
+                                     error);
 		}
-        catch (IllegalAccessException e) {
-			LOGGER.error(Strings.getStackTrace(e));
-        }
         catch (InvocationTargetException e) {
 		    String message = "The dynamically retrieved method '" + copyAPIMethodName + "' threw an exception upon execution.";
-            LOGGER.error(message);
             throw new CopyException(message, e);
         }
         finally
@@ -798,164 +833,100 @@ public final class Database {
      * @throws SQLException Thrown if communication with the database was
      * unsuccessful.
      */
-	@SuppressWarnings("unchecked")
-    public static <T> T getResult( final String query,
-                                   final String label )
-            throws SQLException
-    {
-        return (T) Database.getResult( query, label, null ).getLeft();
-    }
-
-
-    /**
-     * Returns the first value in the labeled column from the query
-     * @param query The query used to select the value
-     * @param label The name of the column containing the data to retrieve
-     * @param <T> The type of data that should exist within the indicated column
-     * @param tablesToLock acquire an exclusive lock on these tables (can be
-     *                     either null or empty if caller desires no locks)
-     * @return The value in the indicated column from the first row of data.
-     * Null is returned if no data was found.
-     * The right hand boolean value of the pair indicates whether an insert was
-     * performed during retrieval: true if insert happened, false otherwise
-     * @throws SQLException Thrown if communication with the database was
-     * unsuccessful.
-     */
     @SuppressWarnings("unchecked")
-    public static <T> Pair<T,Boolean> getResult( final String query,
-                                                 final String label,
-                                                 final String[] tablesToLock )
+    public static <T> T getResult( final String query, final String label )
             throws SQLException
 	{
-		Connection connection = null;
-        Statement lockStatement = null;
-		Statement statement = null;
-		ResultSet results = null;
-		T result = null;
-        String lockQuery = null;
-        Boolean wasRowInserted = false;
+	    Connection connection = null;
+	    T result = null;
 
-        boolean shouldLock = tablesToLock != null && tablesToLock.length > 0;
-
-        try
+	    try
         {
-            connection = getConnection();
-
-            if ( shouldLock )
-            {
-                connection.setAutoCommit( false );
-                lockStatement = connection.createStatement();
-                lockStatement.setFetchSize( 1 );
-
-                StringJoiner tables = new StringJoiner(", ");
-
-                // Caller is responsible for correct order of locking
-                for ( String table : tablesToLock )
-                {
-                    tables.add( table );
-                }
-                lockQuery = "LOCK TABLE " + tables.toString()
-                            + " IN ACCESS EXCLUSIVE MODE";
-
-                LOGGER.trace( lockQuery );
-            }
-
-            if ( LOGGER.isTraceEnabled() )
-            {
-                LOGGER.trace( query );
-            }
-
-            statement = connection.createStatement();
-            statement.setFetchSize(1);
-
-            // Must this happen after the last statement is created? Doesn't
-            // seem to matter.
-            if ( shouldLock )
-            {
-                lockStatement.execute( lockQuery );
-            }
-
-            Timer scriptTimer = null;
-
-            if (LOGGER.isDebugEnabled())
-            {
-                scriptTimer = createScriptTimer( query );
-            }
-
-            results = statement.executeQuery(query);
-
-            if (LOGGER.isDebugEnabled())
-            {
-                scriptTimer.cancel();
-            }
-
-            ResultSetMetaData metaData = results.getMetaData();
-
-            if ( results.isBeforeFirst() )
-            {
-                results.next();
-                result = (T) results.getObject(label);
-            }
-
-            // If the CTE results in a second column, it should be "wasInserted"
-            if ( metaData.getColumnCount() == 2)
-            {
-                wasRowInserted =
-                        ( Boolean ) results.getObject( "wasInserted" );
-            }
-
-            if ( shouldLock )
-            {
-                connection.commit();
-            }
-        }
-        catch ( SQLException error )
-        {
-            LOGGER.error("The following SQL call failed: {}{}", NEWLINE, query, error );
-
-            if ( shouldLock && connection != null )
-            {
-                if ( lockQuery != null )
-                {
-                    LOGGER.error( "The lock statement may have failed: {}{}",
-                                  NEWLINE, lockQuery );
-                }
-                LOGGER.warn( "About to roll back" );
-                connection.rollback();
-                LOGGER.warn( "Finished rolling back" );
-            }
-            throw error;
+            connection = Database.getConnection();
+            result = Database.getResult( connection, query, label );
         }
         finally
         {
-            if (results != null)
-            {
-                results.close();
-            }
-
-            if ( lockStatement != null && !lockStatement.isClosed() )
-            {
-                lockStatement.close();
-            }
-
-            if ( statement != null && !statement.isClosed() )
-            {
-                statement.close();
-            }
-
             if (connection != null)
             {
-                if ( shouldLock )
-                {
-                    connection.setAutoCommit( true );
-                }
-                returnConnection(connection);
+                Database.returnConnection( connection );
             }
         }
 
-        LOGGER.trace( "Result of query: {}", result );
+        return result;
+	}
 
-        return Pair.of( result, wasRowInserted );
+
+	@SuppressWarnings("unchecked")
+	public static <T> T getResult( final Connection connection,
+								   final String query,
+								   final String label) throws SQLException
+	{
+		Statement statement = null;
+		ResultSet results = null;
+		T result = null;
+
+		try
+		{
+
+			if ( LOGGER.isTraceEnabled() )
+			{
+				LOGGER.trace( query );
+			}
+
+			statement = connection.createStatement();
+			statement.setFetchSize(1);
+
+			Timer scriptTimer = null;
+
+			if (LOGGER.isDebugEnabled())
+			{
+				scriptTimer = createScriptTimer( query );
+			}
+
+			results = statement.executeQuery(query);
+
+			if (LOGGER.isDebugEnabled())
+			{
+				scriptTimer.cancel();
+			}
+
+			if ( results.isBeforeFirst() )
+			{
+				results.next();
+				result = (T) results.getObject(label);
+			}
+		}
+		catch ( SQLException error )
+		{
+			String message = "The following SQL query failed:" + NEWLINE + query;
+			// Decorate SQLException with additional information
+			throw new SQLException( message, error );
+		}
+		finally
+		{
+			if (results != null)
+			{
+			    try
+                {
+                    results.close();
+                }
+                catch ( SQLException se )
+                {
+                    // Exception on close should not affect primary outputs.
+                    LOGGER.warn( "Could not close results {}.", results, se );
+                }
+			}
+
+			if ( statement != null && !statement.isClosed() )
+			{
+				statement.close();
+			}
+		}
+
+		LOGGER.trace( "Result of query: {}", result );
+
+		return result;
 	}
 
     /**
@@ -972,6 +943,7 @@ public final class Database {
      * @return The value if it is in the result set, null otherwise
      * @throws SQLException Thrown if the field is not in the result set
      */
+    @SuppressWarnings( "unchecked" )
 	public static <U> U getValue(ResultSet resultSet, String fieldName)
 			throws SQLException
 	{
@@ -1051,21 +1023,43 @@ public final class Database {
      * @param resultSet The set of data retrieved from the database
      * @param columnName The name of the column to check for
      * @return Whether or not the column exists
+     * @throws SQLException when resultSet metadata cannot be retrieved
+     * @throws NullPointerException when any arg is null
      */
 	public static boolean hasColumn(ResultSet resultSet, String columnName)
+            throws SQLException
 	{
+	    Objects.requireNonNull( resultSet );
+	    Objects.requireNonNull( columnName );
+
 		boolean columnExists = false;
 
-		// If the column exists, it will just return the index, otherwise it errors.
-		try
-		{
-			columnExists = resultSet.findColumn( columnName ) > -1;
-		}
-		catch (SQLException e)
-		{
-			LOGGER.trace( "The column '{}' was not found in the result set.",
-						  columnName );
-		}
+        try
+        {
+            // JDBC has a findColumn function that can do this, but it throws
+            // an exception if it isn't found. This means that an exception is
+            // thrown everytime it returns false. If you have thousands of
+            // calls and they all return false, you'll hit a massive slowdown
+            // due to exceptions. Instead, we perform a simple loop which will
+            // prevent that
+            int columnCount = resultSet.getMetaData().getColumnCount();
+            for ( int index = 1; index <= columnCount; ++index )
+            {
+                if ( resultSet.getMetaData()
+                              .getColumnLabel( index )
+                              .equals( columnName ) )
+                {
+                    columnExists = true;
+                    break;
+                }
+            }
+        }
+        catch ( SQLException e )
+        {
+            // We don't rethrow because it already answers the question;
+            // it just means we can't query the column.
+            LOGGER.debug( "A database result set could not be queried.", e );
+        }
 
 		return columnExists;
 	}
@@ -1081,6 +1075,7 @@ public final class Database {
      * @throws SQLException Thrown if the database could not be communicated
      * with successfully
      */
+    @SuppressWarnings( "unchecked" )
 	public static Collection populateCollection(final Collection collection,
                                                 final String query,
                                                 final String fieldLabel)
@@ -1118,14 +1113,23 @@ public final class Database {
 		}
 		catch (SQLException error)
 		{
-            LOGGER.error( "The following query failed:{}{}", NEWLINE, query );
-			throw error;
+            String message = "The following query failed:" + NEWLINE + query;
+            // Decorate SQLException with additional information.
+			throw new SQLException( message, error );
 		}
 		finally
 		{
 			if (results != null)
 			{
-				results.close();
+			    try
+                {
+                    results.close();
+                }
+                catch ( SQLException se )
+                {
+                    // Exception on close should not affect primary outputs.
+                    LOGGER.warn( "Could not close result set {}.", results, se );
+                }
 			}
 
 			if (connection != null)
@@ -1211,6 +1215,7 @@ public final class Database {
      * @throws SQLException Thrown if the given query fails
      * @throws SQLException Thrown if the expected columns don't exist
      */
+    @SuppressWarnings( "unchecked" )
 	public static Map populateMap(final Map map,
 								  final String query,
 								  final String keyLabel,
@@ -1246,14 +1251,23 @@ public final class Database {
 		}
 		catch (SQLException error)
 		{
-            LOGGER.error( "The following query failed:{}{}", NEWLINE, query );
-			throw error;
+            String message = "The following query failed:" + NEWLINE + query;
+            // Decorate SQLException with additional information.
+			throw new SQLException( message, error );
 		}
 		finally
 		{
 			if (results != null)
 			{
-				results.close();
+			    try
+                {
+                    results.close();
+                }
+                catch ( SQLException se )
+                {
+                    // Exception on close should not affect primary outputs.
+                    LOGGER.warn( "Could not close result set {}.", results, se );
+                }
 			}
 
 			if (connection != null)
@@ -1296,7 +1310,7 @@ public final class Database {
 			connection = Database.getConnection();
 			resultSet = Database.getResults( connection, query );
 
-			if (LOGGER.isDebugEnabled())
+			if (LOGGER.isDebugEnabled() && scriptTimer != null)
             {
                 scriptTimer.cancel();
             }
@@ -1307,7 +1321,15 @@ public final class Database {
 		{
 			if (resultSet != null)
 			{
-				resultSet.close();
+			    try
+                {
+                    resultSet.close();
+                }
+                catch ( SQLException se )
+                {
+                    // Exception on close should not affect primary outputs.
+                    LOGGER.warn( "Could not close result set {}.", resultSet, se );
+                }
 			}
 
 			if (connection != null)
@@ -1326,73 +1348,111 @@ public final class Database {
      * were removed prior to running.
      * @param vacuum Whether or not to remove records pertaining to deleted
      *               values as well
+     * @throws SQLException when refresh or adding indices goes wrong
      */
 	public static void refreshStatistics(boolean vacuum)
+            throws SQLException
 	{
         if (vacuum)
         {
-            Database.addNewIndexes();
+            try
+            {
+                Database.addNewIndexes();
+            }
+            catch ( InterruptedException ie )
+            {
+                Thread.currentThread().interrupt();
+            }
+            catch ( ExecutionException ee )
+            {
+                // This might not actually be a SQLException underneath, but
+                // for now, translate to one until we figure out a better way.
+                throw new SQLException( "Could not add indices.", ee );
+            }
         }
 
 		Connection connection = null;
 		ResultSet results;
+        List<String> sql = new ArrayList<>();
 
-		// TODO: Thread this operation such that each table is analyzed simultaneously
+        String optionalVacuum = "";
+
+        if (vacuum)
+        {
+            optionalVacuum = "VACUUM ";
+        }
+
+		LOGGER.info("Analyzing data for efficient execution...");
+
         try
         {
             connection = getConnection();
 
-            String optionalVacuum = "";
+            String script =
+                    "SELECT 'ANALYZE '||n.nspname ||'.'|| c.relname||';' AS alyze"
+                    + NEWLINE +
+                    "FROM pg_catalog.pg_class c" + NEWLINE +
+                    "INNER JOIN pg_catalog.pg_namespace n" + NEWLINE +
+                    "     ON N.oid = C.relnamespace" + NEWLINE +
+                    "WHERE relchecks > 0" + NEWLINE +
+                    "     AND (nspname = 'wres' OR nspname = 'partitions')"
+                    + NEWLINE +
+                    "     AND relkind = 'r';";
 
-            if (vacuum)
-            {
-                optionalVacuum = "VACUUM ";
-            }
-
-            StringBuilder script = new StringBuilder();
-
-            script.append("SELECT 'ANALYZE '||n.nspname ||'.'|| c.relname||';' AS alyze").append(NEWLINE);
-            script.append("FROM pg_catalog.pg_class c").append(NEWLINE);
-            script.append("INNER JOIN pg_catalog.pg_namespace n").append(NEWLINE);
-            script.append("     ON N.oid = C.relnamespace").append(NEWLINE);
-            script.append("WHERE relchecks > 0").append(NEWLINE);
-            script.append("     AND (nspname = 'wres' OR nspname = 'partitions')").append(NEWLINE);
-            script.append("     AND relkind = 'r';");
-
-            results = getResults(connection, script.toString());
-
-            script = new StringBuilder();
+            results = getResults( connection, script );
 
             while (results.next())
             {
-                script.append(optionalVacuum).append(results.getString("alyze")).append(NEWLINE);
+            	sql.add(optionalVacuum + results.getString( "alyze" ));
             }
 
-            script.append(optionalVacuum).append("ANALYZE wres.Observation;").append(NEWLINE);
-            script.append(optionalVacuum).append("ANALYZE wres.TimeSeries;").append(NEWLINE);
-            script.append(optionalVacuum).append("ANALYZE wres.ForecastSource;").append(NEWLINE);
-            script.append(optionalVacuum).append("ANALYZE wres.ProjectSource;").append(NEWLINE);
-            script.append(optionalVacuum).append("ANALYZE wres.Source;").append(NEWLINE);
-
-            LOGGER.info("Now refreshing the statistics within the database.");
-            Database.execute(script.toString());
-
-        }
-        catch (SQLException e)
-        {
-			LOGGER.error(Strings.getStackTrace(e));
         }
         finally
         {
-            LOGGER.info("Database statistical analysis is now complete.");
-        	Database.returnConnection(connection);
-		}
+            Database.returnConnection(connection);
+        }
+
+        sql.add(optionalVacuum + "ANALYZE wres.Observation;");
+        sql.add(optionalVacuum + "ANALYZE wres.TimeSeries;");
+        sql.add(optionalVacuum + "ANALYZE wres.ForecastSource;");
+        sql.add(optionalVacuum + "ANALYZE wres.ProjectSource;");
+        sql.add(optionalVacuum + "ANALYZE wres.Source;");
+
+        List<Future<?>> queries = new ArrayList<>();
+
+        for (String statement : sql)
+        {
+            SQLExecutor query = new SQLExecutor( statement );
+            query.setOnComplete( ProgressMonitor.onThreadCompleteHandler() );
+            queries.add( Database.execute( query ) );
+        }
+
+        boolean analyzeFailed = true;
+
+        for (Future<?> query : queries)
+        {
+            try
+            {
+                query.get();
+                analyzeFailed = false;
+            }
+            catch ( ExecutionException | InterruptedException e )
+            {
+                LOGGER.error("A data optimization statement could not be completed.", e);
+            }
+        }
+
+        if (analyzeFailed)
+        {
+            throw new SQLException( "Data in the database could not be "
+                                    + "analyzed for efficient execution." );
+        }
+
+        LOGGER.info("Database statistical analysis is now complete.");
 	}
 
-	public static final boolean removeOrphanedData() throws SQLException
+	public static boolean removeOrphanedData() throws SQLException
     {
-        boolean orphanedDataRemoved;
-
         try
         {
             if (!Database.thereAreOrphanedValues())
@@ -1445,7 +1505,15 @@ public final class Database {
             {
                 if ( resultSet != null )
                 {
-                    resultSet.close();
+                    try
+                    {
+                        resultSet.close();
+                    }
+                    catch ( SQLException se )
+                    {
+                        // Exception on close should not affect primary outputs.
+                        LOGGER.warn( "Could not close result set {}.", resultSet, se );
+                    }
                 }
 
                 if (connection != null)
@@ -1518,9 +1586,12 @@ public final class Database {
                 scriptBuilder.addLine(");");
             }
 
-            scriptBuilder.execute();
-
-            orphanedDataRemoved = true;
+            // We have to run everything sequentially because the tables need
+            // to know about their parents to know what to delete.
+            // Async would be neat, but not really possible. MVCC might make it
+            // possible though; probably worth exploring since this can take a
+            // while
+            scriptBuilder.executeInTransaction();
 
             LOGGER.info("Incomplete data has been removed from the system.");
         }
@@ -1529,10 +1600,10 @@ public final class Database {
             throw new SQLException( "Orphaned data could not be removed", databaseError );
         }
 
-        return orphanedDataRemoved;
+        return true;
     }
 
-    public static boolean thereAreOrphanedValues() throws SQLException
+    private static boolean thereAreOrphanedValues() throws SQLException
     {
         ScriptBuilder scriptBuilder = new ScriptBuilder(  );
 
@@ -1581,7 +1652,7 @@ public final class Database {
 
 			results = statement.executeQuery(query);
 
-			if (LOGGER.isDebugEnabled())
+			if (LOGGER.isDebugEnabled() && timer != null)
 			{
 				timer.cancel();
 			}
@@ -1589,10 +1660,23 @@ public final class Database {
 		}
 		catch (SQLException error)
 		{
+		    if (!statement.isClosed())
+            {
+                try
+                {
+                    statement.close();
+                }
+                catch ( SQLException se )
+                {
+                    // Exception on close should not affect primary outputs.
+                    LOGGER.warn( "Failed to close statement {}.", statement, se );
+                }
+            }
             LOGGER.error( "The following SQL query failed:{}{}", NEWLINE, query, error );
 			throw error;
 		}
-        return results; 
+
+        return results;
     }
 
     /**
@@ -1661,12 +1745,11 @@ public final class Database {
 		}
 		catch (final SQLException e)
         {
-			LOGGER.error("WRES data could not be removed from the database." + NEWLINE);
-			LOGGER.error("");
-			LOGGER.error(builder.toString());
-			LOGGER.error("");
-			LOGGER.error(Strings.getStackTrace(e));
-			throw e;
+			String message = "WRES data could not be removed from the database."
+                             + NEWLINE + NEWLINE
+                             + builder.toString();
+			// Decorate with contextual information.
+			throw new SQLException( message, e );
 		}
 	}
 
@@ -1678,11 +1761,63 @@ public final class Database {
         return Database.CONNECTION_POOL;
     }
 
+    public static void lockTable(Connection connection, String tableName) throws SQLException
+    {
+        // Locking a table is nonsensical if the connection is autocommiting;
+        // even if the database implementation driver allows it, the lock will
+        // only last until the commit, which is immediate
+        if (LOGGER.isDebugEnabled() && connection.getAutoCommit())
+        {
+            LOGGER.debug( "The application is seeking to lock a table with a "
+                          + "connection that will automatically commit. Nothing "
+                          + "will be achieved by this action." );
+
+            StringJoiner traceJoiner = new StringJoiner( NEWLINE );
+            for (StackTraceElement trace : Thread.currentThread().getStackTrace())
+            {
+                traceJoiner.add( trace.toString() );
+            }
+
+            LOGGER.debug( traceJoiner.toString() );
+        }
+
+
+        Statement statement = null;
+        final String query = "LOCK TABLE " + tableName + " IN ACCESS EXCLUSIVE MODE;";
+
+        try
+        {
+            statement = connection.createStatement();
+            statement.execute( query );
+        }
+        catch (SQLException e)
+        {
+            String message = "The table '" + tableName + "' could not be locked."
+                    + NEWLINE + "The query was: '" + query + "'";
+            // Decorate SQLException with contextual information
+            throw new SQLException( message,e );
+        }
+        finally
+        {
+            if ( statement != null )
+            {
+                try
+                {
+                    statement.close();
+                }
+                catch ( SQLException se )
+                {
+                    // Exception on close should not affect primary outputs.
+                    LOGGER.warn( "Failed to close a statement.", se );
+                }
+            }
+        }
+    }
+
     /**
      * Lock the database for mutation so that we can do clean up accurately.
      * @throws IOException when lock cannot be acquired or db has an error
      */
-
     public static void lockForMutation() throws IOException
     {
         final String RESULT_COLUMN = "pg_try_advisory_lock";
@@ -1763,14 +1898,6 @@ public final class Database {
 
     public static void releaseLockForMutation() throws IOException
     {
-        // This script is unneccessary; the advisory lock ends at session death
-        /*
-        final String RELEASE_LOCK_SCRIPT = "SELECT pg_advisory_unlock( "
-                                           + MUTATION_LOCK_KEY
-                                           + " )";*/
-
-        //Since the advisory lock ends at session death, we don't need to run the release script
-        //Database.execute( RELEASE_LOCK_SCRIPT );
 
         // We instead need to release the connection
         synchronized ( Database.ADVISORY_LOCK )
@@ -1786,7 +1913,7 @@ public final class Database {
             {
                 // The above statement is a diagnostic measure - it doesn't
                 // affect the user, but we do need to log it for our own sakes
-                LOGGER.error( Strings.getStackTrace( e ) );
+                LOGGER.warn( "Could not get lock status.", e );
             }
 
             try

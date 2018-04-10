@@ -53,14 +53,15 @@ ensemble <-list(
 # A function that generates one or more named metrics at one threshold and for all 
 # features in the input pairs.
 #
-# pairs     The paired file
-# threshold The real valued threshold, which applies to the left for
-#           continuous measures. This is currently assumed to be >=
-# ...	      The list of metrics to compute
+# pairs          The paired file
+# threshold      The real valued threshold, which applies to the left for
+#                continuous measures.
+# thresholdType  The threshold type 
+# ...	           The list of metrics to compute
 #   
 ##########################################################################################
 
-generateAllMetricsForAllFeatures <- function( pairs, threshold, ... ) 
+generateAllMetricsForAllFeatures <- function( pairs, threshold, thresholdType, ... ) 
 {
       # Read, skip dates, fill header row, which may not be the first row
 	test <- read.table( file = pairs, nrows = 1, stringsAsFactors = FALSE )
@@ -86,7 +87,7 @@ generateAllMetricsForAllFeatures <- function( pairs, threshold, ... )
 	# Iterate through the features and generate the metrics for each one
 	for( i in 1: length(features) )
 	{
-		results <- generateAllMetricsForOneFeature ( data[ data$V1==features[i], ], threshold, ... )
+		results <- generateAllMetricsForOneFeature ( data[ data$V1==features[i], ], threshold, thresholdType, ... )
 		print( paste( "Metric results for '", features[[i]], "':", sep="" ) )
 		print( results )		
 	} 
@@ -97,15 +98,16 @@ generateAllMetricsForAllFeatures <- function( pairs, threshold, ... )
 # A function that generates one or more named metrics at one threshold and for one 
 # feature. Expects a subset of pairs with only one feature.
 #
-# pairs     The pairs
-# threshold The real valued threshold, which applies to the left for
-#           continuous measures
-# ...	      The list of metrics to compute
-# Returns   The list of metric results, one for each metric
+# pairs          The pairs
+# threshold      The real valued threshold, which applies to the left for
+#                continuous measures
+# thresholdType  The threshold type 
+# ...	           The list of metrics to compute
+# Returns        The list of metric results, one for each metric
 #   
 ##########################################################################################
 
-generateAllMetricsForOneFeature <- function( pairs, threshold, ... ) 
+generateAllMetricsForOneFeature <- function( pairs, threshold, thresholdType, ... ) 
 {
 	# Validate
 	if( length( unique( pairs$V1 ) ) >1 )
@@ -115,11 +117,11 @@ generateAllMetricsForOneFeature <- function( pairs, threshold, ... )
 	# Iterate through the metrics
 	metrics <- list( ... )
 	# Results to return in a named list
-	results<-list( length(metrics))
+	results<-list( length(metrics) )
 	names(results)<-metrics
 	for ( i in 1: length( metrics ) )
 	{
-		results[[i]]=generateOneMetricForOneFeature( pairs, threshold, metrics[[i]] )
+		results[[i]]=generateOneMetricForOneFeature( pairs, threshold, thresholdType, metrics[[i]] )
 	} 
 	results
 }
@@ -129,16 +131,20 @@ generateAllMetricsForOneFeature <- function( pairs, threshold, ... )
 # A function that generates one named metric at one threshold and for one feature.
 # Expects a subset of pairs with only one feature.
 #
-# pairs     The pairs
-# threshold The real valued threshold, which applies to the left for
-#           continuous measures
-# metric    The metric to compute
-# Returns   A data.table of metric results with two columns: window number and metric name
+# pairs          The pairs
+# threshold      The real valued threshold, which applies to the left for
+#                continuous measures
+# thresholdType  The threshold type 
+# metric         The metric to compute
+# Returns        A data.table of metric results with two columns: window number and metric name
 #   
 ##########################################################################################
 
-generateOneMetricForOneFeature <- function( pairs, threshold, metric ) 
+generateOneMetricForOneFeature <- function( pairs, threshold, thresholdType, metric ) 
 {
+      # Validate the threshold information
+      getThresholdPredicate( threshold, thresholdType )
+
 	# Iterate through each window
 	windows <- unique( pairs$V4 )
 	metricToCompute <- getMetric( metric )
@@ -150,7 +156,7 @@ generateOneMetricForOneFeature <- function( pairs, threshold, metric )
 		nextWindow <- pairs[ pairs$V4 == windows[[i]],]
 
 		# Transform the pairs in a metric-appropriate way
-		nextWindow <- suppressWarnings( transformPairs( nextWindow, metric, threshold ) )
+		nextWindow <- suppressWarnings( transformPairs( nextWindow, metric, threshold, thresholdType ) )
 		
 		# For single-valued input, remove any rows with NaN
 		if( ncol( nextWindow ) == 6 )
@@ -189,14 +195,19 @@ generateOneMetricForOneFeature <- function( pairs, threshold, metric )
 # measures, the pairs are subset by left value. For dichotomous measures, the pairs 
 # are classified according to threshold.
 #
-# pairs     The pairs
-# metric    The named metric
-# Returns   A the transformed pairs
+# pairs          The pairs
+# metric         The named metric
+# threshold      The threshold
+# thresholdType  The threshold type 
+# Returns        A the transformed pairs
 #  
 ##########################################################################################
 
-transformPairs <- function( pairs, metric, threshold )
+transformPairs <- function( pairs, metric, threshold, thresholdType )
 {
+      # Get the threshold predicate
+      thresholdPredicate <- getThresholdPredicate( threshold, thresholdType )
+
       # Continuous measures for single-valued input
 	if( doesThisMetricExist( tolower( metric ), single.valued.continuous ) )   
 	{
@@ -208,7 +219,7 @@ transformPairs <- function( pairs, metric, threshold )
 		else 
 		{
 	      	# Observations in V5
-			pairs[ pairs$V5 >= threshold , ]     # Assumed >=
+			pairs[ thresholdPredicate( pairs$V5) , ]
 		}
 	}
 	# Discrete probability measures for ensemble input
@@ -224,7 +235,7 @@ transformPairs <- function( pairs, metric, threshold )
 		{
 			# Convert to probabilities
 			subPairs<-pairs[,5:ncol( pairs )]
-			subPairs <- apply( subPairs, 2, function(x) as.double ( x >= threshold ) )
+			subPairs <- apply( subPairs, 2, function(x) as.double ( thresholdPredicate( x ) ) )
 			counts <- apply( subPairs, 1, function(x) sum( !is.na(x) ) ) - 1		
 			f.probs <- rowSums( subPairs[,2:ncol( subPairs )] ) / counts
 			pairs[,5] <- subPairs[,1]	
@@ -249,7 +260,7 @@ transformPairs <- function( pairs, metric, threshold )
 		{			
 			# Convert to binary obs and pred
 			subPairs<-pairs[,5:ncol( pairs )]
-			subPairs <- apply( subPairs, 2, function(x) as.double ( x >= threshold ) )
+			subPairs <- apply( subPairs, 2, function(x) as.double ( thresholdPredicate( x ) ) )
 			pairs[,5] <- subPairs[,1]	
 			pairs[,6] <- subPairs[,2]			
 			pairs
@@ -265,7 +276,7 @@ transformPairs <- function( pairs, metric, threshold )
 		else 
 		{
 	      	# Observations in V5
-			pairs[ pairs$V5 >= threshold , ]     # Assumed >=
+			pairs[ thresholdPredicate( pairs$V5 ) , ]     
 		}
 	}
 	else 	
@@ -434,6 +445,41 @@ doesThisMetricExist<-function(metric, metric.list)
 
 ##########################################################################################
 #
+# Function that returns a predicate that evaluates to true if the input meets the 
+# specified threshold condition, otherwise false
+#
+# threshold      The numeric threshold
+# thresholdType  The named threshold type
+# Return         A predicate that evaluates to true if the threshold condition is met
+#
+##########################################################################################
+
+getThresholdPredicate<-function(threshold, thresholdType) 
+{
+    if( thresholdType == ">" )
+    {
+        function( input ) input > threshold; 
+    }
+    else if( thresholdType == ">=" )
+    {
+        function( input ) input >= threshold; 
+    }
+    else if( thresholdType == "<" )
+    {
+        function( input ) input < threshold; 
+    }
+    else if( thresholdType == "<=" )
+    {
+        function( input ) input <= threshold; 
+    }
+    else
+    {
+        stop( paste( "Unrecognized relational operator: ", thresholdType ) )
+    }
+}
+
+##########################################################################################
+#
 # Main function that accepts command line arguments in this order:
 #
 # Path to pairs.csv file (sorted or unsorted)
@@ -446,18 +492,26 @@ main <- function()
 {
 	# Get the trailing command line args
 	args <-commandArgs(TRUE)
-	if(length(args) != 3 )
+	if(length(args) != 3 && length(args) != 4  )
 	{
-		stop("Usage: path-to-pairs metric threshold")
+		stop("Usage: path-to-pairs metric threshold thresholdType (optional)")
 	}
+
+      #Threshold type
+      thresholdType <- ">="
 
 	# Echo
 	print( paste("Pairs: ", args[1], sep="" ) )
 	print( paste("Metric: ", args[2], sep="" ) )
 	print( paste("Threshold: ", args[3], sep="" ) )
+      if( length(args) == 4 )
+      {
+	    thresholdType = args[4]
+      }
+      print( paste("Threshold type (optional): ", thresholdType, sep="" ) )  
 
 	# Generate the mean error for a particular threshold. NA = all data
-	generateAllMetricsForAllFeatures( args[1], as.numeric( args[3] ), args[2] )
+	generateAllMetricsForAllFeatures( args[1], as.numeric( args[3] ), thresholdType, args[2] )
 }
 main()
 

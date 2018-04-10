@@ -2,6 +2,8 @@ package wres.vis;
 
 import java.awt.geom.Point2D;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -34,6 +36,7 @@ import ohd.hseb.charter.datasource.instances.DataSetXYChartDataSource;
 import ohd.hseb.charter.datasource.instances.NumericalXYChartDataSource;
 import ohd.hseb.charter.parameters.ChartDrawingParameters;
 import ohd.hseb.hefs.utils.arguments.ArgumentsProcessor;
+import ohd.hseb.hefs.utils.xml.GenericXMLReadingHandlerException;
 import ohd.hseb.hefs.utils.xml.XMLTools;
 import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.ProjectConfig;
@@ -41,7 +44,7 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.datamodel.Threshold;
+import wres.datamodel.OneOrTwoThresholds;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
@@ -73,7 +76,7 @@ public abstract class ChartEngineFactory
         UNIQUE( null ),
         LEAD_THRESHOLD( OutputTypeSelection.LEAD_THRESHOLD ),
         THRESHOLD_LEAD( OutputTypeSelection.THRESHOLD_LEAD ),
-        POOLING_WINDOW( null ), //OutputTypeSelection.POOLING_WINDOW will go away.
+        POOLING_WINDOW( null ), // Internal type only, not configured
         SINGLE_VALUED_PAIRS( OutputTypeSelection.SINGLE_VALUED_PAIRS );
 
         private final OutputTypeSelection basis;
@@ -108,7 +111,7 @@ public abstract class ChartEngineFactory
                     }
                 }
             }
-            throw new IllegalArgumentException( "OutputTypeSelection " + v.toString()
+            throw new IllegalArgumentException( "OutputTypeSelection " + v
                                                 + " cannot be translated to a ChartEngineFactory ChartType." );
         }
     }
@@ -141,13 +144,20 @@ public abstract class ChartEngineFactory
     static
     {
         metricSpecificTemplateMap.put( MetricConstants.RELIABILITY_DIAGRAM, "reliabilityDiagramTemplate.xml" );
-        metricSpecificTemplateMap.put( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM, "rocDiagramTemplate.xml" );
+        metricSpecificTemplateMap.put( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
+                                       "rocDiagramTemplate.xml" );
         metricSpecificTemplateMap.put( MetricConstants.QUANTILE_QUANTILE_DIAGRAM, "qqDiagramTemplate.xml" );
         metricSpecificTemplateMap.put( MetricConstants.RANK_HISTOGRAM, "rankHistogramTemplate.xml" );
-        metricSpecificTemplateMap.put( MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE, "boxPlotOfErrorsTemplate.xml" );
-        metricSpecificTemplateMap.put( MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE, "boxPlotOfErrorsTemplate.xml" );
+        metricSpecificTemplateMap.put( MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE,
+                                       "boxPlotOfErrorsTemplate.xml" );
+        metricSpecificTemplateMap.put( MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
+                                       "boxPlotOfErrorsTemplate.xml" );
         metricSpecificTemplateMap.put( MetricConstants.TIME_TO_PEAK_ERROR, "timeToPeakErrorTemplate.xml" );
-        metricSpecificTemplateMap.put( MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC, "timeToPeakSummaryStatsTemplate.xml" );
+        metricSpecificTemplateMap.put( MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR, "timeToPeakErrorTemplate.xml" );
+        metricSpecificTemplateMap.put( MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC,
+                                       "timeToPeakSummaryStatsTemplate.xml" );
+        metricSpecificTemplateMap.put( MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR_STATISTIC,
+                                       "timeToPeakSummaryStatsTemplate.xml" );
     }
 
     /**
@@ -241,7 +251,7 @@ public abstract class ChartEngineFactory
         else if ( usedPlotType == OutputTypeSelection.THRESHOLD_LEAD )
         {
             inputSlice =
-                    input.filterByThreshold( (Threshold) inputKeyInstance );
+                    input.filterByThreshold( (OneOrTwoThresholds) inputKeyInstance );
         }
         else
         {
@@ -269,7 +279,7 @@ public abstract class ChartEngineFactory
         }
         else if ( usedPlotType == ChartType.THRESHOLD_LEAD )
         {
-            args.addThresholdLeadArguments( inputSlice, (Threshold) inputKeyInstance );
+            args.addThresholdLeadArguments( inputSlice, (OneOrTwoThresholds) inputKeyInstance );
         }
         else
         {
@@ -292,6 +302,7 @@ public abstract class ChartEngineFactory
      *            overrides for the appearance of chart.
      * @return A {@link ChartEngine} to be stored with the inputKeyInstance in a results map.
      * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
+     * @throws WRESVisXMLReadingException when reading template fails.
      */
     private static WRESChartEngine
             processReliabilityDiagram(
@@ -301,7 +312,7 @@ public abstract class ChartEngineFactory
                                        ChartType usedPlotType,
                                        String templateName,
                                        String overrideParametersStr )
-                    throws ChartEngineException
+                    throws ChartEngineException, WRESVisXMLReadingException
     {
         final List<XYChartDataSource> dataSources = new ArrayList<>();
         int[] diagonalDataSourceIndices = null;
@@ -356,6 +367,7 @@ public abstract class ChartEngineFactory
      *            overrides for the appearance of chart.
      * @return A {@link ChartEngine} to be stored with the inputKeyInstance in a results map.
      * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
+     * @throws WRESVisXMLReadingException when reading template fails
      */
     private static WRESChartEngine
             processROCDiagram(
@@ -365,7 +377,7 @@ public abstract class ChartEngineFactory
                                ChartType usedPlotType,
                                String templateName,
                                String overrideParametersStr )
-                    throws ChartEngineException
+                    throws ChartEngineException, WRESVisXMLReadingException
     {
         final List<XYChartDataSource> dataSources = new ArrayList<>();
         int[] diagonalDataSourceIndices = null;
@@ -411,6 +423,7 @@ public abstract class ChartEngineFactory
      *            overrides for the appearance of chart.
      * @return A {@link ChartEngine} to be stored with the inputKeyInstance in a results map.
      * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
+     * @throws WRESVisXMLReadingException when reading template fails
      */
     private static WRESChartEngine
             processQQDiagram(
@@ -420,7 +433,7 @@ public abstract class ChartEngineFactory
                               ChartType usedPlotType,
                               String templateName,
                               String overrideParametersStr )
-                    throws ChartEngineException
+                    throws ChartEngineException, WRESVisXMLReadingException
     {
         final List<XYChartDataSource> dataSources = new ArrayList<>();
         int[] diagonalDataSourceIndices = null;
@@ -468,6 +481,7 @@ public abstract class ChartEngineFactory
      *            overrides for the appearance of chart.
      * @return A {@link ChartEngine} to be stored with the inputKeyInstance in a results map.
      * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
+     * @throws WRESVisXMLReadingException when reading template fails.
      */
     private static WRESChartEngine
             processRankHistogram(
@@ -477,7 +491,7 @@ public abstract class ChartEngineFactory
                                   ChartType usedPlotType,
                                   String templateName,
                                   String overrideParametersStr )
-                    throws ChartEngineException
+                    throws ChartEngineException, WRESVisXMLReadingException
     {
         final List<XYChartDataSource> dataSources = new ArrayList<>();
         int[] diagonalDataSourceIndices = null;
@@ -528,6 +542,7 @@ public abstract class ChartEngineFactory
      *         passed to {@link ChartTools#generateOutputImageFile(java.io.File, JFreeChart, int, int)} in order to
      *         construct the image file.  The keys depend on the provided plot type selection.
      * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
+     * @throws WRESVisXMLReadingException when reading template fails.
      */
     public static ConcurrentMap<Object, ChartEngine>
             buildMultiVectorOutputChartEngine( final ProjectConfig config, 
@@ -536,7 +551,7 @@ public abstract class ChartEngineFactory
                                                final OutputTypeSelection userSpecifiedPlotType,
                                                final String userSpecifiedTemplateResourceName,
                                                final String overrideParametersStr )
-                    throws ChartEngineException
+                    throws ChartEngineException, WRESVisXMLReadingException
     {
         final ConcurrentMap<Object, ChartEngine> results = new ConcurrentSkipListMap<>();
 
@@ -616,14 +631,15 @@ public abstract class ChartEngineFactory
      * @param overrideParametersStr An XML string providing override parameters if they were given in the project configuration.
      * @return A single instance of {@link WRESChartEngine}.
      * @throws ChartEngineException If the chart could not build for whatever reason.
+     * @throws WRESVisXMLReadingException when reading template fails.
      */
     private static WRESChartEngine
             processBoxPlotErrorsDiagram(
-                                         Pair<TimeWindow, Threshold> inputKeyInstance,
+                                         Pair<TimeWindow, OneOrTwoThresholds> inputKeyInstance,
                                          final MetricOutputMapByTimeAndThreshold<BoxPlotOutput> input,
                                          String templateName,
                                          String overrideParametersStr )
-                    throws ChartEngineException
+                    throws ChartEngineException, WRESVisXMLReadingException
     {
         final List<XYChartDataSource> dataSources = new ArrayList<>();
         WRESArgumentProcessor arguments = null;
@@ -662,15 +678,16 @@ public abstract class ChartEngineFactory
      *            overrides for the appearance of chart.
      * @return Map where the keys are instances of {@link Pair} with the two keys being an integer and a threshold.
      * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
+     * @throws WRESVisXMLReadingException when reading template fails
      */
-    public static ConcurrentMap<Pair<TimeWindow, Threshold>, ChartEngine>
+    public static ConcurrentMap<Pair<TimeWindow, OneOrTwoThresholds>, ChartEngine>
             buildBoxPlotChartEngine( final ProjectConfig config, 
                                      final MetricOutputMapByTimeAndThreshold<BoxPlotOutput> input,
                                      final String userSpecifiedTemplateResourceName,
                                      final String overrideParametersStr )
-                    throws ChartEngineException
+                    throws ChartEngineException, WRESVisXMLReadingException
     {
-        final ConcurrentMap<Pair<TimeWindow, Threshold>, ChartEngine> results = new ConcurrentSkipListMap<>();
+        final ConcurrentMap<Pair<TimeWindow, OneOrTwoThresholds>, ChartEngine> results = new ConcurrentSkipListMap<>();
 
         //Determine the output type, converting DEFAULT accordingly, and template name.
         ChartType usedPlotType = determineChartType( config, input, null );
@@ -682,10 +699,10 @@ public abstract class ChartEngineFactory
         }
 
         //Determine the key set for the loop below based on if this is a lead time first and threshold first plot type.
-        Set<Pair<TimeWindow, Threshold>> keySetValues = input.keySet();
+        Set<Pair<TimeWindow, OneOrTwoThresholds>> keySetValues = input.keySet();
 
         //For each lead time, do the following....
-        for ( final Pair<TimeWindow, Threshold> keyInstance : keySetValues )
+        for ( final Pair<TimeWindow, OneOrTwoThresholds> keyInstance : keySetValues )
         {
             if ( input.getMetadata().getMetricID() == MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE
                  || input.getMetadata().getMetricID() == MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE )
@@ -725,6 +742,7 @@ public abstract class ChartEngineFactory
      *            overrides for the appearance of chart.
      * @return a map of {@link ChartEngine} containing the plots
      * @throws ChartEngineException if the ChartEngine fails to construct
+     * @throws WRESVisXMLReadingException when reading template fails
      */
     public static ConcurrentMap<MetricConstants, ChartEngine>
             buildScoreOutputChartEngine( final ProjectConfig config, 
@@ -733,7 +751,7 @@ public abstract class ChartEngineFactory
                                          final OutputTypeSelection userSpecifiedPlotType,
                                          final String userSpecifiedTemplateResourceName,
                                          final String overrideParametersStr )
-                    throws ChartEngineException
+                    throws ChartEngineException, WRESVisXMLReadingException
     {
         final ConcurrentMap<MetricConstants, ChartEngine> results = new ConcurrentSkipListMap<>();
 
@@ -766,6 +784,7 @@ public abstract class ChartEngineFactory
      *         passed to {@link ChartTools#generateOutputImageFile(java.io.File, JFreeChart, int, int)} in order to
      *         construct the image file.
      * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
+     * @throws WRESVisXMLReadingException when reading template fails
      */
     private static ChartEngine
             buildScoreOutputChartEngine( final ProjectConfig config,
@@ -773,7 +792,7 @@ public abstract class ChartEngineFactory
                                          final OutputTypeSelection userSpecifiedPlotType,
                                          final String userSpecifiedTemplateResourceName,
                                          final String overrideParametersStr )
-                    throws ChartEngineException
+                    throws ChartEngineException, WRESVisXMLReadingException
     {
         //Determine the output type, converting DEFAULT accordingly, and template name.
         ChartType usedPlotType = determineChartType( config, input, userSpecifiedPlotType );
@@ -842,13 +861,14 @@ public abstract class ChartEngineFactory
      * @param overrideParametersStr Override template XML string, or null to not use.
      * @return {@link ChartEngine} ready for plot production.
      * @throws ChartEngineException If the {@link ChartEngine} fails to build for any reason.
+     * @throws WRESVisXMLReadingException when reading template fails
      */
     public static ChartEngine
             buildPairedInstantDurationChartEngine( final ProjectConfig config,
                                                    MetricOutputMapByTimeAndThreshold<PairedOutput<Instant, Duration>> input,
                                                    final String userSpecifiedTemplateResourceName,
                                                    final String overrideParametersStr )
-                    throws ChartEngineException
+                    throws ChartEngineException, WRESVisXMLReadingException
     {
         //Determine the output type, converting DEFAULT accordingly, and template name.
         ChartType usedPlotType = determineChartType( config, input, null );
@@ -866,13 +886,13 @@ public abstract class ChartEngineFactory
         //Setup plot specific arguments.
         arguments.addBaselineArguments( meta );
         arguments.addDurationMetricArguments();
+        arguments.addTimeToPeakArguments( input );
 
         //Build the source.
         XYChartDataSource source = null;
 
         //Setup the assumed source and arguments.
         source = XYChartDataSourceFactory.ofPairedOutputInstantDuration( 0, input );
-        arguments.addPoolingWindowArguments( input );
 
         //Build the ChartEngine instance.
         return generateChartEngine( Lists.newArrayList( source ),
@@ -894,14 +914,14 @@ public abstract class ChartEngineFactory
      * are not overridden.
      * @return A {@link ChartEngine} ready to be used to build a chart.
      * @throws ChartEngineException A problem was encountered building the {@link ChartEngine}.
-     * @throws XYChartDataSourceException A problem was encountered preparing the categorical source.
+     * @throws WRESVisXMLReadingException when reading templates fails
      */
     public static ChartEngine
             buildCategoricalDurationScoreChartEngine( final ProjectConfig config,
                                                       MetricOutputMapByTimeAndThreshold<DurationScoreOutput> input,
                                                       final String userSpecifiedTemplateResourceName,
                                                       final String overrideParametersStr )
-                    throws ChartEngineException, XYChartDataSourceException
+                    throws ChartEngineException, WRESVisXMLReadingException
     {
         //Determine the output type, converting DEFAULT accordingly, and template name.
         ChartType usedPlotType = determineChartType( config, input, null );
@@ -919,6 +939,7 @@ public abstract class ChartEngineFactory
         //Setup plot specific arguments.
         arguments.addBaselineArguments( meta );
         arguments.addDurationMetricArguments();
+        arguments.addTimeToPeakArguments( input );
 
         //Setup the assumed source and arguments.
         CategoricalXYChartDataSource source =
@@ -933,6 +954,14 @@ public abstract class ChartEngineFactory
                                     null );
     }
 
+    @SuppressWarnings( "serial" )
+    private static class WRESVisXMLReadingException extends IOException
+    {
+        public WRESVisXMLReadingException( String message, Throwable t )
+        {
+            super( message, t );
+        }
+    }
 
     /**
      * @param input The pairs to plot.
@@ -944,11 +973,12 @@ public abstract class ChartEngineFactory
      *         passed to {@link ChartTools#generateOutputImageFile(java.io.File, JFreeChart, int, int)} in order to
      *         construct the image file.
      * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
+     * @throws WRESVisXMLReadingException when reading or parsing the template fails.
      */
     public static ChartEngine buildSingleValuedPairsChartEngine( final SingleValuedPairs input,
                                                                  final String userSpecifiedTemplateResourceName,
                                                                  final String overrideParametersStr )
-            throws ChartEngineException
+            throws ChartEngineException, WRESVisXMLReadingException
     {
 
         String templateName = "singleValuedPairsTemplate.xml";
@@ -975,10 +1005,14 @@ public abstract class ChartEngineFactory
                 {
                     XMLTools.readXMLFromString( usedStr, override );
                 }
-                catch ( final Exception t )
+                catch ( GenericXMLReadingHandlerException e )
                 {
-                    LOGGER.warn( "Unable to parse XML provided by user for chart drawing: " + t.getMessage() );
-                    LOGGER.trace( "Unable to parse XML provided by user for chart drawing", t );
+                    String message = "Unable to parse XML provided by user for chart drawing: "
+                                     + System.lineSeparator()
+                                     + usedStr
+                                     + System.lineSeparator()
+                                     + override;
+                    throw new WRESVisXMLReadingException( message, e );
                 }
             }
         }
@@ -1029,6 +1063,7 @@ public abstract class ChartEngineFactory
         }
     }
 
+
     /**
      * Method to call in order to generate an instance of {@link WRESChartEngine}.
      * 
@@ -1045,33 +1080,57 @@ public abstract class ChartEngineFactory
      * @param axisToSquareAgainstDomain A string indicating the axes to square against the domain; either "left" or
      *            "right".
      * @return A {@link WRESChartEngine} instance ready to use.
-     * @throws ChartEngineException If the template fails to parse.
+     * @throws ChartEngineException If the {@link ChartEngine} fails to construct.
+     * @throws WRESVisXMLReadingException when reading or parsing template fails
      */
+
     public static WRESChartEngine generateChartEngine( final List<XYChartDataSource> dataSources,
                                                        final ArgumentsProcessor arguments,
                                                        final String templateName,
                                                        final String overrideParametersStr,
                                                        final int[] diagonalDataSourceIndices,
                                                        final String axisToSquareAgainstDomain )
-            throws ChartEngineException
+            throws ChartEngineException, WRESVisXMLReadingException
     {
         //Load the template parameters.  This will first attempt to load them as a system resource on the class path and
         //then as a file from the file system.  If neither works, it throws an exception.
         final ChartDrawingParameters parameters = new ChartDrawingParameters();
+
+        InputStream templateStream =
+                ChartEngineFactory.class.getClassLoader()
+                                        .getResourceAsStream( templateName );
+
         try
         {
-            XMLTools.readXMLFromResource( templateName, parameters );
-        }
-        catch ( final Exception t )
-        {
-            try
+            if ( templateStream != null )
             {
-                XMLTools.readXMLFromFile( new File( templateName ), parameters );
+                XMLTools.readXMLFromStream( templateStream, false, parameters );
             }
-            catch ( final Exception t2 )
+            else
             {
-                throw new ChartEngineException( "Unable to load default chart drawing parameters from resource or file with name '"
-                                                + templateName + "': " + t2.getMessage() );
+                XMLTools.readXMLFromFile( new File( templateName ),
+                                          parameters );
+            }
+        }
+        catch ( GenericXMLReadingHandlerException e )
+        {
+            throw new WRESVisXMLReadingException( "Unable to load default chart drawing parameters from resource or file with name '"
+                                                  + templateName + "': ", e );
+        }
+        finally
+        {
+            if ( templateStream != null )
+            {
+                try
+                {
+                    templateStream.close();
+                }
+                catch ( IOException ioe )
+                {
+                    // Failure to close should not affect primary outputs.
+                    LOGGER.warn( "Failed to close template stream {}",
+                                 templateStream, ioe );
+                }
             }
         }
 
@@ -1087,10 +1146,14 @@ public abstract class ChartEngineFactory
                 {
                     XMLTools.readXMLFromString( usedStr, override );
                 }
-                catch ( final Exception t )
+                catch ( GenericXMLReadingHandlerException e )
                 {
-                    LOGGER.warn( "Unable to parse XML provided by user for chart drawing: " + t.getMessage() );
-                    LOGGER.trace( "Unable to parse XML provided by user for chart drawing", t );
+                    String message = "Unable to parse XML provided by user for chart drawing: "
+                                     + System.lineSeparator()
+                                     + usedStr
+                                     + System.lineSeparator()
+                                     + override;
+                    throw new WRESVisXMLReadingException( message, e );
                 }
             }
         }

@@ -4,6 +4,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -520,7 +521,9 @@ public class MetricCollectionTest
                                            metaFac.getDimension(),
                                            MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
         MetricOutputMapByMetric<DoubleScoreOutput> expected =
-                outF.ofMap( Arrays.asList( outF.ofDoubleScoreOutput( 0.9999999910148981, outM ) ) );
+                outF.ofMetricOutputMapByMetric( Collections.singletonMap( MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
+                                                                          outF.ofDoubleScoreOutput( 0.9999999910148981,
+                                                                                                    outM ) ) );
         //Check them   
         assertTrue( "Difference between the actual and expected output when ignoring some metrics in the "
                     + "collection.", actual.equals( expected ) );

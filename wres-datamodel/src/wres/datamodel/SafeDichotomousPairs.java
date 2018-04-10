@@ -102,7 +102,9 @@ class SafeDichotomousPairs extends SafeMulticategoryPairs implements Dichotomous
     private SafeDichotomousPairs( final DichotomousPairsBuilder b )
     {
         super( b );
-        if ( super.getCategoryCount() != 2 )
+        int count = super.getCategoryCount();
+        // Allow empty data or two categories
+        if ( count > 0 && count != 2 )
         {
             throw new MetricInputException( "Expected one outcome in the dichotomous input (two or four columns)." );
         }

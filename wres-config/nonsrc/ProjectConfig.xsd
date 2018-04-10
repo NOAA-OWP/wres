@@ -7,6 +7,8 @@
     <xs:complexType name="doubleBoundsType">
         <xs:attribute name="minimum" type="xs:double" />
         <xs:attribute name="maximum" type="xs:double" />
+        <xs:attribute name="default_minimum" type="xs:double" />
+        <xs:attribute name="default_maximum" type="xs:double" />
     </xs:complexType>
 
     <xs:complexType name="intBoundsType">
@@ -145,12 +147,16 @@
         </xs:restriction>
     </xs:simpleType>
 
-    <!-- An enum to specify if the left, right, or baseline has been chosen. -->
-    <xs:simpleType name="leftOrRightOrBaseline">
+    <!-- An enum to specify the scope of the thresholds when filtering paired data. -->
+    <xs:simpleType name="thresholdDataType">
         <xs:restriction base="xs:string">
             <xs:enumeration value="left" />
             <xs:enumeration value="right" />
-            <xs:enumeration value="baseline" />
+            <xs:enumeration value="left and right" />
+            <xs:enumeration value="any right" />
+            <xs:enumeration value="left and any right" />
+            <xs:enumeration value="right mean" />
+            <xs:enumeration value="left and right mean" />
         </xs:restriction>
     </xs:simpleType>
 
@@ -187,7 +193,7 @@
         <!-- A threshold contains a type, applyTo and operator and EITHER an external source OR an internal commaSeparatedValues. -->
         <xs:sequence>
 	    <xs:element name="type" type="thresholdType" default="probability" minOccurs="0" maxOccurs="1"/>
-            <xs:element name="applyTo" type="leftOrRightOrBaseline" minOccurs="0" maxOccurs="1"/>
+            <xs:element name="applyTo" type="thresholdDataType" minOccurs="0" maxOccurs="1"/>
             <!-- Choice of using an internal source or an external source -->
             <xs:choice>
                 <!-- Internal source -->
@@ -205,7 +211,7 @@
                     </xs:complexType>
                 </xs:element>
             </xs:choice>
-            <xs:element name="operator" type="thresholdOperator" default="less than" minOccurs="0" maxOccurs="1" />
+            <xs:element name="operator" type="thresholdOperator" default="greater than" minOccurs="0" maxOccurs="1" />
         </xs:sequence>
     </xs:complexType>
 
@@ -247,8 +253,21 @@
             <xs:enumeration value="reliability diagram" />
             <xs:enumeration value="root mean square error" />
             <xs:enumeration value="sample size" />
-	    <xs:enumeration value="time to peak error" />
             <xs:enumeration value="volumetric efficiency" />
+        </xs:restriction>
+    </xs:simpleType>
+
+    <!-- There is a mapping between these names and the enum in MetricConstants.
+         For now, these two lists must be periodically synchronized manually.-->
+    <xs:simpleType name="timeSeriesMetricConfigName">
+        <xs:restriction base="xs:string">
+
+            <!-- When user wishes to have all the metrics that are valid for a
+                 given configuration -->
+            <xs:enumeration value="all valid" />
+
+	    <xs:enumeration value="time to peak error" />
+            <xs:enumeration value="time to peak relative error" />
         </xs:restriction>
     </xs:simpleType>
 
@@ -282,6 +301,23 @@
     </xs:complexType>
 
     <!-- Base type for a metric -->
+    <xs:complexType name="abstractMetric">
+
+        <!-- for class naming using xjc-->
+        <xs:annotation>
+            <xs:appinfo>
+                <jaxb:class name="AbstractMetricConfig" />
+            </xs:appinfo>
+        </xs:annotation>
+
+        <xs:sequence>
+            <xs:element name="templateResourceName" type="xs:anyURI" minOccurs="0" />
+        </xs:sequence>
+
+        <xs:attribute name="label" type="xs:string" />
+    </xs:complexType>
+
+    <!-- Ordinary metrics -->
     <xs:complexType name="metric">
 
         <!-- for class naming using xjc-->
@@ -291,12 +327,13 @@
             </xs:appinfo>
         </xs:annotation>
 
-        <xs:sequence>
-            <xs:element name="name" type="metricConfigName" />
-            <xs:element name="templateResourceName" type="xs:anyURI" minOccurs="0" />
-        </xs:sequence>
-
-        <xs:attribute name="label" type="xs:string" />
+        <xs:complexContent>
+            <xs:extension base="abstractMetric">
+                <xs:sequence>
+                    <xs:element name="name" type="metricConfigName" />
+                </xs:sequence>
+            </xs:extension>
+        </xs:complexContent>
     </xs:complexType>
 
     <!-- Metrics that consume time-series and may have summary statistics associated with them -->
@@ -310,8 +347,9 @@
         </xs:annotation>
 
         <xs:complexContent>
-            <xs:extension base="metric">
+            <xs:extension base="abstractMetric">
                 <xs:sequence>
+                    <xs:element name="name" type="timeSeriesMetricConfigName" />
                     <xs:element name="summaryStatistics" type="summaryStatistics" minOccurs="0" maxOccurs="1"/>
                 </xs:sequence>
             </xs:extension>
@@ -338,7 +376,6 @@
             <xs:enumeration value="default" />
             <xs:enumeration value="lead threshold" />
             <xs:enumeration value="threshold lead" />
-	    <xs:enumeration value="pooling window" />
             <xs:enumeration value="single valued pairs" />
         </xs:restriction>
     </xs:simpleType>
@@ -399,7 +436,6 @@
             <xs:enumeration value="avg" />
             <xs:enumeration value="max" />
             <xs:enumeration value="min" />
-            <xs:enumeration value="median" />
         </xs:restriction>
     </xs:simpleType>
 

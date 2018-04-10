@@ -3,6 +3,7 @@ package wres.vis;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.Objects;
+import java.util.TimeZone;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -15,7 +16,7 @@ import ohd.hseb.hefs.utils.plugins.UniqueGenericParameterList;
 import ohd.hseb.util.misc.HString;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.Threshold;
+import wres.datamodel.OneOrTwoThresholds;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
@@ -76,7 +77,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * @param inputKeyInstance the input key
      * @param displayPlotInput the input data
      */
-    public WRESArgumentProcessor( Pair<TimeWindow, Threshold> inputKeyInstance, BoxPlotOutput displayPlotInput )
+    public WRESArgumentProcessor( Pair<TimeWindow, OneOrTwoThresholds> inputKeyInstance, BoxPlotOutput displayPlotInput )
     {
         super();
         MetricOutputMetadata meta = displayPlotInput.getMetadata();
@@ -144,7 +145,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
 
         //I could create a helper method to handle this wrapping, but I don't think this will be used outside of this context,
         //so why bother?  (This relates to an email James wrote.)
-        if ( meta.getMetricComponentID().equals( MetricConstants.MAIN ) )
+        if ( ! meta.hasMetricComponentID() || meta.getMetricComponentID().equals( MetricConstants.MAIN ) )
         {
             addArgument( "metricComponentNameSuffix", "" );
         }
@@ -203,7 +204,6 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
     //want to avoid using the same strings (argument names) repeatedly.  
     /**
      * Record the pooling window arguments and attributes from the meta data or provided overrides.  
-     * @param meta
      * @param usedEarliestLeadTimeInHours Earliest lead time to use IN HOURS!
      * @param usedLatestLeadTimeInHours Latest lead time to use IN HOURS!
      * @param usedReferenceTime The reference time system for the pooling windows.
@@ -257,19 +257,25 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
      * @param threshold the threshold
      */
     public void addThresholdLeadArguments( MetricOutputMapByTimeAndThreshold<?> displayedPlotInput,
-                                           Threshold threshold )
+                                           OneOrTwoThresholds threshold )
     {
-        final MetricOutputMetadata meta = displayedPlotInput.getMetadata();
 
-        addArgument( "legendTitle", "Lead Time" );
+        // Augment the plot title when the input dataset contains a secondary threshold/classifier
+        // Create a string from the set of secondary thresholds
+        String supplementary = "";
+        if( !displayedPlotInput.setOfThresholdTwo().isEmpty() )
+        {
+            String set = displayedPlotInput.setOfThresholdTwo().toString();
+            supplementary = " with occurrences defined as " + set;
+        }
+        addArgument( "plotTitleSupplementary", supplementary );
+        addArgument( "legendTitle",  "Lead Time" );
         addArgument( "legendUnitsText", " [hours]" );
+        
         if ( threshold != null )
         {
             addArgument( "diagramInstanceDescription",
-                         "for Threshold " + threshold.toString()
-                                                       + " ("
-                                                       + meta.getInputDimension()
-                                                       + ")" );
+                         "for Threshold " + threshold.toString() );
             addArgument( "plotTitleVariable", "Lead Times" );
         }
     }
@@ -302,6 +308,17 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
     {
         addArgument( "outputUnitsLabelSuffix", " [HOURS]" );
     }
+    
+    /**
+     * Custom method created for the time-to-peak plots.
+     * @param displayedPlotInput the plot input
+     */
+    public void addTimeToPeakArguments(MetricOutputMapByTimeAndThreshold<?> displayedPlotInput )
+    {
+        final MetricOutputMetadata meta = displayedPlotInput.getMetadata();
+        addArgument( "legendTitle", "Threshold " );
+        addArgument( "legendUnitsText", "[" + meta.getInputDimension() + "]" );
+    }
 
     /**
      * Adds arguments related to the baseline forecasts for skill scores.
@@ -327,7 +344,7 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
     /**
      * Called to process a date-to-text argument function.
      * @param argument the argument
-     * @param dateInMillis the time in milliseconds from the epoch
+     * @param dateInstant the date to format
      * @return Date function processed value
      */
     private String processDateFunction( final Argument argument, Instant dateInstant )
@@ -338,30 +355,38 @@ public class WRESArgumentProcessor extends DefaultArgumentsProcessor
                          + " is not provided with plotting meta data." );
             return null;
         }
-        try
+        if ( argument.getFunctionParameterValues().size() == 2 )
         {
-            if ( argument.getFunctionParameterValues().size() == 2 )
+            final String dateFormat = argument.getFunctionParameterValues().get( 0 );
+            final String timeZoneStr = argument.getFunctionParameterValues().get( 1 );
+            HEFSTimeZoneTools.retrieveTimeZone( timeZoneStr );
+
+            DateTimeFormatter formatter;
+
+            // TODO: if retrieveTimeZone throws any kind of RuntimeException,
+            // catch specifically that exception for this one line.
+            // Didn't have the javadoc available to see which one is thrown.
+            TimeZone zone = HEFSTimeZoneTools.retrieveTimeZone( timeZoneStr );
+
+            try
             {
-                final String dateFormat = argument.getFunctionParameterValues().get( 0 );
-                final String timeZoneStr = argument.getFunctionParameterValues().get( 1 );
-                HEFSTimeZoneTools.retrieveTimeZone( timeZoneStr );
-                DateTimeFormatter formatter =
-                        DateTimeFormatter.ofPattern( dateFormat )
-                                         .withZone( HEFSTimeZoneTools.retrieveTimeZone( timeZoneStr ).toZoneId() );
-                return formatter.format( dateInstant );
+                 formatter =
+                         DateTimeFormatter.ofPattern( dateFormat )
+                                          .withZone( zone.toZoneId() );
             }
-            else
+            catch ( IllegalArgumentException e )
             {
-                LOGGER.warn( "Incorrect number of parameters specified for " + argument.getArgumentName()
-                             + " function; requires 2 arguments, the date format and time zone identifier." );
+                LOGGER.warn( "Date format '{}' is invalid for argument {}.",
+                             dateFormat, argument, e );
                 return null;
             }
+
+            return formatter.format( dateInstant );
         }
-        catch ( final Exception e )
+        else
         {
-            LOGGER.warn( "Date format is invalid for " + argument.getArgumentName()
-                         + " function; message: "
-                         + e.getMessage() );
+            LOGGER.warn( "Incorrect number of parameters specified for argument {}; requires 2 arguments, the date format and time zone identifier.",
+                         argument );
             return null;
         }
     }

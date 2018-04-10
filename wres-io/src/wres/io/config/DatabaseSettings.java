@@ -187,7 +187,7 @@ final class DatabaseSettings
         }
     }
 
-    public Connection getRawConnection() throws SQLException
+    Connection getRawConnection() throws SQLException
 	{
 		try
 		{
@@ -201,7 +201,7 @@ final class DatabaseSettings
 		return DriverManager.getConnection(this.getConnectionString(), this.username, this.password);
 	}
 
-	public ComboPooledDataSource createDatasource()
+	ComboPooledDataSource createDatasource()
 	{
 		ComboPooledDataSource datasource = new ComboPooledDataSource();
 
@@ -217,14 +217,15 @@ final class DatabaseSettings
 			datasource.setPreferredTestQuery("SELECT 1");
 			datasource.setTestConnectionOnCheckout(false);
 		} 
-		catch (PropertyVetoException e) {
+		catch (PropertyVetoException e)
+        {
 			LOGGER.error(Strings.getStackTrace(e));
 		}
 
         return datasource;
 	}
 
-	public ComboPooledDataSource createHighPriorityDataSource()
+	ComboPooledDataSource createHighPriorityDataSource()
 	{
 		ComboPooledDataSource highPrioritySource = new ComboPooledDataSource();
 
@@ -344,7 +345,7 @@ final class DatabaseSettings
 	/**
 	 * Parses out settings from the passed in XML 
 	 * @param reader The XML reader containing XML data describing the database settings
-	 * @throws Exception Any exception occurred when reading from the XML
+	 * @throws XMLStreamException Any exception occurred when reading from the XML
 	 */
     private void parseElement( XMLStreamReader reader )
             throws XMLStreamException

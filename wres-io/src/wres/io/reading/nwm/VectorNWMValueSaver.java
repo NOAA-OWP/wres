@@ -25,6 +25,7 @@ import ucar.nc2.Variable;
 import wres.config.generated.DataSourceConfig;
 import wres.io.concurrency.CopyExecutor;
 import wres.io.concurrency.WRESRunnable;
+import wres.io.concurrency.WRESRunnableException;
 import wres.io.config.ConfigHelper;
 import wres.io.config.SystemSettings;
 import wres.io.data.caching.DataSources;
@@ -50,7 +51,7 @@ class VectorNWMValueSaver extends WRESRunnable
      */
     private static class TimeSeriesIndexKey
     {
-        public TimeSeriesIndexKey(Integer variableID,
+        TimeSeriesIndexKey(Integer variableID,
                                   String initializationDate,
                                   Integer ensembleID,
                                   Integer measurementUnitID)
@@ -69,7 +70,7 @@ class VectorNWMValueSaver extends WRESRunnable
         @Override
         public boolean equals( Object obj )
         {
-            return !Objects.isNull( obj ) && this.hashCode() == obj.hashCode();
+            return obj instanceof TimeSeriesIndexKey && this.hashCode() == obj.hashCode();
         }
 
         @Override
@@ -168,10 +169,11 @@ class VectorNWMValueSaver extends WRESRunnable
     private Integer sourceID;
     private Double missingValue;
     private boolean inChargeOfIngest;
+    private Integer ensembleId;
 
-    public VectorNWMValueSaver( String filename,
-                                Future<String> futureHash,
-                                DataSourceConfig dataSourceConfig)
+    VectorNWMValueSaver( String filename,
+                         Future<String> futureHash,
+                         DataSourceConfig dataSourceConfig)
     {
         if (filename == null || filename.isEmpty())
         {
@@ -189,8 +191,9 @@ class VectorNWMValueSaver extends WRESRunnable
 
     /**
      * Gets the result of the
-     * @return
-     * @throws IOException
+     * @return The hash representing the source file
+     * @throws IOException thrown if hashing was interrupted and if it
+     * encountered an error during processing
      */
     private String getHash() throws IOException
     {
@@ -204,17 +207,16 @@ class VectorNWMValueSaver extends WRESRunnable
             {
                 String message = "The hashing process for the file '";
                 message += this.filePath.toAbsolutePath().toString();
-                message += "' was interupted and could not be completed.";
-                LOGGER.error(message);
+                message += "' was interrupted and could not be completed.";
+                LOGGER.warn( message );
 
-                throw new IOException( message, e );
+                Thread.currentThread().interrupt();
             }
             catch ( ExecutionException e )
             {
                 String message = "An error occurred while hashing the file '";
                 message += this.filePath.toAbsolutePath().toString();
                 message += "'.";
-                LOGGER.error(message);
 
                 throw new IOException( message, e );
             }
@@ -277,6 +279,7 @@ class VectorNWMValueSaver extends WRESRunnable
     {
         if (this.sourceID == null)
         {
+            // TODO: Modify the cache to do this work
             SourceDetails.SourceKey sourceKey =
                     new SourceDetails.SourceKey( this.filePath.toAbsolutePath().toString(),
                                                  NetCDF.getInitializedTime( this.getSource() ),
@@ -350,8 +353,8 @@ class VectorNWMValueSaver extends WRESRunnable
                 + NEWLINE;
         forecastSourceInsert +=
                 "WHERE TS.ensemble_id = " + this.getEnsembleID() + NEWLINE;
-        forecastSourceInsert += "   AND TS.initialization_date = '" + NetCDF
-                .getInitializedTime( this.getSource() ) + "'" + NEWLINE;
+        forecastSourceInsert += "   AND TS.initialization_date = '" +
+                                NetCDF.getInitializedTime( this.getSource() ) + "'" + NEWLINE;
         forecastSourceInsert += "   AND TS.measurementunit_id = "
                                 + this.getMeasurementUnitID() + NEWLINE;
         forecastSourceInsert +=
@@ -376,10 +379,13 @@ class VectorNWMValueSaver extends WRESRunnable
         {
             // Read and save the data from the NetCDF file
             this.read();
+
+            LOGGER.debug("Finished Parsing '{}'", this.filePath);
         }
         catch (SQLException | IOException e )
         {
-            LOGGER.error(Strings.getStackTrace(e));
+            String message = "Failed to read or save data from an NWM file.";
+            throw new WRESRunnableException( message, e );
         }
         finally
         {
@@ -394,9 +400,9 @@ class VectorNWMValueSaver extends WRESRunnable
                 }
                 catch (IOException e)
                 {
-                    LOGGER.error("Could not close the NetCDF file: '{}'",
-                                 this.filePath.toAbsolutePath().toString());
-                    LOGGER.error(Strings.getStackTrace(e));
+                    // Exception on close should not affect primary outputs.
+                    LOGGER.warn("Could not close the NetCDF file: '{}'",
+                                 this.filePath.toAbsolutePath().toString(), e );
                 }
             }
         }
@@ -504,7 +510,6 @@ class VectorNWMValueSaver extends WRESRunnable
             catch (IOException e)
             {
                 String message = "The variable could not be retrieved from the NetCDF source file.";
-                LOGGER.error(message);
                 throw new IOException( message, e );
             }
         }
@@ -520,8 +525,7 @@ class VectorNWMValueSaver extends WRESRunnable
             catch (IOException e)
             {
                 String message = "The source NetCDF file could not be loaded.";
-                LOGGER.error(message);
-                throw new IOException( message );
+                throw new IOException( message, e );
             }
         }
         else
@@ -638,7 +642,6 @@ class VectorNWMValueSaver extends WRESRunnable
                 String message = "A variable ID for '" +
                                  this.getVariable().getShortName() +
                                  "' could not be retrieved from the database.";
-                LOGGER.error(message);
                 throw new IOException( message, e );
             }
         }
@@ -759,7 +762,11 @@ class VectorNWMValueSaver extends WRESRunnable
      */
     private int getEnsembleID() throws SQLException, IOException
     {
-        return Ensembles.getEnsembleID(NetCDF.getEnsemble(this.getSource()));
+        if (this.ensembleId == null)
+        {
+            this.ensembleId = Ensembles.getEnsembleID( NetCDF.getEnsemble( this.getSource() ) );
+        }
+        return this.ensembleId;
     }
 
     /**
@@ -920,7 +927,7 @@ class VectorNWMValueSaver extends WRESRunnable
     {
         if (this.lead == null)
         {
-            this.lead = NetCDF.getNWMLeadTime(this.getSource());
+            this.lead = NetCDF.getLeadTime( this.getSource());
         }
         return this.lead;
     }
@@ -936,11 +943,12 @@ class VectorNWMValueSaver extends WRESRunnable
             {
                 this.source = NetcdfFile.open(filePath.toAbsolutePath().toString());
             }
-            catch (IOException e) {
-                LOGGER.error("A file at: '{}' could not be loaded as a NetCDF file.",
-                             this.filePath.toAbsolutePath().toString());
-                LOGGER.error(Strings.getStackTrace(e));
-                throw e;
+            catch ( IOException e )
+            {
+                String message = "A file at: '"
+                                 + this.filePath.toAbsolutePath()
+                                 + "' could not be loaded as a NetCDF file.";
+                throw new IOException( message, e );
             }
         }
         return this.source;

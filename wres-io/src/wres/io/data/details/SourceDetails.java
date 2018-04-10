@@ -1,21 +1,30 @@
 package wres.io.data.details;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.io.data.details.SourceDetails.SourceKey;
 import wres.io.utilities.Database;
+import wres.io.utilities.ScriptBuilder;
 
 /**
  * Details about a source of observation or forecast data
  * @author Christopher Tubbs
  */
-public class SourceDetails extends CachedDetail<SourceDetails, SourceKey> {
-
+public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
+{
+	/**
+	 * Prevents asynchronous saving of the same source information
+	 */
+	private static final Object SOURCE_SAVE_LOCK = new Object();
     private static final Logger LOGGER = LoggerFactory.getLogger( SourceDetails.class );
 
 	private String sourcePath = null;
@@ -83,7 +92,8 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey> {
 	}
 
 	@Override
-	public int compareTo(SourceDetails other) {
+	public int compareTo(SourceDetails other)
+	{
 		Integer id = this.sourceID;
 		
 		if (id == null) {
@@ -121,61 +131,150 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey> {
 	}
 
 	@Override
-	protected String getInsertSelectStatement() throws SQLException
+	protected PreparedStatement getInsertSelectStatement( Connection connection )
+			throws SQLException
 	{
-	    if (this.hash == null)
-        {
-            throw new SQLException( "Could not save '" + this.sourcePath + "'; there was no file hash." );
-        }
+	    List<Object> args = new ArrayList<>();
+	    ScriptBuilder script = new ScriptBuilder(  );
 
-		String script = "";
-		script += "WITH new_source AS" + NEWLINE;
-		script += "(" + NEWLINE;
-		script += "		INSERT INTO wres.Source (path, output_time, lead, hash)" + NEWLINE;
-		script += "		SELECT '" + this.sourcePath + "'," + NEWLINE;
-		script += "				'" + this.outputTime + "'," + NEWLINE;
-		script += "             " + this.lead + "," + NEWLINE;
-		script += "             '" + this.hash + "'" + NEWLINE;
-		script += "		WHERE NOT EXISTS (" + NEWLINE;
-		script += "			SELECT 1" + NEWLINE;
-		script += "			FROM wres.Source" + NEWLINE;
-		script += "			WHERE hash = '" + this.hash + "'" + NEWLINE;
-		script += "		)" + NEWLINE;
-		script += "		RETURNING source_id" + NEWLINE;
-		script += ")" + NEWLINE;
-        script += "SELECT source_id, TRUE as wasInserted" + NEWLINE;
-		script += "FROM new_source" + NEWLINE + NEWLINE;
-		script += "";
-		script += "UNION" + NEWLINE + NEWLINE;
-		script += "";
-        script += "SELECT source_id, FALSE as wasInserted" + NEWLINE;
-		script += "FROM wres.Source" + NEWLINE;
-		script += "WHERE hash = '" + this.hash + "';" + NEWLINE;
+	    script.addLine("WITH new_source AS");
+	    script.addLine("(");
+	    script.addTab().addLine("INSERT INTO wres.Source (path, output_time, lead, hash)");
+	    script.addTab().addLine("SELECT ?, (?)::timestamp without time zone, ?, ?");
 
-		return script;
+	    args.add( this.sourcePath );
+	    args.add(this.outputTime);
+	    args.add(this.lead);
+	    args.add(this.hash);
+
+	    script.addTab().addLine("WHERE NOT EXISTS (");
+	    script.addTab(  2  ).addLine("SELECT 1");
+	    script.addTab(  2  ).addLine("FROM wres.Source");
+	    script.addTab(  2  ).addLine("WHERE hash = ?");
+
+	    args.add(this.hash);
+
+	    script.addTab().addLine(")");
+	    script.addTab().addLine("RETURNING source_id");
+	    script.addLine(")");
+	    script.addLine("SELECT source_id, TRUE as wasInserted");
+	    script.addLine("FROM new_source");
+	    script.addLine();
+	    script.addLine("UNION");
+	    script.addLine();
+	    script.addLine("SELECT source_id, FALSE AS wasInserted");
+	    script.addLine("FROM wres.Source");
+	    script.addLine("WHERE hash = ?;");
+
+	    args.add(this.hash);
+
+	    return script.getPreparedStatement( connection, args.toArray() );
 	}
 
-    @Override
+	@Override
+	protected Object getSaveLock()
+	{
+		return SourceDetails.SOURCE_SAVE_LOCK;
+	}
+
+	@Override
     public void save() throws SQLException
     {
-        String[] tablesToLock = { "wres.source" };
-        Pair<Integer,Boolean> databaseResult
-                = Database.getResult( this.getInsertSelectStatement(),
-                                      this.getIDName(),
-                                      tablesToLock );
+        Connection connection = null;
+		ResultSet resultSet = null;
+		PreparedStatement statement = null;
 
-        if ( LOGGER.isTraceEnabled() )
+		try
         {
-            LOGGER.trace( "Did I create Source ID {}? {}",
-                          databaseResult.getLeft(),
-                          databaseResult.getRight() );
-        }
+            connection = Database.getConnection();
+            connection.setAutoCommit( false );
 
-        this.setID( databaseResult.getLeft() );
-        this.performedInsert = databaseResult.getRight();
+            Database.lockTable( connection, "wres.Source" );
+
+            statement = this.getInsertSelectStatement( connection );
+            resultSet = statement.executeQuery();
+            //resultSet = Database.getResults( connection, this.getInsertSelectStatement() );
+
+            this.setID( Database.getValue( resultSet, this.getIDName() ) );
+            this.performedInsert = Database.getValue( resultSet, "wasInserted" );
+
+            connection.commit();
+
+            if ( LOGGER.isTraceEnabled() )
+            {
+                LOGGER.trace( "Did I create Source ID {}? {}",
+                              this.getId(),
+                              this.performedInsert );
+            }
+        }
+        catch (SQLException e)
+        {
+            if (connection != null)
+            {
+                try
+                {
+                    connection.rollback();
+                }
+                catch ( SQLException se )
+                {
+                    // Failure to roll back should not affect primary outputs.
+                    LOGGER.warn( "Failed to rollback on connection {}.", connection, se );
+                }
+            }
+
+            throw e;
+        }
+        finally
+        {
+            if (resultSet != null)
+            {
+                try
+                {
+                    resultSet.close();
+                }
+                catch ( SQLException se )
+                {
+                    // Failure to close should not affect primary outputs.
+                    LOGGER.warn( "Failed to close result set {}.", resultSet, se );
+                }
+            }
+
+            if (statement != null)
+            {
+                try
+                {
+                    statement.close();
+                }
+                catch (SQLException e)
+                {
+                    // Failure to close should not affect primary outputs.
+                    LOGGER.warn( "Failed to close statement {}.", statement, e );
+                }
+            }
+
+            if (connection != null)
+            {
+                connection.setAutoCommit( true );
+                Database.returnConnection( connection );
+            }
+        }
     }
 
-    public boolean performedInsert()
+    @Override
+    protected Logger getLogger()
+    {
+        return SourceDetails.LOGGER;
+    }
+
+    @Override
+	public String toString()
+	{
+		return "Source: { path: " + this.sourcePath +
+			   ", Lead: " + this.lead +
+			   ", Hash: " + this.hash + " }";
+	}
+
+	public boolean performedInsert()
     {
         return this.performedInsert;
     }

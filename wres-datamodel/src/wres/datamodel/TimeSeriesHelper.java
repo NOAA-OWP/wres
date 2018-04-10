@@ -88,6 +88,7 @@ class TimeSeriesHelper
                                                                           earliestDuration,
                                                                           latestDuration ) );
         }
+        
         return returnMe;
     }
 
@@ -100,13 +101,39 @@ class TimeSeriesHelper
 
     static Instant getEarliestBasisTime( List<Instant> basisTimes )
     {
-        if ( basisTimes.size() == 1 )
+        if( basisTimes.isEmpty() )
+        {
+            return Instant.MIN;
+        }
+        else if ( basisTimes.size() == 1 )
         {
             return ( basisTimes ).iterator().next();
         }
+        
         return new TreeSet<>( basisTimes ).first();
     }
 
+    /**
+     * Returns the latest basis time.
+     * 
+     * @param basisTimes the basis times
+     * @return the latest basis time
+     */
+
+    static Instant getLatestBasisTime( List<Instant> basisTimes )
+    {
+        if( basisTimes.isEmpty() )
+        {
+            return Instant.MAX;
+        }
+        else if ( basisTimes.size() == 1 )
+        {
+            return ( basisTimes ).iterator().next();
+        }
+        
+        return new TreeSet<>( basisTimes ).last();
+    }    
+    
     /**
      * Returns a string representation of the {@link TimeSeries}.
      * @param <T> the type of time-series

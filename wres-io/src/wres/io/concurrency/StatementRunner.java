@@ -3,7 +3,6 @@ package wres.io.concurrency;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import wres.io.utilities.Database;
-import wres.util.Strings;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -60,9 +59,9 @@ public class StatementRunner extends WRESRunnable {
         }
         catch (SQLException e)
         {
-            LOGGER.error("Error occured while running prepared statement:");
-            LOGGER.error(this.script);
-            LOGGER.error(Strings.getStackTrace(e));
+            String message = "Error occurred while running prepared statement:"
+                             + System.lineSeparator() + this.script;
+            throw new WRESRunnableException( message, e );
         }
         finally
         {
@@ -74,8 +73,8 @@ public class StatementRunner extends WRESRunnable {
                 }
                 catch (SQLException e)
                 {
-                    LOGGER.error("Could not close the prepared statement.");
-                    LOGGER.error(Strings.getStackTrace(e));
+                    // No changes in primary output when close fails, so warn.
+                    LOGGER.warn( "Could not close the prepared statement.", e );
                 }
             }
 

@@ -5,7 +5,7 @@
 	<plotTitle>
         <font family="Dialog" size="12" style="1"/>
 		<text>@metricName@@metricComponentNameSuffix@ for @primaryScenario@ predictions of @variableName@
-at @locationName@@baselineLabelSuffix@
+at @locationName@@baselineLabelSuffix@@plotTitleSupplementary@
 @referenceTime@ Evaluation Period: @dataPoolingWindow(yyyy-MM-dd;GMT)@</text>
 	</plotTitle>
 

@@ -2,7 +2,6 @@ package wres.datamodel;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -12,7 +11,9 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import wres.datamodel.SafeTimeSeriesOfSingleValuedPairs.SafeTimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.inputs.MetricInputException;
@@ -32,6 +33,9 @@ import wres.datamodel.time.TimeSeries;
  */
 public final class SafeTimeSeriesOfPairsTest
 {
+
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
 
     /**
      * Tests the {@link SafeTimeSeriesOfPairs#isRegular()} method.
@@ -78,27 +82,28 @@ public final class SafeTimeSeriesOfPairsTest
         assertTrue( "Expected a regular time-series with a duration of '" + benchmark
                     + "'.",
                     ts.getRegularDuration().equals( benchmark ) );
-        
+
         //Add more data and test again
         first.add( Event.of( Instant.parse( "1985-01-03T00:00:00Z" ), metIn.pairOf( 2, 2 ) ) );
         first.add( Event.of( Instant.parse( "1985-01-04T00:00:00Z" ), metIn.pairOf( 3, 3 ) ) );
         first.add( Event.of( Instant.parse( "1985-01-05T00:00:00Z" ), metIn.pairOf( 4, 4 ) ) );
-        
+
         SafeTimeSeriesOfSingleValuedPairsBuilder c = new SafeTimeSeriesOfSingleValuedPairsBuilder();
         TimeSeriesOfSingleValuedPairs tsSecond =
                 (TimeSeriesOfSingleValuedPairs) c.addTimeSeriesData( firstBasisTime, first )
                                                  .setMetadata( meta )
                                                  .build();
         assertTrue( "Expected a regular time-series with a duration of '" + benchmark
-                    + "'.", tsSecond.getRegularDuration().equals( benchmark ) );
-        
+                    + "'.",
+                    tsSecond.getRegularDuration().equals( benchmark ) );
+
         //Add an irregular timestep and check for null output
         first.add( Event.of( Instant.parse( "1985-01-07T00:00:00Z" ), metIn.pairOf( 4, 4 ) ) );
         SafeTimeSeriesOfSingleValuedPairsBuilder d = new SafeTimeSeriesOfSingleValuedPairsBuilder();
         TimeSeriesOfSingleValuedPairs tsThird =
                 (TimeSeriesOfSingleValuedPairs) d.addTimeSeriesData( firstBasisTime, first )
                                                  .setMetadata( meta )
-                                                 .build();      
+                                                 .build();
         assertTrue( "Expected an irregular time-series.",
                     Objects.isNull( tsThird.getRegularDuration() ) );
     }
@@ -215,114 +220,53 @@ public final class SafeTimeSeriesOfPairsTest
                 (TimeSeriesOfSingleValuedPairs) d.addTimeSeriesData( firstBasisTime, first )
                                                  .setMetadata( meta )
                                                  .build();
-        try
-        {
-            Iterator<TimeSeries<PairOfDoubles>> it = ts.basisTimeIterator().iterator();
-            it.forEachRemaining( a -> a.equals( null ) );
-            it.next();
-            fail( "Expected a checked exception on iterating a time-series with no more basis times left." );
-        }
-        catch ( NoSuchElementException e )
-        {
-        }
-        try
-        {
-            Iterator<TimeSeries<PairOfDoubles>> it = ts.durationIterator().iterator();
-            it.forEachRemaining( a -> a.equals( null ) );
-            it.next();
-            fail( "Expected a checked exception on iterating a time-series with no more durations left." );
-        }
-        catch ( NoSuchElementException e )
-        {
-        }
-        try
-        {
-            Iterator<Event<PairOfDoubles>> it = ts.timeIterator().iterator();
-            it.forEachRemaining( a -> a.equals( null ) );
-            it.next();
-            fail( "Expected a checked exception on iterating a time-series with no more elements left." );
-        }
-        catch ( NoSuchElementException e )
-        {
-        }
-        try
-        {
-            Iterator<TimeSeries<PairOfDoubles>> it = ts.basisTimeIterator().iterator();
-            it.next();
-            it.remove();
-            fail( "Expected a checked exception on attempting to remove a basis time from an immutable time-series." );
-        }
-        catch ( UnsupportedOperationException e )
-        {
-        }
-        try
-        {
-            Iterator<TimeSeries<PairOfDoubles>> it = ts.durationIterator().iterator();
-            it.next();
-            it.remove();
-            fail( "Expected a checked exception on attempting to remove a duration from an immutable time-series." );
-        }
-        catch ( UnsupportedOperationException e )
-        {
-        }
-        try
-        {
-            Iterator<Event<PairOfDoubles>> it = ts.timeIterator().iterator();
-            it.next();
-            it.remove();
-            fail( "Expected a checked exception on attempting to remove a time from an immutable time-series." );
-        }
-        catch ( UnsupportedOperationException e )
-        {
-        }
-        //Check for null filters
-        try
-        {
-            ts.filterByBasisTime( null );
-            fail( "Expected a checked exception on attempting to filter by basis times with a null filter." );
-        }
-        catch ( NullPointerException e )
-        {
-        }
-        try
-        {
-            ts.filterByDuration( null );
-            fail( "Expected a checked exception on attempting to filter by duration with a null filter." );
-        }
-        catch ( NullPointerException e )
-        {
-        }
+
+
+        // Iterate
+        exception.expect( NoSuchElementException.class );
+        Iterator<TimeSeries<PairOfDoubles>> noneSuchBasis = ts.basisTimeIterator().iterator();
+        noneSuchBasis.forEachRemaining( a -> a.equals( null ) );
+        noneSuchBasis.next();
+
+        Iterator<TimeSeries<PairOfDoubles>> noneSuchDuration = ts.durationIterator().iterator();
+        noneSuchDuration.forEachRemaining( a -> a.equals( null ) );
+        noneSuchDuration.next();
+
+        Iterator<Event<PairOfDoubles>> noneSuchElement = ts.timeIterator().iterator();
+        noneSuchElement.forEachRemaining( a -> a.equals( null ) );
+        noneSuchElement.next();
+
+        //Mutate 
+        exception.expect( UnsupportedOperationException.class );
+
+        Iterator<TimeSeries<PairOfDoubles>> immutableBasis = ts.basisTimeIterator().iterator();
+        immutableBasis.next();
+        immutableBasis.remove();
+
+        Iterator<TimeSeries<PairOfDoubles>> immutableDuration = ts.durationIterator().iterator();
+        immutableDuration.next();
+        immutableDuration.remove();
+
         //Construct with null input
-        try
-        {
-            List<Event<PairOfDoubles>> withNulls = new ArrayList<>();
-            withNulls.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), metIn.pairOf( 1, 1 ) ) );
-            withNulls.add( null );
-            new SafeTimeSeriesOfSingleValuedPairsBuilder().addTimeSeriesData( firstBasisTime, withNulls )
-                                                          .setMetadata( meta )
-                                                          .build();
-            fail( "Expected a checked exception on attempting to construct a time-series with empty input." );
-        }
-        catch ( MetricInputException e )
-        {
-        }
+        exception.expect( MetricInputException.class );
+
+        List<Event<PairOfDoubles>> withNulls = new ArrayList<>();
+        withNulls.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), metIn.pairOf( 1, 1 ) ) );
+        withNulls.add( null );
+        new SafeTimeSeriesOfSingleValuedPairsBuilder().addTimeSeriesData( firstBasisTime, withNulls )
+                                                      .setMetadata( meta )
+                                                      .build();
+
         //Construct with null input for baseline
-        try
-        {
-            List<Event<PairOfDoubles>> withNullsForBaseline = new ArrayList<>();
-            withNullsForBaseline.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), metIn.pairOf( 1, 1 ) ) );
-            withNullsForBaseline.add( null );
-            new SafeTimeSeriesOfSingleValuedPairsBuilder().addTimeSeriesData( firstBasisTime, first )
-                                                          .addTimeSeriesDataForBaseline( firstBasisTime,
-                                                                                         withNullsForBaseline )
-                                                          .setMetadata( meta )
-                                                          .setMetadataForBaseline( meta )
-                                                          .build();
-            fail( "Expected a checked exception on attempting to construct a time-series with empty input." );
-        }
-        catch ( MetricInputException e )
-        {
-        }
+        List<Event<PairOfDoubles>> withNullsForBaseline = new ArrayList<>();
+        withNullsForBaseline.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), metIn.pairOf( 1, 1 ) ) );
+        withNullsForBaseline.add( null );
+        new SafeTimeSeriesOfSingleValuedPairsBuilder().addTimeSeriesData( firstBasisTime, first )
+                                                      .addTimeSeriesDataForBaseline( firstBasisTime,
+                                                                                     withNullsForBaseline )
+                                                      .setMetadata( meta )
+                                                      .setMetadataForBaseline( meta )
+                                                      .build();
     }
 
 }

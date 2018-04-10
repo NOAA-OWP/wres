@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <!-- This is a test of verifying forecast MAPX vs obs MAP using a value threshold to break out the 0s from non-zeros. -->
-<project label="ExampleProject">
+<project label="ExampleProject" name="scenario302">
 
     <inputs>
         <left label="">
@@ -34,7 +34,7 @@
     </metrics>
     <outputs>
         <destination type="numeric" decimalFormat="0.000000">
-            <path>output</path>
+            <path>output/</path>
         </destination>
         <destination type="pairs">
             <path>output/</path>

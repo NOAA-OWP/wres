@@ -1,5 +1,6 @@
 package wres.io.data.caching;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -12,8 +13,8 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.generated.LeftOrRightOrBaseline;
 import wres.config.generated.ProjectConfig;
+import wres.io.config.LeftOrRightOrBaseline;
 import wres.io.data.details.ProjectDetails;
 import wres.io.reading.IngestResult;
 import wres.io.utilities.Database;
@@ -26,6 +27,21 @@ public class Projects extends Cache<ProjectDetails, Integer> {
     private static final Logger LOGGER = LoggerFactory.getLogger(Projects.class);
     private static Projects instance = null;
     private static final Object CACHE_LOCK = new Object();
+
+    private static final Object DETAIL_LOCK = new Object();
+    private static final Object KEY_LOCK = new Object();
+
+    @Override
+    protected Object getDetailLock()
+    {
+        return Projects.DETAIL_LOCK;
+    }
+
+    @Override
+    protected Object getKeyLock()
+    {
+        return Projects.KEY_LOCK;
+    }
 
     private static Projects getCache ()
     {
@@ -40,7 +56,7 @@ public class Projects extends Cache<ProjectDetails, Integer> {
         }
     }
 
-    public static Pair<ProjectDetails,Boolean> getProject( ProjectConfig projectConfig,
+    private static Pair<ProjectDetails,Boolean> getProject( ProjectConfig projectConfig,
                                                            List<String> leftHashes,
                                                            List<String> rightHashes,
                                                            List<String> baselineHashes )
@@ -118,7 +134,9 @@ public class Projects extends Cache<ProjectDetails, Integer> {
         }
         catch (SQLException error)
         {
-            LOGGER.error("An error was encountered when trying to populate the Project cache.");
+            // Failure to pre-populate cache should not affect primary outputs.
+            LOGGER.warn( "An error was encountered when trying to populate the Project cache.",
+                         error );
         }
         finally
         {
@@ -130,7 +148,9 @@ public class Projects extends Cache<ProjectDetails, Integer> {
                 }
                 catch (SQLException error)
                 {
-                    LOGGER.error("The result set containing projects could not be closed.");
+                    // Exception on close should not affect primary outputs.
+                    LOGGER.warn( "The result set {} containing projects could not be closed.",
+                                 projects, error );
                 }
             }
 
@@ -148,10 +168,11 @@ public class Projects extends Cache<ProjectDetails, Integer> {
      * @return the ProjectDetails to use
      * @throws SQLException when ProjectDetails construction goes wrong
      * @throws IllegalArgumentException when an IngestResult does not have left/right/baseline information
+     * @throws IOException when a source identifier cannot be determined
      */
     public static ProjectDetails getProjectFromIngest( ProjectConfig projectConfig,
                                                        List<IngestResult> ingestResults )
-            throws SQLException
+            throws SQLException, IOException
     {
         List<String> leftHashes = new ArrayList<>();
         List<String> rightHashes = new ArrayList<>();
@@ -212,6 +233,15 @@ public class Projects extends Cache<ProjectDetails, Integer> {
             {
                 Integer sourceID =
                     DataSources.getActiveSourceID( ingestResult.getHash() );
+
+                if (sourceID == null)
+                {
+                    throw new IOException( "The id for a source file that must "
+                                           + "be linked to this project could "
+                                           + "not be determined. The data "
+                                           + "ingest cannot continue." );
+                }
+
                 copyStatement.add( details.getId() + delimiter
                                    + sourceID + delimiter
                                    + ingestResult.getLeftOrRightOrBaseline().value() );

@@ -36,18 +36,18 @@ final class BackToBackMetricInputIterator extends MetricInputIterator
         int count;
         if ( ConfigHelper.isForecast( this.getRight() ))
         {
-            long start = this.getFirstLeadInWindow();
+            long start = Math.max(1, this.getFirstLeadInWindow());
             Integer last = this.getProjectDetails().getLastLead( this.getFeature() );
 
             if (last == null)
             {
-                throw new IllegalArgumentException( "The final lead time for the data set for: " +
+                throw new NoDataException( "The final lead time for the data set for: " +
                                                     this.getRight()
                                                         .getVariable()
                                                         .getValue() +
                                                     " could not be determined.");
             }
-            else if (start >= last)
+            else if (start > last)
             {
                 throw new NoDataException( "No data can be retrieved because " +
                                            "the first requested lead time " +

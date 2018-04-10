@@ -13,12 +13,16 @@ import org.apache.commons.lang3.tuple.Pair;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.SafeMetricOutputMapByMetric.SafeMetricOutputMapByMetricBuilder;
+import wres.datamodel.SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapByTimeAndThresholdBuilder;
 import wres.datamodel.SafeMetricOutputMultiMapByTimeAndThreshold.SafeMetricOutputMultiMapByTimeAndThresholdBuilder;
-import wres.datamodel.SafeRegularTimeSeriesOfEnsemblePairs.SafeRegularTimeSeriesOfEnsemblePairsBuilder;
-import wres.datamodel.SafeRegularTimeSeriesOfSingleValuedPairs.SafeRegularTimeSeriesOfSingleValuedPairsBuilder;
+import wres.datamodel.SafeThresholdsByMetric.SafeThresholdsByMetricBuilder;
+import wres.datamodel.SafeThresholdsByType.SafeThresholdsByTypeBuilder;
 import wres.datamodel.SafeTimeSeriesOfEnsemblePairs.SafeTimeSeriesOfEnsemblePairsBuilder;
 import wres.datamodel.SafeTimeSeriesOfSingleValuedPairs.SafeTimeSeriesOfSingleValuedPairsBuilder;
-import wres.datamodel.Threshold.Operator;
+import wres.datamodel.ThresholdConstants.Operator;
+import wres.datamodel.ThresholdConstants.ThresholdDataType;
+import wres.datamodel.ThresholdsByMetric.ThresholdsByMetricBuilder;
+import wres.datamodel.ThresholdsByType.ThresholdsByTypeBuilder;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
@@ -29,8 +33,6 @@ import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
-import wres.datamodel.inputs.pairs.builders.RegularTimeSeriesOfEnsemblePairsBuilder;
-import wres.datamodel.inputs.pairs.builders.RegularTimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.inputs.pairs.builders.TimeSeriesOfEnsemblePairsBuilder;
 import wres.datamodel.inputs.pairs.builders.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.metadata.Metadata;
@@ -94,6 +96,24 @@ public class DefaultDataFactory implements DataFactory
     public Slicer getSlicer()
     {
         return DefaultSlicer.getInstance();
+    }
+
+    @Override
+    public OneOrTwoDoubles ofOneOrTwoDoubles( Double first, Double second )
+    {
+        return SafeOneOrTwoDoubles.of( first, second );
+    }
+
+    @Override
+    public ThresholdsByMetricBuilder ofThresholdsByMetricBuilder()
+    {
+        return new SafeThresholdsByMetricBuilder();
+    }
+
+    @Override
+    public ThresholdsByTypeBuilder ofThresholdsByTypeBuilder()
+    {
+        return new SafeThresholdsByTypeBuilder();
     }
 
     @Override
@@ -336,31 +356,32 @@ public class DefaultDataFactory implements DataFactory
     }
 
     @Override
-    public <T extends MetricOutput<?>> MetricOutputMapByMetric<T> ofMap( final List<T> input )
+    public <T extends MetricOutput<?>> MetricOutputMapByMetric<T>
+            ofMetricOutputMapByMetric( final Map<MetricConstants, T> input )
     {
         Objects.requireNonNull( input, "Specify a non-null list of inputs." );
         final SafeMetricOutputMapByMetricBuilder<T> builder = new SafeMetricOutputMapByMetricBuilder<>();
-        input.forEach( a -> {
-            final MapKey<MetricConstants> key = getMapKey( a.getMetadata().getMetricID() );
-            builder.put( key, a );
-        } );
+        
+        input.forEach( ( key, value ) -> builder.put( this.getMapKey( value.getMetadata().getMetricID() ), value ) );
+        
+        //input.forEach( ( key, value ) -> builder.put( this.getMapKey( key ), value ) );
         return builder.build();
     }
 
     @Override
     public <T extends MetricOutput<?>> MetricOutputMapByTimeAndThreshold<T>
-            ofMap( final Map<Pair<TimeWindow, Threshold>, T> input )
+            ofMetricOutputMapByTimeAndThreshold( final Map<Pair<TimeWindow, OneOrTwoThresholds>, T> input )
     {
         Objects.requireNonNull( input, "Specify a non-null map of inputs by lead time and threshold." );
-        final SafeMetricOutputMapByTimeAndThreshold.Builder<T> builder =
-                new SafeMetricOutputMapByTimeAndThreshold.Builder<>();
+        final SafeMetricOutputMapByTimeAndThresholdBuilder<T> builder =
+                new SafeMetricOutputMapByTimeAndThresholdBuilder<>();
         input.forEach( builder::put );
         return builder.build();
     }
 
     @Override
     public <T extends MetricOutput<?>> MetricOutputMultiMapByTimeAndThreshold<T>
-            ofMultiMap( final Map<Pair<TimeWindow, Threshold>, List<MetricOutputMapByMetric<T>>> input )
+            ofMetricOutputMultiMapByTimeAndThreshold( final Map<Pair<TimeWindow, OneOrTwoThresholds>, List<MetricOutputMapByMetric<T>>> input )
     {
         Objects.requireNonNull( input, "Specify a non-null map of inputs by threshold." );
         final SafeMetricOutputMultiMapByTimeAndThresholdBuilder<T> builder =
@@ -377,65 +398,13 @@ public class DefaultDataFactory implements DataFactory
     @Override
     public <S extends MetricOutput<?>>
             MetricOutputMultiMapByTimeAndThreshold.MetricOutputMultiMapByTimeAndThresholdBuilder<S>
-            ofMultiMap()
+            ofMetricOutputMultiMapByTimeAndThresholdBuilder()
     {
         return new SafeMetricOutputMultiMapByTimeAndThresholdBuilder<>();
     }
 
-
     @Override
-    public TimeSeriesOfSingleValuedPairs
-            ofRegularTimeSeriesOfSingleValuedPairs( List<Event<List<PairOfDoubles>>> timeSeries,
-                                                    Metadata mainMeta,
-                                                    List<Event<List<PairOfDoubles>>> timeSeriesBaseline,
-                                                    Metadata baselineMeta,
-                                                    Duration timeStep )
-    {
-        SafeRegularTimeSeriesOfSingleValuedPairsBuilder builder = new SafeRegularTimeSeriesOfSingleValuedPairsBuilder();
-        builder.addTimeSeriesData( timeSeries ).setTimeStep( timeStep ).setMetadata( mainMeta );
-        if ( Objects.nonNull( timeSeriesBaseline ) )
-        {
-            builder.addTimeSeriesDataForBaseline( timeSeriesBaseline );
-            builder.setMetadataForBaseline( baselineMeta );
-        }
-        return builder.build();
-    }
-
-    @Override
-    public TimeSeriesOfEnsemblePairs
-            ofRegularTimeSeriesOfEnsemblePairs( List<Event<List<PairOfDoubleAndVectorOfDoubles>>> timeSeries,
-                                                Metadata mainMeta,
-                                                List<Event<List<PairOfDoubleAndVectorOfDoubles>>> timeSeriesBaseline,
-                                                Metadata baselineMeta,
-                                                Duration timeStep )
-    {
-        SafeRegularTimeSeriesOfEnsemblePairsBuilder builder = new SafeRegularTimeSeriesOfEnsemblePairsBuilder();
-        builder.addTimeSeriesData( timeSeries ).setTimeStep( timeStep ).setMetadata( mainMeta );
-        if ( Objects.nonNull( timeSeriesBaseline ) )
-        {
-            builder.addTimeSeriesDataForBaseline( timeSeriesBaseline );
-            builder.setMetadataForBaseline( baselineMeta );
-        }
-        return builder.build();
-    }
-
-
-    @Override
-    public RegularTimeSeriesOfSingleValuedPairsBuilder ofRegularTimeSeriesOfSingleValuedPairsBuilder()
-    {
-        return new SafeRegularTimeSeriesOfSingleValuedPairsBuilder();
-    }
-
-    @Override
-    public RegularTimeSeriesOfEnsemblePairsBuilder ofRegularTimeSeriesOfEnsemblePairsBuilder()
-    {
-        return new SafeRegularTimeSeriesOfEnsemblePairsBuilder();
-    }
-
-
-    @Override
-    public TimeSeriesOfSingleValuedPairs ofTimeSeriesOfSingleValuedPairs(
-                                                                          List<Event<List<Event<PairOfDoubles>>>> timeSeries,
+    public TimeSeriesOfSingleValuedPairs ofTimeSeriesOfSingleValuedPairs( List<Event<List<Event<PairOfDoubles>>>> timeSeries,
                                                                           Metadata mainMeta,
                                                                           List<Event<List<Event<PairOfDoubles>>>> timeSeriesBaseline,
                                                                           Metadata baselineMeta )
@@ -451,8 +420,7 @@ public class DefaultDataFactory implements DataFactory
     }
 
     @Override
-    public TimeSeriesOfEnsemblePairs ofTimeSeriesOfEnsemblePairs(
-                                                                  List<Event<List<Event<PairOfDoubleAndVectorOfDoubles>>>> timeSeries,
+    public TimeSeriesOfEnsemblePairs ofTimeSeriesOfEnsemblePairs( List<Event<List<Event<PairOfDoubleAndVectorOfDoubles>>>> timeSeries,
                                                                   Metadata mainMeta,
                                                                   List<Event<List<Event<PairOfDoubleAndVectorOfDoubles>>>> timeSeriesBaseline,
                                                                   Metadata baselineMeta )
@@ -484,8 +452,8 @@ public class DefaultDataFactory implements DataFactory
             combine( final List<MetricOutputMapByTimeAndThreshold<T>> input )
     {
         Objects.requireNonNull( input, "Specify a non-null map of inputs to combine." );
-        final SafeMetricOutputMapByTimeAndThreshold.Builder<T> builder =
-                new SafeMetricOutputMapByTimeAndThreshold.Builder<>();
+        final SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapByTimeAndThresholdBuilder<T> builder =
+                new SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapByTimeAndThresholdBuilder<>();
         //If the input contains time windows, find the union of them
         List<TimeWindow> windows = new ArrayList<>();
         for ( MetricOutputMapByTimeAndThreshold<T> next : input )
@@ -512,42 +480,49 @@ public class DefaultDataFactory implements DataFactory
     }
 
     @Override
-    public Threshold ofThreshold( final Double threshold, final Double thresholdUpper, final Operator condition, String label )
+    public Threshold ofThreshold( final OneOrTwoDoubles values,
+                                  final Operator condition,
+                                  final ThresholdDataType dataType,
+                                  final String label,
+                                  final Dimension units )
     {
-        return new SafeThreshold.ThresholdBuilder().setThreshold( threshold )
-                                                   .setThresholdUpper( thresholdUpper )
+        return new SafeThreshold.ThresholdBuilder().setValues( values )
                                                    .setCondition( condition )
-                                                   .setLabel( label)
+                                                   .setDataType( dataType )
+                                                   .setLabel( label )
+                                                   .setUnits( units )
                                                    .build();
     }
 
     @Override
-    public Threshold ofProbabilityThreshold( final Double threshold,
-                                              final Double thresholdUpper,
-                                              final Operator condition,
-                                              final String label )
+    public Threshold ofProbabilityThreshold( final OneOrTwoDoubles probabilities,
+                                             final Operator condition,
+                                             final ThresholdDataType dataType,
+                                             final String label,
+                                             final Dimension units )
     {
-        return new SafeThreshold.ThresholdBuilder().setThresholdProbability( threshold )
-                                                   .setThresholdProbabilityUpper( thresholdUpper )
+        return new SafeThreshold.ThresholdBuilder().setProbabilities( probabilities )
                                                    .setCondition( condition )
-                                                   .setLabel( label)
+                                                   .setDataType( dataType )
+                                                   .setLabel( label )
+                                                   .setUnits( units )
                                                    .build();
     }
 
     @Override
-    public Threshold ofQuantileThreshold( final Double threshold,
-                                           final Double thresholdUpper,
-                                           final Double probability,
-                                           final Double probabilityUpper,
-                                           final Operator condition,
-                                           final String label )
+    public Threshold ofQuantileThreshold( final OneOrTwoDoubles values,
+                                          final OneOrTwoDoubles probabilities,
+                                          final Operator condition,
+                                          final ThresholdDataType dataType,
+                                          final String label,
+                                          final Dimension units )
     {
-        return new SafeThreshold.ThresholdBuilder().setThreshold( threshold )
-                                                   .setThresholdUpper( thresholdUpper )
-                                                   .setThresholdProbability( probability )
-                                                   .setThresholdProbabilityUpper( probabilityUpper )
+        return new SafeThreshold.ThresholdBuilder().setValues( values )
+                                                   .setProbabilities( probabilities )
                                                    .setCondition( condition )
-                                                   .setLabel( label)
+                                                   .setDataType( dataType )
+                                                   .setLabel( label )
+                                                   .setUnits( units )
                                                    .build();
     }
 

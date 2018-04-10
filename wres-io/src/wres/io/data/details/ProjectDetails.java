@@ -3,6 +3,7 @@ package wres.io.data.details;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.MonthDay;
@@ -12,6 +13,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -24,6 +26,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.ProjectConfigs;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
@@ -37,7 +40,6 @@ import wres.config.generated.ProjectConfig;
 import wres.config.generated.ThresholdType;
 import wres.config.generated.TimeScaleConfig;
 import wres.config.generated.TimeScaleFunction;
-import wres.config.generated.TimeWindowMode;
 import wres.io.concurrency.DataSetRetriever;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Features;
@@ -50,6 +52,7 @@ import wres.io.utilities.ScriptBuilder;
 import wres.io.utilities.ScriptGenerator;
 import wres.util.Collections;
 import wres.util.FormattedStopwatch;
+import wres.util.ProgressMonitor;
 import wres.util.Strings;
 import wres.util.TimeHelper;
 
@@ -57,7 +60,19 @@ import wres.util.TimeHelper;
  * Wrapper object linking a project configuration and the data needed to form
  * database statements
  */
-public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
+public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
+{
+    public enum PairingMode
+    {
+        ROLLING,
+        BACK_TO_BACK,
+        TIME_SERIES
+    }
+
+    /**
+     * Ensures that multiple copies of a project aren't saved at the same time
+     */
+    private static final Object PROJECT_SAVE_LOCK = new Object();
 
     private static final Logger LOGGER = LoggerFactory.getLogger( ProjectDetails.class );
 
@@ -151,6 +166,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
      */
     private Integer baselineVariableID = null;
 
+    private static final Object SERIES_AMOUNT_LOCK = new Object();
     /**
      * Details the number of time series to pull at once when gathering by time series
      */
@@ -538,7 +554,16 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
                 {
                     if ( resultSet != null )
                     {
-                        resultSet.close();
+                        try
+                        {
+                            resultSet.close();
+                        }
+                        catch ( SQLException se )
+                        {
+                            // Failure to close shouldn't affect primary output.
+                            LOGGER.warn( "Failed to close result set {}.",
+                                         resultSet, se );
+                        }
                     }
 
                     if ( connection != null )
@@ -578,6 +603,28 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     public DataSourceConfig getBaseline()
     {
         return this.projectConfig.getInputs().getBaseline();
+    }
+
+    public Integer getVariableId(DataSourceConfig dataSourceConfig)
+            throws SQLException
+    {
+        final String side = this.getInputName( dataSourceConfig );
+        Integer variableId = null;
+
+        if (ProjectDetails.LEFT_MEMBER.equals( side ))
+        {
+            variableId = this.getLeftVariableID();
+        }
+        else if (ProjectDetails.RIGHT_MEMBER.equals( side ))
+        {
+            variableId = this.getRightVariableID();
+        }
+        else if (ProjectDetails.BASELINE_MEMBER.equals( side ))
+        {
+            variableId = this.getBaselineVariableID();
+        }
+
+        return variableId;
     }
 
     /**
@@ -702,6 +749,19 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         return maximum;
     }
 
+    public Double getDefaultMaximumValue()
+    {
+        Double maximum = null;
+
+        if (this.projectConfig.getPair().getValues() != null &&
+            this.projectConfig.getPair().getValues().getDefaultMaximum() != null)
+        {
+            maximum = this.projectConfig.getPair().getValues().getDefaultMaximum();
+        }
+
+        return maximum;
+    }
+
     /**
      * @return The smallest possible value for the data. -Double.MAX_VALUE by default
      */
@@ -716,6 +776,19 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         }
 
         return minimum;
+    }
+
+    public Double getDefaultMinimumValue()
+    {
+        Double defaultMinimum = null;
+
+        if (this.projectConfig.getPair().getValues() != null &&
+                this.projectConfig.getPair().getValues().getDefaultMinimum() != null)
+        {
+            defaultMinimum = this.projectConfig.getPair().getValues().getDefaultMinimum();
+        }
+
+        return defaultMinimum;
     }
 
     /**
@@ -842,8 +915,9 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
      * @return The length of a period of lead time to retrieve from the database
      * @throws NoDataException Thrown if the period could not be determined
      * from the scale
+     * @throws SQLException when communication with the database failed
      */
-    public Integer getLeadPeriod() throws NoDataException
+    public Integer getLeadPeriod() throws NoDataException, SQLException
     {
         Integer period;
 
@@ -886,8 +960,9 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
      * @return The unit of time that leads should be queried in
      * @throws NoDataException Thrown if there wasn't enough data available to
      * determine the scale
+     * @throws SQLException when communication with the database failed
      */
-    public String getLeadUnit() throws NoDataException
+    public String getLeadUnit() throws NoDataException, SQLException
     {
         String unit;
 
@@ -921,8 +996,9 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
      * @return The frequency will which to retrieve a period of leads
      * @throws NoDataException Thrown if there wasn't enough data available to
      * infer a frequency from.
+     * @throws SQLException when communication with the database failed
      */
-    public Integer getLeadFrequency() throws NoDataException
+    public Integer getLeadFrequency() throws NoDataException, SQLException
     {
         Integer frequency;
 
@@ -968,60 +1044,13 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     /**
      * @return Whether or not data should be scaled
      * @throws NoDataException Thrown if a dynamic scale could not be created
+     * @throws SQLException when communication with the database failed
      */
-    public boolean shouldScale() throws NoDataException
+    public boolean shouldScale() throws NoDataException, SQLException
     {
         return this.getScale() != null &&
                !TimeScaleFunction.NONE
                        .value().equalsIgnoreCase(this.getScale().getFunction().value());
-    }
-
-    /**
-     * @param dataSourceConfig The data source that might need to be scaled
-     * @return Whether or not to scale this data source
-     * @throws IOException Thrown if there was either not enough data available
-     * to determine the scale or the sets of data were of fundamentally
-     * incompatible scales.
-     */
-    public boolean shouldScale(DataSourceConfig dataSourceConfig)
-            throws IOException
-    {
-        // If no scaling will need to be done, skip right past this.
-        if (!this.shouldScale())
-        {
-            return false;
-        }
-
-        boolean scale;
-
-        try
-        {
-            TimeScaleConfig desiredScale = this.getScale();
-
-            long dataSourcesScale;
-
-            if (dataSourceConfig == this.getLeft())
-            {
-                dataSourcesScale = this.getLeftScale();
-            }
-            else if (dataSourceConfig == this.getRight())
-            {
-                dataSourcesScale = this.getRightScale();
-            }
-            else
-            {
-                dataSourcesScale = this.getBaselineScale();
-            }
-
-            scale = ( dataSourcesScale != desiredScale.getPeriod());
-        }
-        catch (NoDataException | SQLException e)
-        {
-            throw new IOException( "The scales for either the project or the "
-                                   + "data source could not be determined.", e );
-        }
-
-        return scale;
     }
 
     /**
@@ -1037,8 +1066,9 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
      * data
      * @throws NoDataException Thrown if the scales for either the left or
      * right handed data could not be evaluated.
+     * @throws SQLException when communication with the database failed
      */
-    private TimeScaleConfig getCommonScale() throws NoDataException
+    private TimeScaleConfig getCommonScale() throws NoDataException, SQLException
     {
         Long commonScale;
 
@@ -1052,6 +1082,9 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
             long left = this.getLeftScale();
             long right = this.getRightScale();
 
+            long maxScale = Math.max(left, right);
+            long minScale = Math.min(left, right);
+
             if (left == right)
             {
                 commonScale = left;
@@ -1063,11 +1096,17 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
             // This logic will attempt to reconcile the two to find a possible
             // desired scale; i.e. if the left is in a scale of 4 hours and the
             // right in 3, the needed scale would be 12 hours.
-            else if (Math.max(left, right) % Math.min(left, right) == 0)
+            else if (minScale != 0 && maxScale % minScale == 0)
             {
-                commonScale = Math.max(left, right);
+                String message = "The temporal scales of the left and right hand data "
+                                 + "don't match. The left hand data is in a "
+                                 + "scale of %d hours and the scale on the "
+                                 + "right is in %d hours. If the data is "
+                                 + "compatible, a scale of %d hours should "
+                                 + "suffice.";
+                throw new NoDataException( String.format( message, left, right, maxScale ) );
             }
-            else
+            else if (!(minScale == 0 || maxScale == 0))
             {
 
                 BigInteger bigLeft = BigInteger.valueOf( left );
@@ -1078,18 +1117,28 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
 
                 commonScale =
                         left * right / greatestCommonFactor;
+
+                String message = "The temporal scales of the left (%d Hours) "
+                                 + "and right (%d Hours) hand data are in "
+                                 + "different temporal scales and more "
+                                 + "information is needed in order to pair "
+                                 + "data properly. Please supply a desired time "
+                                 + "scale. A scale of %d hours should work if "
+                                 + "there is enough data and an appropriate "
+                                 + "scaling function is supplied.";
+                throw new NoDataException( String.format( message, left, right, commonScale ) );
+            }
+            else
+            {
+                throw new NoDataException( "Not enough data was supplied to "
+                                           + "evaluate a correct scale between "
+                                           + "data sources." );
             }
         }
         catch ( NoDataException e )
         {
-            throw new NoDataException( "The common scale between left and"
+            throw new NoDataException( "The common scale between left and "
                                        + "right inputs could not be evaluated.",
-                                       e );
-        }
-        catch ( SQLException e )
-        {
-            throw new NoDataException( "The database could not determine "
-                                       + "the scale of the left and right hand data.",
                                        e );
         }
 
@@ -1109,12 +1158,26 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
      * @return The expected scale of the data
      * @throws NoDataException Thrown if there wasn't enough data in the
      * database to determine the scale of both the left and right inputs
+     * @throws SQLException when communication with the database failed
      */
-    public TimeScaleConfig getScale() throws NoDataException
+    public TimeScaleConfig getScale() throws NoDataException, SQLException
     {
         if (this.desiredTimeScale == null)
         {
             this.desiredTimeScale = this.projectConfig.getPair().getDesiredTimeScale();
+
+            // If there is an explicit desired time scale but the frequency
+            // wasn't set, we need to set the default
+            if (this.desiredTimeScale != null &&
+                this.desiredTimeScale.getFrequency() == null)
+            {
+                this.desiredTimeScale = new TimeScaleConfig(
+                        this.desiredTimeScale.getFunction(),
+                        this.desiredTimeScale.getPeriod(),
+                        this.desiredTimeScale.getPeriod(),
+                        this.desiredTimeScale.getUnit(),
+                        null);
+            }
         }
 
         if (this.desiredTimeScale == null)
@@ -1139,13 +1202,17 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
      * "TimeWindowMode.BACK_TO_BACK" otherwise.
      * @return The pooling mode of the project. Defa
      */
-    public TimeWindowMode getPoolingMode()
+    public PairingMode getPairingMode()
     {
-        TimeWindowMode mode = TimeWindowMode.BACK_TO_BACK;
+        PairingMode mode = PairingMode.BACK_TO_BACK;
 
         if ( this.getIssuePoolingWindow() != null )
         {
-            mode = TimeWindowMode.ROLLING;
+            mode = PairingMode.ROLLING;
+        }
+        else if (this.usesTimeSeriesMetrics())
+        {
+            mode = PairingMode.TIME_SERIES;
         }
 
         return mode;
@@ -1292,71 +1359,101 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
      */
     public Integer getNumberOfSeriesToRetrieve() throws SQLException
     {
-        if (this.numberOfSeriesToRetrieve == null)
+        synchronized ( ProjectDetails.SERIES_AMOUNT_LOCK )
         {
+            if ( this.numberOfSeriesToRetrieve == null )
+            {
 
-            ScriptBuilder script = new ScriptBuilder();
-            script.addLine(
-                    "SELECT (((COUNT(E.ensemble_id) * 8 + 20 * -- This determines the size of a single row" );
-            script.add( "(" )
-                  .addTab()
-                  .addLine( "-- This determines the number of expected rows" );
-            script.addTab().addLine( "SELECT COUNT(*)" );
-            script.addTab().addLine( "FROM wres.ForecastValue FV" );
-            script.addTab().addLine( "INNER JOIN (" );
-            script.addTab( 2 ).addLine( "SELECT TS.timeseries_id" );
-            script.addTab( 2 ).addLine( "FROM wres.TimeSeries TS" );
-            script.addTab( 2 ).addLine( "INNER JOIN wres.ForecastSource FS" );
-            script.addTab( 3 )
-                  .addLine( "ON FS.forecast_id = TS.timeseries_id" );
-            script.addTab( 2 ).addLine( "INNER JOIN wres.ProjectSource PS" );
-            script.addTab( 3 ).addLine( "ON PS.source_id = FS.source_id" );
-            script.addTab( 2 )
-                  .addLine( "WHERE PS.project_id = ", this.getId() );
-            script.addTab( 3 )
-                  .addLine( "AND PS.member = ", ProjectDetails.RIGHT_MEMBER );
-            script.addTab( 2 ).addLine( "LIMIT 1" );
-            script.addTab().addLine( ") AS TS" );
-            script.addTab( 2 )
-                  .addLine( "ON TS.timeseries_id = FV.timeseries_id" );
-            script.add( ")) / 1000)::int AS size" )
-                  .addTab()
-                  .addLine(
-                          "-- We divide by 1000 to convert the number to kilobyte scale" );
-            script.addLine(
-                    "-- We select from ensemble because the number of ensembles affects" );
-            script.addLine(
-                    "-- the number of values returned in the resultant array" );
-            script.addLine( "FROM wres.Ensemble E" );
-            script.addLine( "WHERE EXISTS (" );
-            script.addTab().addLine( "SELECT 1" );
-            script.addTab().addLine( "FROM wres.TimeSeries TS" );
-            script.addTab().addLine( "INNER JOIN wres.ForecastSource FS" );
-            script.addTab( 2 )
-                  .addLine( "ON FS.forecast_id = TS.timeseries_id" );
-            script.addTab().addLine( "INNER JOIN wres.ProjectSource PS" );
-            script.addTab( 2 ).addLine( "ON PS.source_id = FS.source_id" );
-            script.addTab().addLine( "WHERE PS.project_id = ", this.getId() );
-            script.addTab( 2 )
-                  .addLine( "AND PS.member = ", ProjectDetails.RIGHT_MEMBER );
-            script.addTab( 2 ).addLine( "AND TS.ensemble_id = E.ensemble_id" );
-            script.addLine( ");" );
+                ScriptBuilder script = new ScriptBuilder();
+                script.addLine( "SELECT (" );
+                script.addTab().addLine( "(" );
+                script.addTab( 2 )
+                      .addLine(
+                              "(COUNT(E.ensemble_id) * 8 + 20) * -- This determines the size of a single row" );
+                script.addTab( 3 )
+                      .addLine(
+                              "(  -- This determines the number of expected rows" );
+                script.addTab( 4 ).addLine( "SELECT COUNT(*)" );
+                script.addTab( 4 ).addLine( "FROM wres.ForecastValue FV" );
+                script.addTab( 4 ).addLine( "INNER JOIN (" );
+                script.addTab( 5 ).addLine( "SELECT TS.timeseries_id" );
+                script.addTab( 5 ).addLine( "FROM wres.TimeSeries TS" );
+                script.addTab( 5 )
+                      .addLine( "INNER JOIN wres.ForecastSource FS" );
+                script.addTab( 6 )
+                      .addLine( "ON FS.forecast_id = TS.timeseries_id" );
+                script.addTab( 5 )
+                      .addLine( "INNER JOIN wres.ProjectSource PS" );
+                script.addTab( 6 ).addLine( "ON PS.source_id = FS.source_id" );
+                script.addTab( 5 )
+                      .addLine( "WHERE PS.project_id = ", this.getId() );
+                script.addTab( 6 )
+                      .addLine( "AND PS.member = ",
+                                ProjectDetails.RIGHT_MEMBER );
+                script.addTab( 5 ).addLine( "LIMIT 1" );
+                script.addTab( 4 ).addLine( ") AS TS" );
+                script.addTab( 4 )
+                      .addLine( "ON TS.timeseries_id = FV.timeseries_id" );
+                script.addTab( 3 ).addLine( ")" );
+                script.addTab( 2 )
+                      .addLine(
+                              ") / 1000.0)::float AS size     -- We divide by 1000.0 to convert the number to kilobyte scale" );
+                script.addLine(
+                        "-- We Select from ensemble because the number of ensembles affects" );
+                script.addLine(
+                        "--   the number of values returned in the resultant array" );
+                script.addLine( "FROM wres.Ensemble E" );
+                script.addLine( "WHERE EXISTS (" );
+                script.addTab().addLine( "SELECT 1" );
+                script.addTab().addLine( "FROM wres.TimeSeries TS" );
+                script.addTab().addLine( "INNER JOIN wres.ForecastSource FS" );
+                script.addTab( 2 )
+                      .addLine( "ON FS.forecast_id = TS.timeseries_id" );
+                script.addTab().addLine( "INNER JOIN wres.ProjectSource PS" );
+                script.addTab( 2 ).addLine( "ON PS.source_id = FS.source_id" );
+                script.addTab()
+                      .addLine( "WHERE PS.project_id = ", this.getId() );
+                script.addTab( 2 )
+                      .addLine( "AND PS.member = ",
+                                ProjectDetails.RIGHT_MEMBER );
+                script.addTab( 2 )
+                      .addLine( "AND TS.ensemble_id = E.ensemble_id" );
+                script.addLine( ");" );
 
-            int timeSeriesSize = script.retrieve( "size" );
+                double timeSeriesSize = script.retrieve( "size" );
 
-            // We're going to limit the size of a time series group to 1MB
-            final int sizeCap = 1000;
+                // We're going to limit the size of a time series group to 1MB
+                final int sizeCap = 1000;
 
-            // The number of series to retrieve will either be 1 or the number
-            // of time series that may be retrieved and still fit under the cap.
-            // Using Math.max ensures that we'll pull at least one value at a time.
-            // If a single time series has an estimated size of 1186KB, we'll
-            // only retrieve one time series at a time. If the estimated size is
-            // 400KB, we'll bring in two at a time.
-            this.numberOfSeriesToRetrieve = Math.max(1, sizeCap / timeSeriesSize);
+                // The number of series to retrieve will either be 1 or the number
+                // of time series that may be retrieved and still fit under the cap.
+                // Using Math.max ensures that we'll pull at least one value at a time.
+                // If a single time series has an estimated size of 1186KB, we'll
+                // only retrieve one time series at a time. If the estimated size is
+                // 400KB, we'll bring in two at a time.
+                this.numberOfSeriesToRetrieve =
+                        ( ( Double ) Math.max( 1.0, sizeCap / timeSeriesSize ) )
+                                .intValue();
+            }
+
+            return this.numberOfSeriesToRetrieve;
         }
+    }
 
-        return this.numberOfSeriesToRetrieve;
+    /**
+     * @return Indicates whether or not pairs will be fed into time series
+     * only metrics
+     * 
+     * TODO: replace this with a call to {@link ProjectConfigs#hasTimeSeriesMetrics(ProjectConfig)}. 
+     * JBr: unclear why this was explicitly duplicated again - the reason I haven't removed it again - but this check
+     * for nullity is not needed. Implementation details aside, we shouldn't duplicate such helpers.
+     */
+    public boolean usesTimeSeriesMetrics()
+    {
+        return Collections.exists(
+                this.projectConfig.getMetrics(),
+                metric -> !metric.getTimeSeriesMetric().isEmpty()
+        );
     }
 
     /**
@@ -1391,9 +1488,11 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
 
         if (this.shouldCalculateLeads())
         {
+            int frequency = (int)TimeHelper.unitsToLeadUnits( this.getLeadUnit(), this.getLeadFrequency() );
+            int period = (int)TimeHelper.unitsToLeadUnits( this.getLeadUnit(), this.getLeadPeriod() );
             Integer offset = this.getLeadOffset( feature );
-            beginning = windowNumber * this.getLeadFrequency() + offset;
-            end = beginning + this.getLeadPeriod();
+            beginning = windowNumber * frequency + offset;
+            end = beginning + period;
         }
         else
         {
@@ -1402,6 +1501,10 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
                 populateDiscreteLeads();
             }
 
+            // We can probably do an operation on period to get a full scale
+            // for the irregular series, i.e., if this gives us a period of 1,
+            // but we might be able to pull off
+            // [this.discreteLeads.get(feature)[x] - period, this.discreteLeads.get(feature)[x]]
             beginning = this.discreteLeads.get( feature )[windowNumber];
             end = beginning;
         }
@@ -1562,7 +1665,9 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
                 }
                 catch (SQLException e)
                 {
-                    LOGGER.debug("A database result set could not be closed.", e);
+                    // Exception on close should not affect primary outputs.
+                    LOGGER.warn( "A database result set {} could not be closed.",
+                                 resultSet, e );
                 }
             }
 
@@ -1612,7 +1717,9 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
             }
             catch ( InterruptedException e )
             {
-                throw new IOException( "Population of discrete leads has been interrupted.", e );
+                LOGGER.warn( "Population of discrete leads has been interrupted.",
+                             e );
+                Thread.currentThread().interrupt();
             }
             catch ( ExecutionException e )
             {
@@ -1715,10 +1822,20 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
 
         part = new ScriptBuilder(  );
 
-        if (width > 1 || this.getMinimumLeadHour() != Integer.MIN_VALUE)
+        if (this.getMinimumLeadHour() != Integer.MIN_VALUE)
+        {
+            part.addTab(  2  ).addLine( "AND FV.lead >= ", (this.getMinimumLeadHour() - 1) + width);
+        }
+        else
+        {
+            part.addTab(  2  ).addLine( "AND FV.lead >= ", width);
+        }
+
+        /*if (width > 1 || this.getMinimumLeadHour() != Integer.MIN_VALUE)
         {
             part.addTab( 2 ).addLine( "AND FV.lead >= ", Math.max( width, this.getMinimumLeadHour() ) );
-        }
+        }*/
+
 
         if (this.getMaximumLeadHour() != Integer.MAX_VALUE)
         {
@@ -1802,6 +1919,8 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
 
             LOGGER.trace("Variable position metadata loaded...");
 
+            LOGGER.info("Loading preliminary metadata...");
+
             while (resultSet.next())
             {
                 ScriptBuilder finalScript = new ScriptBuilder( );
@@ -1838,7 +1957,9 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
                 }
                 catch ( SQLException e )
                 {
-                    LOGGER.debug("A database result set could not be closed.", e);
+                    // Exception on close should not affect primary outputs.
+                    LOGGER.warn( "Database result set {} could not be closed.",
+                                 resultSet, e);
                 }
             }
 
@@ -1847,6 +1968,9 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
                 Database.returnConnection( connection );
             }
         }
+
+        ProgressMonitor.resetMonitor();
+        ProgressMonitor.setSteps( (long)futureOffsets.size() );
 
         while (!futureOffsets.isEmpty())
         {
@@ -1878,10 +2002,12 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
                         offset
                 );
                 LOGGER.trace( "An offset for {} was loaded!", ConfigHelper.getFeatureDescription( feature ) );
+                ProgressMonitor.completeStep();
             }
             catch ( InterruptedException e )
             {
-                throw new IOException( "Population of lead offsets has been interrupted.", e );
+                LOGGER.warn( "Population of lead offsets has been interrupted.", e );
+                Thread.currentThread().interrupt();
             }
             catch ( ExecutionException e )
             {
@@ -1904,6 +2030,8 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
             LOGGER.debug( "It took {} to get the offsets for all locations.",
                           timer.getFormattedDuration() );
         }
+
+        ProgressMonitor.resetMonitor();
     }
 
     /**
@@ -1925,7 +2053,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
      */
     public Integer getIssuePoolCount( Feature feature) throws SQLException
     {
-        if ( getPoolingMode() != TimeWindowMode.ROLLING)
+        if ( this.getPairingMode() != PairingMode.ROLLING)
         {
             return -1;
         }
@@ -1985,7 +2113,15 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         {
             if (resultSet != null)
             {
-                resultSet.close();
+                try
+                {
+                    resultSet.close();
+                }
+                catch ( SQLException se )
+                {
+                    // Failure to close resource shouldn't affect primary output
+                    LOGGER.warn( "Failed to close result set {}.", resultSet, se );
+                }
             }
 
             if (connection != null)
@@ -2062,7 +2198,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
      * @throws SQLException Thrown if an error was encountered while retrieving
      * scale information from the database
      */
-    public long getRightScale() throws NoDataException, SQLException
+    private long getRightScale() throws NoDataException, SQLException
     {
         synchronized ( RIGHT_LEAD_LOCK )
         {
@@ -2182,7 +2318,47 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         script.addLine("(");
         script.addLine("    SELECT lead - lag(lead) OVER (ORDER BY FV.timeseries_id, lead) AS difference");
         script.addLine("    FROM wres.ForecastValue FV");
-        script.addLine("    WHERE lead > 0");
+        script.addLine("    INNER JOIN wres.TimeSeries TS");
+        script.addLine("        ON TS.timeseries_id = FV.timeseries_id");
+
+        if (this.getMinimumLeadHour() != Integer.MIN_VALUE)
+        {
+            script.addTab().addLine("WHERE lead > ", this.getMinimumLeadHour());
+        }
+        else
+        {
+            script.addLine("    WHERE lead > 0");
+        }
+
+        if (this.getMaximumLeadHour() != Integer.MAX_VALUE)
+        {
+            script.addTab().addLine("AND lead <= ", this.getMaximumLeadHour());
+        }
+        else
+        {
+            // Set the maximum to 500. If the maximum is lead is 200, then this
+            // not should behave much differently than having no clause at all.
+            // If real maximum was 2880, 500 will provide a large enough sample
+            // size and produce the correct values in a slightly faster fashion.
+            // In one data set, leaving this out causes this to take 11.5s .
+            // That was even with a subset of the real data (1 month vs 30 years).
+            // If we cut it to 500, it now takes 1.6s. Still not great, but
+            // much faster
+            script.addTab().addLine( "AND lead <= ", 500 );
+        }
+
+        Optional<FeatureDetails> featureDetails = this.getFeatures().stream().findFirst();
+
+        if (featureDetails.isPresent())
+        {
+            String variablePositionClause = ConfigHelper.getVariablePositionClause(
+                    featureDetails.get().toFeature(),
+                    this.getVariableId( dataSourceConfig ),
+                    "TS" );
+            script.addLine("        AND ", variablePositionClause);
+
+        }
+
         script.addLine("        AND EXISTS (");
         script.addLine("            SELECT 1");
         script.addLine("            FROM wres.ProjectSource PS");
@@ -2196,7 +2372,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         script.addLine("SELECT MIN(difference)::integer AS scale");
         script.addLine("FROM differences");
         script.addLine("WHERE difference IS NOT NULL");
-        script.addLine("    AND difference >= 0");
+        script.addLine("    AND difference > 0");
 
         return script.retrieve( "scale" );
     }
@@ -2217,14 +2393,37 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         script.addLine("(");
         script.addLine("    SELECT AGE(observation_time, (LAG(observation_time) OVER (ORDER BY observation_time)))");
         script.addLine("    FROM wres.Observation O");
-        script.addLine("    WHERE EXISTS (");
-        script.addLine("        SELECT 1");
-        script.addLine("        FROM wres.ProjectSource PS");
-        script.addLine("        WHERE PS.project_id = ", this.getId());
-        script.addLine("            AND PS.member = ", this.getInputName( dataSourceConfig ) );
-        script.addLine("            AND PS.source_id = O.source_id");
-        script.addLine("    )");
-        script.addLine("    GROUP BY observation_time");
+
+        Optional<FeatureDetails> featureDetails = this.getFeatures().stream().findFirst();
+        int tabCount;
+
+        if (featureDetails.isPresent())
+        {
+            String variablePositionClause = ConfigHelper.getVariablePositionClause(
+                    featureDetails.get().toFeature(),
+                    this.getVariableId( dataSourceConfig ),
+                    "O" );
+            script.addLine("    WHERE ", variablePositionClause);
+            tabCount = 3;
+            script.addTab(  2  ).add("AND ");
+
+        }
+        else
+        {
+            tabCount = 2;
+            script.addTab().add("WHERE ");
+        }
+
+
+        script.addLine("EXISTS (");
+
+        script.addTab(tabCount).addLine("SELECT 1");
+        script.addTab(tabCount).addLine("FROM wres.ProjectSource PS");
+        script.addTab(tabCount).addLine("WHERE PS.project_id = ", this.getId());
+        script.addTab(tabCount).addTab().addLine("AND PS.member = ", this.getInputName( dataSourceConfig ) );
+        script.addTab(tabCount).addTab().addLine("AND PS.source_id = O.source_id");
+        script.addTab().addLine(")");
+        script.addTab().addLine("GROUP BY observation_time");
         script.addLine(")");
 
         // TODO: When we change the scale of the lead column, we need to change this as well
@@ -2264,54 +2463,143 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
     }
 
     @Override
-    protected String getInsertSelectStatement() {
-        String script = "WITH new_project AS" + NEWLINE +
-                        "(" + NEWLINE +
-                        "     INSERT INTO wres.project (project_name, input_code)"
-                        + NEWLINE +
-                        "     SELECT '" + this.getProjectName() + "', " + this.getInputCode() + NEWLINE;
+    protected PreparedStatement getInsertSelectStatement( Connection connection )
+            throws SQLException
+    {
+        List<Object> args = new ArrayList<>();
+        ScriptBuilder script = new ScriptBuilder(  );
 
-        script +=
-                        "     WHERE NOT EXISTS (" + NEWLINE +
-                        "         SELECT 1" + NEWLINE +
-                        "         FROM wres.Project P" + NEWLINE +
-                        "         WHERE P.input_code = " + this.getInputCode() + NEWLINE;
+        script.addLine("WITH new_project AS");
+        script.addLine("(");
+        script.addTab().addLine("INSERT INTO wres.Project (project_name, input_code)");
+        script.addTab().addLine("SELECT ?, ?");
 
-        script +=
-                        "     )" + NEWLINE +
-                        "     RETURNING project_id" + NEWLINE +
-                        ")" + NEWLINE +
-                        "SELECT project_id, TRUE as wasInserted" + NEWLINE +
-                        "FROM new_project" + NEWLINE +
-                        NEWLINE +
-                        "UNION" + NEWLINE +
-                        NEWLINE +
-                        "SELECT project_id, FALSE as wasInserted" + NEWLINE +
-                        "FROM wres.Project P" + NEWLINE +
-                        "WHERE P.input_code = " + this.getInputCode() + ";";
+        args.add(this.getProjectName());
+        args.add(this.getInputCode());
 
-        return script;
+        script.addTab().addLine("WHERE NOT EXISTS (");
+        script.addTab(  2  ).addLine("SELECT 1");
+        script.addTab(  2  ).addLine("FROM wres.Project P");
+        script.addTab(  2  ).addLine("WHERE P.input_code = ?");
+
+        args.add(this.getInputCode());
+
+        script.addTab().addLine(")");
+        script.addTab().addLine("RETURNING project_id");
+        script.addLine(")");
+        script.addLine("SELECT project_id, TRUE AS wasInserted");
+        script.addLine("FROM new_project");
+        script.addLine(  );
+        script.addLine("UNION");
+        script.addLine();
+        script.addLine("SELECT project_id, FALSE AS wasInserted");
+        script.addLine("FROM wres.Project P");
+        script.addLine("WHERE P.input_code = ?;");
+
+        args.add(this.getInputCode());
+
+        return script.getPreparedStatement( connection, args );
+    }
+
+    @Override
+    protected Object getSaveLock()
+    {
+        return PROJECT_SAVE_LOCK;
     }
 
 
     @Override
     public void save() throws SQLException
     {
-        String[] tablesToLock = { "wres.project" };
-        Pair<Integer,Boolean> databaseResult
-                = Database.getResult( this.getInsertSelectStatement(),
-                                      this.getIDName(),
-                                      tablesToLock );
+        Connection connection = null;
+        ResultSet results = null;
+        PreparedStatement statement = null;
 
-        if ( LOGGER.isDebugEnabled() )
+        try
         {
-            LOGGER.debug( "Did I create Project ID {}? {}",
-                          databaseResult.getLeft(),
-                          databaseResult.getRight() );
-        }
+            connection = Database.getConnection();
+            connection.setAutoCommit( false );
 
-        this.setID( databaseResult.getLeft() );
-        this.performedInsert = databaseResult.getRight();
+            Database.lockTable( connection, "wres.Project" );
+            statement = this.getInsertSelectStatement( connection );
+            results = statement.executeQuery();
+            //results = Database.getResults( connection, this.getInsertSelectStatement() );
+
+            this.setID( Database.getValue( results, this.getIDName() ) );
+            this.performedInsert = Database.getValue( results, "wasInserted" );
+
+            connection.commit();
+
+            if ( LOGGER.isTraceEnabled() )
+            {
+                LOGGER.trace( "Did I create Project ID {}? {}",
+                              this.getId(),
+                              this.performedInsert );
+            }
+        }
+        catch (SQLException e)
+        {
+            if (connection != null)
+            {
+                try
+                {
+                    connection.rollback();
+                }
+                catch ( SQLException se )
+                {
+                    LOGGER.warn( "Failed to rollback.", se );
+                }
+            }
+
+            throw e;
+        }
+        finally
+        {
+            if (results != null)
+            {
+                try
+                {
+                    results.close();
+                }
+                catch ( SQLException se )
+                {
+                    // Failure to close resource shouldn't affect primary output
+                    LOGGER.warn( "Failed to close result set {}.", results, se );
+                }
+            }
+
+            if (statement != null)
+            {
+                try
+                {
+                    statement.close();
+                }
+                catch (SQLException e)
+                {
+                    // Failure to close resource shouldn't affect primary output
+                    LOGGER.warn( "Failed to close statement {}.", statement, e );
+                }
+            }
+
+            if (connection != null)
+            {
+                connection.setAutoCommit( true );
+                Database.returnConnection( connection );
+            }
+        }
+    }
+
+    @Override
+    protected Logger getLogger()
+    {
+        return ProjectDetails.LOGGER;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "Project { Name: " + this.getProjectName() +
+               ", Code: " + this.getInputCode() + " }";
     }
 
     public boolean performedInsert()
@@ -2471,8 +2759,9 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
      * @return The overall number of lead units within a single window
      * @throws NoDataException Thrown if there wasn't enough data available to
      * evaluate
+     * @throws SQLException when communication with the database failed
      */
-    public long getWindowWidth() throws NoDataException
+    public long getWindowWidth() throws NoDataException, SQLException
     {
         return TimeHelper.unitsToLeadUnits( this.getLeadUnit(), this.getLeadPeriod() );
     }
@@ -2577,6 +2866,14 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
         {
             if (!this.forecastLag.containsKey( feature ))
             {
+                // This script will tell us the maximum distance between
+                // sequential forecasts for a feature for this project.
+                // We don't need the intended distance. If we go with the
+                // intended distance (say 3 hours), but the user just doesn't
+                // have or chooses not to use a forecast, resulting in a gap of
+                // 6 hours, we'll encounter an error because we're aren't
+                // accounting for that weird gap. By going with the maximum, we
+                // ensure that we will always cover that gap.
                 ScriptBuilder script = new ScriptBuilder();
                 script.addLine("WITH initialization_lag AS");
                 script.addLine("(");
@@ -2605,12 +2902,17 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer> {
                 script.addTab(    4    ).addLine("AND PS.member = ", this.getInputName( sourceConfig ));
                 script.addTab(    4    ).addLine("AND FS.forecast_id = TS.timeseries_id");
                 script.addTab(  2  ).addLine(")");
+                script.addTab().addLine("GROUP BY TS.initialization_date");
                 script.addTab().addLine("ORDER BY TS.initialization_date");
                 script.addLine(")");
-                script.addLine("SELECT MAX(IL.lag) AS typical_gap");
-                script.addLine("FROM initialization_lag IL;");
+                script.addLine("SELECT max(IL.lag) AS typical_gap");
+                script.addLine("-- We take the max to ensure that values are contained within;");
+                script.addLine("--   If we try to take the mode, we risk being too granular");
+                script.addLine("--   and trying to select values that aren't there.");
+                script.addLine("FROM initialization_lag IL");
+                script.addLine("WHERE IL.lag IS NOT NULL;");
 
-                this.forecastLag.put( feature, script.retrieve( "typical_lag" ) );
+                this.forecastLag.put( feature, script.retrieve( "typical_gap" ) );
             }
 
 

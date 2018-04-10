@@ -5,16 +5,13 @@ import wres.config.generated.Feature;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.VectorOfDoubles;
-import wres.io.concurrency.WRESRunnable;
+import wres.io.concurrency.WRESCallable;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.UnitConversions;
 import wres.io.data.caching.Variables;
 import wres.io.data.details.ProjectDetails;
 import wres.io.reading.usgs.USGSReader;
 import wres.io.utilities.Database;
-import wres.io.utilities.NoDataException;
-import wres.util.Collections;
-import wres.util.Strings;
 
 import java.io.IOException;
 import java.sql.Connection;
@@ -23,9 +20,10 @@ import java.sql.SQLException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -38,13 +36,15 @@ class ClimatologyBuilder
     private static final Logger
             LOGGER = LoggerFactory.getLogger( ClimatologyBuilder.class );
     private static final String NEWLINE = System.lineSeparator();
+
+    // TODO: Put into its own file
     /**
      * Serves as a fuzzy key for date values. The idea is that, given a date,
      * the value should match if it is contained within the range
      */
     private static class DateRange implements Comparable<DateRange>
     {
-        public DateRange(String beginning, String end)
+        DateRange(String beginning, String end)
         {
             this.startDate = beginning;
             this.endDate = end;
@@ -190,30 +190,30 @@ class ClimatologyBuilder
         @Override
         public int hashCode()
         {
-            // The hash code is a constant to force all equality checks to
-            // bypass the hash check and instead
-            // force use of #equals
-            return 1268475648;
+            throw new UnsupportedOperationException( "Cannot call hashCode" );
         }
     }
 
     // Collection of values mapped to their fuzzy date definitions
-    private Map<DateRange, List<Double>> values;
+    private final SortedMap<DateRange, List<Double>> values;
 
-    private Future<?> futureClimatologicalDates;
+    private Future<SortedMap<DateRange, List<Double>>> futureClimatologicalDates;
     private VectorOfDoubles climatology;
     private Map<Integer, UnitConversions.Conversion> conversions;
     private final ProjectDetails projectDetails;
     private final DataSourceConfig dataSourceConfig;
     private final Feature feature;
 
-    public ClimatologyBuilder(ProjectDetails projectDetails, DataSourceConfig dataSourceConfig, Feature feature)
+    ClimatologyBuilder(ProjectDetails projectDetails, DataSourceConfig dataSourceConfig, Feature feature)
             throws IOException
     {
         this.projectDetails = projectDetails;
         this.dataSourceConfig = dataSourceConfig;
         this.feature = feature;
+        this.values = new TreeMap<>();
 
+        LOGGER.debug( "ClimatologyBuilder constructed with args {}, {}, {}",
+                      projectDetails, dataSourceConfig, feature );
         try
         {
             String earliestDate =
@@ -231,99 +231,135 @@ class ClimatologyBuilder
 
     private void prepareDateLoad(String earliestDate)
     {
-        this.futureClimatologicalDates = Database.execute( new WRESRunnable() {
-            @Override
-            protected Logger getLogger()
-            {
-                return LOGGER;
-            }
-
-            @Override
-            protected void execute()
-            {
-
-                Connection connection = null;
-                ResultSet results = null;
-
-                try
-                {
-                    StringBuilder script = new StringBuilder("SELECT").append(NEWLINE);
-                    script.append("    (")
-                          .append(earliestDate).append("::timestamp without time zone");
-
-                    if (dataSourceConfig.getTimeShift() != null)
-                    {
-                        script.append(" + '")
-                              .append(dataSourceConfig.getTimeShift().getWidth())
-                              .append(" ")
-                              .append(dataSourceConfig.getTimeShift().getUnit())
-                              .append("'");
-                    }
-
-
-                    script.append(" + ( member_number || ' ")
-                          .append(projectDetails.getScale().getUnit())
-                          .append("')::INTERVAL)::TEXT AS start_date,").append(NEWLINE);
-                    script.append("    (")
-                          .append(earliestDate).append("::timestamp without time zone")
-                          .append(" + ( ( member_number + ").append(projectDetails.getScale().getPeriod())
-                          .append(" ) || ' ").append(projectDetails.getScale().getUnit()).append("')::INTERVAL)::TEXT AS end_date")
-                          .append(NEWLINE);
-                    script.append("FROM generate_series(0, ")
-                          .append( ConfigHelper.getValueCount(projectDetails,
-                                                              dataSourceConfig,
-                                                              feature))
-                          .append(" * ")
-                          .append(projectDetails.getScale().getPeriod())
-                          .append(", ")
-                          .append(projectDetails.getScale().getPeriod())
-                          .append(") AS member_number;");
-                    connection = Database.getConnection();
-                    results = Database.getResults( connection, script.toString() );
-
-                    while (results.next())
-                    {
-                        if (values == null)
-                        {
-                            values = new TreeMap<>();
-                        }
-
-                        values.put(
-                                new DateRange(results.getString("start_date"),
-                                              results.getString("end_date")),
-                                new ArrayList<>(  )
-                        );
-                    }
-                }
-                catch ( SQLException | NoDataException e )
-                {
-                    LOGGER.error( Strings.getStackTrace(e));
-                }
-                finally
-                {
-                    if (results != null)
-                    {
-                        try
-                        {
-                            results.close();
-                        }
-                        catch ( SQLException e )
-                        {
-                            LOGGER.error( Strings.getStackTrace(e));
-                        }
-                    }
-
-                    if (connection != null)
-                    {
-                        Database.returnConnection( connection );
-                    }
-                }
-            }
-        } );
+        LOGGER.debug( "prepareDateLoad called with earliestDate {}",
+                      earliestDate );
+        PrepareDateLoad loadTask = new PrepareDateLoad( this.feature,
+                                                        this.projectDetails,
+                                                        this.dataSourceConfig,
+                                                        earliestDate );
+        this.futureClimatologicalDates = Database.submit( loadTask );
     }
 
-    public VectorOfDoubles getClimatology() throws IOException
+    // TODO: put into its own file
+    private static final class PrepareDateLoad
+            extends WRESCallable<SortedMap<DateRange, List<Double>>>
     {
+        private final Feature feature;
+        private final ProjectDetails projectDetails;
+        private final DataSourceConfig dataSourceConfig;
+        private final String earliestDate;
+
+        PrepareDateLoad( Feature feature,
+                         ProjectDetails projectDetails,
+                         DataSourceConfig dataSourceConfig,
+                         String earliestDate )
+        {
+            this.feature = feature;
+            this.projectDetails = projectDetails;
+            this.dataSourceConfig = dataSourceConfig;
+            this.earliestDate = earliestDate;
+        }
+
+        @Override
+        protected SortedMap<DateRange, List<Double>> execute()
+                throws SQLException, IOException
+        {
+            StringBuilder script = new StringBuilder("SELECT").append(NEWLINE);
+            script.append("    (")
+                  .append(earliestDate).append("::timestamp without time zone");
+
+            if (dataSourceConfig.getTimeShift() != null)
+            {
+                script.append(" + '")
+                      .append(dataSourceConfig.getTimeShift().getWidth())
+                      .append(" ")
+                      .append(dataSourceConfig.getTimeShift().getUnit())
+                      .append("'");
+            }
+
+
+            script.append(" + ( member_number || ' ")
+                  .append(projectDetails.getScale().getUnit())
+                  .append("')::INTERVAL)::TEXT AS start_date,").append(NEWLINE);
+            script.append("    (")
+                  .append(earliestDate).append("::timestamp without time zone");
+
+            if (dataSourceConfig.getTimeShift() != null)
+            {
+                script.append(" + '")
+                      .append(dataSourceConfig.getTimeShift().getWidth())
+                      .append(" ")
+                      .append(dataSourceConfig.getTimeShift().getUnit())
+                      .append("'");
+            }
+
+            script.append(" + ( ( member_number + ").append(projectDetails.getScale().getPeriod())
+                  .append(" ) || ' ").append(projectDetails.getScale().getUnit()).append("')::INTERVAL)::TEXT AS end_date")
+                  .append(NEWLINE);
+            script.append("FROM generate_series(0, ")
+                  .append( ConfigHelper.getValueCount(projectDetails,
+                                                      dataSourceConfig,
+                                                      feature))
+                  .append(" * ")
+                  .append(projectDetails.getScale().getPeriod())
+                  .append(", ")
+                  .append(projectDetails.getScale().getPeriod())
+                  .append(") AS member_number;");
+
+            Connection connection = null;
+            ResultSet results = null;
+
+            SortedMap<DateRange, List<Double>> returnValues = new TreeMap<>();
+
+            try
+            {
+                connection = Database.getConnection();
+                results = Database.getResults( connection, script.toString() );
+
+                while (results.next())
+                {
+                    returnValues.put(
+                            new DateRange(results.getString("start_date"),
+                                          results.getString("end_date")),
+                            new ArrayList<>(  )
+                    );
+                }
+            }
+            finally
+            {
+                if (results != null)
+                {
+                    try
+                    {
+                        results.close();
+                    }
+                    catch ( SQLException e )
+                    {
+                        // Exception on close shouldn't change main outputs.
+                        LOGGER.warn( "Failed to close a db result set.", e );
+                    }
+                }
+
+                if (connection != null)
+                {
+                    Database.returnConnection( connection );
+                }
+            }
+
+            return Collections.unmodifiableSortedMap( returnValues );
+        }
+
+        @Override
+        protected Logger getLogger()
+        {
+            return ClimatologyBuilder.LOGGER;
+        }
+    }
+
+    VectorOfDoubles getClimatology() throws IOException
+    {
+        LOGGER.debug( "getClimatology called" );
+
         if (this.climatology == null)
         {
             this.setupDates();
@@ -331,22 +367,32 @@ class ClimatologyBuilder
 
             List<Double> aggregatedValues = new ArrayList<>();
 
-            for (List<Double> valuesToAggregate : this.getValues().values())
+            try
             {
-                if (this.projectDetails.shouldScale())
+                for ( List<Double> valuesToAggregate : this.getValues()
+                                                           .values() )
                 {
-                    Double aggregation = Collections.aggregate(
-                            valuesToAggregate,
-                            this.projectDetails.getScale().getFunction().value() );
-                    if ( !Double.isNaN( aggregation ) )
+                    if ( this.projectDetails.shouldScale() )
                     {
-                        aggregatedValues.add( aggregation );
+                        Double aggregation = wres.util.Collections.aggregate(
+                                valuesToAggregate,
+                                this.projectDetails.getScale()
+                                                   .getFunction()
+                                                   .value() );
+                        if ( !Double.isNaN( aggregation ) )
+                        {
+                            aggregatedValues.add( aggregation );
+                        }
+                    }
+                    else
+                    {
+                        aggregatedValues.addAll( valuesToAggregate );
                     }
                 }
-                else
-                {
-                    aggregatedValues.addAll( valuesToAggregate );
-                }
+            }
+            catch ( SQLException se )
+            {
+                throw new IOException( "Failed to get scale information.", se );
             }
 
             DataFactory factory = DefaultDataFactory.getInstance();
@@ -359,17 +405,24 @@ class ClimatologyBuilder
 
     private void setupDates() throws IOException
     {
+        LOGGER.debug( "setupDates called" );
+
         final String errorPrepend = "The process of determining dates within "
                                     + "which to aggregate ";
         try
         {
-            this.futureClimatologicalDates.get();
+            this.values.putAll( this.futureClimatologicalDates.get() );
         }
         catch ( InterruptedException e )
         {
-            throw new IOException( errorPrepend +
-                                   " was interupted and could not be completed.",
-                                   e );
+            if ( LOGGER.isWarnEnabled() )
+            {
+                LOGGER.warn( errorPrepend +
+                             "was interrupted and could not be completed.",
+                             e );
+            }
+
+            Thread.currentThread().interrupt();
         }
         catch ( ExecutionException e )
         {
@@ -507,7 +560,20 @@ class ClimatologyBuilder
                 value = this.getConversion( results.getInt(
                         "measurementunit_id" ) ).convert( value );
 
-                if ( value >= this.projectDetails.getMinimumValue()
+                if (value < this.projectDetails.getMinimumValue() &&
+                    this.projectDetails.getDefaultMinimumValue() != null)
+                {
+
+                    this.addValue( results.getString( "observation_time" ),
+                                   this.projectDetails.getDefaultMinimumValue() );
+                }
+                else if (value > this.projectDetails.getMaximumValue() &&
+                         this.projectDetails.getDefaultMaximumValue() != null)
+                {
+                    this.addValue( results.getString( "observation_time" ),
+                                   this.projectDetails.getDefaultMaximumValue() );
+                }
+                else if ( value >= this.projectDetails.getMinimumValue()
                      && value <= this.projectDetails.getMaximumValue() )
                 {
                     this.addValue( results.getString( "observation_time" ),
@@ -535,7 +601,8 @@ class ClimatologyBuilder
                 }
                 catch ( SQLException e )
                 {
-                    LOGGER.debug( "ClimatologyBuilder#addValues: the result set could not be closed." );
+                    // Exception on close shouldn't change main outputs.
+                    LOGGER.warn( "The result set could not be closed.", e );
                 }
             }
 
@@ -587,13 +654,8 @@ class ClimatologyBuilder
         return this.conversions.get(measurementUnitID);
     }
 
-    private Map<DateRange, List<Double>> getValues()
+    private SortedMap<DateRange, List<Double>> getValues()
     {
-        if (this.values == null)
-        {
-            this.values = new HashMap<>(  );
-        }
-
         return this.values;
     }
 

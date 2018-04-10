@@ -31,6 +31,21 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
     private static final Logger LOGGER = LoggerFactory.getLogger(Features.class);
     private static final Object CACHE_LOCK = new Object();
 
+    private static final Object DETAIL_LOCK = new Object();
+    private static final Object KEY_LOCK = new Object();
+
+    @Override
+    protected Object getDetailLock()
+    {
+        return Features.DETAIL_LOCK;
+    }
+
+    @Override
+    protected Object getKeyLock()
+    {
+        return Features.KEY_LOCK;
+    }
+
     /**
      *  Global cache for all Features
      */
@@ -132,7 +147,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         return Features.getCache().get( id );
     }
 
-    public static Set<FeatureDetails> getUnspecifiedDetails( ProjectConfig projectConfig )
+    private static Set<FeatureDetails> getUnspecifiedDetails( ProjectConfig projectConfig )
             throws SQLException
     {
         Set<FeatureDetails> features = new HashSet<>(  );
@@ -147,6 +162,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
 
         if (hasNetCDF)
         {
+            script.addTab().addLine("AND comid != -999");
             script.addTab().addLine("AND nwm_index IS NOT NULL");
         }
 
@@ -154,6 +170,8 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         {
             script.addTab(  ).addLine("AND character_length(gage_id) >= 0");
         }
+
+        script.addLine("ORDER BY feature_id");
 
         Connection connection = null;
         ResultSet resultSet = null;
@@ -170,14 +188,22 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         }
         catch (SQLException e)
         {
-            throw new SQLException( "Avaliable Features could not be determined "
-                                    + "when none were specified.", e );
+            throw new SQLException( "Available Features could not be determined.",
+                                    e );
         }
         finally
         {
             if (resultSet != null)
             {
-                resultSet.close();
+                try
+                {
+                    resultSet.close();
+                }
+                catch ( SQLException se )
+                {
+                    // Exception on close should not affect primary outputs.
+                    LOGGER.warn( "Failed to close result set {}.", resultSet, se );
+                }
             }
 
             if (connection != null)
@@ -191,7 +217,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
 
     public static Set<FeatureDetails> getAllDetails(ProjectConfig projectConfig) throws SQLException
     {
-        Set<FeatureDetails> features = null;
+        Set<FeatureDetails> features;
 
         if (projectConfig.getPair().getFeature() == null || projectConfig.getPair().getFeature().isEmpty())
         {
@@ -205,7 +231,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         return features;
     }
 
-    public static Set<FeatureDetails> getSpecifiedDetails( ProjectConfig projectConfig ) throws SQLException
+    private static Set<FeatureDetails> getSpecifiedDetails( ProjectConfig projectConfig ) throws SQLException
     {
         Set<FeatureDetails> features = new HashSet<>();
         boolean hasNetCDF = ConfigHelper.usesNetCDFData( projectConfig );
@@ -239,7 +265,8 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
                                   "information available to link it to a NetCDF " +
                                   "source file.";
                     }
-                    else if (hasUSGS && !Strings.hasValue( details.getGageID() ))
+                    else if (hasUSGS &&
+                             !(Strings.hasValue( details.getGageID() ) || details.getGageID().length() < 8))
                     {
                         message = "Since this project uses USGS data, the " +
                                   "location {} cannot be used for " +
@@ -267,7 +294,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         // If we are using both NetCDF and USGS data, we need both Gage IDs
         // and indexes for NetCDF files to be able to load any sort of
         // data for evaluation
-        else if ((usesNetCDF && feature.getNwmIndex() != null) &&
+        else if ((usesNetCDF && feature.getComid() != -999) &&
                  (usesUSGS && Strings.hasValue( feature.getGageID() )))
         {
             // gage ids must have 8 or more characters
@@ -275,22 +302,22 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         }
         // If we are using NetCDF data, we need indexes to determine what
         // data to retrieve
-        else if (usesNetCDF && feature.getNwmIndex() != null)
+        else if (usesNetCDF && feature.getComid() != -999 && !usesUSGS)
         {
             return true;
         }
         // If we are using USGS data, we need a gageID or we won't be
-        // able to retrieve data
-        else if (usesUSGS && Strings.hasValue( feature.getGageID() ))
+        // able to retrieve data. Gages must have at least 8 digits
+        else if (usesUSGS && Strings.hasValue( feature.getGageID() ) &&
+                 feature.getGageID().length() >= 8 && !usesNetCDF)
         {
-            // gage ids must have 8 or more characters
-            return feature.getGageID().length() >= 8;
+            return true;
         }
 
         return false;
     }
 
-    public static Set<FeatureDetails> getAllDetails(Feature feature)
+    private static Set<FeatureDetails> getAllDetails(Feature feature)
             throws SQLException
     {
         Set<FeatureDetails> details = new HashSet<>(  );
@@ -342,14 +369,14 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         return details;
     }
 
-    public static FeatureDetails getDetails(Integer comid, String lid, String gageID, String huc)
+    private static FeatureDetails getDetails(Integer comid, String lid, String gageID, String huc)
             throws SQLException
     {
         Integer id = Features.getFeatureID( comid, lid, gageID, huc );
         return Features.getCache().get( id );
     }
 
-    public static FeatureDetails getDetailsByLID(String lid) throws SQLException
+    private static FeatureDetails getDetailsByLID(String lid) throws SQLException
     {
         return Features.getDetails( null, lid, null, null );
     }
@@ -359,7 +386,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         return Features.getDetails( null, null, gageID, null );
     }
 
-    public static List<FeatureDetails> getDetailsByCoordinates(Float longitude, Float latitude, Float range)
+    private static List<FeatureDetails> getDetailsByCoordinates(Float longitude, Float latitude, Float range)
             throws SQLException
     {
         Double radianLatitude = Math.toRadians( latitude );
@@ -386,7 +413,8 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         script += ")" + NEWLINE;
         script += "SELECT *" + NEWLINE;
         script += "FROM feature_and_distance" + NEWLINE;
-        script += "WHERE distance <= " + rangeInDegrees + ";";
+        script += "WHERE distance <= " + rangeInDegrees + NEWLINE;
+        script += "ORDER BY feature_id;";
 
         Connection connection = null;
         ResultSet closestFeatures = null;
@@ -422,16 +450,15 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
 
     }
 
-    public static List<FeatureDetails> getDetailsByHUC(String huc)
+    private static List<FeatureDetails> getDetailsByHUC(String huc)
             throws SQLException
     {
         String script = "";
 
         script += "SELECT *" + NEWLINE;
         script += "FROM wres.Feature" + NEWLINE;
-        script += "WHERE huc LIKE '" + huc + "%'";
-
-        script += ";";
+        script += "WHERE huc LIKE '" + huc + "%'" + NEWLINE;
+        script += "ORDER BY feature_id;";
 
         Connection connection = null;
         ResultSet hucFeatures = null;
@@ -473,7 +500,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         script += "FROM wres.Feature" + NEWLINE;
         script += "WHERE rfc = '" + rfc + "'" + NEWLINE;
 
-        script += ";";
+        script += "ORDER BY feature_id;";
 
         Connection connection = null;
         ResultSet rfcFeatures = null;
@@ -521,7 +548,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
 	
 	@Override
 	protected int getMaxDetails() {
-		return 1000;
+		return 5000;
 	}
 
 	/**

@@ -4,12 +4,16 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import wres.config.generated.ProjectConfig;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.DataSources;
 import wres.io.reading.BasicSource;
 import wres.io.reading.IngestException;
 import wres.io.reading.IngestResult;
+import wres.util.Strings;
 
 /**
  * @author Christopher Tubbs
@@ -17,6 +21,8 @@ import wres.io.reading.IngestResult;
  */
 public class FEWSSource extends BasicSource
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger( FEWSSource.class );
+
 	/**
      * Constructor that sets the filename
      * @param projectConfig the ProjectConfig causing ingest
@@ -71,10 +77,19 @@ public class FEWSSource extends BasicSource
             throw new IngestException( message, se );
         }
 
+
+        LOGGER.debug("Finished Parsing '{}'", this.getFilename());
+
         return IngestResult.singleItemListFrom( this.getProjectConfig(),
                                                 this.getDataSourceConfig(),
                                                 this.getHash(),
                                                 wasFoundInCache );
+    }
+
+    @Override
+    protected Logger getLogger()
+    {
+        return FEWSSource.LOGGER;
     }
 
 }

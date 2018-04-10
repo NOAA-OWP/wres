@@ -17,7 +17,7 @@ public class USGSParameters
 
     private static class ParameterKey implements Comparable<ParameterKey>
     {
-        public ParameterKey(String name, String measurementUnit, String aggregation)
+        ParameterKey(String name, String measurementUnit, String aggregation)
         {
             this.name = name;
             this.measurementUnit = measurementUnit;
@@ -91,15 +91,13 @@ public class USGSParameters
         @Override
         public String toString()
         {
-            StringBuilder parameter = new StringBuilder(  );
+            String parameter = "Name: '" + this.name + "', " +
+                               "Description: '" + this.description + "', " +
+                               "Code: " + this.parameterCode + ", " +
+                               "Aggregated as: " + this.aggregation + ", " +
+                               "Measurement Unit: " + this.measurementUnit;
 
-            parameter.append( "Name: '" ).append(this.name).append("', ");
-            parameter.append( "Description: '").append(this.description).append("', ");
-            parameter.append( "Code: " ).append(this.parameterCode).append(", ");
-            parameter.append( "Aggregated as: ").append(this.aggregation).append(", ");
-            parameter.append( "Measurement Unit: ").append(this.measurementUnit);
-
-            return parameter.toString();
+            return parameter;
         }
 
         public String getName()
@@ -206,6 +204,24 @@ public class USGSParameters
         }
 
         return foundParameter;
+    }
+
+    public static USGSParameter getParameter(String parameterName, String measurementUnit)
+            throws SQLException
+    {
+        USGSParameter parameter = null;
+
+        for (USGSParameters.ParameterKey key : USGSParameters.getParameterStore().keySet())
+        {
+            if (key.name.equalsIgnoreCase( parameterName ) &&
+                key.measurementUnit.equalsIgnoreCase( measurementUnit ))
+            {
+                parameter = USGSParameters.getParameterStore().get(key);
+                break;
+            }
+        }
+
+        return parameter;
     }
 
     public static USGSParameter getParameter(String parameterName, String measurementUnit, String aggregationMethod)

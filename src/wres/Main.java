@@ -1,13 +1,9 @@
 package wres;
 
 import java.lang.management.ManagementFactory;
-import java.time.Instant;
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
@@ -45,7 +41,8 @@ public class Main {
 
         if (LOGGER.isInfoEnabled())
         {
-            LOGGER.info(getVersion());
+            LOGGER.info( Main.getVersionDescription() );
+            LOGGER.info( Main.getVerboseRuntimeDescription() );
         }
 
         final String operation = ((Supplier<String>) () -> {
@@ -110,7 +107,8 @@ public class Main {
                                      startTime,
                                      duration,
                                      exitCode.get() == MainFunctions.FAILURE,
-                                     Main.combineExceptions() );
+                                     Main.combineExceptions(),
+                                     Main.getVersion() );
         }
         catch ( Exception e )
         {
@@ -121,7 +119,8 @@ public class Main {
                                      startTime,
                                      duration,
                                      exitCode.get() == MainFunctions.FAILURE,
-                                     Main.combineExceptions( ) );
+                                     Main.combineExceptions( ),
+                                     Main.getVersion() );
         }
         watch.stop();
 
@@ -136,6 +135,16 @@ public class Main {
     public static String getVersion()
     {
         return version.toString();
+    }
+
+    public static String getVersionDescription()
+    {
+        return version.getDescription();
+    }
+
+    private static String getVerboseRuntimeDescription()
+    {
+        return version.getVerboseRuntimeDescription();
     }
 
     /**

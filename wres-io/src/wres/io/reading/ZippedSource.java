@@ -84,6 +84,12 @@ public class ZippedSource extends BasicSource {
         return issue();
     }
 
+    @Override
+    protected Logger getLogger()
+    {
+        return ZippedSource.LOGGER;
+    }
+
     private Future<List<IngestResult>> getIngestTask()
     {
         return tasks.poll();
@@ -98,7 +104,7 @@ public class ZippedSource extends BasicSource {
      * @param projectConfig the project config causing this ingest
 	 * @param filename The name of the source file
 	 */
-    public ZippedSource ( ProjectConfig projectConfig,
+    ZippedSource ( ProjectConfig projectConfig,
                           String filename )
 	{
         super( projectConfig );
@@ -121,14 +127,21 @@ public class ZippedSource extends BasicSource {
 
             while (archivedSource != null)
             {
-                ProgressMonitor.increment();
+                //ProgressMonitor.increment();
                 if (archivedSource.isFile())
                 {
-                    processFile(archivedSource, archive);
+                    int bytesRead = processFile(archivedSource, archive);
+
+                    // The loop can be broken if the end of the file is reached
+                    if (bytesRead == -1)
+                    {
+                        //ProgressMonitor.completeStep();
+                        break;
+                    }
                 }
 
                 archivedSource = archive.getNextTarEntry();
-                ProgressMonitor.completeStep();
+                //ProgressMonitor.completeStep();
             }
 
             Future<List<IngestResult>> ingestTask = this.getIngestTask();
@@ -194,38 +207,50 @@ public class ZippedSource extends BasicSource {
                                           e );
         }
 
+        LOGGER.debug("Finished parsing '{}'", this.getFilename());
         return Collections.unmodifiableList( result );
     }
 
-    private void processFile(TarArchiveEntry source,
+    private int processFile(TarArchiveEntry source,
                              TarArchiveInputStream archiveInputStream)
             throws IOException
     {
+        int bytesRead = (int)source.getSize();
         String archivedFileName = Paths.get(this.directoryPath, source.getName()).toString();
         Format sourceType = ReaderFactory.getFiletype( archivedFileName );
         DataSourceConfig.Source
                 originalSource = ConfigHelper.findDataSourceByFilename( this.getDataSourceConfig(), this.getAbsoluteFilename() );
 
-        byte[] content = new byte[(int)source.getSize()];
+        byte[] content = new byte[bytesRead];
 
         try
         {
-            archiveInputStream.read( content, 0, content.length );
+            bytesRead = archiveInputStream.read( content, 0, content.length );
         }
         catch (EOFException eof)
         {
-            String message = "The end of the archive entry for: {} was ";
-            message += "reached. Data within the archive may have been ";
-            message += "cut off when creating or moving the archive.";
-            LOGGER.error(message, archivedFileName);
-            LOGGER.error(Strings.getStackTrace( eof ));
-            return;
+            String message = "The end of the archive entry for: '"
+                             + archivedFileName + "' was "
+                             + "reached. Data within the archive may have been "
+                             + "cut off when creating or moving the archive.";
+            // Regarding whether to log-and-continue or to propagate and stop:
+            // On the one hand, it might happen on a file that is intended for
+            // ingest and therefore can affect primary outputs if not ingested.
+            // On the other hand, this is a very specific case of a particular
+            // exception when reading a particular file within an archive.
+            // But then again, shouldn't the user be notified that the archive
+            // is corrupt? And if so, stopping (propagating here) is the
+            // clearest way to notify the user of a corrupt input file.
+            throw new IngestException( message, eof );
         }
 
         if ( originalSource == null )
         {
-            LOGGER.trace( "'{}' is not being ingested because its data source is null", source );
-            return;
+            // Demote to debug or trace if null is known as being a normal,
+            // usual occurrence that has no potential impact on anything.
+            LOGGER.warn( "'{}' is not being ingested because its data source is null",
+                         source );
+            return bytesRead;
         }
 
         Pair<Boolean, String> checkIngest =
@@ -233,13 +258,22 @@ public class ZippedSource extends BasicSource {
         if ( !checkIngest.getLeft() )
         {
             LOGGER.trace( "'{}' is not being ingested because was already found", source );
+
+            if (checkIngest.getRight() == null || checkIngest.getRight().isEmpty())
+            {
+                String message = "Method shouldIngest did not return a hash for"
+                                 + " file " + archivedFileName + " from source "
+                                 + originalSource;
+                throw new PreIngestException( message );
+            }
+
             // Fake a future, return result immediately.
             Future<List<IngestResult>> ingest =
                     IngestResult.fakeFutureSingleItemListFrom( projectConfig,
                                                                dataSourceConfig,
                                                                checkIngest.getRight() );
             this.addIngestTask( ingest );
-            return;
+            return bytesRead;
         }
         else
         {
@@ -289,6 +323,8 @@ public class ZippedSource extends BasicSource {
                 this.addIngestTask(task);
             }
         }
+
+        return bytesRead;
     }
 
     private final String directoryPath;

@@ -10,7 +10,6 @@ import org.slf4j.LoggerFactory;
 import wres.io.data.details.MeasurementDetails;
 import wres.io.utilities.Database;
 import wres.util.Collections;
-import wres.util.Strings;
 
 /**
  * Caches details mapping units of measurements to their IDs
@@ -24,6 +23,21 @@ public class MeasurementUnits extends Cache<MeasurementDetails, String> {
      */
 	private static  MeasurementUnits instance = null;
 	private static final Object CACHE_LOCK = new Object();
+
+    private static final Object DETAIL_LOCK = new Object();
+    private static final Object KEY_LOCK = new Object();
+
+    @Override
+    protected Object getDetailLock()
+    {
+        return MeasurementUnits.DETAIL_LOCK;
+    }
+
+    @Override
+    protected Object getKeyLock()
+    {
+        return MeasurementUnits.KEY_LOCK;
+    }
 
     private static MeasurementUnits getCache()
     {
@@ -97,8 +111,9 @@ public class MeasurementUnits extends Cache<MeasurementDetails, String> {
         }
         catch (SQLException error)
         {
-            LOGGER.error("An error was encountered when trying to populate the Measurement cache.");
-            LOGGER.error(Strings.getStackTrace(error));
+            // Failure to pre-populate cache should not affect primary outputs.
+            LOGGER.warn( "An error was encountered when trying to populate the Measurement cache.",
+                         error );
         }
         finally
         {
@@ -110,8 +125,9 @@ public class MeasurementUnits extends Cache<MeasurementDetails, String> {
                 }
                 catch(SQLException e)
                 {
-                    LOGGER.error("An error was encountered when trying to close the resultset that loaded measurements.");
-                    LOGGER.error(Strings.getStackTrace(e));
+                    // Exception on close should not affect primary outputs.
+                    LOGGER.warn( "An error was encountered when trying to close the resultset that loaded measurements.",
+                                  e );
                 }
             }
 

@@ -5,7 +5,6 @@ import java.time.Instant;
 import java.util.Iterator;
 import java.util.List;
 import java.util.SortedSet;
-import java.util.function.Predicate;
 
 /**
  * <p>A representation of one or more atomic time-series, each of which contains one or more {@link Event}, which 
@@ -31,8 +30,6 @@ import java.util.function.Predicate;
  * views should not allow {@link Iterator#remove()} to remove an element from the underlying time-series.</p>
  * 
  * @param <T> the atomic type of data
- * @version 0.1
- * @since 0.3
  * @author james.brown@hydrosolved.com
  */
 
@@ -67,27 +64,6 @@ public interface TimeSeries<T>
      */
 
     Iterable<TimeSeries<T>> durationIterator();
-
-    /**
-     * Returns a {@link TimeSeries} whose elements are filtered according to duration or null if no such time-series 
-     * exists. If the current time-series is regular, the returned time-series may be irregular, and vice versa, 
-     * depending on the filter applied. 
-     * 
-     * @param duration the duration filter
-     * @return a list of values with the same duration or null if no such duration exists
-     */
-
-    TimeSeries<T> filterByDuration( Predicate<Duration> duration );
-
-    /**
-     * Returns a {@link TimeSeries} whose elements are filtered according to basis time or null if no such time-series 
-     * exists.
-     * 
-     * @param basisTime the basis time filter
-     * @return a time-series associated with a specific basis time or null
-     */
-
-    TimeSeries<T> filterByBasisTime( Predicate<Instant> basisTime );
 
     /**
      * Returns the basis times associated with all the atomic time-series in the container. If 
@@ -133,12 +109,7 @@ public interface TimeSeries<T>
      * atomic time-series must have a constant {@link Duration} between times, as revealed by this method. However, 
      * when the container stores forecasts, the basis/issue time may not be regular and the time-step between 
      * basis/issue times may differ from the {@link #getRegularDuration}. For example, the container may store 
-     * forecasts that are issued once per day with a regular time-step of 6 hours. If the timeline is viewed as a 
-     * function of the unit duration, f(h)=6h, the first derivative of the timeline is 6h, and 
-     * {@link #getRegularDuration} will return a {@link Duration} of 6h. 
-     *  
-     * 
-     * The regular duration is the first derivative of the timeline   
+     * forecasts that are issued once per day with a regular time-step of 6 hours.
      * 
      * @return a duration for a regular time-series or null
      */
@@ -155,4 +126,12 @@ public interface TimeSeries<T>
 
     Instant getEarliestBasisTime();
 
+    /**
+     * Returns the latest basis time associated with the {@link TimeSeries}.
+     * 
+     * @return the latest basis time associated with any time-series
+     */
+
+    Instant getLatestBasisTime();    
+    
 }

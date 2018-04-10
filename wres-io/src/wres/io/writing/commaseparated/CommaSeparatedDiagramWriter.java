@@ -22,7 +22,7 @@ import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.Threshold;
+import wres.datamodel.OneOrTwoThresholds;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
@@ -192,7 +192,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
             throws IOException
     {
         // Loop across thresholds
-        for ( Threshold threshold : output.setOfThresholdKey() )
+        for ( OneOrTwoThresholds threshold : output.setOfThresholdKey() )
         {
             MetricOutputMetadata meta = output.getMetadata();
             MetricOutputMapByTimeAndThreshold<MultiVectorOutput> next = output.filterByThreshold( threshold );
@@ -229,9 +229,9 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
         {
             // Loop across the thresholds, merging results when multiple thresholds occur
             Map<Integer, List<Double>> merge = new TreeMap<>();
-            for ( Threshold threshold : output.setOfThresholdKey() )
+            for ( OneOrTwoThresholds threshold : output.setOfThresholdKey() )
             {
-                Pair<TimeWindow, Threshold> key = Pair.of( timeWindow, threshold );
+                Pair<TimeWindow, OneOrTwoThresholds> key = Pair.of( timeWindow, threshold );
                 CommaSeparatedDiagramWriter.addRowsForOneDiagramAtOneTimeWindowAndThreshold( output, key, merge );
             }
             // Add the merged rows
@@ -249,7 +249,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
     }
 
     /**
-     * Adds rows to the input map of merged rows for a specific {@link TimeWindow} and {@link Threshold}.
+     * Adds rows to the input map of merged rows for a specific {@link TimeWindow} and {@link OneOrTwoThresholds}.
      *
      * @param output the diagram output
      * @param key the key for which rows are required
@@ -258,7 +258,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
 
     private static void
             addRowsForOneDiagramAtOneTimeWindowAndThreshold( MetricOutputMapByTimeAndThreshold<MultiVectorOutput> output,
-                                                             Pair<TimeWindow, Threshold> key,
+                                                             Pair<TimeWindow, OneOrTwoThresholds> key,
                                                              Map<Integer, List<Double>> merge )
     {
 
@@ -335,7 +335,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedWriter
         MultiVectorOutput data = output.getValue( 0 );
         Set<MetricDimension> dimensions = data.getData().keySet();
         //Add the metric name, dimension, and threshold for each column-vector
-        for ( Threshold nextThreshold : output.setOfThresholdKey() )
+        for ( OneOrTwoThresholds nextThreshold : output.setOfThresholdKey() )
         {
             for ( MetricDimension nextDimension : dimensions )
             {

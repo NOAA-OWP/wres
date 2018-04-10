@@ -24,6 +24,7 @@ public final class Strings
 	private static final Pattern RTRIM = Pattern.compile("\\s+$");
 	private static final Pattern NUMERIC_PATTERN = Pattern.compile( "^[-]?\\d*\\.?\\d+$" );
 
+	private static final int LINE_LENGTH = 120;
 	private static final int TRUNCATE_SIZE = 2000;
 
     private Strings(){}
@@ -54,21 +55,77 @@ public final class Strings
 		return word != null && !word.trim().isEmpty();
 	}
 
+	public static String formatForLine(final String line)
+	{
+	    //return line;
+		String formattedLine = line;
+		while (formattedLine.length() < LINE_LENGTH)
+		{
+			formattedLine += " ";
+		}
+
+		if (formattedLine.length() > LINE_LENGTH)
+		{
+			formattedLine = formattedLine.substring( 0, LINE_LENGTH );
+		}
+
+		return "\r" + formattedLine;
+	}
+
+	public static String formatForLine(final String first, final String last)
+	{
+		String formattedLine = first;
+		String formattedLast = last;
+		formattedLine += " ";
+		//return "\r" + formattedLine + formattedLast;
+		int left = LINE_LENGTH - formattedLine.length();
+
+		if (formattedLast.length() > left)
+		{
+			formattedLast = "..." + formattedLast.substring( formattedLast.length() - left - 3 );
+		}
+
+		formattedLine += formattedLast;
+
+		return formatForLine(formattedLine);
+	}
+
 	/**
 	 * Extracts the first grouping of characters in the source string that matches the pattern
 	 * @param source The string to extract the word from
 	 * @param pattern The pattern to match
 	 * @return The first substring to match the pattern
 	 */
-	public static String extractWord(String source, String pattern) {
-		String matched_string = null;
+	public static String extractWord(final String source, final String pattern)
+    {
+		return Strings.extractWord( source, pattern, null );
+	}
+
+	public static String extractWord(final String source,
+                                     final String pattern,
+                                     final String defaultString)
+	{
 		Pattern regex = Pattern.compile(pattern);
-		Matcher match = regex.matcher(source);
-		
-		if (match.find()) {
-			matched_string = match.group();
+		return Strings.extractWord( source, regex, defaultString );
+	}
+
+	public static String extractWord(final String source, final Pattern pattern)
+	{
+		return Strings.extractWord( source, pattern, null );
+	}
+
+	public static String extractWord(final String source,
+                                     final Pattern pattern,
+                                     final String defaultString)
+	{
+		String matchedString = defaultString;
+		Matcher match = pattern.matcher(source);
+
+		if (match.find())
+		{
+			matchedString = match.group();
 		}
-		return matched_string;
+		return matchedString;
 	}
 
 	public static String truncate(String message)

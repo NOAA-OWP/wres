@@ -222,6 +222,19 @@ public class FunctionFactory
     }
 
     /**
+     * <p>
+     * Return a function that computes the maximum of value in a vector of doubles.
+     * </p>
+     * 
+     * @return a function that computes the maximum over the input
+     */
+
+    public static ToDoubleFunction<VectorOfDoubles> sampleSize()
+    {
+        return a -> a.size();
+    }    
+    
+    /**
      * Returns a statistic associated with a {@link MetricConstants} that belongs to the 
      * {@link ScoreOutputGroup#UNIVARIATE_STATISTIC}.
      * 
@@ -281,6 +294,7 @@ public class FunctionFactory
         STATISTICS.put( MetricConstants.MINIMUM, minimum() );
         STATISTICS.put( MetricConstants.MAXIMUM, maximum() );
         STATISTICS.put( MetricConstants.MEAN_ABSOLUTE, meanAbsolute() );
+        STATISTICS.put( MetricConstants.SAMPLE_SIZE, sampleSize() );
     }
 
 }

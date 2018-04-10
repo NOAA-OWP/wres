@@ -3,7 +3,6 @@ package wres.control;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -19,26 +18,26 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.FeaturePlus;
 import wres.config.ProjectConfigException;
+import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationType;
 import wres.config.generated.Feature;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.datamodel.Threshold;
+import wres.datamodel.ThresholdsByMetric;
 import wres.datamodel.inputs.InsufficientDataException;
 import wres.datamodel.inputs.MetricInput;
-import wres.datamodel.outputs.MetricOutputAccessException;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.processing.MetricProcessorException;
 import wres.engine.statistics.metric.processing.MetricProcessorForProject;
 import wres.io.Operations;
 import wres.io.config.ConfigHelper;
-import wres.io.config.ProjectConfigPlus;
 import wres.io.data.details.ProjectDetails;
 import wres.io.retrieval.InputGenerator;
 import wres.io.retrieval.IterationFailedException;
 import wres.io.utilities.NoDataException;
+import wres.io.writing.SharedWriters;
 import wres.util.ProgressMonitor;
 
 /**
@@ -98,7 +97,7 @@ class ProcessorHelper
 
         ProgressMonitor.setShowStepDescription( false );
 
-        Set<Feature> decomposedFeatures;
+        Set<FeaturePlus> decomposedFeatures;
 
         try
         {
@@ -106,24 +105,81 @@ class ProcessorHelper
         }
         catch ( SQLException e )
         {
-            IOException ioe = new IOException( "Failed to retrieve the set of features.", e );
-            ProcessorHelper.addException( ioe );
-            throw ioe;
+            throw new IOException( "Failed to retrieve the set of features.", e );
         }
 
         List<Feature> successfulFeatures = new ArrayList<>();
         List<Feature> missingDataFeatures = new ArrayList<>();
 
         // Read external thresholds from the configuration, per feature
-        // Compare on locationId only. TODO: improve the representation of features
-        // TODO: MUST move this threshold reading to wres-metrics as this is project internals related to metrics, 
-        // not API stuff. However, there are two barriers: 1) it involves file IO, which
-        // should not happen in metrics; and 2) it requires a consistent, system-wide, definition of features
-        // because external thresholds are read for multiple features. Both would be solved if we had an internal
-        // representation of a full project configuration that was passed around the system after ingest.
-        // The current approach is deeply unsatisfying.
-        final Map<FeaturePlus, List<Set<Threshold>>> thresholds = new TreeMap<>( FeaturePlus::compareByLocationId );
-        thresholds.putAll( ConfigHelper.readThresholdsFromProjectConfig( projectConfig ) );
+        // Compare on locationId only. TODO: consider how better to transmit these thresholds
+        // to wres-metrics, given that they are resolved by project configuration that is
+        // passed separately to wres-metrics. Options include moving MetricProcessor* to 
+        // wres-control, since they make processing decisions, or passing ResolvedProject onwards
+        final Map<FeaturePlus, ThresholdsByMetric> thresholds =
+                new TreeMap<>( FeaturePlus::compareByLocationId );
+        thresholds.putAll( ConfigHelper.readExternalThresholdsFromProjectConfig( projectConfig ) );
+
+        // The project code - ideally project hash
+        String projectIdentifier = String.valueOf( projectDetails.getKey() );
+
+        // Need to get lead counts when netcdf is specified, basis times
+        long leadCount = 0;
+        long basisTimes = 0;
+
+        // TODO: please move this to a utility method somewhere, out of the main processing pipeline, 
+        // because: 1) it is self-contained logic and; 2) we don't want to refer to concrete types like NETCDF in
+        // our abstract processing pipeline
+        if ( ConfigHelper.getIncrementalFormats( projectConfig )
+                         .contains( DestinationType.NETCDF ) )
+        {
+            try
+            {
+                leadCount = Operations.getLeadCountsForProject( projectIdentifier );
+            }
+            catch ( SQLException se )
+            {
+                throw new IOException( "Unable to get lead counts.", se );
+            }
+
+            if ( leadCount > Integer.MAX_VALUE )
+            {
+                throw new IOException( "Cannot use more than "
+                                       + Integer.MAX_VALUE
+                                       + " lead times in a netCDF file." );
+            }
+
+            try
+            {
+                basisTimes = Operations.getBasisTimeCountsForProject( projectIdentifier );
+            }
+            catch ( SQLException se )
+            {
+                throw new IOException( "Unable to get basis time counts.", se );
+            }
+
+            if ( basisTimes > Integer.MAX_VALUE )
+            {
+                throw new IOException( "Cannot use more than "
+                                       + Integer.MAX_VALUE
+                                       + " basis times in a netCDF file." );
+            }
+        }
+
+        ResolvedProject resolvedProject = ResolvedProject.of( projectConfigPlus,
+                                                              decomposedFeatures,
+                                                              projectIdentifier,
+                                                              thresholds );
+
+        // Build any writers of incremental formats that are shared across features
+        // TODO: make this call abstract. We should not be referring to DOUBLE_SCORE output here, but to all output
+        // for which writers are shared
+        SharedWriters sharedWriters = ConfigHelper.getSharedWriters( projectConfig,
+                                                                     resolvedProject.getFeatureCount(),
+                                                                     (int) basisTimes,
+                                                                     (int) leadCount,
+                                                                     resolvedProject.getThresholdCount( MetricOutputGroup.DOUBLE_SCORE ),
+                                                                     resolvedProject.getDoubleScoreMetrics() );
 
         // Reduce our triad of executors to one object
         ExecutorServices executors = new ExecutorServices( pairExecutor,
@@ -132,7 +188,7 @@ class ProcessorHelper
 
         int currentFeature = 0;
 
-        for ( Feature feature : decomposedFeatures )
+        for ( FeaturePlus feature : decomposedFeatures )
         {
             ProgressMonitor.resetMonitor();
 
@@ -147,10 +203,10 @@ class ProcessorHelper
 
             FeatureProcessingResult result =
                     processFeature( feature,
-                                    thresholds.get( FeaturePlus.of( feature ) ),
-                                    projectConfigPlus,
+                                    resolvedProject,
                                     projectDetails,
-                                    executors );
+                                    executors,
+                                    sharedWriters );
 
             if ( result.hadData() )
             {
@@ -167,6 +223,8 @@ class ProcessorHelper
                 missingDataFeatures.add( result.getFeature() );
             }
         }
+
+        sharedWriters.close();
 
         printFeaturesReport( projectConfigPlus,
                              decomposedFeatures,
@@ -186,7 +244,7 @@ class ProcessorHelper
      */
 
     private static void printFeaturesReport( final ProjectConfigPlus projectConfigPlus,
-                                             final Set<Feature> decomposedFeatures,
+                                             final Set<FeaturePlus> decomposedFeatures,
                                              final List<Feature> successfulFeatures,
                                              final List<Feature> missingDataFeatures )
     {
@@ -234,24 +292,30 @@ class ProcessorHelper
      * Processes a {@link ProjectConfigPlus} for a specific {@link Feature} using a prescribed {@link ExecutorService}
      * for each of the pairs, thresholds and metrics.
      * 
+     * TODO: please eliminate projectConfigPlus from the params and use projectDetails to source the project config.
+     * JFB: On reconsideration, the ProjectConfigPlus was precisely intended
+     * for sharing with the graphics generator. So whatever is needed to pass
+     * the ProjectConfigPlus to the graphics generator is needed and should stay.
+     *
      * @param feature the feature to process
-     * @param thresholds an optional set of (canonical) thresholds for which
-     *                   results are required, may be null
-     * @param projectConfigPlus the project configuration
+     * @param resolvedProject the resolved project
      * @param projectDetails the project details to use
      * @param executors the executors for pairs, thresholds, and metrics
+     * @param sharedWriters writers that are shared across features 
      * @throws WresProcessingException when an error occurs during processing
      * @return a feature result
      */
 
-    private static FeatureProcessingResult processFeature( final Feature feature,
-                                                           final List<Set<Threshold>> thresholds,
-                                                           final ProjectConfigPlus projectConfigPlus,
+    private static FeatureProcessingResult processFeature( final FeaturePlus feature,
+                                                           final ResolvedProject resolvedProject,
                                                            final ProjectDetails projectDetails,
-                                                           final ExecutorServices executors )
+                                                           final ExecutorServices executors,
+                                                           final SharedWriters sharedWriters )
     {
 
-        final ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
+        final ProjectConfig projectConfig = resolvedProject.getProjectConfig();
+        final ThresholdsByMetric thresholds =
+                resolvedProject.getThresholdForFeature( feature );
 
         final String featureDescription = ConfigHelper.getFeatureDescription( feature );
         final String errorMessage = "While processing feature " + featureDescription;
@@ -274,7 +338,7 @@ class ProcessorHelper
 
         // Build an InputGenerator for the next feature
         InputGenerator metricInputs = Operations.getInputs( projectDetails,
-                                                            feature );
+                                                            feature.getFeature() );
 
         // Queue the various tasks by time window (time window is the pooling dimension for metric calculation here)
         final List<CompletableFuture<?>> listOfFutures = new ArrayList<>(); //List of futures to test for completion
@@ -282,7 +346,7 @@ class ProcessorHelper
         // During the pipeline, only write types that are not end-of-pipeline types unless they refer to
         // a format that can be written incrementally
         BiPredicate<MetricOutputGroup, DestinationType> onlyWriteTheseTypes =
-                ( type, format ) -> !processor.getCachedMetricOutputTypes().contains( type )
+                ( type, format ) -> !processor.getMetricOutputTypesToCache().contains( type )
                                     || ConfigHelper.getIncrementalFormats( projectConfig ).contains( format );
 
         try
@@ -298,8 +362,9 @@ class ProcessorHelper
                 final CompletableFuture<Void> c =
                         CompletableFuture.supplyAsync( new PairsByTimeWindowProcessor( nextInput, processor ),
                                                        executors.getPairExecutor() )
-                                         .thenAcceptAsync( new ProductProcessor( projectConfigPlus,
-                                                                                 onlyWriteTheseTypes ),
+                                         .thenAcceptAsync( new ProductProcessor( resolvedProject,
+                                                                                 onlyWriteTheseTypes,
+                                                                                 sharedWriters ),
                                                            executors.getPairExecutor() )
                                          .thenAccept( aVoid -> ProgressMonitor.completeStep() );
 
@@ -309,29 +374,29 @@ class ProcessorHelper
         }
         catch ( IterationFailedException re )
         {
+            // If there was not enough data for this feature, OK
             if ( ProcessorHelper.wasInsufficientDataOrNoDataInThisStack( re ) )
             {
-                return new FeatureProcessingResult( feature,
+                return new FeatureProcessingResult( feature.getFeature(),
                                                     false,
                                                     re );
             }
-            else
-            {
-                ProcessorHelper.addException( re );
-            }
+
+            // Otherwise, chain and propagate the exception up to the top.
+            throw new WresProcessingException( "Iteration failed", re );
         }
 
         // Complete all tasks or one exceptionally: join() is blocking, representing a final sink for the results
         try
         {
-            doAllOrException( listOfFutures ).join();
+            ProcessorHelper.doAllOrException( listOfFutures ).join();
         }
         catch ( CompletionException e )
         {
             // If there was simply not enough data for this feature, OK
             if ( ProcessorHelper.wasInsufficientDataOrNoDataInThisStack( e ) )
             {
-                return new FeatureProcessingResult( feature,
+                return new FeatureProcessingResult( feature.getFeature(),
                                                     false,
                                                     e );
             }
@@ -345,26 +410,32 @@ class ProcessorHelper
         {
             try
             {
-                // End of pipeline processor
+                // Determine the cached types
+                Set<MetricOutputGroup> cachedTypes = processor.getCachedMetricOutputTypes();
+                
                 // Only process cached types that were not written incrementally
                 BiPredicate<MetricOutputGroup, DestinationType> nowWriteTheseTypes =
-                        ( type, format ) -> processor.getCachedMetricOutputTypes().contains( type )
+                        ( type, format ) -> cachedTypes.contains( type )
                                             && !ConfigHelper.getIncrementalFormats( projectConfig ).contains( format );
-                ProductProcessor endOfPipeline =
-                        new ProductProcessor( projectConfigPlus,
-                                              nowWriteTheseTypes );
-
-                // Generate output
-                endOfPipeline.accept( processor.getCachedMetricOutput() );
-
+                try ( // End of pipeline processor
+                      ProductProcessor endOfPipeline =
+                              new ProductProcessor( resolvedProject,
+                                                    nowWriteTheseTypes,
+                                                    sharedWriters ) )
+                {
+                    // Generate output
+                    endOfPipeline.accept( processor.getCachedMetricOutput() );
+                }
             }
-            catch ( MetricOutputAccessException e )
+            catch ( InterruptedException e )
             {
+                Thread.currentThread().interrupt();
+                
                 throw new WresProcessingException( errorMessage, e );
             }
         }
 
-        return new FeatureProcessingResult( feature, true, null );
+        return new FeatureProcessingResult( feature.getFeature(), true, null );
     }
 
     /**
@@ -424,45 +495,6 @@ class ProcessorHelper
             cause = cause.getCause();
         }
         return false;
-    }
-
-    /**
-     * List of exceptions encountered during processing.
-     */
-    private static final List<Exception> exceptionList = new ArrayList<>();
-
-    /**
-     * A lock to use when mutating the list of exceptions.
-     */
-
-    private static final Object EXCEPTION_LOCK = new Object();
-
-    /**
-     * Add an exception to the list of exceptions.
-     * 
-     * @param exception the exception to add
-     */
-
-    private static void addException( Exception exception )
-    {
-        synchronized ( EXCEPTION_LOCK )
-        {
-            ProcessorHelper.exceptionList.add( exception );
-        }
-    }
-
-    /**
-     * Return a list of processing exceptions encountered.
-     * 
-     * @return a list of processing exceptions
-     */
-
-    public static List<Exception> getEncounteredExceptions()
-    {
-        synchronized ( EXCEPTION_LOCK )
-        {
-            return Collections.unmodifiableList( ProcessorHelper.exceptionList );
-        }
     }
 
 

@@ -68,7 +68,11 @@ public class ReaderFactory {
 		{
             type = Format.ARCHIVE;
 		}
-		else if ( filename.endsWith(".xml") || (filename.endsWith(".xml.gz")) || Strings.contains(filename, ".+\\.\\d+$"))
+		// Should we change ".+\\.\\d+$" to ".+\\.xml\\.\\d+$"? There's nothing
+		// currently in that regex saying that is an xml file
+		else if ( filename.endsWith(".xml") ||
+				  (filename.endsWith(".xml.gz")) ||
+				  Strings.contains(filename, ".+\\.\\d+$"))
 		{
             type = Format.PI_XML;
 		}
@@ -76,7 +80,7 @@ public class ReaderFactory {
         {
             type = Format.USGS;
         }
-        else if ( NetCDF.isNWMData(filename ) )
+        else if ( NetCDF.isNetCDFFile(filename ) )
         {
             type = Format.NET_CDF;
         }

@@ -31,20 +31,18 @@ import wres.config.generated.Format;
 import wres.config.generated.MetricConfig;
 import wres.config.generated.MetricConfigName;
 import wres.config.generated.MetricsConfig;
-import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.PairConfig;
 import wres.config.generated.PoolingWindowConfig;
 import wres.config.generated.ProjectConfig;
 import wres.config.generated.ProjectConfig.Inputs;
+import wres.config.generated.ThresholdsConfig;
 import wres.config.generated.TimeScaleConfig;
 import wres.config.generated.TimeScaleFunction;
 import wres.config.generated.TimeSeriesMetricConfig;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.engine.statistics.metric.config.MetricConfigHelper;
-import wres.engine.statistics.metric.config.MetricConfigurationException;
 import wres.io.config.ConfigHelper;
-import wres.io.config.ProjectConfigPlus;
 import wres.util.Strings;
 
 
@@ -73,31 +71,6 @@ public class Validation
 
 
     /**
-     * Validates a list of {@link ProjectConfigPlus}. Returns true if the
-     * projects validate successfully, false otherwise.
-     *
-     * @param projectConfiggies a list of project configurations to validate
-     * @return true if the projects validate successfully, false otherwise
-     */
-
-    public static boolean validateProjects( List<ProjectConfigPlus> projectConfiggies )
-    {
-        boolean validationsPassed = true;
-
-        // Validate all projects, not stopping until all are done
-        for ( ProjectConfigPlus projectConfigPlus: projectConfiggies )
-        {
-            if ( !isProjectValid( projectConfigPlus ) )
-            {
-                validationsPassed = false;
-            }
-        }
-
-        return validationsPassed;
-    }
-
-
-    /**
      * Quick validation of the project configuration, will return detailed
      * information to the user regarding issues about the configuration. Strict
      * for now, i.e. return false even on minor xml problems. Does not return on
@@ -107,7 +80,7 @@ public class Validation
      * @return true if no issues were detected, false otherwise
      */
 
-    private static boolean isProjectValid( ProjectConfigPlus projectConfigPlus )
+    public static boolean isProjectValid( ProjectConfigPlus projectConfigPlus )
     {
         // Assume valid until demonstrated otherwise
         boolean result = true;
@@ -178,6 +151,9 @@ public class Validation
         // Check that each named metric is consistent with the other configuration
         result = result && Validation.isAllMetricsConfigConsistentWithOtherConfig( projectConfigPlus );
 
+        // Check that any external thresholds refer to readable files
+        result = result && Validation.areAllPathsToThresholdsReadable( projectConfigPlus );
+        
         return result;
     }    
     
@@ -275,6 +251,7 @@ public class Validation
                          metrics
                                 .sourceLocation()
                                 .getColumnNumber() );
+            returnMe = false;
         }
 
         // Cannot define specific metrics together with all valid        
@@ -386,9 +363,9 @@ public class Validation
                 }
                 // Handle the situation where a metric is recognized by the xsd but not by the ConfigMapper. This is
                 // unlikely and implies an incomplete implementation of a metric by the system  
-                catch ( MetricConfigurationException e )
+                catch ( MetricConfigException e )
                 {
-                    LOGGER.error( "In file {}, a metric named {} was requested, but is not recognized by the system.",
+                    LOGGER.warn( "In file {}, a metric named {} was requested, but is not recognized by the system.",
                                   projectConfigPlus.getPath(),
                                   next.getName() );
                     result = false;
@@ -397,6 +374,85 @@ public class Validation
         }
         return result;
     }
+    
+    /**
+     * Validates the paths to external thresholds.
+     *
+     * @param projectConfigPlus the project configuration
+     * @return true if all have readable files, false otherwise
+     * @throws NullPointerException when projectConfigPlus is null
+     */
+
+    private static boolean areAllPathsToThresholdsReadable( ProjectConfigPlus projectConfigPlus )
+    {
+        Objects.requireNonNull( projectConfigPlus, NON_NULL);
+
+        boolean result = true;
+
+        final String PLEASE_UPDATE = "Please update the project configuration "
+                + "with a readable source of external thresholds.";
+        
+        // Iterate through the metric group
+        for ( MetricsConfig nextMetric : projectConfigPlus.getProjectConfig().getMetrics() )
+        {
+            
+            // Iterate through the thresholds within each group
+            for ( ThresholdsConfig nextThreshold : nextMetric.getThresholds() )
+            {
+                
+                Object nextSource = nextThreshold.getCommaSeparatedValuesOrSource();
+                
+                // Locate a threshold with an external source
+                if ( nextSource instanceof ThresholdsConfig.Source )
+                {
+                    String pathString = ( (ThresholdsConfig.Source) nextSource ).getValue();
+                    
+                    final Path destinationPath;
+                    try
+                    {
+                        destinationPath = Paths.get( pathString );
+                    }
+                    catch ( InvalidPathException ipe )
+                    {
+                        if ( LOGGER.isWarnEnabled() )
+                        {
+                            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                                         + " The path {} could not be found. "
+                                         + PLEASE_UPDATE,
+                                         projectConfigPlus.getPath(),
+                                         nextThreshold.sourceLocation().getLineNumber(),
+                                         nextThreshold.sourceLocation().getColumnNumber(),
+                                         pathString );
+                        }
+
+                        result = false;
+                        continue;
+                    }
+
+                    File destinationFile = destinationPath.toFile();
+
+                    if ( !destinationFile.canRead() || destinationFile.isDirectory() )
+                    {
+                        if ( LOGGER.isWarnEnabled() )
+                        {
+                            LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
+                                         + " The path {} is not a readable file."
+                                         + " "
+                                         + PLEASE_UPDATE,
+                                         projectConfigPlus.getPath(),
+                                         nextThreshold.sourceLocation().getLineNumber(),
+                                         nextThreshold.sourceLocation().getColumnNumber(),
+                                         pathString );
+                        }
+
+                        result = false;
+                    }
+                }
+            }
+        }
+
+        return result;
+    }    
 
     /**
      * Validates outputs portion of project config have writeable directories.
@@ -495,40 +551,6 @@ public class Validation
         for ( DestinationConfig d : projectConfig.getOutputs()
                                                  .getDestination() )
         {
-            // Check that the plot type is consistent with other configuration
-            if ( projectConfig.getPair().getIssuedDatesPoolingWindow() != null
-                 && d.getOutputType() != null
-                 && d.getOutputType() != OutputTypeSelection.POOLING_WINDOW )
-            {
-                result = false;
-                if ( LOGGER.isWarnEnabled() )
-                {
-                    LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                                 + " Cannot use poolingWindow configuration with a plot type of {}.",
-                                 projectConfigPlus.getPath(),
-                                 d.sourceLocation().getLineNumber(),
-                                 d.sourceLocation()
-                                  .getColumnNumber(),
-                                 d.getOutputType() );
-                }
-            }
-            else if ( projectConfig.getPair().getIssuedDatesPoolingWindow() == null
-                      && d.getOutputType() != null
-                      && d.getOutputType() == OutputTypeSelection.POOLING_WINDOW )
-            {
-                result = false;
-                if ( LOGGER.isWarnEnabled() )
-                {
-                    LOGGER.warn( FILE_LINE_COLUMN_BOILERPLATE
-                                 + " Cannot define a plot type of {} without poolingWindow configuration.",
-                                 projectConfigPlus.getPath(),
-                                 d.sourceLocation().getLineNumber(),
-                                 d.sourceLocation()
-                                  .getColumnNumber(),
-                                 d.getOutputType() );
-                }
-            }
-
             String customString = projectConfigPlus.getGraphicsStrings()
                                                    .get( d );
 
@@ -755,7 +777,30 @@ public class Validation
                                                        dates,
                                                        latest )
                          && result;
+
+                // If we plan on using USGS, but we want a date later than now,
+                // break; that's impossible.
+                boolean usesUSGSData = ConfigHelper.usesUSGSData( projectConfigPlus.getProjectConfig() );
+
+                if (result && usesUSGSData && Instant.parse(latest).isAfter(Instant.now()))
+                {
+                    result = false;
+                    if ( LOGGER.isWarnEnabled() )
+                    {
+                        String msg = FILE_LINE_COLUMN_BOILERPLATE
+                                     + " Data from the future cannot be"
+                                     + "requested from USGS; the latest date is"
+                                     + "invalid.";
+
+                        LOGGER.warn( msg,
+                                     projectConfigPlus.getPath(),
+                                     dates.sourceLocation().getLineNumber(),
+                                     dates.sourceLocation()
+                                              .getColumnNumber() );
+                    }
+                }
             }
+
         }
 
         return result;

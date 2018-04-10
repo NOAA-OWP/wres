@@ -9,7 +9,7 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -25,7 +25,9 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.Threshold;
+import wres.datamodel.OneOrTwoThresholds;
+import wres.datamodel.ThresholdConstants.Operator;
+import wres.datamodel.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
@@ -101,17 +103,20 @@ public class CommaSeparatedPairedWriterTest extends CommaSeparatedWriterTest
 
         // Fake output wrapper.
         MetricOutputMapByMetric<PairedOutput<Instant, Duration>> fakeOutputData =
-                outputFactory.ofMap( Arrays.asList( outputFactory.ofPairedOutput( fakeOutputs, fakeMetadata ) ) );
+                outputFactory.ofMetricOutputMapByMetric( Collections.singletonMap( MetricConstants.TIME_TO_PEAK_ERROR,
+                                                                                   outputFactory.ofPairedOutput( fakeOutputs,
+                                                                                                                 fakeMetadata ) ) );
 
         // wrap outputs in future
         Future<MetricOutputMapByMetric<PairedOutput<Instant, Duration>>> outputMapByMetricFuture =
                 CompletableFuture.completedFuture( fakeOutputData );
 
         // Fake lead time and threshold
-        Pair<TimeWindow, Threshold> mapKeyByLeadThreshold =
+        Pair<TimeWindow, OneOrTwoThresholds> mapKeyByLeadThreshold =
                 outputFactory.ofMapKeyByTimeThreshold( timeOne,
-                                                       Double.NEGATIVE_INFINITY,
-                                                       Threshold.Operator.GREATER );
+                                                       outputFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
+                                                       Operator.GREATER,
+                                                       ThresholdDataType.LEFT );
 
         outputBuilder.addPairedOutput( mapKeyByLeadThreshold,
                                        outputMapByMetricFuture );
@@ -123,7 +128,7 @@ public class CommaSeparatedPairedWriterTest extends CommaSeparatedWriterTest
         ProjectConfig projectConfig = getMockedProjectConfig( feature );
 
         // Begin the actual test now that we have constructed dependencies.
-        CommaSeparatedPairedWriter<Instant,Duration> writer = CommaSeparatedPairedWriter.of( projectConfig ); 
+        CommaSeparatedPairedWriter<Instant, Duration> writer = CommaSeparatedPairedWriter.of( projectConfig );
         writer.accept( output.getPairedOutput() );
 
         // read the file, verify it has what we wanted:

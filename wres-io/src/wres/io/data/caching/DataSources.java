@@ -10,16 +10,31 @@ import org.slf4j.LoggerFactory;
 import wres.io.data.details.SourceDetails;
 import wres.io.data.details.SourceDetails.SourceKey;
 import wres.io.utilities.Database;
-import wres.util.Strings;
+import wres.util.Collections;
 
 /**
  * Caches information about the source of forecast and observation data
  * @author Christopher Tubbs
  */
-public class DataSources extends Cache<SourceDetails, SourceKey> {
-
+public class DataSources extends Cache<SourceDetails, SourceKey>
+{
     private static final Logger LOGGER = LoggerFactory.getLogger(DataSources.class);
     private static final Object CACHE_LOCK = new Object();
+
+    private static final Object DETAIL_LOCK = new Object();
+    private static final Object KEY_LOCK = new Object();
+
+    @Override
+    protected Object getDetailLock()
+    {
+        return DataSources.DETAIL_LOCK;
+    }
+
+    @Override
+    protected Object getKeyLock()
+    {
+        return DataSources.KEY_LOCK;
+    }
 
     /**
      * Global Cache of basic source data
@@ -53,18 +68,40 @@ public class DataSources extends Cache<SourceDetails, SourceKey> {
 		return getCache().getID(path, outputTime, lead, hash);
 	}
 
+	public static SourceDetails get(String path, String outputTime, Integer lead, String hash) throws SQLException
+    {
+        int id = DataSources.getCache().getID( path, outputTime, lead, hash );
+        return DataSources.getCache().get( id );
+    }
+
     public static boolean isCached( SourceDetails.SourceKey key )
     {
         return DataSources.getCache()
                           .hasID( key );
     }
 
-	public static boolean hasSource(String hash) throws SQLException
+	public static boolean hasSource(String hash)
+            throws SQLException
     {
         return DataSources.getActiveSourceID( hash ) != null;
     }
 
-    public static Integer getActiveSourceID(String hash) throws SQLException
+    public static String getHash(int sourceId)
+    {
+        String hash = null;
+
+        SourceKey key = Collections.getKeyByValue( DataSources.getCache().getKeyIndex(), sourceId );
+
+        if (key != null)
+        {
+            hash = key.getHash();
+        }
+
+        return hash;
+    }
+
+    public static Integer getActiveSourceID(String hash)
+            throws SQLException
     {
         Integer id = null;
 
@@ -75,8 +112,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey> {
             id = DataSources.getCache().getID( key );
         }
 
-        if (id == null &&
-            DataSources.getCache().getKeyIndex().size() >= DataSources.getCache().getMaxDetails())
+        if (id == null)
         {
             Connection connection = null;
             ResultSet results = null;
@@ -113,7 +149,15 @@ public class DataSources extends Cache<SourceDetails, SourceKey> {
             {
                 if (results != null)
                 {
-                    results.close();
+                    try
+                    {
+                        results.close();
+                    }
+                    catch ( SQLException se )
+                    {
+                        // Exception on close should not affect primary outputs.
+                        LOGGER.warn( "Failed to close result set {}.", results, se );
+                    }
                 }
 
                 if (connection != null)
@@ -140,7 +184,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey> {
 	 * @return The ID of the source in the database
 	 * @throws SQLException Thrown when interaction with the database failed
 	 */
-	public Integer getID(String path, String outputTime, Integer lead, String hash) throws SQLException
+	Integer getID(String path, String outputTime, Integer lead, String hash) throws SQLException
     {
 		return this.getID(SourceDetails.createKey(path, outputTime, lead, hash));
 	}
@@ -158,7 +202,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey> {
 
 	@Override
 	protected int getMaxDetails() {
-		return 200;
+		return 1000;
 	}
 
     @Override
@@ -171,6 +215,7 @@ public class DataSources extends Cache<SourceDetails, SourceKey> {
 
         Connection connection = null;
         ResultSet sources = null;
+        this.initializeDetails();
 
         try
         {
@@ -187,14 +232,17 @@ public class DataSources extends Cache<SourceDetails, SourceKey> {
                 detail.setOutputTime(sources.getString("output_time"));
                 detail.setSourcePath(sources.getString("path"));
                 detail.setHash( sources.getString( "hash" ) );
+                detail.setID( sources.getInt( "source_id" ) );
                 
-                this.getKeyIndex().put(detail.getKey(), sources.getInt("source_id"));
+                this.getKeyIndex().put(detail.getKey(), detail.getId());
+                this.getDetails().put(detail.getId(), detail);
             }
         }
         catch (SQLException error)
         {
-            LOGGER.error("An error was encountered when trying to populate the Source cache.");
-            LOGGER.error(Strings.getStackTrace(error));
+            // Failure to pre-populate cache should not affect primary outputs.
+            LOGGER.warn( "An error was encountered when trying to populate the Source cache.",
+                         error );
         }
         finally
         {
@@ -206,8 +254,9 @@ public class DataSources extends Cache<SourceDetails, SourceKey> {
                 }
                 catch(SQLException e)
                 {
-                    LOGGER.error("An error was encountered when trying to close the resultset that contained data source information.");
-                    LOGGER.error(Strings.getStackTrace(e));
+                    // Exception on close should not affect primary outputs.
+                    LOGGER.warn( "An error was encountered when trying to close the resultset that contained data source information.",
+                                  e );
                 }
             }
 

@@ -9,7 +9,7 @@
             <variable>QINE</variable>
         </left>
         <right label="HEFS">
-            <type>ensemble forecasts</type>
+            <type>single valued forecasts</type>
             <source format="PI-XML" missingValue="-999.0" unit=""></source>
             <variable>SQIN</variable>
         </right>
