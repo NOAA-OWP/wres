@@ -18,7 +18,6 @@ import wres.io.data.details.EnsembleDetails.EnsembleKey;
 import wres.io.utilities.Database;
 import wres.util.Collections;
 import wres.util.NetCDF;
-import wres.util.Strings;
 
 /**
  * Cached details about Ensembles from the database
@@ -28,6 +27,21 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Ensembles.class);
     private static final Object CACHE_LOCK = new Object();
+
+	private static final Object DETAIL_LOCK = new Object();
+	private static final Object KEY_LOCK = new Object();
+
+	@Override
+	protected Object getDetailLock()
+	{
+		return Ensembles.DETAIL_LOCK;
+	}
+
+	@Override
+	protected Object getKeyLock()
+	{
+		return Ensembles.KEY_LOCK;
+	}
 
     /**
      *  Internal cache that will store a global collection of details whose details may be accessed through static methods
@@ -117,54 +131,59 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
 	@Override
 	public Integer getID(final EnsembleKey grouping) throws SQLException
 	{
-		// Maps keys to the number of similarities between them and the passed in grouping
-		Map<Integer, List<EnsembleKey>> possibleKeys;
-
-		// The closest existing key to what we are trying to retrieve
-		EnsembleKey mostSimilar = null;
-
-        Integer id = getKeyIndex().get(grouping);
-		
-		// If no identical groupings are found and the grouping isn't full, attempt to find a similar one
-		if (id == null && getKeyIndex().size() > 0)
+		synchronized ( CACHE_LOCK )
 		{
-			possibleKeys = this.getSimilarKeys( grouping );
+			// Maps keys to the number of similarities between them and the passed in grouping
+			Map<Integer, List<EnsembleKey>> possibleKeys;
 
-			if (possibleKeys.containsKey( 3 ))
-            {
-                mostSimilar = possibleKeys.get(3).get( 0 );
-            }
-			else if (possibleKeys.containsKey(2))
+			// The closest existing key to what we are trying to retrieve
+			EnsembleKey mostSimilar = null;
+
+			Integer id = getKeyIndex().get( grouping );
+
+			// If no identical groupings are found and the grouping isn't full, attempt to find a similar one
+			if ( id == null && getKeyIndex().size() > 0 )
 			{
-			    mostSimilar = this.getSecondDegreeMatch( grouping, possibleKeys.get( 2 ) );
-			}
-			else if (possibleKeys.containsKey(1)) {
-				
-				mostSimilar = Collections.find (
-                        possibleKeys.get(1),
-						(EnsembleKey key) ->
-								key.getEnsembleName()
-								   .equalsIgnoreCase( grouping.getEnsembleName())
-				);
-			}
-		}
-		
-		// If a similar key wasn't found, insert a new element based on the grouping
-		if (id == null && mostSimilar == null)
-		{
-			EnsembleDetails detail = new EnsembleDetails();
-			detail.setEnsembleName(grouping.getEnsembleName());
-			detail.setEnsembleMemberID(grouping.getMemberIndex());
-			detail.setQualifierID(grouping.getQualifierID());
-			addElement(detail);
-            id = getKeyIndex().get(grouping);
-		}
-		else if (id == null)
-		{
-		    id = getKeyIndex().get(mostSimilar);
-		}
+				possibleKeys = this.getSimilarKeys( grouping );
 
-		return id;
+				if ( possibleKeys.containsKey( 3 ) )
+				{
+					mostSimilar = possibleKeys.get( 3 ).get( 0 );
+				}
+				else if ( possibleKeys.containsKey( 2 ) )
+				{
+					mostSimilar = this.getSecondDegreeMatch( grouping,
+															 possibleKeys.get( 2 ) );
+				}
+				else if ( possibleKeys.containsKey( 1 ) )
+				{
+
+					mostSimilar = Collections.find(
+							possibleKeys.get( 1 ),
+							( EnsembleKey key ) ->
+									key.getEnsembleName()
+									   .equalsIgnoreCase( grouping.getEnsembleName() )
+					);
+				}
+			}
+
+			// If a similar key wasn't found, insert a new element based on the grouping
+			if ( id == null && mostSimilar == null )
+			{
+				EnsembleDetails detail = new EnsembleDetails();
+				detail.setEnsembleName( grouping.getEnsembleName() );
+				detail.setEnsembleMemberID( grouping.getMemberIndex() );
+				detail.setQualifierID( grouping.getQualifierID() );
+				addElement( detail );
+				id = getKeyIndex().get( grouping );
+			}
+			else if ( id == null )
+			{
+				id = getKeyIndex().get( mostSimilar );
+			}
+
+			return id;
+		}
 	}
 
 	private Map<Integer, List<EnsembleKey>> getSimilarKeys(EnsembleKey originalKey)
@@ -247,8 +266,8 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
         }
         catch (SQLException error)
         {
-            LOGGER.error("An error was encountered when trying to populate the Ensemble cache.");
-            LOGGER.error(Strings.getStackTrace(error));
+            // Failure to pre-populate cache should not affect primary outputs.
+            LOGGER.warn( "An error was encountered when trying to populate the Ensemble cache.", error);
         }
         finally
         {
@@ -260,8 +279,8 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
                 }
                 catch(SQLException e)
                 {
-                    LOGGER.error("An error was encountered when trying to close the result set containing ensemble information.");
-                    LOGGER.error(Strings.getStackTrace(e));
+                    // Exception on close should not affect primary outputs.
+                    LOGGER.warn( "An error was encountered when trying to close the result set containing ensemble information.", e);
                 }
             }
 
@@ -273,8 +292,8 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
                 }
                 catch(SQLException e)
                 {
-                    LOGGER.error("An error was encountered when trying to close the query that loaded ensemble information.");
-                    LOGGER.error(Strings.getStackTrace(e));
+                    // Exception on close should not affect primary outputs.
+                    LOGGER.warn( "An error was encountered when trying to close the query that loaded ensemble information.", e );
                 }
             }
 

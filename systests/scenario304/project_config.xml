@@ -2,7 +2,7 @@
 
 <!-- Test includes a 24-hour aggregation to confirm code does not attempt to aggregate missing values present
      in the left-hand data source. -->
-     <project label="ExampleProject">
+     <project label="ExampleProject" name="scenario304">
 
     <inputs>
         <left label="">
@@ -43,11 +43,11 @@
     </metrics>
     <outputs>
         <destination type="numeric" decimalFormat="0.000000">
-            <path>output</path>
+            <path>output/</path>
         </destination>
 
         <destination type="pairs" decimalFormat="0.000000">
-            <path>output</path>
+            <path>output/</path>
         </destination>
     </outputs>
 </project>

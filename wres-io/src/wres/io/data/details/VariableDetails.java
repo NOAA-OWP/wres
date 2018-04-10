@@ -1,9 +1,17 @@
 package wres.io.data.details;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import wres.io.utilities.Database;
+import wres.io.utilities.ScriptBuilder;
 
 /**
  * Details about a variable as defined in the Database
@@ -11,6 +19,13 @@ import wres.io.utilities.Database;
  */
 public final class VariableDetails extends CachedDetail<VariableDetails, String>
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger( VariableDetails.class );
+
+	/**
+	 * Prevents asynchronous saving of identical variables
+	 */
+	private static final Object VARIABLE_SAVE_LOCK = new Object();
+
 	public static VariableDetails from (ResultSet resultSet) throws SQLException
 	{
 	    VariableDetails details = new VariableDetails();
@@ -60,22 +75,31 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
 	}
 
 	@Override
-	public void save() throws SQLException {
+	protected void update( ResultSet databaseResults ) throws SQLException
+	{
+		super.update( databaseResults );
+		String partition = "";
+		partition += "CREATE TABLE IF NOT EXISTS ";
+		partition += this.getVariablePositionPartitionName();
+		partition += " ( " + NEWLINE;
+		partition += "	CHECK (variable_id = ";
+		partition += this.getId().toString();
+		partition += ")" + NEWLINE;
+		partition += ") INHERITS (wres.VariablePosition);";
 
-		synchronized (saveLock)
-		{
-			super.save();
-			String partition = "";
-			partition += "CREATE TABLE IF NOT EXISTS ";
-			partition += this.getVariablePositionPartitionName();
-			partition += " ( " + NEWLINE;
-			partition += "	CHECK (variable_id = ";
-			partition += this.getId().toString();
-			partition += ")" + NEWLINE;
-			partition += ") INHERITS (wres.VariablePosition);";
+		Database.execute(partition);
+	}
 
-			Database.execute(partition);
-		}
+    @Override
+    protected Logger getLogger()
+    {
+        return VariableDetails.LOGGER;
+    }
+
+    @Override
+	public String toString()
+	{
+		return "Variable { " + this.variableName + " }";
 	}
 
 	@Override
@@ -101,33 +125,48 @@ public final class VariableDetails extends CachedDetail<VariableDetails, String>
 	}
 
 	@Override
-	public String getInsertSelectStatement()
-    {
-		String script = "";
-		
-		script += "WITH new_variable_id AS" + NEWLINE;
-		script += "(" + NEWLINE;
-		script += "		INSERT INTO wres.Variable(variable_name, variable_type, measurementunit_id)" + NEWLINE;
-		script += "		SELECT '" + variableName + "'," + NEWLINE;
-		script += "			'Double'," + NEWLINE;
-		script += "			" + measurementunitId + NEWLINE;
-		script += "		WHERE NOT EXISTS (" + NEWLINE;
-		script += "			SELECT 1" + NEWLINE;
-		script += "			FROM wres.Variable" + NEWLINE;
-		script += "			WHERE variable_name = '" + variableName + "'" + NEWLINE;
-		script += "		)" + NEWLINE;
-		script += "		RETURNING variable_id" + NEWLINE;
-		script += ")" + NEWLINE;
-		script += "SELECT variable_id" + NEWLINE;
-		script += "FROM new_variable_id" + NEWLINE + NEWLINE;
-		script += "";
-		script += "UNION" + NEWLINE + NEWLINE;
-		script += "";
-		script += "SELECT variable_id" + NEWLINE;
-		script += "FROM wres.Variable" + NEWLINE;
-		script += "WHERE variable_name = '" + variableName + "';";
-		
-		return script;
+	protected PreparedStatement getInsertSelectStatement( Connection connection )
+			throws SQLException
+	{
+		List<Object> args = new ArrayList<>(  );
+		ScriptBuilder script = new ScriptBuilder(  );
+
+		script.addLine("WITH new_variable_id AS");
+		script.addLine("(");
+		script.addTab().addLine("INSERT INTO wres.Variable(variable_name, variable_type, measurementunit_id)");
+		script.addTab().addLine("SELECT ?, 'Double', ?");
+
+		args.add(this.variableName);
+		args.add(this.measurementunitId);
+
+		script.addTab().addLine("WHERE NOT EXISTS (");
+		script.addTab(  2  ).addLine("SELECT 1");
+		script.addTab(  2  ).addLine("FROM wres.Variable");
+		script.addTab(  2  ).addLine("WHERE variable_name = ?");
+
+		args.add(this.variableName);
+
+		script.addTab().addLine(")");
+		script.addTab().addLine("RETURNING variable_id");
+		script.addLine(")");
+		script.addLine("SELECT variable_id");
+		script.addLine("FROM new_variable_id");
+		script.addLine();
+		script.addLine("UNION");
+		script.addLine();
+		script.addLine("SELECT variable_id");
+		script.addLine("FROM wres.Variable");
+		script.addLine("WHERE variable_name = ?;");
+
+		args.add( this.variableName );
+
+		return script.getPreparedStatement( connection, args );
+	}
+
+	@Override
+	protected Object getSaveLock()
+	{
+		return VariableDetails.VARIABLE_SAVE_LOCK;
 	}
 
 	@Override

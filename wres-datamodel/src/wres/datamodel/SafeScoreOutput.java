@@ -97,7 +97,7 @@ abstract class SafeScoreOutput<T,U extends ScoreOutput<T,?>> implements ScoreOut
     @Override
     public T getData()
     {
-        if( hasComponent( MetricConstants.MAIN ) )
+        if( this.hasComponent( MetricConstants.MAIN ) )
         {
             return output.get( MetricConstants.MAIN );
         }
@@ -181,14 +181,12 @@ abstract class SafeScoreOutput<T,U extends ScoreOutput<T,?>> implements ScoreOut
 
     SafeScoreOutput( final T output, final MetricOutputMetadata meta )
     {
-        if ( Objects.isNull( output ) )
-        {
-            throw new MetricOutputException( NULL_OUTPUT_MESSAGE );
-        }
+        // Allow a null score, but not null metadata
         if ( Objects.isNull( meta ) )
         {
             throw new MetricOutputException( NULL_METADATA_MESSAGE );
         }
+        
         this.output = new EnumMap<>( MetricConstants.class );
         if( Objects.nonNull( meta.getMetricComponentID() ) )
         {
@@ -214,6 +212,7 @@ abstract class SafeScoreOutput<T,U extends ScoreOutput<T,?>> implements ScoreOut
         this.output = new EnumMap<>( MetricConstants.class );
         this.output.putAll( output );
         this.meta = meta;
+        
         // Validate
         if ( Objects.isNull( output ) )
         {
@@ -223,8 +222,9 @@ abstract class SafeScoreOutput<T,U extends ScoreOutput<T,?>> implements ScoreOut
         {
             throw new MetricOutputException( NULL_METADATA_MESSAGE );
         }
+        // Allow a null score, but not a null identifier
         output.forEach( ( key, value ) -> {
-            if ( Objects.isNull( key ) || Objects.isNull( value ) )
+            if ( Objects.isNull( key ) )
             {
                 throw new MetricOutputException( "Cannot build a score with null components." );
             }
@@ -244,6 +244,7 @@ abstract class SafeScoreOutput<T,U extends ScoreOutput<T,?>> implements ScoreOut
     {
         this.output = new EnumMap<>( MetricConstants.class );
         this.meta = meta;
+        
         // Validate
         if ( Objects.isNull( template ) )
         {

@@ -15,11 +15,11 @@ then
 	ID=$1
 	listFile="$ID"_dirListing.txt
 	sortedFile="$ID"_sorted_pairs.csv
-	resultFile="ID"_testMetricsResults
+	resultFile="$ID"_testMetricsResults.txt
 else
 	listFile=dirListing.txt
 	sortedFile=sorted_pairs.csv
-	resultFile=testMetricsResults
+	resultFile=testMetricsResults.txt
 fi
 
 

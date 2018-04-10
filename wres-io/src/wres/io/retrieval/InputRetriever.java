@@ -21,6 +21,7 @@ import java.util.function.BinaryOperator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.DestinationConfig;
@@ -70,6 +71,12 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
      */
     private int issueDatesPool;
 
+    private long lastLead = Long.MIN_VALUE;
+    private long lastBaselineLead = Long.MIN_VALUE;
+
+    private long firstLead = Long.MAX_VALUE;
+    private long firstBaselineLead = Long.MAX_VALUE;
+
     /**
      * The total specifications for what data to retrieve
      */
@@ -102,13 +109,15 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
      */
     private List<ForecastedPair> baselinePairs;
 
+    private String rightScript;
+
     /**
      * A cache for all measurement unit conversions
      */
     private Map<Integer, UnitConversions.Conversion> conversionMap;
 
-    public InputRetriever ( ProjectDetails projectDetails,
-                            BiFunction<LocalDateTime, LocalDateTime, List<Double>> getLeftValues )
+    InputRetriever ( ProjectDetails projectDetails,
+                     BiFunction<LocalDateTime, LocalDateTime, List<Double>> getLeftValues )
     {
         this.projectDetails = projectDetails;
         this.getLeftValues = getLeftValues;
@@ -119,17 +128,17 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         this.feature = feature;
     }
 
-    public void setLeadIteration( int leadIteration )
+    void setLeadIteration( int leadIteration )
     {
         this.leadIteration = leadIteration;
     }
 
-    public void setIssueDatesPool( int issueDatesPool )
+    void setIssueDatesPool( int issueDatesPool )
     {
         this.issueDatesPool = issueDatesPool;
     }
 
-    public void setClimatology(VectorOfDoubles climatology)
+    void setClimatology(VectorOfDoubles climatology)
     {
         this.climatology = climatology;
     }
@@ -257,12 +266,24 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
 
         if (this.primaryPairs.isEmpty())
         {
+            LOGGER.debug( "Data could not be loaded for {}", metadata.getTimeWindow() );
+            LOGGER.debug( "The script used was:" );
+            LOGGER.debug( "{}{}", NEWLINE, this.rightScript );
+            LOGGER.debug("Window: {}", this.leadIteration);
+            LOGGER.debug( "Issue Date Sequence: {}", this.issueDatesPool );
             throw new NoDataException( "No data could be retrieved for Metric calculation for window " +
                                        metadata.getTimeWindow().toString() +
                                        " for " +
                                        this.projectDetails.getRightVariableName() +
                                        " at " +
                                        ConfigHelper.getFeatureDescription( this.feature ) );
+        }
+        else if (this.primaryPairs.size() == 1)
+        {
+            LOGGER.trace("There is only one pair in window {} for {} at {}",
+                         metadata.getTimeWindow(),
+                         this.projectDetails.getRightVariableName(),
+                         ConfigHelper.getFeatureDescription( this.feature ));
         }
 
         if (this.projectDetails.hasBaseline())
@@ -276,7 +297,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
 
             if ( this.projectDetails.getRight().getType() == DatasourceType.ENSEMBLE_FORECASTS )
             {
-                if ( ConfigHelper.hasTimeSeriesMetrics( this.projectDetails.getProjectConfig() ) )
+                if ( this.projectDetails.usesTimeSeriesMetrics())
                 {
                     input = this.createEnsembleTimeSeriesInput( metadata, baselineMetadata );
                 }
@@ -287,7 +308,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             }
             else
             {
-                if ( ConfigHelper.hasTimeSeriesMetrics( this.projectDetails.getProjectConfig() ) )
+                if ( this.projectDetails.usesTimeSeriesMetrics())
                 {
                     input = this.createSingleValuedTimeSeriesInput( metadata, baselineMetadata );
                 }
@@ -338,13 +359,13 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                                                                          .ofTimeSeriesOfSingleValuedPairsBuilder();
 
         Map<Instant, List<Event<PairOfDoubles>>> events = this.getSingleValuedEvents( primaryPairs );
-        events.entrySet().forEach( entry -> builder.addTimeSeriesData( entry.getKey(), entry.getValue() ) );
+        events.forEach( builder::addTimeSeriesData );
         builder.setMetadata( rightMetadata );
 
         if (baselinePairs != null)
         {
             events = this.getSingleValuedEvents( this.baselinePairs );
-            events.entrySet().forEach( entry -> builder.addTimeSeriesDataForBaseline( entry.getKey(), entry.getValue() ) );
+            events.forEach( builder::addTimeSeriesDataForBaseline );
             builder.setMetadataForBaseline( baselineMetadata );
         }
 
@@ -399,7 +420,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                                           this.climatology );
     }
 
-    private Map<Instant, List<Event<PairOfDoubleAndVectorOfDoubles>>> getEnsembleEvents(List<ForecastedPair> pairs)
+    /*private Map<Instant, List<Event<PairOfDoubleAndVectorOfDoubles>>> getEnsembleEvents(List<ForecastedPair> pairs)
     {
         Map<Instant, List<Event<PairOfDoubleAndVectorOfDoubles>>> events = new TreeMap<>(  );
 
@@ -414,7 +435,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         }
 
         return events;
-    }
+    }*/
 
     private Map<Instant, List<Event<PairOfDoubles>>> getSingleValuedEvents(List<ForecastedPair> pairs)
     {
@@ -507,8 +528,21 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
 
         if ( this.projectDetails.getRight().equals(dataSourceConfig))
         {
-            loadScript = Scripter.getLoadScript( this.projectDetails, dataSourceConfig, feature,
-                                                 leadIteration, this.issueDatesPool );
+            try
+            {
+                loadScript = Scripter.getLoadScript( this.projectDetails,
+                                                     dataSourceConfig,
+                                                     feature,
+                                                     leadIteration,
+                                                     this.issueDatesPool );
+            }
+            catch ( ProjectConfigException e )
+            {
+                throw new IOException( "Illegal configuration is preventing "
+                                       + "data from being loaded for pairing.", e );
+            }
+            // We save the script for debugging purposes
+            this.rightScript = loadScript;
         }
         else
         {
@@ -526,12 +560,20 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             }
             else
             {
-                loadScript =
-                        Scripter.getLoadScript( this.projectDetails,
-                                                dataSourceConfig,
-                                                this.feature,
-                                                this.leadIteration,
-                                                this.issueDatesPool );
+                try
+                {
+                    loadScript =
+                            Scripter.getLoadScript( this.projectDetails,
+                                                    dataSourceConfig,
+                                                    this.feature,
+                                                    this.leadIteration,
+                                                    this.issueDatesPool );
+                }
+                catch ( ProjectConfigException e )
+                {
+                    throw new IOException( "Illegal configuration is preventing "
+                                           + "data from being loaded for pairing.", e );
+                }
             }
         }
         return loadScript;
@@ -554,12 +596,10 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         Connection connection = null;
         ResultSet resultSet = null;
 
-        Integer scaleMember = null;
-        Integer lead = null;
-        // Use dummy value of MIN to avoid NPE
-        Instant valueDate = Instant.MIN;
+        IngestedValueCollection ingestedValues = new IngestedValueCollection(  );
+        long reference = -1;
 
-        /**
+        /*
          * Maps returned values to their position in their returned array.
          *
          * Say we retrieve:
@@ -588,81 +628,88 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
          *
          * left value : [ agg(v1), agg(v2), agg(v3), agg(v4), agg(v5), agg(v6) ]
          */
-        Map<Integer, List<Double>> rightValues = new TreeMap<>();
 
         try
         {
             connection = Database.getConnection();
             resultSet = Database.getResults(connection, loadScript);
+            int minimumLead = this.projectDetails.getLeadRange( this.feature, this.leadIteration ).getLeft();
+            int period = this.projectDetails.getScale().getPeriod();
+            int frequency = this.projectDetails.getScale().getFrequency();
+
+            period = (int)TimeHelper.unitsToLeadUnits(
+                    this.projectDetails.getScale().getUnit().value(),
+                    period
+            );
+
+            frequency = (int)TimeHelper.unitsToLeadUnits(
+                    this.projectDetails.getScale().getUnit().value(),
+                    frequency
+            );
 
             while(resultSet.next())
             {
-                /**
-                 * scale_member : The member of the scale to group into an
-                 * aggregation. If the period of aggregation is six, you can
-                 * have six different scale members: 0, 1, 2, 3, 4, and 5.
-                 */
-
-                // TODO: The scale_member doesn't always link basis times; see
-                // scenario400, where we have the same date for lead time 2
-                // for 7/27 and lead time 6 for 7/28. It tries to lump the
-                // two together, which crosses basis times.
-                // Consider adding an identity function that ignores the
-                // scale_member or bringing/lumping together based on basis time
-                // (probably a way better solution)
-                //
-                // See Bug #41816
-
-                if (scaleMember != null &&
-                    (!this.projectDetails.shouldScale(dataSourceConfig) || resultSet.getInt( "scale_member" ) <= scaleMember ))
+                if (ingestedValues.size() > 0 && resultSet.getLong( "basis_epoch_time" ) != reference )
                 {
-                    if (this.shouldAddPair( scaleMember, dataSourceConfig ))
+                    Integer aggregationStep = ingestedValues.getFirstCondensingStep(
+                            period,
+                            frequency,
+                            minimumLead
+                    );
+
+                    CondensedIngestedValue condensedValue = ingestedValues.condense(
+                            aggregationStep,
+                            period,
+                            frequency,
+                            minimumLead
+                    );
+
+                    while (condensedValue != null)
                     {
-                        pairs = this.addPair( pairs,
-                                              valueDate,
-                                              rightValues,
-                                              dataSourceConfig,
-                                              lead );
-                    }
-                    else
-                    {
-                        LOGGER.trace("A pair isn't being added for validation"
-                                     + "because it represents an incomplete"
-                                     + "dataset.");
+                        pairs = this.addPair( pairs, condensedValue, dataSourceConfig );
+                        aggregationStep++;
+                        condensedValue = ingestedValues.condense(
+                                aggregationStep,
+                                period,
+                                frequency,
+                                minimumLead
+                        );
                     }
 
-                    rightValues = new TreeMap<>(  );
+                    ingestedValues = new IngestedValueCollection(  );
                 }
 
-                scaleMember = resultSet.getInt( "scale_member" );
-                valueDate = Database.getInstant( resultSet, "value_date" );
+                reference = resultSet.getLong("basis_epoch_time");
 
-                lead = Database.getValue( resultSet, "lead" );
-
-                Double[] measurements = (Double[])resultSet.getArray("measurements").getArray();
-
-                for (int measurementIndex = 0; measurementIndex < measurements.length; ++measurementIndex)
-                {
-                    Integer measurementUnitID = resultSet.getInt( "measurementunit_id" );
-                    rightValues.putIfAbsent( measurementIndex, new ArrayList<>() );
-                    rightValues.get(measurementIndex)
-                               .add( this.convertMeasurement( measurements[measurementIndex],
-                                                              measurementUnitID ) );
-                }
+                ingestedValues.add( resultSet, this.projectDetails);
             }
 
-            // Organizing scaling periods is done based on a modulo operation -
-            // meaning that, for a period of 6, there should be a 6 values, but
-            // the last one won't have a scaleMember equalling the period. The
-            // scaleMember of the last number is actually one below.  If there isn't
-            // a scaling operation, we don't care.
-            if ( rightValues.size() > 0 && this.shouldAddPair( scaleMember, dataSourceConfig ))
+            if ( ingestedValues.size() > 0)
             {
-                pairs = this.addPair( pairs,
-                                      valueDate,
-                                      rightValues,
-                                      dataSourceConfig,
-                                      lead );
+                Integer aggregationStep = ingestedValues.getFirstCondensingStep(
+                        period,
+                        frequency,
+                        minimumLead
+                );
+
+                CondensedIngestedValue condensedValue = ingestedValues.condense(
+                        aggregationStep,
+                        period,
+                        frequency,
+                        minimumLead
+                );
+
+                while (condensedValue != null)
+                {
+                    pairs = this.addPair( pairs, condensedValue, dataSourceConfig );
+                    aggregationStep++;
+                    condensedValue = ingestedValues.condense(
+                            aggregationStep,
+                            period,
+                            frequency,
+                            minimumLead
+                    );
+                }
             }
         }
         finally
@@ -682,31 +729,6 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
     }
 
     /**
-     * Determines whether or not a set of pairs should be added based off of the period
-     * <p>
-     *     A pair should be added if no scaling should occur, if the period is
-     *     empty, or the member is the last possible member for the scale
-     *     (i.e. member 5 of a 6 unit scale)
-     * </p>
-     * @param scaleMember
-     * @return
-     * @throws NoDataException
-     */
-    private boolean shouldAddPair(Integer scaleMember, DataSourceConfig dataSourceConfig)
-            throws IOException
-    {
-        long period = TimeHelper.unitsToLeadUnits(
-                this.projectDetails.getScale().getUnit().value(),
-                this.projectDetails.getScale().getPeriod()
-        );
-
-        return !this.projectDetails.shouldScale(dataSourceConfig) ||
-               period == 0 ||
-               scaleMember == period - 1;
-    }
-
-
-    /**
      * Packages pairs based on persistence forecasting logic
      * @param dataSourceConfig The specification for the baseline
      * @param primaryPairs The set of primary pairs that have already been packaged
@@ -714,7 +736,6 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
      * @throws SQLException
      * @throws IOException
      */
-
     private List<ForecastedPair> createPersistencePairs( DataSourceConfig dataSourceConfig,
                                                          List<ForecastedPair> primaryPairs )
             throws SQLException, IOException
@@ -991,9 +1012,8 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
     }
 
     /**
-     * Pairs retrieved values with their observed equivalent, aggregates them
-     * (if necessary), adds them to the overarching list of packaged pairs,
-     * and writes them to the pair output
+     * Pairs retrieved values with their observed equivalent, adds them to the
+     * overarching list of packaged pairs, and writes them to the pair output
      *
      * <p>
      *     A pair will not be added if no values were retrieved in the first
@@ -1001,33 +1021,44 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
      * </p>
      *
      * @param pairs The overarching list of pairs
-     * @param valueDate The date of the most recent value added to rightValues
-     * @param rightValues A mapping of values mapped to their position in the
-     *                    set of retrieved data (such as ensemble position)
+     * @param condensedIngestedValue A set of values read in from the database
      * @param dataSourceConfig The configuration that is driving this pair
      *                         generation
-     * @param lead The lead time of the most recently added value
      * @return The list of packaged pairs with a possible new pair added
-     * @throws NoDataException
+     * @throws NoDataException Thrown if there wasn't enough data to determine
+     * if a pair is viable
      */
-    private List<ForecastedPair> addPair( List<ForecastedPair> pairs,
-                                          Instant valueDate,
-                                          Map<Integer, List<Double>> rightValues,
-                                          DataSourceConfig dataSourceConfig,
-                                          int lead )
-            throws NoDataException
+    private List<ForecastedPair> addPair(
+            List<ForecastedPair> pairs,
+            CondensedIngestedValue condensedIngestedValue,
+            DataSourceConfig dataSourceConfig)
+            throws NoDataException, SQLException
     {
-        if ( !rightValues.isEmpty() )
+        if (!condensedIngestedValue.isEmpty())
         {
-            PairOfDoubleAndVectorOfDoubles pair = this.getPair( valueDate, rightValues );
+            PairOfDoubleAndVectorOfDoubles pair = this.getPair( condensedIngestedValue );
 
             if (pair != null)
             {
-                ForecastedPair pairPair = new ForecastedPair( lead,
-                                                              valueDate,
-                                                              pair );
-                writePair( valueDate, pairPair, dataSourceConfig );
-                pairs.add( pairPair );
+                if (this.projectDetails.getInputName( dataSourceConfig ).equals(ProjectDetails.RIGHT_MEMBER))
+                {
+                    this.lastLead = Math.max(this.lastLead, condensedIngestedValue.lead);
+                    this.firstLead = Math.min(this.firstLead, condensedIngestedValue.lead);
+                }
+                else
+                {
+                    this.lastBaselineLead = Math.max(this.lastBaselineLead, condensedIngestedValue.lead);
+                    this.firstBaselineLead = Math.min(this.firstBaselineLead, condensedIngestedValue.lead);
+                }
+
+                ForecastedPair packagedPair = new ForecastedPair(
+                        condensedIngestedValue.lead,
+                        condensedIngestedValue.validTime,
+                        pair
+                );
+
+                writePair( condensedIngestedValue.validTime, packagedPair, dataSourceConfig );
+                pairs.add( packagedPair );
             }
         }
         return pairs;
@@ -1069,30 +1100,58 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         DatasetIdentifier datasetIdentifier = metadataFactory.getDatasetIdentifier(geospatialIdentifier,
                                                                                    variableIdentifier,
                                                                                    sourceConfig.getLabel());
-        Double lastLead = 0.0;
+        // Replicated from earlier declaration as long
+        // TODO: confirm that this is really intended as the default
+        Duration firstLead = Duration.ZERO;
+        Duration lastLead = Duration.ZERO;
+        
+        ChronoUnit configuredUnits =
+                ConfigHelper.getLeadTimeUnitsFromProjectConfig( this.projectDetails.getProjectConfig() );
 
-        if ( ConfigHelper.isForecast( sourceConfig )
+        if ( (ConfigHelper.isForecast( sourceConfig ) && !isBaseline)
                 // Persistence forecast meta is based on the forecast meta
                 || ConfigHelper.isPersistence( projectDetails.getProjectConfig(),
                                                sourceConfig ) )
         {
-            Integer offset = this.projectDetails.getLeadOffset( this.feature );
-
-            if (offset == null)
+            if (this.projectDetails.usesTimeSeriesMetrics())
             {
-                throw new IOException( "The last lead of the window could not "
-                                       + "be determined because the offset for "
-                                       + "the window could not be determined." );
+                firstLead = Duration.of( this.firstLead, configuredUnits);
+                lastLead = Duration.of( this.lastLead, configuredUnits);
             }
+            else
+            {
+                Integer offset = this.projectDetails.getLeadOffset( this.feature );
 
-            lastLead = this.leadIteration *
-                       this.projectDetails.getLeadFrequency() +
-                       this.projectDetails.getWindowWidth() * 1.0 +
-                       offset;
+                if (offset == null)
+                {
+                    throw new IOException( "The last lead of the window could not "
+                                           + "be determined because the offset for "
+                                           + "the window could not be determined." );
+                }
+
+                // The lead time offset is in fixed units of hours. TODO: confirm and 
+                // change/document API to use java.time
+                Duration offsetDuration = Duration.of( offset, ChronoUnit.HOURS );
+                // The window width is in fixed units of hours. TODO: confirm and 
+                // change/document API to use java.time
+                Duration windowWidth = Duration.of( this.projectDetails.getWindowWidth(), ChronoUnit.HOURS );
+                
+                Duration leadFrequency = Duration.of( this.projectDetails.getLeadFrequency(), configuredUnits );
+                Duration leadFrequencyMultipliedByLeadIteration = leadFrequency.multipliedBy( this.leadIteration );
+
+                lastLead = leadFrequencyMultipliedByLeadIteration.plus( windowWidth ).plus( offsetDuration );
+                firstLead = lastLead;               
+            }
+        }
+        else if (ConfigHelper.isForecast( sourceConfig ))
+        {
+            Duration.of( this.firstBaselineLead, configuredUnits);
+            Duration.of( this.lastBaselineLead, configuredUnits);
         }
 
         TimeWindow timeWindow = ConfigHelper.getTimeWindow( this.projectDetails,
-                                                            lastLead.longValue(),
+                                                            firstLead,
+                                                            lastLead,
                                                             this.issueDatesPool );
 
         return metadataFactory.getMetadata( dim,
@@ -1100,33 +1159,53 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                                             timeWindow );
     }
 
-    /**
-     * Pairs a collection of values with their left hand counter part and performs
-     * any needed aggregation
-     * @param lastDate The last valid date for the data contained within rightValues
-     * @param rightValues A mapping of values to where they were retrieved in
-     *                    the data retrieved from the database
-     * @return A raw pair that may be used to build up a MetricInput
-     * @throws NoDataException
-     */
-    private PairOfDoubleAndVectorOfDoubles getPair( Instant lastDate,
-                                                    Map<Integer, List<Double>> rightValues)
-            throws NoDataException
+    private PairOfDoubleAndVectorOfDoubles getPair(CondensedIngestedValue condensedIngestedValue)
+            throws NoDataException, SQLException
     {
-        if (rightValues == null || rightValues.isEmpty() )
+        if (condensedIngestedValue.isEmpty())
         {
             throw new NoDataException( "No values could be retrieved to pair "
                                        + "with with any possible set of left "
                                        + "values." );
         }
 
+        Double leftAggregation = this.getLeftAggregation( condensedIngestedValue.validTime );
+
+        // If a valid value could not be retrieved (NaN is valid, so MAX_VALUE
+        // is used), return null
+        if (leftAggregation == null)
+        {
+            LOGGER.trace( "No values from the left could be retrieved to pair with the retrieved right values." );
+            return null;
+        }
+
+        return DefaultDataFactory.getInstance().pairOf(
+                leftAggregation,
+                condensedIngestedValue.getAggregatedValues(
+                        this.projectDetails.shouldScale(),
+                        this.projectDetails.getScale().getFunction()
+                )
+        );
+    }
+
+    /**
+     * Finds and aggregates left hand values
+     * @param end The date at which the left hand values need to be aggregated to
+     * @return The scaled left hand value.
+     * @throws NoDataException
+     */
+    private Double getLeftAggregation(Instant end)
+            throws NoDataException, SQLException
+    {
+
         Instant firstDate;
 
         if (this.projectDetails.shouldScale())
         {
-            // This works for both rolling and back-to-back because of how the grouping of scale_member works
-            firstDate = lastDate.minus( this.projectDetails.getScale().getPeriod(),
-                                        ChronoUnit.valueOf( this.projectDetails.getScale().getUnit().value().toUpperCase() ));
+            firstDate = end.minus(
+                    this.projectDetails.getScale().getPeriod(),
+                    ChronoUnit.valueOf( this.projectDetails.getScale().getUnit().value().toUpperCase() )
+            );
         }
         else
         {
@@ -1135,12 +1214,11 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             // we end up with no left hand values. We instead decrement a short
             // period of time prior to ensure we end up with an actual range of
             // values containing the one value
-            firstDate = lastDate.minus(1L, ChronoUnit.MINUTES);
+            firstDate = end.minus( 1L, ChronoUnit.MINUTES );
         }
 
-        // Convert to LocalDateTime for the getLeftValues function
         LocalDateTime startDate = LocalDateTime.ofInstant( firstDate, ZoneId.of( "Z" ) );
-        LocalDateTime endDate = LocalDateTime.ofInstant( lastDate, ZoneId.of( "Z" ) );
+        LocalDateTime endDate = LocalDateTime.ofInstant(end, ZoneId.of( "Z" ) );
 
         List<Double> leftValues = this.getLeftValues.apply( startDate, endDate );
 
@@ -1154,48 +1232,19 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
 
         if (this.projectDetails.shouldScale())
         {
-            leftAggregation =
-                wres.util.Collections.aggregate( leftValues,
-                                                 this.projectDetails.getScale()
-                                                                    .getFunction()
-                                                                    .value() );
+            leftAggregation = wres.util.Collections.aggregate(
+                    leftValues,
+                    this.projectDetails.getScale()
+                                       .getFunction()
+                                       .value()
+            );
         }
         else
         {
             leftAggregation = leftValues.get( 0 );
-
-            if (leftAggregation == null)
-            {
-                leftAggregation = Double.NaN;
-            }
         }
 
-        List<Double> validAggregations = new ArrayList<>();
-
-        for (List<Double> values : rightValues.values())
-        {
-            if (this.projectDetails.shouldScale())
-            {
-                validAggregations.add(
-                        wres.util.Collections.aggregate(
-                                values,
-                                this.projectDetails.getScale()
-                                                   .getFunction()
-                                                   .value()
-                        )
-                );
-            }
-            // If we aren't aggregating, just throw it in the collection and move on
-            else
-            {
-                validAggregations.addAll( values );
-            }
-        }
-
-        return DefaultDataFactory.getInstance().pairOf( leftAggregation,
-                                                        validAggregations.toArray(
-                                                                new Double[validAggregations
-                                                                        .size()] ) );
+        return leftAggregation;
     }
 
     /**

@@ -26,6 +26,21 @@ public final class Variables extends Cache<VariableDetails, String>
 	private static Variables instance = null;
 	private static final Object CACHE_LOCK = new Object();
 
+	private static final Object DETAIL_LOCK = new Object();
+	private static final Object KEY_LOCK = new Object();
+
+	@Override
+	protected Object getDetailLock()
+	{
+		return Variables.DETAIL_LOCK;
+	}
+
+	@Override
+	protected Object getKeyLock()
+	{
+		return Variables.KEY_LOCK;
+	}
+
 	private static Variables getCache()
 	{
 		synchronized (CACHE_LOCK)
@@ -118,6 +133,12 @@ public final class Variables extends Cache<VariableDetails, String>
 		return getCache().getKey(variableId);
 	}
 
+	public static int getMeasurementUnitId(Integer variableId)
+	{
+		VariableDetails details = getCache().get( variableId );
+		return details.getMeasurementunitId();
+	}
+
 	public String getKey(Integer variableId)
 	{
 		String name = null;
@@ -175,10 +196,11 @@ public final class Variables extends Cache<VariableDetails, String>
                     this.getDetails().put(detail.getId(), detail);
                 }
             }
-            catch (SQLException error)
+            catch ( SQLException sqlException )
             {
-                LOGGER.error("An error was encountered when trying to populate "
-                             + "the Variable cache.", error);
+				// Failure to pre-populate cache should not affect primary outputs.
+                LOGGER.warn( "An error was encountered when trying to populate "
+                             + "the Variable cache.", sqlException );
             }
             finally
             {
@@ -190,9 +212,10 @@ public final class Variables extends Cache<VariableDetails, String>
                     }
                     catch(SQLException e)
                     {
-                        LOGGER.error("An error was encountered when trying to"
+						// Exception on close should not affect primary outputs.
+                        LOGGER.warn( "An error was encountered when trying to"
                                      + "close the result set containing Variable "
-                                     + "information.", e);
+                                     + "information.", e );
                     }
                 }
 

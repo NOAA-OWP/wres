@@ -2,6 +2,7 @@ package wres.io.writing.png;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -10,8 +11,11 @@ import java.util.function.Consumer;
 
 import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
+
 import wres.config.ProjectConfigException;
+import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationConfig;
+import wres.config.generated.OutputTypeSelection;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
@@ -19,7 +23,6 @@ import wres.datamodel.outputs.MapKey;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
 import wres.io.config.ConfigHelper;
-import wres.io.config.ProjectConfigPlus;
 import wres.vis.ChartEngineFactory;
 
 /**
@@ -99,22 +102,47 @@ public class PNGDoubleScoreWriter extends PNGWriter
 
             GraphicsHelper helper = GraphicsHelper.of( projectConfigPlus, destinationConfig, meta.getMetricID() );
 
-            ConcurrentMap<MetricConstants, ChartEngine> engines =
-                    ChartEngineFactory.buildScoreOutputChartEngine( projectConfigPlus.getProjectConfig(),
-                                                                    output,
-                                                                    DATA_FACTORY,
-                                                                    helper.getOutputType(),
-                                                                    helper.getTemplateResourceName(),
-                                                                    helper.getGraphicsString() );
-
-            // Build the outputs
-            for ( final Entry<MetricConstants, ChartEngine> nextEntry : engines.entrySet() )
+            // As many outputs as secondary thresholds if secondary thresholds are defined
+            // and the output type is OutputTypeSelection.THRESHOLD_LEAD.
+            List<MetricOutputMapByTimeAndThreshold<DoubleScoreOutput>> allOutputs = new ArrayList<>();
+            if ( destinationConfig.getOutputType() == OutputTypeSelection.THRESHOLD_LEAD
+                 && !output.setOfThresholdTwo().isEmpty() )
             {
+                // Slice by threshold two
+                output.setOfThresholdTwo().forEach( next -> allOutputs.add( output.filterByThresholdTwo( next ) ) );
+            }
+            // One output only
+            else 
+            {
+                allOutputs.add( output );
+            }
+            
+            for ( MetricOutputMapByTimeAndThreshold<DoubleScoreOutput> nextOutput : allOutputs )
+            {
+                ConcurrentMap<MetricConstants, ChartEngine> engines =
+                        ChartEngineFactory.buildScoreOutputChartEngine( projectConfigPlus.getProjectConfig(),
+                                                                        nextOutput,
+                                                                        DATA_FACTORY,
+                                                                        helper.getOutputType(),
+                                                                        helper.getTemplateResourceName(),
+                                                                        helper.getGraphicsString() );
 
-                // Build the output file name
-                Path outputImage = ConfigHelper.getOutputPathToWrite( destinationConfig, meta );
+                String append = null;
+                // Secondary threshold? If yes, only, one as this was sliced above
+                if ( !nextOutput.setOfThresholdTwo().isEmpty() )
+                {
+                    append = nextOutput.setOfThresholdTwo().iterator().next().toStringSafe();
+                }
 
-                PNGWriter.writeChart( outputImage, nextEntry.getValue(), destinationConfig );
+                // Build the outputs
+                for ( final Entry<MetricConstants, ChartEngine> nextEntry : engines.entrySet() )
+                {
+
+                    // Build the output file name
+                    Path outputImage = ConfigHelper.getOutputPathToWrite( destinationConfig, meta, append );
+
+                    PNGWriter.writeChart( outputImage, nextEntry.getValue(), destinationConfig );
+                }
             }
 
         }

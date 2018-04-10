@@ -12,7 +12,10 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
-import wres.datamodel.Threshold.Operator;
+import wres.datamodel.ThresholdConstants.Operator;
+import wres.datamodel.ThresholdConstants.ThresholdDataType;
+import wres.datamodel.ThresholdsByMetric.ThresholdsByMetricBuilder;
+import wres.datamodel.ThresholdsByType.ThresholdsByTypeBuilder;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
@@ -24,8 +27,6 @@ import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
-import wres.datamodel.inputs.pairs.builders.RegularTimeSeriesOfEnsemblePairsBuilder;
-import wres.datamodel.inputs.pairs.builders.RegularTimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.inputs.pairs.builders.TimeSeriesOfEnsemblePairsBuilder;
 import wres.datamodel.inputs.pairs.builders.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.metadata.Metadata;
@@ -62,178 +63,195 @@ public interface DataFactory
 {
 
     /**
-     * Convenience method that returns a {@link Pair} to map a {@link MetricOutput} by {@link TimeWindow} and
-     * {@link Threshold}.
+     * Returns an instance of {@link OneOrTwoDoubles}.
      * 
-     * @param timeWindow the time window
-     * @param threshold the threshold value
-     * @param condition the threshold condition
-     * @return a map key
+     * @param first the first value
+     * @return a composition of doubles
      */
 
-    default Pair<TimeWindow, Threshold> ofMapKeyByTimeThreshold( TimeWindow timeWindow,
-                                                                  Double threshold,
-                                                                  Operator condition )
+    default OneOrTwoDoubles ofOneOrTwoDoubles( Double first )
     {
-        return Pair.of( timeWindow, ofThreshold( threshold, condition ) );
+        return this.ofOneOrTwoDoubles( first, null );
     }
 
     /**
      * Convenience method that returns a {@link Pair} to map a {@link MetricOutput} by {@link TimeWindow} and
-     * {@link Threshold}.
+     * {@link OneOrTwoThresholds}.
      * 
      * @param timeWindow the time window
-     * @param threshold the threshold value or lower bound of a {@link Operator#BETWEEN} condition
-     * @param thresholdUpper the upper threshold of a {@link Operator#BETWEEN} or null
+     * @param values the values
      * @param condition the threshold condition
+     * @param dataType the data to which the threshold applies
      * @return a map key
      */
 
-    default Pair<TimeWindow, Threshold> ofMapKeyByTimeThreshold( TimeWindow timeWindow,
-                                                                  Double threshold,
-                                                                  Double thresholdUpper,
-                                                                  Operator condition )
+    default Pair<TimeWindow, OneOrTwoThresholds> ofMapKeyByTimeThreshold( TimeWindow timeWindow,
+                                                                          OneOrTwoDoubles values,
+                                                                          Operator condition,
+                                                                          ThresholdDataType dataType )
     {
-        return Pair.of( timeWindow, ofThreshold( threshold, thresholdUpper, condition ) );
+        return Pair.of( timeWindow, OneOrTwoThresholds.of( this.ofThreshold( values, condition, dataType ) ) );
     }
 
     /**
      * Returns {@link Threshold} from the specified input.
      * 
-     * @param threshold the threshold value or lower bound of a {@link Operator#BETWEEN} condition
-     * @param thresholdUpper the upper threshold of a {@link Operator#BETWEEN} or null
+     * @param values the values
      * @param condition the threshold condition
+     * @param dataType the data to which the threshold applies
      * @return a threshold
      */
 
-    default Threshold ofThreshold( Double threshold, Double thresholdUpper, Operator condition )
+    default Threshold ofThreshold( OneOrTwoDoubles values, Operator condition, ThresholdDataType dataType )
     {
-        return ofThreshold( threshold, thresholdUpper, condition, null );
-    }
-
-    /**
-     * Returns {@link Threshold} from the specified input. Both inputs must be in the unit interval, [0,1].
-     * 
-     * @param threshold the threshold value or lower bound of a {@link Operator#BETWEEN} condition
-     * @param thresholdUpper the upper threshold of a {@link Operator#BETWEEN} or null
-     * @param condition the threshold condition
-     * @return a threshold
-     */
-
-    default Threshold ofProbabilityThreshold( Double threshold,
-                                              Double thresholdUpper,
-                                              Operator condition )
-    {
-        return ofProbabilityThreshold( threshold, thresholdUpper, condition, null );
-    }
-
-    /**
-     * Returns a {@link Threshold} from the specified input
-     * 
-     * @param threshold the threshold value or lower bound of a {@link Operator#BETWEEN} condition
-     * @param thresholdUpper the upper threshold of a {@link Operator#BETWEEN} or null
-     * @param probability the probability associated with the threshold
-     * @param probabilityUpper the probability associated with the upper threshold or null
-     * @param condition the threshold condition
-     * @return a quantile
-     */
-
-    default Threshold ofQuantileThreshold( Double threshold,
-                                           Double thresholdUpper,
-                                           Double probability,
-                                           Double probabilityUpper,
-                                           Operator condition )
-    {
-        return ofQuantileThreshold( threshold, thresholdUpper, probability, probabilityUpper, condition, null );
+        return this.ofThreshold( values, condition, dataType, null, null );
     }
 
     /**
      * Returns {@link Threshold} from the specified input.
      * 
-     * @param threshold the threshold value or lower bound
+     * @param values the values
      * @param condition the threshold condition
+     * @param units the optional units for the threshold values
+     * @param dataType the data to which the threshold applies
      * @return a threshold
      */
 
-    default Threshold ofThreshold( Double threshold, Operator condition )
+    default Threshold ofThreshold( OneOrTwoDoubles values,
+                                   Operator condition,
+                                   ThresholdDataType dataType,
+                                   Dimension units )
     {
-        return ofThreshold( threshold, null, condition, null );
+        return this.ofThreshold( values, condition, dataType, null, units );
     }
 
-    /**
-     * Returns {@link Threshold} from the specified input. The input must be in the unit interval, [0,1].
-     * 
-     * @param threshold the threshold value or lower bound
-     * @param condition the threshold condition
-     * @return a threshold
-     */
-
-    default Threshold ofProbabilityThreshold( Double threshold, Operator condition )
-    {
-        return ofProbabilityThreshold( threshold, null, condition, null );
-    }
-
-    /**
-     * Returns a {@link Threshold} from the specified input.
-     * 
-     * @param threshold the threshold value
-     * @param probability the probability associated with the threshold
-     * @param condition the threshold condition
-     * @return a quantile
-     */
-
-    default Threshold ofQuantileThreshold( Double threshold,
-                                           Double probability,
-                                           Operator condition )
-    {
-        return ofQuantileThreshold( threshold, null, probability, null, condition, null );
-    }
-    
     /**
      * Returns {@link Threshold} from the specified input.
      * 
-     * @param threshold the threshold value or lower bound
+     * @param values the values
      * @param condition the threshold condition
+     * @param label an optional label
+     * @param dataType the data to which the threshold applies
+     * @return a threshold
+     */
+
+    default Threshold ofThreshold( OneOrTwoDoubles values,
+                                   Operator condition,
+                                   ThresholdDataType dataType,
+                                   String label )
+    {
+        return this.ofThreshold( values, condition, dataType, label, null );
+    }
+
+    /**
+     * Returns {@link Threshold} from the specified input.
+     * 
+     * @param probabilities the probabilities
+     * @param condition the threshold condition
+     * @param dataType the data to which the threshold applies
+     * @return a threshold
+     */
+
+    default Threshold ofProbabilityThreshold( OneOrTwoDoubles probabilities,
+                                              Operator condition,
+                                              ThresholdDataType dataType )
+    {
+        return this.ofProbabilityThreshold( probabilities, condition, dataType, null, null );
+    }
+
+    /**
+     * Returns {@link Threshold} from the specified input.
+     * 
+     * @param probabilities the probabilities
+     * @param condition the threshold condition
+     * @param dataType the data to which the threshold applies
+     * @param units the optional units for the threshold values
+     * @return a threshold
+     */
+
+    default Threshold ofProbabilityThreshold( OneOrTwoDoubles probabilities,
+                                              Operator condition,
+                                              ThresholdDataType dataType,
+                                              Dimension units )
+    {
+        return this.ofProbabilityThreshold( probabilities, condition, dataType, null, units );
+    }
+
+    /**
+     * Returns {@link Threshold} from the specified input.
+     * 
+     * @param probabilities the probabilities
+     * @param condition the threshold condition
+     * @param dataType the data to which the threshold applies
      * @param label an optional label
      * @return a threshold
      */
 
-    default Threshold ofThreshold( Double threshold, Operator condition, String label )
+    default Threshold ofProbabilityThreshold( OneOrTwoDoubles probabilities,
+                                              Operator condition,
+                                              ThresholdDataType dataType,
+                                              String label )
     {
-        return ofThreshold( threshold, null, condition, label );
+        return this.ofProbabilityThreshold( probabilities, condition, dataType, label, null );
     }
 
     /**
-     * Returns {@link Threshold} from the specified input. The input must be in the unit interval, [0,1].
+     * Returns {@link Threshold} from the specified input.
      * 
-     * @param threshold the threshold value or lower bound
+     * @param values the values
+     * @param probabilities the probabilities
      * @param condition the threshold condition
-     * @param label an optional label
+     * @param dataType the data to which the threshold applies
      * @return a threshold
      */
 
-    default Threshold ofProbabilityThreshold( Double threshold, Operator condition, String label )
-    {
-        return ofProbabilityThreshold( threshold, null, condition, label );
-    }
-
-    /**
-     * Returns a {@link Threshold} from the specified input
-     * 
-     * @param threshold the threshold value
-     * @param probability the probability associated with the threshold
-     * @param condition the threshold condition
-     * @param label an optional label
-     * @return a quantile
-     */
-
-    default Threshold ofQuantileThreshold( Double threshold,
-                                           Double probability,
+    default Threshold ofQuantileThreshold( OneOrTwoDoubles values,
+                                           OneOrTwoDoubles probabilities,
                                            Operator condition,
+                                           ThresholdDataType dataType )
+    {
+        return this.ofQuantileThreshold( values, probabilities, condition, dataType, null, null );
+    }
+
+    /**
+     * Returns {@link Threshold} from the specified input.
+     * 
+     * @param values the values
+     * @param probabilities the probabilities
+     * @param condition the threshold condition
+     * @param dataType the data to which the threshold applies
+     * @param units the optional units for the threshold values
+     * @return a threshold
+     */
+
+    default Threshold ofQuantileThreshold( OneOrTwoDoubles values,
+                                           OneOrTwoDoubles probabilities,
+                                           Operator condition,
+                                           ThresholdDataType dataType,
+                                           Dimension units )
+    {
+        return this.ofQuantileThreshold( values, probabilities, condition, dataType, null, units );
+    }
+
+    /**
+     * Returns {@link Threshold} from the specified input.
+     * 
+     * @param values the values
+     * @param probabilities the probabilities
+     * @param condition the threshold condition
+     * @param dataType the data to which the threshold applies
+     * @param label an optional label
+     * @return a threshold
+     */
+
+    default Threshold ofQuantileThreshold( OneOrTwoDoubles values,
+                                           OneOrTwoDoubles probabilities,
+                                           Operator condition,
+                                           ThresholdDataType dataType,
                                            String label )
     {
-        return ofQuantileThreshold( threshold, null, probability, null, condition, label );
-    }    
+        return this.ofQuantileThreshold( values, probabilities, condition, dataType, label, null );
+    }
 
     /**
      * Return a {@link MatrixOutput}.
@@ -574,42 +592,6 @@ public interface DataFactory
     }
 
     /**
-     * Returns a {@link TimeSeriesOfSingleValuedPairs} with a regular timestep. The input contains one or more time-
-     * series, each one indexed by its basis time. The values must be time-ordered, moving away from the basis time.
-     * 
-     * @param timeSeries the list of time-series, each one indexed by basis time
-     * @param meta the metadata for the time-series
-     * @param timeStep the regular time-step
-     * @return a {@link TimeSeriesOfSingleValuedPairs}
-     */
-
-    default TimeSeriesOfSingleValuedPairs
-            ofRegularTimeSeriesOfSingleValuedPairs( List<Event<List<PairOfDoubles>>> timeSeries,
-                                                    Metadata meta,
-                                                    Duration timeStep )
-    {
-        return ofRegularTimeSeriesOfSingleValuedPairs( timeSeries, meta, null, null, timeStep );
-    }
-
-    /**
-     * Returns a {@link TimeSeriesOfEnsemblePairs} with a regular timestep. The input contains one or more time-series, 
-     * each one indexed by its basis time. The values must be time-ordered, moving away from the basis time.
-     * 
-     * @param timeSeries the list of time-series, each one indexed by basis time
-     * @param meta the metadata for the time-series
-     * @param timeStep the regular time-step
-     * @return a {@link TimeSeriesOfEnsemblePairs}
-     */
-
-    default TimeSeriesOfEnsemblePairs
-            ofRegularTimeSeriesOfEnsemblePairs( List<Event<List<PairOfDoubleAndVectorOfDoubles>>> timeSeries,
-                                                Metadata meta,
-                                                Duration timeStep )
-    {
-        return ofRegularTimeSeriesOfEnsemblePairs( timeSeries, meta, null, null, timeStep );
-    }
-
-    /**
      * Returns a {@link TimeSeriesOfSingleValuedPairs} whose timestep may vary. The input contains one or more time-
      * series, each one indexed by its basis time. The values must be time-ordered, moving away from the basis time.
      * The outer list of {@link Event} contains the atomic time-series by basis time. The inner list of {@link Event} 
@@ -676,6 +658,7 @@ public interface DataFactory
         {
             unionWindow = TimeWindow.unionOf( combinedWindows );
         }
+
         MetadataFactory mDF = getMetadataFactory();
         MetricOutputMetadata combinedMeta =
                 mDF.getOutputMetadata( mDF.getOutputMetadata( sourceMeta, combined.size() ), unionWindow );
@@ -697,6 +680,85 @@ public interface DataFactory
      */
 
     Slicer getSlicer();
+
+    /**
+     * Returns an instance of {@link OneOrTwoDoubles}.
+     * 
+     * @param first the first value, which is required
+     * @param second the second value, which is optional
+     * @return a composition of doubles
+     */
+
+    OneOrTwoDoubles ofOneOrTwoDoubles( Double first, Double second );
+
+    /**
+     * Returns {@link Threshold} from the specified input.
+     * 
+     * @param values the threshold values
+     * @param condition the threshold condition
+     * @param dataType the data to which the threshold applies
+     * @param label an optional label
+     * @param units the optional units for the threshold values
+     * @return a threshold
+     */
+
+    Threshold ofThreshold( OneOrTwoDoubles values,
+                           Operator condition,
+                           ThresholdDataType dataType,
+                           String label,
+                           Dimension units );
+
+    /**
+     * Returns {@link Threshold} from the specified input. Both inputs must be in the unit interval, [0,1].
+     * 
+     * @param probabilities the probabilities
+     * @param condition the threshold condition
+     * @param dataType the data to which the threshold applies
+     * @param label an optional label
+     * @param units an optional set of units to use when deriving quantiles from probability thresholds
+     * @return a threshold
+     */
+
+    Threshold ofProbabilityThreshold( OneOrTwoDoubles probabilities,
+                                      Operator condition,
+                                      ThresholdDataType dataType,
+                                      String label,
+                                      Dimension units );
+
+    /**
+     * Returns a {@link Threshold} from the specified input
+     * 
+     * @param values the value or null
+     * @param probabilities the probabilities or null
+     * @param condition the threshold condition
+     * @param dataType the data to which the threshold applies
+     * @param label an optional label
+     * @param units the optional units for the quantiles
+     * @return a quantile
+     */
+
+    Threshold ofQuantileThreshold( OneOrTwoDoubles values,
+                                   OneOrTwoDoubles probabilities,
+                                   Operator condition,
+                                   ThresholdDataType dataType,
+                                   String label,
+                                   Dimension units );
+
+    /**
+     * Returns a builder for a {@link ThresholdsByMetric}.
+     * 
+     * @return a builder
+     */
+
+    ThresholdsByMetricBuilder ofThresholdsByMetricBuilder();
+
+    /**
+     * Returns a builder for a {@link ThresholdsByType}.
+     * 
+     * @return a builder
+     */
+
+    ThresholdsByTypeBuilder ofThresholdsByTypeBuilder();
 
     /**
      * Construct the single-valued input with a baseline.
@@ -1015,52 +1077,6 @@ public interface DataFactory
     <S extends Comparable<S>> MapKey<S> getMapKey( S key );
 
     /**
-     * Returns {@link Threshold} from the specified input.
-     * 
-     * @param threshold the threshold value or lower bound of a {@link Operator#BETWEEN} condition
-     * @param thresholdUpper the upper threshold of a {@link Operator#BETWEEN} or null
-     * @param condition the threshold condition
-     * @param label an optional label
-     * @return a threshold
-     */
-
-    Threshold ofThreshold( Double threshold, Double thresholdUpper, Operator condition, String label );
-
-    /**
-     * Returns {@link Threshold} from the specified input. Both inputs must be in the unit interval, [0,1].
-     * 
-     * @param threshold the threshold value or lower bound of a {@link Operator#BETWEEN} condition
-     * @param thresholdUpper the upper threshold of a {@link Operator#BETWEEN} or null
-     * @param condition the threshold condition
-     * @param label an optional label
-     * @return a threshold
-     */
-
-    Threshold ofProbabilityThreshold( Double threshold,
-                                      Double thresholdUpper,
-                                      Operator condition,
-                                      String label );
-
-    /**
-     * Returns a {@link Threshold} from the specified input
-     * 
-     * @param threshold the threshold value or lower bound of a {@link Operator#BETWEEN} condition
-     * @param thresholdUpper the upper threshold of a {@link Operator#BETWEEN} or null
-     * @param probability the probability associated with the threshold
-     * @param probabilityUpper the probability associated with the upper threshold or null
-     * @param condition the threshold condition
-     * @param label an optional label
-     * @return a quantile
-     */
-
-    Threshold ofQuantileThreshold( Double threshold,
-                                   Double thresholdUpper,
-                                   Double probability,
-                                   Double probabilityUpper,
-                                   Operator condition,
-                                   String label );
-
-    /**
      * Returns a {@link MetricOutputMapByTimeAndThreshold} from the raw map of inputs.
      * 
      * @param <T> the type of output
@@ -1069,11 +1085,11 @@ public interface DataFactory
      */
 
     <T extends MetricOutput<?>> MetricOutputMapByTimeAndThreshold<T>
-            ofMap( Map<Pair<TimeWindow, Threshold>, T> input );
+            ofMetricOutputMapByTimeAndThreshold( Map<Pair<TimeWindow, OneOrTwoThresholds>, T> input );
 
     /**
      * Returns a {@link MetricOutputMultiMapByTimeAndThreshold} from a map of inputs by {@link TimeWindow} and 
-     * {@link Threshold}.
+     * {@link OneOrTwoThresholds}.
      * 
      * @param <T> the type of output
      * @param input the input map of metric outputs by time window and threshold
@@ -1082,7 +1098,7 @@ public interface DataFactory
      */
 
     <T extends MetricOutput<?>> MetricOutputMultiMapByTimeAndThreshold<T>
-            ofMultiMap( Map<Pair<TimeWindow, Threshold>, List<MetricOutputMapByMetric<T>>> input );
+            ofMetricOutputMultiMapByTimeAndThreshold( Map<Pair<TimeWindow, OneOrTwoThresholds>, List<MetricOutputMapByMetric<T>>> input );
 
     /**
      * Returns a builder for a {@link MetricOutputMultiMapByTimeAndThreshold} that allows for the incremental addition of
@@ -1093,7 +1109,8 @@ public interface DataFactory
      *         threshold
      */
 
-    <T extends MetricOutput<?>> MetricOutputMultiMapByTimeAndThresholdBuilder<T> ofMultiMap();
+    <T extends MetricOutput<?>> MetricOutputMultiMapByTimeAndThresholdBuilder<T>
+            ofMetricOutputMultiMapByTimeAndThresholdBuilder();
 
     /**
      * Returns a builder for a {@link MetricOutputForProjectByTimeAndThreshold}.
@@ -1103,64 +1120,6 @@ public interface DataFactory
      */
 
     MetricOutputForProjectByTimeAndThresholdBuilder ofMetricOutputForProjectByTimeAndThreshold();
-
-    /**
-     * Returns a {@link TimeSeriesOfSingleValuedPairs} with a regular timestep. The input contains one or more time-
-     * series, each one indexed by its basis time. The values must be time-ordered, moving away from the basis time.
-     * The outer list of {@link Event} contains the atomic time-series by basis time. The inner list of {@link Event} 
-     * contains the valid times and a {@link PairOfDoubles} of each element in one atomic time-series.
-     * 
-     * @param timeSeries the list of time-series, each one indexed by basis time
-     * @param mainMeta the metadata for the time-series
-     * @param timeSeriesBaseline an optional list of time-series for a baseline (may be null)
-     * @param baselineMeta the metadata for the baseline time-series (may be null)
-     * @param timeStep the regular time-step
-     * @return a {@link TimeSeriesOfSingleValuedPairs}
-     */
-
-    TimeSeriesOfSingleValuedPairs
-            ofRegularTimeSeriesOfSingleValuedPairs( List<Event<List<PairOfDoubles>>> timeSeries,
-                                                    Metadata mainMeta,
-                                                    List<Event<List<PairOfDoubles>>> timeSeriesBaseline,
-                                                    Metadata baselineMeta,
-                                                    Duration timeStep );
-
-    /**
-     * Returns a {@link TimeSeriesOfEnsemblePairs} with a regular timestep. The input contains one or more time-series, 
-     * each one indexed by its basis time. The values must be time-ordered, moving away from the basis time. The outer 
-     * list of {@link Event} contains the atomic time-series by basis time. The inner list of {@link Event} contains 
-     * the valid times and a {@link PairOfDoubleAndVectorOfDoubles} of each element in one atomic time-series.
-     * 
-     * @param timeSeries the list of time-series, each one indexed by basis time
-     * @param mainMeta the metadata for the time-series
-     * @param timeSeriesBaseline an optional list of time-series for a baseline (may be null)
-     * @param baselineMeta the metadata for the baseline time-series (may be null)
-     * @param timeStep the regular time-step
-     * @return a {@link TimeSeriesOfEnsemblePairs}
-     */
-
-    TimeSeriesOfEnsemblePairs
-            ofRegularTimeSeriesOfEnsemblePairs( List<Event<List<PairOfDoubleAndVectorOfDoubles>>> timeSeries,
-                                                Metadata mainMeta,
-                                                List<Event<List<PairOfDoubleAndVectorOfDoubles>>> timeSeriesBaseline,
-                                                Metadata baselineMeta,
-                                                Duration timeStep );
-
-    /**
-     * Returns a builder for a {@link TimeSeriesOfSingleValuedPairs} with a regular timestep.
-     * 
-     * @return a {@link RegularTimeSeriesOfSingleValuedPairsBuilder}
-     */
-
-    RegularTimeSeriesOfSingleValuedPairsBuilder ofRegularTimeSeriesOfSingleValuedPairsBuilder();
-
-    /**
-     * Returns a builder for a {@link TimeSeriesOfEnsemblePairs} with a regular timestep.
-     * 
-     * @return a {@link RegularTimeSeriesOfEnsemblePairsBuilder}
-     */
-
-    RegularTimeSeriesOfEnsemblePairsBuilder ofRegularTimeSeriesOfEnsemblePairsBuilder();
 
     /**
      * Returns a {@link TimeSeriesOfSingleValuedPairs} whose timestep may vary. The input contains one or more 
@@ -1214,14 +1173,14 @@ public interface DataFactory
     TimeSeriesOfEnsemblePairsBuilder ofTimeSeriesOfEnsemblePairsBuilder();
 
     /**
-     * Returns a {@link MetricOutputMapByMetric} from the raw list of inputs.
+     * Returns a {@link MetricOutputMapByMetric} from the raw map of inputs.
      * 
      * @param <T> the type of output
-     * @param input the list of metric outputs
+     * @param input the map of metric outputs
      * @return a {@link MetricOutputMapByMetric} of metric outputs
      */
 
-    <T extends MetricOutput<?>> MetricOutputMapByMetric<T> ofMap( List<T> input );
+    <T extends MetricOutput<?>> MetricOutputMapByMetric<T> ofMetricOutputMapByMetric( Map<MetricConstants, T> input );
 
     /**
      * Combines a list of {@link MetricOutputMapByTimeAndThreshold} into a single map.

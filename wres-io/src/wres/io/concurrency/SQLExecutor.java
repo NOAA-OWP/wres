@@ -6,7 +6,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.io.utilities.Database;
-import wres.util.Strings;
 
 /**
  * A thread that will execute a passed in SQL script
@@ -23,47 +22,23 @@ public class SQLExecutor extends WRESRunnable
 	 */
 	public SQLExecutor(String script) {
 		this.script = script;
+		this.forceTransaction = false;
 	}
 
-	/**
-	 * Creates the thread with the passed in SQL script with the option to
-	 * display log errors in the database or to log them without
-	 * necessarily displaying them
-	 * @param script The script to execute
-	 * @param displayErrors Determines if errors occuring in the database
-	 *                      should be logged/displayed as errors or logged as
-	 *                      debug records
-	 */
-	public SQLExecutor(String script, boolean displayErrors)
-	{
-		this.script = script;
-		this.displayErrors = displayErrors;
-	}
+    public SQLExecutor( String script, boolean forceTransaction )
+    {
+        this.script = script;
+        this.forceTransaction = forceTransaction;
+    }
 
 	@Override
-    public void execute()
-	{
-		try
-		{
-			Database.execute(this.script);
-		}
-		catch (SQLException e)
-		{
-			// We allow the hiding of errors on the screen on the rare
-			// occasion where failing in the database is acceptable
-			if (this.displayErrors)
-			{
-				this.getLogger().error( Strings.getStackTrace( e ) );
-			}
-			else
-			{
-				this.getLogger().debug( Strings.getStackTrace( e ) );
-			}
-		}
+    public void execute() throws SQLException
+    {
+        Database.execute( this.script, forceTransaction );
 	}
 
-	private String script = null;
-	private boolean displayErrors = true;
+	private final String script;
+	private final boolean forceTransaction;
 
 	@Override
 	protected Logger getLogger () {

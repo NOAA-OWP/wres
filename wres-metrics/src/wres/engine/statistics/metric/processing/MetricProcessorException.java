@@ -4,8 +4,6 @@ package wres.engine.statistics.metric.processing;
  * A checked exception associated with a {@link MetricProcessor}.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 
 public final class MetricProcessorException extends Exception

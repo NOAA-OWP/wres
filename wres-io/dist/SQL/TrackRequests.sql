@@ -1,4 +1,12 @@
-select pid, substring(query from 0 for 1000), state,state_change--, * 
+﻿select pid,
+    query,
+    state,
+    CASE
+        WHEN state = 'active' THEN age(now(), xact_start)
+        ELSE age(state_change, xact_start)
+    END,
+    state_change
+    --, * 
 from pg_stat_activity
 WHERE client_port != -1
 	AND application_name = 'PostgreSQL JDBC Driver'

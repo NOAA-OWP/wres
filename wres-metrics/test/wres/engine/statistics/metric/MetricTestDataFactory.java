@@ -9,6 +9,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -23,11 +24,12 @@ import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
-import wres.datamodel.inputs.pairs.builders.RegularTimeSeriesOfSingleValuedPairsBuilder;
+import wres.datamodel.inputs.pairs.builders.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
+import wres.datamodel.time.Event;
 
 /**
  * Factory class for generating test datasets for metric calculations.
@@ -226,8 +228,26 @@ public final class MetricTestDataFactory
     }
 
     /**
-     * Returns a moderately-sized test dataset of ensemble pairs without a baseline. Reads the pairs from
-     * testinput/metricTestDataFactory/getEnsemblePairsOne.asc. The inputs have a lead time of 24 hours.
+     * Returns a set of single-valued pairs with a baseline, both empty.
+     * 
+     * @return single-valued pairs
+     */
+
+    public static SingleValuedPairs getSingleValuedPairsSeven()
+    {
+        //Construct some single-valued pairs
+        final DataFactory metIn = DefaultDataFactory.getInstance();
+        final MetadataFactory metFac = metIn.getMetadataFactory();
+        final Metadata main = metFac.getMetadata( metFac.getDimension( "CMS" ),
+                                                  metFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ) );
+        final Metadata base = metFac.getMetadata( metFac.getDimension( "CMS" ),
+                                                  metFac.getDatasetIdentifier( "DRRC2", "SQIN", "ESP" ) );
+        return metIn.ofSingleValuedPairs( Collections.emptyList(), Collections.emptyList(), main, base );
+    }
+
+    /**
+     * Returns a moderately-sized test dataset of ensemble pairs with the same dataset as a baseline. Reads the pairs 
+     * from testinput/metricTestDataFactory/getEnsemblePairsOne.asc. The inputs have a lead time of 24 hours.
      * 
      * @return ensemble pairs
      * @throws IOException if the read fails
@@ -260,8 +280,13 @@ public final class MetricTestDataFactory
         final Metadata meta = metFac.getMetadata( metFac.getDimension( "CMS" ),
                                                   metFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ),
                                                   window );
+        final Metadata baseMeta = metFac.getMetadata( metFac.getDimension( "CMS" ),
+                                                      metFac.getDatasetIdentifier( "DRRC2", "SQIN", "ESP" ),
+                                                      window );
         return metIn.ofEnsemblePairs( values,
+                                      values,
                                       meta,
+                                      baseMeta,
                                       metIn.vectorOf( climatology.toArray( new Double[climatology.size()] ) ) );
     }
 
@@ -311,13 +336,52 @@ public final class MetricTestDataFactory
     }
 
     /**
-     * Returns a set of ensemble pairs with a single pair and no baseline. This is useful for checking exceptional
-     * behaviour due to an inadequate sample size.
+     * Returns a small test dataset of ensemble pairs without a baseline. Reads the pairs from
+     * testinput/metricTestDataFactory/getEnsemblePairsTwo.asc. The inputs have a lead time of 24 hours.
+     * 
+     * @return ensemble pairs
+     * @throws IOException if the read fails
+     */
+
+    public static EnsemblePairs getEnsemblePairsTwo() throws IOException
+    {
+        //Construct some ensemble pairs
+        final List<PairOfDoubleAndVectorOfDoubles> values = new ArrayList<>();
+        final DataFactory metIn = DefaultDataFactory.getInstance();
+        File file = new File( "testinput/metricTestDataFactory/getEnsemblePairsTwo.asc" );
+        List<Double> climatology = new ArrayList<>();
+        try ( BufferedReader in = new BufferedReader( new InputStreamReader( new FileInputStream( file ), "UTF-8" ) ) )
+        {
+            String line = null;
+            while ( Objects.nonNull( line = in.readLine() ) && !line.isEmpty() )
+            {
+                double[] doubleValues =
+                        Arrays.stream( line.split( "\\s+" ) ).mapToDouble( Double::parseDouble ).toArray();
+                values.add( metIn.pairOf( doubleValues[0],
+                                          Arrays.copyOfRange( doubleValues, 1, doubleValues.length ) ) );
+                climatology.add( doubleValues[0] );
+            }
+        }
+        final MetadataFactory metFac = metIn.getMetadataFactory();
+        final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                 Instant.parse( "2010-12-31T11:59:59Z" ),
+                                                 ReferenceTime.VALID_TIME,
+                                                 Duration.ofHours( 24 ) );
+        final Metadata meta = metFac.getMetadata( metFac.getDimension( "CMS" ),
+                                                  metFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ),
+                                                  window );
+        return metIn.ofEnsemblePairs( values,
+                                      meta,
+                                      metIn.vectorOf( climatology.toArray( new Double[climatology.size()] ) ) );
+    }
+
+    /**
+     * Returns a set of ensemble pairs with a single pair and no baseline. 
      * 
      * @return ensemble pairs
      */
 
-    public static EnsemblePairs getEnsemblePairsTwo()
+    public static EnsemblePairs getEnsemblePairsThree()
     {
         //Construct some ensemble pairs
         final DataFactory metIn = DefaultDataFactory.getInstance();
@@ -332,6 +396,27 @@ public final class MetricTestDataFactory
                                                   metFac.getDatasetIdentifier( "A", "MAP" ),
                                                   window );
         return metIn.ofEnsemblePairs( values, meta );
+    }
+
+    /**
+     * Returns a set of ensemble pairs with no data in the main input or baseline. 
+     * 
+     * @return ensemble pairs
+     */
+
+    public static EnsemblePairs getEnsemblePairsFour()
+    {
+        //Construct some ensemble pairs
+        final DataFactory metIn = DefaultDataFactory.getInstance();
+        final MetadataFactory metFac = metIn.getMetadataFactory();
+        final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                 Instant.parse( "2010-12-31T11:59:59Z" ),
+                                                 ReferenceTime.VALID_TIME,
+                                                 Duration.ofHours( 24 ) );
+        final Metadata meta = metFac.getMetadata( metFac.getDimension( "MM/DAY" ),
+                                                  metFac.getDatasetIdentifier( "A", "MAP" ),
+                                                  window );
+        return metIn.ofEnsemblePairs( Collections.emptyList(), Collections.emptyList(), meta, meta );
     }
 
     /**
@@ -893,26 +978,24 @@ public final class MetricTestDataFactory
         // Build an immutable regular time-series of single-valued pairs
         DataFactory dataFactory = DefaultDataFactory.getInstance();
         MetadataFactory metaFac = dataFactory.getMetadataFactory();
-        RegularTimeSeriesOfSingleValuedPairsBuilder builder =
-                dataFactory.ofRegularTimeSeriesOfSingleValuedPairsBuilder();
+        TimeSeriesOfSingleValuedPairsBuilder builder =
+                dataFactory.ofTimeSeriesOfSingleValuedPairsBuilder();
         // Create a regular time-series with an issue date/time, a series of paired values, and a timestep
         Instant firstId = Instant.parse( "1985-01-01T00:00:00Z" );
-        List<PairOfDoubles> firstValues = new ArrayList<>();
+        List<Event<PairOfDoubles>> firstValues = new ArrayList<>();
         // Add some values
-        firstValues.add( dataFactory.pairOf( 1, 1 ) );
-        firstValues.add( dataFactory.pairOf( 1, 5 ) );
-        firstValues.add( dataFactory.pairOf( 5, 1 ) );
+        firstValues.add( Event.of( Instant.parse( "1985-01-01T06:00:00Z" ), dataFactory.pairOf( 1, 1 ) ) );
+        firstValues.add( Event.of( Instant.parse( "1985-01-01T12:00:00Z" ), dataFactory.pairOf( 1, 5 ) ) );
+        firstValues.add( Event.of( Instant.parse( "1985-01-01T18:00:00Z" ), dataFactory.pairOf( 5, 1 ) ) );
 
         // Add another time-series
         Instant secondId = Instant.parse( "1985-01-02T00:00:00Z" );
-        List<PairOfDoubles> secondValues = new ArrayList<>();
+        List<Event<PairOfDoubles>> secondValues = new ArrayList<>();
         // Add some values
-        secondValues.add( dataFactory.pairOf( 10, 1 ) );
-        secondValues.add( dataFactory.pairOf( 1, 1 ) );
-        secondValues.add( dataFactory.pairOf( 1, 10 ) );
+        secondValues.add( Event.of( Instant.parse( "1985-01-02T06:00:00Z" ), dataFactory.pairOf( 10, 1 ) ) );
+        secondValues.add( Event.of( Instant.parse( "1985-01-02T12:00:00Z" ), dataFactory.pairOf( 1, 1 ) ) );
+        secondValues.add( Event.of( Instant.parse( "1985-01-02T18:00:00Z" ), dataFactory.pairOf( 1, 10 ) ) );
 
-        // Set the timestep for the time-series to 6h
-        Duration timeStep = Duration.ofHours( 6 );
         // Create some default metadata for the time-series
         final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                  Instant.parse( "1985-01-02T00:00:00Z" ),
@@ -926,10 +1009,111 @@ public final class MetricTestDataFactory
         // Build the time-series
         return (TimeSeriesOfSingleValuedPairs) builder.addTimeSeriesData( firstId, firstValues )
                                                       .addTimeSeriesData( secondId, secondValues )
-                                                      .setTimeStep( timeStep )
                                                       .setMetadata( metaData )
                                                       .build();
     }
 
+    /**
+     * Returns a {@link TimeSeriesOfSingleValuedPairs} containing fake data.
+     * 
+     * @return a time-series of single-valued pairs
+     */
 
+    public static TimeSeriesOfSingleValuedPairs getTimeSeriesOfSingleValuedPairsTwo()
+    {
+        // Build an immutable regular time-series of single-valued pairs
+        DataFactory dataFactory = DefaultDataFactory.getInstance();
+        MetadataFactory metaFac = dataFactory.getMetadataFactory();
+        TimeSeriesOfSingleValuedPairsBuilder builder =
+                dataFactory.ofTimeSeriesOfSingleValuedPairsBuilder();
+        // Create a regular time-series with an issue date/time, a series of paired values, and a timestep
+        Instant firstId = Instant.parse( "1985-01-01T00:00:00Z" );
+        List<Event<PairOfDoubles>> firstValues = new ArrayList<>();
+        // Add some values
+        firstValues.add( Event.of( Instant.parse( "1985-01-01T06:00:00Z" ), dataFactory.pairOf( 1, 1 ) ) );
+        firstValues.add( Event.of( Instant.parse( "1985-01-01T12:00:00Z" ), dataFactory.pairOf( 1, 5 ) ) );
+        firstValues.add( Event.of( Instant.parse( "1985-01-01T18:00:00Z" ), dataFactory.pairOf( 5, 1 ) ) );
+
+        // Create some default metadata for the time-series
+        final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                 Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                 ReferenceTime.ISSUE_TIME,
+                                                 Duration.ofHours( 6 ),
+                                                 Duration.ofHours( 18 ) );
+        final Metadata metaData = metaFac.getMetadata( metaFac.getDimension( "CMS" ),
+                                                       metaFac.getDatasetIdentifier( "A",
+                                                                                     "Streamflow" ),
+                                                       window );
+        // Build the time-series
+        return (TimeSeriesOfSingleValuedPairs) builder.addTimeSeriesData( firstId, firstValues )
+                                                      .setMetadata( metaData )
+                                                      .build();
+    }
+
+    /**
+     * Returns a {@link TimeSeriesOfSingleValuedPairs} containing fake data.
+     * 
+     * @return a time-series of single-valued pairs
+     */
+
+    public static TimeSeriesOfSingleValuedPairs getTimeSeriesOfSingleValuedPairsThree()
+    {
+        // Build an immutable regular time-series of single-valued pairs
+        DataFactory dataFactory = DefaultDataFactory.getInstance();
+        MetadataFactory metaFac = dataFactory.getMetadataFactory();
+        TimeSeriesOfSingleValuedPairsBuilder builder =
+                dataFactory.ofTimeSeriesOfSingleValuedPairsBuilder();
+        // Create a regular time-series with an issue date/time, a series of paired values, and a timestep
+
+        // Add another time-series
+        Instant secondId = Instant.parse( "1985-01-02T00:00:00Z" );
+        List<Event<PairOfDoubles>> secondValues = new ArrayList<>();
+        // Add some values
+        secondValues.add( Event.of( Instant.parse( "1985-01-02T06:00:00Z" ), dataFactory.pairOf( 10, 1 ) ) );
+        secondValues.add( Event.of( Instant.parse( "1985-01-02T12:00:00Z" ), dataFactory.pairOf( 1, 1 ) ) );
+        secondValues.add( Event.of( Instant.parse( "1985-01-02T18:00:00Z" ), dataFactory.pairOf( 1, 10 ) ) );
+
+        // Create some default metadata for the time-series
+        final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-02T00:00:00Z" ),
+                                                 Instant.parse( "1985-01-02T00:00:00Z" ),
+                                                 ReferenceTime.ISSUE_TIME,
+                                                 Duration.ofHours( 6 ),
+                                                 Duration.ofHours( 18 ) );
+        final Metadata metaData = metaFac.getMetadata( metaFac.getDimension( "CMS" ),
+                                                       metaFac.getDatasetIdentifier( "A",
+                                                                                     "Streamflow" ),
+                                                       window );
+        // Build the time-series
+        return (TimeSeriesOfSingleValuedPairs) builder.addTimeSeriesData( secondId, secondValues )
+                                                      .setMetadata( metaData )
+                                                      .build();
+    }
+
+    /**
+     * Returns a {@link TimeSeriesOfSingleValuedPairs} containing no data.
+     * 
+     * @return a time-series of single-valued pairs
+     */
+
+    public static TimeSeriesOfSingleValuedPairs getTimeSeriesOfSingleValuedPairsFour()
+    {
+        // Build an immutable regular time-series of single-valued pairs
+        DataFactory dataFactory = DefaultDataFactory.getInstance();
+        MetadataFactory metaFac = dataFactory.getMetadataFactory();
+        TimeSeriesOfSingleValuedPairsBuilder builder =
+                dataFactory.ofTimeSeriesOfSingleValuedPairsBuilder();
+        // Create a regular time-series with an issue date/time, a series of paired values, and a timestep
+
+        // Create some default metadata for the time-series
+        final TimeWindow window = TimeWindow.of( Instant.MIN,
+                                                 Instant.MAX );
+        final Metadata metaData = metaFac.getMetadata( metaFac.getDimension( "CMS" ),
+                                                       metaFac.getDatasetIdentifier( "A",
+                                                                                     "Streamflow" ),
+                                                       window );
+        // Build the time-series
+        return (TimeSeriesOfSingleValuedPairs) builder.setMetadata( metaData )
+                                                      .build();
+    }    
+    
 }

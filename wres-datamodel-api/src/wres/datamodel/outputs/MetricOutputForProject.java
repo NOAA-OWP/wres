@@ -1,5 +1,6 @@
 package wres.datamodel.outputs;
 
+import java.util.Set;
 import java.util.concurrent.Future;
 
 import wres.datamodel.MetricConstants.MetricOutputGroup;
@@ -38,37 +39,41 @@ public interface MetricOutputForProject<T extends MetricOutputMultiMap<?>>
      * Returns a {@link MetricOutputMultiMap} of {@link DoubleScoreOutput} or null if no output exists.
      * 
      * @return the scalar output or null
-     * @throws MetricOutputAccessException if the retrieval of {@link MetricOutput} fails for any reason
+     * @throws MetricOutputException if the output could not be retrieved
+     * @throws InterruptedException if the retrieval was interrupted
      */
 
-    MetricOutputMultiMap<DoubleScoreOutput> getDoubleScoreOutput() throws MetricOutputAccessException;
+    MetricOutputMultiMap<DoubleScoreOutput> getDoubleScoreOutput() throws InterruptedException;
 
     /**
      * Returns a {@link MetricOutputMultiMap} of {@link MultiVectorOutput} or null if no output exists.
      * 
      * @return the multi-vector output or null
-     * @throws MetricOutputAccessException if the retrieval of {@link MetricOutput} fails for any reason
+     * @throws MetricOutputException if the output could not be retrieved
+     * @throws InterruptedException if the retrieval was interrupted
      */
 
-    MetricOutputMultiMap<MultiVectorOutput> getMultiVectorOutput() throws MetricOutputAccessException;
+    MetricOutputMultiMap<MultiVectorOutput> getMultiVectorOutput() throws InterruptedException;
 
     /**
      * Returns a {@link MetricOutputMultiMap} of {@link MatrixOutput} or null if no output exists.
      * 
      * @return the matrix output or null
-     * @throws MetricOutputAccessException if the retrieval of {@link MetricOutput} fails for any reason
+     * @throws MetricOutputException if the output could not be retrieved
+     * @throws InterruptedException if the retrieval was interrupted
      */
 
-    MetricOutputMultiMap<MatrixOutput> getMatrixOutput() throws MetricOutputAccessException;
+    MetricOutputMultiMap<MatrixOutput> getMatrixOutput() throws InterruptedException;
 
     /**
      * Returns a {@link MetricOutputMultiMap} of {@link BoxPlotOutput} or null if no output exists.
      * 
      * @return the matrix output or null
-     * @throws MetricOutputAccessException if the retrieval of {@link MetricOutput} fails for any reason
+     * @throws MetricOutputException if the output could not be retrieved
+     * @throws InterruptedException if the retrieval was interrupted
      */
 
-    MetricOutputMultiMap<BoxPlotOutput> getBoxPlotOutput() throws MetricOutputAccessException;
+    MetricOutputMultiMap<BoxPlotOutput> getBoxPlotOutput() throws InterruptedException;
 
     /**
      * Returns a {@link MetricOutputMultiMap} for a prescribed array of {@link MetricOutputGroup} or null if no output
@@ -76,10 +81,11 @@ public interface MetricOutputForProject<T extends MetricOutputMultiMap<?>>
      * 
      * @param outGroup the array of {@link MetricOutputGroup}
      * @return the metric output or null
-     * @throws MetricOutputAccessException if the retrieval of {@link MetricOutput} fails for any reason
+     * @throws MetricOutputException if the output could not be retrieved
+     * @throws InterruptedException if the retrieval was interrupted
      */
 
-    T getOutput( MetricOutputGroup... outGroup ) throws MetricOutputAccessException;
+    T getOutput( MetricOutputGroup... outGroup ) throws InterruptedException;
 
     /**
      * Returns all {@link MetricOutputGroup} for which outputs are available.
@@ -87,6 +93,6 @@ public interface MetricOutputForProject<T extends MetricOutputMultiMap<?>>
      * @return all {@link MetricOutputGroup} for which outputs are available
      */
 
-    MetricOutputGroup[] getOutputTypes();
+    Set<MetricOutputGroup> getOutputTypes();
 
 }

@@ -7,9 +7,11 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import wres.io.concurrency.SQLExecutor;
 import wres.io.concurrency.StatementRunner;
@@ -17,6 +19,7 @@ import wres.io.concurrency.ValueRetriever;
 
 public class ScriptBuilder
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger( ScriptBuilder.class );
     private static final String NEWLINE = System.lineSeparator();
     private final StringBuilder script;
 
@@ -103,6 +106,11 @@ public class ScriptBuilder
         return this.script.toString();
     }
 
+    public void execute(Collection<Object> parameters) throws SQLException
+    {
+        this.execute(parameters.toArray());
+    }
+
     /**
      * Executes the built script with the given parameters
      * @param parameters The values to use as parameters to the built script
@@ -124,19 +132,26 @@ public class ScriptBuilder
      */
     public void execute(List<Object[]> parameters) throws SQLException
     {
-        Future task = this.issue(parameters);
+        Connection connection = null;
+        PreparedStatement statement = null;
 
         try
         {
-            task.get();
+            connection = Database.getConnection();
+            statement = this.getPreparedStatement( connection, parameters );
+            statement.execute();
         }
-        catch ( InterruptedException e )
+        finally
         {
-            throw new SQLException( "Script execution was interrupted.", e );
-        }
-        catch ( ExecutionException e )
-        {
-            throw new SQLException( "An error occurred while executing the script.", e );
+            if (statement != null)
+            {
+                statement.close();
+            }
+
+            if (connection != null)
+            {
+                Database.returnConnection( connection );
+            }
         }
     }
 
@@ -146,20 +161,16 @@ public class ScriptBuilder
      */
     public void execute() throws SQLException
     {
-        Future task = this.issue();
+        Database.execute( this.toString());
+    }
 
-        try
-        {
-            task.get();
-        }
-        catch ( InterruptedException e )
-        {
-            throw new SQLException( "Script execution was interrupted.", e );
-        }
-        catch ( ExecutionException e )
-        {
-            throw new SQLException( "An error occurred while executing the script.", e );
-        }
+    /**
+     * Forces the built query to execute within an explicit transaction
+     * @throws SQLException Thrown if the query fails
+     */
+    public void executeInTransaction() throws SQLException
+    {
+        Database.execute( this.toString(), true );
     }
 
     /**
@@ -170,6 +181,26 @@ public class ScriptBuilder
     {
         SQLExecutor executor = new SQLExecutor( this.toString() );
         return Database.execute( executor );
+    }
+
+    /**
+     * Runs the script asynchronously in an explicit transaction
+     * @return The task that is running the script
+     */
+    public Future issueTransaction()
+    {
+        SQLExecutor executor = new SQLExecutor( this.toString(), true );
+        return Database.execute( executor );
+    }
+
+    /**
+     * Runs the script with the given parameters asynchronously
+     * @param parameters A collection of objects to use as parameters
+     * @return The task that runs the script with the given parameters
+     */
+    public Future issue(Collection<Object> parameters)
+    {
+        return this.issue(parameters.toArray());
     }
 
     /**
@@ -208,19 +239,19 @@ public class ScriptBuilder
     public <V> V retrieve(String label) throws SQLException
     {
         V value;
-        Future<V> task = this.submit( label );
+        Connection connection = null;
 
         try
         {
-            value = task.get();
+            connection = Database.getConnection();
+            value = Database.getResult( this.toString(), label );
         }
-        catch ( InterruptedException e )
+        finally
         {
-            throw new SQLException( "Script execution was interrupted.", e );
-        }
-        catch ( ExecutionException e )
-        {
-            throw new SQLException( "An error occurred while executing the script.", e );
+            if (connection != null)
+            {
+                Database.returnConnection( connection );
+            }
         }
 
         return value;
@@ -246,7 +277,7 @@ public class ScriptBuilder
      */
     public <V> Future<V> submit(String label)
     {
-        ValueRetriever<V> retriever = new ValueRetriever<V>( this.toString(), label );
+        ValueRetriever<V> retriever = new ValueRetriever<>( this.toString(), label );
         return Database.submit( retriever );
     }
 
@@ -272,6 +303,22 @@ public class ScriptBuilder
             throws SQLException
     {
         return connection.prepareStatement( this.toString() );
+    }
+
+    /**
+     * Creates a prepared statement using the script and loads values from the
+     * collection of parameters into it
+     * @param connection The connection that the prepared statement will be run
+     * @param parameters A collection of objects to use as parameters
+     * @return A prepared statement that will execute the script with the given
+     * parameters
+     * @throws SQLException Thrown if the script and parameters could not be
+     * used to create a statement
+     */
+    public PreparedStatement getPreparedStatement(final Connection connection, Collection<Object> parameters)
+            throws SQLException
+    {
+        return this.getPreparedStatement( connection, parameters.toArray() );
     }
 
     /**

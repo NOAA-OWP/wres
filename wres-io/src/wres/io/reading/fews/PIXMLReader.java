@@ -99,9 +99,11 @@ public final class PIXMLReader extends XMLReader
 	 * Constructor for a reader that may be for forecasts or observations
 	 * @param filename The path to the file to read
 	 * @param hash the hash code for the source
+     * @throws IOException when an attempt to get the file from classpath fails.
 	 */
     public PIXMLReader( String filename,
                         String hash )
+            throws IOException
 	{
 		super(filename);
 		this.hash = hash;
@@ -110,6 +112,7 @@ public final class PIXMLReader extends XMLReader
     public PIXMLReader( String filename,
                         InputStream inputStream,
                         String hash )
+            throws IOException
 	{
 		super(filename, inputStream);
 		this.hash = hash;
@@ -287,8 +290,8 @@ public final class PIXMLReader extends XMLReader
      * @throws ProjectConfigException when a forecast is missing a forecast date
 	 */
 	private void parseEvent(XMLStreamReader reader)
-            throws SQLException, ProjectConfigException
-    {
+			throws SQLException, ProjectConfigException
+	{
 		this.incrementLead();
 		String value = null;
 		String localName;
@@ -373,7 +376,7 @@ public final class PIXMLReader extends XMLReader
             OffsetDateTime offsetDateTime
                 = OffsetDateTime.of( dateTime, this.getZoneOffset() );
             String formattedDate = offsetDateTime.format( FORMATTER );
-            addObservedEvent( formattedDate, this.getValueToSave( value ) );
+            this.addObservedEvent( formattedDate, this.getValueToSave( value ) );
         }
 
 		if (insertCount >= SystemSettings.getMaximumCopies()) {
@@ -425,8 +428,8 @@ public final class PIXMLReader extends XMLReader
 	 * @throws SQLException Any possible error encountered while trying to retrieve the variable position id or the id of the measurement uni
 	 */
 	private void addObservedEvent(String observedTime, String observedValue)
-            throws SQLException
-    {
+			throws SQLException
+	{
 		if (insertCount > 0)
 		{
 			currentScript.append(NEWLINE);
@@ -450,7 +453,8 @@ public final class PIXMLReader extends XMLReader
 		insertCount++;
 	}
 
-	public static void saveLeftoverForecasts()
+	// TODO: Move the saving to TimeSeriesValues so this doesn't have to be called
+    public static void saveLeftoverForecasts() throws SQLException
     {
         synchronized (groupLock)
         {
@@ -462,15 +466,7 @@ public final class PIXMLReader extends XMLReader
                 if ( PIXMLReader.copyCount.get( key ) > 0 )
                 {
                     String header;
-                    try
-                    {
-                        header = PIXMLReader.getForecastInsertHeader( key );
-                    }
-                    catch ( SQLException e )
-                    {
-                        LOGGER.error( "While saving leftover forecasts:", e );
-                        continue;
-                    }
+                    header = PIXMLReader.getForecastInsertHeader( key );
                     CopyExecutor copier =
                             new CopyExecutor( header,
                                               builderPair.getValue().toString(),
@@ -613,7 +609,7 @@ public final class PIXMLReader extends XMLReader
                 else if (localName.equalsIgnoreCase( "lon" ) || localName.equalsIgnoreCase( "x" ))
                 {
                     // TODO: Store the value as the Longitude on a FeatureDetails Object
-                }/* This absolutely breaks scenario303 (as it should). uncomment when necessary
+                }
 				else if ( localName.equalsIgnoreCase("forecastDate") )
 				{
 					if (!this.isForecast)
@@ -623,7 +619,7 @@ public final class PIXMLReader extends XMLReader
 											  + "observation since it is a forecast.");
 					}
 					this.forecastDate = PIXMLReader.parseDateTime( reader );
-				}*/
+				}
 
 			}
 			reader.next();
@@ -755,8 +751,8 @@ public final class PIXMLReader extends XMLReader
 	 * with the database failed.
 	 */
 	private int getTimeSeriesID()
-            throws SQLException
-    {
+			throws SQLException
+	{
 		if (currentTimeSeriesID == null)
 		{
 			this.getCurrentTimeSeries().setEnsembleID(getEnsembleID());
@@ -768,8 +764,8 @@ public final class PIXMLReader extends XMLReader
 	}
 
 	private TimeSeries getCurrentTimeSeries()
-            throws SQLException
-    {
+			throws SQLException
+	{
         if (this.currentTimeSeries == null)
         {
             OffsetDateTime forecastFullDateTime
@@ -804,8 +800,8 @@ public final class PIXMLReader extends XMLReader
 	 * @throws SQLException Thrown if an ID could not be retrieved from the database
 	 */
 	private int getSourceID()
-            throws SQLException
-    {
+			throws SQLException
+	{
 		if (currentSourceID == null)
 		{
 			String output_time;
@@ -822,6 +818,7 @@ public final class PIXMLReader extends XMLReader
                 output_time = actualStartDate.format( FORMATTER );
 			}
 
+			// TODO: Modify the cache to perform this work
             // In order to interrogate the Cache, we need the key, not the
             // actual SourceDetails class itself.
 
@@ -856,7 +853,7 @@ public final class PIXMLReader extends XMLReader
             // Regardless of whether we were the ones or not, get it from cache
             currentSourceID = DataSources.getActiveSourceID( this.getHash() );
 
-            // Mark whether this reader is the one to perform ingest or yield.
+			// Mark whether this reader is the one to perform ingest or yield.
             inChargeOfIngest = wasThisReaderTheOneThatInserted;
 		}
 		return currentSourceID;

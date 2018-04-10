@@ -136,7 +136,7 @@ class SafeEnsemblePairs implements EnsemblePairs
         /**
          * Pairs for baseline.
          */
-        List<PairOfDoubleAndVectorOfDoubles> baselineInput = new ArrayList<>();
+        List<PairOfDoubleAndVectorOfDoubles> baselineInput = null;
 
         @Override
         public EnsemblePairsBuilder addData( final List<PairOfDoubleAndVectorOfDoubles> mainInput )
@@ -153,6 +153,10 @@ class SafeEnsemblePairs implements EnsemblePairs
         {
             if ( Objects.nonNull( baselineInput ) )
             {
+                if( Objects.isNull( this.baselineInput ) )
+                {
+                    this.baselineInput = new ArrayList<>();
+                }
                 this.baselineInput.addAll( baselineInput );
             }
             return this;
@@ -171,20 +175,30 @@ class SafeEnsemblePairs implements EnsemblePairs
      * 
      * @param b the builder
      * @throws MetricInputException if the pairs are invalid
-     * @throws InsufficientDataException if all inputs are non-finite
+     * @throws InsufficientDataException if the climatological data is both non-null and without finite values
      */
 
     SafeEnsemblePairs( final EnsemblePairsBuilder b )
     {
         //Ensure safe types
         DefaultDataFactory factory = (DefaultDataFactory) DefaultDataFactory.getInstance();
-        mainInput = factory.safePairOfDoubleAndVectorOfDoublesList( b.mainInput );
-        baselineInput =
-                b.baselineInput.isEmpty() ? null : factory.safePairOfDoubleAndVectorOfDoublesList( b.baselineInput );
-        mainMeta = b.mainMeta;
-        baselineMeta = b.baselineMeta;
-        climatology = b.climatology;
-
+        this.mainInput = factory.safePairOfDoubleAndVectorOfDoublesList( b.mainInput );
+        this.mainMeta = b.mainMeta;
+        this.climatology = b.climatology;
+        
+        // Baseline data?
+        if( Objects.nonNull( b.baselineInput ) )
+        {
+            this.baselineInput = factory.safePairOfDoubleAndVectorOfDoublesList( b.baselineInput );
+        }
+        else 
+        {
+            this.baselineInput = null;
+        }
+        
+        // Always set baseline metadata because null-status is validated
+        this.baselineMeta = b.baselineMeta;
+        
         //Validate
         validateMainInput();
         validateBaselineInput();
@@ -195,7 +209,6 @@ class SafeEnsemblePairs implements EnsemblePairs
      * Validates the main pairs and associated metadata after the constructor has copied it.
      * 
      * @throws MetricInputException if the input is invalid
-     * @throws InsufficientDataException if all inputs are non-finite
      */
 
     private void validateMainInput()
@@ -215,23 +228,13 @@ class SafeEnsemblePairs implements EnsemblePairs
         {
             throw new MetricInputException( "One or more of the pairs is null." );
         }
-
-        if ( mainInput.isEmpty() )
-        {
-            throw new MetricInputException( "Cannot build the paired data with an empty input: add one or more pairs." );
-        }
-
-        if ( !Slicer.hasOneOrMoreOfVectorRight( mainInput, Double::isFinite ) )
-        {
-            throw new InsufficientDataException( "Must have at least one non-missing pair in main input." );
-        }
+        
     }
 
     /**
      * Validates the baseline pairs and associated metadata after the constructor has copied it.
      * 
      * @throws MetricInputException if the baseline input is invalid
-     * @throws InsufficientDataException if all baseline inputs are non-finite
      */
 
     private void validateBaselineInput()
@@ -247,17 +250,6 @@ class SafeEnsemblePairs implements EnsemblePairs
             if ( baselineInput.contains( null ) )
             {
                 throw new MetricInputException( "One or more of the baseline pairs is null." );
-            }
-
-            if ( baselineInput.isEmpty() )
-            {
-                throw new MetricInputException( "Cannot build the paired data with an empty baseline: add one or more "
-                                                + "pairs." );
-            }
-
-            if ( !Slicer.hasOneOrMoreOfVectorRight( baselineInput, Double::isFinite ) )
-            {
-                throw new InsufficientDataException( "Must have at least one non-missing pair in baseline input." );
             }
         }
     }

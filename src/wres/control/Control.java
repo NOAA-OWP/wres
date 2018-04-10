@@ -19,9 +19,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.ProjectConfigException;
+import wres.config.ProjectConfigPlus;
 import wres.config.Validation;
 import wres.config.generated.ProjectConfig;
-import wres.io.config.ProjectConfigPlus;
 import wres.io.config.SystemSettings;
 
 /**
@@ -37,42 +37,54 @@ public class Control implements Function<String[], Integer>
 
     /**
      * Processes one or more projects whose paths are provided in the input arguments.
-     *
+     * possible TODO: propagate exceptions and return void rather than Integer
      * @param args the paths to one or more project configurations
      */
+
     @Override
     public Integer apply(final String[] args)
     {
-        // Unmarshal the configurations
-        final List<ProjectConfigPlus> projectConfiggies = getProjects(args);
+        if ( args.length != 1 )
+        {
+            LOGGER.error( "Please correct project configuration file name and "
+                          + "pass it like this: "
+                          + "bin/wres.bat execute c:/path/to/config1.xml " );
+            return 1; // Or return 400 - Bad Request (see #41467)
+        }
 
-        if ( !projectConfiggies.isEmpty() )
+        Path configPath = Paths.get( args[0] );
+        ProjectConfigPlus projectConfigPlus;
+
+        try
         {
-            LOGGER.info( "Successfully unmarshalled {} project "
-                         + "configuration(s),  validating further...",
-                         projectConfiggies.size() );
+            // Unmarshal the configuration
+             projectConfigPlus = ProjectConfigPlus.from( configPath );
         }
-        else
+        catch ( IOException ioe )
         {
-            LOGGER.error( "Please correct project configuration files and pass "
-                          + "them in the command line like this: "
-                          + "bin/wres.bat execute c:/path/to/config1.xml "
-                          + "c:/path/to/config2.xml" );
-            return 1;
+            LOGGER.error( "Failed to unmarshal project configuration at {}.",
+                          ioe );
+            return 1; // Or return 400 - Bad Request (see #41467)
         }
+
+        LOGGER.info( "Successfully unmarshalled project configuration at {}"
+                     + ", validating further...",
+                     projectConfigPlus );
 
         // Validate unmarshalled configurations
-        final boolean validated = Validation.validateProjects(projectConfiggies);
+        final boolean validated = Validation.isProjectValid( projectConfigPlus );
+
         if ( validated )
         {
-            LOGGER.info( "Successfully validated {} project configuration(s). "
+            LOGGER.info( "Successfully validated project configuration at {}. "
                          + "Beginning execution...",
-                         projectConfiggies.size() );
+                         projectConfigPlus );
         }
         else
         {
-            LOGGER.error( "One or more projects did not pass validation.");
-            return 1;
+            LOGGER.error( "Validation failed for project configuration at {}.",
+                          projectConfigPlus);
+            return 1; // Or return 400 - Bad Request (see #41467)
         }
 
         // Build a processing pipeline
@@ -106,25 +118,24 @@ public class Control implements Function<String[], Integer>
 
         try
         {
-            // Iterate through the configurations
-            for(final ProjectConfigPlus projectConfigPlus: projectConfiggies)
-            {
-                // Process the next configuration
-                ProcessorHelper.processProjectConfig( projectConfigPlus,
-                                                      pairExecutor,
-                                                      thresholdExecutor,
-                                                      metricExecutor );
-
-            }
-
-            return 0;
+            // Process the configuration
+            ProcessorHelper.processProjectConfig( projectConfigPlus,
+                                                  pairExecutor,
+                                                  thresholdExecutor,
+                                                  metricExecutor );
+            return 0; // Or return 200 - OK (see #41467)
         }
-        catch ( WresProcessingException | IOException | ProjectConfigException e )
+        catch ( WresProcessingException | IOException internalException)
         {
-
-            LOGGER.error( "Could not complete project execution:", e );
-            Control.addException( e );
-            return -1;
+            LOGGER.error( "Could not complete project execution due to:", internalException );
+            Control.addException( internalException );
+            return -1; // Or return 500 - Internal Server Error (see #41467)
+        }
+        catch ( ProjectConfigException userException )
+        {
+            LOGGER.error( "Please correct the project configuration. Details:", userException );
+            Control.addException( userException );
+            return -1; // Or return 400 - Bad Request (see #41467)
         }
         // Shutdown
         finally
@@ -135,51 +146,6 @@ public class Control implements Function<String[], Integer>
         }
     }
 
-
-    /**
-     * Get project configurations from command line file args. If there are no command line args, look in System
-     * Settings for directory to scan for configurations.
-     *
-     * @param args the paths to the projects
-     * @return the successfully found, read, unmarshalled project configs
-     */
-    private static List<ProjectConfigPlus> getProjects(final String[] args)
-    {
-        final List<Path> existingProjectFiles = new ArrayList<>();
-
-        if(args.length > 0)
-        {
-            for(final String arg: args)
-            {
-                final Path path = Paths.get(arg);
-                if(path.toFile().exists())
-                {
-                    existingProjectFiles.add(path);
-                }
-                else
-                {
-                    LOGGER.warn("Project configuration file {} does not exist!", path);
-                }
-            }
-        }
-
-        final List<ProjectConfigPlus> projectConfiggies = new ArrayList<>();
-
-        for(final Path path: existingProjectFiles)
-        {
-            try
-            {
-                final ProjectConfigPlus projectConfigPlus = ProjectConfigPlus.from(path);
-                projectConfiggies.add(projectConfigPlus);
-            }
-            catch(final IOException ioe)
-            {
-                LOGGER.error("Could not read project configuration: ", ioe);
-                Control.addException( ioe );
-            }
-        }
-        return projectConfiggies;
-    }
 
     /**
      * Kill off the executors passed in even if there are remaining tasks.
@@ -279,9 +245,6 @@ public class Control implements Function<String[], Integer>
             {
                 Control.encounteredExceptions = new ArrayList<>(  );
             }
-
-            Control.encounteredExceptions.addAll( WresProcessingException.getOccurrences() );
-            Control.encounteredExceptions.addAll(ProcessorHelper.getEncounteredExceptions());
 
             return Collections.unmodifiableList(Control.encounteredExceptions);
         }

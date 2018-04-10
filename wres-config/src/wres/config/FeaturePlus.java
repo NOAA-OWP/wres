@@ -218,7 +218,7 @@ public class FeaturePlus implements Comparable<FeaturePlus>
      * Hidden constructor.
      * 
      * @param feature the {@link Feature} to wrap
-     * @throws NullPointerException of the input is null
+     * @throws NullPointerException if the input is null
      */
 
     private FeaturePlus( Feature feature )

@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.SortedSet;
-import java.util.function.Predicate;
 
 import wres.datamodel.SafeTimeSeriesOfSingleValuedPairs.SafeTimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.inputs.MetricInputException;
@@ -71,92 +70,7 @@ class SafeTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
     {
         return bP.durationIterator();
     }
-
-    @Override
-    public TimeSeries<PairOfDoubleAndVectorOfDoubles> filterByDuration( Predicate<Duration> duration )
-    {
-        Objects.requireNonNull( duration, "Provide a non-null predicate on which to filter by duration." );
-        //Iterate through the durations and append to the builder
-        //Throw an exception if attempting to construct an irregular time-series
-        SafeTimeSeriesOfEnsemblePairsBuilder builder = new SafeTimeSeriesOfEnsemblePairsBuilder();
-        for ( TimeSeries<PairOfDoubleAndVectorOfDoubles> a : durationIterator() )
-        {
-            TimeSeriesOfEnsemblePairs next = (TimeSeriesOfEnsemblePairs) a;
-            if ( duration.test( a.getDurations().first() ) )
-            {
-                builder.addTimeSeries( next );
-            }
-        }
-        //Build if something to build
-        if ( !builder.data.isEmpty() )
-        {
-            return builder.build();
-        }
-        return null;
-    }
-
-    @Override
-    public TimeSeries<PairOfDoubleAndVectorOfDoubles> filterByBasisTime( Predicate<Instant> basisTime )
-    {
-        Objects.requireNonNull( basisTime, "Provide a non-null predicate on which to filter by basis time." );
-        SafeTimeSeriesOfEnsemblePairsBuilder builder = new SafeTimeSeriesOfEnsemblePairsBuilder();
-        //Add the filtered data
-        for ( TimeSeries<PairOfDoubleAndVectorOfDoubles> a : basisTimeIterator() )
-        {
-            if ( basisTime.test( a.getEarliestBasisTime() ) )
-            {
-                builder.addTimeSeries( (TimeSeriesOfEnsemblePairs) a );
-            }
-        }
-        //Build if something to build
-        if ( !builder.data.isEmpty() )
-        {
-            return builder.build();
-        }
-        return null;
-    }
-
-    @Override
-    public TimeSeriesOfEnsemblePairs filterByTraceIndex( Predicate<Integer> traceFilter )
-    {
-        //Build a single-valued time-series with the trace at index currentTrace
-        SafeTimeSeriesOfEnsemblePairsBuilder builder =
-                new SafeTimeSeriesOfEnsemblePairsBuilder();
-        builder.setMetadata( getMetadata() );
-        DataFactory dFac = DefaultDataFactory.getInstance();
-        //Iterate through the basis times
-        for ( TimeSeries<PairOfDoubleAndVectorOfDoubles> nextSeries : basisTimeIterator() )
-        {
-            List<Event<PairOfDoubleAndVectorOfDoubles>> input = new ArrayList<>();
-            //Iterate through the pairs
-            for ( Event<PairOfDoubleAndVectorOfDoubles> next : nextSeries.timeIterator() )
-            {
-                //Reform the pairs with a subset of ensemble members
-                double[] allTraces = next.getValue().getItemTwo();
-                List<Double> subTraces = new ArrayList<>();
-                for ( int i = 0; i < allTraces.length; i++ )
-                {
-                    if ( traceFilter.test( i ) )
-                    {
-                        subTraces.add( allTraces[i] );
-                    }
-                }
-                //All time-series have the same number of ensemble members, 
-                //so the first instance with no members means no traces
-                if ( subTraces.isEmpty() )
-                {
-                    return null;
-                }
-                input.add( Event.of( next.getTime(),
-                                     dFac.pairOf( next.getValue().getItemOne(),
-                                                  subTraces.toArray( new Double[subTraces.size()] ) ) ) );
-            }
-            builder.addTimeSeriesData( nextSeries.getEarliestBasisTime(), input );
-        }
-        //Return the time-series
-        return builder.build();
-    }
-
+    
     @Override
     public List<Instant> getBasisTimes()
     {
@@ -194,6 +108,12 @@ class SafeTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
     }
 
     @Override
+    public Instant getLatestBasisTime()
+    {
+        return TimeSeriesHelper.getLatestBasisTime( this.getBasisTimes() );
+    }
+
+    @Override
     public String toString()
     {
         return TimeSeriesHelper.toString( this );
@@ -217,7 +137,7 @@ class SafeTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
          * The raw data for the baseline
          */
 
-        private List<Event<List<Event<PairOfDoubleAndVectorOfDoubles>>>> baselineData = new ArrayList<>();
+        private List<Event<List<Event<PairOfDoubleAndVectorOfDoubles>>>> baselineData = null;
 
         @Override
         public SafeTimeSeriesOfEnsemblePairsBuilder
@@ -233,9 +153,16 @@ class SafeTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
         public SafeTimeSeriesOfEnsemblePairsBuilder
                 addTimeSeriesDataForBaseline( List<Event<List<Event<PairOfDoubleAndVectorOfDoubles>>>> values )
         {
-            List<Event<List<Event<PairOfDoubleAndVectorOfDoubles>>>> sorted = TimeSeriesHelper.sort( values );
-            baselineData.addAll( sorted );
-            addDataForBaseline( TimeSeriesHelper.unwrap( sorted ) );
+            if ( Objects.nonNull( values ) )
+            {
+                if ( Objects.isNull( this.baselineData ) )
+                {
+                    this.baselineData = new ArrayList<>();
+                }
+                List<Event<List<Event<PairOfDoubleAndVectorOfDoubles>>>> sorted = TimeSeriesHelper.sort( values );
+                this.baselineData.addAll( sorted );
+                this.addDataForBaseline( TimeSeriesHelper.unwrap( sorted ) );
+            }
             return this;
         }
 
@@ -243,53 +170,76 @@ class SafeTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
         public SafeTimeSeriesOfEnsemblePairsBuilder
                 addTimeSeries( TimeSeriesOfEnsemblePairs timeSeries )
         {
-            List<Metadata> mainMeta = new ArrayList<>();
-            List<Metadata> baselineMeta = new ArrayList<>();
             VectorOfDoubles climatology = null;
-            MetadataFactory metaFac = DefaultMetadataFactory.getInstance();
             for ( TimeSeries<PairOfDoubleAndVectorOfDoubles> a : timeSeries.basisTimeIterator() )
             {
                 //Add the main data
                 TimeSeriesOfEnsemblePairs next = (TimeSeriesOfEnsemblePairs) a;
 
                 List<Event<PairOfDoubleAndVectorOfDoubles>> nextSource = new ArrayList<>();
-                List<PairOfDoubleAndVectorOfDoubles> nextRawSource = new ArrayList<>();
+
                 for ( Event<PairOfDoubleAndVectorOfDoubles> nextEvent : next.timeIterator() )
                 {
                     nextSource.add( nextEvent );
-                    nextRawSource.add( nextEvent.getValue() );
                 }
-                addTimeSeriesData( Arrays.asList( Event.of( next.getEarliestBasisTime(), nextSource ) ) );
-                mainMeta.add( next.getMetadata() );
+                this.addTimeSeriesData( Arrays.asList( Event.of( next.getEarliestBasisTime(), nextSource ) ) );
+
                 //Add climatology if available
                 if ( next.hasClimatology() )
                 {
                     climatology = next.getClimatology();
                 }
             }
-            setMetadata( metaFac.unionOf( mainMeta ) );
+
+            // Set the union of the current metadata and any previously added time-series
+            MetadataFactory metaFac = DefaultMetadataFactory.getInstance();
+            List<Metadata> mainMeta = new ArrayList<>();  
+            mainMeta.add( timeSeries.getMetadata() );
+            if ( Objects.nonNull( this.mainMeta ) )
+            {
+                mainMeta.add( this.mainMeta );
+            }
+            this.setMetadata( metaFac.unionOf( mainMeta ) );
 
             //Add the baseline data if required
             if ( timeSeries.hasBaseline() )
             {
-                for ( TimeSeries<PairOfDoubleAndVectorOfDoubles> a : timeSeries.getBaselineData().basisTimeIterator() )
-                {
-                    TimeSeriesOfEnsemblePairs nextBaseline = (TimeSeriesOfEnsemblePairs) a;
-                    List<Event<PairOfDoubleAndVectorOfDoubles>> nextBaselineSource = new ArrayList<>();
-                    List<PairOfDoubleAndVectorOfDoubles> nextRawBaselineSource = new ArrayList<>();
-                    for ( Event<PairOfDoubleAndVectorOfDoubles> nextEvent : nextBaseline.timeIterator() )
-                    {
-                        nextBaselineSource.add( nextEvent );
-                        nextRawBaselineSource.add( nextEvent.getValue() );
-                    }
-                    addTimeSeriesDataForBaseline( Arrays.asList( Event.of( nextBaseline.getEarliestBasisTime(),
-                                                                           nextBaselineSource ) ) );
-                    baselineMeta.add( nextBaseline.getMetadata() );
-                }
-                setMetadataForBaseline( metaFac.unionOf( baselineMeta ) );
+                this.addTimeSeriesForBaseline( timeSeries.getBaselineData() );
             }
 
-            setClimatology( climatology );
+            this.setClimatology( climatology );
+            return this;
+        }
+
+        @Override
+        public TimeSeriesOfEnsemblePairsBuilder addTimeSeriesForBaseline( TimeSeriesOfEnsemblePairs timeSeries )
+        {
+            for ( TimeSeries<PairOfDoubleAndVectorOfDoubles> a : timeSeries.basisTimeIterator() )
+            {
+                //Add the main data
+                TimeSeriesOfEnsemblePairs next = (TimeSeriesOfEnsemblePairs) a;
+
+                List<Event<PairOfDoubleAndVectorOfDoubles>> nextSource = new ArrayList<>();
+
+                for ( Event<PairOfDoubleAndVectorOfDoubles> nextEvent : next.timeIterator() )
+                {
+                    nextSource.add( nextEvent );
+                }
+                this.addTimeSeriesDataForBaseline( Arrays.asList( Event.of( next.getEarliestBasisTime(), nextSource ) ) );
+            }
+
+            // Set the union of the current metadata and any previously added time-series
+            MetadataFactory metaFac = DefaultMetadataFactory.getInstance();
+            List<Metadata> baselineMeta = new ArrayList<>();
+            
+            // Metadata, as with data, is taken from the main input
+            baselineMeta.add( timeSeries.getMetadata() );
+            if ( Objects.nonNull( this.baselineMeta ) )
+            {
+                baselineMeta.add( this.baselineMeta );
+            }
+            this.setMetadataForBaseline( metaFac.unionOf( baselineMeta ) );
+
             return this;
         }
 
@@ -351,13 +301,15 @@ class SafeTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
                         }
                         SafeTimeSeriesOfEnsemblePairsBuilder builder =
                                 new SafeTimeSeriesOfEnsemblePairsBuilder();
-                        Instant nextTime = iterator.next();
+
+                        // Iterate
+                        iterator.next();
+
                         builder.addTimeSeriesData( Arrays.asList( bP.getData().get( returned ) ) );
 
-                        //Adjust the time window for the metadata
-                        builder.setMetadata( TimeSeriesHelper.getBasisTimeAdjustedMetadata( getMetadata(),
-                                                                                            nextTime,
-                                                                                            nextTime ) );
+                        // Propagate the metadata without adjustment because the input period is canonical
+                        builder.setMetadata( getMetadata() );
+
                         // Set the climatology
                         builder.setClimatology( getClimatology() );
                         returned++;
@@ -408,9 +360,11 @@ class SafeTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
                         }
                         SafeTimeSeriesOfEnsemblePairsBuilder builder =
                                 new SafeTimeSeriesOfEnsemblePairsBuilder();
+
+                        // Iterate
                         Duration nextDuration = iterator.next();
 
-                        //Adjust the time window for the metadata
+                        // Adjust the time window for the metadata
                         builder.setMetadata( TimeSeriesHelper.getDurationAdjustedMetadata( getMetadata(),
                                                                                            nextDuration,
                                                                                            nextDuration ) );

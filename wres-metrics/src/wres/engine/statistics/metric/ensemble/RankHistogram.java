@@ -13,6 +13,7 @@ import java.util.stream.IntStream;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
+import wres.datamodel.MetricConstants.MissingValues;
 import wres.datamodel.Slicer;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
@@ -53,24 +54,34 @@ public class RankHistogram extends Diagram<EnsemblePairs, MultiVectorOutput>
         {
             throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
         }
+        
         DataFactory d = getDataFactory();
-        Slicer slicer = d.getSlicer();
-        //Acquire subsets in case of missing data
-        Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> sliced = slicer.filterByRight( s.getData() );
-        //Find the subset with the most elements
-        List<PairOfDoubleAndVectorOfDoubles> useMe =
-                sliced.values().stream().max( Comparator.comparingInt( List::size ) ).get();
 
-        //Set the ranked positions as 1:N+1
-        double[] ranks = IntStream.range( 1, useMe.get( 0 ).getItemTwo().length + 2 ).asDoubleStream().toArray();
-        double[] sumRanks = new double[ranks.length]; //Total falling in each ranked position
+        double[] ranks = new double[] { MissingValues.MISSING_DOUBLE };
+        double[] relativeFrequencies = new double[] { MissingValues.MISSING_DOUBLE };
 
-        //Compute the sum of ranks
-        BiConsumer<PairOfDoubleAndVectorOfDoubles, double[]> ranker = rankWithTies( rng );
-        useMe.forEach( nextPair -> ranker.accept( nextPair, sumRanks ) );
+        // Some data to process
+        if ( !s.getData().isEmpty() )
+        {
 
-        //Compute relative frequencies
-        double[] relativeFrequencies = Arrays.stream( sumRanks ).map( a -> a / useMe.size() ).toArray();
+            Slicer slicer = d.getSlicer();
+            //Acquire subsets in case of missing data
+            Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> sliced = slicer.filterByRightSize( s.getData() );
+            //Find the subset with the most elements
+            List<PairOfDoubleAndVectorOfDoubles> useMe =
+                    sliced.values().stream().max( Comparator.comparingInt( List::size ) ).get();
+
+            //Set the ranked positions as 1:N+1
+            ranks = IntStream.range( 1, useMe.get( 0 ).getItemTwo().length + 2 ).asDoubleStream().toArray();
+            double[] sumRanks = new double[ranks.length]; //Total falling in each ranked position
+
+            //Compute the sum of ranks
+            BiConsumer<PairOfDoubleAndVectorOfDoubles, double[]> ranker = rankWithTies( rng );
+            useMe.forEach( nextPair -> ranker.accept( nextPair, sumRanks ) );
+
+            //Compute relative frequencies
+            relativeFrequencies = Arrays.stream( sumRanks ).map( a -> a / useMe.size() ).toArray();
+        }
 
         //Set and return the results
         Map<MetricDimension, double[]> output = new EnumMap<>( MetricDimension.class );

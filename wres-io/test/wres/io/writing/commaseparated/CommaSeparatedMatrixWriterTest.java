@@ -9,6 +9,7 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -25,8 +26,9 @@ import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.Threshold;
-import wres.datamodel.Threshold.Operator;
+import wres.datamodel.OneOrTwoThresholds;
+import wres.datamodel.ThresholdConstants.Operator;
+import wres.datamodel.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
@@ -99,20 +101,24 @@ public class CommaSeparatedMatrixWriterTest extends CommaSeparatedWriterTest
 
         // Fake output wrapper.
         MetricOutputMapByMetric<MatrixOutput> fakeOutputData =
-                outputFactory.ofMap( Arrays.asList( outputFactory.ofMatrixOutput( fakeOutputs,
-                                                                                  Arrays.asList( MetricDimension.TRUE_POSITIVES,
-                                                                                                 MetricDimension.FALSE_POSITIVES,
-                                                                                                 MetricDimension.FALSE_NEGATIVES,
-                                                                                                 MetricDimension.TRUE_NEGATIVES ),
-                                                                                  fakeMetadata ) ) );
+                outputFactory.ofMetricOutputMapByMetric( Collections.singletonMap( MetricConstants.CONTINGENCY_TABLE,
+                                                                                   outputFactory.ofMatrixOutput( fakeOutputs,
+                                                                                                                 Arrays.asList( MetricDimension.TRUE_POSITIVES,
+                                                                                                                                MetricDimension.FALSE_POSITIVES,
+                                                                                                                                MetricDimension.FALSE_NEGATIVES,
+                                                                                                                                MetricDimension.TRUE_NEGATIVES ),
+                                                                                                                 fakeMetadata ) ) );
         // wrap outputs in future
         Future<MetricOutputMapByMetric<MatrixOutput>> outputMapByMetricFuture =
                 CompletableFuture.completedFuture( fakeOutputData );
 
 
         // Fake lead time and threshold
-        Pair<TimeWindow, Threshold> mapKeyByLeadThreshold =
-                Pair.of( timeOne, outputFactory.ofThreshold( Double.NEGATIVE_INFINITY, Operator.GREATER ) );
+        Pair<TimeWindow, OneOrTwoThresholds> mapKeyByLeadThreshold =
+                Pair.of( timeOne,
+                         OneOrTwoThresholds.of( outputFactory.ofThreshold( outputFactory.ofOneOrTwoDoubles( Double.NEGATIVE_INFINITY ),
+                                                                           Operator.GREATER,
+                                                                           ThresholdDataType.LEFT ) ) );
 
         outputBuilder.addMatrixOutput( mapKeyByLeadThreshold,
                                        outputMapByMetricFuture );
@@ -124,7 +130,7 @@ public class CommaSeparatedMatrixWriterTest extends CommaSeparatedWriterTest
         ProjectConfig projectConfig = getMockedProjectConfig( feature );
 
         // Begin the actual test now that we have constructed dependencies.
-        CommaSeparatedMatrixWriter.of( projectConfig ).accept( output.getMatrixOutput() ); 
+        CommaSeparatedMatrixWriter.of( projectConfig ).accept( output.getMatrixOutput() );
 
         // read the file, verify it has what we wanted:
         Path pathToFile = Paths.get( System.getProperty( "java.io.tmpdir" ),

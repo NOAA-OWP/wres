@@ -10,10 +10,12 @@ import java.util.function.Consumer;
 
 import ohd.hseb.charter.ChartEngine;
 import ohd.hseb.charter.ChartEngineException;
+
 import wres.config.ProjectConfigException;
+import wres.config.ProjectConfigPlus;
 import wres.config.generated.DestinationConfig;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.Threshold;
+import wres.datamodel.OneOrTwoThresholds;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.MapKey;
@@ -21,7 +23,6 @@ import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.io.config.ConfigHelper;
-import wres.io.config.ProjectConfigPlus;
 import wres.vis.ChartEngineFactory;
 
 /**
@@ -122,11 +123,11 @@ public class PNGDiagramWriter extends PNGWriter
                                                                      meta,
                                                                      (TimeWindow) append );
                 }
-                else if ( append instanceof Threshold )
+                else if ( append instanceof OneOrTwoThresholds )
                 {
                     outputImage = ConfigHelper.getOutputPathToWrite( destinationConfig,
                                                                      meta,
-                                                                     (Threshold) append );
+                                                                     (OneOrTwoThresholds) append );
                 }
 
                 PNGWriter.writeChart( outputImage, nextEntry.getValue(), destinationConfig );

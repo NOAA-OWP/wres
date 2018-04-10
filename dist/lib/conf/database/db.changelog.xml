@@ -1,0 +1,406 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+    <changeSet author="tubbs (generated)" id="1522180211838-1">
+        <createTable tableName="executionlog">
+            <column autoIncrement="true" name="log_id" type="SERIAL">
+                <constraints nullable="false"/>
+            </column>
+            <column name="arguments" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="system_settings" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="project" type="TEXT"/>
+            <column name="username" type="TEXT"/>
+            <column name="address" type="TEXT"/>
+            <column name="start_time" type="TIMESTAMP WITH TIME ZONE"/>
+            <column name="run_time" type="INTERVAL(49, 6)(49, 6)"/>
+            <column defaultValueBoolean="false" name="failed" type="BOOL"/>
+            <column name="error" type="TEXT"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="tubbs (generated)" id="1522180211838-2">
+        <createTable tableName="indexqueue">
+            <column autoIncrement="true" name="indexqueue_id" type="SERIAL">
+                <constraints nullable="false"/>
+            </column>
+            <column name="table_name" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="index_name" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="column_definition" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValue="'btree'::text" name="method" type="TEXT"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="tubbs (generated)" id="1522180352872-1">
+        <createTable tableName="ensemble">
+            <column autoIncrement="true" name="ensemble_id" type="SERIAL">
+                <constraints primaryKey="true" primaryKeyName="ensemble_pk"/>
+            </column>
+            <column name="ensemble_name" type="TEXT"/>
+            <column name="qualifier_id" type="TEXT"/>
+            <column name="ensemblemember_id" type="INT4"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="tubbs (generated)" id="1522180352872-2">
+        <createTable tableName="feature">
+            <column autoIncrement="true" name="feature_id" type="SERIAL">
+                <constraints primaryKey="true" primaryKeyName="feature_pkey"/>
+            </column>
+            <column name="comid" type="INT4"/>
+            <column name="lid" type="TEXT"/>
+            <column name="gage_id" type="TEXT"/>
+            <column name="rfc" type="TEXT"/>
+            <column name="st" type="TEXT"/>
+            <column name="st_code" type="TEXT"/>
+            <column name="huc" type="TEXT"/>
+            <column name="feature_name" type="TEXT"/>
+            <column name="latitude" type="FLOAT4"/>
+            <column name="longitude" type="FLOAT4"/>
+            <column name="nwm_index" type="INT4"/>
+            <column name="parent_feature_id" type="INT4"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="tubbs (generated)" id="1522180352872-3">
+        <createTable tableName="forecastsource">
+            <column name="forecast_id" type="INT4">
+                <constraints nullable="false"/>
+            </column>
+            <column name="source_id" type="INT4">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="tubbs (generated)" id="1522180352872-4">
+        <createTable tableName="forecastvalue">
+            <column name="timeseries_id" type="INT4"/>
+            <column name="lead" type="INT4"/>
+            <column name="forecasted_value" type="FLOAT8"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="tubbs (generated)" id="1522180352872-5">
+        <createTable tableName="measurementunit">
+            <column autoIncrement="true" name="measurementunit_id" type="SERIAL">
+                <constraints primaryKey="true" primaryKeyName="measurementunit_pk"/>
+            </column>
+            <column name="unit_name" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="tubbs (generated)" id="1522180352872-6">
+        <createTable tableName="netcdfcoordinate">
+            <column name="x_position" type="SMALLINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="y_position" type="SMALLINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="geographic_coordinate" type="POINT(2147483647)">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueNumeric="0" name="resolution" remarks="The degree of accuracy for the coordinate. If the resolution is greater than 0, the coordinate is valid for all points within the resolution from the coordinates. A resolution of 0 indicates an absolute location." type="SMALLINT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="tubbs (generated)" id="1522180352872-7">
+        <createTable tableName="netcdffeature">
+            <column name="feature_id" type="INT4"/>
+            <column name="position_id" type="INT4"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="tubbs (generated)" id="1522180352872-8">
+        <createTable tableName="observation">
+            <column name="variableposition_id" type="INT4"/>
+            <column name="observation_time" type="TIMESTAMP WITH TIME ZONE"/>
+            <column name="observed_value" type="FLOAT8"/>
+            <column name="measurementunit_id" type="INT4"/>
+            <column name="source_id" type="INT4"/>
+            <column name="scenario_id" type="SMALLINT"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="tubbs (generated)" id="1522180352872-9">
+        <createTable tableName="project">
+            <column autoIncrement="true" name="project_id" type="SMALLINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="input_code" type="INT4">
+                <constraints nullable="false"/>
+            </column>
+            <column name="project_name" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="tubbs (generated)" id="1522180352872-10">
+        <createTable tableName="projectsource">
+            <column name="project_id" type="SMALLINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="source_id" type="INT4">
+                <constraints nullable="false"/>
+            </column>
+            <column name="member" type="OPERATING_MEMBER(2147483647)">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueComputed="now()" name="active_time" type="TIMESTAMP WITH TIME ZONE"/>
+            <column name="inactive_time" type="TIMESTAMP WITH TIME ZONE"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="tubbs (generated)" id="1522180352872-11">
+        <createTable tableName="source">
+            <column autoIncrement="true" name="source_id" type="SERIAL">
+                <constraints primaryKey="true" primaryKeyName="source_pk"/>
+            </column>
+            <column name="path" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="output_time" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueBoolean="true" name="is_point_data" type="BOOL"/>
+            <column name="lead" type="SMALLINT"/>
+            <column name="hash" type="TEXT"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="tubbs (generated)" id="1522180352872-12">
+        <createTable tableName="timeseries">
+            <column autoIncrement="true" name="timeseries_id" type="SERIAL">
+                <constraints primaryKey="true" primaryKeyName="timeseries_pk"/>
+            </column>
+            <column name="variableposition_id" type="INT4"/>
+            <column name="ensemble_id" type="INT4"/>
+            <column name="measurementunit_id" type="INT4"/>
+            <column name="initialization_date" type="TIMESTAMP WITH TIME ZONE"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="tubbs (generated)" id="1522180352872-13">
+        <createTable tableName="unitconversion">
+            <column name="from_unit" type="SMALLINT"/>
+            <column name="to_unit" type="SMALLINT"/>
+            <column name="factor" type="FLOAT8"/>
+            <column defaultValueNumeric="0.0" name="initial_offset" type="FLOAT8"/>
+            <column defaultValueNumeric="0.0" name="final_offset" type="FLOAT8"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="tubbs (generated)" id="1522180352872-14">
+        <createTable tableName="usgsparameter">
+            <column name="name" type="TEXT"/>
+            <column name="description" type="TEXT"/>
+            <column name="parameter_code" type="TEXT"/>
+            <column name="measurement_unit" type="TEXT"/>
+            <column name="measurementunit_id" type="TEXT"/>
+            <column name="aggregation" type="TEXT"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="tubbs (generated)" id="1522180352872-15">
+        <createTable tableName="variable">
+            <column autoIncrement="true" name="variable_id" type="SERIAL">
+                <constraints primaryKey="true" primaryKeyName="variable_pk"/>
+            </column>
+            <column name="variable_name" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="variable_type" type="TEXT"/>
+            <column name="description" type="TEXT"/>
+            <column name="measurementunit_id" type="INT4"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="tubbs (generated)" id="1522180352872-16">
+        <createTable tableName="variableposition">
+            <column autoIncrement="true" name="variableposition_id" type="SERIAL">
+                <constraints primaryKey="true" primaryKeyName="variableposition_pk"/>
+            </column>
+            <column name="variable_id" type="INT4"/>
+            <column name="x_position" type="INT4"/>
+            <column name="y_position" type="INT4"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="tubbs (generated)" id="1522180352872-17">
+        <addForeignKeyConstraint baseColumnNames="from_unit" baseTableName="unitconversion" constraintName="from_measurementunit_fk" deferrable="false" initiallyDeferred="false" onDelete="CASCADE" onUpdate="NO ACTION" referencedColumnNames="measurementunit_id" referencedTableName="measurementunit"/>
+    </changeSet>
+    <changeSet author="tubbs (generated)" id="1522180352872-18">
+        <addForeignKeyConstraint baseColumnNames="to_unit" baseTableName="unitconversion" constraintName="to_measurementunit_fk" deferrable="false" initiallyDeferred="false" onDelete="CASCADE" onUpdate="NO ACTION" referencedColumnNames="measurementunit_id" referencedTableName="measurementunit"/>
+    </changeSet>
+    <changeSet author="tubbs (generated)" id="1522180352872-19">
+        <addForeignKeyConstraint baseColumnNames="measurementunit_id" baseTableName="variable" constraintName="variable_measurementunit_fk" deferrable="false" initiallyDeferred="false" onDelete="CASCADE" onUpdate="NO ACTION" referencedColumnNames="measurementunit_id" referencedTableName="measurementunit"/>
+    </changeSet>
+    <changeSet author="tubbs (generated)" id="1522180352872-20">
+        <addForeignKeyConstraint baseColumnNames="variable_id" baseTableName="variableposition" constraintName="variableposition_variable_fk" deferrable="true" initiallyDeferred="true" onDelete="CASCADE" onUpdate="NO ACTION" referencedColumnNames="variable_id" referencedTableName="variable"/>
+    </changeSet>
+    <changeSet author="tubbs (generated)" id="1522180352872-21">
+        <addUniqueConstraint columnNames="parameter_code" constraintName="usgsparameter_code" deferrable="false" disabled="false" initiallyDeferred="false" tableName="usgsparameter"/>
+    </changeSet>
+    <changeSet author="tubbs (generated)" id="1522180352872-22">
+        <addUniqueConstraint columnNames="name, aggregation, measurement_unit" constraintName="usgsparameter_name_agg_measurement" deferrable="false" disabled="false" initiallyDeferred="false" tableName="usgsparameter"/>
+    </changeSet>
+    <changeSet author="tubbs (generated)" id="1522180352872-23">
+        <addUniqueConstraint columnNames="variable_name" constraintName="variable_variable_name_key" deferrable="false" disabled="false" initiallyDeferred="false" tableName="variable"/>
+    </changeSet>
+    <changeSet author="tubbs (generated)" id="1522180352872-24">
+        <createIndex indexName="ensemble_name_idx" tableName="ensemble" unique="false">
+            <column name="ensemble_name"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="tubbs (generated)" id="1522180352872-25">
+        <createIndex indexName="feature_comid_idx" tableName="feature" unique="false">
+            <column name="comid"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="tubbs (generated)" id="1522180352872-26">
+        <createIndex indexName="feature_coordinates_idx" tableName="feature" unique="false">
+            <column name="latitude"/>
+            <column name="longitude"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="tubbs (generated)" id="1522180352872-27">
+        <createIndex indexName="feature_lid_idx" tableName="feature" unique="false">
+            <column name="lid"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="tubbs (generated)" id="1522180352872-28">
+        <createIndex indexName="forecastsource_forecast_idx" tableName="forecastsource" unique="false">
+            <column name="forecast_id"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="tubbs (generated)" id="1522180352872-29">
+        <createIndex indexName="forecastsource_source_idx" tableName="forecastsource" unique="false">
+            <column name="source_id"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="tubbs (generated)" id="1522180352872-30">
+        <createIndex indexName="forecastvalue_lead_idx" tableName="forecastvalue" unique="false">
+            <column name="lead"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="tubbs (generated)" id="1522180352872-31">
+        <createIndex indexName="forecastvalue_timeseries_idx" tableName="forecastvalue" unique="false">
+            <column name="timeseries_id"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="tubbs (generated)" id="1522180352872-32">
+        <createIndex indexName="netcdfcoordinate_coordinate_idx" tableName="netcdfcoordinate" unique="false">
+            <column name="geographic_coordinate"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="tubbs (generated)" id="1522180352872-33">
+        <createIndex indexName="netcdffeature_idx" tableName="netcdffeature" unique="false">
+            <column name="feature_id"/>
+            <column name="position_id"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="tubbs (generated)" id="1522180352872-34">
+        <createIndex indexName="observation_time_idx" tableName="observation" unique="false">
+            <column name="observation_time"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="tubbs (generated)" id="1522180352872-35">
+        <createIndex indexName="observation_variableposition_idx" tableName="observation" unique="false">
+            <column name="variableposition_id"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="tubbs (generated)" id="1522180352872-36">
+        <createIndex indexName="parent_feature_idx" tableName="feature" unique="false">
+            <column name="parent_feature_id"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="tubbs (generated)" id="1522180352872-37">
+        <createIndex indexName="projectsource_project_idx" tableName="projectsource" unique="false">
+            <column name="project_id"/>
+            <column name="member"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="tubbs (generated)" id="1522180352872-38">
+        <createIndex indexName="projectsource_source_idx" tableName="projectsource" unique="false">
+            <column name="source_id"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="tubbs (generated)" id="1522180352872-39">
+        <createIndex indexName="source_hash_idx" tableName="source" unique="false">
+            <column name="hash"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="tubbs (generated)" id="1522180352872-40">
+        <createIndex indexName="source_output_time_idx" tableName="source" unique="false">
+            <column name="output_time"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="tubbs (generated)" id="1522180352872-41">
+        <createIndex indexName="source_path_idx" tableName="source" unique="false">
+            <column name="path"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="tubbs (generated)" id="1522180352872-42">
+        <createIndex indexName="timeseries_initialization_idx" tableName="timeseries" unique="false">
+            <column name="variableposition_id"/>
+            <column name="ensemble_id"/>
+            <column name="initialization_date"/>
+            <column name="measurementunit_id"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="tubbs (generated)" id="1522180352872-43">
+        <createIndex indexName="timeseries_variableposition_idx" tableName="timeseries" unique="false">
+            <column name="variableposition_id"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="tubbs (generated)" id="1522180352872-44">
+        <createIndex indexName="unitconversion_measurementunit_idx" tableName="unitconversion" unique="false">
+            <column name="from_unit"/>
+            <column name="to_unit"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="tubbs (generated)" id="1522180352872-45">
+        <createIndex indexName="variableposition_variable_idx" tableName="variableposition" unique="false">
+            <column name="variable_id"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="tubbs (generated)" id="1522180352872-46">
+        <createIndex indexName="variableposition_x_idx" tableName="variableposition" unique="false">
+            <column name="x_position"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="tubbs (generated)" id="1522180352872-47">
+        <createIndex indexName="variableposition_y_idx" tableName="variableposition" unique="false">
+            <column name="y_position"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="tubbs (generated)" id="1522180352872-48">
+        <createView viewName="forecasts"> SELECT vbf.feature_id,
+    vbf.variable_id,
+    ts.initialization_date AS basis_time,
+    (ts.initialization_date + ('01:00:00'::interval * (fv.lead)::double precision)) AS valid_time,
+    fv.lead,
+    fv.forecasted_value,
+    ts.ensemble_id,
+    ts.measurementunit_id,
+    ts.timeseries_id
+   FROM ((wres.timeseries ts
+     JOIN wres.forecastvalue fv ON ((fv.timeseries_id = ts.timeseries_id)))
+     JOIN wres.variablebyfeature vbf ON ((vbf.variableposition_id = ts.variableposition_id)));</createView>
+    </changeSet>
+    <changeSet author="tubbs (generated)" id="1522180352872-49">
+        <createView viewName="variablebyfeature"> SELECT vp.variableposition_id,
+    f.feature_id,
+    v.variable_name,
+    f.comid,
+    f.lid,
+    f.gage_id,
+    f.rfc,
+    f.st,
+    f.st_code,
+    f.huc,
+    f.feature_name,
+    f.latitude,
+    f.longitude,
+    v.variable_id
+   FROM ((wres.variableposition vp
+     JOIN wres.variable v ON ((v.variable_id = vp.variable_id)))
+     JOIN wres.feature f ON ((f.feature_id = vp.x_position)));</createView>
+    </changeSet>
+</databaseChangeLog>

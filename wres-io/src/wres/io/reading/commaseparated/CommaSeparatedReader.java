@@ -16,8 +16,10 @@ import wres.config.FeaturePlus;
 import wres.config.generated.Feature;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
+import wres.datamodel.Dimension;
 import wres.datamodel.Threshold;
-import wres.datamodel.Threshold.Operator;
+import wres.datamodel.ThresholdConstants.Operator;
+import wres.datamodel.ThresholdConstants.ThresholdDataType;
 
 /**
  * Helps read files of Comma Separated Values (CSV).
@@ -37,7 +39,9 @@ public class CommaSeparatedReader
      * @param commaSeparated the source of comma separated values
      * @param isProbability is true to read probability thresholds
      * @param condition the threshold condition
+     * @param dataType the threshold data type
      * @param missingValue an optional missing value identifier to ignore (may be null)
+     * @param units the optional units associated with the threshold values
      * @return a map of thresholds by feature
      * @throws IOException if the source cannot be read or contains unexpected input
      * @throws NullPointerException if the source is null or the condition is null
@@ -47,13 +51,17 @@ public class CommaSeparatedReader
     public static Map<FeaturePlus, Set<Threshold>> readThresholds( Path commaSeparated,
                                                                    boolean isProbability,
                                                                    Operator condition,
-                                                                   Double missingValue )
+                                                                   ThresholdDataType dataType,
+                                                                   Double missingValue,
+                                                                   Dimension units )
             throws IOException
     {
         Objects.requireNonNull( commaSeparated, "Specify a non-null source of comma separated thresholds to read." );
 
-        Objects.requireNonNull( condition, "Specify non-null condition in order to obtain the thresholds." );
-
+        Objects.requireNonNull( condition, "Specify a non-null condition in order to read the thresholds." );
+        
+        Objects.requireNonNull( condition, "Specify a non-null data type in order to read the thresholds." );
+        
         Map<FeaturePlus, Set<Threshold>> returnMe = new TreeMap<>();
 
         // Read the input
@@ -79,9 +87,11 @@ public class CommaSeparatedReader
                 CommaSeparatedReader.readAllThresholdsForOneFeature( returnMe,
                                                                      isProbability,
                                                                      condition,
+                                                                     dataType,
                                                                      labels,
                                                                      firstLine,
-                                                                     missingValue );
+                                                                     missingValue,
+                                                                     units );
             }
 
             // Process each feature
@@ -91,9 +101,11 @@ public class CommaSeparatedReader
                 CommaSeparatedReader.readAllThresholdsForOneFeature( returnMe,
                                                                      isProbability,
                                                                      condition,
+                                                                     dataType,
                                                                      labels,
                                                                      nextLine,
-                                                                     missingValue );
+                                                                     missingValue,
+                                                                     units );
 
             }
         }
@@ -111,9 +123,11 @@ public class CommaSeparatedReader
      * @param mutate the map of thresholds to mutate
      * @param isProbability is true to read probability thresholds, false for value thresholds
      * @param condition the threshold condition
+     * @param dataType the threshold data type
      * @param labels the optional labels (may be null)
      * @param nextInputFeature the next set of thresholds to process
      * @param missingValue an optional missing value identifier to ignore (may be null)
+     * @param units the optional units associated with the threshold values
      * @throws IllegalArgumentException if the number of labels is inconsistent with the number of thresholds or
      *            the threshold content is inconsistent with the specified type of threshold
      */
@@ -121,9 +135,11 @@ public class CommaSeparatedReader
     private static void readAllThresholdsForOneFeature( Map<FeaturePlus, Set<Threshold>> mutate,
                                                         boolean isProbability,
                                                         Operator condition,
+                                                        ThresholdDataType dataType,
                                                         String[] labels,
                                                         String nextInputFeature,
-                                                        Double missingValue )
+                                                        Double missingValue,
+                                                        Dimension units )
             throws IOException
     {
         // Ignore empty lines
@@ -142,7 +158,9 @@ public class CommaSeparatedReader
                                                                          labels,
                                                                          isProbability,
                                                                          condition,
-                                                                         missingValue ) );
+                                                                         dataType,
+                                                                         missingValue,
+                                                                         units ) );
         }
     }
 
@@ -153,7 +171,9 @@ public class CommaSeparatedReader
      * @param labels a set of labels (as many as thresholds) or null
      * @param isProbability is true to build probability thresholds, false for value thresholds
      * @param condition the threshold condition
+     * @param dataType the threshold data type
      * @param missingValue an optional missing value identifier to ignore (may be null)
+     * @param units the optional units associated with the threshold values
      * @throws NullPointerException if the input or condition is null
      * @throws IllegalArgumentException if the threshold content is inconsistent with the type of threshold     
      * @throws NumberFormatException if the strings cannot be parsed to numbers                  
@@ -163,12 +183,16 @@ public class CommaSeparatedReader
                                                  String[] labels,
                                                  boolean isProbability,
                                                  Operator condition,
-                                                 Double missingValue )
+                                                 ThresholdDataType dataType,
+                                                 Double missingValue,
+                                                 Dimension units )
     {
-        Objects.requireNonNull( input, "Specify non-null input in order to obtain the thresholds." );
+        Objects.requireNonNull( input, "Specify a non-null input in order to read the thresholds." );
 
-        Objects.requireNonNull( condition, "Specify non-null condition in order to obtain the thresholds." );
+        Objects.requireNonNull( condition, "Specify a non-null condition in order to read the thresholds." );
 
+        Objects.requireNonNull( condition, "Specify a non-null data type in order to read the thresholds." );
+        
         Set<Threshold> returnMe = new TreeSet<>();
 
         DataFactory factory = DefaultDataFactory.getInstance();
@@ -192,14 +216,20 @@ public class CommaSeparatedReader
                 // Probability thresholds
                 if ( isProbability )
                 {
-                    returnMe.add( factory.ofProbabilityThreshold( threshold,
+                    returnMe.add( factory.ofProbabilityThreshold( factory.ofOneOrTwoDoubles( threshold ),
                                                                   condition,
-                                                                  iterateLabels[i] ) );
+                                                                  dataType,
+                                                                  iterateLabels[i],
+                                                                  units ) );
                 }
                 // Ordinary thresholds
                 else
                 {
-                    returnMe.add( factory.ofThreshold( threshold, condition, iterateLabels[i] ) );
+                    returnMe.add( factory.ofThreshold( factory.ofOneOrTwoDoubles( threshold ),
+                                                       condition,
+                                                       dataType,
+                                                       iterateLabels[i],
+                                                       units ) );
                 }
             }
         }

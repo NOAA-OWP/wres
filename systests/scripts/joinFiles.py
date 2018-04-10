@@ -32,7 +32,8 @@ while 1:
 		# if they are not the same
 		# if rflastField != rfline2:
 		if atheDiff > 0.000001:
-			file3.writelines([line1, " <--- Metrics value comparison ----> ", line2, " ---- the difference is  ", str(theDiff), "\n"])
+			file3.writelines([line1, " <--- Metrics value comparison ----> ", line2, " ---- the absolute difference value is  ", str(atheDiff), "\n"])
+			#file3.writelines([line1, " <--- Metrics value comparison ----> ", line2, " ---- the difference is  ", str(theDiff), "\n"])
 		else:
 			file3.writelines([line1, " <--- Metrics value comparison ----> ", line2, "\n"])
 	except:

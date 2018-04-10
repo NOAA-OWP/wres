@@ -8,17 +8,32 @@
             <type>observations</type>
             <source format="PI-XML">../data/abrfcExample/LGNN5_QME.xml</source>
             <variable>QME</variable>
+            <existingTimeScale>
+                <function>avg</function>
+                <period>24</period>
+                <unit>hours</unit>
+            </existingTimeScale>
         </left>
         <right label="HEFS" >
             <type>ensemble forecasts</type>
             <source format="PI-XML">../data/abrfcExample/LGNN5_hefs_flow_1yr.tgz</source>
             <variable>QINE</variable>
+            <existingTimeScale>
+                <function>avg</function>
+                <period>1</period>
+                <unit>nanos</unit>
+            </existingTimeScale>
         </right>
     </inputs>
 
     <pair label="Pairs by location and lead time"> 
         <unit>CMS</unit>
         <leadHours minimum="1" maximum="48" />
+        <desiredTimeScale>
+            <function>avg</function>
+            <period>24</period>
+            <unit>hours</unit>
+        </desiredTimeScale>
     </pair>
 
     <metrics>

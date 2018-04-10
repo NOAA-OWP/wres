@@ -290,12 +290,25 @@ public final class ScriptGenerator
         long period = TimeHelper.unitsToLeadUnits(projectDetails.getIssuePoolingWindowUnit(), projectDetails.getIssuePoolingWindowPeriod());
         long frequency = TimeHelper.unitsToLeadUnits( projectDetails.getIssuePoolingWindowUnit(), projectDetails.getIssuePoolingWindowFrequency() );
 
+        long distanceBetween;
+
+        if (period == frequency)
+        {
+            distanceBetween = period;
+        }
+        else
+        {
+            distanceBetween = period - frequency;
+        }
+
         script.addLine("SELECT FLOOR(((EXTRACT( epoch FROM AGE(LEAST(MAX(initialization_date), '",
-                       projectDetails.getLatestIssueDate(), "'), '",
+                       projectDetails.getLatestIssueDate(), "') - INTERVAL '",
+                       period - frequency,
+                       " HOURS', '",
                        projectDetails.getEarliestIssueDate(),
                        "')) / 3600) / (",
-                       period - frequency,
-                       ")) - 1)::int AS window_count");
+                       distanceBetween,
+                       ")))::int AS window_count");
         script.addLine("FROM wres.TimeSeries TS");
         script.addLine("WHERE ", timeSeriesVariablePosition);
         script.addLine("    AND EXISTS (");

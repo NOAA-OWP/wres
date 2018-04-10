@@ -130,7 +130,7 @@ class SafeMetricOutputMultiMapByTimeAndThreshold<S extends MetricOutput<?>>
          * Thread safe map.
          */
 
-        final ConcurrentMap<MapKey<MetricConstants>, SafeMetricOutputMapByTimeAndThreshold.Builder<S>> internal =
+        final ConcurrentMap<MapKey<MetricConstants>, SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapByTimeAndThresholdBuilder<S>> internal =
                 new ConcurrentSkipListMap<>();
 
         @Override
@@ -141,7 +141,7 @@ class SafeMetricOutputMultiMapByTimeAndThreshold<S extends MetricOutput<?>>
 
         @Override
         public MetricOutputMultiMapByTimeAndThresholdBuilder<S>
-                put( final TimeWindow timeWindow, final Threshold threshold, final MetricOutputMapByMetric<S> result )
+                put( final TimeWindow timeWindow, final OneOrTwoThresholds threshold, final MetricOutputMapByMetric<S> result )
         {
             if ( Objects.isNull( result ) )
             {
@@ -152,10 +152,10 @@ class SafeMetricOutputMultiMapByTimeAndThreshold<S extends MetricOutput<?>>
                 final MapKey<MetricConstants> check =
                         dataFactory.getMapKey( d.getMetricID() );
                 //Safe put
-                final SafeMetricOutputMapByTimeAndThreshold.Builder<S> addMe =
-                        new SafeMetricOutputMapByTimeAndThreshold.Builder<>();
+                final SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapByTimeAndThresholdBuilder<S> addMe =
+                        new SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapByTimeAndThresholdBuilder<>();
                 addMe.put( Pair.of( timeWindow, threshold ), value );
-                final SafeMetricOutputMapByTimeAndThreshold.Builder<S> checkMe = internal.putIfAbsent( check, addMe );
+                final SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapByTimeAndThresholdBuilder<S> checkMe = internal.putIfAbsent( check, addMe );
                 //Add if already exists 
                 if ( !Objects.isNull( checkMe ) )
                 {
@@ -174,10 +174,10 @@ class SafeMetricOutputMultiMapByTimeAndThreshold<S extends MetricOutput<?>>
                 throw new MetricOutputException( "Specify a non-null metric result." );
             }
             //Safe put
-            final SafeMetricOutputMapByTimeAndThreshold.Builder<S> addMe =
-                    new SafeMetricOutputMapByTimeAndThreshold.Builder<>();
+            final SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapByTimeAndThresholdBuilder<S> addMe =
+                    new SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapByTimeAndThresholdBuilder<>();
             result.forEach( addMe::put );
-            final SafeMetricOutputMapByTimeAndThreshold.Builder<S> checkMe = internal.putIfAbsent( key, addMe );
+            final SafeMetricOutputMapByTimeAndThreshold.SafeMetricOutputMapByTimeAndThresholdBuilder<S> checkMe = internal.putIfAbsent( key, addMe );
             //Add if already exists 
             if ( !Objects.isNull( checkMe ) )
             {

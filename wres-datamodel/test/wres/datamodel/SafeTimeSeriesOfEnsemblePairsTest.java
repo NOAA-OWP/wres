@@ -2,7 +2,6 @@ package wres.datamodel;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -13,7 +12,9 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.StringJoiner;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import wres.datamodel.SafeTimeSeriesOfEnsemblePairs.SafeTimeSeriesOfEnsemblePairsBuilder;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
@@ -34,12 +35,15 @@ import wres.datamodel.time.TimeSeries;
 public final class SafeTimeSeriesOfEnsemblePairsTest
 {
 
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
+
     /**
      * Tests the {@link SafeTimeSeriesOfEnsemblePairs#basisTimeIterator()} method.
      */
 
     @Test
-    public void test1BasisTimeIterator()
+    public void testBasisTimeIterator()
     {
         //Build a time-series with three basis times 
         List<Event<PairOfDoubleAndVectorOfDoubles>> first = new ArrayList<>();
@@ -86,7 +90,7 @@ public final class SafeTimeSeriesOfEnsemblePairsTest
      */
 
     @Test
-    public void test2DurationIterator()
+    public void testDurationIterator()
     {
         //Build a time-series with three basis times 
         List<Event<PairOfDoubleAndVectorOfDoubles>> first = new ArrayList<>();
@@ -152,7 +156,7 @@ public final class SafeTimeSeriesOfEnsemblePairsTest
      */
 
     @Test
-    public void test3GetBaselineData()
+    public void testGetBaselineData()
     {
         //Build a time-series with two basis times
         List<Event<PairOfDoubleAndVectorOfDoubles>> values = new ArrayList<>();
@@ -197,7 +201,7 @@ public final class SafeTimeSeriesOfEnsemblePairsTest
      */
 
     @Test
-    public void test4AddMultipleTimeSeriesWithSameBasisTime()
+    public void testAddMultipleTimeSeriesWithSameBasisTime()
     {
         //Build a time-series with one basis times and three separate sets of data to append
         List<Event<PairOfDoubleAndVectorOfDoubles>> first = new ArrayList<>();
@@ -268,118 +272,11 @@ public final class SafeTimeSeriesOfEnsemblePairsTest
     }
 
     /**
-     * Tests the {@link SafeTimeSeriesOfEnsemblePairs#filterByBasisTime(java.util.function.Predicate)} 
-     * method.
-     */
-
-    @Test
-    public void test5FilterByBasisTime()
-    {
-        //Build a time-series with three basis times 
-        List<Event<PairOfDoubleAndVectorOfDoubles>> first = new ArrayList<>();
-        List<Event<PairOfDoubleAndVectorOfDoubles>> second = new ArrayList<>();
-        List<Event<PairOfDoubleAndVectorOfDoubles>> third = new ArrayList<>();
-        SafeTimeSeriesOfEnsemblePairsBuilder b = new SafeTimeSeriesOfEnsemblePairsBuilder();
-        DataFactory metIn = DefaultDataFactory.getInstance();
-        MetadataFactory metaFac = metIn.getMetadataFactory();
-        Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
-        first.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), metIn.pairOf( 1, new double[] { 1 } ) ) );
-        first.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), metIn.pairOf( 2, new double[] { 2 } ) ) );
-        first.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ), metIn.pairOf( 3, new double[] { 3 } ) ) );
-        Instant secondBasisTime = Instant.parse( "1985-01-02T00:00:00Z" );
-        second.add( Event.of( Instant.parse( "1985-01-02T01:00:00Z" ), metIn.pairOf( 4, new double[] { 4 } ) ) );
-        second.add( Event.of( Instant.parse( "1985-01-02T02:00:00Z" ), metIn.pairOf( 5, new double[] { 5 } ) ) );
-        second.add( Event.of( Instant.parse( "1985-01-02T03:00:00Z" ), metIn.pairOf( 6, new double[] { 6 } ) ) );
-        Instant thirdBasisTime = Instant.parse( "1985-01-03T00:00:00Z" );
-        third.add( Event.of( Instant.parse( "1985-01-03T01:00:00Z" ), metIn.pairOf( 7, new double[] { 7 } ) ) );
-        third.add( Event.of( Instant.parse( "1985-01-03T02:00:00Z" ), metIn.pairOf( 8, new double[] { 8 } ) ) );
-        third.add( Event.of( Instant.parse( "1985-01-03T03:00:00Z" ), metIn.pairOf( 9, new double[] { 9 } ) ) );
-        Metadata meta = metaFac.getMetadata();
-        //Add the time-series
-        TimeSeriesOfEnsemblePairs ts =
-                (TimeSeriesOfEnsemblePairs) b.addTimeSeriesData( firstBasisTime, first )
-                                             .addTimeSeriesData( secondBasisTime, second )
-                                             .addTimeSeriesData( thirdBasisTime, third )
-                                             .setMetadata( meta )
-                                             .build();
-        //Iterate and test
-        TimeSeries<PairOfDoubleAndVectorOfDoubles> filtered = ts.filterByBasisTime( a -> a.equals( secondBasisTime ) );
-        assertTrue( "Unexpected number of issue times in the filtered time-series.",
-                    filtered.getBasisTimes().size() == 1 );
-        assertTrue( "Unexpected issue time in the filtered time-series.",
-                    filtered.getBasisTimes().get( 0 ).equals( secondBasisTime ) );
-        assertTrue( "Unexpected value in the filtered time-series.",
-                    filtered.timeIterator()
-                            .iterator()
-                            .next()
-                            .getValue()
-                            .equals( metIn.pairOf( 4, new double[] { 4 } ) ) );
-        //Check for nullity on none filter
-        assertTrue( "Expected nullity on filtering basis times.",
-                    Objects.isNull( ts.filterByBasisTime( a -> a.equals( Instant.parse( "1985-01-04T00:00:00Z" ) ) ) ) );
-
-    }
-
-    /**
-     * Tests the {@link SafeTimeSeriesOfEnsemblePairs#filterByDuration(java.util.function.Predicate)} 
-     * method.
-     */
-
-    @Test
-    public void test6FilterByDuration()
-    {
-        //Build a time-series with three basis times 
-        List<Event<PairOfDoubleAndVectorOfDoubles>> first = new ArrayList<>();
-        List<Event<PairOfDoubleAndVectorOfDoubles>> second = new ArrayList<>();
-        List<Event<PairOfDoubleAndVectorOfDoubles>> third = new ArrayList<>();
-        SafeTimeSeriesOfEnsemblePairsBuilder b = new SafeTimeSeriesOfEnsemblePairsBuilder();
-        DataFactory metIn = DefaultDataFactory.getInstance();
-        MetadataFactory metaFac = metIn.getMetadataFactory();
-        Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
-        first.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), metIn.pairOf( 1, new double[] { 1 } ) ) );
-        first.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), metIn.pairOf( 2, new double[] { 2 } ) ) );
-        first.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ), metIn.pairOf( 3, new double[] { 3 } ) ) );
-        Instant secondBasisTime = Instant.parse( "1985-01-02T00:00:00Z" );
-        second.add( Event.of( Instant.parse( "1985-01-02T01:00:00Z" ), metIn.pairOf( 4, new double[] { 4 } ) ) );
-        second.add( Event.of( Instant.parse( "1985-01-02T02:00:00Z" ), metIn.pairOf( 5, new double[] { 5 } ) ) );
-        second.add( Event.of( Instant.parse( "1985-01-02T03:00:00Z" ), metIn.pairOf( 6, new double[] { 6 } ) ) );
-        Instant thirdBasisTime = Instant.parse( "1985-01-03T00:00:00Z" );
-        third.add( Event.of( Instant.parse( "1985-01-03T01:00:00Z" ), metIn.pairOf( 7, new double[] { 7 } ) ) );
-        third.add( Event.of( Instant.parse( "1985-01-03T02:00:00Z" ), metIn.pairOf( 8, new double[] { 8 } ) ) );
-        third.add( Event.of( Instant.parse( "1985-01-03T03:00:00Z" ), metIn.pairOf( 9, new double[] { 9 } ) ) );
-        Metadata meta = metaFac.getMetadata();
-        //Add the time-series
-        TimeSeriesOfEnsemblePairs ts =
-                (TimeSeriesOfEnsemblePairs) b.addTimeSeriesData( firstBasisTime, first )
-                                             .addTimeSeriesData( secondBasisTime, second )
-                                             .addTimeSeriesData( thirdBasisTime, third )
-                                             .setMetadata( meta )
-                                             .build();
-        //Iterate and test
-        TimeSeries<PairOfDoubleAndVectorOfDoubles> filtered =
-                ts.filterByBasisTime( p -> p.equals( secondBasisTime ) )
-                  .filterByDuration( q -> q.equals( Duration.ofHours( 3 ) ) );
-        assertTrue( "Unexpected number of durations in filtered time-series.", filtered.getDurations().size() == 1 );
-        assertTrue( "Unexpected duration in the filtered time-series.",
-                    filtered.getDurations().first().equals( Duration.ofHours( 3 ) ) );
-        assertTrue( "Unexpected value in the filtered time-series.",
-                    filtered.timeIterator()
-                            .iterator()
-                            .next()
-                            .getValue()
-                            .equals( metIn.pairOf( 6, new double[] { 6 } ) ) );
-        //Check for nullity on none filter
-        assertTrue( "Expected nullity on filtering durations.",
-                    Objects.isNull( ts.filterByDuration( p -> p.equals( Duration.ofHours( 4 ) ) ) ) );
-
-    }
-
-    /**
      * Tests for exceptional cases.
      */
 
     @Test
-    public void test7Exceptions()
+    public void testExceptions()
     {
         List<Event<PairOfDoubleAndVectorOfDoubles>> first = new ArrayList<>();
         DataFactory metIn = DefaultDataFactory.getInstance();
@@ -396,63 +293,27 @@ public final class SafeTimeSeriesOfEnsemblePairsTest
                 (TimeSeriesOfEnsemblePairs) d.addTimeSeriesData( firstBasisTime, first )
                                              .setMetadata( meta )
                                              .build();
-        try
-        {
-            Iterator<TimeSeries<PairOfDoubleAndVectorOfDoubles>> it = ts.basisTimeIterator().iterator();
-            it.forEachRemaining( a -> a.equals( null ) );
-            it.next();
-            fail( "Expected a checked exception on iterating a time-series with no more basis times left." );
-        }
-        catch ( NoSuchElementException e )
-        {
-        }
-        try
-        {
-            Iterator<TimeSeries<PairOfDoubleAndVectorOfDoubles>> it = ts.durationIterator().iterator();
-            it.forEachRemaining( a -> a.equals( null ) );
-            it.next();
-            fail( "Expected a checked exception on iterating a time-series with no more durations left." );
-        }
-        catch ( NoSuchElementException e )
-        {
-        }
-        try
-        {
-            Iterator<TimeSeries<PairOfDoubleAndVectorOfDoubles>> it = ts.basisTimeIterator().iterator();
-            it.next();
-            it.remove();
-            fail( "Expected a checked exception on attempting to remove a basis time from an immutable time-series." );
-        }
-        catch ( UnsupportedOperationException e )
-        {
-        }
-        try
-        {
-            Iterator<TimeSeries<PairOfDoubleAndVectorOfDoubles>> it = ts.durationIterator().iterator();
-            it.next();
-            it.remove();
-            fail( "Expected a checked exception on attempting to remove a duration from an immutable time-series." );
-        }
-        catch ( UnsupportedOperationException e )
-        {
-        }
-        //Check for null filters
-        try
-        {
-            ts.filterByBasisTime( null );
-            fail( "Expected a checked exception on attempting to filter by basis times with a null filter." );
-        }
-        catch ( NullPointerException e )
-        {
-        }
-        try
-        {
-            ts.filterByDuration( null );
-            fail( "Expected a checked exception on attempting to filter by duration with a null filter." );
-        }
-        catch ( NullPointerException e )
-        {
-        }
+
+        //Iterate
+        exception.expect( NoSuchElementException.class );
+        Iterator<TimeSeries<PairOfDoubleAndVectorOfDoubles>> noneSuchBasis = ts.basisTimeIterator().iterator();
+        noneSuchBasis.forEachRemaining( a -> a.equals( null ) );
+        noneSuchBasis.next();
+
+        Iterator<TimeSeries<PairOfDoubleAndVectorOfDoubles>> noneSuchDuration = ts.durationIterator().iterator();
+        noneSuchDuration.forEachRemaining( a -> a.equals( null ) );
+        noneSuchDuration.next();
+
+        //Mutate 
+        exception.expect( UnsupportedOperationException.class );
+
+        Iterator<TimeSeries<PairOfDoubleAndVectorOfDoubles>> immutableBasis = ts.basisTimeIterator().iterator();
+        immutableBasis.next();
+        immutableBasis.remove();
+
+        Iterator<TimeSeries<PairOfDoubleAndVectorOfDoubles>> immutableDuration = ts.durationIterator().iterator();
+        immutableDuration.next();
+        immutableDuration.remove();
     }
 
     /**
@@ -460,7 +321,7 @@ public final class SafeTimeSeriesOfEnsemblePairsTest
      */
 
     @Test
-    public void test8ToString()
+    public void testToString()
     {
         List<Event<PairOfDoubleAndVectorOfDoubles>> values = new ArrayList<>();
         SafeTimeSeriesOfEnsemblePairsBuilder b = new SafeTimeSeriesOfEnsemblePairsBuilder();
@@ -489,7 +350,7 @@ public final class SafeTimeSeriesOfEnsemblePairsTest
                                        metIn.pairOf( 1, new double[] { 1 } ) ) );
             joiner.add( "(1985-01-02T" + String.format( "%02d", i ) + ":00:00Z" + ",key: " + "1.0 value: [1.0])" );
         }
-        
+
         b.addTimeSeriesData( nextBasisTime, otherValues );
         assertTrue( "Unexpected string representation of compound time-series.",
                     joiner.toString().equals( b.build().toString() ) );
@@ -510,7 +371,7 @@ public final class SafeTimeSeriesOfEnsemblePairsTest
      */
 
     @Test
-    public void test9IterateIrregularTimeSeriesByDuration()
+    public void testIterateIrregularTimeSeriesByDuration()
     {
         //Build a time-series with three basis times 
         List<Event<PairOfDoubleAndVectorOfDoubles>> first = new ArrayList<>();
@@ -569,7 +430,7 @@ public final class SafeTimeSeriesOfEnsemblePairsTest
      */
 
     @Test
-    public void test10ClimatologyIsPreserved()
+    public void testClimatologyIsPreserved()
     {
         //Build a time-series with one basis times and three separate sets of data to append
         List<Event<PairOfDoubleAndVectorOfDoubles>> first = new ArrayList<>();

@@ -2,8 +2,8 @@ package wres.engine.statistics.metric;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.EnumMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -11,12 +11,13 @@ import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
 
+import wres.config.MetricConfigException;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
-import wres.datamodel.Threshold;
+import wres.datamodel.ThresholdsByMetric;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
@@ -40,7 +41,6 @@ import wres.engine.statistics.metric.categorical.ProbabilityOfDetection;
 import wres.engine.statistics.metric.categorical.ProbabilityOfFalseDetection;
 import wres.engine.statistics.metric.categorical.ThreatScore;
 import wres.engine.statistics.metric.config.MetricConfigHelper;
-import wres.engine.statistics.metric.config.MetricConfigurationException;
 import wres.engine.statistics.metric.discreteprobability.BrierScore;
 import wres.engine.statistics.metric.discreteprobability.BrierSkillScore;
 import wres.engine.statistics.metric.discreteprobability.RelativeOperatingCharacteristicDiagram;
@@ -82,17 +82,17 @@ import wres.engine.statistics.metric.singlevalued.VolumetricEfficiency;
 import wres.engine.statistics.metric.singlevalued.VolumetricEfficiency.VolumetricEfficiencyBuilder;
 import wres.engine.statistics.metric.timeseries.TimeToPeakError;
 import wres.engine.statistics.metric.timeseries.TimeToPeakError.TimeToPeakErrorBuilder;
-import wres.engine.statistics.metric.timeseries.TimeToPeakErrorStatistics;
-import wres.engine.statistics.metric.timeseries.TimeToPeakErrorStatistics.TimeToPeakErrorStatisticBuilder;
+import wres.engine.statistics.metric.timeseries.TimeToPeakRelativeError;
+import wres.engine.statistics.metric.timeseries.TimeToPeakRelativeError.TimeToPeakRelativeErrorBuilder;
+import wres.engine.statistics.metric.timeseries.TimingErrorDurationStatistics;
+import wres.engine.statistics.metric.timeseries.TimingErrorDurationStatistics.TimingErrorDurationStatisticsBuilder;
 
 /**
  * <p>
- * A factory class for constructing metrics.
+ * A factory class for constructing metrics. TODO: make thread safe.
  * </p>
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.2
- * @since 0.1
  */
 
 public class MetricFactory
@@ -108,7 +108,7 @@ public class MetricFactory
      * String used in several error messages to denote an unrecognized metric.
      */
 
-    private static final String UNRECOGNIZED_METRIC_ERROR = "Unrecognized metric for identifier";
+    private static final String UNRECOGNIZED_METRIC_ERROR = "Unrecognized metric for identifier.";
 
     /**
      * String used in several error messages to denote a configuration error.
@@ -128,7 +128,7 @@ public class MetricFactory
      * Instance of an {@link DataFactory} for building metric outputs.
      */
 
-    private DataFactory outputFactory = null;
+    private final DataFactory outputFactory;
 
     /**
      * Cached {@link Metric} that consume {@link SingleValuedPairs} and produce {@link DoubleScoreOutput}. 
@@ -199,7 +199,7 @@ public class MetricFactory
      * Returns a {@link MetricProcessorForProject} for the specified project configuration.
      * 
      * @param projectConfig the project configuration
-     * @param canonicalThresholds an optional set of canonical thresholds (one per metric group), may be null
+     * @param externalThresholds an optional set of external thresholds, may be null
      * @param thresholdExecutor an executor service for processing thresholds
      * @param metricExecutor an executor service for processing metrics
      * @return a metric processor
@@ -207,14 +207,14 @@ public class MetricFactory
      */
 
     public MetricProcessorForProject getMetricProcessorForProject( final ProjectConfig projectConfig,
-                                                                   final List<Set<Threshold>> canonicalThresholds,
+                                                                   final ThresholdsByMetric externalThresholds,
                                                                    final ExecutorService thresholdExecutor,
                                                                    final ExecutorService metricExecutor )
             throws MetricProcessorException
     {
         return new MetricProcessorForProject( this,
                                               projectConfig,
-                                              canonicalThresholds,
+                                              externalThresholds,
                                               thresholdExecutor,
                                               metricExecutor );
     }
@@ -228,21 +228,21 @@ public class MetricFactory
      * <p>Uses the {@link ForkJoinPool#commonPool()} for execution.</p>
      * 
      * @param config the project configuration
-     * @param mergeList an optional list of {@link MetricOutputGroup} for which results should be retained and merged
+     * @param mergeSet an optional list of {@link MetricOutputGroup} for which results should be retained and merged
      * @return the {@link MetricProcessorByTime}
      * @throws MetricProcessorException if the metric processor could not be built
      */
 
     public MetricProcessorByTime<SingleValuedPairs>
             ofMetricProcessorByTimeSingleValuedPairs( final ProjectConfig config,
-                                                      final MetricOutputGroup... mergeList )
+                                                      final Set<MetricOutputGroup> mergeSet )
                     throws MetricProcessorException
     {
         return ofMetricProcessorByTimeSingleValuedPairs( config,
                                                          null,
                                                          ForkJoinPool.commonPool(),
                                                          ForkJoinPool.commonPool(),
-                                                         mergeList );
+                                                         mergeSet );
     }
 
     /**
@@ -254,21 +254,21 @@ public class MetricFactory
      * <p>Uses the {@link ForkJoinPool#commonPool()} for execution.</p>
      * 
      * @param config the project configuration
-     * @param mergeList an optional list of {@link MetricOutputGroup} for which results should be retained and merged
+     * @param mergeSet an optional list of {@link MetricOutputGroup} for which results should be retained and merged
      * @return the {@link MetricProcessorByTime}
      * @throws MetricProcessorException if the metric processor could not be built
      */
 
     public MetricProcessorByTime<EnsemblePairs>
             ofMetricProcessorByTimeEnsemblePairs( final ProjectConfig config,
-                                                  final MetricOutputGroup... mergeList )
+                                                  final Set<MetricOutputGroup> mergeSet )
                     throws MetricProcessorException
     {
         return ofMetricProcessorByTimeEnsemblePairs( config,
                                                      null,
                                                      ForkJoinPool.commonPool(),
                                                      ForkJoinPool.commonPool(),
-                                                     mergeList );
+                                                     mergeSet );
     }
 
     /**
@@ -280,23 +280,23 @@ public class MetricFactory
      * <p>Uses the {@link ForkJoinPool#commonPool()} for execution.</p>
      * 
      * @param config the project configuration
-     * @param canonicalThresholds an optional set of canonical thresholds (one per metric group), may be null
-     * @param mergeList an optional list of {@link MetricOutputGroup} for which results should be retained and merged
+     * @param externalThresholds an optional set of external thresholds, may be null
+     * @param mergeSet an optional list of {@link MetricOutputGroup} for which results should be retained and merged
      * @return the {@link MetricProcessorByTime}
      * @throws MetricProcessorException if the metric processor could not be built
      */
 
     public MetricProcessorByTime<SingleValuedPairs>
             ofMetricProcessorByTimeSingleValuedPairs( final ProjectConfig config,
-                                                      final List<Set<Threshold>> canonicalThresholds,
-                                                      final MetricOutputGroup... mergeList )
+                                                      final ThresholdsByMetric externalThresholds,
+                                                      final Set<MetricOutputGroup> mergeSet )
                     throws MetricProcessorException
     {
         return ofMetricProcessorByTimeSingleValuedPairs( config,
-                                                         canonicalThresholds,
+                                                         externalThresholds,
                                                          ForkJoinPool.commonPool(),
                                                          ForkJoinPool.commonPool(),
-                                                         mergeList );
+                                                         mergeSet );
     }
 
     /**
@@ -308,23 +308,23 @@ public class MetricFactory
      * <p>Uses the {@link ForkJoinPool#commonPool()} for execution.</p>
      * 
      * @param config the project configuration
-     * @param canonicalThresholds an optional set of canonical thresholds (one per metric group), may be null
-     * @param mergeList an optional list of {@link MetricOutputGroup} for which results should be retained and merged
+     * @param externalThresholds an optional set of external thresholds (one per metric), may be null
+     * @param mergeSet an optional list of {@link MetricOutputGroup} for which results should be retained and merged
      * @return the {@link MetricProcessorByTime}
      * @throws MetricProcessorException if the metric processor could not be built
      */
 
     public MetricProcessorByTime<EnsemblePairs>
             ofMetricProcessorByTimeEnsemblePairs( final ProjectConfig config,
-                                                  final List<Set<Threshold>> canonicalThresholds,
-                                                  final MetricOutputGroup... mergeList )
+                                                  final ThresholdsByMetric externalThresholds,
+                                                  final Set<MetricOutputGroup> mergeSet )
                     throws MetricProcessorException
     {
         return ofMetricProcessorByTimeEnsemblePairs( config,
-                                                     canonicalThresholds,
+                                                     externalThresholds,
                                                      ForkJoinPool.commonPool(),
                                                      ForkJoinPool.commonPool(),
-                                                     mergeList );
+                                                     mergeSet );
     }
 
     /**
@@ -334,7 +334,7 @@ public class MetricFactory
      * {@link MetricProcessor#apply(Object)} will return the merged results from all prior calls.
      * 
      * @param config the project configuration
-     * @param canonicalThresholds an optional set of canonical thresholds (one per metric group), may be null
+     * @param externalThresholds an optional set of external thresholds, may be null
      * @param thresholdExecutor an optional {@link ExecutorService} for executing thresholds. Defaults to the 
      *            {@link ForkJoinPool#commonPool()}
      * @param metricExecutor an optional {@link ExecutorService} for executing metrics. Defaults to the 
@@ -345,7 +345,7 @@ public class MetricFactory
 
     public MetricProcessorByTime<SingleValuedPairs>
             ofMetricProcessorByTimeSingleValuedPairs( final ProjectConfig config,
-                                                      final List<Set<Threshold>> canonicalThresholds,
+                                                      final ThresholdsByMetric externalThresholds,
                                                       final ExecutorService thresholdExecutor,
                                                       final ExecutorService metricExecutor )
                     throws MetricProcessorException
@@ -353,12 +353,12 @@ public class MetricFactory
         try
         {
             return ofMetricProcessorByTimeSingleValuedPairs( config,
-                                                             canonicalThresholds,
+                                                             externalThresholds,
                                                              thresholdExecutor,
                                                              metricExecutor,
-                                                             getCacheListFromProjectConfig( config ) );
+                                                             MetricFactory.getCacheListFromProjectConfig( config ) );
         }
-        catch ( MetricConfigurationException e )
+        catch ( MetricConfigException e )
         {
             throw new MetricProcessorException( CONFIGURATION_ERROR, e );
         }
@@ -371,7 +371,7 @@ public class MetricFactory
      * {@link MetricProcessor#apply(Object)} will return the merged results from all prior calls.
      * 
      * @param config the project configuration
-     * @param canonicalThresholds an optional set of canonical thresholds (one per metric group), may be null
+     * @param externalThresholds an optional set of external thresholds, may be null
      * @param thresholdExecutor an optional {@link ExecutorService} for executing thresholds. Defaults to the 
      *            {@link ForkJoinPool#commonPool()}
      * @param metricExecutor an optional {@link ExecutorService} for executing metrics. Defaults to the 
@@ -381,7 +381,7 @@ public class MetricFactory
      */
 
     public MetricProcessorByTime<EnsemblePairs> ofMetricProcessorByTimeEnsemblePairs( final ProjectConfig config,
-                                                                                      final List<Set<Threshold>> canonicalThresholds,
+                                                                                      final ThresholdsByMetric externalThresholds,
                                                                                       final ExecutorService thresholdExecutor,
                                                                                       final ExecutorService metricExecutor )
             throws MetricProcessorException
@@ -389,12 +389,12 @@ public class MetricFactory
         try
         {
             return ofMetricProcessorByTimeEnsemblePairs( config,
-                                                         canonicalThresholds,
+                                                         externalThresholds,
                                                          thresholdExecutor,
                                                          metricExecutor,
-                                                         getCacheListFromProjectConfig( config ) );
+                                                         MetricFactory.getCacheListFromProjectConfig( config ) );
         }
-        catch ( MetricConfigurationException e )
+        catch ( MetricConfigException e )
         {
             throw new MetricProcessorException( CONFIGURATION_ERROR, e );
         }
@@ -407,34 +407,34 @@ public class MetricFactory
      * {@link MetricProcessor#apply(Object)} will return the merged results from all prior calls.
      * 
      * @param config the project configuration
-     * @param canonicalThresholds an optional set of canonical thresholds (one per metric group), may be null
+     * @param externalThresholds an optional set of external thresholds, may be null
      * @param thresholdExecutor an optional {@link ExecutorService} for executing thresholds. Defaults to the 
      *            {@link ForkJoinPool#commonPool()}
      * @param metricExecutor an optional {@link ExecutorService} for executing metrics. Defaults to the 
      *            {@link ForkJoinPool#commonPool()} 
-     * @param mergeList an optional list of {@link MetricOutputGroup} for which results should be retained and merged
+     * @param mergeSet an optional list of {@link MetricOutputGroup} for which results should be retained and merged
      * @return the {@link MetricProcessorByTime}
      * @throws MetricProcessorException if the metric processor could not be built
      */
 
     public MetricProcessorByTime<SingleValuedPairs>
             ofMetricProcessorByTimeSingleValuedPairs( final ProjectConfig config,
-                                                      final List<Set<Threshold>> canonicalThresholds,
+                                                      final ThresholdsByMetric externalThresholds,
                                                       final ExecutorService thresholdExecutor,
                                                       final ExecutorService metricExecutor,
-                                                      final MetricOutputGroup... mergeList )
+                                                      final Set<MetricOutputGroup> mergeSet )
                     throws MetricProcessorException
     {
         try
         {
             return new MetricProcessorByTimeSingleValuedPairs( outputFactory,
                                                                config,
-                                                               canonicalThresholds,
+                                                               externalThresholds,
                                                                thresholdExecutor,
                                                                metricExecutor,
-                                                               mergeList );
+                                                               mergeSet );
         }
-        catch ( MetricConfigurationException e )
+        catch ( MetricConfigException e )
         {
             throw new MetricProcessorException( CONFIGURATION_ERROR, e );
         }
@@ -451,33 +451,33 @@ public class MetricFactory
      * {@link MetricProcessor#apply(Object)} will return the merged results from all prior calls.
      * 
      * @param config the project configuration
-     * @param canonicalThresholds an optional set of canonical thresholds (one per metric group), may be null
+     * @param externalThresholds an optional set of external thresholds, may be null
      * @param thresholdExecutor an optional {@link ExecutorService} for executing thresholds. Defaults to the 
      *            {@link ForkJoinPool#commonPool()}
      * @param metricExecutor an optional {@link ExecutorService} for executing metrics. Defaults to the 
      *            {@link ForkJoinPool#commonPool()} 
-     * @param mergeList an optional list of {@link MetricOutputGroup} for which results should be retained and merged
+     * @param mergeSet an optional set of {@link MetricOutputGroup} for which results should be retained and merged
      * @return the {@link MetricProcessorByTime}
      * @throws MetricProcessorException if the metric processor could not be built
      */
 
     public MetricProcessorByTime<EnsemblePairs> ofMetricProcessorByTimeEnsemblePairs( final ProjectConfig config,
-                                                                                      final List<Set<Threshold>> canonicalThresholds,
+                                                                                      final ThresholdsByMetric externalThresholds,
                                                                                       final ExecutorService thresholdExecutor,
                                                                                       final ExecutorService metricExecutor,
-                                                                                      final MetricOutputGroup... mergeList )
+                                                                                      final Set<MetricOutputGroup> mergeSet )
             throws MetricProcessorException
     {
         try
         {
             return new MetricProcessorByTimeEnsemblePairs( outputFactory,
                                                            config,
-                                                           canonicalThresholds,
+                                                           externalThresholds,
                                                            thresholdExecutor,
                                                            metricExecutor,
-                                                           mergeList );
+                                                           mergeSet );
         }
-        catch ( MetricConfigurationException e )
+        catch ( MetricConfigException e )
         {
             throw new MetricProcessorException( CONFIGURATION_ERROR, e );
         }
@@ -701,7 +701,7 @@ public class MetricFactory
             }
             else
             {
-                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
+                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + next + "'." );
             }
         }
         builder.setOutputFactory( outputFactory ).setExecutorService( executor );
@@ -758,7 +758,7 @@ public class MetricFactory
         {
             if ( !discreteProbabilityScore.containsKey( next ) )
             {
-                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
+                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + next + "'." );
             }
             builder.add( discreteProbabilityScore.get( next ) );
         }
@@ -790,7 +790,7 @@ public class MetricFactory
         {
             if ( !dichotomousScoreCol.containsKey( next ) )
             {
-                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
+                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + next + "'." );
             }
             builder.add( dichotomousScoreCol.get( next ) );
         }
@@ -822,7 +822,7 @@ public class MetricFactory
         {
             if ( !discreteProbabilityMultiVector.containsKey( next ) )
             {
-                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
+                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + next + "'." );
             }
             builder.add( discreteProbabilityMultiVector.get( next ) );
         }
@@ -880,7 +880,7 @@ public class MetricFactory
         {
             if ( !ensembleScore.containsKey( next ) )
             {
-                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
+                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + next + "'." );
             }
             builder.add( ensembleScore.get( next ) );
         }
@@ -938,13 +938,45 @@ public class MetricFactory
         {
             if ( !ensembleBoxPlot.containsKey( next ) )
             {
-                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
+                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + next + "'." );
             }
             builder.add( ensembleBoxPlot.get( next ) );
         }
         builder.setOutputFactory( outputFactory ).setExecutorService( executor );
         return builder.build();
     }
+
+    /**
+     * Returns a {@link MetricCollection} of metrics that consume {@link TimeSeriesOfSingleValuedPairs} and produce
+     * {@link PairedOutput}.
+     * 
+     * @param executor an optional {@link ExecutorService} for executing the metrics
+     * @param metric the metric identifiers
+     * @return a collection of metrics
+     * @throws MetricParameterException if one or more parameter values is incorrect
+     * @throws IllegalArgumentException if a metric identifier is not recognized
+     */
+
+    public MetricCollection<TimeSeriesOfSingleValuedPairs, PairedOutput<Instant, Duration>, PairedOutput<Instant, Duration>>
+            ofSingleValuedTimeSeriesCollection( ExecutorService executor,
+                                                MetricConstants... metric )
+                    throws MetricParameterException
+    {
+        final MetricCollectionBuilder<TimeSeriesOfSingleValuedPairs, PairedOutput<Instant, Duration>, PairedOutput<Instant, Duration>> builder =
+                MetricCollectionBuilder.of();
+        // Build the store if required
+        buildSingleValuedTimeSeriesStore();
+        for ( MetricConstants next : metric )
+        {
+            if ( !singleValuedTimeSeries.containsKey( next ) )
+            {
+                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + next + "'." );
+            }
+            builder.add( singleValuedTimeSeries.get( next ) );
+        }
+        builder.setOutputFactory( outputFactory ).setExecutorService( executor );
+        return builder.build();
+    }  
 
     /**
      * Returns a {@link Metric} that consumes {@link SingleValuedPairs} and produces {@link DoubleScoreOutput}.
@@ -972,38 +1004,6 @@ public class MetricFactory
         {
             throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
         }
-    }
-
-    /**
-     * Returns a {@link MetricCollection} of metrics that consume {@link TimeSeriesOfSingleValuedPairs} and produce
-     * {@link PairedOutput}.
-     * 
-     * @param executor an optional {@link ExecutorService} for executing the metrics
-     * @param metric the metric identifiers
-     * @return a collection of metrics
-     * @throws MetricParameterException if one or more parameter values is incorrect
-     * @throws IllegalArgumentException if a metric identifier is not recognized
-     */
-
-    public MetricCollection<TimeSeriesOfSingleValuedPairs, PairedOutput<Instant, Duration>, PairedOutput<Instant, Duration>>
-            ofSingleValuedTimeSeriesCollection( ExecutorService executor,
-                                                MetricConstants... metric )
-                    throws MetricParameterException
-    {
-        final MetricCollectionBuilder<TimeSeriesOfSingleValuedPairs, PairedOutput<Instant, Duration>, PairedOutput<Instant, Duration>> builder =
-                MetricCollectionBuilder.of();
-        // Build the store if required
-        buildSingleValuedTimeSeriesStore();
-        for ( MetricConstants next : metric )
-        {
-            if ( !singleValuedTimeSeries.containsKey( next ) )
-            {
-                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
-            }
-            builder.add( singleValuedTimeSeries.get( next ) );
-        }
-        builder.setOutputFactory( outputFactory ).setExecutorService( executor );
-        return builder.build();
     }
 
     /**
@@ -1549,7 +1549,7 @@ public class MetricFactory
      * @throws MetricParameterException if one or more parameter values is incorrect
      */
 
-    <T extends PairedInput<?>> SampleSize<T> ofSampleSize() throws MetricParameterException
+    public <T extends PairedInput<?>> SampleSize<T> ofSampleSize() throws MetricParameterException
     {
         return (SampleSize<T>) new SampleSizeBuilder<T>().setOutputFactory( outputFactory ).build();
     }
@@ -1632,21 +1632,63 @@ public class MetricFactory
     }
 
     /**
-     * Return a default {@link TimeToPeakErrorStatistics} function for a prescribed set of {@link MetricConstants}.
-     * For each of the {@link MetricConstants}, the {@link MetricConstants#isInGroup(ScoreOutputGroup)} should return 
-     * <code>true</code> when supplied with {@link ScoreOutputGroup#UNIVARIATE_STATISTIC}.
+     * Return a default {@link TimeToPeakRelativeError} function.
      * 
-     * @param statistics the identifiers for summary statistics
-     * @return a default {@link TimeToPeakErrorStatistics} function
+     * @return a default {@link TimeToPeakRelativeError} function
      * @throws MetricParameterException if one or more parameter values is incorrect
      */
 
-    public TimeToPeakErrorStatistics ofTimeToPeakErrorStatistics( MetricConstants... statistics )
+    public TimeToPeakRelativeError ofTimeToPeakRelativeError() throws MetricParameterException
+    {
+        buildSingleValuedTimeSeriesStore();
+        return (TimeToPeakRelativeError) singleValuedTimeSeries.get( MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR );
+    }
+
+    /**
+     * Return a {@link TimingErrorDurationStatistics} function for a prescribed set of {@link MetricConstants}.
+     * For each of the {@link MetricConstants}, the {@link MetricConstants#isInGroup(ScoreOutputGroup)} should return 
+     * <code>true</code> when supplied with {@link ScoreOutputGroup#UNIVARIATE_STATISTIC}.
+     * 
+     * @param identifier the named metric for which summary statistics are required
+     * @param statistics the identifiers for summary statistics
+     * @return a default {@link TimingErrorDurationStatistics} function
+     * @throws MetricParameterException if one or more parameter values is incorrect
+     */
+
+    public TimingErrorDurationStatistics ofTimingErrorDurationStatistics( MetricConstants identifier,
+                                                                        Set<MetricConstants> statistics )
             throws MetricParameterException
     {
-        return (TimeToPeakErrorStatistics) new TimeToPeakErrorStatisticBuilder().setStatistic( statistics )
-                                                                                .setOutputFactory( outputFactory )
-                                                                                .build();
+        return new TimingErrorDurationStatisticsBuilder().setStatistics( statistics )
+                                                        .setID( identifier )
+                                                        .setOutputFactory( outputFactory )
+                                                        .build();
+    }
+
+    /**
+     * Helper that returns the name of the summary statistics associated with the timing metric or null if no 
+     * summary statistics are defined for the specified input.
+     * 
+     * @param timingMetric the named timing metric
+     * @return the summary statistics name or null if no identifier is defined
+     * @throws NullPointerException if the input is null
+     */
+
+    public static MetricConstants getSummaryStatisticsForTimingErrorMetric( MetricConstants timingMetric )
+    {
+        Objects.requireNonNull( timingMetric, "Specify a non-null metric identifier to map." );
+
+        if ( timingMetric == MetricConstants.TIME_TO_PEAK_ERROR )
+        {
+            return MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC;
+        }
+
+        if ( timingMetric == MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR )
+        {
+            return MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR_STATISTIC;
+        }
+
+        return null;
     }
 
     /**
@@ -1655,12 +1697,12 @@ public class MetricFactory
      * 
      * @param projectConfig the project configuration
      * @return a list of output types that should be cached
-     * @throws MetricConfigurationException if the configuration is invalid
+     * @throws MetricConfigException if the configuration is invalid
      * @throws NullPointerException if the input is null
      */
 
-    private MetricOutputGroup[] getCacheListFromProjectConfig( ProjectConfig projectConfig )
-            throws MetricConfigurationException
+    private static Set<MetricOutputGroup> getCacheListFromProjectConfig( ProjectConfig projectConfig )
+            throws MetricConfigException
     {
         // Always cache ordinary scores and paired output for timing error metrics 
         Set<MetricOutputGroup> returnMe = new TreeSet<>();
@@ -1685,7 +1727,7 @@ public class MetricFactory
         // is available
         returnMe.remove( MetricOutputGroup.DURATION_SCORE );
 
-        return returnMe.toArray( new MetricOutputGroup[returnMe.size()] );
+        return Collections.unmodifiableSet( returnMe );
     }
 
     /**
@@ -1878,6 +1920,9 @@ public class MetricFactory
             singleValuedTimeSeries = new EnumMap<>( MetricConstants.class );
             singleValuedTimeSeries.put( MetricConstants.TIME_TO_PEAK_ERROR,
                                         new TimeToPeakErrorBuilder().setOutputFactory( outputFactory ).build() );
+            singleValuedTimeSeries.put( MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR,
+                                        new TimeToPeakRelativeErrorBuilder().setOutputFactory( outputFactory )
+                                                                            .build() );
         }
     }
 

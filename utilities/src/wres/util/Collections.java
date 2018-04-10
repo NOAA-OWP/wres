@@ -16,21 +16,10 @@ import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 
 import org.apache.commons.math3.stat.descriptive.AbstractUnivariateStatistic;
-import org.apache.commons.math3.stat.descriptive.moment.GeometricMean;
-import org.apache.commons.math3.stat.descriptive.moment.Kurtosis;
 import org.apache.commons.math3.stat.descriptive.moment.Mean;
-import org.apache.commons.math3.stat.descriptive.moment.SecondMoment;
-import org.apache.commons.math3.stat.descriptive.moment.Skewness;
-import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
-import org.apache.commons.math3.stat.descriptive.moment.Variance;
 import org.apache.commons.math3.stat.descriptive.rank.Max;
-import org.apache.commons.math3.stat.descriptive.rank.Median;
 import org.apache.commons.math3.stat.descriptive.rank.Min;
-import org.apache.commons.math3.stat.descriptive.rank.PSquarePercentile;
-import org.apache.commons.math3.stat.descriptive.summary.Product;
 import org.apache.commons.math3.stat.descriptive.summary.Sum;
-import org.apache.commons.math3.stat.descriptive.summary.SumOfLogs;
-import org.apache.commons.math3.stat.descriptive.summary.SumOfSquares;
 
 /**
  * @author Christopher Tubbs
@@ -178,6 +167,39 @@ public final class Collections
             }
         }
         return filteredValues;
+    }
+
+    /**
+     * Finds the key of a map based on a passed in function comparing values
+     * <p>
+     *     The following will find the key of a map with the largest numerical value:
+     * </p>
+     * <pre>Collections.getKeyByValueFunction(
+     *      map,
+     *      (value1, value2) -&gt; Math.max(value1, value2) == value1
+     * )
+     * </pre>
+     * @param map The map to interrogate
+     * @param comparisonFunction The function that will find the correct key.
+     *                           The first parameter is the value to compare
+     *                           against the previous value
+     * @param <K> The type of the key
+     * @param <V> The type of the value
+     * @return The key that is determined to be the match based off of the function
+     */
+    public static <K, V> K getKeyByValueFunction( Map<K, V> map, BiPredicate<V, V> comparisonFunction)
+    {
+        K key = null;
+
+        for (Map.Entry<K, V> entry : map.entrySet())
+        {
+            if (key == null || comparisonFunction.test( entry.getValue(), map.get(key) ))
+            {
+                key = entry.getKey();
+            }
+        }
+
+        return key;
     }
     
     /**
@@ -341,7 +363,7 @@ public final class Collections
     {
         function = function.trim().toLowerCase();
 
-        Double aggregatedValue = Double.NaN;
+        double aggregatedValue = Double.NaN;
 
         AbstractUnivariateStatistic operation = null;
 
@@ -351,9 +373,6 @@ public final class Collections
             case "average":
             case "avg":
                 operation = new Mean();
-                break;
-            case "median":
-                operation = new Median(  );
                 break;
             case "maximum":
             case "max":
@@ -365,43 +384,6 @@ public final class Collections
                 break;
             case "sum":
                 operation = new Sum(  );
-                break;
-            case "sum of logs":
-            case "sum_of_logs":
-            case "sumoflogs":
-                operation = new SumOfLogs(  );
-                break;
-            case "sum_of_squares":
-            case "sum of squares":
-            case "sumofsquares":
-                operation = new SumOfSquares(  );
-                break;
-            case "variance":
-                operation = new Variance(  );
-                break;
-            case "second moment":
-            case "second_moment":
-            case "secondmoment":
-                operation = new SecondMoment(  );
-                break;
-            case "skewness":
-                operation = new Skewness(  );
-                break;
-            case "standard deviation":
-            case "standard_deviation":
-            case "standarddeviation":
-                operation = new StandardDeviation(  );
-                break;
-            case "geometric_mean":
-            case "geometric mean":
-            case "geometricmean":
-                operation = new GeometricMean(  );
-                break;
-            case "product":
-                operation = new Product();
-                break;
-            case "kurtosis":
-                operation = new Kurtosis(  );
                 break;
             default:
                 throw new InvalidParameterException( "The function '" +
@@ -421,11 +403,6 @@ public final class Collections
                                           return value.doubleValue();
                                   } ).toArray()
             );
-        }
-
-        if (aggregatedValue == null)
-        {
-            aggregatedValue = Double.NaN;
         }
 
         return aggregatedValue;

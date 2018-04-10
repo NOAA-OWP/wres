@@ -1,16 +1,21 @@
 package wres.io.data.details;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Comparator;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import wres.config.generated.Feature;
 import wres.io.utilities.Database;
+import wres.io.utilities.ScriptBuilder;
 import wres.util.Strings;
 
 /**
@@ -19,7 +24,10 @@ import wres.util.Strings;
  */
 public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDetails.FeatureKey>
 {
-    private static Comparator<FeatureDetails> alphabeticalComparator = null;
+    private static final Logger LOGGER = LoggerFactory.getLogger(FeatureDetails.class);
+
+    // Prevents asynchronous saving of identical features
+    private static final Object FEATURE_SAVE_LOCK = new Object();
 
 	private String lid = null;
 	private String featureName = null;
@@ -82,7 +90,8 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
                             null );
     }
 
-    private void update(ResultSet row) throws SQLException
+    @Override
+    protected void update( ResultSet row ) throws SQLException
     {
         if (Database.hasColumn( row, "comid" ))
         {
@@ -413,75 +422,43 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
     }
 
     @Override
-    public void save() throws SQLException
+    protected Logger getLogger()
     {
-        //This needs to populate fields if they are missing values
-
-        Connection connection = null;
-        ResultSet feature = null;
-
-        try
-        {
-            connection = Database.getHighPriorityConnection();
-            feature = Database.getResults( connection, this.getInsertSelectStatement() );
-
-            while (feature.next())
-            {
-                this.update( feature );
-            }
-        }
-        finally
-        {
-            if (feature != null)
-            {
-                feature.close();
-            }
-
-            if (connection != null)
-            {
-                Database.returnHighPriorityConnection( connection );
-            }
-        }
+        return FeatureDetails.LOGGER;
     }
 
     @Override
-	protected String getInsertSelectStatement()
+    protected PreparedStatement getInsertSelectStatement( Connection connection)
+            throws SQLException
     {
-		String script = "";
+        List<Object> arguments = new ArrayList<>();
+        ScriptBuilder script = new ScriptBuilder(  );
 
-		script += this.getInsertStatement();
+        script.addLine( this.getInsert( arguments ) );
+        script.addLine();
+        script.addLine("UNION");
+        script.addLine();
+        script.add(this.getSelect( arguments ));
 
-		script += NEWLINE;
-		script += "UNION" + NEWLINE;
-		script += NEWLINE;
+        return script.getPreparedStatement( connection, arguments );
+    }
 
-		script += this.getSelectStatement();
-
-		return script;
-	}
-
-    /**
-     * Creates the 'Insert' portion of the InsertSelectStatement that will
-     * create and retrieve a new record based on the current fields
-     * @return The 'Insert' portion of the InsertSelectStatement
-     */
-	private String getInsertStatement()
+    private String getInsert(final List<Object> args)
     {
-        final String twoTab = "        ";
+        ScriptBuilder script = new ScriptBuilder(  );
 
         // Keeps track of whether or not a field has been added.
         // When true, there needs to be a comma to separate the upcoming field
         // from the previous field, along with a newline
         boolean lineAdded = false;
-        String script = "";
 
-        script += "WITH new_feature AS" + NEWLINE;
-        script += "(" + NEWLINE;
-        script += "    INSERT INTO wres.Feature (" + NEWLINE;
+        script.addLine( "WITH new_feature AS" );
+        script.addLine("(");
+        script.addTab().addLine("INSERT INTO wres.Feature (");
 
         if (this.getComid() != null)
         {
-            script += twoTab + "comid";
+            script.addTab(  2  ).add("comid");
 
             // A field has been added
             lineAdded = true;
@@ -492,7 +469,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
             if (lineAdded)
             {
                 // Add a separator between this and the previously added field
-                script += "," + NEWLINE;
+                script.addLine(",");
             }
             else
             {
@@ -500,8 +477,8 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
                 lineAdded = true;
             }
 
-            script += twoTab + "lid," + NEWLINE;
-            script += twoTab + "parent_feature_id";
+            script.addTab(2).addLine("lid,");
+            script.addTab(2).add("parent_feature_id");
         }
 
         if (this.getGageID() != null)
@@ -509,15 +486,14 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
             if (lineAdded)
             {
                 // Add a separator between this and the previously added field
-                script += "," + NEWLINE;
+                script.addLine(",");
             }
             else
             {
                 // A field has been added
                 lineAdded = true;
             }
-
-            script += twoTab + "gage_id";
+            script.addTab(2).add("gage_id");
         }
 
         if (this.getRfc() != null)
@@ -525,7 +501,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
             if (lineAdded)
             {
                 // Add a separator between this and the previously added field
-                script += "," + NEWLINE;
+                script.addLine(",");
             }
             else
             {
@@ -533,7 +509,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
                 lineAdded = true;
             }
 
-            script += twoTab + "rfc";
+            script.addTab(2).add("rfc");
         }
 
         if (this.getState() != null)
@@ -541,7 +517,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
             if (lineAdded)
             {
                 // Add a separator between this and the previously added field
-                script += "," + NEWLINE;
+                script.addLine(",");
             }
             else
             {
@@ -549,7 +525,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
                 lineAdded = true;
             }
 
-            script += twoTab + "st";
+            script.addTab(2).add("st");
         }
 
         if (this.getStateCode() != null)
@@ -557,7 +533,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
             if (lineAdded)
             {
                 // Add a separator between this and the previously added field
-                script += "," + NEWLINE;
+                script.addLine(",");
             }
             else
             {
@@ -565,7 +541,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
                 lineAdded = true;
             }
 
-            script += twoTab + "st_code";
+            script.addTab(2).add("st_code");
         }
 
         if (this.getHuc() != null)
@@ -573,7 +549,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
             if (lineAdded)
             {
                 // Add a separator between this and the previously added field
-                script += "," + NEWLINE;
+                script.addLine(",");
             }
             else
             {
@@ -581,7 +557,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
                 lineAdded = true;
             }
 
-            script += twoTab + "huc";
+            script.addTab(2).add("huc");
         }
 
         if (this.getFeatureName() != null)
@@ -589,7 +565,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
             if (lineAdded)
             {
                 // Add a separator between this and the previously added field
-                script += "," + NEWLINE;
+                script.addLine(",");
             }
             else
             {
@@ -597,7 +573,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
                 lineAdded = true;
             }
 
-            script += twoTab + "feature_name";
+            script.addTab(2).add("feature_name");
         }
 
         if (this.getLatitude() != null)
@@ -605,7 +581,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
             if (lineAdded)
             {
                 // Add a separator between this and the previously added field
-                script += "," + NEWLINE;
+                script.addLine(",");
             }
             else
             {
@@ -613,7 +589,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
                 lineAdded = true;
             }
 
-            script += twoTab + "latitude";
+            script.addTab(2).add("latitude");
         }
 
         if (this.getLongitude() != null)
@@ -621,24 +597,26 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
             if (lineAdded)
             {
                 // Add a separator between this and the previously added field
-                script += "," + NEWLINE;
+                script.addLine(",");
             }
 
-            script += twoTab + "longitude";
+            script.addTab(2).add("longitude");
         }
 
-        script += NEWLINE;
-        script += "    )" + NEWLINE;
+        script.addLine();
+        script.addTab().addLine(")");
 
         // Now keeps track if we've added a line for a value
         // If true, we need to add a separator between encountered values
         lineAdded = false;
 
-        script += "    SELECT" + NEWLINE;
+        script.addTab().addLine("SELECT");
 
         if (this.getComid() != null)
         {
-            script += "        " + this.getComid();
+            script.addTab(2).add("?");
+
+            args.add(this.getComid());
 
             // A value has now been added
             lineAdded = true;
@@ -649,7 +627,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
             if (lineAdded)
             {
                 // Separate this value from the previous one
-                script += "," + NEWLINE;
+                script.addLine(",");
             }
             else
             {
@@ -657,13 +635,15 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
                 lineAdded = true;
             }
 
-            script += twoTab + "'" + this.getLid() + "'," + NEWLINE;
+            script.addTab(2).addLine("?,");
+            script.addTab(2).addLine("(");
+            script.addTab(  3  ).addLine("SELECT feature_id");
+            script.addTab(  3  ).addLine("FROM wres.Feature F");
+            script.addTab(  3  ).addLine("WHERE ? LIKE F.lid || '%'");
+            script.addTab(2).add(")");
 
-            script += twoTab + "(" + NEWLINE;
-            script += "            SELECT feature_id" + NEWLINE;
-            script += "            FROM wres.Feature F" + NEWLINE;
-            script += "            WHERE '" + this.lid + "' LIKE F.lid || '%'" + NEWLINE;
-            script += twoTab + ")";
+            args.add(this.getLid());
+            args.add(this.getLid());
         }
 
         if (this.getGageID() != null)
@@ -671,7 +651,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
             if (lineAdded)
             {
                 // Separate this value from the previous one
-                script += "," + NEWLINE;
+                script.addLine(",");
             }
             else
             {
@@ -679,7 +659,9 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
                 lineAdded = true;
             }
 
-            script += twoTab + "'" + this.getGageID() + "'";
+
+            script.addTab(2).add("?");
+            args.add(this.getGageID());
         }
 
         if (this.getRfc() != null)
@@ -687,7 +669,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
             if (lineAdded)
             {
                 // Separate this value from the previous one
-                script += "," + NEWLINE;
+                script.addLine(",");
             }
             else
             {
@@ -695,7 +677,8 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
                 lineAdded = true;
             }
 
-            script += twoTab + "'" + this.getRfc() + "'";
+            script.addTab(2).add("?");
+            args.add(this.getRfc());
         }
 
         if (this.getState() != null)
@@ -703,7 +686,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
             if (lineAdded)
             {
                 // Separate this value from the previous one
-                script += "," + NEWLINE;
+                script.addLine(",");
             }
             else
             {
@@ -711,7 +694,8 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
                 lineAdded = true;
             }
 
-            script += twoTab + "'" + this.getState() + "'";
+            script.addTab(2).add("?");
+            args.add(this.getState());
         }
 
         if (this.getStateCode() != null)
@@ -719,7 +703,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
             if (lineAdded)
             {
                 // Separate this value from the previous one
-                script += "," + NEWLINE;
+                script.addLine(",");
             }
             else
             {
@@ -727,7 +711,8 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
                 lineAdded = true;
             }
 
-            script += twoTab + "'" + this.getStateCode()+ "'";
+            script.addTab(2).add("?");
+            args.add(this.getStateCode());
         }
 
         if (this.getHuc() != null)
@@ -735,7 +720,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
             if (lineAdded)
             {
                 // Separate this value from the previous one
-                script += "," + NEWLINE;
+                script.addLine(",");
             }
             else
             {
@@ -743,7 +728,8 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
                 lineAdded = true;
             }
 
-            script += twoTab + "'" + this.getHuc() + "'";
+            script.addTab(2).add("?");
+            args.add(this.getHuc());
         }
 
         if (this.getFeatureName() != null)
@@ -751,7 +737,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
             if (lineAdded)
             {
                 // Seperate this value from the previous one
-                script += "," + NEWLINE;
+                script.addLine(",");
             }
             else
             {
@@ -759,7 +745,8 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
                 lineAdded = true;
             }
 
-            script += twoTab + "'" + this.getFeatureName() + "'";
+            script.addTab(2).add("?");
+            args.add(this.getFeatureName());
         }
 
         if (this.getLatitude() != null)
@@ -767,7 +754,7 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
             if (lineAdded)
             {
                 // Separate this value from the previous one
-                script += "," + NEWLINE;
+                script.addLine(",");
             }
             else
             {
@@ -775,7 +762,8 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
                 lineAdded = true;
             }
 
-            script += twoTab + this.getLatitude();
+            script.addTab(2).add("?");
+            args.add(this.getLatitude());
         }
 
         if (this.getLongitude() != null)
@@ -783,26 +771,27 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
             if (lineAdded)
             {
                 // Separate this value from the previous one
-                script += "," + NEWLINE;
+                script.addLine(",");
             }
 
-            script += twoTab + this.getLongitude();
+            script.addTab(2).add("?");
+            args.add(this.getLongitude());
         }
 
-        script += NEWLINE;
-        script += "    WHERE NOT EXISTS (" + NEWLINE;
-        script += "        SELECT 1" + NEWLINE;
-        script += "        FROM wres.Feature" + NEWLINE;
+        script.addLine();
+        script.addTab().addLine("WHERE NOT EXISTS (");
+        script.addTab(  2  ).addLine("SELECT 1");
+        script.addTab(  2  ).addLine("FROM wres.Feature");
+        script.addTab(  2  ).add("WHERE ");
 
         // Indicates whether or not a where clause has been added
         // If true, an 'OR' operator needs to be added
         lineAdded = false;
 
-        script += "        WHERE ";
-
         if (this.getComid() != null)
         {
-            script += "comid = " + this.getComid();
+            script.add("comid = ?");
+            args.add( this.getComid() );
 
             // A clause was added
             lineAdded = true;
@@ -813,8 +802,8 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
             if (lineAdded)
             {
                 // Separate this clause from the previous with an OR operator
-                script += NEWLINE;
-                script += "            OR ";
+                script.addLine();
+                script.addTab(3).add("OR ");
             }
             else
             {
@@ -822,7 +811,8 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
                 lineAdded = true;
             }
 
-            script += "lid = '" + this.getLid() + "'";
+            script.add("lid = ?");
+            args.add( this.getLid() );
         }
 
         if (Strings.hasValue( this.getGageID() ))
@@ -830,54 +820,61 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
             if (lineAdded)
             {
                 // Separate this clause from the previous with an OR operator
-                script += NEWLINE;
-                script += "            OR ";
+                script.addLine();
+                script.addTab(3).add("OR ");
             }
 
-            script += "gage_id = '" + this.getGageID() + "'";
+            script.add("gage_id = ?");
+            args.add(this.getGageID());
         }
 
-        script += NEWLINE;
-        script += "    )" + NEWLINE;
-        script += "    RETURNING feature_id, "
-                  + "comid, "
-                  + "lid, "
-                  + "gage_id, "
-                  + "rfc, "
-                  + "st, "
-                  + "st_code, "
-                  + "huc, "
-                  + "feature_name, "
-                  + "latitude, "
-                  + "longitude, "
-                  + "nwm_index" + NEWLINE;
-        script += ")" + NEWLINE;
-        script += "SELECT *" + NEWLINE;
-        script += "FROM new_feature" + NEWLINE;
+        script.addLine();
+        script.addTab().addLine(")");
+        script.addTab().addLine("RETURNING feature_id,");
+        script.addTab(  2  ).addLine("comid,");
+        script.addTab(  2  ).addLine("lid,");
+        script.addTab(  2  ).addLine("gage_id,");
+        script.addTab(  2  ).addLine("rfc,");
+        script.addTab(  2  ).addLine("st,");
+        script.addTab(  2  ).addLine("st_code,");
+        script.addTab(  2  ).addLine("huc,");
+        script.addTab(  2  ).addLine("feature_name,");
+        script.addTab(  2  ).addLine("latitude,");
+        script.addTab(  2  ).addLine("longitude,");
+        script.addTab(  2  ).addLine("nwm_index");
+        script.addLine(")");
+        script.addLine("SELECT *");
+        script.addLine("FROM new_feature");
 
-        return script;
+        return script.toString();
     }
 
-    /**
-     * Creates the 'Select' portion of the InsertSelectStatement that will
-     * retrieve preexisting values matching the current keys
-     * @return The 'Select' portion of the InsertSelectStatement
-     */
-    private String getSelectStatement()
+    private String getSelect(final List<Object> args)
     {
-        String script = "";
+        ScriptBuilder script = new ScriptBuilder(  );
 
-        script += "SELECT feature_id, comid, lid, gage_id, rfc, st, st_code, huc, feature_name, latitude, longitude, nwm_index" + NEWLINE;
-        script += "FROM wres.feature" + NEWLINE;
-
-        script += "WHERE ";
+        script.addLine("SELECT feature_id,");
+        script.addTab().addLine("comid,");
+        script.addTab().addLine("lid,");
+        script.addTab().addLine("gage_id,");
+        script.addTab().addLine("rfc,");
+        script.addTab().addLine("st,");
+        script.addTab().addLine("st_code,");
+        script.addTab().addLine("huc,");
+        script.addTab().addLine("feature_name,");
+        script.addTab().addLine("latitude,");
+        script.addTab().addLine("longitude,");
+        script.addTab().addLine("nwm_index");
+        script.addLine("FROM wres.Feature");
+        script.add("WHERE ");
 
         // Determines if an OR operator needs to be added to separate clauses
         boolean clauseAdded = false;
 
         if (this.getComid() != null)
         {
-            script += "comid = " + this.getComid();
+            script.add("comid = ?");
+            args.add(this.getComid());
 
             // A clause was added
             clauseAdded = true;
@@ -888,8 +885,8 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
             if (clauseAdded)
             {
                 // Separate clauses by an OR operator
-                script += NEWLINE;
-                script += "    OR ";
+                script.addLine();
+                script.addTab().add("OR ");
             }
             else
             {
@@ -897,7 +894,8 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
                 clauseAdded = true;
             }
 
-            script += "lid = '" + this.getLid() + "'" + NEWLINE;
+            script.add("lid = ?");
+            args.add(this.getLid());
         }
 
         if (Strings.hasValue( this.getGageID() ))
@@ -905,16 +903,24 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
             if (clauseAdded)
             {
                 // Separate clauses by an OR operator
-                script += NEWLINE;
-                script += "    OR ";
+                script.addLine();
+                script.addTab().add("OR ");
             }
 
-            script += "gage_id = '" + this.getGageID() + "'" + NEWLINE;
+            script.add("gage_id = ?");
+            args.add(this.getGageID());
         }
 
-        script += "LIMIT 1;";
+        script.addLine();
+        script.add("LIMIT 1;");
 
-        return script;
+        return script.toString();
+    }
+
+    @Override
+    protected Object getSaveLock()
+    {
+        return FeatureDetails.FEATURE_SAVE_LOCK;
     }
 
     @Override
@@ -1065,12 +1071,12 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
             {
                 if (Strings.hasValue( this.lid ) && Strings.hasValue( featureKey.lid ))
                 {
-                    comparison = this.lid.compareTo( featureKey.lid );
+                    comparison = this.lid.compareToIgnoreCase( featureKey.lid );
                 }
 
                 if (comparison == 0 && Strings.hasValue( this.gageID ) && Strings.hasValue( featureKey.gageID ))
                 {
-                    comparison = this.gageID.compareTo( featureKey.gageID );
+                    comparison = this.gageID.compareToIgnoreCase( featureKey.gageID );
                 }
 
                 if (comparison == 0 && this.comid != null && featureKey.comid != null)

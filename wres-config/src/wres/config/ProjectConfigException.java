@@ -1,5 +1,7 @@
 package wres.config;
 
+import java.util.Objects;
+
 import com.sun.xml.bind.Locatable;
 
 /**
@@ -38,7 +40,7 @@ public class ProjectConfigException extends Exception
     private static String getMessagePrefix(final Locatable problemElement)
     {
         // If there is no sourceLocation available, use an empty prefix.
-        if ( problemElement.sourceLocation() == null )
+        if ( Objects.isNull( problemElement ) || problemElement.sourceLocation() == null )
         {
             return "";
         }

@@ -12,8 +12,6 @@ import wres.datamodel.outputs.DoubleScoreOutput;
  * Constructs a {@link Metric} that returns the sample size.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 class SampleSize<S extends PairedInput<?>> extends OrdinaryScore<S, DoubleScoreOutput>
 {

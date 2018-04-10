@@ -24,7 +24,7 @@ import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.Threshold;
+import wres.datamodel.OneOrTwoThresholds;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.DoubleScoreOutput;
@@ -189,7 +189,7 @@ public class Chart2DTestOutput
         for ( final Object thresh : engineMap.keySet() )
         {
             ChartTools.generateOutputImageFile( new File( "testoutput/chart2DTest/"
-                                                          + ( ( Threshold ) thresh ).getThreshold()
+                                                          + ( (OneOrTwoThresholds) thresh ).first().getValues().first()
                                                           + "."
                                                           + outputImageFileSuffix ),
                                                 engineMap.get( thresh ).buildChart(),
@@ -311,7 +311,7 @@ public class Chart2DTestOutput
         for ( final Object thresh : engineMap.keySet() )
         {
             ChartTools.generateOutputImageFile( new File( "testoutput/chart2DTest/"
-                                                          + ( ( Threshold ) thresh ).getThreshold()
+                                                          + ( (OneOrTwoThresholds) thresh ).first().getValues().first()
                                                           + "."
                                                           + outputImageFileSuffix ),
                                                 engineMap.get( thresh ).buildChart(),
@@ -466,8 +466,8 @@ public class Chart2DTestOutput
 
         for ( final Object thresh : engineMap.keySet() )
         {
-            String thresholdString = ( ( ( Threshold ) thresh ).getThreshold() ).toString();
-            if ( Double.isInfinite( ( ( Threshold ) thresh ).getThreshold() ) )
+            String thresholdString = ( ( ( OneOrTwoThresholds ) thresh ).first().getValues().first() ).toString();
+            if ( ! ( ( OneOrTwoThresholds ) thresh ).first().isFinite() )
             {
                 thresholdString = "alldata";
             }
@@ -502,21 +502,21 @@ public class Chart2DTestOutput
         // final DataFactory factory = DefaultDataFactory.getInstance();
 
         //Call the factory.
-        final Map<Pair<TimeWindow, Threshold>, ChartEngine> engineMap =
+        final Map<Pair<TimeWindow, OneOrTwoThresholds>, ChartEngine> engineMap =
                 ChartEngineFactory.buildBoxPlotChartEngine( null,
                                                             results,
                                                             null,
                                                             null );
 
         //Generate the output file.
-        for ( final Pair<TimeWindow, Threshold> key : engineMap.keySet() )
+        for ( final Pair<TimeWindow, OneOrTwoThresholds> key : engineMap.keySet() )
         {
 
             long lead = key.getLeft().getEarliestLeadTimeInHours();
-            Threshold thresh = key.getRight();
+            OneOrTwoThresholds thresh = key.getRight();
 
-            String thresholdString = ( thresh.getThreshold() ).toString();
-            if ( Double.isInfinite( thresh.getThreshold() ) )
+            String thresholdString = ( thresh.first().getValues().first() ).toString();
+            if ( ! thresh.first().isFinite() )
             {
                 thresholdString = "alldata";
             }
@@ -552,20 +552,20 @@ public class Chart2DTestOutput
         // final DataFactory factory = DefaultDataFactory.getInstance();
 
         //Call the factory.
-        final Map<Pair<TimeWindow, Threshold>, ChartEngine> engineMap =
+        final Map<Pair<TimeWindow, OneOrTwoThresholds>, ChartEngine> engineMap =
                 ChartEngineFactory.buildBoxPlotChartEngine( null,
                                                             results,
                                                             null,
                                                             null );
 
         //Generate the output file.
-        for ( final Pair<TimeWindow, Threshold> key : engineMap.keySet() )
+        for ( final Pair<TimeWindow, OneOrTwoThresholds> key : engineMap.keySet() )
         {
             long lead = key.getLeft().getLatestLeadTimeInHours();
-            Threshold thresh = key.getRight();
+            OneOrTwoThresholds thresh = key.getRight();
 
-            String thresholdString = ( thresh.getThreshold() ).toString();
-            if ( Double.isInfinite( thresh.getThreshold() ) )
+            String thresholdString = ( thresh.first().getValues().first() ).toString();
+            if ( ! thresh.first().isFinite() )
             {
                 thresholdString = "alldata";
             }

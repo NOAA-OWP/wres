@@ -12,7 +12,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -24,10 +23,11 @@ import java.util.function.Function;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import ucar.ma2.Array;
+import ucar.nc2.Attribute;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.Variable;
-
 import wres.config.generated.Format;
 import wres.config.generated.ProjectConfig;
 import wres.control.Control;
@@ -213,13 +213,16 @@ final class MainFunctions
 	 */
 	private static Function<String[], Integer> connectToDB () {
 		return (final String[] args) -> {
-			Integer result = FAILURE;
-			boolean successfullyConnected = Operations.testConnection();
-			if (successfullyConnected)
+		    try
             {
-                result = SUCCESS;
+                Operations.testConnection();
+                return SUCCESS;
             }
-            return result;
+            catch ( SQLException se )
+            {
+                LOGGER.warn( "Could not connect to database.", se );
+                return FAILURE;
+            }
 		};
 	}
 
@@ -783,6 +786,8 @@ final class MainFunctions
 			Integer result = FAILURE;
 
 			if (args.length > 0) {
+			    NetcdfFile file = null;
+
 				try
 				{
                     // Assign path to NetCDF file
@@ -793,7 +798,7 @@ final class MainFunctions
                         throw new IOException("There is not a NetCDF file at the indicated path.");
                     }
 
-					NetcdfFile file = NetcdfFile.open(args[0]);
+					file = NetcdfFile.open(args[0]);
 
                     // Make sure that NetCDF file has the required coordinate variables (can't rely on the isCoordinate attribute)
 					if (!NetCDF.hasVariable(file, "x") || !NetCDF.hasVariable(file, "y"))
@@ -801,9 +806,60 @@ final class MainFunctions
 						throw new IOException("The NetCDF file at: '" + args[0] + "' lacks the proper X and Y coodinates.");
 					}
 
-                    // Check to see if datum exists; if not, add it
-                    // TODO: Add the datum checks
-                    final int customSRID = 900914;
+					ScriptBuilder script = new ScriptBuilder(  );
+					script.addLine("SELECT EXISTS (");
+					script.addTab().addLine("SELECT 1");
+					script.addTab().addLine("FROM INFORMATION_SCHEMA.Tables");
+					script.addTab().addLine("WHERE table_name = 'spatial_ref_sys'");
+					script.addLine(") AS postgis_installed;");
+
+					boolean postgisIsInstalled = script.retrieve( "postgis_installed" );
+
+					if (!postgisIsInstalled)
+                    {
+                        throw new IOException( "X and Y coordinates cannot be "
+                                               + "loaded; this database does "
+                                               + "not have PostGIS installed or "
+                                               + "enabled." );
+                    }
+
+                    // Loop through a full join across all contained x and y values
+                    Variable xCoordinates = NetCDF.getVariable(file, "x");
+                    Variable yCoordinates = NetCDF.getVariable(file, "y");
+
+                    Attribute sr = NetCDF.getVariableAttribute( xCoordinates, "esri_pe_string" );
+                    Attribute proj4 = NetCDF.getVariableAttribute( xCoordinates, "proj4" );
+                    String srtext = sr.getStringValue();
+                    String proj4Text = proj4.getStringValue();
+
+                    script = new ScriptBuilder(  );
+					script.addLine("WITH new_datum AS");
+					script.addLine("(");
+					script.addTab().addLine("INSERT INTO public.spatial_ref_sys (srid, auth_name, auth_srid, srtext, proj4text)");
+					script.addTab().addLine("SELECT sr.new_srid, 'NWS', sr.new_srid, '", srtext, "', '", proj4Text, "'");
+					script.addTab().addLine("FROM (");
+					script.addTab(  2  ).addLine("SELECT MAX(srid) + 1 AS new_srid");
+					script.addTab(  2  ).addLine("FROM public.spatial_ref_sys");
+					script.addTab().addLine(") AS sr");
+					script.addTab().addLine("WHERE NOT EXISTS (");
+					script.addTab(  2  ).addLine("SELECT 1");
+					script.addTab(  2  ).addLine("FROM public.spatial_ref_sys");
+					script.addTab(  2  ).addLine("WHERE srtext = '", srtext, "'");
+					script.addTab(   3   ).addLine("AND proj4 = '", proj4Text, "'");
+					script.addTab().addLine(")");
+					script.addTab().addLine("RETURNING srid");
+					script.addLine(")");
+					script.addLine("SELECT srid");
+					script.addLine("FROM new_datum");
+					script.addLine();
+					script.addLine("UNION");
+					script.addLine();
+					script.addLine("SELECT srid");
+					script.addLine("FROM public.spatial_ref_sys");
+                    script.addLine("WHERE srtext = '", srtext, "'");
+                    script.addTab().addLine("AND proj4 = '", proj4Text, "';");
+
+                    final int customSRID = script.retrieve( "srid" );
 
 					final String insertHeader = "INSERT INTO wres.NetCDFCoordinate (x_position, y_position, geographic_coordinate, resolution) VALUES ";
 					final short tempResolution = 1000;
@@ -811,10 +867,6 @@ final class MainFunctions
 					int copyCount = 0;
 
 					List<Future> copyOperations = new ArrayList<>();
-
-                    // Loop through a full join across all contained x and y values
-                    Variable xCoordinates = NetCDF.getVariable(file, "x");
-					Variable yCoordinates = NetCDF.getVariable(file, "y");
 
 					int xLength = xCoordinates.getDimension(0).getLength();
 					int yLength = yCoordinates.getDimension(0).getLength();
@@ -842,7 +894,7 @@ final class MainFunctions
 										   append(",").
 										   append(yValues.getDouble(currentYIndex)).
 										   append("), ").
-										   append(customSRID).append("), 4269)::point")
+										   append(customSRID).append("), 4326)::point")
 								   .append(", ");
 							builder.append(tempResolution).append(")");
 
@@ -879,6 +931,17 @@ final class MainFunctions
                 catch (Exception e) {
                     MainFunctions.addException( e );
                     LOGGER.error(Strings.getStackTrace(e));
+                    if (file != null)
+                    {
+                        try
+                        {
+                            file.close();
+                        }
+                        catch ( IOException e1 )
+                        {
+                            MainFunctions.addException( e1 );
+                        }
+                    }
                     result = FAILURE;
                 }
             }
@@ -936,7 +999,7 @@ final class MainFunctions
 
                                 Connection connection = null;
                                 PreparedStatement statement = null;
-                                LinkedList<Future<?>> updates = new LinkedList<>();
+
                                 final String script = "UPDATE wres.Feature SET nwm_index = ? WHERE comid = ?;";
                                 try
                                 {
@@ -1110,7 +1173,6 @@ final class MainFunctions
             Integer valueCount = 10;
             boolean includeFailures = true;
             String projectName = null;
-            String newline = System.lineSeparator();
 
             ScriptBuilder script = new ScriptBuilder(  );
             script.addLine("SELECT 'Arguments: ' || arguments || '");

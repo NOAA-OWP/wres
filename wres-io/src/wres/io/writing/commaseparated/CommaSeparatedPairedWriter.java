@@ -17,7 +17,7 @@ import wres.config.ProjectConfigException;
 import wres.config.generated.DestinationConfig;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.Threshold;
+import wres.datamodel.OneOrTwoThresholds;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.MapKey;
@@ -78,7 +78,7 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
         {
 
             // Formatter
-            Format formatter = ConfigHelper.getDecimalFormatter( destinationConfig );
+            Format formatter = null;
 
             // Write per time-window
             try
@@ -151,20 +151,20 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
                                        StringJoiner headerRow,
                                        Format formatter )
     {
-        String outerName = metricName.toString();
+        String outerName = metricName.toString() + HEADER_DELIMITER;
         List<RowCompareByLeft> returnMe = new ArrayList<>();
 
         // Add the rows
         // Loop across the thresholds
-        for ( Threshold t : output.setOfThresholdKey() )
+        for ( OneOrTwoThresholds t : output.setOfThresholdKey() )
         {
             // Append to header
-            headerRow.add( HEADER_DELIMITER + outerName + HEADER_DELIMITER + "BASIS TIME" + HEADER_DELIMITER + t );
-            headerRow.add( HEADER_DELIMITER + outerName + HEADER_DELIMITER + "DURATION" + HEADER_DELIMITER + t );
+            headerRow.add( outerName + "BASIS TIME" + HEADER_DELIMITER + t );
+            headerRow.add( outerName + "DURATION" + HEADER_DELIMITER + t );
             // Loop across time windows
             for ( TimeWindow timeWindow : output.setOfTimeWindowKey() )
             {
-                Pair<TimeWindow, Threshold> key = Pair.of( timeWindow, t );
+                Pair<TimeWindow, OneOrTwoThresholds> key = Pair.of( timeWindow, t );
                 if ( output.containsKey( key ) )
                 {
                     List<Pair<S, T>> nextValues = output.get( key ).getData();
@@ -174,7 +174,8 @@ public class CommaSeparatedPairedWriter<S, T> extends CommaSeparatedWriter
                                                             timeWindow,
                                                             Arrays.asList( nextPair.getLeft(), nextPair.getRight() ),
                                                             formatter,
-                                                            false );
+                                                            true,
+                                                            nextPair.getLeft().toString() );
                     }
                 }
             }

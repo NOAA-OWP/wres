@@ -2,7 +2,7 @@
 
 <!-- As scenario 400, except, in the left file, I forced 9/1/2015 to be all missing using -999,-998, and -9999.
      output pairs will examined and metric sample size checked.-->
-<project label="ExampleProject" name="Single Valued Test">
+<project label="ExampleProject" name="Scenario402">
 
     <inputs>
         <left label="Observations">
