@@ -364,7 +364,9 @@ project(':wres-thredds-facade')
 {
     dependencies
     {
+        compile project(':wres-config')
         compile 'org.slf4j:slf4j-api:1.7.25'
+
 
         // Server library to run THREDDS:
         compile 'org.eclipse.jetty:jetty-server:9.4.8.v20171121'
