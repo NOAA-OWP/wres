@@ -1035,10 +1035,18 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
      */
     private boolean shouldDynamicallyPoolByLeads()
     {
-        return this.projectConfig.getPair().getDesiredTimeScale() == null &&
-               this.projectConfig.getPair().getLeadTimesPoolingWindow() == null &&
-                     (this.projectConfig.getInputs().getLeft().getExistingTimeScale() == null ||
-                      this.projectConfig.getInputs().getRight().getExistingTimeScale() == null);
+        // We'll want to pool dynamically pool if the right side is a forecast...
+        boolean dynamicallyPool = ConfigHelper.isForecast( this.getRight() );
+        // and there's no defined desired scale...
+        dynamicallyPool = dynamicallyPool && this.projectConfig.getPair().getDesiredTimeScale() == null;
+        // and there's no definition for a lead times pooling window...
+        dynamicallyPool = dynamicallyPool && this.projectConfig.getPair().getLeadTimesPoolingWindow() == null;
+        // and there's no definition for the existing scale for either the left or right input
+        dynamicallyPool = dynamicallyPool &&
+                          (this.getLeft().getExistingTimeScale() == null ||
+                           this.getRight().getExistingTimeScale() == null);
+
+        return dynamicallyPool;
     }
 
     /**
@@ -1180,9 +1188,19 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
             }
         }
 
-        if (this.desiredTimeScale == null)
+        if (this.desiredTimeScale == null && ConfigHelper.isForecast( this.getRight() ))
         {
             this.desiredTimeScale = this.getCommonScale();
+        }
+        else if(this.desiredTimeScale == null)
+        {
+            this.desiredTimeScale = new TimeScaleConfig(
+                    TimeScaleFunction.NONE,
+                    1,
+                    1,
+                    DurationUnit.fromValue(TimeHelper.LEAD_RESOLUTION.toString().toLowerCase() ),
+                    null
+            );
         }
 
         return this.desiredTimeScale;
