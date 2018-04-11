@@ -12,19 +12,19 @@ RUN echo "wres_docker:x:498:1370800073::/home/wres_docker:" >> /etc/passwd \
     && chown wres_docker: /home/wres_docker
 
 ARG version
-COPY ./build/distributions/wres-${version}.zip /opt/
-RUN cd /opt \
-    && unzip wres-${version}.zip \
+WORKDIR /opt
+COPY ./build/distributions/wres-${version}.zip .
+RUN unzip wres-${version}.zip \
     && rm wres-${version}.zip \
     && ln -s /opt/wres-${version}/bin/wres /usr/bin/wres
 
 # WRES above is a one-run-one-database, one-run-one-evaluation, use light shim:
 ARG worker_version
-COPY ./wres-worker/build/distributions/wres-worker-${worker_version}.zip /opt/
-RUN cd /opt \
-    && unzip wres-worker-${worker_version}.zip \
-    && rm wres-worker-${worker_version}.zip \
-    && ln -s /opt/wres-worker-${worker_version}/bin/wres-worker /usr/bin/wres-worker
+WORKDIR /opt
+COPY ./wres-worker/build/distributions/wres-worker-${worker_version}.zip .
+RUN unzip wres-worker-${worker_version}.zip \
+    && rm wres-worker-${worker_version}.zip
 
+WORKDIR /opt/wres-worker-${worker_version}
 USER wres_docker
-CMD [ "/usr/bin/wres-worker", "/usr/bin/wres" ]
+CMD [ "bin/wres-worker", "/usr/bin/wres" ]
