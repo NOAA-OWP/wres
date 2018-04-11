@@ -31,6 +31,8 @@ public final class NetCDF {
 
     private static final Pattern NETCDF_FILENAME_PATTERN = Pattern.compile( ".+\\.nc(\\.gz)?" );
 
+    private static final Pattern SHORT_DATE_PATTERN = Pattern.compile("\\d{8}");
+
     public static class Ensemble
     {
         public Ensemble(String name, String qualifier, String tMinus)
@@ -273,7 +275,14 @@ public final class NetCDF {
             }
 
             location = location.getParent();
-            partList.add( 0, location.getFileName().toString() );
+
+            // If this portion of the path isn't something like "nwm.20180411", we append it
+            // We can't vouch for any other patterns, but anything containing
+            // a pattern like that is bound to be hyper unique where it really shouldn't be
+            if (!NetCDF.SHORT_DATE_PATTERN.matcher( location.getFileName().toString() ).matches())
+            {
+                partList.add( 0, location.getFileName().toString() );
+            }
         }
 
         partList.add(NetCDF.getNWMCategory( file ));
