@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.io.data.details.EnsembleDetails.EnsembleKey;
 import wres.io.utilities.ScriptBuilder;
+import wres.util.Strings;
 
 /**
  * Describes basic information used to define an Ensemble from the database
@@ -19,6 +20,18 @@ import wres.io.utilities.ScriptBuilder;
  */
 public final class EnsembleDetails extends CachedDetail<EnsembleDetails, EnsembleKey>
 {
+    public EnsembleDetails (String name, String ensembleMemberID, String qualifierID)
+    {
+        this.ensembleName = name;
+        this.ensembleMemberID = ensembleMemberID;
+        this.qualifierID = qualifierID;
+    }
+
+    public EnsembleDetails()
+    {
+        super();
+    }
+
     private static final Logger
             LOGGER = LoggerFactory.getLogger( EnsembleDetails.class);
 
@@ -82,7 +95,7 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
 		}
 		else
 		{
-			id = "'" + qualifierID + "'";
+			id = qualifierID;
 		}
 		
 		return id;
@@ -107,11 +120,16 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
 	@Override
 	public int compareTo(EnsembleDetails other)
 	{
-		int comparison = this.ensembleName.compareTo(other.ensembleName);
+		int comparison = this.ensembleName.compareToIgnoreCase(other.ensembleName);
 		
 		if (comparison == 0)
 		{
 			comparison = this.ensembleMemberID.compareTo(other.ensembleMemberID);
+		}
+
+		if (comparison == 0)
+		{
+			comparison = this.qualifierID.compareToIgnoreCase( other.qualifierID );
 		}
 
 		return comparison;
@@ -232,7 +250,14 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
 				this.ensembleName = ensembleName;
 			}
 
-	        this.qualifierID = qualifierID;
+			if (qualifierID == null)
+            {
+                this.qualifierID = "";
+            }
+            else
+            {
+                this.qualifierID = qualifierID;
+            }
 
 	    	if (memberIndex == null)
             {
@@ -247,58 +272,18 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
         @Override
         public int compareTo(EnsembleKey other)
         {
-            int equality;
+            int equality = this.getEnsembleName().compareTo( other.getEnsembleName() );
 
-            if (!this.hasName() && !other.hasName())
-            {
-                equality = 0;
-            }
-            else if (!this.hasName() && other.hasName())
-            {
-                equality = -1;
-            }
-            else if ( this.hasName() && !other.hasName())
+            if (equality == 0)
 			{
-				equality = 1;
+				equality = this.getMemberIndex().compareTo( other.getMemberIndex() );
 			}
-            else
-            {
-                equality = this.ensembleName.compareTo(other.getEnsembleName());
-            }
 
-            if (equality == 0 && (this.hasMemberIndex() || other.hasMemberIndex()))
-            {
-            	if (!this.hasMemberIndex() && other.hasMemberIndex())
-				{
-					equality = -1;
-				}
-				else if (this.hasMemberIndex() && !other.hasMemberIndex())
-				{
-					equality = 1;
-				}
-				else
-				{
-					equality =
-							this.memberIndex.compareTo( other.getMemberIndex() );
-				}
-            }
+			if (equality == 0)
+			{
+				equality = this.getQualifierID().compareTo( other.getQualifierID() );
+			}
 
-            if (equality == 0 && !(this.qualifierIsMissing() && other.qualifierIsMissing()))
-            {
-            	if (this.qualifierIsMissing())
-				{
-					equality = -1;
-				}
-				else if (other.qualifierIsMissing())
-				{
-					equality = 1;
-				}
-				else
-				{
-					equality =
-							this.qualifierID.compareTo( other.getQualifierID() );
-				}
-            }
             return equality;
         }
 
@@ -334,89 +319,19 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
             return Objects.hash(this.ensembleName, this.memberIndex, this.qualifierID);
         }
 
-        public String getEnsembleName()
+        String getEnsembleName()
         {
             return this.ensembleName;
         }
         
-        public String getQualifierID()
+        String getQualifierID()
         {
             return this.qualifierID;
         }
         
-        public String getMemberIndex()
+        String getMemberIndex()
         {
             return this.memberIndex;
-        }
-
-        private boolean hasName()
-        {
-            return !(this.getEnsembleName().equals( "default" ) || this.getEnsembleName().isEmpty());
-        }
-
-        private boolean hasMemberIndex()
-        {
-            return !(this.getMemberIndex().equals( "0" ) || this.getMemberIndex().isEmpty());
-        }
-
-        private boolean qualifierIsMissing()
-		{
-			return this.getQualifierID() == null || this.getQualifierID().isEmpty();
-		}
-
-        /**
-         * Returns the degree of similarity (0-3) between this key and the other.
-         * The similarity is 1 if they both have the same name
-         * The similarity is 2 if they both have the same name and member index
-         * The similarity is 3 if they both have the same name, member index, and qualifier
-         * The similarity is 0 in all other cases
-         * @param other The other key to compare against
-         * @return The degree of similarity
-         */
-        public Integer getSimilarity(EnsembleKey other)
-        {
-        	// If the other is non-existent or more fields exist in this key
-			// than the other, we know that this is not a subset of the other
-			// and the similarity needs to be invalidated
-            if (other == null || this.fillCount() > other.fillCount())
-            {
-                return 0;
-            }
-            // If the two keys are equal, we know that there is a perfect
-			// similarity
-            else if (this.equals(other))
-            {
-                return 3;
-            }
-
-            // If the names are the same, we know that there is some similarity
-			// between the two
-            if ((this.hasName() && other.hasName()) && this.getEnsembleName().equalsIgnoreCase(other.getEnsembleName()))
-            {
-            	// If this doesn't have a member index or both are null,
-				// we know that the similarity ends with the name
-                if(!this.hasMemberIndex() || !(this.hasMemberIndex() || other.hasMemberIndex()))
-                {
-                    return 1;
-                }
-                // If this has a member index and the other doesn't or they both
-				// do and they are different, we know that this is not a subset
-				// of the other
-                else if ((this.hasMemberIndex() && !other.hasMemberIndex()) ||
-                        !this.getMemberIndex().equalsIgnoreCase(other.getMemberIndex()))
-                {
-                    return 0;
-                }
-				// If neither of these have a qualifier or this doesn't have a
-				// qualifier, we know that the similarity is two because we have
-				// passed the testing on member indices.
-                else if ((this.qualifierIsMissing() && other.qualifierIsMissing()) || this.qualifierIsMissing())
-                {
-                    return 2;
-                }
-            }
-
-            return 0;
         }
 
         @Override

@@ -492,7 +492,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         return features;
     }
 
-    public static List<FeatureDetails> getDetailsByRFC(String rfc)
+    private static List<FeatureDetails> getDetailsByRFC(String rfc)
             throws SQLException
     {
         String script = "";
