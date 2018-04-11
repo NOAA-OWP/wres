@@ -24,5 +24,11 @@ testoutput
 *.webm
 utilities
 VLabRepoQuickTips.txt
-wres-*
+wres-config
+wres-datamodel
+wres-datamodel-api
+wres-io
+wres-metrics
+wres-thredds-facade
+wres-vis
 wres.iml

@@ -1,0 +1,15 @@
+version: '3'
+services:
+    tasker:
+        ports:
+         - "8585:8585"
+        image: "3d8e08b74858"
+    broker:
+        ports:
+         - "4369:4369"
+         - "5671:5671"
+         - "5672:5672"
+         - "25672:25672"
+        image: "rabbitmq:3.7.4-alpine"
+    worker:
+        image: "1d5b34ce1486"
