@@ -23,6 +23,9 @@ public class Worker
     private static final String RECV_QUEUE_NAME = "wres.job";
     private static final String SEND_QUEUE_NAME = "wres.jobResults";
 
+    private static final String BROKER_HOST_PROPERTY_NAME = "wres.broker";
+    private static final String DEFAULT_BROKER_HOST = "localhost";
+
     /**
      * Expects exactly one arg with a path to WRES executable
      * @param args arguments, but only one is expected, a WRES executable
@@ -43,6 +46,7 @@ public class Worker
 
         // Getting as a file allows us to verify it exists
         File wresExecutable = Paths.get( args[0] ).toFile();
+
         if ( !wresExecutable.exists() )
         {
             throw new IllegalArgumentException( "First arg must be an executable wres *path*." );
@@ -52,9 +56,12 @@ public class Worker
             throw new IllegalArgumentException( "First arg must be an *executable* wres path." );
         }
 
+        // Determine the actual broker name, whether from -D or default
+        String brokerHost = Worker.getBrokerHost();
+
         // Get work from the queue
         ConnectionFactory factory = new ConnectionFactory();
-        factory.setHost( "localhost" );
+        factory.setHost( brokerHost );
 
         try ( Connection connection = factory.newConnection();
               Channel receiveChannel = connection.createChannel();
@@ -75,4 +82,26 @@ public class Worker
             }
         }
     }
+
+
+    /**
+     * Helper to get the broker host name. Returns what was set in -D args
+     * or a default value if -D is not set.
+     * @return the broker host name to try connecting to.
+     */
+
+    private static final String getBrokerHost()
+    {
+        String brokerFromDashD= System.getProperty( BROKER_HOST_PROPERTY_NAME );
+
+        if ( brokerFromDashD != null )
+        {
+            return brokerFromDashD;
+        }
+        else
+        {
+            return DEFAULT_BROKER_HOST;
+        }
+    }
+
 }
