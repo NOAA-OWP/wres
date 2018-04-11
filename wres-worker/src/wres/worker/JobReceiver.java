@@ -13,6 +13,12 @@ import com.rabbitmq.client.Envelope;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
+/**
+ * The concrete class that does the work of taking a job message and creating
+ * a WRES process to fulfil the job message's request.
+ */
+
 class JobReceiver extends DefaultConsumer
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( JobReceiver.class );
@@ -50,6 +56,15 @@ class JobReceiver extends DefaultConsumer
     {
         return this.responseQueueName;
     }
+
+
+    /**
+     * This is the entry point that will accept a message and create a process.
+     * @param consumerTag boilerplate
+     * @param envelope boilerplate
+     * @param properties boilerplate
+     * @param body the message body of the job request from the queue
+     */
 
     @Override
     public void handleDelivery( String consumerTag,
