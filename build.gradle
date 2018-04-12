@@ -364,42 +364,16 @@ project(':wres-config')
     }
 }
 
-// Intentionally disconnected from the rest of WRES for now because it
-// would include a lot of cruft in our release that we're not using.
-project(':wres-thredds-facade')
+project(':wres-grid')
 {
     dependencies
     {
         compile project(':wres-config')
         compile 'org.slf4j:slf4j-api:1.7.25'
-
-
-        // Server library to run THREDDS:
-        compile 'org.eclipse.jetty:jetty-server:9.4.8.v20171121'
-
-        // Servlet container library to run a web application with:
-        compile 'org.eclipse.jetty:jetty-webapp:9.4.8.v20171121'
-        // THREDDS uses Java Server Pages, additional libraries for that:
-        compile 'org.eclipse.jetty:apache-jsp:9.4.8.v20171121'
-        compile 'org.eclipse.jetty:apache-jstl:9.4.8.v20171121'
-
         compile 'edu.ucar:cdm:5.0.0-alpha3'
-
-        // THREDDS war itself:
-        runtime 'edu.ucar:tds:4.6.11'
-
-        // Just to get our own messages before THREDDS launch. This
-        // will cause duplicate slf4j bindings after THREDDS is
-        // exploded, though, so not ideal:
         runtime 'ch.qos.logback:logback-classic:1.2.3'
-
         testCompile 'junit:junit:4.12'
     }
-
-    apply plugin: 'application'
-
-    mainClassName = 'wres.io.thredds.ThreddsFacade'
-
 }
 
 project(':wres-worker')
