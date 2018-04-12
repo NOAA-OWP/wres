@@ -128,7 +128,7 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
         private long waitTime;
         private boolean hasAsked;
 
-        public boolean shouldTry()
+        boolean shouldTry()
         {
             // If we've never tried, yes, we want to try
             if (!hasAsked)
@@ -146,7 +146,7 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
             return RETRIES - this.numberOfRetries > 0;
         }
 
-        public void errorOccured(WebApplicationException exception) throws IOException
+        void errorOccured(WebApplicationException exception) throws IOException
         {
             this.numberOfRetries++;
 

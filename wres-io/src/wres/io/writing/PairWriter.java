@@ -14,6 +14,8 @@ import java.util.HashMap;
 import java.util.Map.Entry;
 import java.util.StringJoiner;
 
+import javax.print.attribute.standard.Destination;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,6 +56,197 @@ public class PairWriter extends WRESCallable<Boolean>
 
     private DecimalFormat formatter;
 
+    public static class Builder
+    {
+        private final DestinationConfig destinationConfig;
+        private final Instant date;
+        private final Feature feature;
+        private final Integer windowNum;
+        private final PairOfDoubleAndVectorOfDoubles pair;
+        private final Boolean isBaseline;
+        private final Integer poolingStep;
+        private final ProjectDetails projectDetails;
+        private final Integer lead;
+
+        public Builder()
+        {
+            this.destinationConfig = null;
+            this.date = null;
+            this.feature = null;
+            this.windowNum = null;
+            this.pair = null;
+            this.isBaseline = false;
+            this.poolingStep = null;
+            this.projectDetails = null;
+            this.lead = null;
+        }
+
+        private Builder( DestinationConfig destinationConfig,
+                         Instant date,
+                         Feature feature,
+                         Integer windowNum,
+                         PairOfDoubleAndVectorOfDoubles pair,
+                         Boolean isBaseline,
+                         Integer poolingStep,
+                         ProjectDetails projectDetails,
+                         Integer lead)
+        {
+            this.destinationConfig = destinationConfig;
+            this.date = date;
+            this.feature = feature;
+            this.windowNum = windowNum;
+            this.pair = pair;
+            this.isBaseline = isBaseline;
+            this.poolingStep = poolingStep;
+            this.projectDetails = projectDetails;
+            this.lead = lead;
+        }
+
+        public Builder setDestinationConfig(DestinationConfig destinationConfig)
+        {
+            return new Builder( destinationConfig,
+                                this.date,
+                                this.feature,
+                                this.windowNum,
+                                this.pair,
+                                this.isBaseline,
+                                this.poolingStep,
+                                this.projectDetails,
+                                this.lead);
+        }
+
+        public Builder setDate(Instant date)
+        {
+            return new Builder( this.destinationConfig,
+                                date,
+                                this.feature,
+                                this.windowNum,
+                                this.pair,
+                                this.isBaseline,
+                                this.poolingStep,
+                                this.projectDetails,
+                                this.lead);
+        }
+
+        public Builder setFeature(Feature feature)
+        {
+            return new Builder( this.destinationConfig,
+                                this.date,
+                                feature,
+                                this.windowNum,
+                                this.pair,
+                                this.isBaseline,
+                                this.poolingStep,
+                                this.projectDetails,
+                                this.lead);
+        }
+
+        public Builder setWindowNum(Integer windowNum)
+        {
+            return new Builder( this.destinationConfig,
+                                this.date,
+                                this.feature,
+                                windowNum,
+                                this.pair,
+                                this.isBaseline,
+                                this.poolingStep,
+                                this.projectDetails,
+                                this.lead);
+        }
+
+        public Builder setPair(PairOfDoubleAndVectorOfDoubles pair)
+        {
+            return new Builder( this.destinationConfig,
+                                this.date,
+                                this.feature,
+                                this.windowNum,
+                                pair,
+                                this.isBaseline,
+                                this.poolingStep,
+                                this.projectDetails,
+                                this.lead);
+        }
+
+        public Builder setIsBaseline(boolean isBaseline)
+        {
+            return new Builder( this.destinationConfig,
+                                this.date,
+                                this.feature,
+                                this.windowNum,
+                                this.pair,
+                                isBaseline,
+                                this.poolingStep,
+                                this.projectDetails,
+                                this.lead);
+        }
+
+        public Builder setPoolingStep(Integer poolingStep)
+        {
+            return new Builder( this.destinationConfig,
+                                this.date,
+                                this.feature,
+                                this.windowNum,
+                                this.pair,
+                                this.isBaseline,
+                                poolingStep,
+                                this.projectDetails,
+                                this.lead);
+        }
+
+        public Builder setProjectDetails(ProjectDetails projectDetails)
+        {
+            return new Builder( this.destinationConfig,
+                                this.date,
+                                this.feature,
+                                this.windowNum,
+                                this.pair,
+                                this.isBaseline,
+                                this.poolingStep,
+                                projectDetails,
+                                this.lead);
+        }
+
+        public Builder setLead(Integer lead)
+        {
+            return new Builder( this.destinationConfig,
+                                this.date,
+                                this.feature,
+                                this.windowNum,
+                                this.pair,
+                                this.isBaseline,
+                                this.poolingStep,
+                                this.projectDetails,
+                                lead);
+        }
+
+        public PairWriter build()
+        {
+            StringJoiner errorJoiner = new StringJoiner( NEWLINE );
+
+            if (this.destinationConfig == null)
+            {
+                errorJoiner.add( "A PairWriter cannot be created; there is no "
+                                 + "configured destination for the pairs." );
+            }
+
+            if (this.date == null)
+            {
+                errorJoiner.add("A PairWriter cannot be created; there is no "
+                                + "date to record.");
+            }
+
+            return new PairWriter( this.destinationConfig,
+                                   this.date,
+                                   this.feature,
+                                   this.windowNum,
+                                   this.pair,
+                                   this.isBaseline,
+                                   this.poolingStep,
+                                   this.projectDetails,
+                                   this.lead );
+        }
+    }
+
 
     // TODO: IMPLEMENT BUILDER
     public PairWriter( DestinationConfig destinationConfig,
@@ -80,8 +273,6 @@ public class PairWriter extends WRESCallable<Boolean>
     @Override
     protected Boolean execute() throws IOException, ProjectConfigException
     {
-        boolean success = false;
-
         File directoryFromDestinationConfig =
                 ConfigHelper.getDirectoryFromDestinationConfig( this.getDestinationConfig() );
 
@@ -144,8 +335,6 @@ public class PairWriter extends WRESCallable<Boolean>
 
                 writer.write( line.toString() );
                 writer.newLine();
-
-                success = true;
             }
             catch ( SQLException e )
             {
@@ -155,11 +344,11 @@ public class PairWriter extends WRESCallable<Boolean>
             }
         }
 
-        return success;
+        return true;
     }
 
     @Override
-    protected boolean validate()
+    protected void validate()
     {
         if ( this.getDestinationConfig() == null )
         {
@@ -185,8 +374,6 @@ public class PairWriter extends WRESCallable<Boolean>
         {
             throw new IllegalArgumentException( "The PairWriter needs a valid destination", pce );
         }
-
-        return true;
     }
 
     @Override

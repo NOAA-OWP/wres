@@ -1,5 +1,6 @@
 package wres.io.concurrency;
 
+import java.io.IOException;
 import java.sql.SQLException;
 
 /**
@@ -16,7 +17,7 @@ public abstract class WRESRunnable extends WRESTask implements Runnable
         {
             this.execute();
         }
-        catch ( SQLException se )
+        catch ( IOException | SQLException se )
         {
             throw new WRESRunnableException( "Task failed:", se );
         }
@@ -24,5 +25,5 @@ public abstract class WRESRunnable extends WRESTask implements Runnable
         this.executeOnComplete();
     }
 
-    protected abstract void execute() throws SQLException;
+    protected abstract void execute() throws SQLException, IOException;
 }
