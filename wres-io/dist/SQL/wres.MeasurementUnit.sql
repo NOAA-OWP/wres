@@ -1,8 +1,6 @@
--- Table: wres.MeasurementUnit
+﻿-- Table: wres.MeasurementUnit
 
 CREATE SCHEMA IF NOT EXISTS wres AUTHORIZATION wres;
-
-DROP TABLE IF EXISTS wres.MeasurementUnit CASCADE;
 
 CREATE TABLE IF NOT EXISTS wres.MeasurementUnit
 (
@@ -13,8 +11,9 @@ CREATE TABLE IF NOT EXISTS wres.MeasurementUnit
 WITH (
   OIDS=FALSE
 );
-ALTER TABLE wres.measurementunit
-  OWNER TO wres;
+
+ALTER TABLE wres.MeasurementUnit DROP CONSTRAINT IF EXISTS measurementunit_name_uidx;
+ALTER TABLE wres.MeasurementUnit ADD CONSTRAINT measurementunit_name_uidx UNIQUE (unit_name);
 
  INSERT INTO wres.MeasurementUnit (unit_name)
  VALUES	('NONE'),
@@ -41,4 +40,7 @@ ALTER TABLE wres.measurementunit
 	('ft3/day'),
 	('ac-ft'),
 	('mph'),
-	('l/sec');
+	('l/sec'),
+	('ft3/s'),
+	('m3/s')
+ON CONFLICT DO NOTHING;
