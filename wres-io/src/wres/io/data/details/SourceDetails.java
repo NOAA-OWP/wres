@@ -336,5 +336,11 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
 	    private final String sourceTime;
 	    private final Integer lead;
 	    private final String hash;
+
+		@Override
+		public String toString()
+		{
+			return String.format( "Path: %s, lead: %d", this.getSourcePath(), this.getLead()  );
+		}
 	}
 }

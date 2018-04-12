@@ -102,13 +102,13 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
 	 * @return The ID for the specified feature
 	 * @throws SQLException Thrown if the ID could not be retrieved from the Database
 	 */
-	public static Integer getFeatureID(FeatureDetails detail) throws SQLException
+    private static Integer getFeatureID(FeatureDetails detail) throws SQLException
 	{
 	    LOGGER.trace("getFeatureID - args {}", detail);
 		return getCache().getID(detail);
 	}
 
-	public static Integer getFeatureID( FeatureDetails.FeatureKey key) throws SQLException
+	private static Integer getFeatureID( FeatureDetails.FeatureKey key) throws SQLException
     {
         if (!Features.getCache().hasID( key ))
         {
@@ -118,7 +118,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         return Features.getCache().getID( key );
     }
 
-    public static Integer getFeatureID( Integer comid, String lid, String gageID, String huc)
+    private static Integer getFeatureID( Integer comid, String lid, String gageID, String huc)
             throws SQLException
     {
         return Features.getFeatureID( new FeatureDetails.FeatureKey( comid, lid, gageID, huc ));
@@ -141,7 +141,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         return getFeatureID( details );
     }
 
-    public static FeatureDetails getDetails(Feature feature) throws SQLException
+    private static FeatureDetails getDetails(Feature feature) throws SQLException
     {
         Integer id = Features.getFeatureID( feature );
         return Features.getCache().get( id );

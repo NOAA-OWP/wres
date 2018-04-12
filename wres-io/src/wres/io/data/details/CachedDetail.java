@@ -83,6 +83,13 @@ public abstract class CachedDetail<U, V extends Comparable<V>> implements Compar
 				connection = Database.getConnection();
 				statement = this.getInsertSelectStatement( connection );
 				results = statement.executeQuery();
+
+                if (!results.isBeforeFirst())
+                {
+                    throw new SQLException( "No value can be loaded with the key of: " +
+                                            this.getKey() );
+                }
+
 				this.update( results );
 			}
 			finally
