@@ -294,10 +294,12 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
     {
         boolean next;
 
+        boolean generatesTimeSeriesInputs =
+                this.getProjectDetails().getPairingMode() == ProjectDetails.PairingMode.TIME_SERIES;
+
         try
         {
-            if (ConfigHelper.isForecast( this.getRight() ) &&
-                this.getProjectDetails().getPairingMode() != ProjectDetails.PairingMode.TIME_SERIES)
+            if (ConfigHelper.isForecast( this.getRight() ) && !generatesTimeSeriesInputs)
             {
                 next = this.finalPoolingStep > 0 && this.poolingStep + 1 < this.finalPoolingStep;
 
@@ -319,8 +321,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
                     }
                 }
             }
-            else if (ConfigHelper.isForecast( this.getRight() ) &&
-                     this.getProjectDetails().getPairingMode() == ProjectDetails.PairingMode.TIME_SERIES)
+            else if (ConfigHelper.isForecast( this.getRight() ) && generatesTimeSeriesInputs)
             {
                 next = this.poolingStep + 1 < this.finalPoolingStep;
             }
@@ -329,7 +330,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
                 next = this.getWindowNumber() == -1;
             }
 
-            if (!next && this.getWindowNumber() < 0)
+            if (!next && this.getWindowNumber() < 0 && !generatesTimeSeriesInputs)
             {
                 String message = "Due to the configuration of this project,";
                 message += " there are no valid windows to evaluate. ";

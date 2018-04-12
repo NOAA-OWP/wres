@@ -11,6 +11,7 @@ import ucar.nc2.Variable;
 
 import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.WRESRunnable;
+import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Variables;
 import wres.io.reading.BasicSource;
 import wres.io.reading.IngestResult;
@@ -32,8 +33,7 @@ public class NWMSource extends BasicSource
      * @param projectConfig the ProjectConfig causing ingest
 	 * @param filename the file name
 	 */
-	public NWMSource( ProjectConfig projectConfig,
-                      String filename )
+	public NWMSource( ProjectConfig projectConfig, String filename )
     {
         super( projectConfig );
 		this.setFilename(filename);
@@ -43,7 +43,7 @@ public class NWMSource extends BasicSource
 	@Override
 	public List<IngestResult> save() throws IOException
 	{
-		try ( NetcdfFile source = getSource() )
+		try ( NetcdfFile source = NetcdfFile.open(getAbsoluteFilename()) )
 		{
 			saveNetCDF( source );
 		}
@@ -66,44 +66,28 @@ public class NWMSource extends BasicSource
 
 		if (var != null)
         {
-            try
+			WRESRunnable saver;
+			if (NetCDF.isGridded(var))
 			{
-                WRESRunnable saver;
-                if (NetCDF.isGridded(var))
-                {
-                    saver = new GriddedNWMValueSaver( this.getFilename(),
-													  Variables.getVariableID(var.getShortName(),
-																				var.getUnitsString()),
-													  this.getFutureHash());
-                }
-                else
-                {
-                    saver = new VectorNWMValueSaver( this.getFilename(),
-													 this.getFutureHash(),
-													 this.dataSourceConfig );
-                }
+				saver = new GriddedNWMValueSaver( this.getFilename(),
+												  this.getFutureHash(),
+												  ConfigHelper.isForecast(this.dataSourceConfig));
+			}
+			else
+			{
+				saver = new VectorNWMValueSaver( this.getFilename(),
+												 this.getFutureHash(),
+												 this.dataSourceConfig );
+			}
 
-                saver.setOnRun(ProgressMonitor.onThreadStartHandler());
-                saver.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
-                Database.ingest(saver);
-            }
-            catch ( SQLException e )
-            {
-                String message = "Failed to save NWM source file "
-                                 + this.getFilename();
-                throw new IOException( message, e );
-            }
+			saver.setOnRun(ProgressMonitor.onThreadStartHandler());
+			saver.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
+			Database.ingest(saver);
+        }
+        else
+        {
+            LOGGER.debug( "The NetCDF file at '{}' did not contain the "
+                          + "requested variable.", this.getFilename() );
         }
 	}
-	
-	private NetcdfFile getSource() throws IOException
-	{
-		if (source == null)
-		{
-			source = NetcdfFile.open(getAbsoluteFilename());
-		}
-		return source;
-	}
-	
-	private NetcdfFile source = null;
 }

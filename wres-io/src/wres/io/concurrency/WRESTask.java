@@ -24,7 +24,7 @@ public abstract class WRESTask
 
     protected abstract Logger getLogger ();
 
-    protected boolean validate()
+    protected void validate()
     {
         if (this.getLogger() != null)
         {
@@ -32,16 +32,15 @@ public abstract class WRESTask
                                     this.getClass().getName(),
                                     this.getThreadName()  );
         }
-        return true;
     }
 
-    protected void executeOnComplete() {
+    void executeOnComplete() {
         if (this.onComplete != null) {
             this.onComplete.accept(this);
         }
     }
     
-    protected void executeOnRun() {
+    void executeOnRun() {
         this.setThreadName();
         this.validate();
         if (this.onRun != null) {
