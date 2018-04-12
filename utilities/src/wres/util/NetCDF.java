@@ -22,6 +22,8 @@ import java.nio.file.Paths;
 public final class NetCDF {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NetCDF.class);
+
+    // TODO: Maybe change this to support forcing data?
     private static final Pattern NWM_NAME_PATTERN = Pattern.compile(
             "^nwm\\.t\\d\\dz\\.(short|medium|long|analysis)_(range|assim)\\.[a-zA-Z]+(_rt)?(_\\d)?\\.(f\\d\\d\\d|tm\\d\\d)\\.conus\\.nc(\\.gz)?$"
     );

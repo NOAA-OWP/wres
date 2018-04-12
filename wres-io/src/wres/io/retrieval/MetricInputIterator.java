@@ -45,11 +45,6 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
     private int poolingStep;
     private int finalPoolingStep = 0;
 
-    // This is just for debugging. This is safe for removal and doesn't drive any logic
-    // Use Case: "I expect this run to create 15 inputs. It actually generated 612.
-    // Something is wrong."
-    private int inputCounter;
-
     private int getWindowNumber()
     {
         return this.windowNumber;
@@ -324,6 +319,11 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
                     }
                 }
             }
+            else if (ConfigHelper.isForecast( this.getRight() ) &&
+                     this.getProjectDetails().getPairingMode() == ProjectDetails.PairingMode.TIME_SERIES)
+            {
+                next = this.poolingStep + 1 < this.finalPoolingStep;
+            }
             else
             {
                 next = this.getWindowNumber() == -1;
@@ -368,8 +368,8 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
     {
         Future<MetricInput<?>> nextInput;
 
-        this.inputCounter++;
         this.incrementWindowNumber();
+
         try
         {
             nextInput = this.submitForRetrieval();
