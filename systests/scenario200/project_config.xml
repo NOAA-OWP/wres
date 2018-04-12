@@ -18,12 +18,6 @@
     <pair label="Pairs by location and lead time"> 
         <unit>CMS</unit>
         <feature locationId="DOSC1" />
-
-        <desiredTimeScale>
-            <function>avg</function>
-            <period>1</period>
-            <unit>hours</unit>
-        </desiredTimeScale>
     </pair>
 
     <metrics>
