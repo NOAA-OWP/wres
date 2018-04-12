@@ -63,14 +63,6 @@ public final class MeasurementDetails extends CachedDetail<MeasurementDetails, S
 	public void setID(Integer id) {
 		this.measurementUnitID = id;
 	}
-	
-	@Override
-	public void save() throws SQLException
-	{
-	    super.save();
-	    
-	    Database.execute(MeasurementDetails.getUnitConversionInsertScript());
-	}
 
     @Override
     protected Logger getLogger()
@@ -100,21 +92,5 @@ public final class MeasurementDetails extends CachedDetail<MeasurementDetails, S
 	protected Object getSaveLock()
 	{
 		return MEASUREMENTUNIT_SAVE_LOCK;
-	}
-
-	private static String getUnitConversionInsertScript() {
-	    String script = "";
-	    
-	    script += "INSERT INTO wres.UnitConversion(from_unit, to_unit, factor)" + NEWLINE;
-	    script += "SELECT measurementunit_id, measurementunit_id, 1" + NEWLINE;
-	    script += "FROM wres.MeasurementUnit M" + NEWLINE;
-	    script += "WHERE NOT EXISTS (" + NEWLINE;
-	    script += "    SELECT 1" + NEWLINE;
-	    script += "    FROM wres.UnitConversion UC" + NEWLINE;
-	    script += "    WHERE UC.from_unit = M.measurementunit_id" + NEWLINE;
-	    script += "        AND UC.from_unit = UC.to_unit" + NEWLINE;
-	    script += ");";
-	    
-	    return script;
 	}
 }
