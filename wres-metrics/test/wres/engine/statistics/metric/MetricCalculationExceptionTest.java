@@ -17,7 +17,7 @@ public final class MetricCalculationExceptionTest
      */
 
     @Test
-    public void test1MetricCalculationException()
+    public void testMetricCalculationException()
     {
         final MetricCalculationException e = new MetricCalculationException();
         final MetricCalculationException f = new MetricCalculationException("Test exception.");

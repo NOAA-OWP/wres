@@ -13,8 +13,6 @@ import wres.datamodel.DefaultDataFactory;
  * Tests the {@link FunctionFactory}.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 public final class FunctionFactoryTest
 {
@@ -24,7 +22,7 @@ public final class FunctionFactoryTest
      */
 
     @Test
-    public void test1FunctionFactory()
+    public void testFunctionFactory()
     {
         final DataFactory metIn = DefaultDataFactory.getInstance();
         final BiPredicate<Double, Double> testMe = FunctionFactory.doubleEquals();

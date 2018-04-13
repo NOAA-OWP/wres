@@ -2,7 +2,6 @@ package wres.engine.statistics.metric;
 
 import java.util.Collections;
 import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
@@ -12,7 +11,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.Future;
 import java.util.function.BiFunction;
 
 import org.slf4j.Logger;
@@ -41,7 +39,6 @@ import wres.engine.statistics.metric.categorical.ContingencyTable;
  * <p>
  * Build a collection with a {@link MetricCollectionBuilder#of()}.
  * </p>
- * 
  * <p>
  * When a group contains a collection of metrics that do not need to be computed for all inputs, a non-empty set of
  * {@link MetricConstants} may be defined. These metrics are ignored during calculation.
@@ -86,12 +83,6 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
     private final Map<MetricConstants, Map<MetricConstants, Collectable<S, T, U>>> collectableMetrics;
 
     /**
-     * The metric input.
-     */
-
-    private final Future<S> input;
-
-    /**
      * Executor service. By default, the {@link ForkJoinPool#commonPool()}
      */
 
@@ -132,12 +123,6 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
 
     protected static class MetricCollectionBuilder<S extends MetricInput<?>, T extends MetricOutput<?>, U extends MetricOutput<?>>
     {
-
-        /**
-         * The metric input.
-         */
-
-        private Future<S> input;
 
         /**
          * Executor service. By default, uses {@link ForkJoinPool#commonPool()}.
@@ -206,19 +191,6 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
         }
 
         /**
-         * Sets the {@link MetricInput}.
-         * 
-         * @param input the metric input
-         * @return the builder
-         */
-
-        protected MetricCollectionBuilder<S, T, U> setMetricInput( final Future<S> input )
-        {
-            this.input = input;
-            return this;
-        }
-
-        /**
          * Sets the {@link ExecutorService} for parallel computations.
          * 
          * @param metricPool the executor service
@@ -278,16 +250,12 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
         {
             throw new MetricCalculationException( "Specify non-null input to the metric collection." );
         }
-        if ( !Objects.isNull( this.input ) )
-        {
-            throw new MetricCalculationException( "The collection has already been constructed with a fixed input: "
-                                                  + "use call instead of apply to generate the metric results." );
-        }
         if ( Objects.isNull( ignoreTheseMetrics ) )
         {
             throw new MetricCalculationException( "Specify a non-null set of metrics to ignore, such as the empty "
                                                   + "set." );
         }
+        
         // Count elements in metrics and collected metrics
         int count = this.metrics.size() + this.collectableMetrics.values().stream().mapToInt( Map::size ).sum();
         if ( ignoreTheseMetrics.size() == count )
@@ -302,6 +270,7 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
                 new EnumMap<>( this.collectableMetrics );
         localMetrics.keySet().removeAll( ignoreTheseMetrics );
         localCollectableMetrics.keySet().removeAll( ignoreTheseMetrics );
+        
         //Remove from each map in the collection
         localCollectableMetrics.forEach( ( key, value ) -> value.keySet().removeAll( ignoreTheseMetrics ) );
 
@@ -311,10 +280,11 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
         //Create the futures for the collectable metrics
         for ( Map<MetricConstants, Collectable<S, T, U>> next : localCollectableMetrics.values() )
         {
-            Iterator<Collectable<S, T, U>> iterator = next.values().iterator();
             // Proceed
-            if ( iterator.hasNext() )
+            if ( ! next.isEmpty() )
             {
+                Iterator<Collectable<S, T, U>> iterator = next.values().iterator();
+                
                 Collectable<S, T, U> baseMetric = iterator.next();
                 final CompletableFuture<T> baseFuture =
                         CompletableFuture.supplyAsync( () -> baseMetric.getCollectionInput( input ),
@@ -330,7 +300,7 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
                                                                    CompletableFuture.supplyAsync( () -> value.apply( input ),
                                                                                                   this.metricPool ) ) );
         //Compute the results
-        Map<MetricConstants, U> returnMe = new HashMap<>();
+        Map<MetricConstants, U> returnMe = new EnumMap<>( MetricConstants.class );
         MetricConstants nextMetric = null;
 
         this.logStartOfCalculation();
@@ -369,7 +339,6 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
     private MetricCollection( final MetricCollectionBuilder<S, T, U> builder ) throws MetricParameterException
     {
         //Set 
-        this.input = builder.input;
         this.dataFactory = builder.dataFactory;
         this.metricPool = builder.metricPool;
         this.metrics = new EnumMap<>( builder.metrics );
@@ -413,25 +382,6 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
         if ( metrics.isEmpty() && collectableMetrics.isEmpty() )
         {
             throw new MetricParameterException( "Cannot construct a metric collection without any metrics." );
-        }
-        //No null metrics
-        for ( Map.Entry<MetricConstants, Metric<S, U>> next : metrics.entrySet() )
-        {
-            if ( Objects.isNull( next.getValue() ) )
-            {
-                throw new MetricParameterException( "Cannot construct a metric collection with a null metric." );
-            }
-        }
-        //No null collectable metrics
-        for ( Map.Entry<MetricConstants, Map<MetricConstants, Collectable<S, T, U>>> next : collectableMetrics.entrySet() )
-        {
-            for ( Map.Entry<MetricConstants, Collectable<S, T, U>> nextMap : next.getValue().entrySet() )
-            {
-                if ( Objects.isNull( nextMap.getValue() ) )
-                {
-                    throw new MetricParameterException( "Cannot construct a metric collection with a null metric." );
-                }
-            }
         }
     }
 
