@@ -636,8 +636,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
     {
         if (this.leftVariableID == null)
         {
-            this.leftVariableID = Variables.getVariableID(this.getLeftVariableName(),
-                                                          this.getLeftVariableUnit());
+            this.leftVariableID = Variables.getVariableID(this.getLeftVariableName());
         }
 
         return this.leftVariableID;
@@ -668,8 +667,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
     {
         if (this.rightVariableID == null)
         {
-            this.rightVariableID = Variables.getVariableID( this.getRightVariableName(),
-                                                            this.getRightVariableUnit());
+            this.rightVariableID = Variables.getVariableID( this.getRightVariableName());
         }
 
         return this.rightVariableID;
@@ -700,8 +698,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
     {
         if (this.hasBaseline() && this.baselineVariableID == null)
         {
-            this.baselineVariableID = Variables.getVariableID( this.getBaselineVariableName(),
-                                                               this.getBaselineVariableUnit() );
+            this.baselineVariableID = Variables.getVariableID( this.getBaselineVariableName() );
         }
 
         return this.baselineVariableID;

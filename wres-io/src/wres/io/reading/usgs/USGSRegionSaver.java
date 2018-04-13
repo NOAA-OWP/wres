@@ -720,8 +720,7 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
                                .getBaseline()
                                .getVariable();
             }
-            this.variableID = Variables.getVariableID( variable.getValue(),
-                                                       variable.getUnit() );
+            this.variableID = Variables.getVariableID( variable.getValue() );
         }
 
         return this.variableID;

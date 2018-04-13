@@ -634,8 +634,7 @@ class VectorNWMValueSaver extends WRESRunnable
         {
             try
             {
-                this.variableID = Variables.getVariableID(this.getVariable().getShortName(),
-                                                          this.getVariable().getUnitsString());
+                this.variableID = Variables.getVariableID(this.getVariable().getShortName());
             }
             catch (SQLException e)
             {

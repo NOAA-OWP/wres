@@ -1115,8 +1115,23 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         {
             if (this.projectDetails.usesTimeSeriesMetrics())
             {
-                firstLead = Duration.of( this.firstLead, configuredUnits);
-                lastLead = Duration.of( this.lastLead, configuredUnits);
+                if (this.firstLead == Long.MAX_VALUE)
+                {
+                    firstLead = Duration.of(Long.MIN_VALUE, ChronoUnit.SECONDS);
+                }
+                else
+                {
+                    firstLead = Duration.of( this.firstLead, configuredUnits );
+                }
+
+                if (this.lastLead == Long.MIN_VALUE)
+                {
+                    lastLead = Duration.of(Long.MAX_VALUE, ChronoUnit.SECONDS);
+                }
+                else
+                {
+                    lastLead = Duration.of( this.lastLead, configuredUnits );
+                }
             }
             else
             {
@@ -1264,6 +1279,18 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         {
             // TODO: Since we are passing the ForecastedPair object and the ProjectDetails,
             // we can probably eliminate a lot of the arguments
+
+            /*PairWriter.Builder builder = new PairWriter.Builder();
+            builder = builder.setDestinationConfig( dest );
+            builder = builder.setDate( date );
+            builder = builder.setFeature( this.feature );
+            builder = builder.setLeadIteration( this.leadIteration );
+            builder = builder.setPair( pair.getValues() );
+            builder = builder.setIsBaseline( isBaseline );
+            builder = builder.setPoolingStep( this.issueDatesPool );
+            builder = builder.setProjectDetails( this.projectDetails );
+            builder = builder.setLead( (int) pair.getLeadHours() );*/
+
             PairWriter saver = new PairWriter( dest,
                                                date,
                                                this.feature,
@@ -1273,7 +1300,11 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                                                this.issueDatesPool,
                                                this.projectDetails,
                                                (int) pair.getLeadHours() );
-            Executor.submitHighPriorityTask( saver);
+
+            Executor.submitHighPriorityTask( saver );
+
+            //Executor.submit( builder.build() );
+            //Executor.submitHighPriorityTask( builder.build() );
         }
     }
 

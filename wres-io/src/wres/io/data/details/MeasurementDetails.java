@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.io.utilities.Database;
 import wres.io.utilities.ScriptBuilder;
+import wres.util.Strings;
 
 /**
  * Details defining a unit of measurement within the database (i.e. CFS (cubic feet per second),
@@ -32,7 +33,7 @@ public final class MeasurementDetails extends CachedDetail<MeasurementDetails, S
 	 */
 	public void setUnit(String unit)
 	{
-		if (this.unit == null || !this.unit.equalsIgnoreCase(unit))
+		if ( Strings.hasValue(unit) && (this.unit == null || !this.unit.equalsIgnoreCase( unit)))
 		{
 			this.unit = unit.toLowerCase();
 			this.measurementUnitID = null;

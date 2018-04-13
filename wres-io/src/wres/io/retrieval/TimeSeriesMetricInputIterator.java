@@ -29,7 +29,7 @@ public class TimeSeriesMetricInputIterator extends MetricInputIterator
     @Override
     int calculateWindowCount() throws SQLException
     {
-        return 1;
+        return this.getFinalPoolingStep();
     }
 
     @Override
@@ -39,7 +39,7 @@ public class TimeSeriesMetricInputIterator extends MetricInputIterator
     }
 
     @Override
-    protected int getFinalPoolingStep() throws SQLException
+    protected int calculateFinalPoolingStep() throws SQLException
     {
         String minimumDate = this.getProjectDetails().getInitialForecastDate( this.getRight(), this.getFeature() );
         Integer lag = this.getProjectDetails().getForecastLag( this.getRight(), this.getFeature() );
