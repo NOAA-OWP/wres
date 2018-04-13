@@ -43,18 +43,32 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
     private NavigableMap<LocalDateTime, Double> leftHandMap;
     private VectorOfDoubles climatology;
     private int poolingStep;
-    private int finalPoolingStep = 0;
+    private Integer finalPoolingStep;
 
     private int getWindowNumber()
     {
         return this.windowNumber;
     }
 
+    protected int getPoolingStep()
+    {
+        return this.poolingStep;
+    }
+
     private void incrementWindowNumber()
     {
+        if (projectDetails.usesTimeSeriesMetrics())
+        {
+            this.incrementSequenceStep();
+
+            if (this.getPoolingStep() + 1 >= this.finalPoolingStep)
+            {
+                this.windowNumber = 0;
+            }
+        }
         // No incrementing has been done, so we just want to roll with
         // window 0, sequence < 1
-        if (this.windowNumber < 0)
+        else if (this.windowNumber < 0)
         {
             this.windowNumber = 0;
         }
@@ -148,7 +162,16 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
 
     protected int getFinalPoolingStep() throws SQLException
     {
-        return this.projectDetails.getIssuePoolCount( feature );
+        if (this.finalPoolingStep == null)
+        {
+            this.finalPoolingStep = this.calculateFinalPoolingStep();
+        }
+        return this.finalPoolingStep;
+    }
+
+    protected int calculateFinalPoolingStep() throws SQLException
+    {
+        return this.projectDetails.getIssuePoolCount( this.feature );
     }
 
     // TODO: Put into its own class
@@ -301,7 +324,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
         {
             if (ConfigHelper.isForecast( this.getRight() ) && !generatesTimeSeriesInputs)
             {
-                next = this.finalPoolingStep > 0 && this.poolingStep + 1 < this.finalPoolingStep;
+                next = this.getFinalPoolingStep() > 0 && this.poolingStep + 1 < this.getFinalPoolingStep();
 
                 if (!next)
                 {
@@ -321,10 +344,10 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
                     }
                 }
             }
-            else if (ConfigHelper.isForecast( this.getRight() ) && generatesTimeSeriesInputs)
+            /*else if (ConfigHelper.isForecast( this.getRight() ) && generatesTimeSeriesInputs && this.getWindowNumber() == 0)
             {
-                next = this.poolingStep + 1 < this.finalPoolingStep;
-            }
+                next = this.poolingStep + 1 <= this.getFinalPoolingStep();
+            }*/
             else
             {
                 next = this.getWindowNumber() == -1;

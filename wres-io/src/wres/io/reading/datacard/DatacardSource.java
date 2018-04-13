@@ -424,8 +424,7 @@ public class DatacardSource extends BasicSource
     {
 		if (currentVariableID == null)
 		{
-			this.currentVariableID = Variables.getVariableID(this.getSpecifiedVariableName(),
-                                                             this.getSpecifiedVariableUnit());
+			this.currentVariableID = Variables.getVariableID(this.getSpecifiedVariableName());
 		}
 		
 		return this.currentVariableID;

@@ -61,24 +61,24 @@ public class PairWriter extends WRESCallable<Boolean>
         private final DestinationConfig destinationConfig;
         private final Instant date;
         private final Feature feature;
-        private final Integer windowNum;
+        private final Integer leadIteration;
         private final PairOfDoubleAndVectorOfDoubles pair;
-        private final Boolean isBaseline;
+        private final boolean isBaseline;
         private final Integer poolingStep;
         private final ProjectDetails projectDetails;
-        private final Integer lead;
+        private final int lead;
 
         public Builder()
         {
             this.destinationConfig = null;
             this.date = null;
             this.feature = null;
-            this.windowNum = null;
+            this.leadIteration = null;
             this.pair = null;
             this.isBaseline = false;
             this.poolingStep = null;
             this.projectDetails = null;
-            this.lead = null;
+            this.lead = 0;
         }
 
         private Builder( DestinationConfig destinationConfig,
@@ -94,7 +94,7 @@ public class PairWriter extends WRESCallable<Boolean>
             this.destinationConfig = destinationConfig;
             this.date = date;
             this.feature = feature;
-            this.windowNum = windowNum;
+            this.leadIteration = windowNum;
             this.pair = pair;
             this.isBaseline = isBaseline;
             this.poolingStep = poolingStep;
@@ -107,7 +107,7 @@ public class PairWriter extends WRESCallable<Boolean>
             return new Builder( destinationConfig,
                                 this.date,
                                 this.feature,
-                                this.windowNum,
+                                this.leadIteration,
                                 this.pair,
                                 this.isBaseline,
                                 this.poolingStep,
@@ -120,7 +120,7 @@ public class PairWriter extends WRESCallable<Boolean>
             return new Builder( this.destinationConfig,
                                 date,
                                 this.feature,
-                                this.windowNum,
+                                this.leadIteration,
                                 this.pair,
                                 this.isBaseline,
                                 this.poolingStep,
@@ -133,7 +133,7 @@ public class PairWriter extends WRESCallable<Boolean>
             return new Builder( this.destinationConfig,
                                 this.date,
                                 feature,
-                                this.windowNum,
+                                this.leadIteration,
                                 this.pair,
                                 this.isBaseline,
                                 this.poolingStep,
@@ -141,12 +141,12 @@ public class PairWriter extends WRESCallable<Boolean>
                                 this.lead);
         }
 
-        public Builder setWindowNum(Integer windowNum)
+        public Builder setLeadIteration(Integer leadIteration)
         {
             return new Builder( this.destinationConfig,
                                 this.date,
                                 this.feature,
-                                windowNum,
+                                leadIteration,
                                 this.pair,
                                 this.isBaseline,
                                 this.poolingStep,
@@ -159,7 +159,7 @@ public class PairWriter extends WRESCallable<Boolean>
             return new Builder( this.destinationConfig,
                                 this.date,
                                 this.feature,
-                                this.windowNum,
+                                this.leadIteration,
                                 pair,
                                 this.isBaseline,
                                 this.poolingStep,
@@ -172,7 +172,7 @@ public class PairWriter extends WRESCallable<Boolean>
             return new Builder( this.destinationConfig,
                                 this.date,
                                 this.feature,
-                                this.windowNum,
+                                this.leadIteration,
                                 this.pair,
                                 isBaseline,
                                 this.poolingStep,
@@ -185,7 +185,7 @@ public class PairWriter extends WRESCallable<Boolean>
             return new Builder( this.destinationConfig,
                                 this.date,
                                 this.feature,
-                                this.windowNum,
+                                this.leadIteration,
                                 this.pair,
                                 this.isBaseline,
                                 poolingStep,
@@ -198,7 +198,7 @@ public class PairWriter extends WRESCallable<Boolean>
             return new Builder( this.destinationConfig,
                                 this.date,
                                 this.feature,
-                                this.windowNum,
+                                this.leadIteration,
                                 this.pair,
                                 this.isBaseline,
                                 this.poolingStep,
@@ -211,7 +211,7 @@ public class PairWriter extends WRESCallable<Boolean>
             return new Builder( this.destinationConfig,
                                 this.date,
                                 this.feature,
-                                this.windowNum,
+                                this.leadIteration,
                                 this.pair,
                                 this.isBaseline,
                                 this.poolingStep,
@@ -225,20 +225,50 @@ public class PairWriter extends WRESCallable<Boolean>
 
             if (this.destinationConfig == null)
             {
-                errorJoiner.add( "A PairWriter cannot be created; there is no "
-                                 + "configured destination for the pairs." );
+                errorJoiner.add( "There was no destination passed to write to.");
             }
 
             if (this.date == null)
             {
-                errorJoiner.add("A PairWriter cannot be created; there is no "
-                                + "date to record.");
+                errorJoiner.add("No date was added to record.");
+            }
+
+            if (feature == null)
+            {
+                errorJoiner.add("No feature was added to record.");
+            }
+
+            if (this.leadIteration == null)
+            {
+                errorJoiner.add("The iteration was not added to record.");
+            }
+
+            if (this.pair == null)
+            {
+                errorJoiner.add("No pair was added to record.");
+            }
+
+            if (this.poolingStep == null)
+            {
+                errorJoiner.add("No pooling step was configured.");
+            }
+
+            if (this.projectDetails == null)
+            {
+                errorJoiner.add("No details about the project were passed.");
+            }
+
+            if (errorJoiner.length() > 0)
+            {
+                throw new IllegalArgumentException( "A PairWriter could not be "
+                                                    + "created: " +
+                                                    errorJoiner.toString() );
             }
 
             return new PairWriter( this.destinationConfig,
                                    this.date,
                                    this.feature,
-                                   this.windowNum,
+                                   this.leadIteration,
                                    this.pair,
                                    this.isBaseline,
                                    this.poolingStep,

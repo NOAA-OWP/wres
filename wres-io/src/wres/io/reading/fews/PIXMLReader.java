@@ -599,8 +599,7 @@ public final class PIXMLReader extends XMLReader
 				else if (localName.equalsIgnoreCase("parameterId"))
 				{
 					currentVariableName = XML.getXMLText(reader);
-					currentVariableID = Variables.getVariableID(currentVariableName,
-																currentMeasurementUnitID);
+					currentVariableID = Variables.getVariableID(currentVariableName);
 				}
 				else if (localName.equalsIgnoreCase( "lat" ) || localName.equalsIgnoreCase( "y" ))
                 {
@@ -789,8 +788,7 @@ public final class PIXMLReader extends XMLReader
 	private int getVariableID() throws SQLException {
 		if (currentVariableID == null)
 		{
-			this.currentVariableID = Variables.getVariableID(currentVariableName,
-                                                             currentMeasurementUnit);
+			this.currentVariableID = Variables.getVariableID(currentVariableName);
 		}
 		return this.currentVariableID;
 	}
