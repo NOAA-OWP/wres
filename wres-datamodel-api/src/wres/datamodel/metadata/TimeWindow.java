@@ -126,8 +126,7 @@ public final class TimeWindow implements Comparable<TimeWindow>
 
     public static TimeWindow of( Instant earliestTime, Instant latestTime )
     {
-        Duration zero = Duration.ofHours( 0 );
-        return new TimeWindow( earliestTime, latestTime, ReferenceTime.VALID_TIME, zero, zero );
+        return new TimeWindow( earliestTime, latestTime, ReferenceTime.VALID_TIME, Duration.ZERO, Duration.ZERO );
     }
 
     /**

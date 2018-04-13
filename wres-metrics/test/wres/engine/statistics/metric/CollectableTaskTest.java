@@ -43,7 +43,10 @@ public final class CollectableTaskTest
     private ExecutorService pairPool;
     private Collectable<DichotomousPairs, MatrixOutput, DoubleScoreOutput> m;
 
-    /** Metadata for the output */
+    /** 
+     * Metadata for the output 
+     */
+    
     private MetricOutputMetadata m1;
 
     @Before
@@ -63,7 +66,6 @@ public final class CollectableTaskTest
                                         MetricConstants.CONTINGENCY_TABLE,
                                         MetricConstants.MAIN );
     }
-
 
     @Test
     public void testCollectableTask() throws ExecutionException, InterruptedException
@@ -92,7 +94,6 @@ public final class CollectableTaskTest
 
         assertEquals( 0.333333, output.getData(), DOUBLE_COMPARE_THRESHOLD );
     }
-
 
     @Test
     public void testExceptionOnNullInput() throws ExecutionException, InterruptedException
