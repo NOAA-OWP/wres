@@ -1,21 +1,21 @@
 package wres.engine.statistics.metric;
 
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.FutureTask;
 import java.util.function.BiPredicate;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
@@ -36,11 +36,24 @@ import wres.engine.statistics.metric.singlevalued.DoubleErrorScore;
  * Tests the {@link MetricCollection}.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 public class MetricCollectionTest
 {
+
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
+
+    private DataFactory outF;
+    private MetricFactory metF;
+    private ExecutorService metricPool;
+
+    @Before
+    public void setupBeforeEachTest() throws MetricParameterException
+    {
+        outF = DefaultDataFactory.getInstance();
+        metF = MetricFactory.getInstance( outF );
+        metricPool = Executors.newSingleThreadExecutor();
+    }
 
     /**
      * Construct a collection of metrics that consume single-valued pairs and produce scalar outputs. Compute and check
@@ -49,14 +62,10 @@ public class MetricCollectionTest
      */
 
     @Test
-    public void test1OfSingleValuedScalar() throws MetricParameterException
+    public void testOfSingleValuedScalar() throws MetricParameterException
     {
         //Generate some data
         final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
-
-        //Create a collection of metrics that consume single-valued pairs and produce a scalar output
-        final DataFactory outF = DefaultDataFactory.getInstance();
-        final MetricFactory metF = MetricFactory.getInstance( outF );
 
         //Finalize
         final MetricCollection<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput> collection =
@@ -105,7 +114,7 @@ public class MetricCollectionTest
      */
 
     @Test
-    public void test2OfDichotomousScalar() throws MetricParameterException
+    public void testOfDichotomousScalar() throws MetricParameterException
     {
         //Generate some data
         final DichotomousPairs input = MetricTestDataFactory.getDichotomousPairsOne();
@@ -115,8 +124,7 @@ public class MetricCollectionTest
         //Contingency Table, which is computed only once
         final MetricCollectionBuilder<DichotomousPairs, MetricOutput<?>, DoubleScoreOutput> m =
                 MetricCollectionBuilder.of();
-        final DataFactory outF = DefaultDataFactory.getInstance();
-        final MetricFactory metF = MetricFactory.getInstance( outF );
+
         m.setOutputFactory( outF );
         m.setExecutorService( ForkJoinPool.commonPool() );
 
@@ -184,7 +192,7 @@ public class MetricCollectionTest
      */
 
     @Test
-    public void test3OfDiscreteProbabilityVector() throws MetricParameterException
+    public void testOfDiscreteProbabilityVector() throws MetricParameterException
     {
         //Generate some data
         final DiscreteProbabilityPairs input = MetricTestDataFactory.getDiscreteProbabilityPairsTwo();
@@ -192,8 +200,7 @@ public class MetricCollectionTest
         //Create a collection metrics that consume probabilistic pairs and generate vector outputs
         final MetricCollectionBuilder<DiscreteProbabilityPairs, MetricOutput<?>, DoubleScoreOutput> n =
                 MetricCollectionBuilder.of();
-        final DataFactory outF = DefaultDataFactory.getInstance();
-        final MetricFactory metF = MetricFactory.getInstance( outF );
+
         n.setOutputFactory( outF );
         n.setExecutorService( ForkJoinPool.commonPool() );
 
@@ -239,7 +246,7 @@ public class MetricCollectionTest
      */
 
     @Test
-    public void test4OfSingleValuedVector() throws MetricParameterException
+    public void testOfSingleValuedVector() throws MetricParameterException
     {
         //Generate some data
         final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsTwo();
@@ -247,8 +254,7 @@ public class MetricCollectionTest
         //Create a collection metrics that consume single-valued pairs and produce vector outputs
         final MetricCollectionBuilder<SingleValuedPairs, MetricOutput<?>, DoubleScoreOutput> n =
                 MetricCollectionBuilder.of();
-        final DataFactory outF = DefaultDataFactory.getInstance();
-        final MetricFactory metF = MetricFactory.getInstance( outF );
+
         n.setOutputFactory( outF );
         n.setExecutorService( ForkJoinPool.commonPool() );
 
@@ -294,7 +300,7 @@ public class MetricCollectionTest
      */
 
     @Test
-    public void test5OfMulticategoryScalar() throws MetricParameterException
+    public void testOfMulticategoryScalar() throws MetricParameterException
     {
         //Generate some data
         final MulticategoryPairs input = MetricTestDataFactory.getMulticategoryPairsOne();
@@ -302,8 +308,7 @@ public class MetricCollectionTest
         //Create a collection of multicategory metrics that produce a scalar output. 
         final MetricCollectionBuilder<MulticategoryPairs, MetricOutput<?>, DoubleScoreOutput> n =
                 MetricCollectionBuilder.of();
-        final DataFactory outF = DefaultDataFactory.getInstance();
-        final MetricFactory metF = MetricFactory.getInstance( outF );
+
         n.setOutputFactory( outF );
         n.setExecutorService( ForkJoinPool.commonPool() );
 
@@ -333,111 +338,175 @@ public class MetricCollectionTest
     }
 
     /**
-     * Tests the exceptions associated with {@link MetricCollection}.
+     * Expects a {@link MetricCalculationException} when calling 
+     * {@link MetricCollection#apply(wres.datamodel.inputs.MetricInput)} with null input.
      * 
-     * @throws ExecutionException if the execution fails
-     * @throws InterruptedException if the calculation is interrupted
-     * @throws MetricCalculationException if the metric calculation fails
+     * @throws MetricCalculationException if the execution fails
      * @throws MetricParameterException if the metric construction fails
      */
 
     @Test
-    public void test6ExceptionTests()
-            throws MetricCalculationException, InterruptedException, ExecutionException, MetricParameterException
+    public void testApplyWithNullInput() throws MetricParameterException
     {
 
-        final ExecutorService metricPool = Executors.newSingleThreadExecutor();
+        //Create a collection of metrics that consume single-valued pairs and produce a scalar output
+        final MetricCollectionBuilder<SingleValuedPairs, MetricOutput<?>, DoubleScoreOutput> n =
+                MetricCollectionBuilder.of();
 
-        try
-        {
+        n.setOutputFactory( outF );
 
-            //Generate some data
-            final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
+        //Add some appropriate metrics to the collection
+        n.add( metF.ofMeanError() );
 
-            //Create a collection of metrics that consume single-valued pairs and produce a scalar output
-            final MetricCollectionBuilder<SingleValuedPairs, MetricOutput<?>, DoubleScoreOutput> n =
-                    MetricCollectionBuilder.of();
-            final DataFactory outF = DefaultDataFactory.getInstance();
-            final MetricFactory metF = MetricFactory.getInstance( outF );
-            n.setOutputFactory( outF );
-            //Add some appropriate metrics to the collection
-            n.add( metF.ofMeanError() );
+        //Set an executor
+        n.setExecutorService( metricPool );
 
-            //Wrap an input in a future
-            final FutureTask<SingleValuedPairs> futureInput =
-                    new FutureTask<SingleValuedPairs>( new Callable<SingleValuedPairs>()
-                    {
-                        public SingleValuedPairs call()
-                        {
-                            return input;
-                        }
-                    } );
+        //Finalize
+        final MetricCollection<SingleValuedPairs, MetricOutput<?>, DoubleScoreOutput> collection = n.build();
 
-            //Add the data
-            n.setMetricInput( futureInput );
+        //Null input
+        exception.expect( MetricCalculationException.class );
+        exception.expectMessage( "Specify non-null input to the metric collection." );
 
-            //Set an executor
-            n.setExecutorService( metricPool );
+        collection.apply( null );
+    }
 
-            //Finalize
-            final MetricCollection<SingleValuedPairs, MetricOutput<?>, DoubleScoreOutput> collection = n.build();
+    /**
+     * Expects a {@link MetricCalculationException} when calling 
+     * {@link MetricCollection#apply(wres.datamodel.inputs.MetricInput, Set)} with a null set of metrics to ignore.
+     * 
+     * @throws MetricCalculationException if the execution fails
+     * @throws MetricParameterException if the metric construction fails
+     */
 
-            //Calling apply should generate an exception
-            try
-            {
-                collection.apply( input );
-                fail( "Expected a checked exception on calling apply with a new input." );
-            }
-            catch ( final Exception e )
-            {
-            }
-            //Null input
-            try
-            {
-                collection.apply( null );
-                fail( "Expected a checked exception on calling apply with a null input." );
-            }
-            catch ( final Exception e )
-            {
-            }
-            //Try to build with an empty output factory
-            try
-            {
-                final MetricCollectionBuilder<SingleValuedPairs, MetricOutput<?>, DoubleScoreOutput> m =
-                        MetricCollectionBuilder.of();
-                m.build();
-                fail( "Expected a checked exception on constructing a metric collection with no output factory." );
-            }
-            catch ( final Exception e )
-            {
-            }
-            //Try to build with no metrics
-            try
-            {
-                MetricCollectionBuilder.of().setOutputFactory( outF ).build();
-                fail( "Expected a checked exception on constructing a metric collection with no metrics." );
-            }
-            catch ( final Exception e )
-            {
-            }
-            //Check for interruptions and failed executions
-            final MetricCollectionBuilder<SingleValuedPairs, MetricOutput<?>, DoubleScoreOutput> m =
-                    MetricCollectionBuilder.of();
-            m.setOutputFactory( outF );
-            m.add( new MeanErrorException() );
-            try
-            {
-                m.build().apply( input );
-                fail( "Expected an unchecked exception on calling apply." );
-            }
-            catch ( final Exception e )
-            {
-            }
-        }
-        finally
-        {
-            metricPool.shutdown();
-        }
+    @Test
+    public void testApplyWithNullSetToIgnore() throws  MetricParameterException
+    {
+
+        //Create a collection of metrics that consume single-valued pairs and produce a scalar output
+        final MetricCollectionBuilder<SingleValuedPairs, MetricOutput<?>, DoubleScoreOutput> n =
+                MetricCollectionBuilder.of();
+
+        final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
+
+        final MetricCollection<SingleValuedPairs, MetricOutput<?>, DoubleScoreOutput> collection =
+                n.setOutputFactory( outF ).add( metF.ofMeanError() ).setExecutorService( metricPool ).build();
+
+        //Null input
+        exception.expect( MetricCalculationException.class );
+        exception.expectMessage( "Specify a non-null set of metrics to ignore, such as the empty set." );
+
+        collection.apply( input, null );
+    }
+
+    /**
+     * Expects a {@link MetricCalculationException} when calling 
+     * {@link MetricCollection#apply(wres.datamodel.inputs.MetricInput, Set)} with a set of metrics to ignore that 
+     * includes all metrics in the collection.
+     * 
+     * @throws MetricCalculationException if the execution fails
+     * @throws MetricParameterException if the metric construction fails
+     */
+
+    @Test
+    public void testApplyWithAllMetricsToIgnore() throws  MetricParameterException
+    {
+
+        //Create a collection of metrics that consume single-valued pairs and produce a scalar output
+        final MetricCollectionBuilder<SingleValuedPairs, MetricOutput<?>, DoubleScoreOutput> n =
+                MetricCollectionBuilder.of();
+
+        final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
+
+        final MetricCollection<SingleValuedPairs, MetricOutput<?>, DoubleScoreOutput> collection =
+                n.setOutputFactory( outF ).add( metF.ofMeanError() ).setExecutorService( metricPool ).build();
+
+        //Null input
+        exception.expect( MetricCalculationException.class );
+        exception.expectMessage( "Cannot ignore all metrics in the store: specify some metrics to process." );
+
+        collection.apply( input, Collections.singleton( MetricConstants.MEAN_ERROR ) );
+    }    
+    
+    /**
+     * Expects a {@link MetricParameterException} when building a {@link MetricCollection} without an 
+     * {@link ExecutorService}.
+     * 
+     * @throws MetricParameterException if the metric construction fails
+     */
+
+    @Test
+    public void testBuildWithNoExecutorService() throws MetricParameterException
+    {
+        exception.expect( MetricParameterException.class );
+        exception.expectMessage( "Cannot construct the metric collection without an executor service." );
+
+        //No output factory            
+        final MetricCollectionBuilder<SingleValuedPairs, MetricOutput<?>, DoubleScoreOutput> m =
+                MetricCollectionBuilder.of();
+        m.build();
+    }
+
+    /**
+     * Expects a {@link MetricParameterException} when building a {@link MetricCollection} without an 
+     * {@link ExecutorService}.
+     * 
+     * @throws MetricParameterException if the metric construction fails
+     */
+
+    @Test
+    public void testBuildWithNoMetricFactory() throws MetricParameterException
+    {
+        exception.expect( MetricParameterException.class );
+        exception.expectMessage( "Cannot construct the metric collection without a metric output factory." );
+
+        //No output factory            
+        final MetricCollectionBuilder<SingleValuedPairs, MetricOutput<?>, DoubleScoreOutput> m =
+                MetricCollectionBuilder.of();
+        m.setExecutorService( metricPool ).build();
+    }
+
+    /**
+     * Expects a {@link MetricParameterException} when building a {@link MetricCollection} without any metrics.
+     * 
+     * @throws MetricParameterException if the metric construction fails
+     */
+
+    @Test
+    public void testBuildWithNoMetrics() throws MetricParameterException
+    {
+        exception.expect( MetricParameterException.class );
+        exception.expectMessage( "Cannot construct a metric collection without any metrics." );
+
+        //Try to build with no metrics
+        MetricCollectionBuilder.of().setOutputFactory( outF ).setExecutorService( metricPool ).build();
+    }
+
+    /**
+     * Expects a {@link MetricCalculationException} from a metric within a {@link MetricCollection}.
+     * 
+     * @throws MetricCalculationException if the execution fails
+     * @throws MetricParameterException if the metric construction fails
+     */
+
+    @Test
+    public void testExceptionOnFailedExecution() throws MetricParameterException
+    {
+
+        //Generate some data
+        final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
+
+        exception.expect( MetricCalculationException.class );
+        exception.expectMessage( "While processing metric 'MEAN ERROR'." );
+
+        final MetricCollectionBuilder<SingleValuedPairs, MetricOutput<?>, DoubleScoreOutput> failed =
+                MetricCollectionBuilder.of();
+        failed.setOutputFactory( outF )
+              .setExecutorService( metricPool )
+              .add( new MeanErrorException() )
+              .build()
+              .apply( input );
+
     }
 
     /**
@@ -447,15 +516,12 @@ public class MetricCollectionTest
      */
 
     @Test
-    public void test9OfSingleValuedScalar() throws MetricParameterException
+    public void testOfSingleValuedScalarCollectable() throws MetricParameterException
     {
         //Generate some data
         final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Create a collection of metrics that consume single-valued pairs and produce a scalar output
-        final DataFactory outF = DefaultDataFactory.getInstance();
-        final MetricFactory metF = MetricFactory.getInstance( outF );
-
         //Add some appropriate metrics to the collection
         final MetricCollection<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput> n =
                 metF.ofSingleValuedScoreCollection( ForkJoinPool.commonPool(),
@@ -495,14 +561,12 @@ public class MetricCollectionTest
      */
 
     @Test
-    public void test10OfSingleValuedScalarWithIgnore() throws MetricParameterException
+    public void testOfSingleValuedScalarWithIgnore() throws MetricParameterException
     {
         //Generate some data
         final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Create a collection of metrics that consume single-valued pairs and produce a scalar output
-        final DataFactory outF = DefaultDataFactory.getInstance();
-        final MetricFactory metF = MetricFactory.getInstance( outF );
         final MetadataFactory metaFac = outF.getMetadataFactory();
 
         //Add some appropriate metrics to the collection
@@ -572,6 +636,12 @@ public class MetricCollectionTest
         {
             return false;
         }
+    }
+
+    @After
+    public void tearDownAfterEachTest()
+    {
+        metricPool.shutdownNow();
     }
 
 }
