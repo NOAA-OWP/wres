@@ -12,6 +12,7 @@ import wres.config.generated.EnsembleCondition;
 import wres.io.data.details.EnsembleDetails;
 import wres.io.data.details.EnsembleDetails.EnsembleKey;
 import wres.io.utilities.Database;
+import wres.io.utilities.ScriptBuilder;
 import wres.util.NetCDF;
 
 /**
@@ -73,6 +74,44 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
 									ensemble.getQualifier() )
 		);
 	}
+
+    /**
+     * Gets the id of a single ensemble attached to the project
+     * <p>
+     *     Being able to query by a single ensemble speeds up queries where
+     *     information about each query is not neccessary
+     * </p>
+     * @param projectId The id of the project to check
+     * @param variablePositionId The id of the variable and geospatial position
+     * @return An id of an ensemble for the project
+     * @throws SQLException Thrown if an ensemble could not be retrieved
+     */
+	public static Integer getSingleEnsembleID(Integer projectId, Integer variablePositionId)
+            throws SQLException
+    {
+        ScriptBuilder script = new ScriptBuilder(  );
+
+        script.addLine("SELECT E.ensemble_id");
+        script.addLine("FROM wres.Ensemble E");
+        script.addLine("WHERE EXISTS (");
+        script.addTab().addLine("SELECT 1");
+        script.addTab().addLine("FROM wres.TimeSeries TS");
+        script.addTab().addLine("WHERE TS.variableposition_id = ", variablePositionId);
+        script.addTab(  2  ).addLine("AND TS.ensemble_id = E.ensemble_id");
+        script.addTab(  2  ).addLine("AND EXISTS (");
+        script.addTab(   3   ).addLine("SELECT 1");
+        script.addTab(   3   ).addLine("FROM wres.ProjectSource PS");
+        script.addTab(   3   ).addLine("INNER JOIN wres.ForecastSource FS");
+        script.addTab(    4    ).addLine("ON PS.source_id = FS.source_id");
+        script.addTab(   3   ).addLine("WHERE PS.project_id = ", projectId);
+        script.addTab(    4    ).addLine("AND PS.member = 'right'");
+        script.addTab(    4    ).addLine("AND FS.forecast_id = TS.timeseries_id");
+        script.addTab(  2  ).addLine(")");
+        script.addLine(")");
+        script.addLine("LIMIT 1;");
+
+        return script.retrieve( "ensemble_id" );
+    }
 	
 	/**
 	 * Returns the ID of an Ensemble from the global cache based on the combination of its name, member ID, and qualifier
