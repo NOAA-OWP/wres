@@ -90,7 +90,7 @@ public class Worker
      * @return the broker host name to try connecting to.
      */
 
-    private static final String getBrokerHost()
+    private static String getBrokerHost()
     {
         String brokerFromDashD= System.getProperty( BROKER_HOST_PROPERTY_NAME );
 
