@@ -5,6 +5,8 @@ services:
          - "8585:8585"
         image: "84aab85a935f"
         restart: always
+        depends_on:
+         - "***REMOVED***wres-broker"
     ***REMOVED***wres-broker:
         ports:
          - "4369:4369"
@@ -16,3 +18,5 @@ services:
     ***REMOVED***wres-worker:
         image: "1c442d030069"
         restart: always
+        depends_on:
+         - "***REMOVED***wres-broker"
