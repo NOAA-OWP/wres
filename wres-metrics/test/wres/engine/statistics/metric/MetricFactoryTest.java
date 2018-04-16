@@ -1,22 +1,60 @@
 package wres.engine.statistics.metric;
 
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Paths;
+import java.util.Collections;
+import java.util.Objects;
+import java.util.concurrent.ForkJoinPool;
 
+import org.hamcrest.CoreMatchers;
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import wres.config.ProjectConfigPlus;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
-import wres.engine.statistics.metric.processing.MetricProcessor;
+import wres.engine.statistics.metric.categorical.ContingencyTable;
+import wres.engine.statistics.metric.categorical.EquitableThreatScore;
+import wres.engine.statistics.metric.categorical.PeirceSkillScore;
+import wres.engine.statistics.metric.categorical.ProbabilityOfDetection;
+import wres.engine.statistics.metric.categorical.ProbabilityOfFalseDetection;
+import wres.engine.statistics.metric.categorical.ThreatScore;
+import wres.engine.statistics.metric.discreteprobability.BrierScore;
+import wres.engine.statistics.metric.discreteprobability.BrierSkillScore;
+import wres.engine.statistics.metric.discreteprobability.RelativeOperatingCharacteristicDiagram;
+import wres.engine.statistics.metric.discreteprobability.RelativeOperatingCharacteristicScore;
+import wres.engine.statistics.metric.discreteprobability.ReliabilityDiagram;
+import wres.engine.statistics.metric.ensemble.BoxPlotErrorByForecast;
+import wres.engine.statistics.metric.ensemble.BoxPlotErrorByObserved;
+import wres.engine.statistics.metric.ensemble.ContinuousRankedProbabilityScore;
+import wres.engine.statistics.metric.ensemble.ContinuousRankedProbabilitySkillScore;
+import wres.engine.statistics.metric.ensemble.RankHistogram;
+import wres.engine.statistics.metric.processing.MetricProcessorByTimeEnsemblePairs;
+import wres.engine.statistics.metric.processing.MetricProcessorByTimeSingleValuedPairs;
 import wres.engine.statistics.metric.processing.MetricProcessorException;
+import wres.engine.statistics.metric.processing.MetricProcessorForProject;
+import wres.engine.statistics.metric.singlevalued.BiasFraction;
+import wres.engine.statistics.metric.singlevalued.CoefficientOfDetermination;
+import wres.engine.statistics.metric.singlevalued.CorrelationPearsons;
+import wres.engine.statistics.metric.singlevalued.IndexOfAgreement;
+import wres.engine.statistics.metric.singlevalued.KlingGuptaEfficiency;
+import wres.engine.statistics.metric.singlevalued.MeanAbsoluteError;
+import wres.engine.statistics.metric.singlevalued.MeanError;
+import wres.engine.statistics.metric.singlevalued.MeanSquareError;
+import wres.engine.statistics.metric.singlevalued.MeanSquareErrorSkillScore;
+import wres.engine.statistics.metric.singlevalued.QuantileQuantileDiagram;
+import wres.engine.statistics.metric.singlevalued.RootMeanSquareError;
+import wres.engine.statistics.metric.timeseries.TimeToPeakError;
+import wres.engine.statistics.metric.timeseries.TimeToPeakRelativeError;
+import wres.engine.statistics.metric.timeseries.TimingErrorDurationStatistics;
 
 /**
  * Tests the {@link MetricFactory}.
@@ -32,52 +70,22 @@ public final class MetricFactoryTest
      * Output factory.
      */
 
-    final DataFactory outF = DefaultDataFactory.getInstance();
+    private DataFactory outF;
 
     /**
      * Metric factory.
      */
 
-    final MetricFactory metF = MetricFactory.getInstance( outF );
+    private MetricFactory metF;
 
-    /**
-     * Tests the individual metrics in {@link MetricFactory}.
-     * @throws MetricParameterException if the metric construction fails 
-     */
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
 
-    @Test
-    public void test1MetricFactory() throws MetricParameterException
+    @Before
+    public void setupBeforeEachTest()
     {
-        metF.ofBiasFraction();
-        metF.ofBrierScore();
-        metF.ofBrierSkillScore();
-        metF.ofDichotomousContingencyTable();
-        metF.ofCriticalSuccessIndex();
-        metF.ofEquitableThreatScore();
-        metF.ofMeanAbsoluteError();
-        metF.ofMeanError();
-        metF.ofMeanSquareError();
-        metF.ofMeanSquareErrorSkillScore();
-        metF.ofPeirceSkillScore();
-        metF.ofPeirceSkillScoreMulti();
-        metF.ofProbabilityOfDetection();
-        metF.ofProbabilityOfFalseDetection();
-        metF.ofRootMeanSquareError();
-        metF.ofSampleSize();
-        metF.ofReliabilityDiagram();
-        metF.ofRelativeOperatingCharacteristic();
-        metF.ofRelativeOperatingCharacteristicScore();
-        metF.ofRankHistogram();
-        metF.ofQuantileQuantileDiagram();
-        metF.ofFrequencyBias();
-        metF.ofIndexOfAgreement();
-        metF.ofKlingGuptaEfficiency();
-        metF.ofCorrelationPearsons();
-        metF.ofCoefficientOfDetermination();
-        metF.ofContinuousRankedProbabilityScore();
-        metF.ofContinuousRankedProbabilitySkillScore();
-        metF.ofBoxPlotErrorByObserved();
-        metF.ofBoxPlotErrorByForecast();
+        outF = DefaultDataFactory.getInstance();
+        metF = MetricFactory.getInstance( outF );
     }
 
     /**
@@ -85,27 +93,24 @@ public final class MetricFactoryTest
      * @throws MetricParameterException if the metric construction fails
      */
     @Test
-    public void test2OfSingleValuedScalar() throws MetricParameterException
+    public void testOfSingleValuedScore() throws MetricParameterException
     {
-        metF.ofSingleValuedScore( MetricConstants.BIAS_FRACTION );
-        metF.ofSingleValuedScore( MetricConstants.MEAN_ABSOLUTE_ERROR );
-        metF.ofSingleValuedScore( MetricConstants.MEAN_ERROR );
-        metF.ofSingleValuedScore( MetricConstants.ROOT_MEAN_SQUARE_ERROR );
-        metF.ofSingleValuedScore( MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
-        metF.ofSingleValuedScore( MetricConstants.COEFFICIENT_OF_DETERMINATION );
-        metF.ofSingleValuedScore( MetricConstants.INDEX_OF_AGREEMENT );
-        metF.ofSingleValuedScore( MetricConstants.SAMPLE_SIZE );
-        metF.ofSingleValuedScore( MetricConstants.MEAN_SQUARE_ERROR );
-        metF.ofSingleValuedScore( MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE );
-        metF.ofSingleValuedScore( MetricConstants.KLING_GUPTA_EFFICIENCY );
-        try
-        {
-            metF.ofSingleValuedScore( MetricConstants.MAIN );
-            fail( "Expected a checked exception on attempting to construct a metric with an incorrect identifier." );
-        }
-        catch ( IllegalArgumentException e )
-        {
-        }
+        assertTrue( metF.ofSingleValuedScore( MetricConstants.BIAS_FRACTION ) instanceof BiasFraction );
+        assertTrue( metF.ofSingleValuedScore( MetricConstants.MEAN_ABSOLUTE_ERROR ) instanceof MeanAbsoluteError );
+        assertTrue( metF.ofSingleValuedScore( MetricConstants.MEAN_ERROR ) instanceof MeanError );
+        assertTrue( metF.ofSingleValuedScore( MetricConstants.ROOT_MEAN_SQUARE_ERROR ) instanceof RootMeanSquareError );
+        assertTrue( metF.ofSingleValuedScore( MetricConstants.PEARSON_CORRELATION_COEFFICIENT ) instanceof CorrelationPearsons );
+        assertTrue( metF.ofSingleValuedScore( MetricConstants.COEFFICIENT_OF_DETERMINATION ) instanceof CoefficientOfDetermination );
+        assertTrue( metF.ofSingleValuedScore( MetricConstants.INDEX_OF_AGREEMENT ) instanceof IndexOfAgreement );
+        assertTrue( metF.ofSingleValuedScore( MetricConstants.SAMPLE_SIZE ) instanceof SampleSize );
+        assertTrue( metF.ofSingleValuedScore( MetricConstants.MEAN_SQUARE_ERROR ) instanceof MeanSquareError );
+        assertTrue( metF.ofSingleValuedScore( MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE ) instanceof MeanSquareErrorSkillScore );
+        assertTrue( metF.ofSingleValuedScore( MetricConstants.KLING_GUPTA_EFFICIENCY ) instanceof KlingGuptaEfficiency );
+
+        // Unrecognized metric
+        exception.expect( IllegalArgumentException.class );
+        exception.expectMessage( "Unrecognized metric for identifier. 'MAIN'." );
+        metF.ofSingleValuedScore( MetricConstants.MAIN );
     }
 
     /**
@@ -113,19 +118,16 @@ public final class MetricFactoryTest
      * @throws MetricParameterException if the metric construction fails 
      */
     @Test
-    public void test3OfDiscreteProbabilityScore() throws MetricParameterException
+    public void testOfDiscreteProbabilityScore() throws MetricParameterException
     {
-        metF.ofDiscreteProbabilityScore( MetricConstants.BRIER_SCORE );
-        metF.ofDiscreteProbabilityScore( MetricConstants.BRIER_SKILL_SCORE );
-        metF.ofDiscreteProbabilityScore( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE );
-        try
-        {
-            metF.ofDiscreteProbabilityScore( MetricConstants.MAIN );
-            fail( "Expected a checked exception on attempting to construct a metric with an incorrect identifier." );
-        }
-        catch ( IllegalArgumentException e )
-        {
-        }
+        assertTrue( metF.ofDiscreteProbabilityScore( MetricConstants.BRIER_SCORE ) instanceof BrierScore );
+        assertTrue( metF.ofDiscreteProbabilityScore( MetricConstants.BRIER_SKILL_SCORE ) instanceof BrierSkillScore );
+        assertTrue( metF.ofDiscreteProbabilityScore( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE ) instanceof RelativeOperatingCharacteristicScore );
+
+        // Unrecognized metric
+        exception.expect( IllegalArgumentException.class );
+        exception.expectMessage( "Unrecognized metric for identifier. 'MAIN'." );
+        metF.ofDiscreteProbabilityScore( MetricConstants.MAIN );
     }
 
     /**
@@ -133,21 +135,18 @@ public final class MetricFactoryTest
      * @throws MetricParameterException if the metric construction fails 
      */
     @Test
-    public void test4OfDichotomousScore() throws MetricParameterException
+    public void testOfDichotomousScore() throws MetricParameterException
     {
-        metF.ofDichotomousScore( MetricConstants.THREAT_SCORE );
-        metF.ofDichotomousScore( MetricConstants.EQUITABLE_THREAT_SCORE );
-        metF.ofDichotomousScore( MetricConstants.PEIRCE_SKILL_SCORE );
-        metF.ofDichotomousScore( MetricConstants.PROBABILITY_OF_DETECTION );
-        metF.ofDichotomousScore( MetricConstants.PROBABILITY_OF_FALSE_DETECTION );
-        try
-        {
-            metF.ofDichotomousScore( MetricConstants.MAIN );
-            fail( "Expected a checked exception on attempting to construct a metric with an incorrect identifier." );
-        }
-        catch ( IllegalArgumentException e )
-        {
-        }
+        assertTrue( metF.ofDichotomousScore( MetricConstants.THREAT_SCORE ) instanceof ThreatScore );
+        assertTrue( metF.ofDichotomousScore( MetricConstants.EQUITABLE_THREAT_SCORE ) instanceof EquitableThreatScore );
+        assertTrue( metF.ofDichotomousScore( MetricConstants.PEIRCE_SKILL_SCORE ) instanceof PeirceSkillScore );
+        assertTrue( metF.ofDichotomousScore( MetricConstants.PROBABILITY_OF_DETECTION ) instanceof ProbabilityOfDetection );
+        assertTrue( metF.ofDichotomousScore( MetricConstants.PROBABILITY_OF_FALSE_DETECTION ) instanceof ProbabilityOfFalseDetection );
+
+        // Unrecognized metric
+        exception.expect( IllegalArgumentException.class );
+        exception.expectMessage( "Unrecognized metric for identifier. 'MAIN'." );
+        metF.ofDichotomousScore( MetricConstants.MAIN );
     }
 
     /**
@@ -155,17 +154,31 @@ public final class MetricFactoryTest
      * @throws MetricParameterException if the metric construction fails 
      */
     @Test
-    public void test5OfMulticategoryScore() throws MetricParameterException
+    public void testOfMulticategoryScore() throws MetricParameterException
     {
-        metF.ofMulticategoryScore( MetricConstants.PEIRCE_SKILL_SCORE );
-        try
-        {
-            metF.ofMulticategoryScore( MetricConstants.MAIN );
-            fail( "Expected a checked exception on attempting to construct a metric with an incorrect identifier." );
-        }
-        catch ( IllegalArgumentException e )
-        {
-        }
+        assertTrue( metF.ofMulticategoryScore( MetricConstants.PEIRCE_SKILL_SCORE ) instanceof PeirceSkillScore );
+
+        // Unrecognized metric
+        exception.expect( IllegalArgumentException.class );
+        exception.expectMessage( "Unrecognized metric for identifier. 'MAIN'." );
+        metF.ofMulticategoryScore( MetricConstants.MAIN );
+    }
+
+    /**
+     * Tests {@link MetricFactory#ofEnsembleScore(MetricConstants)}. 
+     * @throws MetricParameterException if the metric construction fails
+     */
+    @Test
+    public void testOfEnsembleScore() throws MetricParameterException
+    {
+        assertTrue( metF.ofEnsembleScore( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE ) instanceof ContinuousRankedProbabilityScore );
+        assertTrue( metF.ofEnsembleScore( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE ) instanceof ContinuousRankedProbabilitySkillScore );
+        assertTrue( metF.ofEnsembleScore( MetricConstants.SAMPLE_SIZE ) instanceof SampleSize );
+
+        // Unrecognized metric
+        exception.expect( IllegalArgumentException.class );
+        exception.expectMessage( "Unrecognized metric for identifier. 'MAIN'." );
+        metF.ofEnsembleScore( MetricConstants.MAIN );
     }
 
     /**
@@ -173,17 +186,60 @@ public final class MetricFactoryTest
      * @throws MetricParameterException if the metric construction fails 
      */
     @Test
-    public void test6OfMulticategoryMatrix() throws MetricParameterException
+    public void testOfMulticategoryMatrix() throws MetricParameterException
     {
-        metF.ofDichotomousMatrix( MetricConstants.CONTINGENCY_TABLE );
-        try
-        {
-            metF.ofDichotomousMatrix( MetricConstants.MAIN );
-            fail( "Expected a checked exception on attempting to construct a metric with an incorrect identifier." );
-        }
-        catch ( IllegalArgumentException e )
-        {
-        }
+        assertTrue( metF.ofDichotomousMatrix( MetricConstants.CONTINGENCY_TABLE ) instanceof ContingencyTable );
+
+        // Unrecognized metric
+        exception.expect( IllegalArgumentException.class );
+        exception.expectMessage( "Unrecognized metric for identifier. 'MAIN'." );
+        metF.ofDichotomousMatrix( MetricConstants.MAIN );
+    }
+
+    /**
+     * Tests {@link MetricFactory#ofSingleValuedMultiVector(MetricConstants)}. 
+     * @throws MetricParameterException if the metric construction fails 
+     */
+    @Test
+    public void testOfSingleValuedMultiVector() throws MetricParameterException
+    {
+        assertTrue( metF.ofSingleValuedMultiVector( MetricConstants.QUANTILE_QUANTILE_DIAGRAM ) instanceof QuantileQuantileDiagram );
+
+        // Unrecognized metric
+        exception.expect( IllegalArgumentException.class );
+        exception.expectMessage( "Unrecognized metric for identifier. 'MAIN'." );
+        metF.ofSingleValuedMultiVector( MetricConstants.MAIN );
+    }
+
+    /**
+     * Tests {@link MetricFactory#ofSingleValuedMultiVector(MetricConstants)}. 
+     * @throws MetricParameterException if the metric construction fails 
+     */
+    @Test
+    public void testOfDiscreteProbabilityMultiVector() throws MetricParameterException
+    {
+        assertTrue( metF.ofDiscreteProbabilityMultiVector( MetricConstants.RELIABILITY_DIAGRAM ) instanceof ReliabilityDiagram );
+        assertTrue( metF.ofDiscreteProbabilityMultiVector( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM ) instanceof RelativeOperatingCharacteristicDiagram );
+
+        // Unrecognized metric
+        exception.expect( IllegalArgumentException.class );
+        exception.expectMessage( "Unrecognized metric for identifier. 'MAIN'." );
+        metF.ofDiscreteProbabilityMultiVector( MetricConstants.MAIN );
+    }
+
+    /**
+     * Tests {@link MetricFactory#ofEnsembleMultiVector(MetricConstants)}. 
+     * @throws MetricParameterException if the metric construction fails 
+     */
+    @Test
+    public void testOfEnsembleMultiVector() throws MetricParameterException
+    {
+        assertTrue( metF.ofEnsembleMultiVector( MetricConstants.RANK_HISTOGRAM ) instanceof RankHistogram );
+
+        // Unrecognized metric
+        exception.expect( IllegalArgumentException.class );
+        exception.expectMessage( "Unrecognized metric for identifier. 'MAIN'." );
+        metF.ofEnsembleMultiVector( MetricConstants.MAIN );
     }
 
     /**
@@ -191,28 +247,41 @@ public final class MetricFactoryTest
      * @throws MetricParameterException if the metric construction fails 
      */
     @Test
-    public void test7OfBoxPlot() throws MetricParameterException
+    public void testOfEnsembleBoxPlot() throws MetricParameterException
     {
-        metF.ofEnsembleBoxPlot( MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE );
-        try
-        {
-            metF.ofEnsembleBoxPlot( MetricConstants.MAIN );
-            fail( "Expected a checked exception on attempting to construct a metric with an incorrect identifier." );
-        }
-        catch ( IllegalArgumentException e )
-        {
-        }
+        assertTrue( metF.ofEnsembleBoxPlot( MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE ) instanceof BoxPlotErrorByObserved );
+        assertTrue( metF.ofEnsembleBoxPlot( MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE ) instanceof BoxPlotErrorByForecast );
+
+        // Unrecognized metric
+        exception.expect( IllegalArgumentException.class );
+        exception.expectMessage( "Unrecognized metric for identifier. 'MAIN'." );
+        metF.ofEnsembleBoxPlot( MetricConstants.MAIN );
     }
 
+    /**
+     * Tests {@link MetricFactory#ofSingleValuedTimeSeries(MetricConstants)}. 
+     * @throws MetricParameterException if the metric construction fails 
+     */
+    @Test
+    public void testSingleValuedTimeSeries() throws MetricParameterException
+    {
+        assertTrue( metF.ofSingleValuedTimeSeries( MetricConstants.TIME_TO_PEAK_ERROR ) instanceof TimeToPeakError );
+        assertTrue( metF.ofSingleValuedTimeSeries( MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR ) instanceof TimeToPeakRelativeError );
+
+        // Unrecognized metric
+        exception.expect( IllegalArgumentException.class );
+        exception.expectMessage( "Unrecognized metric for identifier. 'MAIN'." );
+        metF.ofSingleValuedTimeSeries( MetricConstants.MAIN );
+    }
 
     /**
      * Tests {@link MetricFactory#ofSingleValuedScoreCollection(MetricConstants...)}. 
      * @throws MetricParameterException if the metric construction fails
      */
     @Test
-    public void test8OfSingleValuedScoreCollection() throws MetricParameterException
+    public void testOfSingleValuedScoreCollection() throws MetricParameterException
     {
-        metF.ofSingleValuedScoreCollection( MetricConstants.MEAN_ABSOLUTE_ERROR );
+        assertTrue( Objects.nonNull( metF.ofSingleValuedScoreCollection( MetricConstants.MEAN_ABSOLUTE_ERROR ) ) );
     }
 
     /**
@@ -220,9 +289,9 @@ public final class MetricFactoryTest
      * @throws MetricParameterException if the metric construction fails 
      */
     @Test
-    public void test9OfDiscreteProbabilityVectorCollection() throws MetricParameterException
+    public void testOfDiscreteProbabilityVectorCollection() throws MetricParameterException
     {
-        metF.ofDiscreteProbabilityScoreCollection( MetricConstants.BRIER_SCORE );
+        assertTrue( Objects.nonNull( metF.ofDiscreteProbabilityScoreCollection( MetricConstants.BRIER_SCORE ) ) );
     }
 
     /**
@@ -230,10 +299,10 @@ public final class MetricFactoryTest
      * @throws MetricParameterException if the metric construction fails 
      */
     @Test
-    public void test10OfDichotomousScoreCollection() throws MetricParameterException
+    public void testOfDichotomousScoreCollection() throws MetricParameterException
     {
-        metF.ofDichotomousScoreCollection( MetricConstants.THREAT_SCORE );
-        metF.ofDichotomousScoreCollection( MetricConstants.FREQUENCY_BIAS );
+        assertTrue( Objects.nonNull( metF.ofDichotomousScoreCollection( MetricConstants.THREAT_SCORE ) ) );
+        assertTrue( Objects.nonNull( metF.ofDichotomousScoreCollection( MetricConstants.FREQUENCY_BIAS ) ) );
     }
 
     /**
@@ -241,17 +310,9 @@ public final class MetricFactoryTest
      * @throws MetricParameterException if the metric construction fails 
      */
     @Test
-    public void test11OfSingleValuedMultiVectorCollection() throws MetricParameterException
+    public void testOfSingleValuedMultiVectorCollection() throws MetricParameterException
     {
-        metF.ofSingleValuedMultiVectorCollection( MetricConstants.QUANTILE_QUANTILE_DIAGRAM );
-        try
-        {
-            metF.ofSingleValuedMultiVectorCollection( MetricConstants.MAIN );
-            fail( "Expected a checked exception on attempting to construct a metric with an incorrect identifier." );
-        }
-        catch ( IllegalArgumentException e )
-        {
-        }
+        assertTrue( Objects.nonNull( metF.ofSingleValuedMultiVectorCollection( MetricConstants.QUANTILE_QUANTILE_DIAGRAM ) ) );
     }
 
     /**
@@ -259,18 +320,10 @@ public final class MetricFactoryTest
      * @throws MetricParameterException if the metric collection could not be constructed
      */
     @Test
-    public void test12OfDiscreteProbabilityMultiVectorCollection() throws MetricParameterException
+    public void testOfDiscreteProbabilityMultiVectorCollection() throws MetricParameterException
     {
-        metF.ofDiscreteProbabilityMultiVectorCollection( MetricConstants.RELIABILITY_DIAGRAM );
-        metF.ofDiscreteProbabilityMultiVectorCollection( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM );
-        try
-        {
-            metF.ofDiscreteProbabilityMultiVectorCollection( MetricConstants.MAIN );
-            fail( "Expected a checked exception on attempting to construct a metric with an incorrect identifier." );
-        }
-        catch ( IllegalArgumentException e )
-        {
-        }
+        assertTrue( Objects.nonNull( metF.ofDiscreteProbabilityMultiVectorCollection( MetricConstants.RELIABILITY_DIAGRAM ) ) );
+        assertTrue( Objects.nonNull( metF.ofDiscreteProbabilityMultiVectorCollection( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM ) ) );
     }
 
     /**
@@ -278,9 +331,9 @@ public final class MetricFactoryTest
      * @throws MetricParameterException if the metric construction fails 
      */
     @Test
-    public void test13OfMulticategoryMatrixCollection() throws MetricParameterException
+    public void testOfMulticategoryMatrixCollection() throws MetricParameterException
     {
-        metF.ofDichotomousMatrixCollection( MetricConstants.CONTINGENCY_TABLE );
+        assertTrue( Objects.nonNull( metF.ofDichotomousMatrixCollection( MetricConstants.CONTINGENCY_TABLE ) ) );
     }
 
     /**
@@ -288,36 +341,11 @@ public final class MetricFactoryTest
      * @throws MetricParameterException if the metric construction fails 
      */
     @Test
-    public void test14OfEnsembleScoreCollection() throws MetricParameterException
+    public void testOfEnsembleScoreCollection() throws MetricParameterException
     {
-        metF.ofEnsembleScoreCollection( MetricConstants.SAMPLE_SIZE );
-        try
-        {
-            metF.ofEnsembleScoreCollection( MetricConstants.MAIN );
-            fail( "Expected a checked exception on attempting to construct a metric with an incorrect identifier." );
-        }
-        catch ( IllegalArgumentException e )
-        {
-        }
-    }
-
-    /**
-     * Tests {@link MetricFactory#ofEnsembleScoreCollection(MetricConstants...)}. 
-     * @throws MetricParameterException if the metric construction fails 
-     */
-    @Test
-    public void test15OfEnsembleScoreCollection() throws MetricParameterException
-    {
-        metF.ofEnsembleScoreCollection( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE );
-        metF.ofEnsembleScoreCollection( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE );
-        try
-        {
-            metF.ofEnsembleScoreCollection( MetricConstants.MAIN );
-            fail( "Expected a checked exception on attempting to construct a metric with an incorrect identifier." );
-        }
-        catch ( IllegalArgumentException e )
-        {
-        }
+        assertTrue( Objects.nonNull( metF.ofEnsembleScoreCollection( MetricConstants.SAMPLE_SIZE ) ) );
+        assertTrue( Objects.nonNull( metF.ofEnsembleScoreCollection( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE ) ) );
+        assertTrue( Objects.nonNull( metF.ofEnsembleScoreCollection( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE ) ) );
     }
 
     /**
@@ -325,17 +353,9 @@ public final class MetricFactoryTest
      * @throws MetricParameterException if the metric construction fails 
      */
     @Test
-    public void test16OfEnsembleMultiVectorCollection() throws MetricParameterException
+    public void testOfEnsembleMultiVectorCollection() throws MetricParameterException
     {
-        metF.ofEnsembleMultiVectorCollection( MetricConstants.RANK_HISTOGRAM );
-        try
-        {
-            metF.ofEnsembleMultiVectorCollection( MetricConstants.MAIN );
-            fail( "Expected a checked exception on attempting to construct a metric with an incorrect identifier." );
-        }
-        catch ( IllegalArgumentException e )
-        {
-        }
+        assertTrue( Objects.nonNull( metF.ofEnsembleMultiVectorCollection( MetricConstants.RANK_HISTOGRAM ) ) );
     }
 
     /**
@@ -343,17 +363,21 @@ public final class MetricFactoryTest
      * @throws MetricParameterException if the metric construction fails 
      */
     @Test
-    public void test17OfEnsembleBoxPlotCollection() throws MetricParameterException
+    public void testOfEnsembleBoxPlotCollection() throws MetricParameterException
     {
-        metF.ofEnsembleBoxPlotCollection( MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE );
-        try
-        {
-            metF.ofEnsembleBoxPlotCollection( MetricConstants.MAIN );
-            fail( "Expected a checked exception on attempting to construct a metric with an incorrect identifier." );
-        }
-        catch ( IllegalArgumentException e )
-        {
-        }
+        assertTrue( Objects.nonNull( metF.ofEnsembleBoxPlotCollection( MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE ) ) );
+        assertTrue( Objects.nonNull( metF.ofEnsembleBoxPlotCollection( MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE ) ) );
+    }
+
+    /**
+     * Tests {@link MetricFactory#ofSingleValuedTimeSeriesCollection(MetricConstants...)}. 
+     * @throws MetricParameterException if the metric construction fails 
+     */
+    @Test
+    public void testOfSingleValuedTimeSeriesCollection() throws MetricParameterException
+    {
+        assertTrue( Objects.nonNull( metF.ofSingleValuedTimeSeriesCollection( MetricConstants.TIME_TO_PEAK_ERROR ) ) );
+        assertTrue( Objects.nonNull( metF.ofSingleValuedTimeSeriesCollection( MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR ) ) );
     }
 
     /**
@@ -367,49 +391,185 @@ public final class MetricFactoryTest
      */
 
     @Test
-    public void test18Exceptions() throws InstantiationException,
+    public void testExceptions() throws InstantiationException,
             IllegalAccessException,
             InvocationTargetException,
             NoSuchMethodException,
             SecurityException
     {
-        try
-        {
-            Constructor<MetricFactory> cons = MetricFactory.class.getDeclaredConstructor( DataFactory.class );
-            cons.setAccessible( true );
-            cons.newInstance( (DataFactory) null );
-            fail( "Expected a checked exception on building a metric factory with a null output factory." );
-        }
-        catch ( InvocationTargetException e )
-        {
-            e.printStackTrace();
-            assertTrue( "Expected an IllegalArgumentException from the factory constructor.",
-                        e.getTargetException() instanceof IllegalArgumentException );
-        }
+        Constructor<MetricFactory> cons = MetricFactory.class.getDeclaredConstructor( DataFactory.class );
+        cons.setAccessible( true );
+
+        exception.expectCause( CoreMatchers.instanceOf( IllegalArgumentException.class ) );
+        cons.newInstance( (DataFactory) null );
     }
 
     /**
-     * Tests the construction of {@link MetricProcessor}. 
+     * Tests {@link MetricFactory#ofSummaryStatisticsForTimingErrorMetric(MetricConstants)}. 
+     * @throws MetricParameterException if the metric construction fails 
+     */
+    @Test
+    public void testOfSummaryStatisticsForTimingErrorMetric() throws MetricParameterException
+    {
+        assertTrue( Objects.nonNull( MetricFactory.ofSummaryStatisticsForTimingErrorMetric( MetricConstants.TIME_TO_PEAK_ERROR ) ) );
+        assertTrue( Objects.nonNull( MetricFactory.ofSummaryStatisticsForTimingErrorMetric( MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR ) ) );
+        assertTrue( Objects.isNull( MetricFactory.ofSummaryStatisticsForTimingErrorMetric( MetricConstants.MAIN ) ) );
+    }
+
+    /**
+     * Tests the {@link MetricFactory#ofTimingErrorDurationStatistics(MetricConstants, java.util.Set)}.
+     * @throws MetricParameterException if the metric construction fails 
+     */
+
+    @Test
+    public void testOfTimingErrorDurationStatistics() throws MetricParameterException
+    {
+        assertTrue( metF.ofTimingErrorDurationStatistics( MetricConstants.TIME_TO_PEAK_ERROR,
+                                                          Collections.singleton( MetricConstants.MEAN ) ) instanceof TimingErrorDurationStatistics );
+    }
+
+    /**
+     * Tests the {@link MetricFactory#ofMetricProcessorForProject(ProjectConfig, 
+     * wres.datamodel.ThresholdsByMetric, java.util.concurrent.ExecutorService, java.util.concurrent.ExecutorService)}. 
      * @throws IOException if the input configuration could not be read
      * @throws MetricProcessorException if the metric processor could not be constructed
      */
 
     @Test
-    public void test19MetricProcessor() throws IOException, MetricProcessorException
+    public void testOfMetricProcessorByProject() throws IOException, MetricProcessorException
     {
-        //Single-valued processor
         String configPathSingleValued =
                 "testinput/metricProcessorSingleValuedPairsByTimeTest/test1ApplyWithoutThresholds.xml";
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathSingleValued ) ).getProjectConfig();
-        MetricFactory.getInstance( DefaultDataFactory.getInstance() )
-                     .ofMetricProcessorByTimeSingleValuedPairs( config, null );
+        assertTrue( MetricFactory.getInstance( DefaultDataFactory.getInstance() )
+                                 .ofMetricProcessorForProject( config,
+                                                               null,
+                                                               ForkJoinPool.commonPool(),
+                                                               ForkJoinPool.commonPool() ) instanceof MetricProcessorForProject );
+    }
 
-        //Ensemble processor        
+    /**
+     * Tests the {@link MetricFactory#ofMetricProcessorByTimeSingleValuedPairs(ProjectConfig, java.util.Set)}. 
+     * @throws IOException if the input configuration could not be read
+     * @throws MetricProcessorException if the metric processor could not be constructed
+     */
+
+    @Test
+    public void testOfMetricProcessorByTimeSingleValuedPairs() throws IOException, MetricProcessorException
+    {
+        String configPathSingleValued =
+                "testinput/metricProcessorSingleValuedPairsByTimeTest/test1ApplyWithoutThresholds.xml";
+
+        ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathSingleValued ) ).getProjectConfig();
+        assertTrue( MetricFactory.getInstance( DefaultDataFactory.getInstance() )
+                                 .ofMetricProcessorByTimeSingleValuedPairs( config,
+                                                                            null ) instanceof MetricProcessorByTimeSingleValuedPairs );
+    }
+
+    /**
+     * Tests the {@link MetricFactory#ofMetricProcessorByTimeEnsemblePairs(ProjectConfig, 
+     * wres.datamodel.ThresholdsByMetric, java.util.Set)}. 
+     * @throws IOException if the input configuration could not be read
+     * @throws MetricProcessorException if the metric processor could not be constructed
+     */
+
+    @Test
+    public void testOfMetricProcessorByTimeEnsemblePairs() throws IOException, MetricProcessorException
+    {
         String configPathEnsemble = "testinput/metricProcessorEnsemblePairsByTimeTest/test1ApplyWithoutThresholds.xml";
         ProjectConfig configTwo = ProjectConfigPlus.from( Paths.get( configPathEnsemble ) ).getProjectConfig();
-        MetricFactory.getInstance( DefaultDataFactory.getInstance() )
-                     .ofMetricProcessorByTimeEnsemblePairs( configTwo, null );
+        assertTrue( MetricFactory.getInstance( DefaultDataFactory.getInstance() )
+                                 .ofMetricProcessorByTimeEnsemblePairs( configTwo,
+                                                                        null ) instanceof MetricProcessorByTimeEnsemblePairs );
     }
+
+    /**
+     * Tests the {@link MetricFactory#ofMetricProcessorByTimeSingleValuedPairs(ProjectConfig, 
+     * wres.datamodel.ThresholdsByMetric, java.util.Set)}. 
+     * @throws IOException if the input configuration could not be read
+     * @throws MetricProcessorException if the metric processor could not be constructed
+     */
+
+    @Test
+    public void testOfMetricProcessorByTimeSingleValuedPairsWithExternalThresholds()
+            throws IOException, MetricProcessorException
+    {
+        String configPathSingleValued =
+                "testinput/metricProcessorSingleValuedPairsByTimeTest/test2ApplyWithThresholds.xml";
+
+        ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathSingleValued ) ).getProjectConfig();
+        assertTrue( MetricFactory.getInstance( DefaultDataFactory.getInstance() )
+                                 .ofMetricProcessorByTimeSingleValuedPairs( config,
+                                                                            null,
+                                                                            null ) instanceof MetricProcessorByTimeSingleValuedPairs );
+    }
+
+    /**
+     * Tests the {@link MetricFactory#ofMetricProcessorByTimeEnsemblePairs(ProjectConfig, 
+     * wres.datamodel.ThresholdsByMetric, java.util.Set)}. 
+     * @throws IOException if the input configuration could not be read
+     * @throws MetricProcessorException if the metric processor could not be constructed
+     */
+
+    @Test
+    public void testOfMetricProcessorByTimeEnsemblePairsWithExternalThresholds()
+            throws IOException, MetricProcessorException
+    {
+        String configPathSingleValued =
+                "testinput/metricProcessorEnsemblePairsByTimeTest/test2ApplyWithValueThresholds.xml";
+
+        ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathSingleValued ) ).getProjectConfig();
+        assertTrue( MetricFactory.getInstance( DefaultDataFactory.getInstance() )
+                                 .ofMetricProcessorByTimeEnsemblePairs( config,
+                                                                        null,
+                                                                        null ) instanceof MetricProcessorByTimeEnsemblePairs );
+    }
+
+
+    /**
+     * Tests the {@link MetricFactory#ofMetricProcessorByTimeSingleValuedPairs(ProjectConfig, 
+     * wres.datamodel.ThresholdsByMetric, java.util.concurrent.ExecutorService, java.util.concurrent.ExecutorService)}. 
+     * @throws IOException if the input configuration could not be read
+     * @throws MetricProcessorException if the metric processor could not be constructed
+     */
+
+    @Test
+    public void testOfMetricProcessorByTimeSingleValuedPairsWithExternalThresholdsAndExecutors()
+            throws IOException, MetricProcessorException
+    {
+        String configPathSingleValued =
+                "testinput/metricProcessorSingleValuedPairsByTimeTest/test2ApplyWithThresholds.xml";
+
+        ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathSingleValued ) ).getProjectConfig();
+        assertTrue( MetricFactory.getInstance( DefaultDataFactory.getInstance() )
+                                 .ofMetricProcessorByTimeSingleValuedPairs( config,
+                                                                            null,
+                                                                            ForkJoinPool.commonPool(),
+                                                                            ForkJoinPool.commonPool() ) instanceof MetricProcessorByTimeSingleValuedPairs );
+    }
+
+    /**
+     * Tests the {@link MetricFactory#ofMetricProcessorByTimeEnsemblePairs(ProjectConfig, 
+     * wres.datamodel.ThresholdsByMetric, java.util.concurrent.ExecutorService, java.util.concurrent.ExecutorService)}. 
+     * @throws IOException if the input configuration could not be read
+     * @throws MetricProcessorException if the metric processor could not be constructed
+     */
+
+    @Test
+    public void testOfMetricProcessorByTimeEnsemblePairsWithExternalThresholdsAndExecutors()
+            throws IOException, MetricProcessorException
+    {
+        String configPathSingleValued =
+                "testinput/metricProcessorEnsemblePairsByTimeTest/test2ApplyWithValueThresholds.xml";
+
+        ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathSingleValued ) ).getProjectConfig();
+        assertTrue( MetricFactory.getInstance( DefaultDataFactory.getInstance() )
+                                 .ofMetricProcessorByTimeEnsemblePairs( config,
+                                                                        null,
+                                                                        ForkJoinPool.commonPool(),
+                                                                        ForkJoinPool.commonPool() ) instanceof MetricProcessorByTimeEnsemblePairs );
+    }
+
 
 }

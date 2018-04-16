@@ -197,7 +197,7 @@ public class MetricProcessorByTimeSingleValuedPairs extends MetricProcessorByTim
                                                                                                             .equals( name.name() ) );
 
                     // Find the identifier for the summary statistics
-                    MetricConstants identifier = MetricFactory.getSummaryStatisticsForTimingErrorMetric( nextMetric );
+                    MetricConstants identifier = MetricFactory.ofSummaryStatisticsForTimingErrorMetric( nextMetric );
 
                     TimingErrorDurationStatistics stats =
                             this.metricFactory.ofTimingErrorDurationStatistics( identifier, ts );

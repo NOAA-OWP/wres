@@ -58,7 +58,7 @@ public final class CollectableTaskTest
         // Tests can run simultaneously, use only 1 (additional) Thread per test
         pairPool = Executors.newFixedThreadPool( 1 );
         //Add some appropriate metrics to the collection
-        m = metF.ofCriticalSuccessIndex();
+        m = metF.ofThreatScore();
 
         m1 = metaFac.getOutputMetadata( 100,
                                         metaFac.getDimension(),

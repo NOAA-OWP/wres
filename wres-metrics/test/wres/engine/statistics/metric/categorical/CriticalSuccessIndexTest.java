@@ -15,7 +15,7 @@ import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
-import wres.engine.statistics.metric.categorical.ThreatScore.CriticalSuccessIndexBuilder;
+import wres.engine.statistics.metric.categorical.ThreatScore.ThreatScoreBuilder;
 
 /**
  * Tests the {@link ThreatScore}.
@@ -54,7 +54,7 @@ public final class CriticalSuccessIndexTest
                                            metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ) );
 
         //Build the metric
-        final CriticalSuccessIndexBuilder b = new ThreatScore.CriticalSuccessIndexBuilder();
+        final ThreatScoreBuilder b = new ThreatScore.ThreatScoreBuilder();
         b.setOutputFactory( outF );
         final ThreatScore csi = b.build();
 

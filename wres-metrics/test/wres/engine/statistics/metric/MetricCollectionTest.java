@@ -129,7 +129,7 @@ public class MetricCollectionTest
         m.setExecutorService( ForkJoinPool.commonPool() );
 
         //Add some appropriate metrics to the collection     
-        m.add( metF.ofCriticalSuccessIndex() ); //Should be 0.5734265734265734
+        m.add( metF.ofThreatScore() ); //Should be 0.5734265734265734
         m.add( metF.ofProbabilityOfDetection() ); //Should be 0.780952380952381
         m.add( metF.ofProbabilityOfFalseDetection() ); //Should be 0.14615384615384616
         m.add( metF.ofPeirceSkillScore() ); //Should be 0.6347985347985348
