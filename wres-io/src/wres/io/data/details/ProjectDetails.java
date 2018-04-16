@@ -1513,7 +1513,13 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
         Integer beginning;
         Integer end;
 
-        if (this.shouldCalculateLeads())
+        // If we're using time series, we want to cover all leads
+        if (this.usesTimeSeriesMetrics())
+        {
+            beginning = Integer.MIN_VALUE;
+            end = Integer.MAX_VALUE;
+        }
+        else if (this.shouldCalculateLeads())
         {
             int frequency = (int)TimeHelper.unitsToLeadUnits( this.getLeadUnit(), this.getLeadFrequency() );
             int period = (int)TimeHelper.unitsToLeadUnits( this.getLeadUnit(), this.getLeadPeriod() );
@@ -1784,7 +1790,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
     public Integer getLeadOffset(Feature feature)
             throws IOException, SQLException
     {
-        if (ConfigHelper.isSimulation( this.getRight() ))
+        if (ConfigHelper.isSimulation( this.getRight() ) || this.usesTimeSeriesMetrics())
         {
             return 0;
         }
