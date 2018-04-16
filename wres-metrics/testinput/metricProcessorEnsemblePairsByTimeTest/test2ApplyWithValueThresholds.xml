@@ -44,7 +44,9 @@
     <metric><name>all valid</name></metric>
   </metrics>
   <outputs>
-    <destination type="numeric">/home/jesse/text_output"</destination>
+    <destination type="numeric">/home/jesse/text_output"
+    <outputType>threshold lead</outputType> 
+    </destination>
     <destination type="graphic"><path>/tmp/</path>
     <!--Optional:-->
     <graphical width="1920" height="1080">
