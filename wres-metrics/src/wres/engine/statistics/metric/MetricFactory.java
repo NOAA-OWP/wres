@@ -3,8 +3,6 @@ package wres.engine.statistics.metric;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
-import java.util.EnumMap;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
@@ -66,18 +64,26 @@ import wres.engine.statistics.metric.processing.MetricProcessorByTimeSingleValue
 import wres.engine.statistics.metric.processing.MetricProcessorException;
 import wres.engine.statistics.metric.processing.MetricProcessorForProject;
 import wres.engine.statistics.metric.singlevalued.BiasFraction;
+import wres.engine.statistics.metric.singlevalued.BiasFraction.BiasFractionBuilder;
 import wres.engine.statistics.metric.singlevalued.CoefficientOfDetermination;
+import wres.engine.statistics.metric.singlevalued.CoefficientOfDetermination.CoefficientOfDeterminationBuilder;
 import wres.engine.statistics.metric.singlevalued.CorrelationPearsons;
+import wres.engine.statistics.metric.singlevalued.CorrelationPearsons.CorrelationPearsonsBuilder;
 import wres.engine.statistics.metric.singlevalued.IndexOfAgreement;
 import wres.engine.statistics.metric.singlevalued.IndexOfAgreement.IndexOfAgreementBuilder;
 import wres.engine.statistics.metric.singlevalued.KlingGuptaEfficiency;
 import wres.engine.statistics.metric.singlevalued.KlingGuptaEfficiency.KlingGuptaEfficiencyBuilder;
 import wres.engine.statistics.metric.singlevalued.MeanAbsoluteError;
+import wres.engine.statistics.metric.singlevalued.MeanAbsoluteError.MeanAbsoluteErrorBuilder;
 import wres.engine.statistics.metric.singlevalued.MeanError;
+import wres.engine.statistics.metric.singlevalued.MeanError.MeanErrorBuilder;
 import wres.engine.statistics.metric.singlevalued.MeanSquareError;
+import wres.engine.statistics.metric.singlevalued.MeanSquareError.MeanSquareErrorBuilder;
 import wres.engine.statistics.metric.singlevalued.MeanSquareErrorSkillScore;
+import wres.engine.statistics.metric.singlevalued.MeanSquareErrorSkillScore.MeanSquareErrorSkillScoreBuilder;
 import wres.engine.statistics.metric.singlevalued.QuantileQuantileDiagram;
 import wres.engine.statistics.metric.singlevalued.RootMeanSquareError;
+import wres.engine.statistics.metric.singlevalued.RootMeanSquareError.RootMeanSquareErrorBuilder;
 import wres.engine.statistics.metric.singlevalued.VolumetricEfficiency;
 import wres.engine.statistics.metric.singlevalued.VolumetricEfficiency.VolumetricEfficiencyBuilder;
 import wres.engine.statistics.metric.timeseries.TimeToPeakError;
@@ -88,9 +94,7 @@ import wres.engine.statistics.metric.timeseries.TimingErrorDurationStatistics;
 import wres.engine.statistics.metric.timeseries.TimingErrorDurationStatistics.TimingErrorDurationStatisticsBuilder;
 
 /**
- * <p>
- * A factory class for constructing metrics. TODO: make thread safe.
- * </p>
+ * <p>A factory class for constructing metrics.
  * 
  * @author james.brown@hydrosolved.com
  */
@@ -131,54 +135,6 @@ public class MetricFactory
     private final DataFactory outputFactory;
 
     /**
-     * Cached {@link Metric} that consume {@link SingleValuedPairs} and produce {@link DoubleScoreOutput}. 
-     */
-
-    private Map<MetricConstants, Metric<SingleValuedPairs, DoubleScoreOutput>> singleValuedScore;
-
-    /**
-     * Cached {@link Metric} that consume {@link EnsemblePairs} and produce {@link DoubleScoreOutput}. 
-     */
-
-    private Map<MetricConstants, Metric<EnsemblePairs, DoubleScoreOutput>> ensembleScore;
-
-    /**
-     * Cached {@link Collectable} that consume {@link SingleValuedPairs} and produce {@link DoubleScoreOutput}. 
-     */
-
-    private Map<MetricConstants, Collectable<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput>> singleValuedScoreCol;
-
-    /**
-     * Cached {@link Collectable} that consume {@link DichotomousPairs} and produce {@link DoubleScoreOutput}. 
-     */
-
-    private Map<MetricConstants, Collectable<DichotomousPairs, MatrixOutput, DoubleScoreOutput>> dichotomousScoreCol;
-
-    /**
-     * Cached {@link Metric} that consume {@link DiscreteProbabilityPairs} and produce {@link DoubleScoreOutput}. 
-     */
-
-    private Map<MetricConstants, Metric<DiscreteProbabilityPairs, DoubleScoreOutput>> discreteProbabilityScore;
-
-    /**
-     * Cached {@link Metric} that consume {@link DiscreteProbabilityPairs} and produce {@link MultiVectorOutput}. 
-     */
-
-    private Map<MetricConstants, Metric<DiscreteProbabilityPairs, MultiVectorOutput>> discreteProbabilityMultiVector;
-
-    /**
-     * Cached {@link Metric} that consume {@link EnsemblePairs} and produce {@link BoxPlotOutput}. 
-     */
-
-    private Map<MetricConstants, Metric<EnsemblePairs, BoxPlotOutput>> ensembleBoxPlot;
-
-    /**
-     * Cached {@link Metric} that consume {@link TimeSeriesOfSingleValuedPairs} and produce {@link PairedOutput}. 
-     */
-
-    private Map<MetricConstants, Metric<TimeSeriesOfSingleValuedPairs, PairedOutput<Instant, Duration>>> singleValuedTimeSeries;
-
-    /**
      * Returns an instance of a {@link MetricFactory}.
      * 
      * @param dataFactory a {@link DataFactory}
@@ -206,10 +162,10 @@ public class MetricFactory
      * @throws MetricProcessorException if the metric processor could not be built
      */
 
-    public MetricProcessorForProject getMetricProcessorForProject( final ProjectConfig projectConfig,
-                                                                   final ThresholdsByMetric externalThresholds,
-                                                                   final ExecutorService thresholdExecutor,
-                                                                   final ExecutorService metricExecutor )
+    public MetricProcessorForProject ofMetricProcessorForProject( final ProjectConfig projectConfig,
+                                                                  final ThresholdsByMetric externalThresholds,
+                                                                  final ExecutorService thresholdExecutor,
+                                                                  final ExecutorService metricExecutor )
             throws MetricProcessorException
     {
         return new MetricProcessorForProject( this,
@@ -238,11 +194,11 @@ public class MetricFactory
                                                       final Set<MetricOutputGroup> mergeSet )
                     throws MetricProcessorException
     {
-        return ofMetricProcessorByTimeSingleValuedPairs( config,
-                                                         null,
-                                                         ForkJoinPool.commonPool(),
-                                                         ForkJoinPool.commonPool(),
-                                                         mergeSet );
+        return this.ofMetricProcessorByTimeSingleValuedPairs( config,
+                                                              null,
+                                                              ForkJoinPool.commonPool(),
+                                                              ForkJoinPool.commonPool(),
+                                                              mergeSet );
     }
 
     /**
@@ -264,11 +220,11 @@ public class MetricFactory
                                                   final Set<MetricOutputGroup> mergeSet )
                     throws MetricProcessorException
     {
-        return ofMetricProcessorByTimeEnsemblePairs( config,
-                                                     null,
-                                                     ForkJoinPool.commonPool(),
-                                                     ForkJoinPool.commonPool(),
-                                                     mergeSet );
+        return this.ofMetricProcessorByTimeEnsemblePairs( config,
+                                                          null,
+                                                          ForkJoinPool.commonPool(),
+                                                          ForkJoinPool.commonPool(),
+                                                          mergeSet );
     }
 
     /**
@@ -292,11 +248,11 @@ public class MetricFactory
                                                       final Set<MetricOutputGroup> mergeSet )
                     throws MetricProcessorException
     {
-        return ofMetricProcessorByTimeSingleValuedPairs( config,
-                                                         externalThresholds,
-                                                         ForkJoinPool.commonPool(),
-                                                         ForkJoinPool.commonPool(),
-                                                         mergeSet );
+        return this.ofMetricProcessorByTimeSingleValuedPairs( config,
+                                                              externalThresholds,
+                                                              ForkJoinPool.commonPool(),
+                                                              ForkJoinPool.commonPool(),
+                                                              mergeSet );
     }
 
     /**
@@ -320,11 +276,11 @@ public class MetricFactory
                                                   final Set<MetricOutputGroup> mergeSet )
                     throws MetricProcessorException
     {
-        return ofMetricProcessorByTimeEnsemblePairs( config,
-                                                     externalThresholds,
-                                                     ForkJoinPool.commonPool(),
-                                                     ForkJoinPool.commonPool(),
-                                                     mergeSet );
+        return this.ofMetricProcessorByTimeEnsemblePairs( config,
+                                                          externalThresholds,
+                                                          ForkJoinPool.commonPool(),
+                                                          ForkJoinPool.commonPool(),
+                                                          mergeSet );
     }
 
     /**
@@ -352,11 +308,11 @@ public class MetricFactory
     {
         try
         {
-            return ofMetricProcessorByTimeSingleValuedPairs( config,
-                                                             externalThresholds,
-                                                             thresholdExecutor,
-                                                             metricExecutor,
-                                                             MetricFactory.getCacheListFromProjectConfig( config ) );
+            return this.ofMetricProcessorByTimeSingleValuedPairs( config,
+                                                                  externalThresholds,
+                                                                  thresholdExecutor,
+                                                                  metricExecutor,
+                                                                  MetricFactory.getCacheListFromProjectConfig( config ) );
         }
         catch ( MetricConfigException e )
         {
@@ -388,11 +344,11 @@ public class MetricFactory
     {
         try
         {
-            return ofMetricProcessorByTimeEnsemblePairs( config,
-                                                         externalThresholds,
-                                                         thresholdExecutor,
-                                                         metricExecutor,
-                                                         MetricFactory.getCacheListFromProjectConfig( config ) );
+            return this.ofMetricProcessorByTimeEnsemblePairs( config,
+                                                              externalThresholds,
+                                                              thresholdExecutor,
+                                                              metricExecutor,
+                                                              MetricFactory.getCacheListFromProjectConfig( config ) );
         }
         catch ( MetricConfigException e )
         {
@@ -687,23 +643,13 @@ public class MetricFactory
     {
         final MetricCollectionBuilder<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput> builder =
                 MetricCollectionBuilder.of();
-        // Build the store if required
-        buildSingleValuedScoreStore();
+
+        // Add the metrics
         for ( MetricConstants next : metric )
         {
-            if ( singleValuedScoreCol.containsKey( next ) )
-            {
-                builder.add( singleValuedScoreCol.get( next ) );
-            }
-            else if ( singleValuedScore.containsKey( next ) )
-            {
-                builder.add( singleValuedScore.get( next ) );
-            }
-            else
-            {
-                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + next + "'." );
-            }
+            builder.add( this.ofSingleValuedScore( next ) );
         }
+
         builder.setOutputFactory( outputFactory ).setExecutorService( executor );
         return builder.build();
     }
@@ -728,7 +674,7 @@ public class MetricFactory
                 MetricCollectionBuilder.of();
         for ( MetricConstants next : metric )
         {
-            builder.add( ofSingleValuedMultiVector( next ) );
+            builder.add( this.ofSingleValuedMultiVector( next ) );
         }
         builder.setOutputFactory( outputFactory ).setExecutorService( executor );
         return builder.build();
@@ -752,15 +698,9 @@ public class MetricFactory
     {
         final MetricCollectionBuilder<DiscreteProbabilityPairs, DoubleScoreOutput, DoubleScoreOutput> builder =
                 MetricCollectionBuilder.of();
-        // Build the store if required
-        buildDiscreteProbabilityScoreStore();
         for ( MetricConstants next : metric )
         {
-            if ( !discreteProbabilityScore.containsKey( next ) )
-            {
-                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + next + "'." );
-            }
-            builder.add( discreteProbabilityScore.get( next ) );
+            builder.add( this.ofDiscreteProbabilityScore( next ) );
         }
         builder.setOutputFactory( outputFactory ).setExecutorService( executor );
         return builder.build();
@@ -782,17 +722,11 @@ public class MetricFactory
                                           MetricConstants... metric )
                     throws MetricParameterException
     {
-        // Build store if required
-        buildDichotomousScalarStore();
         final MetricCollectionBuilder<DichotomousPairs, MatrixOutput, DoubleScoreOutput> builder =
                 MetricCollectionBuilder.of();
         for ( MetricConstants next : metric )
         {
-            if ( !dichotomousScoreCol.containsKey( next ) )
-            {
-                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + next + "'." );
-            }
-            builder.add( dichotomousScoreCol.get( next ) );
+            builder.add( this.ofDichotomousScore( next ) );
         }
         builder.setOutputFactory( outputFactory ).setExecutorService( executor );
         return builder.build();
@@ -816,15 +750,9 @@ public class MetricFactory
     {
         final MetricCollectionBuilder<DiscreteProbabilityPairs, MultiVectorOutput, MultiVectorOutput> builder =
                 MetricCollectionBuilder.of();
-        // Build the store if required
-        buildDiscreteProbabilityMultiVectorStore();
         for ( MetricConstants next : metric )
         {
-            if ( !discreteProbabilityMultiVector.containsKey( next ) )
-            {
-                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + next + "'." );
-            }
-            builder.add( discreteProbabilityMultiVector.get( next ) );
+            builder.add( this.ofDiscreteProbabilityMultiVector( next ) );
         }
         builder.setOutputFactory( outputFactory ).setExecutorService( executor );
         return builder.build();
@@ -850,7 +778,7 @@ public class MetricFactory
                 MetricCollectionBuilder.of();
         for ( MetricConstants next : metric )
         {
-            builder.add( ofDichotomousMatrix( next ) );
+            builder.add( this.ofDichotomousMatrix( next ) );
         }
         builder.setOutputFactory( outputFactory ).setExecutorService( executor );
         return builder.build();
@@ -874,15 +802,9 @@ public class MetricFactory
     {
         final MetricCollectionBuilder<EnsemblePairs, DoubleScoreOutput, DoubleScoreOutput> builder =
                 MetricCollectionBuilder.of();
-        // Build the store if required
-        buildEnsembleScoreStore();
         for ( MetricConstants next : metric )
         {
-            if ( !ensembleScore.containsKey( next ) )
-            {
-                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + next + "'." );
-            }
-            builder.add( ensembleScore.get( next ) );
+            builder.add( this.ofEnsembleScore( next ) );
         }
         builder.setOutputFactory( outputFactory ).setExecutorService( executor );
         return builder.build();
@@ -908,7 +830,7 @@ public class MetricFactory
                 MetricCollectionBuilder.of();
         for ( MetricConstants next : metric )
         {
-            builder.add( ofEnsembleMultiVector( next ) );
+            builder.add( this.ofEnsembleMultiVector( next ) );
         }
         builder.setOutputFactory( outputFactory ).setExecutorService( executor );
         return builder.build();
@@ -930,17 +852,11 @@ public class MetricFactory
                                          MetricConstants... metric )
                     throws MetricParameterException
     {
-        // Build store if required
-        buildEnsembleBoxPlotStore();
         final MetricCollectionBuilder<EnsemblePairs, BoxPlotOutput, BoxPlotOutput> builder =
                 MetricCollectionBuilder.of();
         for ( MetricConstants next : metric )
         {
-            if ( !ensembleBoxPlot.containsKey( next ) )
-            {
-                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + next + "'." );
-            }
-            builder.add( ensembleBoxPlot.get( next ) );
+            builder.add( this.ofEnsembleBoxPlot( next ) );
         }
         builder.setOutputFactory( outputFactory ).setExecutorService( executor );
         return builder.build();
@@ -964,19 +880,13 @@ public class MetricFactory
     {
         final MetricCollectionBuilder<TimeSeriesOfSingleValuedPairs, PairedOutput<Instant, Duration>, PairedOutput<Instant, Duration>> builder =
                 MetricCollectionBuilder.of();
-        // Build the store if required
-        buildSingleValuedTimeSeriesStore();
         for ( MetricConstants next : metric )
         {
-            if ( !singleValuedTimeSeries.containsKey( next ) )
-            {
-                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + next + "'." );
-            }
-            builder.add( singleValuedTimeSeries.get( next ) );
+            builder.add( this.ofSingleValuedTimeSeries( next ) );
         }
         builder.setOutputFactory( outputFactory ).setExecutorService( executor );
         return builder.build();
-    }  
+    }
 
     /**
      * Returns a {@link Metric} that consumes {@link SingleValuedPairs} and produces {@link DoubleScoreOutput}.
@@ -990,19 +900,34 @@ public class MetricFactory
     public Metric<SingleValuedPairs, DoubleScoreOutput> ofSingleValuedScore( MetricConstants metric )
             throws MetricParameterException
     {
-        // Build store if required
-        buildSingleValuedScoreStore();
-        if ( singleValuedScoreCol.containsKey( metric ) )
+        switch ( metric )
         {
-            return singleValuedScoreCol.get( metric );
-        }
-        else if ( singleValuedScore.containsKey( metric ) )
-        {
-            return singleValuedScore.get( metric );
-        }
-        else
-        {
-            throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
+            case BIAS_FRACTION:
+                return this.ofBiasFraction();
+            case MEAN_ABSOLUTE_ERROR:
+                return this.ofMeanAbsoluteError();
+            case MEAN_ERROR:
+                return this.ofMeanError();
+            case SAMPLE_SIZE:
+                return this.ofSampleSize();
+            case INDEX_OF_AGREEMENT:
+                return this.ofIndexOfAgreement();
+            case VOLUMETRIC_EFFICIENCY:
+                return this.ofVolumetricEfficiency();
+            case MEAN_SQUARE_ERROR_SKILL_SCORE:
+                return this.ofMeanSquareErrorSkillScore();
+            case KLING_GUPTA_EFFICIENCY:
+                return this.ofKlingGuptaEfficiency();
+            case COEFFICIENT_OF_DETERMINATION:
+                return this.ofCoefficientOfDetermination();
+            case PEARSON_CORRELATION_COEFFICIENT:
+                return this.ofCorrelationPearsons();
+            case MEAN_SQUARE_ERROR:
+                return this.ofMeanSquareError();
+            case ROOT_MEAN_SQUARE_ERROR:
+                return this.ofRootMeanSquareError();
+            default:
+                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
         }
     }
 
@@ -1041,15 +966,16 @@ public class MetricFactory
             ofDiscreteProbabilityScore( MetricConstants metric )
                     throws MetricParameterException
     {
-        // Build store if required
-        buildDiscreteProbabilityScoreStore();
-        if ( discreteProbabilityScore.containsKey( metric ) )
+        switch ( metric )
         {
-            return discreteProbabilityScore.get( metric );
-        }
-        else
-        {
-            throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
+            case BRIER_SCORE:
+                return this.ofBrierScore();
+            case BRIER_SKILL_SCORE:
+                return this.ofBrierSkillScore();
+            case RELATIVE_OPERATING_CHARACTERISTIC_SCORE:
+                return this.ofRelativeOperatingCharacteristicScore();
+            default:
+                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
         }
     }
 
@@ -1065,15 +991,22 @@ public class MetricFactory
     public Metric<DichotomousPairs, DoubleScoreOutput> ofDichotomousScore( MetricConstants metric )
             throws MetricParameterException
     {
-        // Build store if required
-        buildDichotomousScalarStore();
-        if ( dichotomousScoreCol.containsKey( metric ) )
+        switch ( metric )
         {
-            return dichotomousScoreCol.get( metric );
-        }
-        else
-        {
-            throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
+            case THREAT_SCORE:
+                return this.ofThreatScore();
+            case EQUITABLE_THREAT_SCORE:
+                return this.ofEquitableThreatScore();
+            case PEIRCE_SKILL_SCORE:
+                return this.ofPeirceSkillScore();
+            case PROBABILITY_OF_DETECTION:
+                return this.ofProbabilityOfDetection();
+            case PROBABILITY_OF_FALSE_DETECTION:
+                return this.ofProbabilityOfFalseDetection();
+            case FREQUENCY_BIAS:
+                return this.ofFrequencyBias();
+            default:
+                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
         }
     }
 
@@ -1112,15 +1045,14 @@ public class MetricFactory
     public Metric<DiscreteProbabilityPairs, MultiVectorOutput>
             ofDiscreteProbabilityMultiVector( MetricConstants metric ) throws MetricParameterException
     {
-        // Build store if required
-        buildDiscreteProbabilityMultiVectorStore();
-        if ( discreteProbabilityMultiVector.containsKey( metric ) )
+        switch ( metric )
         {
-            return discreteProbabilityMultiVector.get( metric );
-        }
-        else
-        {
-            throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
+            case RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM:
+                return this.ofRelativeOperatingCharacteristic();
+            case RELIABILITY_DIAGRAM:
+                return this.ofReliabilityDiagram();
+            default:
+                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
         }
     }
 
@@ -1158,15 +1090,16 @@ public class MetricFactory
     public Metric<EnsemblePairs, DoubleScoreOutput> ofEnsembleScore( MetricConstants metric )
             throws MetricParameterException
     {
-        // Build store if required
-        buildEnsembleScoreStore();
-        if ( ensembleScore.containsKey( metric ) )
+        switch ( metric )
         {
-            return ensembleScore.get( metric );
-        }
-        else
-        {
-            throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
+            case CONTINUOUS_RANKED_PROBABILITY_SCORE:
+                return this.ofContinuousRankedProbabilityScore();
+            case CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE:
+                return this.ofContinuousRankedProbabilitySkillScore();
+            case SAMPLE_SIZE:
+                return this.ofSampleSize();
+            default:
+                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
         }
     }
 
@@ -1182,15 +1115,14 @@ public class MetricFactory
     public Metric<EnsemblePairs, BoxPlotOutput> ofEnsembleBoxPlot( MetricConstants metric )
             throws MetricParameterException
     {
-        // Build store if required
-        buildEnsembleBoxPlotStore();
-        if ( ensembleBoxPlot.containsKey( metric ) )
+        switch ( metric )
         {
-            return ensembleBoxPlot.get( metric );
-        }
-        else
-        {
-            throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
+            case BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE:
+                return this.ofBoxPlotErrorByObserved();
+            case BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE:
+                return this.ofBoxPlotErrorByForecast();
+            default:
+                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
         }
     }
 
@@ -1217,6 +1149,30 @@ public class MetricFactory
     }
 
     /**
+     * Returns a {@link Metric} that consumes {@link TimeSeriesOfSingleValuedPairs} and produces {@link PairedOutput}.
+     * 
+     * @param metric the metric identifier
+     * @return a metric
+     * @throws MetricParameterException if one or more parameter values is incorrect
+     * @throws IllegalArgumentException if the metric identifier is not recognized
+     */
+
+    public Metric<TimeSeriesOfSingleValuedPairs, PairedOutput<Instant, Duration>>
+            ofSingleValuedTimeSeries( MetricConstants metric )
+                    throws MetricParameterException
+    {
+        switch ( metric )
+        {
+            case TIME_TO_PEAK_ERROR:
+                return this.ofTimeToPeakError();
+            case TIME_TO_PEAK_RELATIVE_ERROR:
+                return this.ofTimeToPeakRelativeError();
+            default:
+                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
+        }
+    }
+
+    /**
      * Return a default {@link BiasFraction} function.
      * 
      * @return a default {@link BiasFraction} function
@@ -1225,8 +1181,7 @@ public class MetricFactory
 
     public BiasFraction ofBiasFraction() throws MetricParameterException
     {
-        buildSingleValuedScoreStore();
-        return (BiasFraction) singleValuedScore.get( MetricConstants.BIAS_FRACTION );
+        return (BiasFraction) new BiasFractionBuilder().setOutputFactory( outputFactory ).build();
     }
 
     /**
@@ -1238,8 +1193,8 @@ public class MetricFactory
 
     public BrierScore ofBrierScore() throws MetricParameterException
     {
-        buildDiscreteProbabilityScoreStore();
-        return (BrierScore) discreteProbabilityScore.get( MetricConstants.BRIER_SCORE );
+        return (BrierScore) new BrierScore.BrierScoreBuilder().setOutputFactory( outputFactory )
+                                                              .build();
     }
 
     /**
@@ -1251,8 +1206,8 @@ public class MetricFactory
 
     public BrierSkillScore ofBrierSkillScore() throws MetricParameterException
     {
-        buildDiscreteProbabilityScoreStore();
-        return (BrierSkillScore) discreteProbabilityScore.get( MetricConstants.BRIER_SKILL_SCORE );
+        return (BrierSkillScore) new BrierSkillScore.BrierSkillScoreBuilder().setOutputFactory( outputFactory )
+                                                                             .build();
     }
 
     /**
@@ -1262,10 +1217,10 @@ public class MetricFactory
      * @throws MetricParameterException if one or more parameter values is incorrect
      */
 
-    public CorrelationPearsons ofCoefficientOfDetermination() throws MetricParameterException
+    public CoefficientOfDetermination ofCoefficientOfDetermination() throws MetricParameterException
     {
-        buildSingleValuedScoreStore();
-        return (CoefficientOfDetermination) singleValuedScoreCol.get( MetricConstants.COEFFICIENT_OF_DETERMINATION );
+        return (CoefficientOfDetermination) new CoefficientOfDeterminationBuilder().setOutputFactory( outputFactory )
+                                                                                   .build();
     }
 
     /**
@@ -1290,8 +1245,8 @@ public class MetricFactory
 
     public CorrelationPearsons ofCorrelationPearsons() throws MetricParameterException
     {
-        buildSingleValuedScoreStore();
-        return (CorrelationPearsons) singleValuedScoreCol.get( MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
+        return (CorrelationPearsons) new CorrelationPearsonsBuilder().setOutputFactory( outputFactory )
+                                                                     .build();
     }
 
     /**
@@ -1301,10 +1256,10 @@ public class MetricFactory
      * @throws MetricParameterException if one or more parameter values is incorrect 
      */
 
-    public ThreatScore ofCriticalSuccessIndex() throws MetricParameterException
+    public ThreatScore ofThreatScore() throws MetricParameterException
     {
-        buildDichotomousScalarStore();
-        return (ThreatScore) dichotomousScoreCol.get( MetricConstants.THREAT_SCORE );
+        return (ThreatScore) new ThreatScore.ThreatScoreBuilder().setOutputFactory( outputFactory )
+                                                                 .build();
     }
 
     /**
@@ -1316,8 +1271,8 @@ public class MetricFactory
 
     public EquitableThreatScore ofEquitableThreatScore() throws MetricParameterException
     {
-        buildDichotomousScalarStore();
-        return (EquitableThreatScore) dichotomousScoreCol.get( MetricConstants.EQUITABLE_THREAT_SCORE );
+        return (EquitableThreatScore) new EquitableThreatScore.EquitableThreatScoreBuilder().setOutputFactory( outputFactory )
+                                                                                            .build();
     }
 
     /**
@@ -1329,8 +1284,8 @@ public class MetricFactory
 
     public MeanAbsoluteError ofMeanAbsoluteError() throws MetricParameterException
     {
-        buildSingleValuedScoreStore();
-        return (MeanAbsoluteError) singleValuedScore.get( MetricConstants.MEAN_ABSOLUTE_ERROR );
+        return (MeanAbsoluteError) new MeanAbsoluteErrorBuilder().setOutputFactory( outputFactory )
+                                                                 .build();
     }
 
     /**
@@ -1342,8 +1297,7 @@ public class MetricFactory
 
     public MeanError ofMeanError() throws MetricParameterException
     {
-        buildSingleValuedScoreStore();
-        return (MeanError) singleValuedScore.get( MetricConstants.MEAN_ERROR );
+        return (MeanError) new MeanErrorBuilder().setOutputFactory( outputFactory ).build();
     }
 
     /**
@@ -1355,8 +1309,8 @@ public class MetricFactory
 
     public MeanSquareError<SingleValuedPairs> ofMeanSquareError() throws MetricParameterException
     {
-        buildSingleValuedScoreStore();
-        return (MeanSquareError<SingleValuedPairs>) singleValuedScoreCol.get( MetricConstants.MEAN_SQUARE_ERROR );
+        return (MeanSquareError<SingleValuedPairs>) new MeanSquareErrorBuilder<>().setOutputFactory( outputFactory )
+                                                                                  .build();
     }
 
     /**
@@ -1368,8 +1322,8 @@ public class MetricFactory
 
     public MeanSquareErrorSkillScore<SingleValuedPairs> ofMeanSquareErrorSkillScore() throws MetricParameterException
     {
-        buildSingleValuedScoreStore();
-        return (MeanSquareErrorSkillScore<SingleValuedPairs>) singleValuedScore.get( MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE );
+        return (MeanSquareErrorSkillScore<SingleValuedPairs>) new MeanSquareErrorSkillScoreBuilder<>().setOutputFactory( outputFactory )
+                                                                                                      .build();
     }
 
     /**
@@ -1381,8 +1335,8 @@ public class MetricFactory
 
     public PeirceSkillScore<DichotomousPairs> ofPeirceSkillScore() throws MetricParameterException
     {
-        buildDichotomousScalarStore();
-        return (PeirceSkillScore<DichotomousPairs>) dichotomousScoreCol.get( MetricConstants.PEIRCE_SKILL_SCORE );
+        return (PeirceSkillScore<DichotomousPairs>) new PeirceSkillScore.PeirceSkillScoreBuilder<DichotomousPairs>().setOutputFactory( outputFactory )
+                                                                                                                    .build();
     }
 
     /**
@@ -1407,8 +1361,8 @@ public class MetricFactory
 
     public ProbabilityOfDetection ofProbabilityOfDetection() throws MetricParameterException
     {
-        buildDichotomousScalarStore();
-        return (ProbabilityOfDetection) dichotomousScoreCol.get( MetricConstants.PROBABILITY_OF_DETECTION );
+        return (ProbabilityOfDetection) new ProbabilityOfDetection.ProbabilityOfDetectionBuilder().setOutputFactory( outputFactory )
+                                                                                                  .build();
     }
 
     /**
@@ -1420,8 +1374,8 @@ public class MetricFactory
 
     public ProbabilityOfFalseDetection ofProbabilityOfFalseDetection() throws MetricParameterException
     {
-        buildDichotomousScalarStore();
-        return (ProbabilityOfFalseDetection) dichotomousScoreCol.get( MetricConstants.PROBABILITY_OF_FALSE_DETECTION );
+        return (ProbabilityOfFalseDetection) new ProbabilityOfFalseDetection.ProbabilityOfFalseDetectionBuilder().setOutputFactory( outputFactory )
+                                                                                                                 .build();
     }
 
     /**
@@ -1446,8 +1400,7 @@ public class MetricFactory
 
     public RootMeanSquareError ofRootMeanSquareError() throws MetricParameterException
     {
-        buildSingleValuedScoreStore();
-        return (RootMeanSquareError) singleValuedScoreCol.get( MetricConstants.ROOT_MEAN_SQUARE_ERROR );
+        return (RootMeanSquareError) new RootMeanSquareErrorBuilder().setOutputFactory( outputFactory ).build();
     }
 
     /**
@@ -1459,8 +1412,8 @@ public class MetricFactory
 
     public ReliabilityDiagram ofReliabilityDiagram() throws MetricParameterException
     {
-        buildDiscreteProbabilityMultiVectorStore();
-        return (ReliabilityDiagram) discreteProbabilityMultiVector.get( MetricConstants.RELIABILITY_DIAGRAM );
+        return (ReliabilityDiagram) new ReliabilityDiagramBuilder().setOutputFactory( outputFactory )
+                                                                   .build();
     }
 
     /**
@@ -1472,8 +1425,8 @@ public class MetricFactory
 
     public RelativeOperatingCharacteristicDiagram ofRelativeOperatingCharacteristic() throws MetricParameterException
     {
-        buildDiscreteProbabilityMultiVectorStore();
-        return (RelativeOperatingCharacteristicDiagram) discreteProbabilityMultiVector.get( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM );
+        return (RelativeOperatingCharacteristicDiagram) new RelativeOperatingCharacteristicBuilder().setOutputFactory( outputFactory )
+                                                                                                    .build();
     }
 
     /**
@@ -1485,8 +1438,8 @@ public class MetricFactory
 
     public RelativeOperatingCharacteristicScore ofRelativeOperatingCharacteristicScore() throws MetricParameterException
     {
-        buildDiscreteProbabilityScoreStore();
-        return (RelativeOperatingCharacteristicScore) discreteProbabilityScore.get( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE );
+        return (RelativeOperatingCharacteristicScore) new RelativeOperatingCharacteristicScoreBuilder().setOutputFactory( outputFactory )
+                                                                                                       .build();
     }
 
     /**
@@ -1498,8 +1451,7 @@ public class MetricFactory
 
     public ContinuousRankedProbabilityScore ofContinuousRankedProbabilityScore() throws MetricParameterException
     {
-        buildEnsembleScoreStore();
-        return (ContinuousRankedProbabilityScore) ensembleScore.get( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE );
+        return (ContinuousRankedProbabilityScore) new CRPSBuilder().setOutputFactory( outputFactory ).build();
     }
 
     /**
@@ -1509,10 +1461,10 @@ public class MetricFactory
      * @throws MetricParameterException if one or more parameter values is incorrect
      */
 
-    public ContinuousRankedProbabilityScore ofContinuousRankedProbabilitySkillScore() throws MetricParameterException
+    public ContinuousRankedProbabilitySkillScore ofContinuousRankedProbabilitySkillScore()
+            throws MetricParameterException
     {
-        buildEnsembleScoreStore();
-        return (ContinuousRankedProbabilitySkillScore) ensembleScore.get( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE );
+        return (ContinuousRankedProbabilitySkillScore) new CRPSSBuilder().setOutputFactory( outputFactory ).build();
     }
 
     /**
@@ -1524,8 +1476,7 @@ public class MetricFactory
 
     public IndexOfAgreement ofIndexOfAgreement() throws MetricParameterException
     {
-        buildSingleValuedScoreStore();
-        return (IndexOfAgreement) singleValuedScore.get( MetricConstants.INDEX_OF_AGREEMENT );
+        return (IndexOfAgreement) new IndexOfAgreementBuilder().setOutputFactory( outputFactory ).build();
     }
 
     /**
@@ -1537,8 +1488,7 @@ public class MetricFactory
 
     public KlingGuptaEfficiency ofKlingGuptaEfficiency() throws MetricParameterException
     {
-        buildSingleValuedScoreStore();
-        return (KlingGuptaEfficiency) singleValuedScore.get( MetricConstants.KLING_GUPTA_EFFICIENCY );
+        return (KlingGuptaEfficiency) new KlingGuptaEfficiencyBuilder().setOutputFactory( outputFactory ).build();
     }
 
     /**
@@ -1575,8 +1525,7 @@ public class MetricFactory
 
     public FrequencyBias ofFrequencyBias() throws MetricParameterException
     {
-        buildDichotomousScalarStore();
-        return (FrequencyBias) dichotomousScoreCol.get( MetricConstants.FREQUENCY_BIAS );
+        return (FrequencyBias) new FrequencyBias.FrequencyBiasBuilder().setOutputFactory( outputFactory ).build();
     }
 
     /**
@@ -1588,8 +1537,7 @@ public class MetricFactory
 
     public BoxPlotErrorByObserved ofBoxPlotErrorByObserved() throws MetricParameterException
     {
-        buildEnsembleBoxPlotStore();
-        return (BoxPlotErrorByObserved) ensembleBoxPlot.get( MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE );
+        return (BoxPlotErrorByObserved) new BoxPlotErrorByObservedBuilder().setOutputFactory( outputFactory ).build();
     }
 
     /**
@@ -1601,8 +1549,7 @@ public class MetricFactory
 
     public BoxPlotErrorByForecast ofBoxPlotErrorByForecast() throws MetricParameterException
     {
-        buildEnsembleBoxPlotStore();
-        return (BoxPlotErrorByForecast) ensembleBoxPlot.get( MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE );
+        return (BoxPlotErrorByForecast) new BoxPlotErrorByForecastBuilder().setOutputFactory( outputFactory ).build();
     }
 
     /**
@@ -1614,8 +1561,7 @@ public class MetricFactory
 
     public VolumetricEfficiency ofVolumetricEfficiency() throws MetricParameterException
     {
-        buildSingleValuedScoreStore();
-        return (VolumetricEfficiency) singleValuedScore.get( MetricConstants.VOLUMETRIC_EFFICIENCY );
+        return (VolumetricEfficiency) new VolumetricEfficiencyBuilder().setOutputFactory( outputFactory ).build();
     }
 
     /**
@@ -1627,8 +1573,7 @@ public class MetricFactory
 
     public TimeToPeakError ofTimeToPeakError() throws MetricParameterException
     {
-        buildSingleValuedTimeSeriesStore();
-        return (TimeToPeakError) singleValuedTimeSeries.get( MetricConstants.TIME_TO_PEAK_ERROR );
+        return (TimeToPeakError) new TimeToPeakErrorBuilder().setOutputFactory( outputFactory ).build();
     }
 
     /**
@@ -1640,8 +1585,7 @@ public class MetricFactory
 
     public TimeToPeakRelativeError ofTimeToPeakRelativeError() throws MetricParameterException
     {
-        buildSingleValuedTimeSeriesStore();
-        return (TimeToPeakRelativeError) singleValuedTimeSeries.get( MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR );
+        return (TimeToPeakRelativeError) new TimeToPeakRelativeErrorBuilder().setOutputFactory( outputFactory ).build();
     }
 
     /**
@@ -1656,13 +1600,13 @@ public class MetricFactory
      */
 
     public TimingErrorDurationStatistics ofTimingErrorDurationStatistics( MetricConstants identifier,
-                                                                        Set<MetricConstants> statistics )
+                                                                          Set<MetricConstants> statistics )
             throws MetricParameterException
     {
         return new TimingErrorDurationStatisticsBuilder().setStatistics( statistics )
-                                                        .setID( identifier )
-                                                        .setOutputFactory( outputFactory )
-                                                        .build();
+                                                         .setID( identifier )
+                                                         .setOutputFactory( outputFactory )
+                                                         .build();
     }
 
     /**
@@ -1674,7 +1618,7 @@ public class MetricFactory
      * @throws NullPointerException if the input is null
      */
 
-    public static MetricConstants getSummaryStatisticsForTimingErrorMetric( MetricConstants timingMetric )
+    public static MetricConstants ofSummaryStatisticsForTimingErrorMetric( MetricConstants timingMetric )
     {
         Objects.requireNonNull( timingMetric, "Specify a non-null metric identifier to map." );
 
@@ -1744,186 +1688,6 @@ public class MetricFactory
                                                 + "metric factory." );
         }
         this.outputFactory = dataFactory;
-    }
-
-    /**
-     * Builds the store of metrics that consume {@link SingleValuedPairs} and produce {@link DoubleScoreOutput}. 
-     * @throws MetricParameterException if one or more parameter values is incorrect
-     */
-
-    private void buildSingleValuedScoreStore() throws MetricParameterException
-    {
-        if ( Objects.isNull( singleValuedScore ) )
-        {
-            // Ordinary metrics
-            singleValuedScore = new EnumMap<>( MetricConstants.class );
-            singleValuedScore.put( MetricConstants.BIAS_FRACTION,
-                                   new BiasFraction.BiasFractionBuilder().setOutputFactory( outputFactory ).build() );
-            singleValuedScore.put( MetricConstants.MEAN_ABSOLUTE_ERROR,
-                                   new MeanAbsoluteError.MeanAbsoluteErrorBuilder().setOutputFactory( outputFactory )
-                                                                                   .build() );
-            singleValuedScore.put( MetricConstants.MEAN_ERROR,
-                                   new MeanError.MeanErrorBuilder().setOutputFactory( outputFactory )
-                                                                   .build() );
-            singleValuedScore.put( MetricConstants.SAMPLE_SIZE,
-                                   new SampleSizeBuilder<SingleValuedPairs>().setOutputFactory( outputFactory )
-                                                                             .build() );
-            singleValuedScore.put( MetricConstants.INDEX_OF_AGREEMENT,
-                                   new IndexOfAgreementBuilder().setOutputFactory( outputFactory ).build() );
-            singleValuedScore.put( MetricConstants.VOLUMETRIC_EFFICIENCY,
-                                   new VolumetricEfficiencyBuilder().setOutputFactory( outputFactory ).build() );
-            singleValuedScore.put( MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE,
-                                   new MeanSquareErrorSkillScore.MeanSquareErrorSkillScoreBuilder<>().setOutputFactory( outputFactory )
-                                                                                                     .build() );
-            singleValuedScore.put( MetricConstants.KLING_GUPTA_EFFICIENCY,
-                                   new KlingGuptaEfficiencyBuilder().setOutputFactory( outputFactory ).build() );
-            // Collectable metrics
-            singleValuedScoreCol = new EnumMap<>( MetricConstants.class );
-            singleValuedScoreCol.put( MetricConstants.COEFFICIENT_OF_DETERMINATION,
-                                      (CoefficientOfDetermination) new CoefficientOfDetermination.CoefficientOfDeterminationBuilder().setOutputFactory( outputFactory )
-                                                                                                                                     .build() );
-            singleValuedScoreCol.put( MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
-                                      (CorrelationPearsons) new CorrelationPearsons.CorrelationPearsonsBuilder().setOutputFactory( outputFactory )
-                                                                                                                .build() );
-            singleValuedScoreCol.put( MetricConstants.MEAN_SQUARE_ERROR,
-                                      (MeanSquareError<SingleValuedPairs>) new MeanSquareError.MeanSquareErrorBuilder<>().setOutputFactory( outputFactory )
-                                                                                                                         .build() );
-            // RMSE depends on MSE, so add afterwards
-            singleValuedScoreCol.put( MetricConstants.ROOT_MEAN_SQUARE_ERROR,
-                                      (RootMeanSquareError) new RootMeanSquareError.RootMeanSquareErrorBuilder().setOutputFactory( outputFactory )
-                                                                                                                .build() );
-        }
-    }
-
-    /**
-     * Builds the store of metrics that consume {@link DichotomousPairs} and produce {@link DoubleScoreOutput}. 
-     * @throws MetricParameterException if one or more parameter values is incorrect
-     */
-
-    private void buildDichotomousScalarStore() throws MetricParameterException
-    {
-        if ( Objects.isNull( dichotomousScoreCol ) )
-        {
-            dichotomousScoreCol = new EnumMap<>( MetricConstants.class );
-            dichotomousScoreCol.put( MetricConstants.THREAT_SCORE,
-                                     (ThreatScore) new ThreatScore.CriticalSuccessIndexBuilder().setOutputFactory( outputFactory )
-                                                                                                .build() );
-            dichotomousScoreCol.put( MetricConstants.EQUITABLE_THREAT_SCORE,
-                                     (EquitableThreatScore) new EquitableThreatScore.EquitableThreatScoreBuilder().setOutputFactory( outputFactory )
-                                                                                                                  .build() );
-            dichotomousScoreCol.put( MetricConstants.PEIRCE_SKILL_SCORE,
-                                     (PeirceSkillScore<DichotomousPairs>) new PeirceSkillScore.PeirceSkillScoreBuilder<DichotomousPairs>().setOutputFactory( outputFactory )
-                                                                                                                                          .build() );
-            dichotomousScoreCol.put( MetricConstants.PROBABILITY_OF_DETECTION,
-                                     (ProbabilityOfDetection) new ProbabilityOfDetection.ProbabilityOfDetectionBuilder().setOutputFactory( outputFactory )
-                                                                                                                        .build() );
-            dichotomousScoreCol.put( MetricConstants.PROBABILITY_OF_FALSE_DETECTION,
-                                     (ProbabilityOfFalseDetection) new ProbabilityOfFalseDetection.ProbabilityOfFalseDetectionBuilder().setOutputFactory( outputFactory )
-                                                                                                                                       .build() );
-            dichotomousScoreCol.put( MetricConstants.FREQUENCY_BIAS,
-                                     (FrequencyBias) new FrequencyBias.FrequencyBiasBuilder().setOutputFactory( outputFactory )
-                                                                                             .build() );
-        }
-    }
-
-    /**
-     * Builds the store of metrics that consume {@link EnsemblePairs} and produce {@link DoubleScoreOutput}. 
-     * @throws MetricParameterException if one or more parameter values is incorrect
-     */
-
-    private void buildEnsembleScoreStore() throws MetricParameterException
-    {
-        if ( Objects.isNull( ensembleScore ) )
-        {
-            ensembleScore = new EnumMap<>( MetricConstants.class );
-            ensembleScore.put( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
-                               new CRPSBuilder().setOutputFactory( outputFactory ).build() );
-            ensembleScore.put( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE,
-                               new CRPSSBuilder().setOutputFactory( outputFactory ).build() );
-            ensembleScore.put( MetricConstants.SAMPLE_SIZE,
-                               new SampleSizeBuilder<EnsemblePairs>().setOutputFactory( outputFactory ).build() );
-
-        }
-    }
-
-    /**
-     * Builds the store of metrics that consume {@link DiscreteProbabilityPairs} and produce 
-     * {@link DoubleScoreOutput}. 
-     * @throws MetricParameterException if one or more parameter values is incorrect
-     */
-
-    private void buildDiscreteProbabilityScoreStore() throws MetricParameterException
-    {
-        if ( Objects.isNull( discreteProbabilityScore ) )
-        {
-            discreteProbabilityScore = new EnumMap<>( MetricConstants.class );
-            discreteProbabilityScore.put( MetricConstants.BRIER_SCORE,
-                                          new BrierScore.BrierScoreBuilder().setOutputFactory( outputFactory )
-                                                                            .build() );
-            discreteProbabilityScore.put( MetricConstants.BRIER_SKILL_SCORE,
-                                          new BrierSkillScore.BrierSkillScoreBuilder().setOutputFactory( outputFactory )
-                                                                                      .build() );
-            discreteProbabilityScore.put( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE,
-                                          new RelativeOperatingCharacteristicScoreBuilder().setOutputFactory( outputFactory )
-                                                                                           .build() );
-        }
-    }
-
-    /**
-     * Builds the store of metrics that consume {@link DiscreteProbabilityPairs} and produce 
-     * {@link MultiVectorOutput}. 
-     * @throws MetricParameterException if one or more parameter values is incorrect
-     */
-
-    private void buildDiscreteProbabilityMultiVectorStore() throws MetricParameterException
-    {
-        if ( Objects.isNull( discreteProbabilityMultiVector ) )
-        {
-            discreteProbabilityMultiVector = new EnumMap<>( MetricConstants.class );
-            discreteProbabilityMultiVector.put( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM,
-                                                new RelativeOperatingCharacteristicBuilder().setOutputFactory( outputFactory )
-                                                                                            .build() );
-            discreteProbabilityMultiVector.put( MetricConstants.RELIABILITY_DIAGRAM,
-                                                new ReliabilityDiagramBuilder().setOutputFactory( outputFactory )
-                                                                               .build() );
-        }
-    }
-
-    /**
-     * Builds the store of metrics that consume {@link EnsemblePairs} and produce 
-     * {@link BoxPlotOutput}. 
-     * @throws MetricParameterException if one or more parameter values is incorrect
-     */
-
-    private void buildEnsembleBoxPlotStore() throws MetricParameterException
-    {
-        if ( Objects.isNull( ensembleBoxPlot ) )
-        {
-            ensembleBoxPlot = new EnumMap<>( MetricConstants.class );
-            ensembleBoxPlot.put( MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE,
-                                 new BoxPlotErrorByObservedBuilder().setOutputFactory( outputFactory ).build() );
-            ensembleBoxPlot.put( MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE,
-                                 new BoxPlotErrorByForecastBuilder().setOutputFactory( outputFactory ).build() );
-        }
-    }
-
-    /**
-     * Builds the store of metrics that consumes {@link TimeSeriesOfSingleValuedPairs} and produces 
-     * {@link PairedOutput}. 
-     * @throws MetricParameterException if one or more parameter values is incorrect
-     */
-
-    private void buildSingleValuedTimeSeriesStore() throws MetricParameterException
-    {
-        if ( Objects.isNull( singleValuedTimeSeries ) )
-        {
-            singleValuedTimeSeries = new EnumMap<>( MetricConstants.class );
-            singleValuedTimeSeries.put( MetricConstants.TIME_TO_PEAK_ERROR,
-                                        new TimeToPeakErrorBuilder().setOutputFactory( outputFactory ).build() );
-            singleValuedTimeSeries.put( MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR,
-                                        new TimeToPeakRelativeErrorBuilder().setOutputFactory( outputFactory )
-                                                                            .build() );
-        }
     }
 
 }
