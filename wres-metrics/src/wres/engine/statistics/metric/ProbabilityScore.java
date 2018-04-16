@@ -25,8 +25,6 @@ import wres.datamodel.outputs.ScoreOutput;
  * </p>
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 public interface ProbabilityScore<S extends MetricInput<?>, T extends ScoreOutput<?,T>> extends Score<S,T>
 {

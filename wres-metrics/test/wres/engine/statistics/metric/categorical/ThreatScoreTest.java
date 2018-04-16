@@ -26,11 +26,11 @@ import wres.engine.statistics.metric.MetricTestDataFactory;
 import wres.engine.statistics.metric.Score;
 
 /**
- * Tests the {@link ProbabilityOfDetection}.
+ * Tests the {@link ThreatScore}.
  * 
  * @author james.brown@hydrosolved.com
  */
-public final class ProbabilityOfDetectionTest
+public final class ThreatScoreTest
 {
     
     @Rule
@@ -58,7 +58,7 @@ public final class ProbabilityOfDetectionTest
      * Score used for testing. 
      */
 
-    private ProbabilityOfDetection pod;
+    private ThreatScore ts;
 
     /**
      * Metadata used for testing.
@@ -72,11 +72,11 @@ public final class ProbabilityOfDetectionTest
         outF = DefaultDataFactory.getInstance();
         metaFac = outF.getMetadataFactory();
         metricFactory = MetricFactory.getInstance( outF );
-        pod = metricFactory.ofProbabilityOfDetection();
+        ts = metricFactory.ofThreatScore();
         meta = metaFac.getOutputMetadata( 365,
                                           metaFac.getDimension(),
                                           metaFac.getDimension(),
-                                          MetricConstants.PROBABILITY_OF_DETECTION,
+                                          MetricConstants.THREAT_SCORE,
                                           MetricConstants.MAIN,
                                           metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ) );
     }    
@@ -92,8 +92,8 @@ public final class ProbabilityOfDetectionTest
         final DichotomousPairs input = MetricTestDataFactory.getDichotomousPairsOne();
 
         //Check the results
-        final DoubleScoreOutput actual = pod.apply( input );
-        final DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 0.780952380952381, meta );
+        final DoubleScoreOutput actual = ts.apply( input );
+        final DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 0.5734265734265734, meta );
         assertTrue( "Actual: " + actual.getData().doubleValue()
                     + ". Expected: "
                     + expected.getData().doubleValue()
@@ -108,7 +108,7 @@ public final class ProbabilityOfDetectionTest
     @Test
     public void testMetricIsNamedCorrectly()
     {
-        assertTrue( pod.getName().equals( MetricConstants.PROBABILITY_OF_DETECTION.toString() ) );
+        assertTrue( ts.getName().equals( MetricConstants.THREAT_SCORE.toString() ) );
     }    
     
     /**
@@ -118,7 +118,7 @@ public final class ProbabilityOfDetectionTest
     @Test
     public void testMetricIsNotDecoposable()
     {
-        assertFalse( pod.isDecomposable() );
+        assertFalse( ts.isDecomposable() );
     }    
     
     /**
@@ -128,7 +128,7 @@ public final class ProbabilityOfDetectionTest
     @Test
     public void testMetricIsASkillScore()
     {
-        assertFalse( pod.isSkillScore() );
+        assertFalse( ts.isSkillScore() );
     }       
     
     /**
@@ -138,7 +138,7 @@ public final class ProbabilityOfDetectionTest
     @Test
     public void testGetScoreOutputGroup()
     {
-        assertTrue( pod.getScoreOutputGroup() == ScoreOutputGroup.NONE );
+        assertTrue( ts.getScoreOutputGroup() == ScoreOutputGroup.NONE );
     }      
     
     /**
@@ -148,7 +148,7 @@ public final class ProbabilityOfDetectionTest
     @Test
     public void testGetCollectionOf()
     {
-        assertTrue( pod.getCollectionOf() == MetricConstants.CONTINGENCY_TABLE );
+        assertTrue( ts.getCollectionOf() == MetricConstants.CONTINGENCY_TABLE );
     }      
 
     /**
@@ -160,8 +160,8 @@ public final class ProbabilityOfDetectionTest
     public void testExceptionOnNullInput()
     {
         exception.expect( MetricInputException.class );
-        exception.expectMessage( "Specify non-null input to the '"+pod.getName()+"'." );
-        pod.aggregate( (MatrixOutput) null );
-    }    
+        exception.expectMessage( "Specify non-null input to the '"+ts.getName()+"'." );
+        ts.aggregate( (MatrixOutput) null );
+    }     
 
 }

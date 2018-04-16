@@ -1,9 +1,6 @@
 package wres.engine.statistics.metric.categorical;
 
-import java.util.Objects;
-
 import wres.datamodel.MetricConstants;
-import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MatrixOutput;
@@ -15,8 +12,6 @@ import wres.engine.statistics.metric.MetricParameterException;
  * (i.e. were true positives), after factoring out the correct predictions that were due to chance.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 public class EquitableThreatScore extends ContingencyTableScore<DichotomousPairs>
 {
@@ -24,17 +19,13 @@ public class EquitableThreatScore extends ContingencyTableScore<DichotomousPairs
     @Override
     public DoubleScoreOutput apply( final DichotomousPairs s )
     {
-        return aggregate( getCollectionInput( s ) );
+        return aggregate( this.getCollectionInput( s ) );
     }
 
     @Override
     public DoubleScoreOutput aggregate( final MatrixOutput output )
     {
-        if ( Objects.isNull( output ) )
-        {
-            throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
-        }
-        is2x2ContingencyTable( output, this );
+        this.is2x2ContingencyTable( output, this );
         final MatrixOutput v = output;
         final double[][] cm = v.getData().getDoubles();
         final double t = cm[0][0] + cm[0][1] + cm[1][0];

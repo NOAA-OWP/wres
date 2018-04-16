@@ -4,7 +4,5 @@
  * and produce {@link wres.datamodel.outputs.MetricOutput}.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 package wres.engine.statistics.metric.categorical;

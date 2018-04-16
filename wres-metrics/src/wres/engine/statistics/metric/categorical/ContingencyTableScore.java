@@ -21,8 +21,6 @@ import wres.engine.statistics.metric.categorical.ContingencyTable.ContingencyTab
  * A generic implementation of an error score that applies to the components of a {@link ContingencyTable}.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 
 abstract class ContingencyTableScore<S extends MulticategoryPairs> extends OrdinaryScore<S, DoubleScoreOutput>
@@ -39,7 +37,7 @@ abstract class ContingencyTableScore<S extends MulticategoryPairs> extends Ordin
      * Null string warning, used in several places.
      */
 
-    private final String nullString = "Specify non-null input for the '" + toString() + "'.";
+    private final String nullString = "Specify non-null input to the '" + toString() + "'.";
 
     @Override
     public MetricConstants getCollectionOf()

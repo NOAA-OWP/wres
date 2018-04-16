@@ -83,7 +83,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
     @Test
     public void test1ApplyWithoutThresholds() throws IOException, MetricProcessorException, InterruptedException
     {
-        String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/test1ApplyWithoutThresholds.xml";
+        String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/testApplyWithoutThresholds.xml";
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
@@ -145,7 +145,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
     public void test2ApplyWithThresholds() throws IOException, MetricProcessorException, InterruptedException
     {
         final DataFactory metIn = DefaultDataFactory.getInstance();
-        String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/test2ApplyWithThresholds.xml";
+        String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/testApplyWithThresholds.xml";
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
@@ -216,7 +216,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
 
         //Check for null input
         final DataFactory metIn = DefaultDataFactory.getInstance();
-        String testOne = "testinput/metricProcessorSingleValuedPairsByTimeTest/test3ExceptionsOne.xml";
+        String testOne = "testinput/metricProcessorSingleValuedPairsByTimeTest/testExceptionsOne.xml";
         try
         {
             ProjectConfig config = ProjectConfigPlus.from( Paths.get( testOne ) ).getProjectConfig();
@@ -231,7 +231,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         {
         }
         //Check for absence of thresholds on metrics that require them
-        String testTwo = "testinput/metricProcessorSingleValuedPairsByTimeTest/test3ExceptionsFour.xml";
+        String testTwo = "testinput/metricProcessorSingleValuedPairsByTimeTest/testExceptionsFour.xml";
         try
         {
             ProjectConfig config = ProjectConfigPlus.from( Paths.get( testTwo ) ).getProjectConfig();
@@ -248,7 +248,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         {
         }
         //Checked for value thresholds that do not apply to left
-        String testThree = "testinput/metricProcessorSingleValuedPairsByTimeTest/test3ExceptionsFive.xml";
+        String testThree = "testinput/metricProcessorSingleValuedPairsByTimeTest/testExceptionsFive.xml";
         try
         {
             ProjectConfig config = ProjectConfigPlus.from( Paths.get( testThree ) ).getProjectConfig();
@@ -265,7 +265,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         {
         }
         //Checked for probability thresholds that do not apply to left
-        String testFour = "testinput/metricProcessorSingleValuedPairsByTimeTest/test3ExceptionsSix.xml";
+        String testFour = "testinput/metricProcessorSingleValuedPairsByTimeTest/testExceptionsSix.xml";
         try
         {
             ProjectConfig config = ProjectConfigPlus.from( Paths.get( testFour ) ).getProjectConfig();
@@ -282,7 +282,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
         {
         }
         //Check for insufficient data to compute climatological probability thresholds
-        String testFive = "testinput/metricProcessorSingleValuedPairsByTimeTest/test3ExceptionsEight.xml";
+        String testFive = "testinput/metricProcessorSingleValuedPairsByTimeTest/testExceptionsEight.xml";
         try
         {
             ProjectConfig config = ProjectConfigPlus.from( Paths.get( testFive ) ).getProjectConfig();
@@ -312,7 +312,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
     public void test4AllValid() throws IOException, MetricProcessorException
     {
         final DataFactory metIn = DefaultDataFactory.getInstance();
-        String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/test4AllValid.xml";
+        String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/testAllValid.xml";
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
                 MetricFactory.getInstance( metIn )
@@ -343,7 +343,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
     {
         DataFactory metIn = DefaultDataFactory.getInstance();
         MetadataFactory metaFac = DefaultMetadataFactory.getInstance();
-        String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/test5ApplyTimeSeriesMetrics.xml";
+        String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/testApplyTimeSeriesMetrics.xml";
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
@@ -434,7 +434,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
     {
         DataFactory metIn = DefaultDataFactory.getInstance();
         MetadataFactory metaFac = DefaultMetadataFactory.getInstance();
-        String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/test6ApplyTimeSeriesSummaryStats.xml";
+        String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/testApplyTimeSeriesSummaryStats.xml";
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
@@ -513,7 +513,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
             throws IOException, MetricOutputAccessException, MetricProcessorException, InterruptedException
     {
         final DataFactory metIn = DefaultDataFactory.getInstance();
-        String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/test2ApplyWithThresholds.xml";
+        String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/testApplyWithThresholds.xml";
 
         // Define the external thresholds to use
         Map<MetricConstants, Set<Threshold>> canonical = new HashMap<>();
@@ -616,7 +616,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
     public void test8ApplyWithThresholdsAndNoData() throws IOException, MetricProcessorException, InterruptedException
     {
         final DataFactory metIn = DefaultDataFactory.getInstance();
-        String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/test2ApplyWithThresholds.xml";
+        String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/testApplyWithThresholds.xml";
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
@@ -695,7 +695,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
     {
         DataFactory metIn = DefaultDataFactory.getInstance();
         MetadataFactory metaFac = DefaultMetadataFactory.getInstance();
-        String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/test6ApplyTimeSeriesSummaryStats.xml";
+        String configPath = "testinput/metricProcessorSingleValuedPairsByTimeTest/testApplyTimeSeriesSummaryStats.xml";
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =

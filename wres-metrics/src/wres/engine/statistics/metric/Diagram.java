@@ -10,8 +10,6 @@ import wres.datamodel.outputs.MetricOutput;
  * An abstract diagram.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 
 public abstract class Diagram<S extends MetricInput<?>, T extends MetricOutput<?>> implements Metric<S, T>

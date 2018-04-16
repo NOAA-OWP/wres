@@ -14,8 +14,6 @@ import wres.datamodel.outputs.MetricOutput;
  * the intermediate input (output).
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 
 class CollectableTask<S extends MetricInput<?>, T extends MetricOutput<?>, U extends MetricOutput<?>>

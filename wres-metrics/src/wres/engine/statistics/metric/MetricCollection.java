@@ -49,8 +49,6 @@ import wres.engine.statistics.metric.categorical.ContingencyTable;
  * @param <U> the output type
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.2
- * @since 0.1
  */
 
 public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?>, U extends MetricOutput<?>>
