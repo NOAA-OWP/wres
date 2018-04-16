@@ -1,9 +1,11 @@
 package wres.engine.statistics.metric;
 
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
@@ -20,11 +22,31 @@ import wres.engine.statistics.metric.SampleSize.SampleSizeBuilder;
  * Tests the {@link SampleSize}.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 public final class SampleSizeTest
 {
+
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
+
+    /**
+     * Output factory.
+     */
+
+    private DataFactory outF;
+
+    /**
+     * Metadata factory.
+     */
+
+    private MetadataFactory metaFac;
+
+    @Before
+    public void setupBeforeEachTest()
+    {
+        outF = DefaultDataFactory.getInstance();
+        metaFac = outF.getMetadataFactory();
+    }
 
     /**
      * Constructs a {@link SampleSize} and compares the actual result to the expected result. Also, checks the 
@@ -33,11 +55,9 @@ public final class SampleSizeTest
      */
 
     @Test
-    public void test1SampleSize() throws MetricParameterException
+    public void testSampleSize() throws MetricParameterException
     {
         //Obtain the factories
-        final DataFactory outF = DefaultDataFactory.getInstance();
-        final MetadataFactory metaFac = outF.getMetadataFactory();
 
         //Generate some data
         final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
@@ -76,25 +96,17 @@ public final class SampleSizeTest
      */
 
     @Test
-    public void test2Exceptions() throws MetricParameterException
+    public void testExceptions() throws MetricParameterException
     {
-        //Obtain the factories
-        final DataFactory outF = DefaultDataFactory.getInstance();
-
         //Build the metric
         final SampleSizeBuilder<SingleValuedPairs> b = new SampleSize.SampleSizeBuilder<>();
         b.setOutputFactory( outF );
         final SampleSize<SingleValuedPairs> ss = b.build();
 
-        //Check exceptions
-        try
-        {
-            ss.apply( null );
-            fail( "Expected an exception on null input." );
-        }
-        catch ( MetricInputException e )
-        {
-        }
+        exception.expect( MetricInputException.class );
+        exception.expectMessage( "Specify non-null input to the 'SAMPLE SIZE'." );
+        ss.apply( null );
+
     }
 
 

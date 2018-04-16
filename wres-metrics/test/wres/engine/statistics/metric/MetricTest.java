@@ -1,8 +1,8 @@
 package wres.engine.statistics.metric;
 
-import static org.junit.Assert.fail;
-
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
@@ -12,11 +12,12 @@ import wres.datamodel.MetricConstants;
  * Tests the {@link Metric}.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 public final class MetricTest
 {
+
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
 
     /**
      * Constructs a {@link Metric} and tests for checked exceptions.
@@ -24,22 +25,22 @@ public final class MetricTest
      */
 
     @Test
-    public void test1Exceptions() throws MetricParameterException
+    public void testExceptions() throws MetricParameterException
     {
-        //Obtaining metadata from a Collectable not allowed
-        try
-        {
-            final DataFactory outF = DefaultDataFactory.getInstance();
-            MetricFactory.getInstance( outF ).ofCorrelationPearsons().getMetadata(
-                                                                                   MetricTestDataFactory.getSingleValuedPairsOne(),
-                                                                                   1,
-                                                                                   MetricConstants.MAIN,
-                                                                                   null );
-            fail( "Expected a checked exception on requesting metadata from a collectable metric." );
-        }
-        catch ( UnsupportedOperationException e )
-        {
-        }
+
+        exception.expect( UnsupportedOperationException.class );
+        exception.expectMessage( "Cannot safely obtain the metadata for the collectable "
+                                 + "implementation of '"
+                                 + "PEARSON CORRELATION COEFFICIENT"
+                                 + "': build the metadata in the implementing class." );
+
+        final DataFactory outF = DefaultDataFactory.getInstance();
+        MetricFactory.getInstance( outF )
+                     .ofCorrelationPearsons()
+                     .getMetadata( MetricTestDataFactory.getSingleValuedPairsOne(),
+                                   1,
+                                   MetricConstants.MAIN,
+                                   null );
     }
 
 }

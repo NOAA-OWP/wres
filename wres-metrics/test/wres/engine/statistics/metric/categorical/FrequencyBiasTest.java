@@ -1,86 +1,167 @@
 package wres.engine.statistics.metric.categorical;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
+import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
+import wres.datamodel.outputs.MatrixOutput;
+import wres.engine.statistics.metric.Collectable;
+import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
-import wres.engine.statistics.metric.categorical.FrequencyBias.FrequencyBiasBuilder;
+import wres.engine.statistics.metric.Score;
 
 /**
  * Tests the {@link FrequencyBias}.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 public final class FrequencyBiasTest
 {
 
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
+
     /**
-     * Constructs a {@link FrequencyBias} and compares the actual result to the expected result. Also, checks the
-     * parameters of the metric.
-     * @throws MetricParameterException if the metric construction fails 
+     * Output factory.
+     */
+
+    private DataFactory outF;
+
+    /**
+     * Metadata factory.
+     */
+
+    private MetadataFactory metaFac;
+
+    /**
+     * Metric factory.
+     */
+
+    private MetricFactory metricFactory;
+
+    /**
+     * Score used for testing. 
+     */
+
+    private FrequencyBias fb;
+
+    /**
+     * Metadata used for testing.
+     */
+
+    private MetricOutputMetadata meta;
+
+    @Before
+    public void setUpBeforeEachTest() throws MetricParameterException
+    {
+        outF = DefaultDataFactory.getInstance();
+        metaFac = outF.getMetadataFactory();
+        metricFactory = MetricFactory.getInstance( outF );
+        fb = metricFactory.ofFrequencyBias();
+        meta = metaFac.getOutputMetadata( 365,
+                                          metaFac.getDimension(),
+                                          metaFac.getDimension(),
+                                          MetricConstants.FREQUENCY_BIAS,
+                                          MetricConstants.MAIN,
+                                          metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ) );
+    }    
+    
+    /**
+     * Compares the output from {@link Metric#apply(wres.datamodel.inputs.MetricInput)} against expected output.
      */
 
     @Test
-    public void test1FrequencyBias() throws MetricParameterException
+    public void testApply()
     {
-        //Obtain the factories
-        final DataFactory outF = DefaultDataFactory.getInstance();
-        final MetadataFactory metaFac = outF.getMetadataFactory();
-
         //Generate some data
         final DichotomousPairs input = MetricTestDataFactory.getDichotomousPairsOne();
 
-        //Metadata for the output
-        final MetricOutputMetadata m1 =
-                metaFac.getOutputMetadata( input.getData().size(),
-                                           metaFac.getDimension(),
-                                           metaFac.getDimension(),
-                                           MetricConstants.FREQUENCY_BIAS,
-                                           MetricConstants.MAIN,
-                                           metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ) );
-
-        //Build the metric
-        final FrequencyBiasBuilder b = new FrequencyBiasBuilder();
-        b.setOutputFactory( outF );
-        final FrequencyBias fb = b.build();
-
         //Check the results
-        final MetricFactory metF = MetricFactory.getInstance( outF );
         final DoubleScoreOutput actual = fb.apply( input );
-        final DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 1.1428571428571428, m1 );
+        final DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 1.1428571428571428, meta );
         assertTrue( "Actual: " + actual.getData().doubleValue()
                     + ". Expected: "
                     + expected.getData().doubleValue()
                     + ".",
                     actual.equals( expected ) );
-        //Check the parameters
-        assertTrue( "Unexpected name for the Frequency Bias.",
-                    fb.getName().equals( MetricConstants.FREQUENCY_BIAS.toString() ) );
-        assertTrue( "The Frequency Bias is not decomposable.", !fb.isDecomposable() );
-        assertTrue( "The Frequency Bias is not a skill score.", !fb.isSkillScore() );
-        assertTrue( "The Frequency Bias cannot be decomposed.",
-                    fb.getScoreOutputGroup() == ScoreOutputGroup.NONE );
-        final String expName = metF.ofDichotomousContingencyTable().getName();
-        final String actName = fb.getCollectionOf().toString();
-        assertTrue( "The Frequency Bias should be a collection of '" + expName
-                    + "', but is actually a collection of '"
-                    + actName
-                    + "'.",
-                    fb.getCollectionOf() == metF.ofDichotomousContingencyTable().getID() );
-
     }
+    
+    /**
+     * Verifies that {@link Metric#getName()} returns the expected result.
+     */
+
+    @Test
+    public void testMetricIsNamedCorrectly()
+    {
+        assertTrue( fb.getName().equals( MetricConstants.FREQUENCY_BIAS.toString() ) );
+    }    
+    
+    /**
+     * Verifies that {@link Score#isDecomposable()} returns <code>false</code>.
+     */
+
+    @Test
+    public void testMetricIsNotDecoposable()
+    {
+        assertFalse( fb.isDecomposable() );
+    }    
+    
+    /**
+     * Verifies that {@link Score#isSkillScore()} returns <code>false</code>.
+     */
+
+    @Test
+    public void testMetricIsASkillScore()
+    {
+        assertFalse( fb.isSkillScore() );
+    }       
+    
+    /**
+     * Verifies that {@link Score#getScoreOutputGroup()} returns {@link OutputScoreGroup#NONE}.
+     */
+
+    @Test
+    public void testGetScoreOutputGroup()
+    {
+        assertTrue( fb.getScoreOutputGroup() == ScoreOutputGroup.NONE );
+    }      
+    
+    /**
+     * Verifies that {@link Collectable#getCollectionOf()} returns {@link MetricConstants#CONTINGENCY_TABLE}.
+     */
+
+    @Test
+    public void testGetCollectionOf()
+    {
+        assertTrue( fb.getCollectionOf() == MetricConstants.CONTINGENCY_TABLE );
+    }      
+
+    /**
+     * Checks for an exception when calling {@link Collectable#aggregate(wres.datamodel.outputs.MetricOutput)} with 
+     * null input.
+     */
+
+    @Test
+    public void testExceptionOnNullInput()
+    {
+        exception.expect( MetricInputException.class );
+        exception.expectMessage( "Specify non-null input to the '"+fb.getName()+"'." );
+        fb.aggregate( (MatrixOutput) null );
+    }    
 
 }

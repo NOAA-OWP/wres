@@ -123,12 +123,12 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
 		
 		if (comparison == 0)
 		{
-			comparison = this.ensembleMemberID.compareTo(other.ensembleMemberID);
+			comparison = this.getEnsembleMemberID().compareTo(other.getEnsembleMemberID());
 		}
 
 		if (comparison == 0)
 		{
-			comparison = this.qualifierID.compareToIgnoreCase( other.qualifierID );
+			comparison = this.getQualifierID().compareToIgnoreCase( other.getQualifierID() );
 		}
 
 		return comparison;
@@ -168,8 +168,24 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
 		script.addTab().addLine("SELECT ?, ?, ?");
 
 		args.add(this.ensembleName);
-		args.add(this.getQualifierID());
-		args.add(Integer.parseInt(this.getEnsembleMemberID()));
+
+		if (this.qualifierID == null)
+		{
+			args.add(null);
+		}
+		else
+		{
+			args.add( this.getQualifierID() );
+		}
+
+		if (this.getEnsembleMemberID() == null)
+		{
+			args.add(null);
+		}
+		else
+		{
+			args.add( Integer.parseInt( this.getEnsembleMemberID() ) );
+		}
 
 		script.addTab().addLine("WHERE NOT EXISTS (");
 		script.addTab(  2  ).addLine("SELECT 1");
@@ -284,28 +300,6 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
 			}
 
             return equality;
-        }
-
-        short fillCount()
-        {
-            short count = 0;
-
-            if (!(this.getEnsembleName() == null || this.getEnsembleName().isEmpty()))
-            {
-                count++;
-            }
-
-            if (!(this.getMemberIndex() == null || this.getMemberIndex().isEmpty()))
-            {
-                count++;
-            }
-
-            if (!(this.getQualifierID() == null || this.getQualifierID().isEmpty()))
-            {
-                count++;
-            }
-
-            return count;
         }
 
         @Override

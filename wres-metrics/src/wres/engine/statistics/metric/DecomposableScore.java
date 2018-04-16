@@ -10,8 +10,6 @@ import wres.datamodel.outputs.DoubleScoreOutput;
  * A generic implementation of an error score that is decomposable.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 
 public abstract class DecomposableScore<S extends MetricInput<?>> extends OrdinaryScore<S, DoubleScoreOutput>

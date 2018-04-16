@@ -31,8 +31,6 @@ import wres.datamodel.outputs.MetricOutput;
  * </p>
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 public interface Metric<S extends MetricInput<?>, T extends MetricOutput<?>> extends Function<S, T>
 {
@@ -119,6 +117,7 @@ public interface Metric<S extends MetricInput<?>, T extends MetricOutput<?>> ext
      * @param componentID the component identifier or metric decomposition template
      * @param baselineID the baseline identifier or null
      * @return the metadata
+     * @throws UnsupportedOperationException if the input metric is an instance of {@link Collectable}
      */
 
     default MetricOutputMetadata getMetadata( final MetricInput<?> input,

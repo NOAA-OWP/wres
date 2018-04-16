@@ -60,8 +60,6 @@ import wres.engine.statistics.metric.timeseries.TimingErrorDurationStatistics;
  * Tests the {@link MetricFactory}.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 public final class MetricFactoryTest
 {
@@ -439,7 +437,7 @@ public final class MetricFactoryTest
     public void testOfMetricProcessorByProject() throws IOException, MetricProcessorException
     {
         String configPathSingleValued =
-                "testinput/metricProcessorSingleValuedPairsByTimeTest/test1ApplyWithoutThresholds.xml";
+                "testinput/metricProcessorSingleValuedPairsByTimeTest/testApplyWithoutThresholds.xml";
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathSingleValued ) ).getProjectConfig();
         assertTrue( MetricFactory.getInstance( DefaultDataFactory.getInstance() )
@@ -459,7 +457,7 @@ public final class MetricFactoryTest
     public void testOfMetricProcessorByTimeSingleValuedPairs() throws IOException, MetricProcessorException
     {
         String configPathSingleValued =
-                "testinput/metricProcessorSingleValuedPairsByTimeTest/test1ApplyWithoutThresholds.xml";
+                "testinput/metricProcessorSingleValuedPairsByTimeTest/testApplyWithoutThresholds.xml";
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathSingleValued ) ).getProjectConfig();
         assertTrue( MetricFactory.getInstance( DefaultDataFactory.getInstance() )
@@ -477,7 +475,7 @@ public final class MetricFactoryTest
     @Test
     public void testOfMetricProcessorByTimeEnsemblePairs() throws IOException, MetricProcessorException
     {
-        String configPathEnsemble = "testinput/metricProcessorEnsemblePairsByTimeTest/test1ApplyWithoutThresholds.xml";
+        String configPathEnsemble = "testinput/metricProcessorEnsemblePairsByTimeTest/testApplyWithoutThresholds.xml";
         ProjectConfig configTwo = ProjectConfigPlus.from( Paths.get( configPathEnsemble ) ).getProjectConfig();
         assertTrue( MetricFactory.getInstance( DefaultDataFactory.getInstance() )
                                  .ofMetricProcessorByTimeEnsemblePairs( configTwo,
@@ -496,7 +494,7 @@ public final class MetricFactoryTest
             throws IOException, MetricProcessorException
     {
         String configPathSingleValued =
-                "testinput/metricProcessorSingleValuedPairsByTimeTest/test2ApplyWithThresholds.xml";
+                "testinput/metricProcessorSingleValuedPairsByTimeTest/testApplyWithThresholds.xml";
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathSingleValued ) ).getProjectConfig();
         assertTrue( MetricFactory.getInstance( DefaultDataFactory.getInstance() )
@@ -517,7 +515,7 @@ public final class MetricFactoryTest
             throws IOException, MetricProcessorException
     {
         String configPathSingleValued =
-                "testinput/metricProcessorEnsemblePairsByTimeTest/test2ApplyWithValueThresholds.xml";
+                "testinput/metricProcessorEnsemblePairsByTimeTest/testApplyWithValueThresholds.xml";
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathSingleValued ) ).getProjectConfig();
         assertTrue( MetricFactory.getInstance( DefaultDataFactory.getInstance() )
@@ -539,7 +537,7 @@ public final class MetricFactoryTest
             throws IOException, MetricProcessorException
     {
         String configPathSingleValued =
-                "testinput/metricProcessorSingleValuedPairsByTimeTest/test2ApplyWithThresholds.xml";
+                "testinput/metricProcessorSingleValuedPairsByTimeTest/testApplyWithThresholds.xml";
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathSingleValued ) ).getProjectConfig();
         assertTrue( MetricFactory.getInstance( DefaultDataFactory.getInstance() )
@@ -561,7 +559,7 @@ public final class MetricFactoryTest
             throws IOException, MetricProcessorException
     {
         String configPathSingleValued =
-                "testinput/metricProcessorEnsemblePairsByTimeTest/test2ApplyWithValueThresholds.xml";
+                "testinput/metricProcessorEnsemblePairsByTimeTest/testApplyWithValueThresholds.xml";
 
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathSingleValued ) ).getProjectConfig();
         assertTrue( MetricFactory.getInstance( DefaultDataFactory.getInstance() )

@@ -42,6 +42,7 @@ import wres.config.generated.TimeScaleConfig;
 import wres.config.generated.TimeScaleFunction;
 import wres.io.concurrency.DataSetRetriever;
 import wres.io.config.ConfigHelper;
+import wres.io.data.caching.Ensembles;
 import wres.io.data.caching.Features;
 import wres.io.data.caching.Variables;
 import wres.io.utilities.DataSet;
@@ -2377,18 +2378,25 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
             // That was even with a subset of the real data (1 month vs 30 years).
             // If we cut it to 500, it now takes 1.6s. Still not great, but
             // much faster
-            script.addTab().addLine( "AND lead <= ", 500 );
+            script.addTab().addLine( "AND lead <= ", 100 );
         }
 
         Optional<FeatureDetails> featureDetails = this.getFeatures().stream().findFirst();
 
         if (featureDetails.isPresent())
         {
+            FeatureDetails feature = featureDetails.get();
+            Integer variableId = this.getVariableId( dataSourceConfig );
+            Integer variablePositionId = feature.getVariablePositionID( variableId );
+            Integer arbitraryEnsembleId = Ensembles.getSingleEnsembleID(this.getId(), variablePositionId);
+
             String variablePositionClause = ConfigHelper.getVariablePositionClause(
-                    featureDetails.get().toFeature(),
-                    this.getVariableId( dataSourceConfig ),
+                    feature.toFeature(),
+                    variableId,
                     "TS" );
             script.addLine("        AND ", variablePositionClause);
+
+            script.addTab(  2  ).addLine("AND TS.ensemble_id = ", arbitraryEnsembleId);
 
         }
 
