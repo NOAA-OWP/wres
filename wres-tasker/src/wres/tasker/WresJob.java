@@ -25,8 +25,18 @@ public class WresJob
 
     private static final String SEND_QUEUE_NAME = "wres.job";
 
+    private static final String BROKER_HOST_PROPERTY_NAME = "wres.broker";
+    private static final String DEFAULT_BROKER_HOST = "localhost";
+
     // Using a member variable fails, make it same across instances.
     private static final ConnectionFactory CONNECTION_FACTORY = new ConnectionFactory();
+
+    static
+    {
+        // Determine the actual broker name, whether from -D or default
+        String brokerHost = WresJob.getBrokerHost();
+        CONNECTION_FACTORY.setHost( brokerHost );
+    }
 
     @GET
     @Produces( MediaType.TEXT_PLAIN )
@@ -91,4 +101,26 @@ public class WresJob
                        .entity("<!DOCTYPE html><html><head><title>Our mistake</title></head><body><h1>Internal Server Error</h1><p>An issue occurred that is not your fault.</p></body></html>")
                        .build();
     }
+
+
+    /**
+     * Helper to get the broker host name. Returns what was set in -D args
+     * or a default value if -D is not set.
+     * @return the broker host name to try connecting to.
+     */
+
+    private static String getBrokerHost()
+    {
+        String brokerFromDashD= System.getProperty( BROKER_HOST_PROPERTY_NAME );
+
+        if ( brokerFromDashD != null )
+        {
+            return brokerFromDashD;
+        }
+        else
+        {
+            return DEFAULT_BROKER_HOST;
+        }
+    }
+
 }
