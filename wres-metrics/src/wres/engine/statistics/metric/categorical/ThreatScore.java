@@ -23,19 +23,19 @@ public class ThreatScore extends ContingencyTableScore<DichotomousPairs>
 {
 
     @Override
-    public DoubleScoreOutput apply(final DichotomousPairs s)
+    public DoubleScoreOutput apply( final DichotomousPairs s )
     {
-        return aggregate(getCollectionInput(s));
+        return aggregate( getCollectionInput( s ) );
     }
 
     @Override
-    public DoubleScoreOutput aggregate(final MatrixOutput output)
+    public DoubleScoreOutput aggregate( final MatrixOutput output )
     {
-        is2x2ContingencyTable(output, this);
+        is2x2ContingencyTable( output, this );
         final MatrixOutput v = output;
         final double[][] cm = v.getData().getDoubles();
-        double result = FunctionFactory.finiteOrNaN().applyAsDouble( cm[0][0] / (cm[0][0] + cm[0][1] + cm[1][0]) );
-        return getDataFactory().ofDoubleScoreOutput( result, getMetadata(output));
+        double result = FunctionFactory.finiteOrNaN().applyAsDouble( cm[0][0] / ( cm[0][0] + cm[0][1] + cm[1][0] ) );
+        return getDataFactory().ofDoubleScoreOutput( result, getMetadata( output ) );
     }
 
     @Override
@@ -54,13 +54,13 @@ public class ThreatScore extends ContingencyTableScore<DichotomousPairs>
      * A {@link MetricBuilder} to build the metric.
      */
 
-    public static class CriticalSuccessIndexBuilder extends OrdinaryScoreBuilder<DichotomousPairs, DoubleScoreOutput>
+    public static class ThreatScoreBuilder extends OrdinaryScoreBuilder<DichotomousPairs, DoubleScoreOutput>
     {
 
         @Override
         public ThreatScore build() throws MetricParameterException
         {
-            return new ThreatScore(this);
+            return new ThreatScore( this );
         }
 
     }
@@ -72,9 +72,9 @@ public class ThreatScore extends ContingencyTableScore<DichotomousPairs>
      * @throws MetricParameterException if one or more parameters is invalid
      */
 
-    private ThreatScore(final CriticalSuccessIndexBuilder builder) throws MetricParameterException
+    private ThreatScore( final ThreatScoreBuilder builder ) throws MetricParameterException
     {
-        super(builder);
+        super( builder );
     }
 
 }

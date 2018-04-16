@@ -39,7 +39,7 @@ public final class ContingencyTableScoreTest
         final DataFactory outputFactory = DefaultDataFactory.getInstance();
         final MetadataFactory metaFac = outputFactory.getMetadataFactory();
         final MetricFactory metricFactory = MetricFactory.getInstance( outputFactory );
-        final ThreatScore cs = metricFactory.ofCriticalSuccessIndex();
+        final ThreatScore cs = metricFactory.ofThreatScore();
 
         //Metadata for the output
         final MetricOutputMetadata m1 = metaFac.getOutputMetadata( 365,
@@ -74,7 +74,7 @@ public final class ContingencyTableScoreTest
         final DataFactory outF = DefaultDataFactory.getInstance();
         final MetadataFactory metaFac = outF.getMetadataFactory();
         final MetricFactory metricFactory = MetricFactory.getInstance( outF );
-        final ThreatScore cs = metricFactory.ofCriticalSuccessIndex();
+        final ThreatScore cs = metricFactory.ofThreatScore();
         final MetricOutputMetadata m1 = metaFac.getOutputMetadata( 365,
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension(),

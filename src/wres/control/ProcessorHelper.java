@@ -326,7 +326,7 @@ class ProcessorHelper
         try
         {
             processor = MetricFactory.getInstance( DATA_FACTORY )
-                                     .getMetricProcessorForProject( projectConfig,
+                                     .ofMetricProcessorForProject( projectConfig,
                                                                     thresholds,
                                                                     executors.getThresholdExecutor(),
                                                                     executors.getMetricExecutor() );
