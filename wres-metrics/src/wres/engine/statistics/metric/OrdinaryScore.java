@@ -11,8 +11,6 @@ import wres.datamodel.outputs.ScoreOutput;
  * An abstract score.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 
 public abstract class OrdinaryScore<S extends MetricInput<?>, T extends ScoreOutput<?,T>> implements Score<S, T>

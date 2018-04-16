@@ -35,8 +35,6 @@ import wres.datamodel.time.Event;
  * Factory class for generating test datasets for metric calculations.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 public final class MetricTestDataFactory
 {

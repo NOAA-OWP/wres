@@ -16,8 +16,6 @@ import wres.engine.statistics.metric.MetricParameterException;
  * {@link ProbabilityOfFalseDetection}.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 public class PeirceSkillScore<S extends MulticategoryPairs> extends ContingencyTableScore<S>
 {
@@ -25,14 +23,14 @@ public class PeirceSkillScore<S extends MulticategoryPairs> extends ContingencyT
     @Override
     public DoubleScoreOutput apply( final S s )
     {
-        return aggregate( getCollectionInput( s ) );
+        return aggregate( this.getCollectionInput( s ) );
     }
 
     @Override
     public DoubleScoreOutput aggregate( final MatrixOutput output )
     {
         //Check the input
-        isContingencyTable( output, this );
+        this.isContingencyTable( output, this );
 
         final MatrixOfDoubles v = output.getData();
         final double[][] cm = v.getDoubles();
