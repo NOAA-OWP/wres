@@ -68,7 +68,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
         {
             this.incrementSequenceStep();
 
-            if (this.getPoolingStep() + 1 >= this.finalPoolingStep)
+            if (this.getPoolingStep() + 1 > this.finalPoolingStep)
             {
                 this.windowNumber = 0;
             }

@@ -103,6 +103,10 @@ else
     psql -U $1 -d $3 -h $2 -f wres.forecasts.sql >/dev/null
 
     echo ''
+    echo 'Adding the public.ProjectExecutions view...'
+    psql -U $1 -d $3 -h $2 -f ProjectExecutions.sql >/dev/null
+
+    echo ''
     echo 'Creating the schema for dynamically generated partitions...'
     psql -U $1 -d $3 -h $2 -c "CREATE SCHEMA IF NOT EXISTS partitions AUTHORIZATION wres;" >/dev/null
 fi
