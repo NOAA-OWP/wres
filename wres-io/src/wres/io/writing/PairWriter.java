@@ -61,10 +61,10 @@ public class PairWriter extends WRESCallable<Boolean>
         private final DestinationConfig destinationConfig;
         private final Instant date;
         private final Feature feature;
-        private final Integer leadIteration;
+        private final int leadIteration;
         private final PairOfDoubleAndVectorOfDoubles pair;
         private final boolean isBaseline;
-        private final Integer poolingStep;
+        private final int poolingStep;
         private final ProjectDetails projectDetails;
         private final int lead;
 
@@ -73,10 +73,10 @@ public class PairWriter extends WRESCallable<Boolean>
             this.destinationConfig = null;
             this.date = null;
             this.feature = null;
-            this.leadIteration = null;
+            this.leadIteration = Integer.MIN_VALUE;
             this.pair = null;
             this.isBaseline = false;
-            this.poolingStep = null;
+            this.poolingStep = Integer.MIN_VALUE;
             this.projectDetails = null;
             this.lead = 0;
         }
@@ -238,7 +238,7 @@ public class PairWriter extends WRESCallable<Boolean>
                 errorJoiner.add("No feature was added to record.");
             }
 
-            if (this.leadIteration == null)
+            if (this.leadIteration == Integer.MIN_VALUE)
             {
                 errorJoiner.add("The iteration was not added to record.");
             }
@@ -248,7 +248,7 @@ public class PairWriter extends WRESCallable<Boolean>
                 errorJoiner.add("No pair was added to record.");
             }
 
-            if (this.poolingStep == null)
+            if (this.poolingStep == Integer.MIN_VALUE)
             {
                 errorJoiner.add("No pooling step was configured.");
             }
@@ -277,9 +277,7 @@ public class PairWriter extends WRESCallable<Boolean>
         }
     }
 
-
-    // TODO: IMPLEMENT BUILDER
-    public PairWriter( DestinationConfig destinationConfig,
+    private PairWriter( DestinationConfig destinationConfig,
                        Instant date,
                        Feature feature,
                        int windowNum,

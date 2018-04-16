@@ -30,7 +30,6 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>>
     @Override
     public Iterator<Future<MetricInput<?>>> iterator()
     {
-        // TODO: Evaluate what kind of MetricInputIterator to return.
         Iterator<Future<MetricInput<?>>> iterator;
         try
         {
@@ -40,6 +39,7 @@ public class InputGenerator implements Iterable<Future<MetricInput<?>>>
                     iterator = new PoolingMetricInputIterator( this.feature,
                                                                this.projectDetails );
                     break;
+                // TODO: Merge back to back and rolling logic
                 case BACK_TO_BACK:
                     iterator =  new BackToBackMetricInputIterator( this.feature,
                                                                    this.projectDetails );

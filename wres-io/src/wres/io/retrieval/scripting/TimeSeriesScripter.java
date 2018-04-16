@@ -4,8 +4,6 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.StringJoiner;
 
-import org.apache.commons.lang3.tuple.Pair;
-
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.EnsembleCondition;
 import wres.config.generated.Feature;

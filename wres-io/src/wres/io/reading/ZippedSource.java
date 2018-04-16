@@ -39,7 +39,6 @@ import wres.io.config.ConfigHelper;
 import wres.io.config.SystemSettings;
 import wres.io.utilities.Database;
 import wres.util.ProgressMonitor;
-import wres.util.Strings;
 
 /**
  * @author Christopher Tubbs

@@ -12,7 +12,6 @@ import org.slf4j.LoggerFactory;
 
 import wres.io.data.details.EnsembleDetails.EnsembleKey;
 import wres.io.utilities.ScriptBuilder;
-import wres.util.Strings;
 
 /**
  * Describes basic information used to define an Ensemble from the database
