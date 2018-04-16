@@ -19,7 +19,6 @@ import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.Executor;
 import wres.io.concurrency.WRESCallable;
 import wres.io.config.ConfigHelper;
-import wres.io.config.LeftOrRightOrBaseline;
 import wres.io.data.caching.Variables;
 import wres.io.utilities.Database;
 import wres.util.Strings;

@@ -557,9 +557,7 @@ public final class PIXMLReader extends XMLReader
 				}
 				else if(localName.equalsIgnoreCase("units"))
 				{
-					//	If we are at the tag for the units, save it to the measurement units
-					currentMeasurementUnit = XML.getXMLText(reader);
-					currentMeasurementUnitID = MeasurementUnits.getMeasurementUnitID(currentMeasurementUnit);
+					currentMeasurementUnitID = MeasurementUnits.getMeasurementUnitID(XML.getXMLText(reader));
 				}
 				else if(localName.equalsIgnoreCase("missVal"))
 				{
@@ -1076,11 +1074,6 @@ public final class PIXMLReader extends XMLReader
 	 * The member ID of the current ensemble
 	 */
 	private String currentEnsembleMemberID = null;
-	
-	/**
-	 * The name of the unit of measurement that the current variable is measured in
-	 */
-	private String currentMeasurementUnit = null;
 	
 	/**
 	 * The name of the variable whose values are currently being parsed 

@@ -1104,9 +1104,6 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         // TODO: confirm that this is really intended as the default
         Duration firstLead = Duration.ZERO;
         Duration lastLead = Duration.ZERO;
-        
-        ChronoUnit configuredUnits =
-                ConfigHelper.getLeadTimeUnitsFromProjectConfig( this.projectDetails.getProjectConfig() );
 
         if ( (ConfigHelper.isForecast( sourceConfig ) && !isBaseline)
                 // Persistence forecast meta is based on the forecast meta
@@ -1115,23 +1112,14 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         {
             if (this.projectDetails.usesTimeSeriesMetrics())
             {
-                if (this.firstLead == Long.MAX_VALUE)
+                if (this.lastLead == Long.MIN_VALUE || this.firstLead == Long.MAX_VALUE)
                 {
-                    firstLead = Duration.of(Long.MIN_VALUE, ChronoUnit.SECONDS);
-                }
-                else
-                {
-                    firstLead = Duration.of( this.firstLead, configuredUnits );
+                    throw new IOException( "Valid lead times could not be "
+                                           + "retrieved from the database." );
                 }
 
-                if (this.lastLead == Long.MIN_VALUE)
-                {
-                    lastLead = Duration.of(Long.MAX_VALUE, ChronoUnit.SECONDS);
-                }
-                else
-                {
-                    lastLead = Duration.of( this.lastLead, configuredUnits );
-                }
+                firstLead = Duration.of( this.firstLead, TimeHelper.LEAD_RESOLUTION );
+                lastLead = Duration.of( this.lastLead, TimeHelper.LEAD_RESOLUTION );
             }
             else
             {
@@ -1146,12 +1134,15 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
 
                 // The lead time offset is in fixed units of hours. TODO: confirm and 
                 // change/document API to use java.time
-                Duration offsetDuration = Duration.of( offset, ChronoUnit.HOURS );
+                Duration offsetDuration = Duration.of( offset, TimeHelper.LEAD_RESOLUTION );
                 // The window width is in fixed units of hours. TODO: confirm and 
                 // change/document API to use java.time
-                Duration windowWidth = Duration.of( this.projectDetails.getWindowWidth(), ChronoUnit.HOURS );
+                Duration windowWidth = Duration.of( this.projectDetails.getWindowWidth(),
+                                                    TimeHelper.LEAD_RESOLUTION );
+
+                ChronoUnit leadTemporalUnit = ChronoUnit.valueOf( this.projectDetails.getLeadUnit() );
                 
-                Duration leadFrequency = Duration.of( this.projectDetails.getLeadFrequency(), configuredUnits );
+                Duration leadFrequency = Duration.of( this.projectDetails.getLeadFrequency(), leadTemporalUnit );
                 Duration leadFrequencyMultipliedByLeadIteration = leadFrequency.multipliedBy( this.leadIteration );
 
                 lastLead = leadFrequencyMultipliedByLeadIteration.plus( windowWidth ).plus( offsetDuration );
@@ -1160,8 +1151,8 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         }
         else if (ConfigHelper.isForecast( sourceConfig ))
         {
-            Duration.of( this.firstBaselineLead, configuredUnits);
-            Duration.of( this.lastBaselineLead, configuredUnits);
+            Duration.of( this.firstBaselineLead, TimeHelper.LEAD_RESOLUTION);
+            Duration.of( this.lastBaselineLead, TimeHelper.LEAD_RESOLUTION);
         }
 
         TimeWindow timeWindow = ConfigHelper.getTimeWindow( this.projectDetails,
@@ -1280,7 +1271,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             // TODO: Since we are passing the ForecastedPair object and the ProjectDetails,
             // we can probably eliminate a lot of the arguments
 
-            /*PairWriter.Builder builder = new PairWriter.Builder();
+            PairWriter.Builder builder = new PairWriter.Builder();
             builder = builder.setDestinationConfig( dest );
             builder = builder.setDate( date );
             builder = builder.setFeature( this.feature );
@@ -1289,22 +1280,9 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             builder = builder.setIsBaseline( isBaseline );
             builder = builder.setPoolingStep( this.issueDatesPool );
             builder = builder.setProjectDetails( this.projectDetails );
-            builder = builder.setLead( (int) pair.getLeadHours() );*/
+            builder = builder.setLead( (int) pair.getLeadHours() );
 
-            PairWriter saver = new PairWriter( dest,
-                                               date,
-                                               this.feature,
-                                               this.leadIteration,
-                                               pair.getValues(),
-                                               isBaseline,
-                                               this.issueDatesPool,
-                                               this.projectDetails,
-                                               (int) pair.getLeadHours() );
-
-            Executor.submitHighPriorityTask( saver );
-
-            //Executor.submit( builder.build() );
-            //Executor.submitHighPriorityTask( builder.build() );
+            Executor.submitHighPriorityTask( builder.build() );
         }
     }
 

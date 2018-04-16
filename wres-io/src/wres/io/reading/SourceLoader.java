@@ -11,10 +11,8 @@ import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -34,7 +32,6 @@ import wres.io.config.SystemSettings;
 import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Features;
 import wres.io.data.details.FeatureDetails;
-import wres.util.ProgressMonitor;
 import wres.util.Strings;
 
 /**

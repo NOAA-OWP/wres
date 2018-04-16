@@ -65,6 +65,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
     public enum PairingMode
     {
         ROLLING,
+        @Deprecated
         BACK_TO_BACK,
         TIME_SERIES
     }
@@ -970,6 +971,17 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
         else
         {
             unit = this.getScale().getUnit().value();
+        }
+
+        // The following ensures that the returned unit may be converted into a ChronoUnit
+        if (unit != null)
+        {
+            unit = unit.toUpperCase();
+
+            if (!unit.endsWith( "S" ))
+            {
+                unit += "S";
+            }
         }
 
         return unit;

@@ -44,19 +44,26 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
     private VectorOfDoubles climatology;
     private int poolingStep;
     private Integer finalPoolingStep;
+    private int iterationCount = 0;
 
     private int getWindowNumber()
     {
         return this.windowNumber;
     }
 
-    protected int getPoolingStep()
+    private int getPoolingStep()
     {
         return this.poolingStep;
     }
 
     private void incrementWindowNumber()
     {
+        // If we're using time series metrics, our primary form of iteration is
+        // through sequence/pooling steps, not window numbers. We want to
+        // ensure that that step always increments. Once it passes the
+        // threshold for the final step, the window number will increment,
+        // indicating that we have moved on to the next window, which is
+        // invalid for metrics using whole time series.
         if (projectDetails.usesTimeSeriesMetrics())
         {
             this.incrementSequenceStep();
@@ -68,12 +75,12 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
         }
         // No incrementing has been done, so we just want to roll with
         // window 0, sequence < 1
-        else if (this.windowNumber < 0)
+        else if ( this.windowNumber < 0)
         {
             this.windowNumber = 0;
         }
         // If the next sequence is less than the final step, we increment the sequence
-        else if ( this.poolingStep + 1 < this.finalPoolingStep )
+        else if ( this.getPoolingStep() + 1 < this.finalPoolingStep )
         {
             this.incrementSequenceStep();
         }
@@ -160,7 +167,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
         ProgressMonitor.setSteps( Long.valueOf( this.getWindowCount() ) );
     }
 
-    protected int getFinalPoolingStep() throws SQLException
+    int getFinalPoolingStep() throws SQLException
     {
         if (this.finalPoolingStep == null)
         {
@@ -315,16 +322,20 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
     @Override
     public boolean hasNext()
     {
-        boolean next;
+        boolean next = false;
 
         boolean generatesTimeSeriesInputs =
                 this.getProjectDetails().getPairingMode() == ProjectDetails.PairingMode.TIME_SERIES;
 
+        boolean isForecast = ConfigHelper.isForecast( this.getRight() );
+
         try
         {
-            if (ConfigHelper.isForecast( this.getRight() ) && !generatesTimeSeriesInputs)
+            // If this is a non-time series metric forecast evaluation, we want
+            // to test for iteration through windows based on lead parameters
+            if (isForecast && !generatesTimeSeriesInputs)
             {
-                next = this.getFinalPoolingStep() > 0 && this.poolingStep + 1 < this.getFinalPoolingStep();
+                next = this.getFinalPoolingStep() > 0 && this.getPoolingStep() + 1 < this.getFinalPoolingStep();
 
                 if (!next)
                 {
@@ -344,31 +355,21 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
                     }
                 }
             }
-            /*else if (ConfigHelper.isForecast( this.getRight() ) && generatesTimeSeriesInputs && this.getWindowNumber() == 0)
-            {
-                next = this.poolingStep + 1 <= this.getFinalPoolingStep();
-            }*/
-            else
+            // If this is either a time series forecast evaluation or isn't a
+            // forecast (i.e. simulation), we only want to run for one window number
+            else if ((isForecast && generatesTimeSeriesInputs) || ConfigHelper.isSimulation( this.getRight() ))
             {
                 next = this.getWindowNumber() == -1;
             }
 
-            if (!next && this.getWindowNumber() < 0 && !generatesTimeSeriesInputs)
+            if (!next && this.iterationCount == 0)
             {
-                String message = "Due to the configuration of this project,";
-                message += " there are no valid windows to evaluate. ";
-                message += "The range of all lead times go from {} to ";
-                message += "{}, and the size of the window is {} hours. ";
-                message += "Based on the difference between the initialization ";
-                message += "of the left and right data sets, there is a {} ";
-                message += "hour offset. This puts an initial window out ";
-                message += "range of the specifications.";
+                String message = "Due to either the configuration or the data, "
+                                 + "no metric input could be created for the "
+                                 + "feature: " +
+                                 ConfigHelper.getFeatureDescription( this.getFeature() );
 
-                this.getLogger().error(message,
-                                       this.getProjectDetails().getMinimumLeadHour(),
-                                       this.getProjectDetails().getLastLead( feature ),
-                                       this.getProjectDetails().getWindowWidth(),
-                                       this.getProjectDetails().getLeadOffset( this.getFeature() ));
+                throw new IterationFailedException( message );
             }
         }
         catch ( SQLException | IOException e )
@@ -403,14 +404,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
             throw new IterationFailedException( "An exception prevented iteration.", e );
         }
 
-        // Does null have a specific meaning here? Is it expected that
-        // null will be returned every time the last call to next() happens?
-        // Shouldn't the caller call hasNext() prior to calling next()?
-        if (nextInput == null)
-        {
-            throw new IterationFailedException( "There are no more windows to evaluate" );
-        }
-
+        this.iterationCount++;
         return nextInput;
     }
 
@@ -429,7 +423,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
         retriever.setFeature(feature);
         retriever.setClimatology( this.getClimatology() );
         retriever.setLeadIteration( this.getWindowNumber() );
-        retriever.setIssueDatesPool( this.poolingStep );
+        retriever.setIssueDatesPool( this.getPoolingStep() );
         return retriever;
     }
 

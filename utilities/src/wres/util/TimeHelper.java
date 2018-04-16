@@ -22,6 +22,10 @@ public final class TimeHelper
      * The global format for dates is {@value}
      */
     public static final String DATE_FORMAT = "yyyy-MM-dd[ [HH][:mm][:ss]";
+
+    /**
+     * The temporal unit that lead numbers in the database represent
+     */
     public static final TemporalUnit LEAD_RESOLUTION = ChronoUnit.HOURS;
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern( DATE_FORMAT );

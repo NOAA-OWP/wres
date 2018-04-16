@@ -7,7 +7,6 @@ import java.sql.SQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.io.utilities.Database;
 import wres.io.utilities.ScriptBuilder;
 import wres.util.Strings;
 

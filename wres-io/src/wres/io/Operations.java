@@ -38,7 +38,6 @@ import wres.io.utilities.Database;
 import wres.io.utilities.ScriptBuilder;
 import wres.io.writing.PairWriter;
 import wres.util.ProgressMonitor;
-import wres.util.Strings;
 
 public final class Operations {
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(Operations.class);
