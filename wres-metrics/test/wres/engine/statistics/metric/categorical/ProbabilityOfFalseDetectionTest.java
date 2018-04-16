@@ -1,86 +1,167 @@
 package wres.engine.statistics.metric.categorical;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
+import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
+import wres.datamodel.outputs.MatrixOutput;
+import wres.engine.statistics.metric.Collectable;
+import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
-import wres.engine.statistics.metric.categorical.ProbabilityOfFalseDetection.ProbabilityOfFalseDetectionBuilder;
+import wres.engine.statistics.metric.Score;
 
 /**
  * Tests the {@link ProbabilityOfFalseDetection}.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 public final class ProbabilityOfFalseDetectionTest
 {
 
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
+
     /**
-     * Constructs a {@link ProbabilityOfFalseDetection} and compares the actual result to the expected result. Also,
-     * checks the parameters of the metric.
-     * @throws MetricParameterException if the metric could not be constructed
+     * Output factory.
+     */
+
+    private DataFactory outF;
+
+    /**
+     * Metadata factory.
+     */
+
+    private MetadataFactory metaFac;
+
+    /**
+     * Metric factory.
+     */
+
+    private MetricFactory metricFactory;
+
+    /**
+     * Score used for testing. 
+     */
+
+    private ProbabilityOfFalseDetection pofd;
+
+    /**
+     * Metadata used for testing.
+     */
+
+    private MetricOutputMetadata meta;
+
+    @Before
+    public void setUpBeforeEachTest() throws MetricParameterException
+    {
+        outF = DefaultDataFactory.getInstance();
+        metaFac = outF.getMetadataFactory();
+        metricFactory = MetricFactory.getInstance( outF );
+        pofd = metricFactory.ofProbabilityOfFalseDetection();
+        meta = metaFac.getOutputMetadata( 365,
+                                          metaFac.getDimension(),
+                                          metaFac.getDimension(),
+                                          MetricConstants.PROBABILITY_OF_FALSE_DETECTION,
+                                          MetricConstants.MAIN,
+                                          metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ) );
+    }    
+    
+    /**
+     * Compares the output from {@link Metric#apply(wres.datamodel.inputs.MetricInput)} against expected output.
      */
 
     @Test
-    public void test1ProbabilityOfDetection() throws MetricParameterException
+    public void testApply()
     {
-        //Obtain the factories
-        final DataFactory outF = DefaultDataFactory.getInstance();
-        final MetadataFactory metaFac = outF.getMetadataFactory();
-
         //Generate some data
         final DichotomousPairs input = MetricTestDataFactory.getDichotomousPairsOne();
 
-        //Metadata for the output
-        final MetricOutputMetadata m1 =
-                metaFac.getOutputMetadata( input.getData().size(),
-                                           metaFac.getDimension(),
-                                           metaFac.getDimension(),
-                                           MetricConstants.PROBABILITY_OF_FALSE_DETECTION,
-                                           MetricConstants.MAIN,
-                                           metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ) );
-
-        //Build the metric
-        final ProbabilityOfFalseDetectionBuilder b =
-                new ProbabilityOfFalseDetection.ProbabilityOfFalseDetectionBuilder();
-        b.setOutputFactory( outF );
-        final ProbabilityOfFalseDetection pofd = b.build();
-
         //Check the results
         final DoubleScoreOutput actual = pofd.apply( input );
-        final MetricFactory metF = MetricFactory.getInstance( outF );
-        final DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 0.14615384615384616, m1 );
+        final DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 0.14615384615384616, meta );
         assertTrue( "Actual: " + actual.getData().doubleValue()
                     + ". Expected: "
                     + expected.getData().doubleValue()
                     + ".",
                     actual.equals( expected ) );
-        //Check the parameters
-        assertTrue( "Unexpected name for the Probability of False Detection.",
-                    pofd.getName().equals( MetricConstants.PROBABILITY_OF_FALSE_DETECTION.toString() ) );
-        assertTrue( "The Probability of False Detection is not decomposable.", !pofd.isDecomposable() );
-        assertTrue( "The Probability of False Detection is not a skill score.", !pofd.isSkillScore() );
-        assertTrue( "The Probability of False Detection cannot be decomposed.",
-                    pofd.getScoreOutputGroup() == ScoreOutputGroup.NONE );
-        final String expName = metF.ofDichotomousContingencyTable().getName();
-        final String actName = pofd.getCollectionOf().toString();
-        assertTrue( "The Probability of False Detection should be a collection of '" + expName
-                    + "', but is actually a collection of '"
-                    + actName
-                    + "'.",
-                    pofd.getCollectionOf() == metF.ofDichotomousContingencyTable().getID() );
     }
+    
+    /**
+     * Verifies that {@link Metric#getName()} returns the expected result.
+     */
 
+    @Test
+    public void testMetricIsNamedCorrectly()
+    {
+        assertTrue( pofd.getName().equals( MetricConstants.PROBABILITY_OF_FALSE_DETECTION.toString() ) );
+    }    
+    
+    /**
+     * Verifies that {@link Score#isDecomposable()} returns <code>false</code>.
+     */
+
+    @Test
+    public void testMetricIsNotDecoposable()
+    {
+        assertFalse( pofd.isDecomposable() );
+    }    
+    
+    /**
+     * Verifies that {@link Score#isSkillScore()} returns <code>false</code>.
+     */
+
+    @Test
+    public void testMetricIsASkillScore()
+    {
+        assertFalse( pofd.isSkillScore() );
+    }       
+    
+    /**
+     * Verifies that {@link Score#getScoreOutputGroup()} returns {@link OutputScoreGroup#NONE}.
+     */
+
+    @Test
+    public void testGetScoreOutputGroup()
+    {
+        assertTrue( pofd.getScoreOutputGroup() == ScoreOutputGroup.NONE );
+    }      
+    
+    /**
+     * Verifies that {@link Collectable#getCollectionOf()} returns {@link MetricConstants#CONTINGENCY_TABLE}.
+     */
+
+    @Test
+    public void testGetCollectionOf()
+    {
+        assertTrue( pofd.getCollectionOf() == MetricConstants.CONTINGENCY_TABLE );
+    }      
+
+    /**
+     * Checks for an exception when calling {@link Collectable#aggregate(wres.datamodel.outputs.MetricOutput)} with 
+     * null input.
+     */
+
+    @Test
+    public void testExceptionOnNullInput()
+    {
+        exception.expect( MetricInputException.class );
+        exception.expectMessage( "Specify non-null input to the '"+pofd.getName()+"'." );
+        pofd.aggregate( (MatrixOutput) null );
+    }        
+    
 }

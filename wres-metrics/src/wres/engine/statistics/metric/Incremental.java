@@ -13,8 +13,6 @@ import wres.datamodel.outputs.MetricOutput;
  * @param <T> the intermediate output type
  * @param <U> the final output type
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.4
  */
 public interface Incremental<S extends MetricInput<?>, T extends MetricOutput<?>, U extends MetricOutput<?>>
 {
