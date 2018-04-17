@@ -1,9 +1,12 @@
 package wres.engine.statistics.metric.categorical;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
@@ -15,100 +18,150 @@ import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MatrixOutput;
+import wres.engine.statistics.metric.Collectable;
+import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
-import wres.engine.statistics.metric.categorical.EquitableThreatScore.EquitableThreatScoreBuilder;
+import wres.engine.statistics.metric.Score;
 
 /**
  * Tests the {@link EquitableThreatScore}.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 public final class EquitableThreatScoreTest
 {
 
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
+
     /**
-     * Constructs a {@link EquitableThreatScore} and compares the actual result to the expected result. Also, checks the
-     * parameters of the metric.
-     * @throws MetricParameterException if the metric construction fails
+     * Output factory.
+     */
+
+    private DataFactory outF;
+
+    /**
+     * Metadata factory.
+     */
+
+    private MetadataFactory metaFac;
+
+    /**
+     * Metric factory.
+     */
+
+    private MetricFactory metricFactory;
+
+    /**
+     * Score used for testing. 
+     */
+
+    private EquitableThreatScore ets;
+
+    /**
+     * Metadata used for testing.
+     */
+
+    private MetricOutputMetadata meta;
+
+    @Before
+    public void setUpBeforeEachTest() throws MetricParameterException
+    {
+        outF = DefaultDataFactory.getInstance();
+        metaFac = outF.getMetadataFactory();
+        metricFactory = MetricFactory.getInstance( outF );
+        ets = metricFactory.ofEquitableThreatScore();
+        meta = metaFac.getOutputMetadata( 365,
+                                          metaFac.getDimension(),
+                                          metaFac.getDimension(),
+                                          MetricConstants.EQUITABLE_THREAT_SCORE,
+                                          MetricConstants.MAIN,
+                                          metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ) );
+    }    
+    
+    /**
+     * Compares the output from {@link Metric#apply(wres.datamodel.inputs.MetricInput)} against expected output.
      */
 
     @Test
-    public void test1EquitableThreatScore() throws MetricParameterException
+    public void testApply()
     {
-        //Obtain the factories
-        final DataFactory outF = DefaultDataFactory.getInstance();
-        final MetadataFactory metaFac = outF.getMetadataFactory();
-
         //Generate some data
         final DichotomousPairs input = MetricTestDataFactory.getDichotomousPairsOne();
 
-        //Metadata for the output
-        final MetricOutputMetadata m1 =
-                metaFac.getOutputMetadata( input.getData().size(),
-                                           metaFac.getDimension(),
-                                           metaFac.getDimension(),
-                                           MetricConstants.EQUITABLE_THREAT_SCORE,
-                                           MetricConstants.MAIN,
-                                           metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ) );
-
-        //Build the metric
-        final EquitableThreatScoreBuilder b = new EquitableThreatScore.EquitableThreatScoreBuilder();
-        b.setOutputFactory( outF );
-        final EquitableThreatScore ets = b.build();
-
         //Check the results
-        final MetricFactory metF = MetricFactory.getInstance( outF );
         final DoubleScoreOutput actual = ets.apply( input );
-        final DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 0.43768152544513195, m1 );
+        final DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 0.43768152544513195, meta );
         assertTrue( "Actual: " + actual.getData().doubleValue()
                     + ". Expected: "
                     + expected.getData().doubleValue()
                     + ".",
                     actual.equals( expected ) );
-
-        //Check the parameters
-        assertTrue( "Unexpected name for the Equitable Threat Score.",
-                    ets.getName().equals( MetricConstants.EQUITABLE_THREAT_SCORE.toString() ) );
-        assertTrue( "The Equitable Threat Score is not decomposable.", !ets.isDecomposable() );
-        assertTrue( "The Equitable Threat Score is a skill score.", ets.isSkillScore() );
-        assertTrue( "The Equitable Threat Score cannot be decomposed.",
-                    ets.getScoreOutputGroup() == ScoreOutputGroup.NONE );
-        final String expName = metF.ofDichotomousContingencyTable().getName();
-        final String actName = ets.getCollectionOf().toString();
-        assertTrue( "The Equitable Threat Score should be a collection of '" + expName
-                    + "', but is actually a collection of '"
-                    + actName
-                    + "'.",
-                    ets.getCollectionOf() == metF.ofDichotomousContingencyTable().getID() );
     }
-
+    
     /**
-     * Constructs a {@link EquitableThreatScore} and checks for exceptional cases.
-     * @throws MetricParameterException if the metric could not be constructed 
+     * Verifies that {@link Metric#getName()} returns the expected result.
      */
 
     @Test
-    public void test2Exceptions() throws MetricParameterException
+    public void testMetricIsNamedCorrectly()
     {
-        //Build the metric
-        final DataFactory outF = DefaultDataFactory.getInstance();
-        final EquitableThreatScoreBuilder b = new EquitableThreatScore.EquitableThreatScoreBuilder();
-        b.setOutputFactory( outF );
-        final EquitableThreatScore ets = b.build();
+        assertTrue( ets.getName().equals( MetricConstants.EQUITABLE_THREAT_SCORE.toString() ) );
+    }    
+    
+    /**
+     * Verifies that {@link Score#isDecomposable()} returns <code>false</code>.
+     */
 
-        //Check the exceptions
-        try
-        {
-            ets.aggregate( (MatrixOutput) null );
-            fail( "Expected an exception on null input." );
-        }
-        catch ( MetricInputException e )
-        {
-        }
+    @Test
+    public void testMetricIsNotDecoposable()
+    {
+        assertFalse( ets.isDecomposable() );
+    }    
+    
+    /**
+     * Verifies that {@link Score#isSkillScore()} returns <code>true</code>.
+     */
+
+    @Test
+    public void testMetricIsASkillScore()
+    {
+        assertTrue( ets.isSkillScore() );
+    }       
+    
+    /**
+     * Verifies that {@link Score#getScoreOutputGroup()} returns {@link OutputScoreGroup#NONE}.
+     */
+
+    @Test
+    public void testGetScoreOutputGroup()
+    {
+        assertTrue( ets.getScoreOutputGroup() == ScoreOutputGroup.NONE );
+    }      
+    
+    /**
+     * Verifies that {@link Collectable#getCollectionOf()} returns {@link MetricConstants#CONTINGENCY_TABLE}.
+     */
+
+    @Test
+    public void testGetCollectionOf()
+    {
+        assertTrue( ets.getCollectionOf() == MetricConstants.CONTINGENCY_TABLE );
+    }      
+
+    /**
+     * Checks for an exception when calling {@link Collectable#aggregate(wres.datamodel.outputs.MetricOutput)} with 
+     * null input.
+     */
+
+    @Test
+    public void testExceptionOnNullInput()
+    {
+        exception.expect( MetricInputException.class );
+        exception.expectMessage( "Specify non-null input to the '"+ets.getName()+"'." );
+        ets.aggregate( (MatrixOutput) null );
     }
 
 }

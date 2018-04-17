@@ -1,10 +1,7 @@
 package wres.engine.statistics.metric.singlevalued;
 
-import java.util.Objects;
-
 import wres.datamodel.Dimension;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
@@ -20,23 +17,21 @@ import wres.engine.statistics.metric.MetricParameterException;
  * available for the RMSE.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 public class RootMeanSquareError extends DoubleErrorScore<SingleValuedPairs>
         implements Collectable<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput>
 {
 
     /**
-     * Instance if {@link MeanSquareError}.
+     * Instance if {@link SumOfSquareError}.
      */
 
-    private final MeanSquareError<SingleValuedPairs> mse;
+    private final SumOfSquareError<SingleValuedPairs> sse;
 
     @Override
     public DoubleScoreOutput apply( final SingleValuedPairs t )
     {
-        return aggregate( getCollectionInput( t ) );
+        return this.aggregate( this.getInputForAggregation( t ) );
     }
 
     @Override
@@ -62,6 +57,7 @@ public class RootMeanSquareError extends DoubleErrorScore<SingleValuedPairs>
     {
         final MetricOutputMetadata metIn = output.getMetadata();
         final MetadataFactory f = getDataFactory().getMetadataFactory();
+        
         // Set the output dimension
         Dimension outputDimension = f.getDimension();
         if( hasRealUnits() )
@@ -71,27 +67,23 @@ public class RootMeanSquareError extends DoubleErrorScore<SingleValuedPairs>
         MetricOutputMetadata meta = f.getOutputMetadata( metIn.getSampleSize(),
                                                          outputDimension,
                                                          metIn.getDimension(),
-                                                         getID(),
+                                                         this.getID(),
                                                          MetricConstants.MAIN,
                                                          metIn.getIdentifier(),
                                                          metIn.getTimeWindow() );
-        return getDataFactory().ofDoubleScoreOutput( Math.sqrt( output.getData() ), meta );
+        return getDataFactory().ofDoubleScoreOutput( Math.sqrt( output.getData() / metIn.getSampleSize() ), meta );
     }
 
     @Override
-    public DoubleScoreOutput getCollectionInput( SingleValuedPairs input )
+    public DoubleScoreOutput getInputForAggregation( SingleValuedPairs input )
     {
-        if ( Objects.isNull( input ) )
-        {
-            throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
-        }
-        return mse.apply( input );
+        return sse.apply( input );
     }
 
     @Override
     public MetricConstants getCollectionOf()
     {
-        return MetricConstants.MEAN_SQUARE_ERROR;
+        return MetricConstants.SUM_OF_SQUARE_ERROR;
     }
 
     /**
@@ -119,7 +111,7 @@ public class RootMeanSquareError extends DoubleErrorScore<SingleValuedPairs>
     private RootMeanSquareError( final RootMeanSquareErrorBuilder builder ) throws MetricParameterException
     {
         super( builder.setErrorFunction( FunctionFactory.squareError() ) );
-        mse = MetricFactory.getInstance( getDataFactory() ).ofMeanSquareError();
+        sse = MetricFactory.getInstance( this.getDataFactory() ).ofSumOfSquareError();
     }
 
 }

@@ -12,8 +12,6 @@ import wres.engine.statistics.metric.MetricParameterException;
  * indicates an absence of any bias in the predicted and observed frequencies with which an event occurs.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 public class FrequencyBias extends ContingencyTableScore<DichotomousPairs>
 {
@@ -21,17 +19,17 @@ public class FrequencyBias extends ContingencyTableScore<DichotomousPairs>
     @Override
     public DoubleScoreOutput apply( final DichotomousPairs s )
     {
-        return aggregate( getCollectionInput( s ) );
+        return aggregate( this.getInputForAggregation( s ) );
     }
 
     @Override
     public DoubleScoreOutput aggregate( final MatrixOutput output )
     {
-        is2x2ContingencyTable( output, this );
+        this.is2x2ContingencyTable( output, this );
         final MatrixOutput v = output;
         final double[][] cm = v.getData().getDoubles();
         final double score =
-                FunctionFactory.finiteOrNaN().applyAsDouble( ( cm[0][0] + cm[0][1] ) / ( cm[0][0] + cm[1][0] ) );
+                FunctionFactory.finiteOrMissing().applyAsDouble( ( cm[0][0] + cm[0][1] ) / ( cm[0][0] + cm[1][0] ) );
         return getDataFactory().ofDoubleScoreOutput( score, getMetadata( output ) );
     }
 

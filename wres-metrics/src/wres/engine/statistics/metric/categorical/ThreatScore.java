@@ -16,8 +16,6 @@ import wres.engine.statistics.metric.MetricParameterException;
  * </p>
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 public class ThreatScore extends ContingencyTableScore<DichotomousPairs>
 {
@@ -25,7 +23,7 @@ public class ThreatScore extends ContingencyTableScore<DichotomousPairs>
     @Override
     public DoubleScoreOutput apply( final DichotomousPairs s )
     {
-        return aggregate( getCollectionInput( s ) );
+        return aggregate( getInputForAggregation( s ) );
     }
 
     @Override
@@ -34,7 +32,7 @@ public class ThreatScore extends ContingencyTableScore<DichotomousPairs>
         is2x2ContingencyTable( output, this );
         final MatrixOutput v = output;
         final double[][] cm = v.getData().getDoubles();
-        double result = FunctionFactory.finiteOrNaN().applyAsDouble( cm[0][0] / ( cm[0][0] + cm[0][1] + cm[1][0] ) );
+        double result = FunctionFactory.finiteOrMissing().applyAsDouble( cm[0][0] / ( cm[0][0] + cm[0][1] + cm[1][0] ) );
         return getDataFactory().ofDoubleScoreOutput( result, getMetadata( output ) );
     }
 

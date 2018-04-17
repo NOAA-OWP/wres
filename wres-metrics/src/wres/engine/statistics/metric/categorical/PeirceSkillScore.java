@@ -16,8 +16,6 @@ import wres.engine.statistics.metric.MetricParameterException;
  * {@link ProbabilityOfFalseDetection}.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 public class PeirceSkillScore<S extends MulticategoryPairs> extends ContingencyTableScore<S>
 {
@@ -25,14 +23,14 @@ public class PeirceSkillScore<S extends MulticategoryPairs> extends ContingencyT
     @Override
     public DoubleScoreOutput apply( final S s )
     {
-        return aggregate( getCollectionInput( s ) );
+        return aggregate( this.getInputForAggregation( s ) );
     }
 
     @Override
     public DoubleScoreOutput aggregate( final MatrixOutput output )
     {
         //Check the input
-        isContingencyTable( output, this );
+        this.isContingencyTable( output, this );
 
         final MatrixOfDoubles v = output.getData();
         final double[][] cm = v.getDoubles();
@@ -40,7 +38,7 @@ public class PeirceSkillScore<S extends MulticategoryPairs> extends ContingencyT
         //Dichotomous predictand
         if ( v.rows() == 2 )
         {
-            double result = FunctionFactory.finiteOrNaN().applyAsDouble( ( cm[0][0] / ( cm[0][0] + cm[1][0] ) )
+            double result = FunctionFactory.finiteOrMissing().applyAsDouble( ( cm[0][0] / ( cm[0][0] + cm[1][0] ) )
                                                                          - ( cm[0][1] / ( cm[0][1] + cm[1][1] ) ) );
             return getDataFactory().ofDoubleScoreOutput( result, getMetadata( output ) );
         }
@@ -76,7 +74,7 @@ public class PeirceSkillScore<S extends MulticategoryPairs> extends ContingencyT
         }
         //Compose the result
         final double nSquared = n * n;
-        final double result = FunctionFactory.finiteOrNaN().applyAsDouble( ( ( diag / n ) - ( sumProd / nSquared ) )
+        final double result = FunctionFactory.finiteOrMissing().applyAsDouble( ( ( diag / n ) - ( sumProd / nSquared ) )
                                                                            / ( 1.0 - ( uniProd / nSquared ) ) );
         return getDataFactory().ofDoubleScoreOutput( result, getMetadata( output ) );
     }

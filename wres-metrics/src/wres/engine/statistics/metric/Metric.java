@@ -31,8 +31,6 @@ import wres.datamodel.outputs.MetricOutput;
  * </p>
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 public interface Metric<S extends MetricInput<?>, T extends MetricOutput<?>> extends Function<S, T>
 {
@@ -110,7 +108,7 @@ public interface Metric<S extends MetricInput<?>, T extends MetricOutput<?>> ext
      * Returns the {@link MetricOutputMetadata} using a prescribed {@link MetricInput} and the current {@link Metric} to
      * compose, along with an explicit component identifier or decomposition template and an identifier for the
      * baseline, where applicable. This helper method is not intended for implementations of {@link Collectable}, whose
-     * {@link Collectable#getCollectionInput(MetricInput)} should return the {@link MetricConstants} identifier
+     * {@link Collectable#getInputForAggregation(MetricInput)} should return the {@link MetricConstants} identifier
      * associated with the implementing class and not the caller. This method identifies the metric by calling
      * {@link #getID()}.
      * 
@@ -119,6 +117,7 @@ public interface Metric<S extends MetricInput<?>, T extends MetricOutput<?>> ext
      * @param componentID the component identifier or metric decomposition template
      * @param baselineID the baseline identifier or null
      * @return the metadata
+     * @throws UnsupportedOperationException if the input metric is an instance of {@link Collectable}
      */
 
     default MetricOutputMetadata getMetadata( final MetricInput<?> input,
