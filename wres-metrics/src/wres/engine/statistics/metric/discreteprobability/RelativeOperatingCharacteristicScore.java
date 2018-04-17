@@ -184,7 +184,7 @@ public class RelativeOperatingCharacteristicScore extends OrdinaryScore<Discrete
                 }
             }
         }
-        return FunctionFactory.finiteOrNaN()
+        return FunctionFactory.finiteOrMissing()
                               .applyAsDouble( 1.0 - ( ( 1.0 / ( 2.0 * byOccurrence.size() * byNonOccurrence.size() ) )
                                                       * rhs ) );
     }

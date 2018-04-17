@@ -35,9 +35,9 @@ public interface Collectable<S extends MetricInput<?>, T extends MetricOutput<?>
     U aggregate( T output );
 
     /**
-     * Returns the result whose method {@link Metric#apply(MetricInput)} provides the input to
-     * {@link #aggregate(MetricOutput)}. Ensure that the {@link Metric#getID()} associated with the
-     * {@link MetricOutputMetadata} of the output corresponds to that of the implementing class and not the caller.
+     * Returns the intermediate metric result for input to {@link #aggregate(MetricOutput)}. Ensure that the 
+     * {@link Metric#getID()} associated with the {@link MetricOutputMetadata} of the output corresponds to that of 
+     * the implementing class and not the caller.
      * 
      * @param input the metric input
      * @return the intermediate output that forms the input to metrics within this collection
@@ -45,7 +45,7 @@ public interface Collectable<S extends MetricInput<?>, T extends MetricOutput<?>
      * @throws MetricCalculationException if the metric could not be computed
      */
 
-    T getCollectionInput( S input );
+    T getInputForAggregation( S input );
 
     /**
      * Returns the {@link Metric#getID()} of the metric whose output forms the input to this metric. Metrics with common

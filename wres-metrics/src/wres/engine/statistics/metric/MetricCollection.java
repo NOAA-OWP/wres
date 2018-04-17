@@ -95,7 +95,7 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
 
     public MetricOutputMapByMetric<U> apply( final S input )
     {
-        return applyParallel( input, Collections.emptySet() );
+        return this.applyParallel( input, Collections.emptySet() );
     }
 
     /**
@@ -108,7 +108,7 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
     @Override
     public MetricOutputMapByMetric<U> apply( final S input, final Set<MetricConstants> ignoreTheseMetrics )
     {
-        return applyParallel( input, ignoreTheseMetrics );
+        return this.applyParallel( input, ignoreTheseMetrics );
     }
 
     /**
@@ -169,7 +169,7 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
          * @return the builder
          */
 
-        protected MetricCollectionBuilder<S, T, U> add( final Metric<S, U> metric )
+        protected MetricCollectionBuilder<S, T, U> addMetric( final Metric<S, U> metric )
         {
             this.metrics.put( metric.getID(), metric );
             return this;
@@ -182,7 +182,7 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
          * @return the builder
          */
 
-        protected MetricCollectionBuilder<S, T, U> add( final Collectable<S, T, U> metric )
+        protected MetricCollectionBuilder<S, T, U> addCollectable( final Collectable<S, T, U> metric )
         {
             this.collectableMetrics.put( metric.getID(), metric );
             return this;
@@ -285,7 +285,7 @@ public class MetricCollection<S extends MetricInput<?>, T extends MetricOutput<?
                 
                 Collectable<S, T, U> baseMetric = iterator.next();
                 final CompletableFuture<T> baseFuture =
-                        CompletableFuture.supplyAsync( () -> baseMetric.getCollectionInput( input ),
+                        CompletableFuture.supplyAsync( () -> baseMetric.getInputForAggregation( input ),
                                                        this.metricPool );
                 //Using the future dependent result, compute a future of each of the independent results
                 next.forEach( ( id, metric ) -> metricFutures.put( id,

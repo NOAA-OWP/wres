@@ -18,7 +18,7 @@ public class ProbabilityOfDetection extends ContingencyTableScore<DichotomousPai
     @Override
     public DoubleScoreOutput apply( final DichotomousPairs s )
     {
-        return aggregate( this.getCollectionInput( s ) );
+        return aggregate( this.getInputForAggregation( s ) );
     }
 
     @Override
@@ -27,7 +27,7 @@ public class ProbabilityOfDetection extends ContingencyTableScore<DichotomousPai
         this.is2x2ContingencyTable( output, this );
         final MatrixOutput v = output;
         final double[][] cm = v.getData().getDoubles();
-        double result = FunctionFactory.finiteOrNaN().applyAsDouble( cm[0][0] / ( cm[0][0] + cm[1][0] ) );
+        double result = FunctionFactory.finiteOrMissing().applyAsDouble( cm[0][0] / ( cm[0][0] + cm[1][0] ) );
         return getDataFactory().ofDoubleScoreOutput( result, getMetadata( output ) );
     }
 

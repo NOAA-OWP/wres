@@ -19,7 +19,7 @@ public class FrequencyBias extends ContingencyTableScore<DichotomousPairs>
     @Override
     public DoubleScoreOutput apply( final DichotomousPairs s )
     {
-        return aggregate( this.getCollectionInput( s ) );
+        return aggregate( this.getInputForAggregation( s ) );
     }
 
     @Override
@@ -29,7 +29,7 @@ public class FrequencyBias extends ContingencyTableScore<DichotomousPairs>
         final MatrixOutput v = output;
         final double[][] cm = v.getData().getDoubles();
         final double score =
-                FunctionFactory.finiteOrNaN().applyAsDouble( ( cm[0][0] + cm[0][1] ) / ( cm[0][0] + cm[1][0] ) );
+                FunctionFactory.finiteOrMissing().applyAsDouble( ( cm[0][0] + cm[0][1] ) / ( cm[0][0] + cm[1][0] ) );
         return getDataFactory().ofDoubleScoreOutput( score, getMetadata( output ) );
     }
 
