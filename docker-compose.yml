@@ -16,7 +16,9 @@ services:
         image: "rabbitmq:3.7.4-alpine"
         restart: always
     ***REMOVED***wres-worker:
-        image: "1c442d030069"
+        image: "aec10d158d28"
         restart: always
         depends_on:
          - "***REMOVED***wres-broker"
+        volumes:
+         - /mnt/wres_share:/wres_data
