@@ -62,7 +62,7 @@ implements Collectable<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput>
         // Minimum sample size of 1
         if ( s.getData().size() > 1 )
         {
-            returnMe = FunctionFactory.finiteOrNaN()
+            returnMe = FunctionFactory.finiteOrMissing()
                                       .applyAsDouble( correlation.correlation( slicer.getLeftSide( s ),
                                                                                slicer.getRightSide( s ) ) );
         }
@@ -106,7 +106,7 @@ implements Collectable<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput>
     }
 
     @Override
-    public DoubleScoreOutput getCollectionInput(SingleValuedPairs input)
+    public DoubleScoreOutput getInputForAggregation(SingleValuedPairs input)
     {
         return apply(input);
     }

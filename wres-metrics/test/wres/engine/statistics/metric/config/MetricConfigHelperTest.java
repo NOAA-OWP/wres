@@ -1,11 +1,12 @@
 package wres.engine.statistics.metric.config;
 
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import java.util.Objects;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import wres.config.MetricConfigException;
 import wres.config.generated.MetricConfigName;
@@ -14,11 +15,13 @@ import wres.config.generated.MetricConfigName;
  * Tests the {@link MetricConfigHelper}.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 public final class MetricConfigHelperTest
 {
+
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
+
 
     /**
      * Tests the {@link MetricConfigHelper#from(wres.config.generated.MetricConfigName)}.
@@ -26,12 +29,17 @@ public final class MetricConfigHelperTest
      */
 
     @Test
-    public void test1From() throws MetricConfigException
+    public void testFromMetricName() throws MetricConfigException
     {
         //Check for mapping without exception
         for ( MetricConfigName nextConfig : MetricConfigName.values() )
         {
-            MetricConfigHelper.from( nextConfig );
+            if ( nextConfig != MetricConfigName.ALL_VALID )
+            {
+                assertTrue( "No mapping found for '" + nextConfig
+                            + "'.",
+                            Objects.nonNull( MetricConfigHelper.from( nextConfig ) ) );
+            }
         }
 
         //Check the MetricConfigName.ALL_VALID       
@@ -39,24 +47,18 @@ public final class MetricConfigHelperTest
                     + "'.",
                     Objects.isNull( MetricConfigHelper.from( MetricConfigName.ALL_VALID ) ) );
     }
-    
+
     /**
-     * Tests the {@link MetricConfigHelper} for checked exceptions.
+     * Tests the {@link MetricConfigHelper#from(MetricConfigName)} for a checked exception on null input.
      * @throws MetricConfigException if an unexpected exception is encountered
      */
-    
+
     @Test
-    public void test3Exceptions() throws MetricConfigException
+    public void testExceptionFromMetricNameWithNullInput() throws MetricConfigException
     {
-        //Test the exceptions
-        try
-        {
-            MetricConfigHelper.from( (MetricConfigName) null );
-            fail("Expected a checked exception on invalid inputs: null pair.");
-        }
-        catch(final NullPointerException e)
-        {
-        }
+        exception.expect( NullPointerException.class );
+        exception.expectMessage( "Specify input configuration with a non-null name to map" );
+        MetricConfigHelper.from( (MetricConfigName) null );
     }
 
 }

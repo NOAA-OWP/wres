@@ -129,11 +129,11 @@ public class MetricCollectionTest
         m.setExecutorService( ForkJoinPool.commonPool() );
 
         //Add some appropriate metrics to the collection     
-        m.add( metF.ofThreatScore() ); //Should be 0.5734265734265734
-        m.add( metF.ofProbabilityOfDetection() ); //Should be 0.780952380952381
-        m.add( metF.ofProbabilityOfFalseDetection() ); //Should be 0.14615384615384616
-        m.add( metF.ofPeirceSkillScore() ); //Should be 0.6347985347985348
-        m.add( metF.ofEquitableThreatScore() ); //Should be 0.43768152544513195
+        m.addMetric( metF.ofThreatScore() ); //Should be 0.5734265734265734
+        m.addMetric( metF.ofProbabilityOfDetection() ); //Should be 0.780952380952381
+        m.addMetric( metF.ofProbabilityOfFalseDetection() ); //Should be 0.14615384615384616
+        m.addMetric( metF.ofPeirceSkillScore() ); //Should be 0.6347985347985348
+        m.addMetric( metF.ofEquitableThreatScore() ); //Should be 0.43768152544513195
 
         //Finalize
         final MetricCollection<DichotomousPairs, MetricOutput<?>, DoubleScoreOutput> collection = m.build();
@@ -205,8 +205,8 @@ public class MetricCollectionTest
         n.setExecutorService( ForkJoinPool.commonPool() );
 
         //Add some appropriate metrics to the collection
-        n.add( metF.ofBrierScore() ); //Should be 0.26
-        n.add( metF.ofBrierSkillScore() ); //Should be 0.11363636363636376
+        n.addMetric( metF.ofBrierScore() ); //Should be 0.26
+        n.addMetric( metF.ofBrierSkillScore() ); //Should be 0.11363636363636376
 
         //Finalize
         final MetricCollection<DiscreteProbabilityPairs, MetricOutput<?>, DoubleScoreOutput> collection =
@@ -251,19 +251,19 @@ public class MetricCollectionTest
         //Generate some data
         final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsTwo();
 
-        //Create a collection metrics that consume single-valued pairs and produce vector outputs
-        final MetricCollectionBuilder<SingleValuedPairs, MetricOutput<?>, DoubleScoreOutput> n =
+        //Create a collection of metrics that consume single-valued pairs and produce vector outputs
+        final MetricCollectionBuilder<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput> n =
                 MetricCollectionBuilder.of();
 
         n.setOutputFactory( outF );
         n.setExecutorService( ForkJoinPool.commonPool() );
 
         //Add some appropriate metrics to the collection
-        n.add( metF.ofMeanSquareError() ); //Should be 400003.929
-        n.add( metF.ofMeanSquareErrorSkillScore() ); //Should be 0.8007025335093799
+        n.addMetric( metF.ofMeanSquareError() ); //Should be 400003.929
+        n.addMetric( metF.ofMeanSquareErrorSkillScore() ); //Should be 0.8007025335093799
 
         //Finalize
-        final MetricCollection<SingleValuedPairs, MetricOutput<?>, DoubleScoreOutput> collection = n.build();
+        final MetricCollection<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput> collection = n.build();
 
         //Compute them
         final MetricOutputMapByMetric<DoubleScoreOutput> d = collection.apply( input );
@@ -313,7 +313,7 @@ public class MetricCollectionTest
         n.setExecutorService( ForkJoinPool.commonPool() );
 
         //Add some appropriate metrics to the collection
-        n.add( metF.ofMulticategoryScore( MetricConstants.PEIRCE_SKILL_SCORE ) ); //Should be 0.05057466520850963
+        n.addMetric( metF.ofMulticategoryScore( MetricConstants.PEIRCE_SKILL_SCORE ) ); //Should be 0.05057466520850963
 
         //Finalize
         final MetricCollection<MulticategoryPairs, MetricOutput<?>, DoubleScoreOutput> collection = n.build();
@@ -356,7 +356,7 @@ public class MetricCollectionTest
         n.setOutputFactory( outF );
 
         //Add some appropriate metrics to the collection
-        n.add( metF.ofMeanError() );
+        n.addMetric( metF.ofMeanError() );
 
         //Set an executor
         n.setExecutorService( metricPool );
@@ -390,7 +390,7 @@ public class MetricCollectionTest
         final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         final MetricCollection<SingleValuedPairs, MetricOutput<?>, DoubleScoreOutput> collection =
-                n.setOutputFactory( outF ).add( metF.ofMeanError() ).setExecutorService( metricPool ).build();
+                n.setOutputFactory( outF ).addMetric( metF.ofMeanError() ).setExecutorService( metricPool ).build();
 
         //Null input
         exception.expect( MetricCalculationException.class );
@@ -419,7 +419,7 @@ public class MetricCollectionTest
         final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         final MetricCollection<SingleValuedPairs, MetricOutput<?>, DoubleScoreOutput> collection =
-                n.setOutputFactory( outF ).add( metF.ofMeanError() ).setExecutorService( metricPool ).build();
+                n.setOutputFactory( outF ).addMetric( metF.ofMeanError() ).setExecutorService( metricPool ).build();
 
         //Null input
         exception.expect( MetricCalculationException.class );
@@ -503,7 +503,7 @@ public class MetricCollectionTest
                 MetricCollectionBuilder.of();
         failed.setOutputFactory( outF )
               .setExecutorService( metricPool )
-              .add( new MeanErrorException() )
+              .addMetric( new MeanErrorException() )
               .build()
               .apply( input );
 
@@ -526,7 +526,11 @@ public class MetricCollectionTest
         final MetricCollection<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput> n =
                 metF.ofSingleValuedScoreCollection( ForkJoinPool.commonPool(),
                                                     MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
-                                                    MetricConstants.COEFFICIENT_OF_DETERMINATION );
+                                                    MetricConstants.COEFFICIENT_OF_DETERMINATION,
+                                                    MetricConstants.SUM_OF_SQUARE_ERROR,
+                                                    MetricConstants.MEAN_SQUARE_ERROR,
+                                                    MetricConstants.ROOT_MEAN_SQUARE_ERROR );
+
         //Compute them
         final MetricOutputMapByMetric<DoubleScoreOutput> d = n.apply( input );
 
@@ -536,8 +540,15 @@ public class MetricCollectionTest
         //Check them   
         final Double expectedFirst = 0.9999999910148981;
         final Double expectedSecond = Math.pow( expectedFirst, 2 );
+        final Double expectedThird = 4000039.29;
+        final Double expectedFourth = 400003.929;
+        final Double expectedFifth = 632.4586381732801;
+
         final Double actualFirst = d.get( MetricConstants.PEARSON_CORRELATION_COEFFICIENT ).getData();
         final Double actualSecond = d.get( MetricConstants.COEFFICIENT_OF_DETERMINATION ).getData();
+        final Double actualThird = d.get( MetricConstants.SUM_OF_SQUARE_ERROR ).getData();
+        final Double actualFourth = d.get( MetricConstants.MEAN_SQUARE_ERROR ).getData();
+        final Double actualFifth = d.get( MetricConstants.ROOT_MEAN_SQUARE_ERROR ).getData();
 
         final BiPredicate<Double, Double> testMe = FunctionFactory.doubleEquals();
 
@@ -546,11 +557,31 @@ public class MetricCollectionTest
                     + actualFirst
                     + ".",
                     testMe.test( actualFirst, expectedFirst ) );
+        
         assertTrue( "Expected value: " + expectedSecond
                     + ". Actual value: "
                     + actualSecond
                     + ".",
                     testMe.test( actualSecond, expectedSecond ) );
+        
+        assertTrue( "Expected value: " + expectedThird
+                    + ". Actual value: "
+                    + actualThird
+                    + ".",
+                    testMe.test( actualThird, expectedThird ) );
+        
+        assertTrue( "Expected value: " + expectedFourth
+                    + ". Actual value: "
+                    + actualFourth
+                    + ".",
+                    testMe.test( actualFourth, expectedFourth ) );
+        
+        assertTrue( "Expected value: " + expectedFifth
+                    + ". Actual value: "
+                    + actualFifth
+                    + ".",
+                    testMe.test( actualFifth, expectedFifth ) );
+        
     }
 
     /**

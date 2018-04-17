@@ -23,7 +23,7 @@ public class CoefficientOfDetermination extends CorrelationPearsons
     @Override
     public DoubleScoreOutput apply(SingleValuedPairs s)
     {
-        return aggregate(getCollectionInput(s));
+        return aggregate(getInputForAggregation(s));
     }
 
     @Override
@@ -50,7 +50,7 @@ public class CoefficientOfDetermination extends CorrelationPearsons
     }
 
     @Override
-    public DoubleScoreOutput getCollectionInput(SingleValuedPairs input)
+    public DoubleScoreOutput getInputForAggregation(SingleValuedPairs input)
     {
         if(Objects.isNull(input))
         {

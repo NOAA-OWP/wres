@@ -46,7 +46,7 @@ abstract class ContingencyTableScore<S extends MulticategoryPairs> extends Ordin
     }
 
     @Override
-    public MatrixOutput getCollectionInput( final S s )
+    public MatrixOutput getInputForAggregation( final S s )
     {
         if ( Objects.isNull( s ) )
         {
