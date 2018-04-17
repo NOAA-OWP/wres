@@ -10,8 +10,6 @@ import wres.datamodel.outputs.MetricOutput;
  * An abstract diagram.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 
 public abstract class Diagram<S extends MetricInput<?>, T extends MetricOutput<?>> implements Metric<S, T>
@@ -65,8 +63,7 @@ public abstract class Diagram<S extends MetricInput<?>, T extends MetricOutput<?
         }        
         
     }    
-    
-    
+       
     /**
      * Hidden constructor.
      * 
@@ -80,7 +77,9 @@ public abstract class Diagram<S extends MetricInput<?>, T extends MetricOutput<?
         {
             throw new MetricParameterException( "Cannot construct the metric with a null builder." );
         }
+        
         this.dataFactory = builder.dataFactory;
+        
         if ( Objects.isNull( this.dataFactory ) )
         {
             throw new MetricParameterException( "Specify a data factory with which to build the metric." );

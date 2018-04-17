@@ -4,8 +4,6 @@ package wres.engine.statistics.metric;
  * A checked exception associated with a metric parameter.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 
 public final class MetricParameterException extends Exception

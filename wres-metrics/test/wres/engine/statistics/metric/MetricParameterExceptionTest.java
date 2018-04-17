@@ -6,8 +6,6 @@ import org.junit.Test;
  * Tests the {@link MetricParameterException}.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 public final class MetricParameterExceptionTest
 {

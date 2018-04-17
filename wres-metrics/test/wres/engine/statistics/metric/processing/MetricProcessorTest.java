@@ -55,7 +55,7 @@ public final class MetricProcessorTest
             throws IOException, MetricConfigException, MetricParameterException, MetricProcessorException
     {
         final DataFactory metIn = DefaultDataFactory.getInstance();
-        String configPath = "testinput/metricProcessorTest/test1AllValid.xml";
+        String configPath = "testinput/metricProcessorTest/testAllValid.xml";
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> trueProcessor =
                 MetricFactory.getInstance( metIn )
@@ -93,7 +93,7 @@ public final class MetricProcessorTest
             throws IOException, MetricConfigException, MetricParameterException, MetricProcessorException
     {
         final DataFactory metIn = DefaultDataFactory.getInstance();
-        String configPath = "testinput/metricProcessorTest/test1AllValid.xml";
+        String configPath = "testinput/metricProcessorTest/testAllValid.xml";
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPath ) ).getProjectConfig();
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
                 MetricFactory.getInstance( metIn )
@@ -132,7 +132,7 @@ public final class MetricProcessorTest
     {
         final DataFactory metIn = DefaultDataFactory.getInstance();
         //Single-valued case
-        String configPathSingleValued = "testinput/metricProcessorTest/test3SingleValued.xml";
+        String configPathSingleValued = "testinput/metricProcessorTest/testSingleValued.xml";
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathSingleValued ) ).getProjectConfig();
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
                 MetricFactory.getInstance( metIn )
@@ -156,7 +156,7 @@ public final class MetricProcessorTest
         }
 
         //Ensemble case
-        String configPathEnsemble = "testinput/metricProcessorTest/test3Ensemble.xml";
+        String configPathEnsemble = "testinput/metricProcessorTest/testDisallowNonScores.xml";
         ProjectConfig configEnsemble = ProjectConfigPlus.from( Paths.get( configPathEnsemble ) ).getProjectConfig();
         MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processorEnsemble =
                 MetricFactory.getInstance( metIn )
@@ -197,7 +197,7 @@ public final class MetricProcessorTest
         final MetadataFactory metFac = metIn.getMetadataFactory();
 
         //Single-valued case
-        String configPathSingleValued = "testinput/metricProcessorTest/test4SingleValued.xml";
+        String configPathSingleValued = "testinput/metricProcessorTest/testDoNotComputeTheseMetricsForThisThreshold.xml";
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathSingleValued ) ).getProjectConfig();
         MetricProcessor<SingleValuedPairs, MetricOutputForProjectByTimeAndThreshold> processor =
                 MetricFactory.getInstance( metIn )
@@ -272,7 +272,7 @@ public final class MetricProcessorTest
         final DataFactory metIn = DefaultDataFactory.getInstance();
 
         //Single-valued case
-        String configPathSingleValued = "testinput/metricProcessorTest/test5Ensemble.xml";
+        String configPathSingleValued = "testinput/metricProcessorTest/testEnsemble.xml";
         ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathSingleValued ) ).getProjectConfig();
         MetricProcessor<EnsemblePairs, MetricOutputForProjectByTimeAndThreshold> processor =
                 MetricFactory.getInstance( metIn )

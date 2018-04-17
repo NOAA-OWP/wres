@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
@@ -164,31 +165,38 @@ public abstract class XYChartDataSourceFactory
                 // Build the TimeSeriesCollection
                 TimeSeriesCollection returnMe = new TimeSeriesCollection();
 
-                // Filter by lead time and then by threshold
-                for ( Entry<Pair<TimeWindow, OneOrTwoThresholds>, PairedOutput<Instant, Duration>> entry : input.entrySet() )
+                Set<OneOrTwoThresholds> thresholds = input.setOfThresholdKey();
+                
+                // Filter by by threshold
+                for ( OneOrTwoThresholds nextSeries : thresholds )
                 {
-//                    Long time = entry.getKey().getLeft().getLatestLeadTimeInHours();  We decided not to include this:
-                    OneOrTwoThresholds threshold = entry.getKey().getRight();
                     TimeSeries next =
-                            new TimeSeries( threshold.toStringWithoutUnits(), FixedMillisecond.class );
-                    for ( Pair<Instant, Duration> oneValue : entry.getValue() )
+                            new TimeSeries( nextSeries.toStringWithoutUnits(), FixedMillisecond.class );
+                    
+                    MetricOutputMapByTimeAndThreshold<PairedOutput<Instant, Duration>> filtered = input.filterByThreshold( nextSeries );
+                    // Create the series
+                    for ( PairedOutput<Instant, Duration> nextSet : filtered.values() )
                     {
-                        // Find the decimal hours
-                        BigDecimal result = BigDecimal.valueOf( oneValue.getRight().toMillis() )
-                                                      .divide( MILLIS_PER_HOUR, 2, RoundingMode.HALF_DOWN );
+                        for ( Pair<Instant, Duration> oneValue : nextSet )
+                        {
+                            // Find the decimal hours
+                            BigDecimal result = BigDecimal.valueOf( oneValue.getRight().toMillis() )
+                                                          .divide( MILLIS_PER_HOUR, 2, RoundingMode.HALF_DOWN );
 
-                        next.add( new FixedMillisecond( oneValue.getLeft().toEpochMilli() ),
-                                  result.doubleValue() );
+                            next.add( new FixedMillisecond( oneValue.getLeft().toEpochMilli() ),
+                                      result.doubleValue() );
+                        }
                     }
                     returnMe.addSeries( next );
                 }
+                
                 return returnMe;
             }
         };
 
         buildInitialParameters( source,
                                 orderIndex,
-                                input.size() ); //# of series = number of entries in input.
+                                input.setOfThresholdKey().size() ); //# of series = number of thresholds in input.
         source.setXAxisType( ChartConstants.AXIS_IS_TIME );
         source.getDefaultFullySpecifiedDataSourceDrawingParameters()
               .setDefaultDomainAxisTitle( "FORECAST ISSUE DATE/TIME [UTC]" );

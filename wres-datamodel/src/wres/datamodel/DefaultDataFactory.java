@@ -361,10 +361,7 @@ public class DefaultDataFactory implements DataFactory
     {
         Objects.requireNonNull( input, "Specify a non-null list of inputs." );
         final SafeMetricOutputMapByMetricBuilder<T> builder = new SafeMetricOutputMapByMetricBuilder<>();
-        
-        input.forEach( ( key, value ) -> builder.put( this.getMapKey( value.getMetadata().getMetricID() ), value ) );
-        
-        //input.forEach( ( key, value ) -> builder.put( this.getMapKey( key ), value ) );
+        input.forEach( ( key, value ) -> builder.put( this.getMapKey( key ), value ) );
         return builder.build();
     }
 

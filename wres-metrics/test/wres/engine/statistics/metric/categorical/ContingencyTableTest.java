@@ -1,11 +1,13 @@
 package wres.engine.statistics.metric.categorical;
 
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import java.util.Arrays;
 
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
@@ -13,41 +15,63 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
+import wres.datamodel.inputs.pairs.MulticategoryPairs;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MatrixOutput;
+import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
-import wres.engine.statistics.metric.categorical.ContingencyTable.ContingencyTableBuilder;
 
 /**
  * Tests the {@link ContingencyTable}.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 public final class ContingencyTableTest
 {
 
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
+
     /**
-     * Constructs a {@link ContingencyTable} and compares the actual result to the expected result. Also, checks the
-     * parameters of the metric.
-     * @throws MetricParameterException if the metric could not be constructed 
+     * Output factory.
+     */
+
+    private DataFactory outF;
+
+    /**
+     * Metadata factory.
+     */
+
+    private MetadataFactory metaFac;
+
+    /**
+     * The metric to test.
+     */
+
+    private ContingencyTable<MulticategoryPairs> table;
+
+    @Before
+    public void setupBeforeEachTest() throws MetricParameterException
+    {
+        outF = DefaultDataFactory.getInstance();
+        metaFac = outF.getMetadataFactory();
+        table = new ContingencyTable.ContingencyTableBuilder<>().setOutputFactory( outF ).build();
+    }
+
+    /**
+     * Compares the output from {@link Metric#apply(wres.datamodel.inputs.MetricInput)} against expected output.
      */
 
     @Test
-    public void test1ContingencyTable() throws MetricParameterException
+    public void testApply()
     {
-        //Obtain the factories
-        final DataFactory outF = DefaultDataFactory.getInstance();
-        final MetadataFactory metaFac = outF.getMetadataFactory();
-
         //Generate some data
         final DichotomousPairs input = MetricTestDataFactory.getDichotomousPairsOne();
 
         //Metadata for the output
-        final MetricOutputMetadata m1 =
+        final MetricOutputMetadata meta =
                 metaFac.getOutputMetadata( input.getData().size(),
                                            metaFac.getDimension(),
                                            metaFac.getDimension(),
@@ -55,10 +79,6 @@ public final class ContingencyTableTest
                                            MetricConstants.MAIN,
                                            metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ) );
 
-        //Build the metric
-        final ContingencyTableBuilder<DichotomousPairs> b = new ContingencyTable.ContingencyTableBuilder<>();
-        b.setOutputFactory( outF );
-        final ContingencyTable<DichotomousPairs> table = b.build();
         final double[][] benchmark = new double[][] { { 82.0, 38.0 }, { 23.0, 222.0 } };
         final MatrixOutput actual = table.apply( input );
         final MatrixOutput expected = outF.ofMatrixOutput( benchmark,
@@ -66,35 +86,60 @@ public final class ContingencyTableTest
                                                                           MetricDimension.FALSE_POSITIVES,
                                                                           MetricDimension.FALSE_NEGATIVES,
                                                                           MetricDimension.TRUE_NEGATIVES ),
-                                                           m1 );       
+                                                           meta );
         assertTrue( "Unexpected result for the contingency table.", actual.equals( expected ) );
+
         //Check the parameters
         assertTrue( table.getName().equals( MetricConstants.CONTINGENCY_TABLE.toString() ) );
     }
 
     /**
-     * Constructs a {@link ContingencyTable} and checks for exceptional cases.
-     * @throws MetricParameterException if the metric could not be constructed
+     * Checks that the {@link ContingencyTable#getName()} returns {@link MetricConstants.CONTINGENCY_TABLE.toString()}
+     * @throws MetricParameterException if the metric could not be constructed 
      */
 
     @Test
-    public void test2Exceptions() throws MetricParameterException
+    public void testContingencyTableIsNamedCorrectly() throws MetricParameterException
     {
-        //Build the metric
-        final DataFactory outF = DefaultDataFactory.getInstance();
-        final ContingencyTableBuilder<DichotomousPairs> b = new ContingencyTable.ContingencyTableBuilder<>();
-        b.setOutputFactory( outF );
-        final ContingencyTable<DichotomousPairs> table = b.build();
-
-        //Check the exceptions
-        try
-        {
-            table.apply( (DichotomousPairs) null );
-            fail( "Expected an exception on null input." );
-        }
-        catch ( MetricInputException e )
-        {
-        }
+        assertTrue( table.getName().equals( MetricConstants.CONTINGENCY_TABLE.toString() ) );
     }
 
+    /**
+     * Checks for an expected exception on null input to {@link ContingencyTable#apply(wres.datamodel.inputs.MetricInput)}.
+     */
+
+    @Test
+    public void testExceptionOnNullInput()
+    {
+        exception.expect( MetricInputException.class );
+        exception.expectMessage( "Specify non-null input to the 'CONTINGENCY TABLE'." );
+        table.apply( (DichotomousPairs) null );
+    }
+
+    /**
+     * Checks for an expected exception when building with a null builder.
+     * @throws MetricParameterException if a different exceptional outcome than expected occurs
+     */
+
+    @Test
+    public void testExceptionOnNullBuilder() throws MetricParameterException
+    {
+        exception.expect( MetricParameterException.class );
+        exception.expectMessage( "Cannot construct the metric with a null builder." );
+        new ContingencyTable<>( null );
+    }    
+    
+    /**
+     * Checks for an expected exception when building without a {@link DataFactory}.
+     * @throws MetricParameterException if a different exceptional outcome than expected occurs
+     */
+
+    @Test
+    public void testExceptionOnMissingDataFactory() throws MetricParameterException
+    {
+        exception.expect( MetricParameterException.class );
+        exception.expectMessage( "Specify a data factory with which to build the metric." );
+        new ContingencyTable.ContingencyTableBuilder<>().build();
+    } 
+    
 }
