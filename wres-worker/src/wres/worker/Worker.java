@@ -67,6 +67,9 @@ public class Worker
               Channel receiveChannel = connection.createChannel();
               Channel sendChannel = connection.createChannel() )
         {
+            // Take precisely one job at a time:
+            receiveChannel.basicQos( 1 );
+
             receiveChannel.queueDeclare( RECV_QUEUE_NAME, false, false, false, null );
             sendChannel.queueDeclare( SEND_QUEUE_NAME, false, false, false, null );
             JobReceiver receiver = new JobReceiver( receiveChannel,
