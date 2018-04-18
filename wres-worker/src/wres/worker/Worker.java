@@ -58,6 +58,7 @@ public class Worker
 
         // Determine the actual broker name, whether from -D or default
         String brokerHost = Worker.getBrokerHost();
+        LOGGER.info( "Using broker at host '{}'", brokerHost );
 
         // Get work from the queue
         ConnectionFactory factory = new ConnectionFactory();
