@@ -1,13 +1,15 @@
 version: '3'
 services:
-    ***REMOVED***wres:
+    tasker:
         ports:
          - "8585:8585"
-        image: "84aab85a935f"
+        image: "b1e45dc08b14"
         restart: always
         depends_on:
-         - "***REMOVED***wres-broker"
-    ***REMOVED***wres-broker:
+         - "broker"
+        environment:
+         - JAVA_OPTS=-Dwres.broker=broker
+    broker:
         ports:
          - "4369:4369"
          - "5671:5671"
@@ -15,10 +17,12 @@ services:
          - "25672:25672"
         image: "rabbitmq:3.7.4-alpine"
         restart: always
-    ***REMOVED***wres-worker:
-        image: "aec10d158d28"
+    worker:
+        image: "a7acb88c1a61"
         restart: always
         depends_on:
-         - "***REMOVED***wres-broker"
+         - "broker"
         volumes:
          - /mnt/wres_share:/wres_data
+        environment:
+         - JAVA_OPTS=-Dwres.broker=broker

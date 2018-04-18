@@ -12,5 +12,4 @@ RUN unzip wres-tasker-${version}.zip \
 WORKDIR /opt/wres-tasker-${version}
 EXPOSE 8585
 USER wres_tasker_docker
-ENV JAVA_OPTS -Dwres.broker=***REMOVED***wres-broker
 CMD [ "bin/wres-tasker" ]
