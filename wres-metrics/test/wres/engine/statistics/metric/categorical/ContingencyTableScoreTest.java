@@ -130,7 +130,7 @@ public final class ContingencyTableScoreTest
     }
     
     /**
-     * Compares the output from {@link ContingencyTableScore#getCollectionInput(wres.datamodel.inputs.pairs.MulticategoryPairs)} 
+     * Compares the output from {@link ContingencyTableScore#getInputForAggregation(wres.datamodel.inputs.pairs.MulticategoryPairs)} 
      * against a benchmark.
      */
     
@@ -157,7 +157,7 @@ public final class ContingencyTableScoreTest
                                                                           MetricDimension.TRUE_NEGATIVES ),
                                                            m1 );
 
-        final MatrixOutput actual = cs.getCollectionInput( input );
+        final MatrixOutput actual = cs.getInputForAggregation( input );
         
         assertTrue( "Unexpected result for the contingency table.", actual.equals( expected ) );
     }        
@@ -199,7 +199,7 @@ public final class ContingencyTableScoreTest
                                            MetricConstants.MAIN,
                                            metaFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ) );
         
-        assertTrue( cs.getMetadata( cs.getCollectionInput( input ) ).equals( expected ) );       
+        assertTrue( cs.getMetadata( cs.getInputForAggregation( input ) ).equals( expected ) );       
     }    
     
     /**

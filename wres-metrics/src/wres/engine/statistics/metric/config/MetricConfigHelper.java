@@ -39,8 +39,6 @@ import wres.datamodel.ThresholdsByMetric.ThresholdsByMetricBuilder;
  * A helper class for interpreting and using the {@link ProjectConfig} in the context of verification metrics.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.2
- * @since 0.1
  */
 
 public final class MetricConfigHelper
@@ -85,7 +83,7 @@ public final class MetricConfigHelper
      * @param metricConfigName the metric configuration name
      * @return the corresponding name in the {@link MetricConstants}
      * @throws MetricConfigException if the input name is not mapped
-     * @throws NullPointerException if the input is null or the input name is null
+     * @throws NullPointerException if the input is null
      */
 
     public static MetricConstants from( MetricConfigName metricConfigName ) throws MetricConfigException
@@ -101,12 +99,6 @@ public final class MetricConfigHelper
 
         // Lazy build the mapping
         buildMetricConfigNameMap();
-
-        if ( !NAME_MAP.containsKey( metricConfigName ) )
-        {
-            throw new MetricConfigException( " Unable to find a metric with a configured identifier of "
-                                             + "'" + metricConfigName + "'." );
-        }
 
         return NAME_MAP.get( metricConfigName );
     }
@@ -135,12 +127,6 @@ public final class MetricConfigHelper
 
         // Lazy build the name map
         buildSummaryStatisticsNameMap();
-
-        if ( !STATISTICS_NAME_MAP.containsKey( statsName ) )
-        {
-            throw new MetricConfigException( " Unable to find a summary statistic with a configured identifier "
-                                             + "of '" + statsName + "'." );
-        }
 
         return STATISTICS_NAME_MAP.get( statsName );
     }

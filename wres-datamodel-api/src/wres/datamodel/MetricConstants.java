@@ -202,6 +202,12 @@ public enum MetricConstants
     SAMPLE_SIZE( new MetricInputGroup[] { MetricInputGroup.SINGLE_VALUED,
                                           MetricInputGroup.ENSEMBLE },
             MetricOutputGroup.DOUBLE_SCORE, ScoreOutputGroup.UNIVARIATE_STATISTIC ),
+    
+    /**
+     * Identifier for a Sum of Square Error.
+     */
+
+    SUM_OF_SQUARE_ERROR( MetricInputGroup.SINGLE_VALUED, MetricOutputGroup.DOUBLE_SCORE ),    
 
     /**
      * Identifier for the Volumetric Efficiency.

@@ -52,6 +52,7 @@ import wres.engine.statistics.metric.singlevalued.MeanSquareError;
 import wres.engine.statistics.metric.singlevalued.MeanSquareErrorSkillScore;
 import wres.engine.statistics.metric.singlevalued.QuantileQuantileDiagram;
 import wres.engine.statistics.metric.singlevalued.RootMeanSquareError;
+import wres.engine.statistics.metric.singlevalued.SumOfSquareError;
 import wres.engine.statistics.metric.timeseries.TimeToPeakError;
 import wres.engine.statistics.metric.timeseries.TimeToPeakRelativeError;
 import wres.engine.statistics.metric.timeseries.TimingErrorDurationStatistics;
@@ -104,12 +105,31 @@ public final class MetricFactoryTest
         assertTrue( metF.ofSingleValuedScore( MetricConstants.MEAN_SQUARE_ERROR ) instanceof MeanSquareError );
         assertTrue( metF.ofSingleValuedScore( MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE ) instanceof MeanSquareErrorSkillScore );
         assertTrue( metF.ofSingleValuedScore( MetricConstants.KLING_GUPTA_EFFICIENCY ) instanceof KlingGuptaEfficiency );
-
+        assertTrue( metF.ofSingleValuedScore( MetricConstants.SUM_OF_SQUARE_ERROR ) instanceof SumOfSquareError );
+        
         // Unrecognized metric
         exception.expect( IllegalArgumentException.class );
         exception.expectMessage( "Unrecognized metric for identifier. 'MAIN'." );
         metF.ofSingleValuedScore( MetricConstants.MAIN );
     }
+    
+    /**
+     * Tests {@link MetricFactory#ofSingleValuedScoreCollectable(MetricConstants)}. 
+     * @throws MetricParameterException if the metric construction fails
+     */
+    @Test
+    public void testOfSingleValuedScoreCollectable() throws MetricParameterException
+    {
+        assertTrue( metF.ofSingleValuedScoreCollectable( MetricConstants.ROOT_MEAN_SQUARE_ERROR ) instanceof RootMeanSquareError );
+        assertTrue( metF.ofSingleValuedScoreCollectable( MetricConstants.PEARSON_CORRELATION_COEFFICIENT ) instanceof CorrelationPearsons );
+        assertTrue( metF.ofSingleValuedScoreCollectable( MetricConstants.COEFFICIENT_OF_DETERMINATION ) instanceof CoefficientOfDetermination );
+        assertTrue( metF.ofSingleValuedScoreCollectable( MetricConstants.MEAN_SQUARE_ERROR ) instanceof MeanSquareError );
+
+        // Unrecognized metric
+        exception.expect( IllegalArgumentException.class );
+        exception.expectMessage( "Unrecognized metric for identifier. 'MAIN'." );
+        metF.ofSingleValuedScoreCollectable( MetricConstants.MAIN );
+    }    
 
     /**
      * Tests {@link MetricFactory#ofDiscreteProbabilityScore(MetricConstants)} 
@@ -568,6 +588,5 @@ public final class MetricFactoryTest
                                                                         ForkJoinPool.commonPool(),
                                                                         ForkJoinPool.commonPool() ) instanceof MetricProcessorByTimeEnsemblePairs );
     }
-
 
 }

@@ -21,8 +21,6 @@ import wres.engine.statistics.metric.OrdinaryScore;
  * score returned across all pairs.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 public abstract class DoubleErrorScore<S extends SingleValuedPairs> extends OrdinaryScore<S, DoubleScoreOutput>
 {

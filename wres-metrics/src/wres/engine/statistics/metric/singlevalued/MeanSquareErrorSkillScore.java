@@ -3,13 +3,16 @@ package wres.engine.statistics.metric.singlevalued;
 import java.util.Objects;
 
 import wres.datamodel.DataFactory;
+import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
+import wres.engine.statistics.metric.DecomposableScore;
 import wres.engine.statistics.metric.FunctionFactory;
+import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 
 /**
@@ -17,11 +20,15 @@ import wres.engine.statistics.metric.MetricParameterException;
  * when compared to another. The MSE-SS is equivalent to the Nash-Sutcliffe Efficiency. The perfect MSE-SS is 1.0.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
-public class MeanSquareErrorSkillScore<S extends SingleValuedPairs> extends MeanSquareError<S>
+public class MeanSquareErrorSkillScore<S extends SingleValuedPairs> extends DecomposableScore<S>
 {
+
+    /**
+     * Instance if {@link SumOfSquareError}.
+     */
+
+    private final SumOfSquareError<SingleValuedPairs> sse;
 
     @Override
     public DoubleScoreOutput apply( final S s )
@@ -38,11 +45,11 @@ public class MeanSquareErrorSkillScore<S extends SingleValuedPairs> extends Mean
         // Some data, proceed
         if ( !s.getData().isEmpty() )
         {
-            double numerator = this.getSumOfSquareError( s );
+            double numerator = sse.apply( s ).getData();
             double denominator = 0.0;
             if ( s.hasBaseline() )
             {
-                denominator = this.getSumOfSquareError( s.getBaselineData() );
+                denominator = sse.apply( s.getBaselineData() ).getData();
             }
             else
             {
@@ -56,8 +63,14 @@ public class MeanSquareErrorSkillScore<S extends SingleValuedPairs> extends Mean
             result = FunctionFactory.skill().applyAsDouble( numerator, denominator );
         }
 
-        //Metadata
-        final MetricOutputMetadata metOut = this.getMetadata( s );
+        // Metadata
+        DatasetIdentifier baselineIdentifier = null;
+        if ( s.hasBaseline() )
+        {
+            baselineIdentifier = s.getMetadataForBaseline().getIdentifier();
+        }
+        final MetricOutputMetadata metOut =
+                this.getMetadata( s, s.getData().size(), MetricConstants.MAIN, baselineIdentifier );
         return this.getDataFactory().ofDoubleScoreOutput( result, metOut );
     }
 
@@ -85,7 +98,7 @@ public class MeanSquareErrorSkillScore<S extends SingleValuedPairs> extends Mean
 
     public static class MeanSquareErrorSkillScoreBuilder<S extends SingleValuedPairs>
             extends
-            MeanSquareErrorBuilder<S>
+            DecomposableScoreBuilder<S>
     {
 
         @Override
@@ -107,6 +120,7 @@ public class MeanSquareErrorSkillScore<S extends SingleValuedPairs> extends Mean
             throws MetricParameterException
     {
         super( builder );
+        sse = MetricFactory.getInstance( this.getDataFactory() ).ofSumOfSquareError();
     }
 
 }

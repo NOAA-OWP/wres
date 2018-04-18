@@ -253,6 +253,7 @@
             <xs:enumeration value="reliability diagram" />
             <xs:enumeration value="root mean square error" />
             <xs:enumeration value="sample size" />
+            <xs:enumeration value="sum of square error" />
             <xs:enumeration value="volumetric efficiency" />
         </xs:restriction>
     </xs:simpleType>

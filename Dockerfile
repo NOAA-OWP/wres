@@ -29,3 +29,5 @@ WORKDIR /opt/wres-worker-${worker_version}
 USER wres_docker
 ENV JAVA_OPTS -Dwres.broker=***REMOVED***wres-broker
 CMD [ "bin/wres-worker", "/usr/bin/wres" ]
+
+VOLUME /wres_data
