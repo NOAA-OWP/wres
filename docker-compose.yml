@@ -18,7 +18,7 @@ services:
         image: "rabbitmq:3.7.4-alpine"
         restart: always
     worker:
-        image: "a7acb88c1a61"
+        image: "efbb0d6d8ce4"
         restart: always
         depends_on:
          - "broker"
