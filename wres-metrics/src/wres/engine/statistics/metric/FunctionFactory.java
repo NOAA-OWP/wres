@@ -91,9 +91,9 @@ public class FunctionFactory
 
     public static DoubleBinaryOperator skill()
     {
-        return ( a, b ) -> finiteOrMissing().applyAsDouble ( 1.0 - ( a / b ) );
+        return ( a, b ) -> finiteOrMissing().applyAsDouble( 1.0 - ( a / b ) );
     }
-    
+
     /**
      * <p>
      * Return a function that produces the identity of the finite input or {@link MissingValues#MISSING_DOUBLE} if the 
@@ -106,7 +106,7 @@ public class FunctionFactory
     public static DoubleUnaryOperator finiteOrMissing()
     {
         return a -> Double.isFinite( a ) ? a : MissingValues.MISSING_DOUBLE;
-    }    
+    }
 
     /**
      * Rounds the input to the prescribed number of decimal places using {@link BigDecimal#ROUND_HALF_UP}.
@@ -133,7 +133,8 @@ public class FunctionFactory
 
     public static BiPredicate<Double, Double> doubleEquals()
     {
-        return ( a, b ) -> Math.abs( a - b ) < .00000001;
+        return ( a, b ) -> Double.isFinite( a ) && Double.isFinite( b ) ? Math.abs( a - b ) < .00000001
+                                                                        : Double.compare( a, b ) == 0;
     }
 
     /**
@@ -231,8 +232,8 @@ public class FunctionFactory
     public static ToDoubleFunction<VectorOfDoubles> sampleSize()
     {
         return a -> a.size();
-    }    
-    
+    }
+
     /**
      * Returns a statistic associated with a {@link MetricConstants} that belongs to the 
      * {@link ScoreOutputGroup#UNIVARIATE_STATISTIC}.
@@ -253,12 +254,10 @@ public class FunctionFactory
                                                 + "' is not a recognized statistic "
                                                 + "in this context." );
         }
+        
         // Lazy build the map
         buildStatisticsMap();
-        if ( !STATISTICS.containsKey( statistic ) )
-        {
-            throw new IllegalArgumentException( "The statistic '" + statistic + "' has not been implemented." );
-        }
+
         return STATISTICS.get( statistic );
     }
 
