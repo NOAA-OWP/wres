@@ -16,6 +16,7 @@ import java.util.function.ToDoubleFunction;
 import org.apache.commons.math3.stat.descriptive.rank.Median;
 
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.MissingValues;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
@@ -90,21 +91,21 @@ public class FunctionFactory
 
     public static DoubleBinaryOperator skill()
     {
-        return ( a, b ) -> finiteOrNaN().applyAsDouble ( 1.0 - ( a / b ) );
+        return ( a, b ) -> finiteOrMissing().applyAsDouble ( 1.0 - ( a / b ) );
     }
     
     /**
      * <p>
-     * Return a function that produces the identity of the finite input or {@link Double#NaN} if the input is 
-     * non-finite.
+     * Return a function that produces the identity of the finite input or {@link MissingValues#MISSING_DOUBLE} if the 
+     * input is non-finite.
      * </p>
      * 
      * @return a function that computes the finite identity
      */
 
-    public static DoubleUnaryOperator finiteOrNaN()
+    public static DoubleUnaryOperator finiteOrMissing()
     {
-        return a -> Double.isFinite( a ) ? a : Double.NaN;
+        return a -> Double.isFinite( a ) ? a : MissingValues.MISSING_DOUBLE;
     }    
 
     /**

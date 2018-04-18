@@ -65,7 +65,6 @@ public abstract class OrdinaryScore<S extends MetricInput<?>, T extends ScoreOut
 
     }
 
-
     /**
      * Hidden constructor.
      * 

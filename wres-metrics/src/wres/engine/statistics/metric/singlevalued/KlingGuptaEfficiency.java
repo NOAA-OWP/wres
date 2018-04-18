@@ -11,6 +11,7 @@ import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.engine.statistics.metric.Collectable;
+import wres.engine.statistics.metric.DecomposableScore;
 import wres.engine.statistics.metric.FunctionFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.singlevalued.CorrelationPearsons.CorrelationPearsonsBuilder;
@@ -30,10 +31,8 @@ import wres.engine.statistics.metric.singlevalued.CorrelationPearsons.Correlatio
  * covariances. Do the same for any other scores that uses these components.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
-public class KlingGuptaEfficiency extends MeanSquareError<SingleValuedPairs>
+public class KlingGuptaEfficiency extends DecomposableScore<SingleValuedPairs>
 {
 
     /**
@@ -90,10 +89,10 @@ public class KlingGuptaEfficiency extends MeanSquareError<SingleValuedPairs>
             double left = Math.pow( rhoWeight * ( rhoVal - 1.0 ), 2 );
             double middle = Math.pow( varWeight * ( gamma - 1.0 ), 2 );
             double right = Math.pow( biasWeight * ( beta - 1.0 ), 2 );
-            result = FunctionFactory.finiteOrNaN().applyAsDouble( 1.0 - Math.sqrt( left + middle + right ) );
+            result = FunctionFactory.finiteOrMissing().applyAsDouble( 1.0 - Math.sqrt( left + middle + right ) );
         }
         //Metadata
-        final MetricOutputMetadata metOut = getMetadata( s );
+        final MetricOutputMetadata metOut = this.getMetadata( s, s.getData().size(), MetricConstants.MAIN, null );
         return dataFactory.ofDoubleScoreOutput( result, metOut );
     }
 
@@ -121,7 +120,7 @@ public class KlingGuptaEfficiency extends MeanSquareError<SingleValuedPairs>
 
     public static class KlingGuptaEfficiencyBuilder
             extends
-            MeanSquareErrorBuilder<SingleValuedPairs>
+            DecomposableScoreBuilder<SingleValuedPairs>
     {
 
         @Override

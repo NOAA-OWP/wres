@@ -63,8 +63,7 @@ public abstract class Diagram<S extends MetricInput<?>, T extends MetricOutput<?
         }        
         
     }    
-    
-    
+       
     /**
      * Hidden constructor.
      * 
@@ -78,7 +77,9 @@ public abstract class Diagram<S extends MetricInput<?>, T extends MetricOutput<?
         {
             throw new MetricParameterException( "Cannot construct the metric with a null builder." );
         }
+        
         this.dataFactory = builder.dataFactory;
+        
         if ( Objects.isNull( this.dataFactory ) )
         {
             throw new MetricParameterException( "Specify a data factory with which to build the metric." );

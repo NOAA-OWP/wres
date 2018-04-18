@@ -13,6 +13,7 @@ import wres.config.MetricConfigException;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
+import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
 import wres.datamodel.ThresholdsByMetric;
@@ -84,6 +85,8 @@ import wres.engine.statistics.metric.singlevalued.MeanSquareErrorSkillScore.Mean
 import wres.engine.statistics.metric.singlevalued.QuantileQuantileDiagram;
 import wres.engine.statistics.metric.singlevalued.RootMeanSquareError;
 import wres.engine.statistics.metric.singlevalued.RootMeanSquareError.RootMeanSquareErrorBuilder;
+import wres.engine.statistics.metric.singlevalued.SumOfSquareError;
+import wres.engine.statistics.metric.singlevalued.SumOfSquareError.SumOfSquareErrorBuilder;
 import wres.engine.statistics.metric.singlevalued.VolumetricEfficiency;
 import wres.engine.statistics.metric.singlevalued.VolumetricEfficiency.VolumetricEfficiencyBuilder;
 import wres.engine.statistics.metric.timeseries.TimeToPeakError;
@@ -647,7 +650,14 @@ public class MetricFactory
         // Add the metrics
         for ( MetricConstants next : metric )
         {
-            builder.add( this.ofSingleValuedScore( next ) );
+            if ( MetricFactory.isCollectable( next ) )
+            {
+                builder.addCollectable( this.ofSingleValuedScoreCollectable( next ) );
+            }
+            else
+            {
+                builder.addMetric( this.ofSingleValuedScore( next ) );
+            }
         }
 
         builder.setOutputFactory( outputFactory ).setExecutorService( executor );
@@ -674,7 +684,7 @@ public class MetricFactory
                 MetricCollectionBuilder.of();
         for ( MetricConstants next : metric )
         {
-            builder.add( this.ofSingleValuedMultiVector( next ) );
+            builder.addMetric( this.ofSingleValuedMultiVector( next ) );
         }
         builder.setOutputFactory( outputFactory ).setExecutorService( executor );
         return builder.build();
@@ -700,7 +710,7 @@ public class MetricFactory
                 MetricCollectionBuilder.of();
         for ( MetricConstants next : metric )
         {
-            builder.add( this.ofDiscreteProbabilityScore( next ) );
+            builder.addMetric( this.ofDiscreteProbabilityScore( next ) );
         }
         builder.setOutputFactory( outputFactory ).setExecutorService( executor );
         return builder.build();
@@ -726,7 +736,8 @@ public class MetricFactory
                 MetricCollectionBuilder.of();
         for ( MetricConstants next : metric )
         {
-            builder.add( this.ofDichotomousScore( next ) );
+            // All dichotomous scores are collectable
+            builder.addCollectable( this.ofDichotomousScore( next ) );
         }
         builder.setOutputFactory( outputFactory ).setExecutorService( executor );
         return builder.build();
@@ -752,7 +763,7 @@ public class MetricFactory
                 MetricCollectionBuilder.of();
         for ( MetricConstants next : metric )
         {
-            builder.add( this.ofDiscreteProbabilityMultiVector( next ) );
+            builder.addMetric( this.ofDiscreteProbabilityMultiVector( next ) );
         }
         builder.setOutputFactory( outputFactory ).setExecutorService( executor );
         return builder.build();
@@ -778,7 +789,7 @@ public class MetricFactory
                 MetricCollectionBuilder.of();
         for ( MetricConstants next : metric )
         {
-            builder.add( this.ofDichotomousMatrix( next ) );
+            builder.addMetric( this.ofDichotomousMatrix( next ) );
         }
         builder.setOutputFactory( outputFactory ).setExecutorService( executor );
         return builder.build();
@@ -804,7 +815,7 @@ public class MetricFactory
                 MetricCollectionBuilder.of();
         for ( MetricConstants next : metric )
         {
-            builder.add( this.ofEnsembleScore( next ) );
+            builder.addMetric( this.ofEnsembleScore( next ) );
         }
         builder.setOutputFactory( outputFactory ).setExecutorService( executor );
         return builder.build();
@@ -830,7 +841,7 @@ public class MetricFactory
                 MetricCollectionBuilder.of();
         for ( MetricConstants next : metric )
         {
-            builder.add( this.ofEnsembleMultiVector( next ) );
+            builder.addMetric( this.ofEnsembleMultiVector( next ) );
         }
         builder.setOutputFactory( outputFactory ).setExecutorService( executor );
         return builder.build();
@@ -856,7 +867,7 @@ public class MetricFactory
                 MetricCollectionBuilder.of();
         for ( MetricConstants next : metric )
         {
-            builder.add( this.ofEnsembleBoxPlot( next ) );
+            builder.addMetric( this.ofEnsembleBoxPlot( next ) );
         }
         builder.setOutputFactory( outputFactory ).setExecutorService( executor );
         return builder.build();
@@ -882,7 +893,7 @@ public class MetricFactory
                 MetricCollectionBuilder.of();
         for ( MetricConstants next : metric )
         {
-            builder.add( this.ofSingleValuedTimeSeries( next ) );
+            builder.addMetric( this.ofSingleValuedTimeSeries( next ) );
         }
         builder.setOutputFactory( outputFactory ).setExecutorService( executor );
         return builder.build();
@@ -904,6 +915,8 @@ public class MetricFactory
         {
             case BIAS_FRACTION:
                 return this.ofBiasFraction();
+            case KLING_GUPTA_EFFICIENCY:
+                return this.ofKlingGuptaEfficiency();
             case MEAN_ABSOLUTE_ERROR:
                 return this.ofMeanAbsoluteError();
             case MEAN_ERROR:
@@ -916,8 +929,38 @@ public class MetricFactory
                 return this.ofVolumetricEfficiency();
             case MEAN_SQUARE_ERROR_SKILL_SCORE:
                 return this.ofMeanSquareErrorSkillScore();
-            case KLING_GUPTA_EFFICIENCY:
-                return this.ofKlingGuptaEfficiency();
+            case COEFFICIENT_OF_DETERMINATION:
+                return this.ofCoefficientOfDetermination();
+            case PEARSON_CORRELATION_COEFFICIENT:
+                return this.ofCorrelationPearsons();
+            case MEAN_SQUARE_ERROR:
+                return this.ofMeanSquareError();
+            case ROOT_MEAN_SQUARE_ERROR:
+                return this.ofRootMeanSquareError();
+            case SUM_OF_SQUARE_ERROR:
+                return this.ofSumOfSquareError();
+            default:
+                throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
+        }
+    }
+
+    /**
+     * Returns a {@link Collectable} that consumes {@link SingleValuedPairs} and produces {@link DoubleScoreOutput}.
+     * 
+     * @param metric the metric identifier
+     * @return the metric
+     * @throws MetricParameterException if one or more parameter values is incorrect
+     * @throws IllegalArgumentException if the metric identifier is not recognized
+     */
+
+    public Collectable<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput>
+            ofSingleValuedScoreCollectable( MetricConstants metric )
+                    throws MetricParameterException
+    {
+        switch ( metric )
+        {
+            case SUM_OF_SQUARE_ERROR:
+                return this.ofSumOfSquareError();
             case COEFFICIENT_OF_DETERMINATION:
                 return this.ofCoefficientOfDetermination();
             case PEARSON_CORRELATION_COEFFICIENT:
@@ -988,7 +1031,7 @@ public class MetricFactory
      * @throws IllegalArgumentException if the metric identifier is not recognized
      */
 
-    public Metric<DichotomousPairs, DoubleScoreOutput> ofDichotomousScore( MetricConstants metric )
+    public Collectable<DichotomousPairs, MatrixOutput, DoubleScoreOutput> ofDichotomousScore( MetricConstants metric )
             throws MetricParameterException
     {
         switch ( metric )
@@ -1298,6 +1341,19 @@ public class MetricFactory
     public MeanError ofMeanError() throws MetricParameterException
     {
         return (MeanError) new MeanErrorBuilder().setOutputFactory( outputFactory ).build();
+    }
+
+    /**
+     * Return a default {@link SumOfSquareError} function.
+     * 
+     * @return a default {@link SumOfSquareError} function
+     * @throws MetricParameterException if one or more parameter values is incorrect 
+     */
+
+    public SumOfSquareError<SingleValuedPairs> ofSumOfSquareError() throws MetricParameterException
+    {
+        return (SumOfSquareError<SingleValuedPairs>) new SumOfSquareErrorBuilder<>().setOutputFactory( outputFactory )
+                                                                                    .build();
     }
 
     /**
@@ -1672,6 +1728,30 @@ public class MetricFactory
         returnMe.remove( MetricOutputGroup.DURATION_SCORE );
 
         return Collections.unmodifiableSet( returnMe );
+    }
+
+    /**
+     * Returns <code>true</code> if the input metric is an instance of {@link Collectable}, otherwise 
+     * <code>false</code>.
+     * 
+     * @param metric the metric
+     * @return true if the metric is {@link Collectable}, otherwise false
+     */
+
+    private static boolean isCollectable( MetricConstants metric )
+    {
+        Objects.requireNonNull( metric, "Specify a non-null metric to test." );
+
+        boolean singleValued = metric == MetricConstants.COEFFICIENT_OF_DETERMINATION
+                               || metric == MetricConstants.PEARSON_CORRELATION_COEFFICIENT
+                               || metric == MetricConstants.SUM_OF_SQUARE_ERROR;
+        
+        singleValued = singleValued
+                       || metric == MetricConstants.MEAN_SQUARE_ERROR
+                       || metric == MetricConstants.ROOT_MEAN_SQUARE_ERROR
+                       || metric == MetricConstants.PEARSON_CORRELATION_COEFFICIENT;
+
+        return singleValued || metric.isInGroup( MetricInputGroup.DICHOTOMOUS );
     }
 
     /**

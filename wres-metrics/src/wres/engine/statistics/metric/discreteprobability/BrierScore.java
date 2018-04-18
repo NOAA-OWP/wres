@@ -20,8 +20,6 @@ import wres.engine.statistics.metric.singlevalued.MeanSquareError;
  * </p>
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 public class BrierScore extends MeanSquareError<DiscreteProbabilityPairs>
         implements ProbabilityScore<DiscreteProbabilityPairs, DoubleScoreOutput>
