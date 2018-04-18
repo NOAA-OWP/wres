@@ -114,43 +114,6 @@ class PoolingForecastScripter extends Scripter
         this.addLine( "ORDER BY F.basis_time, F.valid_time, F.lead;" );
     }
 
-    private void applyEnsembleConstraint() throws SQLException
-    {
-        if (this.getDataSourceConfig().getEnsemble() != null &&
-            ! this.getDataSourceConfig().getEnsemble().isEmpty())
-        {
-            int includeCount = 0;
-            int excludeCount = 0;
-            StringJoiner
-                    include = new StringJoiner( ",", "ANY('{", "}'::integer[])");
-            StringJoiner exclude = new StringJoiner(",", "ANY('{", "}'::integer[])");
-
-            for ( EnsembleCondition condition : this.getDataSourceConfig().getEnsemble())
-            {
-                if ( condition.isExclude() )
-                {
-                    excludeCount++;
-                    exclude.add(String.valueOf( Ensembles.getEnsembleID( condition)));
-                }
-                else
-                {
-                    includeCount++;
-                    include.add( String.valueOf( Ensembles.getEnsembleID( condition ) ) );
-                }
-            }
-
-            if (includeCount > 0)
-            {
-                this.addLine( "    AND F.ensemble_id = ", include.toString() );
-            }
-
-            if (excludeCount > 0)
-            {
-                this.addLine( "    AND NOT F.ensemble_id = ", exclude.toString() );
-            }
-        }
-    }
-
     @Override
     String getBaseDateName()
     {

@@ -58,7 +58,7 @@ public final class Operations {
         // First, ensure this process is the only one ingesting
         Database.lockForMutation();
 
-        boolean orphansDeleted = false;
+        boolean orphansDeleted;
         try
         {
             orphansDeleted = Database.removeOrphanedData();
@@ -249,9 +249,7 @@ public final class Operations {
      * version of the database it may access
      * @throws SQLException when WRES cannot access the database
      */
-
-    public static void testConnection()
-            throws SQLException
+    public static void testConnection() throws SQLException
     {
         try
         {

@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.StringJoiner;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ExecutionException;
@@ -1397,7 +1398,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
                 script.addTab().addLine( "(" );
                 script.addTab( 2 )
                       .addLine(
-                              "(COUNT(E.ensemble_id) * 8 + 20) * -- This determines the size of a single row" );
+                              "(COUNT(E.ensemble_id) * 8 + 24) * -- This determines the size of a single row" );
                 script.addTab( 3 )
                       .addLine(
                               "(  -- This determines the number of expected rows" );
@@ -1446,7 +1447,42 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
                                 ProjectDetails.RIGHT_MEMBER );
                 script.addTab( 2 )
                       .addLine( "AND TS.ensemble_id = E.ensemble_id" );
-                script.addLine( ");" );
+                script.addLine( ")" );
+
+                if ( !this.getRight().getEnsemble().isEmpty() )
+                {
+                    int includeCount = 0;
+                    int excludeCount = 0;
+
+                    StringJoiner
+                            include = new StringJoiner( ",", "ANY('{", "}'::integer[])");
+                    StringJoiner exclude = new StringJoiner(",", "ANY('{", "}'::integer[])");
+
+                    for ( EnsembleCondition condition : this.getRight().getEnsemble())
+                    {
+                        List<Integer> ids = Ensembles.getEnsembleIDs( condition );
+                        if ( condition.isExclude() )
+                        {
+                            excludeCount += ids.size();
+                            ids.forEach( id -> exclude.add(id.toString()) );
+                        }
+                        else
+                        {
+                            includeCount += ids.size();
+                            ids.forEach( id -> include.add(id.toString()) );
+                        }
+                    }
+
+                    if (includeCount > 0)
+                    {
+                        script.addLine( "    AND ensemble_id = ", include.toString() );
+                    }
+
+                    if (excludeCount > 0)
+                    {
+                        script.addLine( "    AND NOT ensemble_id = ", exclude.toString() );
+                    }
+                }
 
                 double timeSeriesSize = script.retrieve( "size" );
 
@@ -1532,6 +1568,11 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
         {
             if (this.discreteLeads == null)
             {
+                LOGGER.warn("The system is detecting irregular time series or "
+                            + "data that contains forecasts out of sync with "
+                            + "the others.");
+                LOGGER.warn("Irregular forecasts are not fully supported, so "
+                            + "only discrete leads will be evaluated.");
                 populateDiscreteLeads();
             }
 
@@ -2370,13 +2411,13 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
         }
         else
         {
-            // Set the maximum to 500. If the maximum is lead is 200, then this
-            // not should behave much differently than having no clause at all.
-            // If real maximum was 2880, 500 will provide a large enough sample
+            // Set the maximum to 100. If the maximum is lead is 72, then this
+            // should not behave much differently than having no clause at all.
+            // If real maximum was 2880, 100 will provide a large enough sample
             // size and produce the correct values in a slightly faster fashion.
             // In one data set, leaving this out causes this to take 11.5s .
             // That was even with a subset of the real data (1 month vs 30 years).
-            // If we cut it to 500, it now takes 1.6s. Still not great, but
+            // If we cut it to 100, it now takes 1.6s. Still not great, but
             // much faster
             script.addTab().addLine( "AND lead <= ", 100 );
         }

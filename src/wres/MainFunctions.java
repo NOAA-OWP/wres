@@ -122,7 +122,7 @@ final class MainFunctions
 		functions.put("refreshdatabase", refreshDatabase());
 		functions.put("loadcoordinates", loadCoordinates());
 		functions.put("install", install());
-		functions.put("ingest", ingest());
+		functions.put("ingest", MainFunctions::ingest);
 		functions.put("loadfeatures", loadFeatures());
 		functions.put("killconnections", killWRESConnections());
 		functions.put( "loadusgsparameters", loadUSGSParameters());
@@ -749,36 +749,35 @@ final class MainFunctions
 		};
 	}
 
-    private static Function<String[], Integer> ingest ()
+    private static Integer ingest(String[] args)
     {
-	    return (String[] args) -> {
-	        int result = FAILURE;
+        int result = FAILURE;
 
-	        if (args.length > 0)
+        if (args.length > 0)
+        {
+            String projectPath = args[0];
+
+            ProjectConfig projectConfig;
+
+            try
             {
-                String projectPath = args[0];
-
-                ProjectConfig projectConfig;
-
-                try
-                {
-                    projectConfig = ConfigHelper.read(projectPath);
-                    Operations.ingest(projectConfig);
-                }
-                catch ( IOException e )
-                {
-                    MainFunctions.addException( e );
-                    LOGGER.error(Strings.getStackTrace(e));
-                }
+                projectConfig = ConfigHelper.read(projectPath);
+                Operations.ingest(projectConfig);
+                result = SUCCESS;
             }
-            else
+            catch ( IOException e )
             {
-                LOGGER.error("There are not enough arguments to run 'ingest'");
-                LOGGER.error("usage: ingest <path to configuration>");
+                MainFunctions.addException( e );
+                LOGGER.error(Strings.getStackTrace(e));
             }
+        }
+        else
+        {
+            LOGGER.error("There are not enough arguments to run 'ingest'");
+            LOGGER.error("usage: ingest <path to configuration>");
+        }
 
-	        return result;
-        };
+        return result;
     }
 
     private static Function<String[], Integer> loadCoordinates() {
