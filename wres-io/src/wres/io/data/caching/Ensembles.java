@@ -4,6 +4,10 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.function.BiPredicate;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,6 +18,7 @@ import wres.io.data.details.EnsembleDetails.EnsembleKey;
 import wres.io.utilities.Database;
 import wres.io.utilities.ScriptBuilder;
 import wres.util.NetCDF;
+import wres.util.Strings;
 
 /**
  * Cached details about Ensembles from the database
@@ -65,14 +70,47 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
                                            ensemble.getQualifier() );
 	}
 
-	public static Integer getEnsembleID( EnsembleCondition ensemble)
+    /**
+     * Creates a list containing all ensemble IDs that are specified in the condition
+     * <p>
+     *     The exclude flag is not respected. It is up to the caller to dictate
+     *     that the returned values should be excluded
+     * </p>
+     * @param ensemble An ensemble condition from the project configuration
+     * @return All ensemble Ids that match the ensemble conditions
+     * @throws SQLException
+     */
+	public static List<Integer> getEnsembleIDs( EnsembleCondition ensemble)
 			throws SQLException
 	{
-		return Ensembles.getCache().getID(
-				new EnsembleDetails(ensemble.getName(),
-									ensemble.getMemberId(),
-									ensemble.getQualifier() )
-		);
+	    List<Integer> ids = new ArrayList<>();
+
+        BiPredicate<EnsembleCondition, EnsembleKey> namesAreEquivalent = (condition, key) -> {
+            boolean compareNames = ensemble.getName() != null;
+
+            return !compareNames || condition.getName().equals( key.getEnsembleName() );
+        };
+
+        BiPredicate<EnsembleCondition, EnsembleKey> membersAreEquivalent = (condition, key) -> {
+            boolean compareMembers = ensemble.getMemberId() != null;
+            return !compareMembers || condition.getMemberId().equals( key.getMemberIndex() );
+        };
+
+        BiPredicate<EnsembleCondition, EnsembleKey> qualifiersAreEquivalent = (condition, key) -> {
+            boolean compareQualifiers = condition.getQualifier() != null;
+            return !compareQualifiers || condition.getQualifier().equals( key.getQualifierID() );
+        };
+
+	    for (Map.Entry<EnsembleKey, Integer> key : Ensembles.getCache().getKeyIndex().entrySet())
+        {
+            EnsembleKey ensembleKey = key.getKey();
+
+            if (namesAreEquivalent.and( membersAreEquivalent ).and( qualifiersAreEquivalent ).test( ensemble, ensembleKey ))
+            {
+                ids.add(key.getValue());
+            }
+        }
+		return ids;
 	}
 
     /**

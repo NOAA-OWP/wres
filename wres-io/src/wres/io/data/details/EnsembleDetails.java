@@ -194,13 +194,29 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
 
 		args.add(this.ensembleName);
 
-		script.addTab(   3   ).addLine("AND ensemblemember_id = ?");
+		script.addTab(   3   ).add("AND ensemblemember_id ");
 
-		args.add(Integer.parseInt(this.getEnsembleMemberID()));
+        if (this.getEnsembleMemberID() == null)
+        {
+            script.addLine("IS NULL");
+        }
+        else
+        {
+            script.addLine("= ?");
+            args.add( Integer.parseInt( this.getEnsembleMemberID() ) );
+        }
 
-		script.addTab(   3   ).addLine("AND qualifier_id = ?");
+		script.addTab(   3   ).add("AND qualifier_id ");
 
-		args.add(this.getQualifierID());
+        if (this.qualifierID == null)
+        {
+            script.addLine("IS NULL");
+        }
+        else
+        {
+            script.addLine("= ?");
+            args.add( this.getQualifierID() );
+        }
 
 		script.addTab().addLine(")");
 		script.addTab().addLine("RETURNING ensemble_id");
@@ -216,13 +232,29 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
 
 		args.add(this.ensembleName);
 
-		script.addTab().addLine("AND ensemblemember_id = ?");
+		script.addTab().add("AND ensemblemember_id ");
 
-		args.add(Integer.parseInt(this.getEnsembleMemberID()));
+        if (this.getEnsembleMemberID() == null)
+        {
+            script.addLine("IS NULL");
+        }
+        else
+        {
+            script.addLine("= ?");
+            args.add( Integer.parseInt( this.getEnsembleMemberID() ) );
+        }
 
-		script.addTab().addLine("AND qualifier_id = ?;");
+		script.addTab().add("AND qualifier_id ");
 
-		args.add(this.getQualifierID());
+        if (this.qualifierID == null)
+        {
+            script.add("IS NULL;");
+        }
+        else
+        {
+            script.add("= ?;");
+            args.add( this.getQualifierID() );
+        }
 
 		return script.getPreparedStatement( connection, args.toArray( new Object[args.size()] ) );
 	}
@@ -312,17 +344,17 @@ public final class EnsembleDetails extends CachedDetail<EnsembleDetails, Ensembl
             return Objects.hash(this.ensembleName, this.memberIndex, this.qualifierID);
         }
 
-        String getEnsembleName()
+        public String getEnsembleName()
         {
             return this.ensembleName;
         }
         
-        String getQualifierID()
+        public String getQualifierID()
         {
             return this.qualifierID;
         }
         
-        String getMemberIndex()
+        public String getMemberIndex()
         {
             return this.memberIndex;
         }

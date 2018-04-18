@@ -33,6 +33,7 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
 	private Integer sourceID = null;
 	private String hash = null;
 	private SourceKey key = null;
+	private boolean isPointData = true;
 	private boolean performedInsert;
 
 	/**
@@ -43,7 +44,6 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
 		this.setOutputTime(null);
 		this.setID(null);
 		this.setHash( null );
-
 	}
 
 	/**
@@ -84,6 +84,11 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
 	public void setHash(String hash)
     {
         this.hash = hash;
+    }
+
+    public void setIsPointData(boolean isPointData)
+    {
+        this.isPointData = isPointData;
     }
 
     public String getHash()
@@ -139,13 +144,14 @@ public class SourceDetails extends CachedDetail<SourceDetails, SourceKey>
 
 	    script.addLine("WITH new_source AS");
 	    script.addLine("(");
-	    script.addTab().addLine("INSERT INTO wres.Source (path, output_time, lead, hash)");
-	    script.addTab().addLine("SELECT ?, (?)::timestamp without time zone, ?, ?");
+	    script.addTab().addLine("INSERT INTO wres.Source (path, output_time, lead, hash, is_point_data)");
+	    script.addTab().addLine("SELECT ?, (?)::timestamp without time zone, ?, ?, ?");
 
 	    args.add( this.sourcePath );
 	    args.add(this.outputTime);
 	    args.add(this.lead);
 	    args.add(this.hash);
+	    args.add(this.isPointData);
 
 	    script.addTab().addLine("WHERE NOT EXISTS (");
 	    script.addTab(  2  ).addLine("SELECT 1");

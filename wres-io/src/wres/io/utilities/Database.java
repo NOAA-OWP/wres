@@ -1417,6 +1417,7 @@ public final class Database {
         sql.add(optionalVacuum + "ANALYZE wres.ForecastSource;");
         sql.add(optionalVacuum + "ANALYZE wres.ProjectSource;");
         sql.add(optionalVacuum + "ANALYZE wres.Source;");
+        sql.add(optionalVacuum + "ANALYZE wres.Ensemble;");
 
         List<Future<?>> queries = new ArrayList<>();
 
@@ -1735,6 +1736,8 @@ public final class Database {
 		builder.append("    FROM wres.Feature F").append(NEWLINE);
 		builder.append("    WHERE F.feature_id = VP.x_position").append(NEWLINE);
 		builder.append(");").append(NEWLINE);
+		builder.append("DELETE FROM wres.Ensemble E").append(NEWLINE);
+		builder.append("WHERE E.ensemble_id > 1;").append(NEWLINE);
 		builder.append("DELETE FROM wres.Feature WHERE parent_feature_id IS NOT NULL;").append(NEWLINE);
 		builder.append("TRUNCATE wres.Project RESTART IDENTITY CASCADE;").append(NEWLINE);
 		builder.append("TRUNCATE wres.ProjectSource RESTART IDENTITY CASCADE;").append(NEWLINE);

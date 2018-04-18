@@ -221,44 +221,52 @@ public class PairWriter extends WRESCallable<Boolean>
 
         public PairWriter build()
         {
+            int errorCount = 0;
             StringJoiner errorJoiner = new StringJoiner( NEWLINE );
 
             if (this.destinationConfig == null)
             {
+                errorCount += 1;
                 errorJoiner.add( "There was no destination passed to write to.");
             }
 
             if (this.date == null)
             {
+                errorCount += 1;
                 errorJoiner.add("No date was added to record.");
             }
 
             if (feature == null)
             {
+                errorCount += 1;
                 errorJoiner.add("No feature was added to record.");
             }
 
             if (this.leadIteration == Integer.MIN_VALUE)
             {
+                errorCount += 1;
                 errorJoiner.add("The iteration was not added to record.");
             }
 
             if (this.pair == null)
             {
+                errorCount += 1;
                 errorJoiner.add("No pair was added to record.");
             }
 
             if (this.poolingStep == Integer.MIN_VALUE)
             {
+                errorCount += 1;
                 errorJoiner.add("No pooling step was configured.");
             }
 
             if (this.projectDetails == null)
             {
+                errorCount += 1;
                 errorJoiner.add("No details about the project were passed.");
             }
 
-            if (errorJoiner.length() > 0)
+            if (errorCount > 0)
             {
                 throw new IllegalArgumentException( "A PairWriter could not be "
                                                     + "created: " +

@@ -2,6 +2,8 @@ package wres.io.retrieval.scripting;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.StringJoiner;
 
 import wres.config.generated.DataSourceConfig;
@@ -95,41 +97,6 @@ class BackToBackForecastScripter extends Scripter
                                         " + INTERVAL '1 HOUR' * FV.lead";
         }
         return this.validTimeCalculation;
-    }
-
-    private void applyEnsembleConstraint() throws SQLException
-    {
-        if ( !this.getDataSourceConfig().getEnsemble().isEmpty() )
-        {
-            int includeCount = 0;
-            int excludeCount = 0;
-            StringJoiner include = new StringJoiner(",", "ANY('{", "}'::integer[])");
-            StringJoiner exclude = new StringJoiner(",", "ANY('{", "}'::integer[])");
-
-            for ( EnsembleCondition condition : this.getDataSourceConfig().getEnsemble())
-            {
-                if ( condition.isExclude() )
-                {
-                    excludeCount++;
-                    exclude.add(String.valueOf( Ensembles.getEnsembleID( condition)));
-                }
-                else
-                {
-                    includeCount++;
-                    include.add( String.valueOf( Ensembles.getEnsembleID( condition ) ) );
-                }
-            }
-
-            if (includeCount > 0)
-            {
-                this.addLine( "    AND TS.ensemble_id = ", include.toString() );
-            }
-
-            if (excludeCount > 0)
-            {
-                this.addLine( "    AND NOT TS.ensemble_id = ", exclude.toString() );
-            }
-        }
     }
 
     private void applyProjectConstraint()

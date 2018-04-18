@@ -220,45 +220,6 @@ class TimeSeriesScripter extends Scripter
         return this.validTimeCalculation;
     }
 
-    private void applyEnsembleConstraint() throws SQLException
-    {
-        if ( !this.getDataSourceConfig().getEnsemble().isEmpty() )
-        {
-            int includeCount = 0;
-            int excludeCount = 0;
-            StringJoiner include = new StringJoiner(",", "ANY('{", "}'::integer[])");
-            StringJoiner exclude = new StringJoiner(",", "ANY('{", "}'::integer[])");
-
-            for ( EnsembleCondition condition : this.getDataSourceConfig().getEnsemble())
-            {
-                if ( condition.isExclude() )
-                {
-                    excludeCount++;
-                    exclude.add(String.valueOf( Ensembles.getEnsembleID( condition)));
-                }
-                else
-                {
-                    includeCount++;
-                    include.add( String.valueOf( Ensembles.getEnsembleID( condition ) ) );
-                }
-            }
-
-            if (includeCount > 0)
-            {
-                this.addTab();
-                this.addWhere();
-                this.addLine( "TS.ensemble_id = ", include.toString() );
-            }
-
-            if (excludeCount > 0)
-            {
-                this.addTab();
-                this.addWhere();
-                this.addLine( "NOT TS.ensemble_id = ", exclude.toString() );
-            }
-        }
-    }
-
     private void applyGrouping()
     {
         this.add("GROUP BY ");

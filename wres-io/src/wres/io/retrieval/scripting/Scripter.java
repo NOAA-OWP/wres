@@ -5,12 +5,15 @@ import java.sql.SQLException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
+import java.util.StringJoiner;
 
 
 import wres.config.ProjectConfigException;
 import wres.config.generated.DataSourceConfig;
+import wres.config.generated.EnsembleCondition;
 import wres.config.generated.Feature;
 import wres.io.config.ConfigHelper;
+import wres.io.data.caching.Ensembles;
 import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.ScriptBuilder;
 
@@ -166,6 +169,45 @@ public abstract class Scripter extends ScriptBuilder
     int getSequenceStep()
     {
         return this.sequenceStep;
+    }
+
+
+    void applyEnsembleConstraint() throws SQLException
+    {
+        if ( !this.getDataSourceConfig().getEnsemble().isEmpty() )
+        {
+            int includeCount = 0;
+            int excludeCount = 0;
+
+            StringJoiner
+                    include = new StringJoiner( ",", "ANY('{", "}'::integer[])");
+            StringJoiner exclude = new StringJoiner(",", "ANY('{", "}'::integer[])");
+
+            for ( EnsembleCondition condition : this.getDataSourceConfig().getEnsemble())
+            {
+                List<Integer> ids = Ensembles.getEnsembleIDs( condition );
+                if ( condition.isExclude() )
+                {
+                    excludeCount += ids.size();
+                    ids.forEach( id -> exclude.add(id.toString()) );
+                }
+                else
+                {
+                    includeCount += ids.size();
+                    ids.forEach( id -> include.add(id.toString()) );
+                }
+            }
+
+            if (includeCount > 0)
+            {
+                this.addLine( "    AND ensemble_id = ", include.toString() );
+            }
+
+            if (excludeCount > 0)
+            {
+                this.addLine( "    AND NOT ensemble_id = ", exclude.toString() );
+            }
+        }
     }
 
     Integer getVariableID() throws SQLException

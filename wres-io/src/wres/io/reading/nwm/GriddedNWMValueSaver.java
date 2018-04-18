@@ -87,9 +87,18 @@ class GriddedNWMValueSaver extends WRESRunnable
                 lead = NetCDF.getLeadTime( this.getFile() );
             }
 
-			SourceDetails addedSource = DataSources.get( this.fileName, referenceTime, lead, hash );
+            SourceDetails griddedSource = new SourceDetails(  );
+			griddedSource.setSourcePath( this.fileName );
+			griddedSource.setOutputTime( referenceTime );
+			griddedSource.setLead( lead );
+			griddedSource.setHash( hash );
+			griddedSource.setIsPointData( false );
 
-			if (addedSource.getId() == null)
+			griddedSource.save();
+
+			//SourceDetails addedSource = DataSources.get( this.fileName, referenceTime, lead, hash );
+
+			if ( griddedSource.getId() == null)// addedSource.getId() == null)
             {
                 throw new IOException( "Information about the gridded data source at " +
                                        this.fileName + " could not be ingested." );
