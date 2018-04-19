@@ -1748,8 +1748,7 @@ public class MetricFactory
         
         singleValued = singleValued
                        || metric == MetricConstants.MEAN_SQUARE_ERROR
-                       || metric == MetricConstants.ROOT_MEAN_SQUARE_ERROR
-                       || metric == MetricConstants.PEARSON_CORRELATION_COEFFICIENT;
+                       || metric == MetricConstants.ROOT_MEAN_SQUARE_ERROR;
 
         return singleValued || metric.isInGroup( MetricInputGroup.DICHOTOMOUS );
     }

@@ -18,7 +18,6 @@ import wres.io.data.details.EnsembleDetails.EnsembleKey;
 import wres.io.utilities.Database;
 import wres.io.utilities.ScriptBuilder;
 import wres.util.NetCDF;
-import wres.util.Strings;
 
 /**
  * Cached details about Ensembles from the database
@@ -62,6 +61,13 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
 		}
 	}
 
+	/**
+	 * Returns the ensemble ID.
+	 * @param ensemble an ensemble
+	 * @return an ensemble identifier
+	 * @throws SQLException if the ID could not be retrieved from the database
+	 */
+	
 	public static Integer getEnsembleID( NetCDF.Ensemble ensemble )
             throws SQLException
     {
@@ -78,7 +84,7 @@ public class Ensembles extends Cache<EnsembleDetails, EnsembleKey> {
      * </p>
      * @param ensemble An ensemble condition from the project configuration
      * @return All ensemble Ids that match the ensemble conditions
-     * @throws SQLException
+     * @throws SQLException if the ensemble IDs could not be obtained
      */
 	public static List<Integer> getEnsembleIDs( EnsembleCondition ensemble)
 			throws SQLException
