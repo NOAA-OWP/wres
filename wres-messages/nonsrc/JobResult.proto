@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+package wres.messages.generated;
+
+message JobResult
+{
+    int32 result = 1;
+}

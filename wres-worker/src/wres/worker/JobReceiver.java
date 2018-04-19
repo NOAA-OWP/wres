@@ -24,39 +24,23 @@ class JobReceiver extends DefaultConsumer
     private static final Logger LOGGER = LoggerFactory.getLogger( JobReceiver.class );
 
     private final File wresExecutable;
-    private final Channel responseChannel;
-    private final String responseQueueName;
 
 
     /**
      * Constructs a new instance and records its association to the passed-in channel.
      * @param channel the channel to which this consumer is attached
      * @param wresExecutable the wresExecutable to use for launching WRES
-     * @param responseChannel the response channel used to report results
      */
-    JobReceiver( Channel channel, File wresExecutable, Channel responseChannel, String responseQueueName )
+    JobReceiver( Channel channel, File wresExecutable )
     {
         super( channel );
         this.wresExecutable = wresExecutable;
-        this.responseChannel = responseChannel;
-        this.responseQueueName = responseQueueName;
     }
 
     private File getWresExecutable()
     {
         return this.wresExecutable;
     }
-
-    private Channel getResponseChannel()
-    {
-        return this.responseChannel;
-    }
-
-    private String getResponseQueueName()
-    {
-        return this.responseQueueName;
-    }
-
 
     /**
      * This is the entry point that will accept a message and create a process.
@@ -85,7 +69,7 @@ class JobReceiver extends DefaultConsumer
         {
             String problem = "Could not execute due to invalid message.";
             LOGGER.warn( problem );
-            this.sendResponse( response + " " + problem );
+            this.sendResponse( properties, response + " " + problem );
             return;
         }
 
@@ -100,7 +84,7 @@ class JobReceiver extends DefaultConsumer
         {
             LOGGER.warn( "Failed to launch process from {}.", processBuilder, ioe );
             String problem = "Failed to launch due to " + ioe.getMessage();
-            this.sendResponse( response + " " + problem );
+            this.sendResponse( properties, response + " " + problem );
             return;
         }
 
@@ -111,12 +95,12 @@ class JobReceiver extends DefaultConsumer
             process.waitFor();
             int exitValue = process.exitValue();
             LOGGER.info( "Subprocess {} exited {}", process, exitValue );
-            this.sendResponse( "Result of execution: " + exitValue );
+            this.sendResponse( properties, "Result of execution: " + exitValue );
         }
         catch ( InterruptedException ie )
         {
             LOGGER.warn( "Interrupted while waiting for {}.", process );
-            this.sendResponse( "Interrupted, JobReceiver dying!" );
+            this.sendResponse( properties, "Interrupted, JobReceiver dying!" );
             Thread.currentThread().interrupt();
         }
     }
@@ -189,17 +173,25 @@ class JobReceiver extends DefaultConsumer
 
 
     /**
-     * Attempts to send a message with job results
+     * Attempts to send a message with job results to the queue specified in job
+     * @param jobProperties the properties of the job message, has queue and id
      * @param message the message to send.
      */
-    private void sendResponse( String message )
+    private void sendResponse( AMQP.BasicProperties jobProperties, String message )
     {
+        AMQP.BasicProperties resultProperties =
+                new AMQP.BasicProperties
+                        .Builder()
+                        .correlationId( jobProperties.getCorrelationId() )
+                        .build();
+
         try
         {
-            this.getResponseChannel().basicPublish( "",
-                                                    this.getResponseQueueName(),
-                                                    null,
-                                                    message.getBytes() );
+            this.getChannel().basicPublish( "",
+                                            //jobProperties.getReplyTo(),
+                                            "",
+                                            resultProperties,
+                                            message.getBytes() );
         }
         catch ( IOException ioe )
         {
