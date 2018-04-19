@@ -22,11 +22,10 @@ else
 	resultFile=testMetricsResults.txt
 fi
 
+#echo "DEBUG -------- $debug"
+#debug="yes"
 
-#CSV_FILES=`ls *.csv | grep -v pairs`
-#CSV_FILES=`grep .csv dirListing.txt | grep -v pairs`
-#CSV_FILES=`grep .csv dirListing.txt | grep -v pairs | egrep -v '(CONTINGENCY_TABLE|FREQUENCY_BIAS|PEIRCE_SKILL_SCORE|QUANTILE_QUANTILE_DIAGRAM|HEFS_RELIABILITY_DIAGRAM|HEFS_BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE|HEFS_RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM|HEFS_RANK_HISTOGRAM|HEFS_BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE|HEFS_BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE)'`
-#CSV_FILES=`grep .csv $listFile | grep -v pairs | egrep -v '(CONTINGENCY_TABLE|FREQUENCY_BIAS|PEIRCE_SKILL_SCORE|QUANTILE_QUANTILE_DIAGRAM|HEFS_RELIABILITY_DIAGRAM|HEFS_BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE|HEFS_RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM|HEFS_RANK_HISTOGRAM|HEFS_BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE|HEFS_BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE)'`
+
 CSV_FILES=`grep .csv $listFile | grep -v pairs | egrep -v '(CONTINGENCY_TABLE|FREQUENCY_BIAS|PEIRCE_SKILL_SCORE|DIAGRAM|ERRORS_BY_OBSERVED_VALUE|ERRORS_BY_FORECAST_VALUE|CONTINUOUS_RANKED_PROBABILITY|HISTOGRAM|EQUITABLE|PROBABILITY|THREAT)'`
 echo "csv files = $CSV_FILES"
 for CSV_FILE in $CSV_FILES
@@ -45,36 +44,81 @@ do
 	while [ $column -le $numberOfColumns ]
 	do
 		# get the name/value pairs from the 1st line with a comma separator and convert "All data" to NA
-		nameValuePairs=`head -1 $CSV_FILE | gawk -F, -v column=$column '{print $column}' | sed -e 's/All data/ \>\= NA/'`
+		#nameValuePairs=`head -1 $CSV_FILE | gawk -F, -v column=$column '{print $column}' | sed -e 's/All data/ \>\= NA/'`
+		nameValuePairs=`head -1 $CSV_FILE | gawk -F, -v column=$column '{print $column}'`
+		#theSign=">=" # Bad
+		#testtheSign=$(echo $nameValuePairs | gawk '{print $2}') # Bad
+		#echo "testtheSign ======>>>>> $testtheSign" # Bad
+		testtheSign=$(echo $nameValuePairs | grep '>')
+		if [ -n "$testtheSign" ]
+		then
+			testtheSign=$(echo $nameValuePairs | grep '>=')
+			if [ -n "$testtheSign" ]
+                	then
+                        	nameValuePairs=`head -1 $CSV_FILE | gawk -F, -v column=$column '{print $column}' | sed -e 's/All data/ \>\= NA/'`
+                        	theSign=">="
+                	else
+				nameValuePairs=`head -1 $CSV_FILE | gawk -F, -v column=$column '{print $column}' | sed -e 's/All data/ \> NA/'`
+				theSign=">"
+			fi
+		fi
+		testtheSign=$(echo $nameValuePairs | grep '<')
+		if [ -n "$testtheSign" ]
+		then
+			testtheSign=$(echo $nameValuePairs | grep '<=')
+			if [ -n "$testtheSign" ]
+                	then
+                        	nameValuePairs=`head -1 $CSV_FILE | gawk -F, -v column=$column '{print $column}' | sed -e 's/All data/ \<\= NA/'`
+                        	theSign="<="
+                	else	
+				nameValuePairs=`head -1 $CSV_FILE | gawk -F, -v column=$column '{print $column}' | sed -e 's/All data/ \< NA/'`
+				theSign="<"
+			fi
+		fi
 		#echo $nameValuePairs
 		# get the name in 1st field with a greater than sign as separator and convert to all lower case
-		name=$(echo $nameValuePairs | gawk -F'>' '{print $1}' | tr [A-Z] [a-z])
+		if [ "$theSign" = ">=" -o "$theSign" = ">" ]
+		then
+			name=$(echo $nameValuePairs | gawk -F'>' '{print $1}' | tr [A-Z] [a-z])
+		elif [ "$theSign" = "<=" -o "$theSign" = "<" ]
+		then
+			name=$(echo $nameValuePairs | gawk -F'<' '{print $1}' | tr [A-Z] [a-z])
+		elif [ -z "$theSign" ] # in some cases like scenrio 50*, there is only an "All data" for the freshole
+		then
+			#echo "unsolved bug: $nameValuePairs"
+			nameValuePairs=`head -1 $CSV_FILE | gawk -F, -v column=$column '{print $column}' | sed -e 's/All data/ \>\= NA/'`
+			#echo "unsolved bug ------------: $nameValuePairs"
+			name=$(echo $nameValuePairs | gawk -F'>' '{print $1}' | tr [A-Z] [a-z])
+			theSign=">="		
+		fi
 		# evaluated the name
 		ename=`eval echo -n "$name"`
 		# get the value from 2nd field with a greater than sign as separator, relacce the equal sign to null.
 		value=$(echo $nameValuePairs | sed -e 's/\=//' | cut -d'>' -f2 | gawk '{print $1}')
 		#echo $value
+		if [ "$value" = "NA" ]
+		then
+			theSign=
+		fi
+		echo "Name, value, and sign for RScript: ename is $ename, value is $value, theSign is $theSign"
 		if [ -f sorted_pairs.csv ] # just double check
 		then
-			#Rscript ../../rsrc/CheckMetrics.R sorted_pairs.csv "$ename" $value 2>&1 | tee -a testMetricsResults.txt
-			#(Rscript ../../rsrc/CheckMetrics.R sorted_pairs.csv "$ename" $value > temp1.txt) 2>> $errorFile
-			#if [ -f checkedSorted_pairs.csv ]
 			if [ -f $sortedFile ]
 			then
-				#(Rscript ../../rsrc/CheckMetrics.R "$ID"_sorted_pairs.csv "$ename" $value > temp1.txt) 2>> $errorFile
-				(Rscript ../../rsrc/CheckMetrics.R $sortedFile "$ename" $value > temp1.txt) 2>> $errorFile
-				#(Rscript ../../rsrc/CheckMetrics.R checkedSorted_pairs.csv "$ename" $value > temp1.txt) 2>> $errorFile
-			#else
-			#	(Rscript ../../rsrc/CheckMetrics.R sorted_pairs.csv "$ename" $value > temp1.txt) 2>> $errorFile
+				#(Rscript ../../rsrc/CheckMetrics.R $sortedFile "$ename" $value > temp1.txt) 2>> $errorFile
+				(Rscript ../../rsrc/CheckMetrics.R $sortedFile "$ename" $value "$theSign" > temp1.txt) 2>> $errorFile
+				theSign= # reset the sign after Rscript
 			fi
-			#(Rscript ../../rsrc/CheckMetrics.R sorted_pairs.csv "$ename" $value > temp1.txt) 2>> $errorFile
-			head -6 temp1.txt > header.txt
-			sed -n "7,$"p temp1.txt | gawk '{print($1 "          "  $3)}' > metricsValues.txt
+			#head -6 temp1.txt > header.txt
+			head -7 temp1.txt > header.txt
+			#sed -n "7,$"p temp1.txt | gawk '{print($1 "          "  $3)}' > metricsValues.txt
+			sed -n "8,$"p temp1.txt | gawk '{print($1 "          "  $3)}' > metricsValues.txt
 			#rm -v temp1.txt
 		fi
 
 		# compare the output of metrics values versus the *.csv file 
 		row=2 # start at row 2
+		#row=1 # start at row 2
 		cat /dev/null > fileValues.txt
 		while [ $row -le $numberOfRows ]
 		do
@@ -88,12 +132,22 @@ do
 		then
 			rm -v joinFiles.txt
 		fi
+
+		# debugging
+		if [ "$debug" = "yes" ]
+		then
+			echo "Output from RScript"
+			cat metricsValues.txt 
+			echo "Output from csv file"
+			cat fileValues.txt
+		fi
+		# debugging
+
 		pwd > joinFiles.txt
 		echo "$CSV_FILE" >> joinFiles.txt
 		cat header.txt >> joinFiles.txt
 		../../scripts/joinFiles.py # join metricsValues.txt and fileValues.txt append to joinFiles.txt
-		#cat joinFiles.txt >> testMetricsResults.txt
-		#cat joinFiles.txt | tee -a testMetricsResults.txt
+		# cat the join files and append to result file
 		cat joinFiles.txt | tee -a $resultFile 
 		echo "" | tee -a $resultFile 
 		# next column
