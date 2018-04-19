@@ -31,9 +31,15 @@ else # run all scenarios
 	scenario_dirs=$(ls -d scenario*)
 fi
 
+if [ $# -ge 3 ]
+then
+	debug=$3
+else
+	debug=no
+fi
+
 echo $scenario_dirs
 
-#MetricsScriptDir=/wres_share/releases/systests
 MetricsScriptDir=../..
 
 for scenario_dir in $scenario_dirs
@@ -73,7 +79,7 @@ do
 			then
 				for ID in `cat IDFile.txt`
 				do
-					$MetricsScriptDir/scripts/createMetricsTest.bash $ID
+					$MetricsScriptDir/scripts/createMetricsTest.bash $ID $debug
 				done
 			else
 				$MetricsScriptDir/scripts/createMetricsTest.bash
