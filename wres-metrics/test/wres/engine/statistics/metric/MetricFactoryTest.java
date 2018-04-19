@@ -106,13 +106,13 @@ public final class MetricFactoryTest
         assertTrue( metF.ofSingleValuedScore( MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE ) instanceof MeanSquareErrorSkillScore );
         assertTrue( metF.ofSingleValuedScore( MetricConstants.KLING_GUPTA_EFFICIENCY ) instanceof KlingGuptaEfficiency );
         assertTrue( metF.ofSingleValuedScore( MetricConstants.SUM_OF_SQUARE_ERROR ) instanceof SumOfSquareError );
-        
+
         // Unrecognized metric
         exception.expect( IllegalArgumentException.class );
         exception.expectMessage( "Unrecognized metric for identifier. 'MAIN'." );
         metF.ofSingleValuedScore( MetricConstants.MAIN );
     }
-    
+
     /**
      * Tests {@link MetricFactory#ofSingleValuedScoreCollectable(MetricConstants)}. 
      * @throws MetricParameterException if the metric construction fails
@@ -129,7 +129,7 @@ public final class MetricFactoryTest
         exception.expect( IllegalArgumentException.class );
         exception.expectMessage( "Unrecognized metric for identifier. 'MAIN'." );
         metF.ofSingleValuedScoreCollectable( MetricConstants.MAIN );
-    }    
+    }
 
     /**
      * Tests {@link MetricFactory#ofDiscreteProbabilityScore(MetricConstants)} 
@@ -568,6 +568,32 @@ public final class MetricFactoryTest
     }
 
     /**
+     * Tests the {@link MetricFactory#ofMetricProcessorByTimeSingleValuedPairs(ProjectConfig, 
+     * wres.datamodel.ThresholdsByMetric, java.util.concurrent.ExecutorService, 
+     * java.util.concurrent.ExecutorService, java.util.Set)} when an expected configuration exception occurs. 
+     * @throws IOException if the input configuration could not be read
+     * @throws MetricProcessorException if the metric processor could not be constructed
+     */
+
+    @Test
+    public void testOfMetricProcessorByTimeSingleValuedPairsWithExternalThresholdsAndExecutorsThrowsException()
+            throws IOException, MetricProcessorException
+    {
+        exception.expect( MetricProcessorException.class );
+        exception.expectMessage( "While building the metric processor, a configuration exception occurred:" );
+
+        String configPathSingleValued =
+                "testinput/metricProcessorEnsemblePairsByTimeTest/testApplyWithValueThresholds.xml";
+
+        ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathSingleValued ) ).getProjectConfig();
+        MetricFactory.getInstance( DefaultDataFactory.getInstance() )
+                     .ofMetricProcessorByTimeSingleValuedPairs( config,
+                                                                null,
+                                                                ForkJoinPool.commonPool(),
+                                                                ForkJoinPool.commonPool() );
+    }
+
+    /**
      * Tests the {@link MetricFactory#ofMetricProcessorByTimeEnsemblePairs(ProjectConfig, 
      * wres.datamodel.ThresholdsByMetric, java.util.concurrent.ExecutorService, java.util.concurrent.ExecutorService)}. 
      * @throws IOException if the input configuration could not be read
@@ -587,6 +613,32 @@ public final class MetricFactoryTest
                                                                         null,
                                                                         ForkJoinPool.commonPool(),
                                                                         ForkJoinPool.commonPool() ) instanceof MetricProcessorByTimeEnsemblePairs );
+    }
+
+    /**
+     * Tests the {@link MetricFactory#ofMetricProcessorByTimeEnsemblePairs(ProjectConfig, 
+     * wres.datamodel.ThresholdsByMetric, java.util.concurrent.ExecutorService, java.util.concurrent.ExecutorService, 
+     * java.util.Set) when an expected configuration exception occurs. 
+     * @throws IOException if the input configuration could not be read
+     * @throws MetricProcessorException if the metric processor could not be constructed
+     */
+
+    @Test
+    public void testOfMetricProcessorByTimeEnsemblePairsWithExternalThresholdsAndExecutorsThrowsException()
+            throws IOException, MetricProcessorException
+    {
+        exception.expect( MetricProcessorException.class );
+        exception.expectMessage( "While building the metric processor, a configuration exception occurred:" );
+
+        String configPathEnsemble =
+                "testinput/metricProcessorSingleValuedPairsByTimeTest/testApplyWithThresholds.xml";
+
+        ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathEnsemble ) ).getProjectConfig();
+        MetricFactory.getInstance( DefaultDataFactory.getInstance() )
+                     .ofMetricProcessorByTimeEnsemblePairs( config,
+                                                            null,
+                                                            ForkJoinPool.commonPool(),
+                                                            ForkJoinPool.commonPool() );
     }
 
 }
