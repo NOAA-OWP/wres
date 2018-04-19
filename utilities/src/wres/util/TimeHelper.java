@@ -264,7 +264,7 @@ public final class TimeHelper
      * @param duration Retrieves the duration
      * @return The length of the duration in terms of the project's lead resolution
      */
-    private static long durationToLeadUnits(Duration duration)
+    public static long durationToLeadUnits(Duration duration)
     {
         long amount = 0;
 
