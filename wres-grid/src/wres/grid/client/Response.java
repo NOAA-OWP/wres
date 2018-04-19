@@ -6,6 +6,9 @@ import java.util.List;
 
 import wres.config.FeaturePlus;
 
+/**
+ * Prototype interface for receiving grid information
+ */
 public interface Response extends Iterable<List<Response.Series>>
 {
     interface Series extends Iterable<Entry>, Comparable<Series>

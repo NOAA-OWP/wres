@@ -5,6 +5,9 @@ import java.time.Instant;
 
 import wres.config.generated.Feature;
 
+/**
+ * Prototype Interface for requesting grid data
+ */
 public interface Request
 {
     void addIndex(final Integer xIndex, final Integer yIndex);

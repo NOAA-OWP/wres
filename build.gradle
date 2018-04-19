@@ -184,6 +184,7 @@ project(':wres-io')
         compile project(':wres-datamodel-api')
         compile project(':wres-config')
         compile project(':wres-vis')
+        compile project(':wres-grid')
 
         compile 'org.slf4j:slf4j-api:1.7.25'
         compile group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
