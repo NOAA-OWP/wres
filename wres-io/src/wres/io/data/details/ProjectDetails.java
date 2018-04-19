@@ -234,6 +234,10 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
      */
     private Boolean calculateLeads = null;
 
+    private Boolean leftUsesGriddedData = null;
+    private Boolean rightUsesGriddedData = null;
+    private Boolean baselineUsesGriddedData = null;
+
     /**
      * Stores sets of lead times per feature that need to be evaluated
      * individually if it is deemed that lead times shouldn't be calculated
@@ -1518,6 +1522,53 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
                 this.projectConfig.getMetrics(),
                 metric -> !metric.getTimeSeriesMetric().isEmpty()
         );
+    }
+
+    public boolean usesGriddedData(DataSourceConfig dataSourceConfig)
+            throws SQLException
+    {
+        Boolean usesGriddedData = null;
+
+        switch ( this.getInputName( dataSourceConfig ) )
+        {
+            case ProjectDetails.LEFT_MEMBER:
+                usesGriddedData = this.leftUsesGriddedData;
+                break;
+            case ProjectDetails.RIGHT_MEMBER:
+                usesGriddedData = this.rightUsesGriddedData;
+                break;
+            default:
+                usesGriddedData = this.baselineUsesGriddedData;
+        }
+
+        if (usesGriddedData == null)
+        {
+            ScriptBuilder script = new ScriptBuilder(  );
+            script.addLine("SELECT EXISTS (");
+            script.addTab().addLine("SELECT 1");
+            script.addTab().addLine("FROM wres.ProjectSource PS");
+            script.addTab().addLine("INNER JOIN wres.Source S");
+            script.addTab(  2  ).addLine("ON PS.source_id = S.source_id");
+            script.addTab().addLine("WHERE PS.project_id = ", this.getId());
+            script.addTab(  2  ).addLine("AND PS.member = ", this.getInputName( dataSourceConfig ));
+            script.addTab(  2  ).addLine("AND S.is_point_data = FALSE");
+            script.addLine(") AS uses_gridded_data;");
+
+            usesGriddedData = script.retrieve( "uses_gridded_data" );
+
+            switch ( this.getInputName( dataSourceConfig ) )
+            {
+                case ProjectDetails.LEFT_MEMBER:
+                    this.leftUsesGriddedData = usesGriddedData;
+                    break;
+                case ProjectDetails.RIGHT_MEMBER:
+                    this.rightUsesGriddedData = usesGriddedData;
+                    break;
+                default:
+                    this.baselineUsesGriddedData = usesGriddedData;
+            }
+        }
+        return usesGriddedData;
     }
 
     /**

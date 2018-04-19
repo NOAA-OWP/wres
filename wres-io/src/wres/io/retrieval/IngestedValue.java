@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.TreeMap;
 
+import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.UnitConversions;
 import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.Database;
@@ -54,6 +55,20 @@ class IngestedValue implements Comparable<IngestedValue>
 
         this.lead = Database.getValue( row, "lead" );
         this.referenceEpoch = Database.getValue( row, "basis_epoch_time" );
+    }
+
+    IngestedValue(Instant validTime,
+                  Double[] measurements,
+                  int measurementUnitId,
+                  int lead,
+                  long basisEpoch,
+                  ProjectDetails projectDetails)
+    {
+        this.validTime = validTime;
+        this.measurements = measurements;
+        this.convertAllMeasurements( measurementUnitId, projectDetails );
+        this.lead = lead;
+        this.referenceEpoch = basisEpoch;
     }
 
     int getLead()
