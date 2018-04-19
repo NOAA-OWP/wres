@@ -202,7 +202,7 @@ class IngestedValueCollection
         return values.size();
     }
 
-    private void add(IngestedValue value)
+    void add(IngestedValue value)
     {
         boolean canAdd = false;
 

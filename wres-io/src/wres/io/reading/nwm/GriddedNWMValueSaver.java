@@ -96,9 +96,7 @@ class GriddedNWMValueSaver extends WRESRunnable
 
 			griddedSource.save();
 
-			//SourceDetails addedSource = DataSources.get( this.fileName, referenceTime, lead, hash );
-
-			if ( griddedSource.getId() == null)// addedSource.getId() == null)
+			if ( griddedSource.getId() == null)
             {
                 throw new IOException( "Information about the gridded data source at " +
                                        this.fileName + " could not be ingested." );
