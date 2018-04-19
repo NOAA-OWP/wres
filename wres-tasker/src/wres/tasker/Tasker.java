@@ -36,10 +36,18 @@ public class Tasker
         context.setContextPath( "/" );
 
         ServletHolder dynamicHolder = context.addServlet( ServletContainer.class,
-                                                                "/*" );
+                                                          "/*" );
 
         dynamicHolder.setInitParameter( "jersey.config.server.provider.classnames",
                                         WresJob.class.getCanonicalName() );
+
+        /* TODO: expose the jobResult service in a working fashion
+        ServletHolder dynamicHolderTwo = context.addServlet( ServletContainer.class,
+                                                             "/jobResult/*" );
+
+        dynamicHolderTwo.setInitParameter( "jersey.config.server.provider.classnames",
+                                           WresJobResult.class.getCanonicalName() );
+        */
 
         // Static handler:
         ResourceHandler resourceHandler = new ResourceHandler();
