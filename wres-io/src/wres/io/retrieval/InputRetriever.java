@@ -42,14 +42,19 @@ import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.time.Event;
+import wres.grid.client.Fetcher;
+import wres.grid.client.Request;
 import wres.io.concurrency.Executor;
 import wres.io.concurrency.WRESCallable;
 import wres.io.config.ConfigHelper;
+import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.UnitConversions;
 import wres.io.data.details.ProjectDetails;
+import wres.io.reading.waterml.Response;
 import wres.io.retrieval.scripting.Scripter;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
+import wres.io.utilities.ScriptBuilder;
 import wres.io.writing.PairWriter;
 import wres.util.NotImplementedException;
 import wres.util.TimeHelper;
@@ -205,7 +210,14 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
     @Override
     public MetricInput<?> execute() throws Exception
     {
-        this.primaryPairs = this.createPairs(this.projectDetails.getRight());
+        if (this.projectDetails.usesGriddedData( this.projectDetails.getRight() ))
+        {
+            this.primaryPairs = this.createGriddedPairs( this.projectDetails.getRight() );
+        }
+        else
+        {
+            this.primaryPairs = this.createPairs(this.projectDetails.getRight());
+        }
 
         if (this.projectDetails.hasBaseline())
         {
@@ -218,8 +230,15 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             }
             else
             {
-                this.baselinePairs =
-                        this.createPairs( this.projectDetails.getBaseline() );
+                if (this.projectDetails.usesGriddedData( this.projectDetails.getBaseline() ))
+                {
+                    this.baselinePairs = this.createGriddedPairs( this.projectDetails.getBaseline() );
+                }
+                else
+                {
+                    this.baselinePairs =
+                            this.createPairs( this.projectDetails.getBaseline() );
+                }
             }
         }
 
@@ -577,6 +596,182 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             }
         }
         return loadScript;
+    }
+
+    private List<ForecastedPair> createGriddedPairs( DataSourceConfig dataSourceConfig )
+            throws IOException, SQLException
+    {
+        List<ForecastedPair> pairs = null;
+
+        Request griddedRequest = Fetcher.prepareRequest();
+        griddedRequest.addFeature( this.feature );
+        griddedRequest.setVariableName( dataSourceConfig.getVariable().getValue() );
+
+        boolean isForecast = ConfigHelper.isForecast( dataSourceConfig );
+
+        griddedRequest.setIsForecast( isForecast );
+
+        ScriptBuilder script = new ScriptBuilder();
+        script.addLine("SELECT path");
+        script.addLine("FROM wres.Source S");
+        script.addLine("WHERE S.is_point_data = FALSE");
+
+        if (isForecast && this.projectDetails.getMinimumLeadHour() > Integer.MIN_VALUE)
+        {
+            griddedRequest.setEarliestLead(
+                    Duration.of(this.projectDetails.getMinimumLeadHour(), TimeHelper.LEAD_RESOLUTION)
+            );
+
+            script.addTab().addLine("AND S.lead >= ", this.projectDetails.getMinimumLeadHour());
+        }
+
+        if (isForecast && this.projectDetails.getMaximumLeadHour() < Integer.MAX_VALUE)
+        {
+            griddedRequest.setLatestLead(
+                    Duration.of(this.projectDetails.getMaximumLeadHour(), TimeHelper.LEAD_RESOLUTION)
+            );
+
+            script.addTab().addLine("AND S.lead <= ", this.projectDetails.getMaximumLeadHour());
+        }
+
+        if (this.projectDetails.getEarliestDate() != null)
+        {
+            griddedRequest.setEarliestValidTime( Instant.parse( this.projectDetails.getEarliestDate() ) );
+
+            script.addTab().add("AND S.output_time ");
+
+            if (isForecast)
+            {
+                script.add("+ INTERVAL '1 ", TimeHelper.LEAD_RESOLUTION, "' * S.lead ");
+            }
+
+            script.addLine(">= '", this.projectDetails.getEarliestDate(), "'");
+        }
+
+        if (this.projectDetails.getLatestDate() != null)
+        {
+            griddedRequest.setLatestValidTime( Instant.parse( this.projectDetails.getLatestDate() ) );
+
+            script.addTab().add("AND S.output_time ");
+
+            if (isForecast)
+            {
+                script.add("+ INTERVAL '1 ", TimeHelper.LEAD_RESOLUTION, "' * S.lead ");
+            }
+
+            script.addLine("<= '", this.projectDetails.getLatestDate(), "'");
+        }
+
+        if (isForecast && this.projectDetails.getEarliestIssueDate() != null)
+        {
+            griddedRequest.setEarliestIssueTime( Instant.parse(this.projectDetails.getEarliestIssueDate()) );
+
+            script.addTab().addLine("AND S.output_time >= '", this.projectDetails.getEarliestIssueDate(), "'");
+        }
+
+        if (isForecast && this.projectDetails.getLatestIssueDate() != null)
+        {
+            griddedRequest.setLatestIssueTime( Instant.parse(this.projectDetails.getLatestIssueDate()) );
+
+            script.addTab().addLine("AND S.output_time <= '", this.projectDetails.getLatestIssueDate(), "'");
+        }
+
+        script.addTab().addLine("AND EXISTS (");
+        script.addTab(  2  ).addLine("SELECT 1");
+        script.addTab(  2  ).addLine("FROM wres.ProjectSource PS");
+        script.addTab(  2  ).addLine("WHERE PS.project_id = ", this.projectDetails.getId());
+        script.addTab(   3   ).addLine("AND PS.member = ", this.projectDetails.getInputName( dataSourceConfig ));
+        script.addTab().addLine(")");
+        script.addTab().addLine("AND is_point_data = FALSE;");
+
+        Connection connection;
+        ResultSet paths;
+
+        try
+        {
+            connection = Database.getConnection();
+            paths = script.retrieve( connection );
+
+            while (paths.next())
+            {
+                griddedRequest.addPath( paths.getString("path") );
+            }
+        }
+        catch ( SQLException e )
+        {
+            e.printStackTrace();
+        }
+
+        wres.grid.client.Response response = Fetcher.getData( griddedRequest );
+
+        int measurementUnitId = MeasurementUnits.getMeasurementUnitID(response.getMeasurementUnit());
+
+        int minimumLead = this.projectDetails.getLeadRange( this.feature, this.leadIteration ).getLeft();
+        int period = this.projectDetails.getScale().getPeriod();
+        int frequency = this.projectDetails.getScale().getFrequency();
+
+        period = (int)TimeHelper.unitsToLeadUnits(
+                this.projectDetails.getScale().getUnit().value(),
+                period
+        );
+
+        frequency = (int)TimeHelper.unitsToLeadUnits(
+                this.projectDetails.getScale().getUnit().value(),
+                frequency
+        );
+
+        for (List<wres.grid.client.Response.Series> listOfSeries : response)
+        {
+            // Until we support many locations per retrieval, we don't need special handling for features
+            for ( wres.grid.client.Response.Series series : listOfSeries)
+            {
+                IngestedValueCollection ingestedValues = new IngestedValueCollection();
+
+                for ( wres.grid.client.Response.Entry entry : series)
+                {
+                    IngestedValue value = new IngestedValue(
+                            entry.getValidDate(),
+                            entry.getMeasurements(),
+                            measurementUnitId,
+                            ( int ) TimeHelper.durationToLeadUnits( entry.getLead() ),
+                            series.getIssuedDate().getEpochSecond(),
+                            this.projectDetails
+                    );
+                    ingestedValues.add( value );
+
+                }
+                Integer aggregationStep = ingestedValues.getFirstCondensingStep(
+                        period,
+                        frequency,
+                        minimumLead
+                );
+
+                CondensedIngestedValue condensedValue = ingestedValues.condense(
+                        aggregationStep,
+                        period,
+                        frequency,
+                        minimumLead
+                );
+
+                while (condensedValue != null)
+                {
+                    pairs = this.addPair( pairs, condensedValue, dataSourceConfig );
+                    aggregationStep++;
+                    condensedValue = ingestedValues.condense(
+                            aggregationStep,
+                            period,
+                            frequency,
+                            minimumLead
+                    );
+                }
+            }
+        }
+
+        /*
+         * TODO: Add code to pull indexes from the index table that fit within the wkt in the feature
+         */
+
+        return pairs;
     }
 
     // TODO: REFACTOR

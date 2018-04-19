@@ -113,7 +113,7 @@ public final class MetricConfigHelper
      * @throws NullPointerException if the input is null
      */
 
-    public static MetricConstants getSummaryStatisticsName( SummaryStatisticsName statsName )
+    public static MetricConstants from( SummaryStatisticsName statsName )
             throws MetricConfigException
     {
 
@@ -138,7 +138,7 @@ public final class MetricConfigHelper
      * 
      * @param config the project configuration
      * @return a set of metrics
-     * @throws MetricConfigException if the metrics are configured incorrectly or no metrics are configured
+     * @throws MetricConfigException if the metrics are configured incorrectly
      */
 
     public static Set<MetricConstants> getMetricsFromConfig( ProjectConfig config ) throws MetricConfigException
@@ -150,12 +150,6 @@ public final class MetricConfigHelper
         returnMe.addAll( MetricConfigHelper.getOrdinaryMetricsFromConfig( config ) );
 
         returnMe.addAll( MetricConfigHelper.getTimeSeriesMetricsFromConfig( config ) );
-
-        // Validate
-        if ( returnMe.isEmpty() )
-        {
-            throw new MetricConfigException( config, "The project configuration does not contain any valid metrics." );
-        }
 
         return Collections.unmodifiableSet( returnMe );
     }
@@ -572,7 +566,7 @@ public final class MetricConfigHelper
         }
         else
         {
-            returnMe.add( MetricConfigHelper.getSummaryStatisticsName( name ) );
+            returnMe.add( MetricConfigHelper.from( name ) );
         }
 
         return Collections.unmodifiableSet( returnMe );

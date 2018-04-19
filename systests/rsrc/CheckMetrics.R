@@ -410,7 +410,6 @@ getMetric <- function( metric )
 	}
 	else if( lower  == "bias fraction" )
 	{
-		# Mean CRPS using Hersbach (2000)
 		function( left, right )
 		{		
 			me( right, left ) / mean( left )
