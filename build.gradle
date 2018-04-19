@@ -233,6 +233,7 @@ project(':wres-metrics')
         testCompile project (':wres-datamodel')
         testCompile 'junit:junit:4.12'
         testCompile 'org.slf4j:slf4j-api:1.7.25'
+        testCompile 'org.mockito:mockito-core:2.8.47'
     }
 }
 
