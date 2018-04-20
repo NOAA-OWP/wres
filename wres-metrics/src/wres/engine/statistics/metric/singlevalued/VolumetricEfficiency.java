@@ -34,14 +34,14 @@ public class VolumetricEfficiency extends DoubleErrorScore<SingleValuedPairs>
         }
         Double vO = 0.0;
         double vP = 0.0;
-        for ( PairOfDoubles nextPair : s.getData() )
+        for ( PairOfDoubles nextPair : s.getRawData() )
         {
             vO += Math.abs( nextPair.getItemOne() );
             vP += Math.abs( nextPair.getItemOne() - nextPair.getItemTwo() );
         }
 
         //Metadata
-        final MetricOutputMetadata metOut = getMetadata( s, s.getData().size(), MetricConstants.MAIN, null );
+        final MetricOutputMetadata metOut = getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null );
         //Compute the atomic errors in a stream
         if( vO.equals( 0.0 ) )
         {

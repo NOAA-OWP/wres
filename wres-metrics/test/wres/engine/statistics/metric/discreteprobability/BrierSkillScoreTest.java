@@ -50,7 +50,7 @@ public final class BrierSkillScoreTest
         final BrierSkillScore bss = b.build();
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getData().size(),
+        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getRawData().size(),
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension(),
                                                                    MetricConstants.BRIER_SKILL_SCORE,
@@ -101,7 +101,7 @@ public final class BrierSkillScoreTest
         final BrierSkillScore bss = b.build();
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getData().size(),
+        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getRawData().size(),
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension(),
                                                                    MetricConstants.BRIER_SKILL_SCORE,

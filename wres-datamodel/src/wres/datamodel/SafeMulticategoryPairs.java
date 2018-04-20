@@ -53,7 +53,7 @@ class SafeMulticategoryPairs implements MulticategoryPairs
     private VectorOfDoubles climatology;    
 
     @Override
-    public List<VectorOfBooleans> getData()
+    public List<VectorOfBooleans> getRawData()
     {
         return mainInput;
     }

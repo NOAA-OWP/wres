@@ -163,7 +163,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
             final Metadata meta = metFac.getMetadata( metFac.getDimension( "CMS" ),
                                                       metFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ),
                                                       window );
-            processor.apply( metIn.ofSingleValuedPairs( pairs.getData(), meta ) );
+            processor.apply( metIn.ofSingleValuedPairs( pairs.getRawData(), meta ) );
         }
 
         // Validate a subset of the data            
@@ -559,7 +559,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
             final Metadata meta = metFac.getMetadata( metFac.getDimension( "CMS" ),
                                                       metFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ),
                                                       window );
-            processor.apply( metIn.ofSingleValuedPairs( pairs.getData(), meta ) );
+            processor.apply( metIn.ofSingleValuedPairs( pairs.getRawData(), meta ) );
         }
 
         // Validate a subset of the data            
@@ -634,7 +634,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
             final Metadata meta = metFac.getMetadata( metFac.getDimension( "CMS" ),
                                                       metFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ),
                                                       window );
-            processor.apply( metIn.ofSingleValuedPairs( pairs.getData(), meta ) );
+            processor.apply( metIn.ofSingleValuedPairs( pairs.getRawData(), meta ) );
         }
 
         // Validate a subset of the data            

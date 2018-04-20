@@ -14,15 +14,17 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import wres.datamodel.inputs.MetricInputException;
+import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairs;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 
 /**
- * Base class for an immutable implementation of a (possibly irregular) time-series of pairs.
+ * Base class for an immutable implementation of a (possibly irregular) time-series.
  * 
+ * @param <T> the type of time-series data
  * @author james.brown@hydrosolved.com
  */
-class SafeTimeSeriesOfPairs<T>
+class SafeTimeSeries<T> implements TimeSeries<T>
 {
 
     /**
@@ -73,125 +75,74 @@ class SafeTimeSeriesOfPairs<T>
 
     private final Iterable<Event<T>> timeIterator;
 
-    /**
-     * Returns the immutable raw data.
-     * 
-     * @return the raw data
-     */
-
-    List<Event<List<Event<T>>>> getData()
-    {
-        // Return immutable data
-        return data;
-    }
-    
-    /**
-     * Returns the immutable raw data for the baseline.
-     * 
-     * @return the raw data for the baseline
-     */
-
-    List<Event<List<Event<T>>>> getDataForBaseline()
-    {
-        // Return immutable data
-        return baselineData;
-    }    
-    
-    /**
-     * Returns an iterator over each pair.
-     * 
-     * @return an iterator over each pair
-     */
-
-    Iterable<Event<T>> timeIterator()
+    @Override
+    public Iterable<Event<T>> timeIterator()
     {
         return timeIterator;
     }
 
-    /**
-     * Returns an iterator over the basis times.
-     * 
-     * @return an iterator over the basis times
-     */
-
-    Iterable<TimeSeries<T>> basisTimeIterator()
+    @Override
+    public Iterable<TimeSeries<T>> basisTimeIterator()
     {
         return basisTimeIterator;
     }
 
-    /**
-     * Returns an iterator over the durations.
-     * 
-     * @return an iterator over the durations
-     */
-
-    Iterable<TimeSeries<T>> durationIterator()
+    @Override
+    public Iterable<TimeSeries<T>> durationIterator()
     {
         return durationIterator;
     }
 
-    /**
-     * Returns the basis times.
-     * 
-     * @return the basis times
-     */
-    List<Instant> getBasisTimes()
+    @Override
+    public List<Instant> getBasisTimes()
     {
-        return Collections.unmodifiableList( basisTimes );
+        return Collections.unmodifiableList( this.basisTimes );
     }
 
-    /**
-     * Returns the durations.
-     * 
-     * @return the durations
-     */
-    
-    SortedSet<Duration> getDurations()
+    @Override
+    public Instant getEarliestBasisTime()
     {
-        return Collections.unmodifiableSortedSet( durations );
+        return TimeSeriesHelper.getEarliestBasisTime( this.getBasisTimes() );
     }
 
-    /**
-     * Returns <code>true</code> if the store contains multiple atomic time-series, otherwise <code>false</code>.
-     * 
-     * @return true if there are multiple atomic time-series, false otherwise
-     */
-    
-    boolean hasMultipleTimeSeries()
+    @Override
+    public Instant getLatestBasisTime()
+    {
+        return TimeSeriesHelper.getLatestBasisTime( this.getBasisTimes() );
+    }
+
+    @Override
+    public SortedSet<Duration> getDurations()
+    {
+        return Collections.unmodifiableSortedSet( this.durations );
+    }
+
+    @Override
+    public boolean hasMultipleTimeSeries()
     {
         return data.size() > 1;
     }
 
-    /**
-     * Returns <code>true</code> if the time-series is regular, otherwise <code>false</code>.
-     * 
-     * @return true if the time-series is regular, false otherwise
-     */
-    
-    boolean isRegular()
+    @Override
+    public boolean isRegular()
     {
         return Objects.nonNull( getRegularDuration() );
     }
 
-    /**
-     * Returns the regular duration associated with the time-series or null if the time-series is irregular.
-     * 
-     * @return the regular duration or null
-     */
-    
-    Duration getRegularDuration()
+    @Override
+    public Duration getRegularDuration()
     {
-        if ( durations.size() == 1 )
+        if ( this.durations.size() == 1 )
         {
-            return durations.first();
+            return this.durations.first();
         }
         Duration gap = null;
         Duration last = null;
-        for ( Duration next : durations )
+        for ( Duration next : this.durations )
         {
             if ( Objects.isNull( last ) )
             {
-                last = durations.first();
+                last = this.durations.first();
             }
             else if ( Objects.isNull( gap ) )
             {
@@ -202,11 +153,42 @@ class SafeTimeSeriesOfPairs<T>
             {
                 return null;
             }
-            else {
+            else
+            {
                 last = next;
             }
         }
         return gap;
+    }
+
+    @Override
+    public String toString()
+    {
+        return TimeSeriesHelper.toString( this );
+    }
+
+    /**
+     * Returns the immutable raw data.
+     * 
+     * @return the raw data
+     */
+
+    List<Event<List<Event<T>>>> getRawData()
+    {
+        // Rendered immutable on construction
+        return this.data;
+    }
+
+    /**
+     * Returns the immutable raw data for the baseline.
+     * 
+     * @return the raw data for the baseline
+     */
+
+    List<Event<List<Event<T>>>> getRawDataForBaseline()
+    {
+        // Rendered immutable on construction
+        return this.baselineData;
     }
 
     /**
@@ -214,37 +196,34 @@ class SafeTimeSeriesOfPairs<T>
      * 
      * @param data the raw data
      * @param baselineData the raw data for the baseline (may be empty, cannot be null)
-     * @param basisTimes the basis times
-     * @param durations the durations
-     * @param durationsBaseline the durations for the baseline
      * @param basisTimeIterator a basis time iterator
      * @param durationIterator a duration iterator
      * @throws MetricInputException if one or more inputs is invalid
      */
-    
-    SafeTimeSeriesOfPairs( final List<Event<List<Event<T>>>> data,
-                           final List<Event<List<Event<T>>>> baselineData,
-                           final Iterable<TimeSeries<T>> basisTimeIterator,
-                           final Iterable<TimeSeries<T>> durationIterator )
+
+    SafeTimeSeries( final List<Event<List<Event<T>>>> data,
+                    final List<Event<List<Event<T>>>> baselineData,
+                    final Iterable<TimeSeries<T>> basisTimeIterator,
+                    final Iterable<TimeSeries<T>> durationIterator )
     {
 
         // Set then validate
         this.data = TimeSeriesHelper.getImmutableTimeSeries( data );
-        
+
         // Baseline data?
-        if( Objects.nonNull( baselineData ) )
+        if ( Objects.nonNull( baselineData ) )
         {
             this.baselineData = TimeSeriesHelper.getImmutableTimeSeries( baselineData );
         }
-        else 
+        else
         {
             this.baselineData = null;
         }
-        
+
         // Set the iterators
         this.basisTimeIterator = basisTimeIterator;
         this.durationIterator = durationIterator;
-        
+
         // Set the durations
         this.durations = new TreeSet<>();
         int eventCount = 0;
@@ -339,9 +318,13 @@ class SafeTimeSeriesOfPairs<T>
 
     /**
      * Filters the data by {@link Duration}.
+     * 
+     * TODO: remove this method once a general builder of time-series is public facing and the {@link Slicer} provides
+     * a filtering method for generic time-series, akin to {@link Slicer#filterByDuration(TimeSeriesOfEnsemblePairs, 
+     * java.util.function.Predicate)}.
      *
      * @param duration the duration to find
-     * @param the raw data to search 
+     * @param rawData the raw data to search 
      * @return the filtered data
      */
 

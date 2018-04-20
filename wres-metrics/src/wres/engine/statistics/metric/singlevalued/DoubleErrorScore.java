@@ -77,13 +77,13 @@ public abstract class DoubleErrorScore<S extends SingleValuedPairs> extends Ordi
         {
             id = s.getMetadataForBaseline().getIdentifier();
         }
-        final MetricOutputMetadata metOut = getMetadata( s, s.getData().size(), MetricConstants.MAIN, id );
+        final MetricOutputMetadata metOut = getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, id );
         
         //Compute the atomic errors in a stream
         double doubleScore = MissingValues.MISSING_DOUBLE;
-        if( ! s.getData().isEmpty() )
+        if( ! s.getRawData().isEmpty() )
         {
-            doubleScore = s.getData().stream().mapToDouble( f ).average().getAsDouble();
+            doubleScore = s.getRawData().stream().mapToDouble( f ).average().getAsDouble();
         }        
         return getDataFactory().ofDoubleScoreOutput( doubleScore, metOut );
     }

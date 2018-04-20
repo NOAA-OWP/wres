@@ -394,7 +394,7 @@ public interface Slicer
     }
 
     /**
-     * Returns the left side of {@link SingleValuedPairs#getData()} as a primitive array of doubles.
+     * Returns the left side of a {@link SingleValuedPairs} as a primitive array of doubles.
      * 
      * @param input the input pairs
      * @return the left side
@@ -403,7 +403,7 @@ public interface Slicer
     double[] getLeftSide( SingleValuedPairs input );
 
     /**
-     * Returns the right side of {@link SingleValuedPairs#getData()} as a primitive array of doubles.
+     * Returns the right side of a {@link SingleValuedPairs} as a primitive array of doubles.
      * 
      * @param input the input pairs
      * @return the right side
@@ -412,7 +412,7 @@ public interface Slicer
     double[] getRightSide( SingleValuedPairs input );
 
     /**
-     * Returns the left side of {@link EnsemblePairs#getData()} as a primitive array of doubles.
+     * Returns the left side of a {@link EnsemblePairs} as a primitive array of doubles.
      * 
      * @param input the input pairs
      * @return the left side

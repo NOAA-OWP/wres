@@ -48,7 +48,7 @@ public interface MetricInput<S> extends Iterable<S>
      * @return the raw input
      */
 
-    List<S> getData();
+    List<S> getRawData();
 
     /**
      * Returns the metadata associated with the input.

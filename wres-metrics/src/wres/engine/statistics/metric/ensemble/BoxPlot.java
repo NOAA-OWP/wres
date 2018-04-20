@@ -82,7 +82,7 @@ abstract class BoxPlot
         {
             boxes.add( getBox( next ) );
         }
-        MetricOutputMetadata metOut = getMetadata( s, s.getData().size(), MetricConstants.MAIN, null );
+        MetricOutputMetadata metOut = getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null );
         return getDataFactory().ofBoxPlotOutput( boxes,
                                                  probabilities,
                                                  metOut,

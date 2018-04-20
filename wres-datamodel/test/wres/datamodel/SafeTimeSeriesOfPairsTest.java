@@ -25,7 +25,7 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 
 /**
- * Tests the {@link SafeTimeSeriesOfPairs}.
+ * Tests the {@link SafeTimeSeries}.
  * 
  * @author james.brown@hydrosolved.com
  * @version 0.1
@@ -38,7 +38,7 @@ public final class SafeTimeSeriesOfPairsTest
     public final ExpectedException exception = ExpectedException.none();
 
     /**
-     * Tests the {@link SafeTimeSeriesOfPairs#isRegular()} method.
+     * Tests the {@link SafeTimeSeries#isRegular()} method.
      */
 
     @Test
@@ -60,7 +60,7 @@ public final class SafeTimeSeriesOfPairsTest
     }
 
     /**
-     * Tests the {@link SafeTimeSeriesOfPairs#getRegularDuration()} method.
+     * Tests the {@link SafeTimeSeries#getRegularDuration()} method.
      */
 
     @Test
@@ -109,7 +109,7 @@ public final class SafeTimeSeriesOfPairsTest
     }
 
     /**
-     * Tests the {@link SafeTimeSeriesOfPairs#hasMultipleTimeSeries()} method.
+     * Tests the {@link SafeTimeSeries#hasMultipleTimeSeries()} method.
      */
 
     @Test
@@ -140,7 +140,7 @@ public final class SafeTimeSeriesOfPairsTest
     }
 
     /**
-     * Tests the {@link SafeTimeSeriesOfPairs#getBasisTimes()}.
+     * Tests the {@link SafeTimeSeries#getBasisTimes()}.
      */
 
     @Test
@@ -170,7 +170,7 @@ public final class SafeTimeSeriesOfPairsTest
     }
 
     /**
-     * Tests the {@link SafeTimeSeriesOfPairs#getDurations()} method.
+     * Tests the {@link SafeTimeSeries#getDurations()} method.
      */
 
     @Test

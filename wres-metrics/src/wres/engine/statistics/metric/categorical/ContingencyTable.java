@@ -65,7 +65,7 @@ public class ContingencyTable<S extends MulticategoryPairs> implements Metric<S,
             returnMe[index[1] - outcomes][index[0]] += 1;
         };
         // Increment the count in a serial stream as the lambda is stateful
-        s.getData().stream().forEach( f );
+        s.getRawData().stream().forEach( f );
         // Name the outcomes for a 2x2 contingency table
         List<MetricDimension> componentNames = null;
         if ( outcomes == 2 )
@@ -75,7 +75,7 @@ public class ContingencyTable<S extends MulticategoryPairs> implements Metric<S,
                                             MetricDimension.FALSE_NEGATIVES,
                                             MetricDimension.TRUE_NEGATIVES );
         }
-        final MetricOutputMetadata metOut = getMetadata( s, s.getData().size(), MetricConstants.MAIN, null );
+        final MetricOutputMetadata metOut = getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null );
         return getDataFactory().ofMatrixOutput( returnMe, componentNames, metOut );
     }
 

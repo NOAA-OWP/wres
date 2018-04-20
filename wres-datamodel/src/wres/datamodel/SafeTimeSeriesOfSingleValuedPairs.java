@@ -36,7 +36,7 @@ class SafeTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
      * Instance of base class for a time-series of pairs.
      */
 
-    private final SafeTimeSeriesOfPairs<PairOfDoubles> bP;
+    private final SafeTimeSeries<PairOfDoubles> bP;
 
     @Override
     public TimeSeriesOfSingleValuedPairs getBaselineData()
@@ -46,7 +46,7 @@ class SafeTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
             return null;
         }
         SafeTimeSeriesOfSingleValuedPairsBuilder builder = new SafeTimeSeriesOfSingleValuedPairsBuilder();
-        builder.addTimeSeriesData( bP.getDataForBaseline() ).setMetadata( getMetadataForBaseline() );
+        builder.addTimeSeriesData( bP.getRawDataForBaseline() ).setMetadata( getMetadataForBaseline() );
         return builder.build();
     }
 
@@ -258,7 +258,7 @@ class SafeTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
     SafeTimeSeriesOfSingleValuedPairs( final SafeTimeSeriesOfSingleValuedPairsBuilder b )
     {
         super( b );
-        bP = new SafeTimeSeriesOfPairs<>( b.data,
+        bP = new SafeTimeSeries<>( b.data,
                                           b.baselineData,
                                           getBasisTimeIterator(),
                                           getDurationIterator() );
@@ -302,7 +302,7 @@ class SafeTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
                         // Iterate
                         iterator.next();
 
-                        builder.addTimeSeriesData( Arrays.asList( bP.getData().get( returned ) ) );
+                        builder.addTimeSeriesData( Arrays.asList( bP.getRawData().get( returned ) ) );
 
                         // Propagate the metadata without adjustment because the input period is canonical
                         builder.setMetadata( getMetadata() );
@@ -366,7 +366,7 @@ class SafeTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
                                                                                            nextDuration,
                                                                                            nextDuration ) );
                         // Data for the current duration by basis time
-                        builder.addTimeSeriesData( bP.filterByDuration( nextDuration, bP.getData() ) );
+                        builder.addTimeSeriesData( bP.filterByDuration( nextDuration, bP.getRawData() ) );
                         // Set the climatology
                         builder.setClimatology( getClimatology() );
                         return builder.build();

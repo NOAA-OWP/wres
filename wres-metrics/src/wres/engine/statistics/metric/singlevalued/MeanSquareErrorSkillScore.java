@@ -43,7 +43,7 @@ public class MeanSquareErrorSkillScore<S extends SingleValuedPairs> extends Deco
         double result = Double.NaN;
 
         // Some data, proceed
-        if ( !s.getData().isEmpty() )
+        if ( !s.getRawData().isEmpty() )
         {
             double numerator = sse.apply( s ).getData();
             double denominator = 0.0;
@@ -55,7 +55,7 @@ public class MeanSquareErrorSkillScore<S extends SingleValuedPairs> extends Deco
             {
                 DataFactory d = getDataFactory();
                 double meanLeft = FunctionFactory.mean().applyAsDouble( d.vectorOf( d.getSlicer().getLeftSide( s ) ) );
-                for ( PairOfDoubles next : s.getData() )
+                for ( PairOfDoubles next : s.getRawData() )
                 {
                     denominator += Math.pow( next.getItemOne() - meanLeft, 2 );
                 }
@@ -70,7 +70,7 @@ public class MeanSquareErrorSkillScore<S extends SingleValuedPairs> extends Deco
             baselineIdentifier = s.getMetadataForBaseline().getIdentifier();
         }
         final MetricOutputMetadata metOut =
-                this.getMetadata( s, s.getData().size(), MetricConstants.MAIN, baselineIdentifier );
+                this.getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, baselineIdentifier );
         return this.getDataFactory().ofDoubleScoreOutput( result, metOut );
     }
 

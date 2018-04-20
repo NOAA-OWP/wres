@@ -54,7 +54,7 @@ class SafeSingleValuedPairs implements SingleValuedPairs
     private VectorOfDoubles climatology;
 
     @Override
-    public List<PairOfDoubles> getData()
+    public List<PairOfDoubles> getRawData()
     {
         return mainInput;
     }

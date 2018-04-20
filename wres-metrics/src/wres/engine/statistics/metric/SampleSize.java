@@ -23,8 +23,8 @@ class SampleSize<S extends MetricInput<?>> extends OrdinaryScore<S, DoubleScoreO
         {
             throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
         }
-        return getDataFactory().ofDoubleScoreOutput( s.getData().size(),
-                                               getMetadata( s, s.getData().size(), MetricConstants.MAIN, null ) );
+        return getDataFactory().ofDoubleScoreOutput( s.getRawData().size(),
+                                               getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null ) );
     }
 
     @Override

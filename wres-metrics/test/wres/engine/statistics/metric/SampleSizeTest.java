@@ -63,7 +63,7 @@ public final class SampleSizeTest
         final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getData().size(),
+        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getRawData().size(),
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension(),
                                                                    MetricConstants.SAMPLE_SIZE,
@@ -75,7 +75,7 @@ public final class SampleSizeTest
 
         //Check the results
         final DoubleScoreOutput actual = ss.apply( input );
-        final DoubleScoreOutput expected = outF.ofDoubleScoreOutput( input.getData().size(), m1 );
+        final DoubleScoreOutput expected = outF.ofDoubleScoreOutput( input.getRawData().size(), m1 );
         assertTrue( "Actual: " + actual.getData().doubleValue()
                     + ". Expected: "
                     + expected.getData().doubleValue()
