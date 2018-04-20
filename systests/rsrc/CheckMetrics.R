@@ -208,6 +208,9 @@ transformPairs <- function( pairs, metric, threshold, thresholdType )
       # Get the threshold predicate
       thresholdPredicate <- getThresholdPredicate( threshold, thresholdType )
 
+      # Remove any missing pairs, i.e. NA left or all NA right
+		
+
       # Continuous measures for single-valued input
 	if( doesThisMetricExist( tolower( metric ), single.valued.continuous ) )   
 	{

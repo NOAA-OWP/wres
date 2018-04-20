@@ -9,7 +9,7 @@ import wres.datamodel.inputs.MetricInput;
  * 
  * @author james.brown@hydrosolved.com
  */
-public interface SingleValuedPairs extends PairedInput<PairOfDoubles>
+public interface SingleValuedPairs extends MetricInput<PairOfDoubles>
 {
     
     /**

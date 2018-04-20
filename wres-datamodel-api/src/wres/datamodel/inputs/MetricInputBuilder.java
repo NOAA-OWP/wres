@@ -1,20 +1,17 @@
-package wres.datamodel.inputs.pairs.builders;
+package wres.datamodel.inputs;
 
 import java.util.List;
 
 import wres.datamodel.VectorOfDoubles;
-import wres.datamodel.inputs.pairs.PairedInput;
 import wres.datamodel.metadata.Metadata;
 
 /**
- * A builder for a {@link PairedInput} with associated {@link Metadata}.
+ * A builder for a {@link MetricInput} with associated {@link Metadata}.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.3
  */
 
-public interface PairedInputBuilder<S>
+public interface MetricInputBuilder<S>
 {
 
     /**
@@ -24,7 +21,7 @@ public interface PairedInputBuilder<S>
      * @return the builder
      */
 
-    PairedInputBuilder<S> addData( List<S> mainInput );
+    MetricInputBuilder<S> addData( List<S> mainInput );
 
     /**
      * Sets the metadata associated with the input.
@@ -33,7 +30,7 @@ public interface PairedInputBuilder<S>
      * @return the builder
      */
 
-    PairedInputBuilder<S> setMetadata( Metadata mainMeta );
+    MetricInputBuilder<S> setMetadata( Metadata mainMeta );
 
     /**
      * Adds input data for a baseline, which is used to calculate skill, appending to any existing baseline data, as
@@ -43,7 +40,7 @@ public interface PairedInputBuilder<S>
      * @return the builder
      */
 
-    PairedInputBuilder<S> addDataForBaseline( List<S> baselineInput );
+    MetricInputBuilder<S> addDataForBaseline( List<S> baselineInput );
 
     /**
      * Sets the metadata associated with the baseline input.
@@ -52,7 +49,7 @@ public interface PairedInputBuilder<S>
      * @return the builder
      */
 
-    PairedInputBuilder<S> setMetadataForBaseline( Metadata baselineMeta );
+    MetricInputBuilder<S> setMetadataForBaseline( Metadata baselineMeta );
 
     /**
      * Sets a climatological dataset for the input.
@@ -61,7 +58,7 @@ public interface PairedInputBuilder<S>
      * @return the builder
      */
 
-    PairedInputBuilder<S> setClimatology( VectorOfDoubles climatology );
+    MetricInputBuilder<S> setClimatology( VectorOfDoubles climatology );
 
     /**
      * Builds the metric input.
@@ -69,6 +66,6 @@ public interface PairedInputBuilder<S>
      * @return the metric input
      */
 
-    PairedInput<S> build();
+    MetricInput<S> build();
 
 }

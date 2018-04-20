@@ -251,7 +251,7 @@ public final class MetricConfigHelper
     public static boolean hasSummaryStatisticsFor( ProjectConfig config, Predicate<TimeSeriesMetricConfigName> metric )
             throws MetricConfigException
     {
-        return !MetricConfigHelper.getSummaryStatisticsFor( config, metric ).isEmpty();
+        return ! MetricConfigHelper.getSummaryStatisticsFor( config, metric ).isEmpty();
     }
 
     /**
