@@ -1,11 +1,13 @@
-package wres.datamodel;
+package wres.datamodel.thresholds;
 
 import java.util.Objects;
 import java.util.function.Predicate;
 
-import wres.datamodel.ThresholdConstants.Operator;
-import wres.datamodel.ThresholdConstants.ThresholdDataType;
-import wres.datamodel.ThresholdConstants.ThresholdType;
+import wres.datamodel.Dimension;
+import wres.datamodel.OneOrTwoDoubles;
+import wres.datamodel.thresholds.ThresholdConstants.Operator;
+import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
+import wres.datamodel.thresholds.ThresholdConstants.ThresholdType;
 
 /**
  * <p>Stores a threshold value and associated logical condition. A threshold comprises one or both of: 

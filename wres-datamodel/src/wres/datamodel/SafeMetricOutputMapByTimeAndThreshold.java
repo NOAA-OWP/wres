@@ -24,6 +24,8 @@ import wres.datamodel.outputs.MetricOutput;
 import wres.datamodel.outputs.MetricOutputException;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMapWithBiKey;
+import wres.datamodel.thresholds.OneOrTwoThresholds;
+import wres.datamodel.thresholds.Threshold;
 
 /**
  * Immutable map of {@link MetricOutput} stored by {@link TimeWindow} and {@link OneOrTwoThresholds} in their natural order.

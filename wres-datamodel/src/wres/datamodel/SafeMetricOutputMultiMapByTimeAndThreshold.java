@@ -19,6 +19,7 @@ import wres.datamodel.outputs.MetricOutputException;
 import wres.datamodel.outputs.MetricOutputMapByMetric;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
+import wres.datamodel.thresholds.OneOrTwoThresholds;
 
 /**
  * Default implementation of a safe map that contains {@link MetricOutputMapByTimeAndThreshold} for several metrics.

@@ -7,8 +7,8 @@ import java.util.concurrent.Future;
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.datamodel.OneOrTwoThresholds;
 import wres.datamodel.metadata.TimeWindow;
+import wres.datamodel.thresholds.OneOrTwoThresholds;
 
 /**
  * <p>

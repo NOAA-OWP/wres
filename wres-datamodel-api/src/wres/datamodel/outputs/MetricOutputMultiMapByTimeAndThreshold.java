@@ -10,8 +10,8 @@ import java.util.function.BiConsumer;
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.MetricConstants;
-import wres.datamodel.OneOrTwoThresholds;
 import wres.datamodel.metadata.TimeWindow;
+import wres.datamodel.thresholds.OneOrTwoThresholds;
 
 /**
  * A map of {@link MetricOutputMapByTimeAndThreshold} stored by metric identifier. Implements the same read-only API as the

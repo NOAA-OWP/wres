@@ -24,6 +24,7 @@ import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.ScoreOutput;
+import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 

@@ -2,8 +2,9 @@ package wres.datamodel;
 
 import java.util.Objects;
 
-import wres.datamodel.ThresholdConstants.Operator;
-import wres.datamodel.ThresholdConstants.ThresholdDataType;
+import wres.datamodel.thresholds.Threshold;
+import wres.datamodel.thresholds.ThresholdConstants.Operator;
+import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 
 /**
  * Concrete implementation of a {@link Threshold}.

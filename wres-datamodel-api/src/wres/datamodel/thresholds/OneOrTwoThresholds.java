@@ -1,4 +1,4 @@
-package wres.datamodel;
+package wres.datamodel.thresholds;
 
 import java.util.Comparator;
 import java.util.Objects;

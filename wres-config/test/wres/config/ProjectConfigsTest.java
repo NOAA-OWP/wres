@@ -8,7 +8,7 @@ import org.junit.rules.ExpectedException;
 
 import wres.config.generated.ThresholdOperator;
 import wres.config.generated.ThresholdsConfig;
-import wres.datamodel.ThresholdConstants.Operator;
+import wres.datamodel.thresholds.ThresholdConstants.Operator;
 
 public class ProjectConfigsTest
 {

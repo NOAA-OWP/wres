@@ -23,9 +23,9 @@ import wres.config.generated.TimeSeriesMetricConfigName;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.datamodel.ThresholdConstants;
-import wres.datamodel.ThresholdConstants.Operator;
-import wres.datamodel.ThresholdsByMetric;
+import wres.datamodel.thresholds.ThresholdConstants;
+import wres.datamodel.thresholds.ThresholdsByMetric;
+import wres.datamodel.thresholds.ThresholdConstants.Operator;
 
 /**
  * Provides static methods that help with ProjectConfig and its children.

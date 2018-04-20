@@ -5,10 +5,10 @@ import java.util.List;
 
 import org.jfree.data.xy.AbstractXYDataset;
 
-import wres.datamodel.OneOrTwoThresholds;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.ScoreOutput;
+import wres.datamodel.thresholds.OneOrTwoThresholds;
 
 /**
  * An {@link AbstractXYDataset} that wraps a {@link MetricOutputMapByTimeAndThreshold} which contains a set of
