@@ -247,10 +247,9 @@ class DefaultSlicer implements Slicer
         return dataFac.ofEnsemblePairs( mainPairsSubset, input.getMetadata(), climatology );
     }
 
-
     @Override
     public TimeSeriesOfSingleValuedPairs filter( TimeSeriesOfSingleValuedPairs input,
-                                                 Predicate<TimeSeriesOfSingleValuedPairs> condition,
+                                                 Predicate<TimeSeries<PairOfDoubles>> condition,
                                                  DoublePredicate applyToClimatology )
     {
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
@@ -265,11 +264,9 @@ class DefaultSlicer implements Slicer
         // Filter the main pairs and add them
         for ( TimeSeries<PairOfDoubles> next : input.basisTimeIterator() )
         {
-            // TODO: avoid cast here: update builder to take uncasted type 
-            TimeSeriesOfSingleValuedPairs nextPair = (TimeSeriesOfSingleValuedPairs) next;
-            if ( condition.test( nextPair ) )
+            if ( condition.test( next ) )
             {
-                builder.addTimeSeries( nextPair );
+                builder.addTimeSeries( next );
             }
         }
 
@@ -289,11 +286,9 @@ class DefaultSlicer implements Slicer
 
             for ( TimeSeries<PairOfDoubles> next : input.getBaselineData().basisTimeIterator() )
             {
-                // TODO: avoid cast here: update builder to take uncasted type 
-                TimeSeriesOfSingleValuedPairs nextPair = (TimeSeriesOfSingleValuedPairs) next;
-                if ( condition.test( nextPair ) )
+                if ( condition.test( next ) )
                 {
-                    builder.addTimeSeriesForBaseline( nextPair );
+                    builder.addTimeSeriesForBaseline( next );
                 }
             }
 
@@ -319,11 +314,9 @@ class DefaultSlicer implements Slicer
         
         for ( TimeSeries<PairOfDoubles> a : input.durationIterator() )
         {
-            // TODO: avoid cast here: update builder to take uncasted type 
-            TimeSeriesOfSingleValuedPairs next = (TimeSeriesOfSingleValuedPairs) a;
             if ( duration.test( a.getDurations().first() ) )
             {
-                builder.addTimeSeries( next );
+                builder.addTimeSeries( a );
             }
         }
 
@@ -346,10 +339,9 @@ class DefaultSlicer implements Slicer
         //Add the filtered data
         for ( TimeSeries<PairOfDoubles> a : input.basisTimeIterator() )
         {
-            // TODO: avoid cast here: update builder to take uncasted type 
             if ( basisTime.test( a.getEarliestBasisTime() ) )
             {
-                builder.addTimeSeries( (TimeSeriesOfSingleValuedPairs) a );
+                builder.addTimeSeries( a );
             }
         }
 
@@ -372,11 +364,9 @@ class DefaultSlicer implements Slicer
         
         for ( TimeSeries<PairOfDoubleAndVectorOfDoubles> a : input.durationIterator() )
         {
-            // TODO: avoid cast here: update builder to take uncasted type 
-            TimeSeriesOfEnsemblePairs next = (TimeSeriesOfEnsemblePairs) a;
             if ( condition.test( a.getDurations().first() ) )
             {
-                builder.addTimeSeries( next );
+                builder.addTimeSeries( a );
             }
         }
         
@@ -398,10 +388,9 @@ class DefaultSlicer implements Slicer
         //Add the filtered data
         for ( TimeSeries<PairOfDoubleAndVectorOfDoubles> a : input.basisTimeIterator() )
         {
-            // TODO: avoid cast here: update builder to take uncasted type 
             if ( condition.test( a.getEarliestBasisTime() ) )
             {
-                builder.addTimeSeries( (TimeSeriesOfEnsemblePairs) a );
+                builder.addTimeSeries( a );
             }
         }
 

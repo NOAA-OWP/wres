@@ -231,16 +231,6 @@ public final class SafeTimeSeriesOfEnsemblePairsTest
         //Check that climatology has been preserved
         assertTrue( "Failed to perserve climatology when building new time-series.",
                     climatology.equals( c.build().getClimatology() ) );
-        assertTrue( "Failed to perserve climatology when iterating new time-series by basis time.",
-                    climatology.equals( ( (TimeSeriesOfEnsemblePairs) c.build()
-                                                                       .durationIterator()
-                                                                       .iterator()
-                                                                       .next() ).getClimatology() ) );
-        assertTrue( "Failed to perserve climatology when iterating new time-series by duration.",
-                    climatology.equals( ( (TimeSeriesOfEnsemblePairs) c.build()
-                                                                       .durationIterator()
-                                                                       .iterator()
-                                                                       .next() ).getClimatology() ) );
 
         second.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), metIn.pairOf( 4, new double[] { 4 } ) ) );
         second.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), metIn.pairOf( 5, new double[] { 5 } ) ) );
@@ -456,16 +446,7 @@ public final class SafeTimeSeriesOfEnsemblePairsTest
         //Check that climatology has been preserved
         assertTrue( "Failed to perserve climatology when building new time-series.",
                     climatology.equals( c.build().getClimatology() ) );
-        assertTrue( "Failed to perserve climatology when iterating new time-series by basis time.",
-                    climatology.equals( ( (TimeSeriesOfEnsemblePairs) c.build()
-                                                                       .durationIterator()
-                                                                       .iterator()
-                                                                       .next() ).getClimatology() ) );
-        assertTrue( "Failed to perserve climatology when iterating new time-series by duration.",
-                    climatology.equals( ( (TimeSeriesOfEnsemblePairs) c.build()
-                                                                       .durationIterator()
-                                                                       .iterator()
-                                                                       .next() ).getClimatology() ) );
-    }
 
+    }
+    
 }

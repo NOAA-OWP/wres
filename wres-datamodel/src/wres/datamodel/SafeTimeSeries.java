@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeSeriesBuilder;
 
 /**
  * Base class for an immutable implementation of a (possibly irregular) time-series.
@@ -34,12 +35,6 @@ class SafeTimeSeries<T> implements TimeSeries<T>
     private final List<Event<List<Event<T>>>> data;
 
     /**
-     * The raw data for the baseline
-     */
-
-    private final List<Event<List<Event<T>>>> baselineData;
-
-    /**
      * Basis times for the data.
      */
 
@@ -50,12 +45,6 @@ class SafeTimeSeries<T> implements TimeSeries<T>
      */
 
     private final SortedSet<Duration> durations;
-
-    /**
-     * Durations associated with the baseline time-series.
-     */
-
-    private final SortedSet<Duration> durationsBaseline;
 
     /**
      * Basis time iterator.
@@ -180,15 +169,31 @@ class SafeTimeSeries<T> implements TimeSeries<T>
     }
 
     /**
-     * Returns the immutable raw data for the baseline.
-     * 
-     * @return the raw data for the baseline
+     * A default builder to build the time-series.
      */
 
-    List<Event<List<Event<T>>>> getRawDataForBaseline()
+    static class SafeTimeSeriesBuilder<T> implements TimeSeriesBuilder<T>
     {
-        // Rendered immutable on construction
-        return this.baselineData;
+
+        /**
+         * The raw data.
+         */
+
+        private List<Event<List<Event<T>>>> data = new ArrayList<>();
+
+        @Override
+        public TimeSeriesBuilder<T> addTimeSeriesData( List<Event<List<Event<T>>>> timeSeries )
+        {
+            data.addAll( timeSeries );
+            return this;
+        }
+
+        @Override
+        public TimeSeries<T> build()
+        {
+            return new SafeTimeSeries<>( this );
+        }
+
     }
 
     /**
@@ -201,17 +206,29 @@ class SafeTimeSeries<T> implements TimeSeries<T>
      * @throws MetricInputException if one or more inputs is invalid
      */
 
-    SafeTimeSeries( final List<Event<List<Event<T>>>> data,
-                    final List<Event<List<Event<T>>>> baselineData )
+    SafeTimeSeries( final SafeTimeSeriesBuilder<T> builder )
+    {
+        this( builder.data );
+    }
+
+    /**
+     * Build the time-series internally. This allows for the use as a {@link SafeTimeSeries}
+     * 
+     * @param data the raw data
+     * @param basisTimeIterator a basis time iterator
+     * @param durationIterator a duration iterator
+     * @throws MetricInputException if one or more inputs is invalid
+     */
+
+    SafeTimeSeries( final List<Event<List<Event<T>>>> data )
     {
         this( data,
-              baselineData,
               SafeTimeSeries.getBasisTimeIterator( data ),
               SafeTimeSeries.getDurationIterator( data ) );
     }
 
     /**
-     * Build the time-series.
+     * Build the time-series internally.
      * 
      * @param data the raw data
      * @param baselineData the raw data for the baseline (may be empty, cannot be null)
@@ -220,28 +237,23 @@ class SafeTimeSeries<T> implements TimeSeries<T>
      * @throws MetricInputException if one or more inputs is invalid
      */
 
-    SafeTimeSeries( final List<Event<List<Event<T>>>> data,
-                    final List<Event<List<Event<T>>>> baselineData,
-                    final Iterable<TimeSeries<T>> basisTimeIterator,
-                    final Iterable<TimeSeries<T>> durationIterator )
+    private SafeTimeSeries( final List<Event<List<Event<T>>>> data,
+                            final Iterable<TimeSeries<T>> basisTimeIterator,
+                            final Iterable<TimeSeries<T>> durationIterator )
     {
 
         // Set then validate
         this.data = TimeSeriesHelper.getImmutableTimeSeries( data );
 
-        // Baseline data?
-        if ( Objects.nonNull( baselineData ) )
-        {
-            this.baselineData = TimeSeriesHelper.getImmutableTimeSeries( baselineData );
-        }
-        else
-        {
-            this.baselineData = null;
-        }
-
         // Set the iterators
         this.basisTimeIterator = basisTimeIterator;
         this.durationIterator = durationIterator;
+
+        // Validate
+        if ( Objects.isNull( data ) )
+        {
+            throw new MetricInputException( "Specify non-null input data for the time-series." );
+        }
 
         // Set the durations
         this.durations = new TreeSet<>();
@@ -257,24 +269,9 @@ class SafeTimeSeries<T> implements TimeSeries<T>
         }
         // Set the basis times
         this.basisTimes = this.data.stream().map( Event::getTime ).collect( Collectors.toList() );
-        if ( Objects.nonNull( baselineData ) )
-        {
-            this.durationsBaseline = new TreeSet<>();
-            for ( Event<List<Event<T>>> nextSeries : this.baselineData )
-            {
-                Instant basisTime = nextSeries.getTime();
-                for ( Event<T> nextEvent : nextSeries.getValue() )
-                {
-                    this.durationsBaseline.add( Duration.between( basisTime, nextEvent.getTime() ) );
-                }
-            }
-        }
-        else
-        {
-            this.durationsBaseline = null;
-        }
+
         // Set the time iterator
-        timeIterator = SafeTimeSeries.getTimeIterator( this.data, eventCount );
+        this.timeIterator = SafeTimeSeries.getTimeIterator( this.data, eventCount );
     }
 
     /**
@@ -380,7 +377,7 @@ class SafeTimeSeries<T> implements TimeSeries<T>
                         List<Event<List<Event<T>>>> events = Arrays.asList( data.get( returned ) );
 
                         returned++;
-                        return new SafeTimeSeries<>( events, null );
+                        return new SafeTimeSeries<>( events );
                     }
 
                     @Override
@@ -444,7 +441,7 @@ class SafeTimeSeries<T> implements TimeSeries<T>
                         // Data for the current duration by basis time
                         List<Event<List<Event<T>>>> events = SafeTimeSeries.filterByDuration( nextDuration, data );
 
-                        return new SafeTimeSeries<>( events, null );
+                        return new SafeTimeSeries<>( events );
                     }
 
                     @Override
