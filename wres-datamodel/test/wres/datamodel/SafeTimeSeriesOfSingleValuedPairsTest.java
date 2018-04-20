@@ -230,20 +230,6 @@ public final class SafeTimeSeriesOfSingleValuedPairsTest
         SafeTimeSeriesOfSingleValuedPairsBuilder c = new SafeTimeSeriesOfSingleValuedPairsBuilder();
         c.addTimeSeries( ts );
 
-        //Check that climatology has been preserved
-        assertTrue( "Failed to perserve climatology when building new time-series.",
-                    climatology.equals( c.build().getClimatology() ) );
-        assertTrue( "Failed to perserve climatology when iterating new time-series by basis time.",
-                    climatology.equals( ( (TimeSeriesOfSingleValuedPairs) c.build()
-                                                                           .durationIterator()
-                                                                           .iterator()
-                                                                           .next() ).getClimatology() ) );
-        assertTrue( "Failed to perserve climatology when iterating new time-series by duration.",
-                    climatology.equals( ( (TimeSeriesOfSingleValuedPairs) c.build()
-                                                                           .durationIterator()
-                                                                           .iterator()
-                                                                           .next() ).getClimatology() ) );
-
         second.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), metIn.pairOf( 4, 4 ) ) );
         second.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), metIn.pairOf( 5, 5 ) ) );
         second.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ), metIn.pairOf( 6, 6 ) ) );
@@ -456,16 +442,6 @@ public final class SafeTimeSeriesOfSingleValuedPairsTest
         //Check that climatology has been preserved
         assertTrue( "Failed to perserve climatology when building new time-series.",
                     climatology.equals( c.build().getClimatology() ) );
-        assertTrue( "Failed to perserve climatology when iterating new time-series by basis time.",
-                    climatology.equals( ( (TimeSeriesOfSingleValuedPairs) c.build()
-                                                                           .durationIterator()
-                                                                           .iterator()
-                                                                           .next() ).getClimatology() ) );
-        assertTrue( "Failed to perserve climatology when iterating new time-series by duration.",
-                    climatology.equals( ( (TimeSeriesOfSingleValuedPairs) c.build()
-                                                                           .durationIterator()
-                                                                           .iterator()
-                                                                           .next() ).getClimatology() ) );
     }
     
 }

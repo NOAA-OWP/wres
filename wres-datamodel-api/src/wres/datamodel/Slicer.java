@@ -246,7 +246,7 @@ public interface Slicer
      * @throws NullPointerException if the input is null
      */
 
-    static Predicate<TimeSeriesOfSingleValuedPairs>
+    static Predicate<TimeSeries<PairOfDoubles>>
             anyOfLeftInTimeSeriesOfSingleValuedPairs( DoublePredicate predicate )
     {
         Objects.requireNonNull( predicate, "Specify non-null input when slicing a time-series by any of left." );
@@ -277,7 +277,7 @@ public interface Slicer
      * @throws NullPointerException if the input is null
      */
 
-    static Predicate<TimeSeriesOfSingleValuedPairs>
+    static Predicate<TimeSeries<PairOfDoubles>>
             anyOfRightInTimeSeriesOfSingleValuedPairs( DoublePredicate predicate )
     {
         Objects.requireNonNull( predicate, "Specify non-null input when slicing a time-series by any of right." );
@@ -309,7 +309,7 @@ public interface Slicer
      * @throws NullPointerException if the input is null
      */
 
-    static Predicate<TimeSeriesOfSingleValuedPairs>
+    static Predicate<TimeSeries<PairOfDoubles>>
             anyOfLeftAndAnyOfRightInTimeSeriesOfSingleValuedPairs( DoublePredicate predicate )
     {
         Objects.requireNonNull( predicate, "Specify non-null input when slicing a time-series by any of left"
@@ -476,7 +476,7 @@ public interface Slicer
      */
 
     TimeSeriesOfSingleValuedPairs filter( TimeSeriesOfSingleValuedPairs input,
-                                          Predicate<TimeSeriesOfSingleValuedPairs> condition,
+                                          Predicate<TimeSeries<PairOfDoubles>> condition,
                                           DoublePredicate applyToClimatology );
 
     /**

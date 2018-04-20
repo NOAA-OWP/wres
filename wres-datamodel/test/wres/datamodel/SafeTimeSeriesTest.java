@@ -11,10 +11,12 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import wres.datamodel.SafeTimeSeries.SafeTimeSeriesBuilder;
 import wres.datamodel.SafeTimeSeriesOfSingleValuedPairs.SafeTimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
@@ -33,28 +35,98 @@ public final class SafeTimeSeriesTest
 {
 
     @Rule
-    public final ExpectedException exception = ExpectedException.none();
+    public ExpectedException exception = ExpectedException.none();
+
+    /**
+     * Data factory.
+     */
+
+    private DataFactory metIn;
+
+    /**
+     * Metadata factory.
+     */
+
+    private MetadataFactory metaFac;
+
+    /**
+     * Default time-series for testing.
+     */
+
+    private TimeSeries<Double> defaultTimeSeries;
+
+
+    @Before
+    public void setUpBeforeEachTest()
+    {
+        metIn = DefaultDataFactory.getInstance();
+        metaFac = metIn.getMetadataFactory();
+        SafeTimeSeriesBuilder<Double> b = new SafeTimeSeriesBuilder<>();
+        List<Event<Double>> first = new ArrayList<>();
+        Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
+        first.add( Event.of( Instant.parse( "1985-01-02T00:00:00Z" ), 1.0 ) );
+        first.add( Event.of( Instant.parse( "1985-01-03T00:00:00Z" ), 2.0 ) );
+        List<Event<Double>> second = new ArrayList<>();
+        Instant secondBasisTime = Instant.parse( "1985-01-03T00:00:00Z" );
+        second.add( Event.of( Instant.parse( "1985-01-04T00:00:00Z" ), 3.0 ) );
+        second.add( Event.of( Instant.parse( "1985-01-05T00:00:00Z" ), 4.0 ) );
+
+        defaultTimeSeries = b.addTimeSeriesData( firstBasisTime, first )
+                             .addTimeSeriesData( secondBasisTime, second )
+                             .build();
+    }
+
+    /**
+     * Test the {@link SafeTimeSeries#timeIterator()}.
+     */
+
+    @Test
+    public void testTimeIterator()
+    {
+        // Not null
+        assertTrue( Objects.nonNull( defaultTimeSeries.timeIterator() ) );
+
+        // Actual events
+        List<Event<Double>> actual = new ArrayList<>();
+        defaultTimeSeries.timeIterator().forEach( actual::add );
+
+        // Expected events
+        List<Event<Double>> expected = new ArrayList<>();
+        expected.add( Event.of( Instant.parse( "1985-01-02T00:00:00Z" ), 1.0 ) );
+        expected.add( Event.of( Instant.parse( "1985-01-03T00:00:00Z" ), 2.0 ) );
+        expected.add( Event.of( Instant.parse( "1985-01-04T00:00:00Z" ), 3.0 ) );
+        expected.add( Event.of( Instant.parse( "1985-01-05T00:00:00Z" ), 4.0 ) );
+
+        assertTrue( actual.equals( expected ) );
+    }
+
+    /**
+     * Confirm that the {@link SafeTimeSeries#timeIterator()} throws an iteration exception when expected.
+     */
+
+    @Test
+    public void testTimeIteratorThrowsNoSuchElementException()
+    {
+        exception.expect( NoSuchElementException.class );
+        exception.expectMessage( "No more events to iterate." );
+        
+        Iterator<Event<Double>> iterator = defaultTimeSeries.timeIterator().iterator();
+        iterator.next();
+        iterator.next();
+        iterator.next();
+        iterator.next();
+        iterator.next();
+    }
+
 
     /**
      * Tests the {@link SafeTimeSeries#isRegular()} method.
      */
 
     @Test
-    public void test1IsRegular()
+    public void testIsRegular()
     {
-        //Build a time-series with one basis time
-        List<Event<PairOfDoubles>> first = new ArrayList<>();
-        SafeTimeSeriesOfSingleValuedPairsBuilder b = new SafeTimeSeriesOfSingleValuedPairsBuilder();
-        DataFactory metIn = DefaultDataFactory.getInstance();
-        MetadataFactory metaFac = metIn.getMetadataFactory();
-        Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
-        first.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), metIn.pairOf( 1, 1 ) ) );
-        final Metadata meta = metaFac.getMetadata();
-        TimeSeriesOfSingleValuedPairs ts =
-                (TimeSeriesOfSingleValuedPairs) b.addTimeSeriesData( firstBasisTime, first )
-                                                 .setMetadata( meta )
-                                                 .build();
-        assertTrue( "Expected a regular time-series.", ts.isRegular() );
+        assertTrue( "Expected a regular time-series.", defaultTimeSeries.isRegular() );
     }
 
     /**
@@ -62,20 +134,16 @@ public final class SafeTimeSeriesTest
      */
 
     @Test
-    public void test2GetRegularDuration()
+    public void testGetRegularDuration()
     {
         //Build a time-series with one basis time
         List<Event<PairOfDoubles>> first = new ArrayList<>();
-        SafeTimeSeriesOfSingleValuedPairsBuilder b = new SafeTimeSeriesOfSingleValuedPairsBuilder();
-        DataFactory metIn = DefaultDataFactory.getInstance();
-        MetadataFactory metaFac = metIn.getMetadataFactory();
+        SafeTimeSeriesBuilder<PairOfDoubles> b = new SafeTimeSeriesBuilder<>();
         Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
         first.add( Event.of( Instant.parse( "1985-01-02T00:00:00Z" ), metIn.pairOf( 1, 1 ) ) );
-        final Metadata meta = metaFac.getMetadata();
-        TimeSeriesOfSingleValuedPairs ts =
-                (TimeSeriesOfSingleValuedPairs) b.addTimeSeriesData( firstBasisTime, first )
-                                                 .setMetadata( meta )
-                                                 .build();
+
+        TimeSeries<PairOfDoubles> ts = b.addTimeSeriesData( firstBasisTime, first )
+                                        .build();
         Duration benchmark = Duration.ofDays( 1 );
         assertTrue( "Expected a regular time-series with a duration of '" + benchmark
                     + "'.",
@@ -86,22 +154,18 @@ public final class SafeTimeSeriesTest
         first.add( Event.of( Instant.parse( "1985-01-04T00:00:00Z" ), metIn.pairOf( 3, 3 ) ) );
         first.add( Event.of( Instant.parse( "1985-01-05T00:00:00Z" ), metIn.pairOf( 4, 4 ) ) );
 
-        SafeTimeSeriesOfSingleValuedPairsBuilder c = new SafeTimeSeriesOfSingleValuedPairsBuilder();
-        TimeSeriesOfSingleValuedPairs tsSecond =
-                (TimeSeriesOfSingleValuedPairs) c.addTimeSeriesData( firstBasisTime, first )
-                                                 .setMetadata( meta )
-                                                 .build();
+        SafeTimeSeriesBuilder<PairOfDoubles> c = new SafeTimeSeriesBuilder<>();
+        TimeSeries<PairOfDoubles> tsSecond = c.addTimeSeriesData( firstBasisTime, first )
+                                              .build();
         assertTrue( "Expected a regular time-series with a duration of '" + benchmark
                     + "'.",
                     tsSecond.getRegularDuration().equals( benchmark ) );
 
         //Add an irregular timestep and check for null output
         first.add( Event.of( Instant.parse( "1985-01-07T00:00:00Z" ), metIn.pairOf( 4, 4 ) ) );
-        SafeTimeSeriesOfSingleValuedPairsBuilder d = new SafeTimeSeriesOfSingleValuedPairsBuilder();
-        TimeSeriesOfSingleValuedPairs tsThird =
-                (TimeSeriesOfSingleValuedPairs) d.addTimeSeriesData( firstBasisTime, first )
-                                                 .setMetadata( meta )
-                                                 .build();
+        SafeTimeSeriesBuilder<PairOfDoubles> d = new SafeTimeSeriesBuilder<>();
+        TimeSeries<PairOfDoubles> tsThird = d.addTimeSeriesData( firstBasisTime, first )
+                                             .build();
         assertTrue( "Expected an irregular time-series.",
                     Objects.isNull( tsThird.getRegularDuration() ) );
     }
@@ -111,13 +175,11 @@ public final class SafeTimeSeriesTest
      */
 
     @Test
-    public void test3HasMultipleTimeSeries()
+    public void testHasMultipleTimeSeries()
     {
         //Build a time-series with one basis time
         List<Event<PairOfDoubles>> values = new ArrayList<>();
         SafeTimeSeriesOfSingleValuedPairsBuilder b = new SafeTimeSeriesOfSingleValuedPairsBuilder();
-        DataFactory metIn = DefaultDataFactory.getInstance();
-        MetadataFactory metaFac = metIn.getMetadataFactory();
         Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );
         values.add( Event.of( Instant.parse( "1985-01-02T00:00:00Z" ), metIn.pairOf( 1, 1 ) ) );
         Metadata meta = metaFac.getMetadata();
@@ -142,13 +204,11 @@ public final class SafeTimeSeriesTest
      */
 
     @Test
-    public void test4GetBasisTimes()
+    public void testGetBasisTimes()
     {
         //Build a time-series with two basis times
         List<Event<PairOfDoubles>> values = new ArrayList<>();
         SafeTimeSeriesOfSingleValuedPairsBuilder b = new SafeTimeSeriesOfSingleValuedPairsBuilder();
-        DataFactory metIn = DefaultDataFactory.getInstance();
-        MetadataFactory metaFac = metIn.getMetadataFactory();
         Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );
         values.add( Event.of( Instant.parse( "1985-01-02T00:00:00Z" ), metIn.pairOf( 1, 1 ) ) );
         Metadata meta = metaFac.getMetadata();
@@ -172,13 +232,11 @@ public final class SafeTimeSeriesTest
      */
 
     @Test
-    public void test5GetDurations()
+    public void testGetDurations()
     {
         //Build a time-series with two basis times
         List<Event<PairOfDoubles>> values = new ArrayList<>();
         SafeTimeSeriesOfSingleValuedPairsBuilder b = new SafeTimeSeriesOfSingleValuedPairsBuilder();
-        DataFactory metIn = DefaultDataFactory.getInstance();
-        MetadataFactory metaFac = metIn.getMetadataFactory();
         Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );
         values.add( Event.of( Instant.parse( "1985-01-02T00:00:00Z" ), metIn.pairOf( 1, 1 ) ) );
         values.add( Event.of( Instant.parse( "1985-01-03T00:00:00Z" ), metIn.pairOf( 2, 2 ) ) );
@@ -201,11 +259,9 @@ public final class SafeTimeSeriesTest
      */
 
     @Test
-    public void test6Exceptions()
+    public void testExceptions()
     {
         List<Event<PairOfDoubles>> first = new ArrayList<>();
-        DataFactory metIn = DefaultDataFactory.getInstance();
-        MetadataFactory metaFac = metIn.getMetadataFactory();
         Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
         first.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), metIn.pairOf( 1, 1 ) ) );
         first.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), metIn.pairOf( 2, 2 ) ) );

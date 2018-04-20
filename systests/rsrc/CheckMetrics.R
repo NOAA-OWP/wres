@@ -81,10 +81,8 @@ generateAllMetricsForAllFeatures <- function( pairs, threshold, thresholdType, .
 	}
 
 	# Convert numeric columns to numeric type
-      for( i in 5: ncol(data))
-      {
-		data[,i] <- sapply( data[,i],as.numeric )
-      }
+      data[,5] <- sapply( data[,5],as.numeric )
+      data[,6] <- sapply( data[,6],as.numeric )
 
       # Replace NaN with NA
       data[sapply(data,is.na)] = NA
