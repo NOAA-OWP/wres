@@ -89,8 +89,9 @@ generateAllMetricsForAllFeatures <- function( pairs, threshold, thresholdType, .
       # Replace NaN with NA
       data[sapply(data,is.na)] = NA
 
-      # Remove missing values
-      data = na.omit( data )
+      # Remove rows with missing obs
+      #data = na.omit( data )
+	data=data[complete.cases(data[, "V5"]),]
 
 	# Find the features
       features <- unique(data$V1)
