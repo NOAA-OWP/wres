@@ -17,11 +17,8 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import wres.datamodel.SafeTimeSeries.SafeTimeSeriesBuilder;
-import wres.datamodel.SafeTimeSeriesOfSingleValuedPairs.SafeTimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
-import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
-import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
@@ -77,7 +74,7 @@ public final class SafeTimeSeriesTest
     }
 
     /**
-     * Test the {@link SafeTimeSeries#timeIterator()}.
+     * Test {@link SafeTimeSeries#timeIterator()}.
      */
 
     @Test
@@ -101,26 +98,7 @@ public final class SafeTimeSeriesTest
     }
 
     /**
-     * Confirm that the {@link SafeTimeSeries#timeIterator()} throws an iteration exception when expected.
-     */
-
-    @Test
-    public void testTimeIteratorThrowsNoSuchElementException()
-    {
-        exception.expect( NoSuchElementException.class );
-        exception.expectMessage( "No more events to iterate." );
-        
-        Iterator<Event<Double>> iterator = defaultTimeSeries.timeIterator().iterator();
-        iterator.next();
-        iterator.next();
-        iterator.next();
-        iterator.next();
-        iterator.next();
-    }
-
-
-    /**
-     * Tests the {@link SafeTimeSeries#isRegular()} method.
+     * Tests {@link SafeTimeSeries#isRegular()}.
      */
 
     @Test
@@ -130,7 +108,7 @@ public final class SafeTimeSeriesTest
     }
 
     /**
-     * Tests the {@link SafeTimeSeries#getRegularDuration()} method.
+     * Tests {@link SafeTimeSeries#getRegularDuration()}.
      */
 
     @Test
@@ -171,7 +149,7 @@ public final class SafeTimeSeriesTest
     }
 
     /**
-     * Tests the {@link SafeTimeSeries#hasMultipleTimeSeries()} method.
+     * Tests {@link SafeTimeSeries#hasMultipleTimeSeries()}.
      */
 
     @Test
@@ -179,28 +157,23 @@ public final class SafeTimeSeriesTest
     {
         //Build a time-series with one basis time
         List<Event<PairOfDoubles>> values = new ArrayList<>();
-        SafeTimeSeriesOfSingleValuedPairsBuilder b = new SafeTimeSeriesOfSingleValuedPairsBuilder();
+        SafeTimeSeriesBuilder<PairOfDoubles> b = new SafeTimeSeriesBuilder<>();
         Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );
         values.add( Event.of( Instant.parse( "1985-01-02T00:00:00Z" ), metIn.pairOf( 1, 1 ) ) );
-        Metadata meta = metaFac.getMetadata();
-        b.addTimeSeriesData( basisTime, values ).setMetadata( meta );
-        b.addTimeSeriesDataForBaseline( basisTime, values ).setMetadataForBaseline( meta );
+
+        b.addTimeSeriesData( basisTime, values );
 
         //Check dataset count
         assertFalse( "Expected a time-series with one basis time.", b.build().hasMultipleTimeSeries() );
-        assertFalse( "Expected a time-series with one basis time.",
-                     b.build().getBaselineData().hasMultipleTimeSeries() );
+
         //Add another time-series
         Instant nextBasisTime = Instant.parse( "1985-01-02T00:00:00Z" );
         b.addTimeSeriesData( nextBasisTime, values );
-        b.addTimeSeriesDataForBaseline( nextBasisTime, values ).setMetadataForBaseline( meta );
         assertTrue( "Expected a time-series with multiple basis times.", b.build().hasMultipleTimeSeries() );
-        assertTrue( "Expected a time-series with multiple basis times.",
-                    b.build().getBaselineData().hasMultipleTimeSeries() );
     }
 
     /**
-     * Tests the {@link SafeTimeSeries#getBasisTimes()}.
+     * Tests {@link SafeTimeSeries#getBasisTimes()}.
      */
 
     @Test
@@ -208,17 +181,18 @@ public final class SafeTimeSeriesTest
     {
         //Build a time-series with two basis times
         List<Event<PairOfDoubles>> values = new ArrayList<>();
-        SafeTimeSeriesOfSingleValuedPairsBuilder b = new SafeTimeSeriesOfSingleValuedPairsBuilder();
+        SafeTimeSeriesBuilder<PairOfDoubles> b = new SafeTimeSeriesBuilder<>();
         Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );
         values.add( Event.of( Instant.parse( "1985-01-02T00:00:00Z" ), metIn.pairOf( 1, 1 ) ) );
-        Metadata meta = metaFac.getMetadata();
-        b.addTimeSeriesData( basisTime, values )
-         .setMetadata( meta );
+        b.addTimeSeriesData( basisTime, values );
+
         Instant nextBasisTime = Instant.parse( "1985-01-02T00:00:00Z" );
         b.addTimeSeriesData( nextBasisTime, values );
-        SafeTimeSeriesOfSingleValuedPairs pairs = b.build();
+        TimeSeries<PairOfDoubles> pairs = b.build();
+
         //Check dataset count
         assertTrue( "Expected a time-series with two basis times.", pairs.getBasisTimes().size() == 2 );
+
         //Check the basis times
         assertTrue( "First basis time missing from time-series.",
                     pairs.getBasisTimes().get( 0 ).equals( basisTime ) );
@@ -236,13 +210,13 @@ public final class SafeTimeSeriesTest
     {
         //Build a time-series with two basis times
         List<Event<PairOfDoubles>> values = new ArrayList<>();
-        SafeTimeSeriesOfSingleValuedPairsBuilder b = new SafeTimeSeriesOfSingleValuedPairsBuilder();
+        SafeTimeSeriesBuilder<PairOfDoubles> b = new SafeTimeSeriesBuilder<>();
         Instant basisTime = Instant.parse( "1985-01-01T00:00:00Z" );
         values.add( Event.of( Instant.parse( "1985-01-02T00:00:00Z" ), metIn.pairOf( 1, 1 ) ) );
         values.add( Event.of( Instant.parse( "1985-01-03T00:00:00Z" ), metIn.pairOf( 2, 2 ) ) );
         values.add( Event.of( Instant.parse( "1985-01-04T00:00:00Z" ), metIn.pairOf( 3, 3 ) ) );
-        Metadata meta = metaFac.getMetadata();
-        b.addTimeSeriesData( basisTime, values ).setMetadata( meta );
+
+        b.addTimeSeriesData( basisTime, values );
         //Check dataset count
         assertTrue( "Expected a time-series with three lead times.", b.build().getDurations().size() == 3 );
         //Check the lead times
@@ -255,72 +229,119 @@ public final class SafeTimeSeriesTest
     }
 
     /**
-     * Tests for exceptional cases.
+     * Confirms that the {@link SafeTimeSeries#timeIterator()} throws an iteration exception when expected.
      */
 
     @Test
-    public void testExceptions()
+    public void testTimeIteratorThrowsNoSuchElementException()
     {
-        List<Event<PairOfDoubles>> first = new ArrayList<>();
-        Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
-        first.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), metIn.pairOf( 1, 1 ) ) );
-        first.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), metIn.pairOf( 2, 2 ) ) );
-        first.add( Event.of( Instant.parse( "1985-01-01T03:00:00Z" ), metIn.pairOf( 3, 3 ) ) );
-        final Metadata meta = metaFac.getMetadata();
-
-        //Check for exceptions on the iterators
-        SafeTimeSeriesOfSingleValuedPairsBuilder d = new SafeTimeSeriesOfSingleValuedPairsBuilder();
-        TimeSeriesOfSingleValuedPairs ts =
-                (TimeSeriesOfSingleValuedPairs) d.addTimeSeriesData( firstBasisTime, first )
-                                                 .setMetadata( meta )
-                                                 .build();
-
-
-        // Iterate
         exception.expect( NoSuchElementException.class );
-        Iterator<TimeSeries<PairOfDoubles>> noneSuchBasis = ts.basisTimeIterator().iterator();
-        noneSuchBasis.forEachRemaining( a -> a.equals( null ) );
-        noneSuchBasis.next();
+        exception.expectMessage( "No more events to iterate." );
 
-        Iterator<TimeSeries<PairOfDoubles>> noneSuchDuration = ts.durationIterator().iterator();
-        noneSuchDuration.forEachRemaining( a -> a.equals( null ) );
-        noneSuchDuration.next();
-
-        Iterator<Event<PairOfDoubles>> noneSuchElement = ts.timeIterator().iterator();
+        Iterator<Event<Double>> noneSuchElement = defaultTimeSeries.timeIterator().iterator();
         noneSuchElement.forEachRemaining( a -> a.equals( null ) );
         noneSuchElement.next();
+    }
 
-        //Mutate 
+    /**
+     * Confirms that the {@link SafeTimeSeries#basisTimeIterator()} throws an iteration exception when expected.
+     */
+
+    @Test
+    public void testBasisTimeIteratorThrowsNoSuchElementException()
+    {
+        exception.expect( NoSuchElementException.class );
+        exception.expectMessage( "No more basis times to iterate." );
+        
+        Iterator<TimeSeries<Double>> noneSuchBasis = defaultTimeSeries.basisTimeIterator().iterator();
+        noneSuchBasis.forEachRemaining( a -> a.equals( null ) );
+        noneSuchBasis.next();
+    }
+
+    /**
+     * Confirms that the {@link SafeTimeSeries#durationIterator()} throws an iteration exception when expected.
+     */
+
+    @Test
+    public void testDurationIteratorThrowsNoSuchElementException()
+    {
+        exception.expect( NoSuchElementException.class );
+        exception.expectMessage( "No more durations to iterate." );
+        
+        Iterator<TimeSeries<Double>> noneSuchDuration = defaultTimeSeries.durationIterator().iterator();
+        noneSuchDuration.forEachRemaining( a -> a.equals( null ) );
+        noneSuchDuration.next();
+    }
+
+    /**
+     * Confirms that the {@link SafeTimeSeries#timeIterator()} throws an exception when attempting to mutate the 
+     * time-series.
+     */
+
+    @Test
+    public void testTimeIteratorThrowsExceptionOnAttemptToMutate()
+    {
         exception.expect( UnsupportedOperationException.class );
+        exception.expectMessage( "While attempting to modify an immutable time-series." );
 
-        Iterator<TimeSeries<PairOfDoubles>> immutableBasis = ts.basisTimeIterator().iterator();
-        immutableBasis.next();
-        immutableBasis.remove();
+        Iterator<Event<Double>> immutableTimeSeries = defaultTimeSeries.timeIterator().iterator();
+        immutableTimeSeries.next();
+        immutableTimeSeries.remove();
+    }
 
-        Iterator<TimeSeries<PairOfDoubles>> immutableDuration = ts.durationIterator().iterator();
-        immutableDuration.next();
-        immutableDuration.remove();
+    /**
+     * Confirms that the {@link SafeTimeSeries#durationIterator()} throws an exception when attempting to mutate the 
+     * time-series.
+     */
 
-        //Construct with null input
+    @Test
+    public void testDurationIteratorThrowsExceptionOnAttemptToMutate()
+    {
+        exception.expect( UnsupportedOperationException.class );
+        exception.expectMessage( "While attempting to modify an immutable time-series." );
+
+        Iterator<TimeSeries<Double>> immutableTimeSeries = defaultTimeSeries.durationIterator().iterator();
+        immutableTimeSeries.next();
+        immutableTimeSeries.remove();
+    }
+
+    /**
+     * Confirms that the {@link SafeTimeSeries#basisTimeIterator} throws an exception when attempting to mutate the 
+     * time-series.
+     */
+
+    @Test
+    public void testBasisTimeIteratorThrowsExceptionOnAttemptToMutate()
+    {
+        exception.expect( UnsupportedOperationException.class );
+        exception.expectMessage( "While attempting to modify an immutable time-series." );
+
+        Iterator<TimeSeries<Double>> immutableTimeSeries = defaultTimeSeries.basisTimeIterator().iterator();
+        immutableTimeSeries.next();
+        immutableTimeSeries.remove();
+    }
+
+    /**
+     * Confirms an expected exception when constructing a {@link SafeTimeSeries} with null input.
+     */
+
+    @Test
+    public void testForExceptionOnNullInput()
+    {
         exception.expect( MetricInputException.class );
+        exception.expectMessage( "Cannot build a time-series with one or more null events." );
 
-        List<Event<PairOfDoubles>> withNulls = new ArrayList<>();
-        withNulls.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), metIn.pairOf( 1, 1 ) ) );
+        List<Event<Double>> withNulls = new ArrayList<>();
+        withNulls.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), 1.0 ) );
         withNulls.add( null );
-        new SafeTimeSeriesOfSingleValuedPairsBuilder().addTimeSeriesData( firstBasisTime, withNulls )
-                                                      .setMetadata( meta )
-                                                      .build();
+        new SafeTimeSeriesBuilder<Double>().addTimeSeriesData( Instant.parse( "1985-01-01T00:00:00Z" ), withNulls )
+                                           .build();
 
-        //Construct with null input for baseline
-        List<Event<PairOfDoubles>> withNullsForBaseline = new ArrayList<>();
-        withNullsForBaseline.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), metIn.pairOf( 1, 1 ) ) );
-        withNullsForBaseline.add( null );
-        new SafeTimeSeriesOfSingleValuedPairsBuilder().addTimeSeriesData( firstBasisTime, first )
-                                                      .addTimeSeriesDataForBaseline( firstBasisTime,
-                                                                                     withNullsForBaseline )
-                                                      .setMetadata( meta )
-                                                      .setMetadataForBaseline( meta )
-                                                      .build();
+        exception.expect( MetricInputException.class );
+        exception.expectMessage( "Cannot build a time-series with one or more null time-series." );
+        new SafeTimeSeriesBuilder<Double>().addTimeSeriesData( Instant.parse( "1985-01-01T00:00:00Z" ), null )
+                                           .build();
+
     }
 
 }
