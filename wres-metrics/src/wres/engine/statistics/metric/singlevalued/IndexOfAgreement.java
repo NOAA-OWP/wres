@@ -43,14 +43,14 @@ public class IndexOfAgreement extends DoubleErrorScore<SingleValuedPairs>
         double returnMe = MissingValues.MISSING_DOUBLE;
 
         // Data available
-        if ( !s.getData().isEmpty() )
+        if ( !s.getRawData().isEmpty() )
         {
             //Compute the average observation
-            double oBar = s.getData().stream().mapToDouble( PairOfDoubles::getItemOne ).average().getAsDouble();
+            double oBar = s.getRawData().stream().mapToDouble( PairOfDoubles::getItemOne ).average().getAsDouble();
             //Compute the score
             double numerator = 0.0;
             double denominator = 0.0;
-            for ( PairOfDoubles nextPair : s.getData() )
+            for ( PairOfDoubles nextPair : s.getRawData() )
             {
                 numerator += Math.pow( Math.abs( nextPair.getItemOne() - nextPair.getItemTwo() ), exponent );
                 denominator += ( Math.abs( nextPair.getItemTwo() - oBar )
@@ -60,7 +60,7 @@ public class IndexOfAgreement extends DoubleErrorScore<SingleValuedPairs>
         }
 
         //Metadata
-        final MetricOutputMetadata metOut = this.getMetadata( s, s.getData().size(), MetricConstants.MAIN, null );
+        final MetricOutputMetadata metOut = this.getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null );
 
         return this.getDataFactory().ofDoubleScoreOutput( returnMe, metOut );
     }

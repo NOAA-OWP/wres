@@ -47,7 +47,7 @@ public final class CoefficientOfDeterminationTest
         b.setOutputFactory( dataF );
         final CoefficientOfDetermination cod = b.build();
 
-        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getData().size(),
+        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getRawData().size(),
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension(),
                                                                    MetricConstants.COEFFICIENT_OF_DETERMINATION,

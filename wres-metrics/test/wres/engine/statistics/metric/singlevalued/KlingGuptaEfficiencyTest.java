@@ -62,7 +62,7 @@ public final class KlingGuptaEfficiencyTest
                                                  Instant.parse( "2010-12-31T11:59:59Z" ),
                                                  ReferenceTime.VALID_TIME,
                                                  Duration.ofHours( 24 ) );
-        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getData().size(),
+        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getRawData().size(),
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension( "MM/DAY" ),
                                                                    MetricConstants.KLING_GUPTA_EFFICIENCY,
@@ -112,7 +112,7 @@ public final class KlingGuptaEfficiencyTest
         //Generate some data
         SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
         //Metadata for the output
-        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getData().size(),
+        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getRawData().size(),
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension(),
                                                                    MetricConstants.KLING_GUPTA_EFFICIENCY,

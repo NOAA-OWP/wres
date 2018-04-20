@@ -92,7 +92,7 @@ public class KlingGuptaEfficiency extends DecomposableScore<SingleValuedPairs>
             result = FunctionFactory.finiteOrMissing().applyAsDouble( 1.0 - Math.sqrt( left + middle + right ) );
         }
         //Metadata
-        final MetricOutputMetadata metOut = this.getMetadata( s, s.getData().size(), MetricConstants.MAIN, null );
+        final MetricOutputMetadata metOut = this.getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null );
         return dataFactory.ofDoubleScoreOutput( result, metOut );
     }
 

@@ -30,11 +30,11 @@ public class BiasFraction extends DoubleErrorScore<SingleValuedPairs>
         {
             throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
         }
-        final MetricOutputMetadata metOut = getMetadata( s, s.getData().size(), MetricConstants.MAIN, null );
+        final MetricOutputMetadata metOut = getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null );
         DoubleAdder left = new DoubleAdder();
         DoubleAdder right = new DoubleAdder();
         DoubleErrorFunction error = FunctionFactory.error();
-        s.getData().forEach( pair -> {
+        s.getRawData().forEach( pair -> {
             left.add( error.applyAsDouble( pair ) );
             right.add( pair.getItemOne() );
         } );

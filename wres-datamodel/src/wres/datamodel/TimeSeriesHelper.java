@@ -19,8 +19,6 @@ import wres.datamodel.time.TimeSeries;
  * A helper class for time-series.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.4
  */
 class TimeSeriesHelper
 {

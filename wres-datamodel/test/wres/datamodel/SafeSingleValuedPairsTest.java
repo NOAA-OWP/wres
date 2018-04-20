@@ -49,8 +49,8 @@ public final class SafeSingleValuedPairsTest
         assertFalse("Expected a dataset without a baseline [false," + p.hasBaseline() + "].", p.hasBaseline());
         p = (SingleValuedPairs)b.addDataForBaseline(values).setMetadataForBaseline(meta).build(); //Add another
         //Check that a returned dataset contains the expected number of pairs
-        assertTrue("Expected a main dataset with ten pairs [10," + p.getData().size() + "].",
-                   p.getData().size() == 10);
+        assertTrue("Expected a main dataset with ten pairs [10," + p.getRawData().size() + "].",
+                   p.getRawData().size() == 10);
         //Check the baseline
         assertTrue("Expected a baseline [true," + p.hasBaseline() + "].", p.hasBaseline());
         //Check the metadata

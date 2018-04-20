@@ -62,10 +62,10 @@ public class ReliabilityDiagram extends Diagram<DiscreteProbabilityPairs, MultiV
         double[] samples = new double[bins];
 
         // Some data available
-        if ( !s.getData().isEmpty() )
+        if ( !s.getRawData().isEmpty() )
         {
             //Compute the average probabilities for samples > 0
-            s.getData().forEach( this.getIncrementor( fProb, oProb, samples, constant ) );
+            s.getRawData().forEach( this.getIncrementor( fProb, oProb, samples, constant ) );
             List<Double> fProbFinal = new ArrayList<>(); //Forecast probs for samples > 0
             List<Double> oProbFinal = new ArrayList<>(); //Observed probs for samples > 0
             for ( int i = 0; i < bins; i++ )
@@ -90,7 +90,7 @@ public class ReliabilityDiagram extends Diagram<DiscreteProbabilityPairs, MultiV
         output.put( MetricDimension.FORECAST_PROBABILITY, fProb );
         output.put( MetricDimension.OBSERVED_RELATIVE_FREQUENCY, oProb );
         output.put( MetricDimension.SAMPLE_SIZE, samples );
-        final MetricOutputMetadata metOut = getMetadata( s, s.getData().size(), MetricConstants.MAIN, null );
+        final MetricOutputMetadata metOut = getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null );
         return getDataFactory().ofMultiVectorOutput( output, metOut );
     }
 

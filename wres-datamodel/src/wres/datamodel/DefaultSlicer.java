@@ -101,7 +101,7 @@ class DefaultSlicer implements Slicer
     {
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
 
-        return input.getData().stream().mapToDouble( PairOfDoubles::getItemOne ).toArray();
+        return input.getRawData().stream().mapToDouble( PairOfDoubles::getItemOne ).toArray();
     }
 
     @Override
@@ -109,7 +109,7 @@ class DefaultSlicer implements Slicer
     {
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
 
-        return input.getData().stream().mapToDouble( PairOfDoubleAndVectorOfDoubles::getItemOne ).toArray();
+        return input.getRawData().stream().mapToDouble( PairOfDoubleAndVectorOfDoubles::getItemOne ).toArray();
     }
 
     @Override
@@ -117,7 +117,7 @@ class DefaultSlicer implements Slicer
     {
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
 
-        return input.getData().stream().mapToDouble( PairOfDoubles::getItemTwo ).toArray();
+        return input.getRawData().stream().mapToDouble( PairOfDoubles::getItemTwo ).toArray();
     }
 
     @Override
@@ -130,7 +130,7 @@ class DefaultSlicer implements Slicer
 
         Objects.requireNonNull( condition, NULL_PREDICATE_EXCEPTION );
 
-        List<PairOfDoubles> mainPairs = input.getData();
+        List<PairOfDoubles> mainPairs = input.getRawData();
         List<PairOfDoubles> mainPairsSubset = mainPairs.stream().filter( condition ).collect( Collectors.toList() );
 
         //Filter climatology as required
@@ -166,7 +166,7 @@ class DefaultSlicer implements Slicer
 
         Objects.requireNonNull( condition, NULL_PREDICATE_EXCEPTION );
 
-        List<PairOfDoubleAndVectorOfDoubles> mainPairs = input.getData();
+        List<PairOfDoubleAndVectorOfDoubles> mainPairs = input.getRawData();
         List<PairOfDoubleAndVectorOfDoubles> mainPairsSubset =
                 mainPairs.stream().filter( condition ).collect( Collectors.toList() );
 
@@ -204,7 +204,7 @@ class DefaultSlicer implements Slicer
 
         Objects.requireNonNull( mapper, NULL_MAPPER_EXCEPTION );
 
-        List<PairOfDoubleAndVectorOfDoubles> mainPairs = input.getData();
+        List<PairOfDoubleAndVectorOfDoubles> mainPairs = input.getRawData();
         List<PairOfDoubleAndVectorOfDoubles> mainPairsSubset = new ArrayList<>();
 
         for ( PairOfDoubleAndVectorOfDoubles next : mainPairs )
@@ -513,7 +513,7 @@ class DefaultSlicer implements Slicer
 
         Objects.requireNonNull( mapper, NULL_MAPPER_EXCEPTION );
 
-        List<PairOfDoubles> mainPairs = input.getData();
+        List<PairOfDoubles> mainPairs = input.getRawData();
         List<PairOfBooleans> mainPairsTransformed = new ArrayList<>();
         mainPairs.stream().map( mapper ).forEach( mainPairsTransformed::add );
         if ( input.hasBaseline() )
@@ -540,7 +540,7 @@ class DefaultSlicer implements Slicer
 
         Objects.requireNonNull( mapper, NULL_MAPPER_EXCEPTION );
 
-        List<PairOfDoubles> mainPairsTransformed = transform( input.getData(), mapper );
+        List<PairOfDoubles> mainPairsTransformed = transform( input.getRawData(), mapper );
         if ( input.hasBaseline() )
         {
             List<PairOfDoubles> basePairsTransformed = transform( input.getDataForBaseline(), mapper );
@@ -562,7 +562,7 @@ class DefaultSlicer implements Slicer
 
         Objects.requireNonNull( mapper, NULL_MAPPER_EXCEPTION );
 
-        List<PairOfDoubleAndVectorOfDoubles> mainPairs = input.getData();
+        List<PairOfDoubleAndVectorOfDoubles> mainPairs = input.getRawData();
         List<PairOfDoubles> mainPairsTransformed = new ArrayList<>();
         mainPairs.forEach( pair -> mainPairsTransformed.add( mapper.apply( pair, threshold ) ) );
         if ( input.hasBaseline() )

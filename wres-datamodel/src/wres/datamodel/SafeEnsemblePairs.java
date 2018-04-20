@@ -54,7 +54,7 @@ class SafeEnsemblePairs implements EnsemblePairs
     private VectorOfDoubles climatology;
 
     @Override
-    public List<PairOfDoubleAndVectorOfDoubles> getData()
+    public List<PairOfDoubleAndVectorOfDoubles> getRawData()
     {
         return mainInput;
     }

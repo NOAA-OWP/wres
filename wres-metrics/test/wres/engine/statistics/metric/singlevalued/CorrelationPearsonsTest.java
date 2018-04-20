@@ -49,7 +49,7 @@ public final class CorrelationPearsonsTest
         b.setOutputFactory( dataF );
         final CorrelationPearsons rho = b.build();
 
-        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getData().size(),
+        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getRawData().size(),
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension(),
                                                                    MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
