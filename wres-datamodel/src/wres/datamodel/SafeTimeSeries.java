@@ -212,22 +212,6 @@ class SafeTimeSeries<T> implements TimeSeries<T>
     }
 
     /**
-     * Build the time-series internally. This allows for the use as a {@link SafeTimeSeries}
-     * 
-     * @param data the raw data
-     * @param basisTimeIterator a basis time iterator
-     * @param durationIterator a duration iterator
-     * @throws MetricInputException if one or more inputs is invalid
-     */
-
-    SafeTimeSeries( final List<Event<List<Event<T>>>> data )
-    {
-        this( data,
-              SafeTimeSeries.getBasisTimeIterator( data ),
-              SafeTimeSeries.getDurationIterator( data ) );
-    }
-
-    /**
      * Build the time-series internally.
      * 
      * @param data the raw data
@@ -237,23 +221,16 @@ class SafeTimeSeries<T> implements TimeSeries<T>
      * @throws MetricInputException if one or more inputs is invalid
      */
 
-    private SafeTimeSeries( final List<Event<List<Event<T>>>> data,
-                            final Iterable<TimeSeries<T>> basisTimeIterator,
-                            final Iterable<TimeSeries<T>> durationIterator )
+    SafeTimeSeries( final List<Event<List<Event<T>>>> data )
     {
 
-        // Set then validate
+        // Sets and validates
         this.data = TimeSeriesHelper.getImmutableTimeSeries( data );
 
         // Set the iterators
-        this.basisTimeIterator = basisTimeIterator;
-        this.durationIterator = durationIterator;
+        this.basisTimeIterator = SafeTimeSeries.getBasisTimeIterator( data );
 
-        // Validate
-        if ( Objects.isNull( data ) )
-        {
-            throw new MetricInputException( "Specify non-null input data for the time-series." );
-        }
+        this.durationIterator = SafeTimeSeries.getDurationIterator( data );
 
         // Set the durations
         this.durations = new TreeSet<>();
