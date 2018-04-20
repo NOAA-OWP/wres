@@ -115,10 +115,10 @@ class SafeMulticategoryPairs implements MulticategoryPairs
     }      
 
     /**
-     * A {@link DefaultPairedInputBuilder} to build the metric input.
+     * A {@link DefaultMetricInputBuilder} to build the metric input.
      */
 
-    static class MulticategoryPairsBuilder extends DefaultPairedInputBuilder<VectorOfBooleans>
+    static class MulticategoryPairsBuilder extends DefaultMetricInputBuilder<VectorOfBooleans>
     {
 
         /**

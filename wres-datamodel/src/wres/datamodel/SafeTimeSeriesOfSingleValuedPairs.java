@@ -14,7 +14,7 @@ import java.util.SortedSet;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
-import wres.datamodel.inputs.pairs.builders.TimeSeriesOfSingleValuedPairsBuilder;
+import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.time.Event;
@@ -117,7 +117,7 @@ class SafeTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
     }
 
     /**
-     * A {@link DefaultPairedInputBuilder} to build the metric input.
+     * A {@link DefaultMetricInputBuilder} to build the metric input.
      */
 
     static class SafeTimeSeriesOfSingleValuedPairsBuilder extends SingleValuedPairsBuilder

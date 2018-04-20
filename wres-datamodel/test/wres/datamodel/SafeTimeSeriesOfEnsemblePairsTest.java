@@ -19,7 +19,7 @@ import org.junit.rules.ExpectedException;
 import wres.datamodel.SafeTimeSeriesOfEnsemblePairs.SafeTimeSeriesOfEnsemblePairsBuilder;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
 import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairs;
-import wres.datamodel.inputs.pairs.builders.TimeSeriesOfEnsemblePairsBuilder;
+import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairsBuilder;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.time.Event;
@@ -29,8 +29,6 @@ import wres.datamodel.time.TimeSeries;
  * Tests the {@link SafeTimeSeriesOfEnsemblePairs}.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.3
  */
 public final class SafeTimeSeriesOfEnsemblePairsTest
 {

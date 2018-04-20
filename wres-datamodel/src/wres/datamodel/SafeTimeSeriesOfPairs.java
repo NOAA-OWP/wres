@@ -21,8 +21,6 @@ import wres.datamodel.time.TimeSeries;
  * Base class for an immutable implementation of a (possibly irregular) time-series of pairs.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.4
  */
 class SafeTimeSeriesOfPairs<T>
 {
@@ -347,8 +345,7 @@ class SafeTimeSeriesOfPairs<T>
      * @return the filtered data
      */
 
-    List<Event<List<Event<T>>>> filterByDuration( Duration duration,
-                                                                      List<Event<List<Event<T>>>> rawData )
+    List<Event<List<Event<T>>>> filterByDuration( Duration duration, List<Event<List<Event<T>>>> rawData )
     {
         List<Event<List<Event<T>>>> returnMe = new ArrayList<>();
         // Iterate through basis times

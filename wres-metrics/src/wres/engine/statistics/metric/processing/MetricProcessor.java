@@ -27,7 +27,6 @@ import wres.datamodel.ThresholdsByMetric;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
-import wres.datamodel.inputs.pairs.PairedInput;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MatrixOutput;
@@ -527,7 +526,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
      * @return a sorted array of values or null
      */
 
-    double[] getSortedClimatology( PairedInput<?> input, Set<Threshold> thresholds )
+    double[] getSortedClimatology( MetricInput<?> input, Set<Threshold> thresholds )
     {
         double[] sorted = null;
         if ( hasProbabilityThreshold( thresholds ) && input.hasClimatology() )

@@ -122,10 +122,10 @@ class SafeEnsemblePairs implements EnsemblePairs
     }
 
     /**
-     * A {@link DefaultPairedInputBuilder} to build the metric input.
+     * A {@link DefaultMetricInputBuilder} to build the metric input.
      */
 
-    static class EnsemblePairsBuilder extends DefaultPairedInputBuilder<PairOfDoubleAndVectorOfDoubles>
+    static class EnsemblePairsBuilder extends DefaultMetricInputBuilder<PairOfDoubleAndVectorOfDoubles>
     {
 
         /**
@@ -245,13 +245,11 @@ class SafeEnsemblePairs implements EnsemblePairs
                                             + "null." );
         }
 
-        if ( Objects.nonNull( baselineInput ) )
+        if ( Objects.nonNull( baselineInput ) && baselineInput.contains( null ) )
         {
-            if ( baselineInput.contains( null ) )
-            {
-                throw new MetricInputException( "One or more of the baseline pairs is null." );
-            }
+            throw new MetricInputException( "One or more of the baseline pairs is null." );
         }
+        
     }
 
     /**

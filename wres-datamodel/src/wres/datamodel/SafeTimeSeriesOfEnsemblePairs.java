@@ -11,13 +11,10 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.SortedSet;
 
-import wres.datamodel.SafeTimeSeriesOfSingleValuedPairs.SafeTimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
-import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairs;
-import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
-import wres.datamodel.inputs.pairs.builders.TimeSeriesOfEnsemblePairsBuilder;
+import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairsBuilder;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.time.Event;
@@ -120,7 +117,7 @@ class SafeTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
     }
 
     /**
-     * A {@link DefaultPairedInputBuilder} to build the metric input.
+     * A {@link DefaultMetricInputBuilder} to build the metric input.
      */
 
     static class SafeTimeSeriesOfEnsemblePairsBuilder extends EnsemblePairsBuilder
@@ -386,75 +383,75 @@ class SafeTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
         return new IterableTimeSeries();
     }
 
-    @Override
-    public Iterable<TimeSeries<PairOfDoubles>> ensembleTraceIterator()
-    {
-        //Construct an iterable view of the ensemble traces
-        //Start with the basis times
-        //Iterator<TimeSeries<PairOfDoubleAndVectorOfDoubles>> basisTimes = basisTimeIterator().iterator();       
-        class IterableTimeSeries implements Iterable<TimeSeries<PairOfDoubles>>
-        {
-            @Override
-            public Iterator<TimeSeries<PairOfDoubles>> iterator()
-            {
-                return new Iterator<TimeSeries<PairOfDoubles>>()
-                {
-                    int currentBasisTime = -1;
-                    int totalBasisTimes = bP.getBasisTimes().size() - 1; //currentBasisTime starts at -1
-                    int currentTrace = 0;
-                    int totalTraces = getData().get( 0 ).getItemTwo().length;
-                    TimeSeriesOfEnsemblePairs currentSeries;
-                    Iterator<TimeSeries<PairOfDoubleAndVectorOfDoubles>> iterator = basisTimeIterator().iterator();
-                    DataFactory dFac = DefaultDataFactory.getInstance();
-
-                    @Override
-                    public boolean hasNext()
-                    {
-                        return currentBasisTime < totalBasisTimes ? true : currentTrace < totalTraces;
-                    }
-
-                    @Override
-                    public TimeSeriesOfSingleValuedPairs next()
-                    {
-                        if ( currentBasisTime >= totalBasisTimes && currentTrace >= totalTraces )
-                        {
-                            throw new NoSuchElementException( "No more traces to iterate." );
-                        }
-                        if ( currentTrace == totalTraces || currentSeries == null )
-                        {
-                            currentBasisTime += 1;
-                            currentTrace = 0;
-                            currentSeries = (TimeSeriesOfEnsemblePairs) iterator.next();
-                        }
-                        //Build a single-valued time-series with the trace at index currentTrace
-                        SafeTimeSeriesOfSingleValuedPairsBuilder builder =
-                                new SafeTimeSeriesOfSingleValuedPairsBuilder();
-                        builder.setMetadata( getMetadata() );
-
-                        List<Event<PairOfDoubles>> input = new ArrayList<>();
-                        for ( Event<PairOfDoubleAndVectorOfDoubles> next : currentSeries.timeIterator() )
-                        {
-                            input.add( Event.of( next.getTime(), dFac.pairOf( next.getValue().getItemOne(),
-                                                                              next.getValue()
-                                                                                  .getItemTwo()[currentTrace] ) ) );
-                        }
-                        builder.addTimeSeriesData( currentSeries.getEarliestBasisTime(), input );
-                        currentTrace++;
-                        //Set the climatology
-                        builder.setClimatology( getClimatology() );
-                        //Return the time-series
-                        return builder.build();
-                    }
-
-                    @Override
-                    public void remove()
-                    {
-                        throw new UnsupportedOperationException( TimeSeriesHelper.UNSUPPORTED_MODIFICATION );
-                    }
-                };
-            }
-        }
-        return new IterableTimeSeries();
-    }
+//    @Override
+//    public Iterable<TimeSeries<PairOfDoubles>> ensembleTraceIterator()
+//    {
+//        //Construct an iterable view of the ensemble traces
+//        //Start with the basis times
+//        //Iterator<TimeSeries<PairOfDoubleAndVectorOfDoubles>> basisTimes = basisTimeIterator().iterator();       
+//        class IterableTimeSeries implements Iterable<TimeSeries<PairOfDoubles>>
+//        {
+//            @Override
+//            public Iterator<TimeSeries<PairOfDoubles>> iterator()
+//            {
+//                return new Iterator<TimeSeries<PairOfDoubles>>()
+//                {
+//                    int currentBasisTime = -1;
+//                    int totalBasisTimes = bP.getBasisTimes().size() - 1; //currentBasisTime starts at -1
+//                    int currentTrace = 0;
+//                    int totalTraces = getData().get( 0 ).getItemTwo().length;
+//                    TimeSeriesOfEnsemblePairs currentSeries;
+//                    Iterator<TimeSeries<PairOfDoubleAndVectorOfDoubles>> iterator = basisTimeIterator().iterator();
+//                    DataFactory dFac = DefaultDataFactory.getInstance();
+//
+//                    @Override
+//                    public boolean hasNext()
+//                    {
+//                        return currentBasisTime < totalBasisTimes ? true : currentTrace < totalTraces;
+//                    }
+//
+//                    @Override
+//                    public TimeSeriesOfSingleValuedPairs next()
+//                    {
+//                        if ( currentBasisTime >= totalBasisTimes && currentTrace >= totalTraces )
+//                        {
+//                            throw new NoSuchElementException( "No more traces to iterate." );
+//                        }
+//                        if ( currentTrace == totalTraces || currentSeries == null )
+//                        {
+//                            currentBasisTime += 1;
+//                            currentTrace = 0;
+//                            currentSeries = (TimeSeriesOfEnsemblePairs) iterator.next();
+//                        }
+//                        //Build a single-valued time-series with the trace at index currentTrace
+//                        SafeTimeSeriesOfSingleValuedPairsBuilder builder =
+//                                new SafeTimeSeriesOfSingleValuedPairsBuilder();
+//                        builder.setMetadata( getMetadata() );
+//
+//                        List<Event<PairOfDoubles>> input = new ArrayList<>();
+//                        for ( Event<PairOfDoubleAndVectorOfDoubles> next : currentSeries.timeIterator() )
+//                        {
+//                            input.add( Event.of( next.getTime(), dFac.pairOf( next.getValue().getItemOne(),
+//                                                                              next.getValue()
+//                                                                                  .getItemTwo()[currentTrace] ) ) );
+//                        }
+//                        builder.addTimeSeriesData( currentSeries.getEarliestBasisTime(), input );
+//                        currentTrace++;
+//                        //Set the climatology
+//                        builder.setClimatology( getClimatology() );
+//                        //Return the time-series
+//                        return builder.build();
+//                    }
+//
+//                    @Override
+//                    public void remove()
+//                    {
+//                        throw new UnsupportedOperationException( TimeSeriesHelper.UNSUPPORTED_MODIFICATION );
+//                    }
+//                };
+//            }
+//        }
+//        return new IterableTimeSeries();
+//    }
 
 }

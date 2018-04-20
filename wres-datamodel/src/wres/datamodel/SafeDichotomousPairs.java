@@ -38,7 +38,7 @@ class SafeDichotomousPairs extends SafeMulticategoryPairs implements Dichotomous
     }
 
     /**
-     * A {@link DefaultPairedInputBuilder} to build the metric input.
+     * A {@link DefaultMetricInputBuilder} to build the metric input.
      */
 
     static class DichotomousPairsBuilder extends MulticategoryPairsBuilder
