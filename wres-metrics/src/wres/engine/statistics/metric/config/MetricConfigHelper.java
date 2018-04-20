@@ -29,11 +29,11 @@ import wres.datamodel.Dimension;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.datamodel.Threshold;
-import wres.datamodel.ThresholdConstants;
-import wres.datamodel.ThresholdConstants.Operator;
-import wres.datamodel.ThresholdsByMetric;
-import wres.datamodel.ThresholdsByMetric.ThresholdsByMetricBuilder;
+import wres.datamodel.thresholds.Threshold;
+import wres.datamodel.thresholds.ThresholdConstants;
+import wres.datamodel.thresholds.ThresholdsByMetric;
+import wres.datamodel.thresholds.ThresholdConstants.Operator;
+import wres.datamodel.thresholds.ThresholdsByMetric.ThresholdsByMetricBuilder;
 
 /**
  * A helper class for interpreting and using the {@link ProjectConfig} in the context of verification metrics.

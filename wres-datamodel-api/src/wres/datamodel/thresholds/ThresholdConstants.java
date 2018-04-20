@@ -1,4 +1,4 @@
-package wres.datamodel;
+package wres.datamodel.thresholds;
 
 /**
  * A store of threshold enumerations.

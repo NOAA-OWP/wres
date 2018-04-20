@@ -2,10 +2,10 @@ package wres.datamodel.outputs;
 
 import java.util.Set;
 
-import wres.datamodel.Threshold;
-import wres.datamodel.OneOrTwoThresholds;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.TimeWindow;
+import wres.datamodel.thresholds.OneOrTwoThresholds;
+import wres.datamodel.thresholds.Threshold;
 
 /**
  * A sorted map of {@link MetricOutput} associated with a single metric. The results are stored by {@link TimeWindow}
