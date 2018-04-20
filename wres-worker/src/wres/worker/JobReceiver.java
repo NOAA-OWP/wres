@@ -188,8 +188,7 @@ class JobReceiver extends DefaultConsumer
         try
         {
             this.getChannel().basicPublish( "",
-                                            //jobProperties.getReplyTo(),
-                                            "",
+                                            jobProperties.getReplyTo(),
                                             resultProperties,
                                             message.getBytes() );
         }

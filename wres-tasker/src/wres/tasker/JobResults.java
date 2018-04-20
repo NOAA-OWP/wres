@@ -1,6 +1,7 @@
 package wres.tasker;
 
 import java.io.IOException;
+import java.util.StringJoiner;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
@@ -13,12 +14,13 @@ import java.util.concurrent.TimeoutException;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
+import com.rabbitmq.client.ConnectionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
 /**
- * Static helper class to get information about results and where to find them.
+ * Used to get information about results and where to find them.
  * Eagerly looks in job result queue when a job id is registered, so that a
  * call from a web service will have the complete result.
  */
@@ -27,71 +29,67 @@ class JobResults
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( JobResults.class );
 
-    /** The lock to guard resultsQueue */
-    private static final Object RESULTS_QUEUE_NAME_LOCK = new Object();
-
-    /** A shared bag of job results by ID, probably a better place to put this */
+    /** A shared bag of job results by ID */
     private static final ConcurrentMap<String,Integer> JOB_RESULTS_BY_ID = new ConcurrentHashMap<>();
+
+    /** A magic value placeholder for job registered-but-not-done */
+    private static final Integer JOB_NOT_DONE_YET = Integer.MIN_VALUE + 1;
 
     /**
      * How many job results to look for at once (should probably be at least as
      * many as the count of workers active on the platform and at most the max
      * count of jobs expected to be in the job queue at any given time?)
      */
-    private static final int NUMBER_OF_THREADS = 25;
+    private final int NUMBER_OF_THREADS = 25;
 
     /** An executor service that consumes job results and stores them in JOB_RESULTS_BY_ID. */
-    private static final ExecutorService EXECUTOR =
-            Executors.newFixedThreadPool( NUMBER_OF_THREADS );
+    private final ExecutorService EXECUTOR = Executors.newFixedThreadPool( NUMBER_OF_THREADS );
 
-    /** A magic value placeholder for job registered-but-not-done */
-    private static final Integer JOB_NOT_DONE_YET = Integer.MIN_VALUE + 1;
+    /** The factory to get connections from, configured to reach broker */
+    private final ConnectionFactory connectionFactory;
 
-    /**
-     * A queue name for workers to put the results.
-     * GuardedBy RESULTS_QUEUE_NAME_LOCk
-     */
-    private static String resultsQueueName = null;
+    /** The connection to use for retrieving results, long lived */
+    private Connection connection;
+
+    /** The lock to guard connection when init fails on construction */
+    private final Object CONNECTION_LOCK = new Object();
 
 
-    private JobResults()
+    JobResults( ConnectionFactory connectionFactory )
     {
-        // Static helper class has no constructor.
+        this.connectionFactory = connectionFactory;
+        // Will lazily initialize connection since trying here first requires
+        // retry later anyway.
+        this.connection = null;
+    }
+
+    private ConnectionFactory getConnectionFactory()
+    {
+        return this.connectionFactory;
+    }
+
+    Connection getConnection()
+            throws IOException, TimeoutException
+    {
+        synchronized ( CONNECTION_LOCK )
+        {
+            if ( this.connection == null )
+            {
+                this.connection = this.getConnectionFactory()
+                                      .newConnection();
+            }
+        }
+        return this.connection;
     }
 
     /**
      * Get the results queue name to get results from workers from.
-     * @param channel the channel to communicate on
      * @return a results queue name to use
-     * @throws IOException when queue declaration fails
      */
 
-    static String getResultsQueueName( Channel channel )
-            throws IOException
+    static String getResultsQueueName()
     {
-        boolean createdNewQueue = false;
-
-        synchronized ( RESULTS_QUEUE_NAME_LOCK )
-        {
-            if ( JobResults.resultsQueueName == null )
-            {
-                JobResults.resultsQueueName = channel.queueDeclare().getQueue();
-                createdNewQueue = true;
-            }
-        }
-
-        if ( createdNewQueue )
-        {
-            LOGGER.info( "Created new queue named {}",
-                         JobResults.resultsQueueName );
-        }
-        else
-        {
-            LOGGER.info( "Did not create new queue, existing queue named {}",
-                         JobResults.resultsQueueName );
-        }
-
-        return JobResults.resultsQueueName;
+        return "wres.jobResults";
     }
 
 
@@ -119,6 +117,7 @@ class JobResults
             this.connection = connection;
             this.queueName = queueName;
             this.correlationId = correlationId;
+            LOGGER.debug( "Instantiated {}", this );
         }
 
         private Connection getConnection()
@@ -144,6 +143,8 @@ class JobResults
 
         public Integer call() throws IOException, TimeoutException
         {
+            LOGGER.debug( "call called on {}", this );
+
             BlockingQueue<Integer> result = new ArrayBlockingQueue<>( 1 );
 
             try ( Channel channel = this.getConnection().createChannel() )
@@ -155,10 +156,16 @@ class JobResults
                                                this.getCorrelationId(),
                                                result );
 
-                String resultsQueueName = JobResults.getResultsQueueName( channel );
-                channel.basicConsume( resultsQueueName,
+                channel.basicConsume( this.getQueueName(),
                                       true,
                                       jobResultReceiver );
+            }
+            catch ( IOException ioe )
+            {
+                // Since we may or may not actually consume result, log exception here
+                LOGGER.warn( "When attempting to get job results message using {}:",
+                             this, ioe );
+                throw ioe;
             }
 
             int resultValue = Integer.MIN_VALUE;
@@ -180,21 +187,33 @@ class JobResults
 
             return resultValue;
         }
+
+        @Override
+        public String toString()
+        {
+            StringJoiner result = new StringJoiner( ", ", "JobResults with ", "" );
+            result.add( "connection=" + this.getConnection() );
+            result.add( "queueName=" + this.getQueueName() );
+            result.add( "correlationId=" + this.getCorrelationId() );
+            return result.toString();
+        }
     }
 
 
     /**
      * Register a job request id with JobResults so that results are able to
      * be completely retrieved from a back-end web service.
-     * @param connection connection to the broker to re-use
      * @param queueName the queue with job results
      * @param correlationId the job to look for
      * @return a future with the job id, can be ignored because results are
      * available via JobResults.getJobResult(...)
+     * @throws IOException when connecting to broker fails
+     * @throws TimeoutException when connecting to broker fails
      */
-    static Future<Integer> registerCorrelationId( Connection connection,
-                                                  String queueName,
-                                                  String correlationId )
+
+    Future<Integer> registerCorrelationId( String queueName,
+                                           String correlationId )
+            throws IOException, TimeoutException
     {
         if ( JOB_RESULTS_BY_ID.putIfAbsent( correlationId, JOB_NOT_DONE_YET ) != null )
         {
@@ -202,7 +221,7 @@ class JobResults
                          correlationId );
         }
 
-        ResultWatcher resultWatcher = new ResultWatcher( connection,
+        ResultWatcher resultWatcher = new ResultWatcher( this.getConnection(),
                                                          queueName,
                                                          correlationId );
         return EXECUTOR.submit( resultWatcher );
