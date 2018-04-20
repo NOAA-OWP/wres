@@ -67,7 +67,7 @@ class SafeTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
     {
         return bP.durationIterator();
     }
-    
+
     @Override
     public List<Instant> getBasisTimes()
     {
@@ -190,7 +190,7 @@ class SafeTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
 
             // Set the union of the current metadata and any previously added time-series
             MetadataFactory metaFac = DefaultMetadataFactory.getInstance();
-            List<Metadata> mainMeta = new ArrayList<>();  
+            List<Metadata> mainMeta = new ArrayList<>();
             mainMeta.add( timeSeries.getMetadata() );
             if ( Objects.nonNull( this.mainMeta ) )
             {
@@ -222,13 +222,14 @@ class SafeTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
                 {
                     nextSource.add( nextEvent );
                 }
-                this.addTimeSeriesDataForBaseline( Arrays.asList( Event.of( next.getEarliestBasisTime(), nextSource ) ) );
+                this.addTimeSeriesDataForBaseline( Arrays.asList( Event.of( next.getEarliestBasisTime(),
+                                                                            nextSource ) ) );
             }
 
             // Set the union of the current metadata and any previously added time-series
             MetadataFactory metaFac = DefaultMetadataFactory.getInstance();
             List<Metadata> baselineMeta = new ArrayList<>();
-            
+
             // Metadata, as with data, is taken from the main input
             baselineMeta.add( timeSeries.getMetadata() );
             if ( Objects.nonNull( this.baselineMeta ) )
@@ -259,9 +260,9 @@ class SafeTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
     {
         super( b );
         bP = new SafeTimeSeries<>( b.data,
-                                          b.baselineData,
-                                          getBasisTimeIterator(),
-                                          getDurationIterator() );
+                                   b.baselineData,
+                                   getBasisTimeIterator(),
+                                   getDurationIterator() );
     }
 
     /**
@@ -366,7 +367,7 @@ class SafeTimeSeriesOfEnsemblePairs extends SafeEnsemblePairs
                                                                                            nextDuration,
                                                                                            nextDuration ) );
                         // Data for the current duration by basis time
-                        builder.addTimeSeriesData( bP.filterByDuration( nextDuration, bP.getRawData() ) );
+                        builder.addTimeSeriesData( SafeTimeSeries.filterByDuration( nextDuration, bP.getRawData() ) );
                         // Set the climatology
                         builder.setClimatology( getClimatology() );
                         return builder.build();

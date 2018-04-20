@@ -28,10 +28,8 @@ import wres.datamodel.time.TimeSeries;
  * Tests the {@link SafeTimeSeries}.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.3
  */
-public final class SafeTimeSeriesOfPairsTest
+public final class SafeTimeSeriesTest
 {
 
     @Rule
