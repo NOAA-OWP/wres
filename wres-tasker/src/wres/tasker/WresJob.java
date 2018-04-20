@@ -1,6 +1,7 @@
 package wres.tasker;
 
 import java.io.IOException;
+import java.sql.Time;
 import java.util.Random;
 import java.util.StringJoiner;
 import java.util.concurrent.TimeoutException;
@@ -41,6 +42,13 @@ public class WresJob
         String brokerHost = WresJob.getBrokerHost();
         CONNECTION_FACTORY.setHost( brokerHost );
     }
+
+    private static final JobResults JOB_RESULTS = new JobResults( CONNECTION_FACTORY );
+
+    private static Connection connection = null;
+
+    /** Guards connection */
+    private static final Object CONNECTION_LOCK = new Object();
 
     @GET
     @Produces( MediaType.TEXT_PLAIN )
@@ -94,8 +102,10 @@ public class WresJob
     private String sendMessage( String message )
             throws IOException, TimeoutException
     {
-        try ( Connection connection = CONNECTION_FACTORY.newConnection();
-              Channel channel = connection.createChannel() )
+        // Use a shared connection across requests.
+        Connection connection = WresJob.getConnection();
+
+        try ( Channel channel = connection.createChannel() )
         {
             long someRandomNumber = RANDOM.nextLong();
             String correlationId = String.valueOf( someRandomNumber );
@@ -103,7 +113,7 @@ public class WresJob
             channel.queueDeclare( SEND_QUEUE_NAME, false, false, false, null );
 
             // Tell the worker where to send results.
-            String resultsQueueName = JobResults.getResultsQueueName( channel );
+            String resultsQueueName = JobResults.getResultsQueueName();
             AMQP.BasicProperties properties =
                     new AMQP.BasicProperties
                             .Builder()
@@ -116,17 +126,17 @@ public class WresJob
             // I think something needs to be watching the queue or else messages
             // end up dropping on the floor, that is why this is called prior
             // to even publishing the job at all. JobResults is a bag-o-state.
-            JobResults.registerCorrelationId( connection,
-                                              resultsQueueName,
-                                              correlationId );
+
+            JOB_RESULTS.registerCorrelationId( resultsQueueName,
+                                               correlationId );
 
             channel.basicPublish( "",
                                   SEND_QUEUE_NAME,
                                   properties,
                                   message.getBytes() );
 
-            LOGGER.info( "I sent this message to queue '{}' with correlationId '{}': '{}'.",
-                         SEND_QUEUE_NAME, correlationId, message );
+            LOGGER.info( "I sent this message to queue '{}' with properties '{}': {}.",
+                         SEND_QUEUE_NAME, properties, message );
             return correlationId;
         }
     }
@@ -157,5 +167,19 @@ public class WresJob
         {
             return DEFAULT_BROKER_HOST;
         }
+    }
+
+    private static Connection getConnection()
+            throws IOException, TimeoutException
+    {
+        synchronized( CONNECTION_LOCK )
+        {
+            if ( WresJob.connection == null )
+            {
+                WresJob.connection = CONNECTION_FACTORY.newConnection();
+            }
+        }
+
+        return WresJob.connection;
     }
 }
