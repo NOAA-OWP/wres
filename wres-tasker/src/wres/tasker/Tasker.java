@@ -38,16 +38,11 @@ public class Tasker
         ServletHolder dynamicHolder = context.addServlet( ServletContainer.class,
                                                           "/*" );
 
-        dynamicHolder.setInitParameter( "jersey.config.server.provider.classnames",
-                                        WresJob.class.getCanonicalName() );
-
-        /* TODO: expose the jobResult service in a working fashion
-        ServletHolder dynamicHolderTwo = context.addServlet( ServletContainer.class,
-                                                             "/jobResult/*" );
-
-        dynamicHolderTwo.setInitParameter( "jersey.config.server.provider.classnames",
-                                           WresJobResult.class.getCanonicalName() );
-        */
+        // Multiple ways of binding using jersey, but Application is standard,
+        // see here:
+        // https://stackoverflow.com/questions/22994690/which-init-param-to-use-jersey-config-server-provider-packages-or-javax-ws-rs-a#23041643
+        dynamicHolder.setInitParameter( "javax.ws.rs.Application",
+                                        JaxRSApplication.class.getCanonicalName() );
 
         // Static handler:
         ResourceHandler resourceHandler = new ResourceHandler();
