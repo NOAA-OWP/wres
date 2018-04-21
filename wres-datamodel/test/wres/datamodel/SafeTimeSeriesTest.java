@@ -6,10 +6,12 @@ import static org.junit.Assert.assertTrue;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.StringJoiner;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -19,7 +21,6 @@ import org.junit.rules.ExpectedException;
 import wres.datamodel.SafeTimeSeries.SafeTimeSeriesBuilder;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
-import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 
@@ -41,23 +42,16 @@ public final class SafeTimeSeriesTest
     private DataFactory metIn;
 
     /**
-     * Metadata factory.
-     */
-
-    private MetadataFactory metaFac;
-
-    /**
      * Default time-series for testing.
      */
 
-    private TimeSeries<Double> defaultTimeSeries;
+    private SafeTimeSeries<Double> defaultTimeSeries;
 
 
     @Before
     public void setUpBeforeEachTest()
     {
         metIn = DefaultDataFactory.getInstance();
-        metaFac = metIn.getMetadataFactory();
         SafeTimeSeriesBuilder<Double> b = new SafeTimeSeriesBuilder<>();
         List<Event<Double>> first = new ArrayList<>();
         Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
@@ -68,9 +62,9 @@ public final class SafeTimeSeriesTest
         second.add( Event.of( Instant.parse( "1985-01-04T00:00:00Z" ), 3.0 ) );
         second.add( Event.of( Instant.parse( "1985-01-05T00:00:00Z" ), 4.0 ) );
 
-        defaultTimeSeries = b.addTimeSeriesData( firstBasisTime, first )
-                             .addTimeSeriesData( secondBasisTime, second )
-                             .build();
+        defaultTimeSeries = (SafeTimeSeries<Double>) b.addTimeSeriesData( firstBasisTime, first )
+                                                      .addTimeSeriesData( secondBasisTime, second )
+                                                      .build();
     }
 
     /**
@@ -80,9 +74,6 @@ public final class SafeTimeSeriesTest
     @Test
     public void testTimeIterator()
     {
-        // Not null
-        assertTrue( Objects.nonNull( defaultTimeSeries.timeIterator() ) );
-
         // Actual events
         List<Event<Double>> actual = new ArrayList<>();
         defaultTimeSeries.timeIterator().forEach( actual::add );
@@ -98,6 +89,116 @@ public final class SafeTimeSeriesTest
     }
 
     /**
+     * Test {@link SafeTimeSeries#durationIterator()}.
+     */
+
+    @Test
+    public void testDurationIterator()
+    {
+        // Actual durations
+        List<Duration> actual = new ArrayList<>();
+        defaultTimeSeries.durationIterator().forEach( next -> actual.addAll( next.getDurations() ) );
+
+        // Expected durations
+        List<Duration> expected = new ArrayList<>();
+        expected.add( Duration.ofDays( 1 ) );
+        expected.add( Duration.ofDays( 2 ) );
+
+        assertTrue( actual.equals( expected ) );
+    }
+
+    /**
+     * Test {@link SafeTimeSeries#basisTimeIterator()}.
+     */
+
+    @Test
+    public void testBasisTimeIterator()
+    {
+        // Actual durations
+        List<Instant> actual = new ArrayList<>();
+        defaultTimeSeries.basisTimeIterator().forEach( next -> actual.add( next.getEarliestBasisTime() ) );
+
+        // Expected durations
+        List<Instant> expected = new ArrayList<>();
+        expected.add( Instant.parse( "1985-01-01T00:00:00Z" ) );
+        expected.add( Instant.parse( "1985-01-03T00:00:00Z" ) );
+
+        assertTrue( actual.equals( expected ) );
+    }
+
+    /**
+     * Test {@link SafeTimeSeries#getEarliestBasisTime()}.
+     */
+
+    @Test
+    public void testGetEarliestBasisTime()
+    {
+        assertTrue( Instant.parse( "1985-01-01T00:00:00Z" ).equals( defaultTimeSeries.getEarliestBasisTime() ) );
+    }
+
+    /**
+     * Test {@link SafeTimeSeries#getLatestBasisTime()}.
+     */
+
+    @Test
+    public void testGetLatestBasisTime()
+    {
+        assertTrue( Instant.parse( "1985-01-03T00:00:00Z" ).equals( defaultTimeSeries.getLatestBasisTime() ) );
+    }
+
+    /**
+     * Test {@link SafeTimeSeries#getRawData()}.
+     */
+
+    @Test
+    public void testGetRawData()
+    {
+        List<Event<Double>> first = new ArrayList<>();
+        Instant firstBasisTime = Instant.parse( "1985-01-01T00:00:00Z" );
+        first.add( Event.of( Instant.parse( "1985-01-02T00:00:00Z" ), 1.0 ) );
+        first.add( Event.of( Instant.parse( "1985-01-03T00:00:00Z" ), 2.0 ) );
+        List<Event<Double>> second = new ArrayList<>();
+        Instant secondBasisTime = Instant.parse( "1985-01-03T00:00:00Z" );
+        second.add( Event.of( Instant.parse( "1985-01-04T00:00:00Z" ), 3.0 ) );
+        second.add( Event.of( Instant.parse( "1985-01-05T00:00:00Z" ), 4.0 ) );
+        
+        List<Event<List<Event<Double>>>> expected = new ArrayList<>();
+        expected.add( Event.of( firstBasisTime, first ) );
+        expected.add( Event.of( secondBasisTime, second ) );
+        
+        assertTrue( expected.equals( defaultTimeSeries.getRawData() ) );
+    }
+    
+    /**
+     * Confirms that the {@link SafeTimeSeries#getRawData()} returns an immutable outer container.
+     */
+
+    @Test
+    public void testGetRawDataIsImmutableOuter()
+    {
+        List<Event<List<Event<Double>>>> rawData = defaultTimeSeries.getRawData();
+        
+        exception.expect( UnsupportedOperationException.class );
+        Instant time = Instant.parse( "1985-01-03T00:00:00Z" );
+        rawData.add( Event.of( time, Arrays.asList( Event.of( time, 1.0 ) ) ) );
+
+    }    
+
+    /**
+     * Confirms that the {@link SafeTimeSeries#getRawData()} returns immutable inner containers.
+     */
+
+    @Test
+    public void testGetRawDataIsImmutableInner()
+    {
+        List<Event<List<Event<Double>>>> rawData = defaultTimeSeries.getRawData();
+        
+        exception.expect( UnsupportedOperationException.class );
+
+        rawData.get( 0 ).getValue().add( Event.of( Instant.parse( "1985-01-03T00:00:00Z" ), 1.0 ) );
+    }     
+    
+    /**
      * Tests {@link SafeTimeSeries#isRegular()}.
      */
 
@@ -106,7 +207,23 @@ public final class SafeTimeSeriesTest
     {
         assertTrue( "Expected a regular time-series.", defaultTimeSeries.isRegular() );
     }
+    
+    /**
+     * Tests {@link SafeTimeSeries#toString()}.
+     */
 
+    @Test
+    public void testToString()
+    {
+        StringJoiner expected = new StringJoiner( System.lineSeparator() );
+        expected.add( "(1985-01-02T00:00:00Z,1.0)" );
+        expected.add( "(1985-01-03T00:00:00Z,2.0)" );
+        expected.add( "(1985-01-04T00:00:00Z,3.0)" );
+        expected.add( "(1985-01-05T00:00:00Z,4.0)" );
+
+        assertTrue( expected.toString().equals( defaultTimeSeries.toString() ) );
+    }
+    
     /**
      * Tests {@link SafeTimeSeries#getRegularDuration()}.
      */
@@ -252,7 +369,7 @@ public final class SafeTimeSeriesTest
     {
         exception.expect( NoSuchElementException.class );
         exception.expectMessage( "No more basis times to iterate." );
-        
+
         Iterator<TimeSeries<Double>> noneSuchBasis = defaultTimeSeries.basisTimeIterator().iterator();
         noneSuchBasis.forEachRemaining( a -> a.equals( null ) );
         noneSuchBasis.next();
@@ -267,7 +384,7 @@ public final class SafeTimeSeriesTest
     {
         exception.expect( NoSuchElementException.class );
         exception.expectMessage( "No more durations to iterate." );
-        
+
         Iterator<TimeSeries<Double>> noneSuchDuration = defaultTimeSeries.durationIterator().iterator();
         noneSuchDuration.forEachRemaining( a -> a.equals( null ) );
         noneSuchDuration.next();

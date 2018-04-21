@@ -388,6 +388,9 @@ class SafeTimeSeries<T> implements TimeSeries<T>
             }
         }
 
+        // Slicer
+        Slicer slicer = DefaultSlicer.getInstance();
+
         //Construct an iterable view of the basis times
         class IterableTimeSeries implements Iterable<TimeSeries<T>>
         {
@@ -415,10 +418,8 @@ class SafeTimeSeries<T> implements TimeSeries<T>
                         // Iterate
                         Duration nextDuration = iterator.next();
 
-                        // Data for the current duration by basis time
-                        List<Event<List<Event<T>>>> events = SafeTimeSeries.filterByDuration( nextDuration, data );
-
-                        return new SafeTimeSeries<>( events );
+                        return slicer.filterByDuration( new SafeTimeSeries<>( data ),
+                                                        isEqual -> isEqual.equals( nextDuration ) );
                     }
 
                     @Override
@@ -430,42 +431,6 @@ class SafeTimeSeries<T> implements TimeSeries<T>
             }
         }
         return new IterableTimeSeries();
-    }
-
-    /**
-     * Filters the data by {@link Duration}.
-     * 
-     * TODO: remove this method once a general builder of time-series is public facing and the {@link Slicer} provides
-     * a filtering method for generic time-series.
-     *
-     * @param duration the duration to find
-     * @param rawData the raw data to search 
-     * @return the filtered data
-     */
-
-    static <T> List<Event<List<Event<T>>>> filterByDuration( final Duration duration,
-                                                             final List<Event<List<Event<T>>>> rawData )
-    {
-        List<Event<List<Event<T>>>> returnMe = new ArrayList<>();
-        // Iterate through basis times
-        for ( Event<List<Event<T>>> nextSeries : rawData )
-        {
-            Instant basisTime = nextSeries.getTime();
-            // Iterate through durations until it is later than the nextDuration
-            for ( Event<T> nextEvent : nextSeries.getValue() )
-            {
-                Duration candidateDuration = Duration.between( basisTime, nextEvent.getTime() );
-                if ( candidateDuration.compareTo( duration ) > 0 )
-                {
-                    break;
-                }
-                else if ( duration.equals( candidateDuration ) )
-                {
-                    returnMe.add( Event.of( basisTime, Arrays.asList( nextEvent ) ) );
-                }
-            }
-        }
-        return returnMe;
     }
 
 }

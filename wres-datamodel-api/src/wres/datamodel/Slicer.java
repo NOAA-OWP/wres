@@ -32,8 +32,6 @@ import wres.datamodel.time.TimeSeries;
  * A utility class for slicing/dicing and transforming datasets associated with verification metrics.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 
 public interface Slicer
@@ -516,6 +514,18 @@ public interface Slicer
 
     TimeSeriesOfEnsemblePairs filterByDuration( TimeSeriesOfEnsemblePairs input,
                                                 Predicate<Duration> condition );
+
+    /**
+     * Filters the input time-series by the {@link Duration} associated with each value. 
+     * 
+     * @param <T> the type of time-series data
+     * @param input the input to slice
+     * @param condition the condition on which to slice
+     * @return the subset of the input that meets the condition
+     * @throws NullPointerException if either the input or condition is null
+     */
+
+    <T> TimeSeries<T> filterByDuration( TimeSeries<T> input, Predicate<Duration> condition );
 
     /**
      * Filters the input time-series by basis time. Applies to both the main pairs and any baseline pairs.
