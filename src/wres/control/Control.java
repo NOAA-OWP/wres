@@ -15,13 +15,14 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
+import org.eclipse.persistence.internal.sessions.factories.model.project.ProjectConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.ProjectConfigException;
 import wres.config.ProjectConfigPlus;
 import wres.config.Validation;
-import wres.config.generated.ProjectConfig;
+import wres.control.ProcessorHelper.ExecutorServices;
 import wres.io.config.SystemSettings;
 
 /**
@@ -91,9 +92,25 @@ public class Control implements Function<String[], Integer>
         // Essential to use a separate thread pool for thresholds and metrics as ArrayBlockingQueue operates a FIFO 
         // policy. If dependent tasks (thresholds) are queued ahead of independent ones (metrics) in the same pool, 
         // there is a DEADLOCK probability       
+        ThreadFactory featureFactory = runnable -> new Thread( runnable, "Feature Thread" );
         ThreadFactory pairFactory = runnable -> new Thread( runnable, "Pair Thread" );
         ThreadFactory thresholdFactory = runnable -> new Thread( runnable, "Threshold Dispatch Thread" );
         ThreadFactory metricFactory = runnable -> new Thread( runnable, "Metric Thread" );
+        ThreadFactory productFactory = runnable -> new Thread( runnable, "Product Thread" );
+        
+        // Processes features
+// !!!!!UNCOMMENT NEXT BLOCK TO TEST AYNCHRONOUS EXECUTION OF FEATURES!!!!!                
+//        ThreadPoolExecutor featureExecutor = new ThreadPoolExecutor( SystemSettings.maximumThreadCount(),
+//                                                                  SystemSettings.maximumThreadCount(),
+//                                                                  SystemSettings.poolObjectLifespan(),
+//                                                                  TimeUnit.MILLISECONDS,
+//                                                                  new ArrayBlockingQueue<>( SystemSettings.maximumThreadCount()
+//                                                                                            * 5 ),
+//                                                                  featureFactory );
+
+// !!!!!COMMENT OUT NEXT LINE TO TEST ASYNCHRONOUS EXECUTION OF FEATURES!!!!!        
+        ExecutorService featureExecutor = Executors.newSingleThreadExecutor( featureFactory );
+        
         // Processes pairs       
         ThreadPoolExecutor pairExecutor = new ThreadPoolExecutor( SystemSettings.maximumThreadCount(),
                                                                   SystemSettings.maximumThreadCount(),
@@ -102,8 +119,10 @@ public class Control implements Function<String[], Integer>
                                                                   new ArrayBlockingQueue<>( SystemSettings.maximumThreadCount()
                                                                                             * 5 ),
                                                                   pairFactory );
+        
         // Dispatches thresholds
         ExecutorService thresholdExecutor = Executors.newSingleThreadExecutor( thresholdFactory );
+        
         // Processes metrics
         ThreadPoolExecutor metricExecutor = new ThreadPoolExecutor( SystemSettings.maximumThreadCount(),
                                                                     SystemSettings.maximumThreadCount(),
@@ -112,17 +131,37 @@ public class Control implements Function<String[], Integer>
                                                                     new ArrayBlockingQueue<>( SystemSettings.maximumThreadCount()
                                                                                               * 5 ),
                                                                     metricFactory );
-        // Set the rejection policy to run in the caller, slowing producers
+        
+        // Processes products
+        ThreadPoolExecutor productExecutor = new ThreadPoolExecutor( SystemSettings.maximumThreadCount(),
+                                                                     SystemSettings.maximumThreadCount(),
+                                                                     SystemSettings.poolObjectLifespan(),
+                                                                     TimeUnit.MILLISECONDS,
+                                                                     new ArrayBlockingQueue<>( SystemSettings.maximumThreadCount()
+                                                                                               * 5 ),
+                                                                     productFactory );
+        
+        // Set the rejection policy to run in the caller, slowing producers   
+        
+// !!!!!UNCOMMENT NEXT LINE TO TEST ASYNCHRONOUS EXECUTION OF FEATURES!!!!!        
+//        featureExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
         pairExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
         metricExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
-
+        productExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
+        
         try
         {
+
+            // Reduce our set of executors to one object
+            ExecutorServices executors = new ExecutorServices( featureExecutor,
+                                                               pairExecutor,
+                                                               thresholdExecutor,
+                                                               metricExecutor,
+                                                               productExecutor );
+                       
             // Process the configuration
             ProcessorHelper.processProjectConfig( projectConfigPlus,
-                                                  pairExecutor,
-                                                  thresholdExecutor,
-                                                  metricExecutor );
+                                                  executors );
             return 0; // Or return 200 - OK (see #41467)
         }
         catch ( WresProcessingException | IOException internalException)
@@ -140,9 +179,11 @@ public class Control implements Function<String[], Integer>
         // Shutdown
         finally
         {
+            shutDownGracefully(productExecutor);
             shutDownGracefully(metricExecutor);
             shutDownGracefully(thresholdExecutor);
             shutDownGracefully(pairExecutor);
+            shutDownGracefully(featureExecutor);
         }
     }
 

@@ -49,20 +49,20 @@ import wres.datamodel.time.TimeSeries;
  * @author james.brown@hydrosolved.com
  */
 
-class DefaultSlicer implements Slicer
+enum DefaultSlicer implements Slicer
 {
 
+    /**
+     * Instance of the factory using singleton enum pattern for thread-safe, lazy, construction.
+     */
+
+    INSTANCE;
+    
     /**
      * Data factory for transformations.
      */
 
     private final DataFactory dataFac;
-
-    /**
-     * Instance of the slicer.
-     */
-
-    private static DefaultSlicer instance = null;
 
     /**
      * Returns an instance of a {@link Slicer}.
@@ -72,11 +72,7 @@ class DefaultSlicer implements Slicer
 
     public static Slicer getInstance()
     {
-        if ( Objects.isNull( instance ) )
-        {
-            instance = new DefaultSlicer();
-        }
-        return instance;
+        return INSTANCE;
     }
 
     /**

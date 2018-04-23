@@ -14,8 +14,6 @@ import wres.config.generated.Feature;
  * Class that tests {@link FeaturePlus}.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 1.0
  */
 
 public class FeaturePlusTest
