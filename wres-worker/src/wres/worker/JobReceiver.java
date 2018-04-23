@@ -13,6 +13,7 @@ import com.rabbitmq.client.Envelope;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.messages.generated.JobResult;
 
 /**
  * The concrete class that does the work of taking a job message and creating
@@ -22,6 +23,8 @@ import org.slf4j.LoggerFactory;
 class JobReceiver extends DefaultConsumer
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( JobReceiver.class );
+
+    private static final int META_FAILURE_CODE = 600;
 
     private final File wresExecutable;
 
@@ -59,17 +62,16 @@ class JobReceiver extends DefaultConsumer
         String message = new String( body, Charset.forName( "UTF-8" ) );
         LOGGER.info( "Received job message {}", message );
 
-        String response = "Message failed: '" + message + "'";
-
         // Translate the message into a command
         ProcessBuilder processBuilder = createBuilderFromMessage( message );
 
         // Check to see if there is any command at all.
         if ( processBuilder == null )
         {
-            String problem = "Could not execute due to invalid message.";
-            LOGGER.warn( problem );
-            this.sendResponse( properties, response + " " + problem );
+            UnsupportedOperationException problem = new UnsupportedOperationException( "Could not execute due to invalid message." );
+            LOGGER.warn( "", problem );
+            byte[] response = JobReceiver.prepareMetaFailureResponse( new UnsupportedOperationException( problem ) );
+            this.sendResponse( properties, response );
             return;
         }
 
@@ -83,8 +85,8 @@ class JobReceiver extends DefaultConsumer
         catch ( IOException ioe )
         {
             LOGGER.warn( "Failed to launch process from {}.", processBuilder, ioe );
-            String problem = "Failed to launch due to " + ioe.getMessage();
-            this.sendResponse( properties, response + " " + problem );
+            byte[] response = JobReceiver.prepareMetaFailureResponse( ioe );
+            this.sendResponse( properties, response );
             return;
         }
 
@@ -95,12 +97,15 @@ class JobReceiver extends DefaultConsumer
             process.waitFor();
             int exitValue = process.exitValue();
             LOGGER.info( "Subprocess {} exited {}", process, exitValue );
-            this.sendResponse( properties, "Result of execution: " + exitValue );
+            byte[] response;
+            response = JobReceiver.prepareResponse( exitValue );
+            this.sendResponse( properties, response );
         }
         catch ( InterruptedException ie )
         {
             LOGGER.warn( "Interrupted while waiting for {}.", process );
-            this.sendResponse( properties, "Interrupted, JobReceiver dying!" );
+            byte[] response = JobReceiver.prepareMetaFailureResponse( ie );
+            this.sendResponse( properties, response );
             Thread.currentThread().interrupt();
         }
     }
@@ -173,11 +178,41 @@ class JobReceiver extends DefaultConsumer
 
 
     /**
+     * Helper to prepare a completed job response
+     * @param exitCode the actual exitCode of the wres process
+     * @return raw message indicating job exit code
+     */
+    private static byte[] prepareResponse( int exitCode )
+    {
+        JobResult.job_result jobResult = JobResult.job_result
+                                                  .newBuilder()
+                                                  .setResult( exitCode )
+                                                  .build();
+        return jobResult.toByteArray();
+    }
+
+
+    /**
+     * Helper to prepare a job that failed due to never getting the job to run
+     * @param e the exception that occurred or null if none
+     * @return raw message indicating meta failure
+     */
+
+    private static byte[] prepareMetaFailureResponse( Exception e )
+    {
+        JobResult.job_result jobResult = JobResult.job_result
+                                                  .newBuilder()
+                                                  .setResult( META_FAILURE_CODE )
+                                                  .build();
+        return jobResult.toByteArray();
+    }
+
+    /**
      * Attempts to send a message with job results to the queue specified in job
      * @param jobProperties the properties of the job message, has queue and id
      * @param message the message to send.
      */
-    private void sendResponse( AMQP.BasicProperties jobProperties, String message )
+    private void sendResponse( AMQP.BasicProperties jobProperties, byte[] message )
     {
         AMQP.BasicProperties resultProperties =
                 new AMQP.BasicProperties
@@ -196,7 +231,7 @@ class JobReceiver extends DefaultConsumer
             this.getChannel().basicPublish( exchangeName,
                                             routingKey,
                                             resultProperties,
-                                            message.getBytes() );
+                                            message );
             LOGGER.info( "Seems like I published to exchange {}, key {}",
                          exchangeName, routingKey );
         }
