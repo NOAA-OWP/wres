@@ -187,10 +187,18 @@ class JobReceiver extends DefaultConsumer
 
         try
         {
-            this.getChannel().basicPublish( "",
-                                            jobProperties.getReplyTo(),
+            String exchangeName = jobProperties.getReplyTo();
+            String exchangeType = "topic";
+            String routingKey = "job." + jobProperties.getCorrelationId() + ".exitCode";
+
+            this.getChannel().exchangeDeclare( exchangeName, exchangeType );
+
+            this.getChannel().basicPublish( exchangeName,
+                                            routingKey,
                                             resultProperties,
                                             message.getBytes() );
+            LOGGER.info( "Seems like I published to exchange {}, key {}",
+                         exchangeName, routingKey );
         }
         catch ( IOException ioe )
         {

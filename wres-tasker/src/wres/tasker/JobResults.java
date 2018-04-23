@@ -12,6 +12,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 
+import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
@@ -83,13 +84,13 @@ class JobResults
     }
 
     /**
-     * Get the results queue name to get results from workers from.
+     * Get the results exchange name to get results from workers from.
      * @return a results queue name to use
      */
 
-    static String getResultsQueueName()
+    static String getJobStatusExchangeName()
     {
-        return "wres.jobResults";
+        return "wres.job.status";
     }
 
 
@@ -102,21 +103,21 @@ class JobResults
     private static class ResultWatcher implements Callable<Integer>
     {
         private final Connection connection;
-        private final String queueName;
-        private final String correlationId;
+        private final String jobStatusExchangeName;
+        private final String jobId;
 
         /**
          * @param connection shared connection
-         * @param queueName the queue name to look in
-         * @param correlationId the job identifier to look for
+         * @param jobStatusExchangeName the exchange name to look in
+         * @param jobId the job identifier to look for
          */
         ResultWatcher( Connection connection,
-                       String queueName,
-                       String correlationId )
+                       String jobStatusExchangeName,
+                       String jobId )
         {
             this.connection = connection;
-            this.queueName = queueName;
-            this.correlationId = correlationId;
+            this.jobStatusExchangeName = jobStatusExchangeName;
+            this.jobId = jobId;
             LOGGER.debug( "Instantiated {}", this );
         }
 
@@ -125,14 +126,14 @@ class JobResults
             return this.connection;
         }
 
-        private String getQueueName()
+        private String getJobStatusExchangeName()
         {
-            return this.queueName;
+            return this.jobStatusExchangeName;
         }
 
-        private String getCorrelationId()
+        private String getJobId()
         {
-            return this.correlationId;
+            return this.jobId;
         }
 
 
@@ -147,18 +148,40 @@ class JobResults
 
             BlockingQueue<Integer> result = new ArrayBlockingQueue<>( 1 );
 
+            int resultValue = Integer.MIN_VALUE;
+            String exchangeName = this.getJobStatusExchangeName();
+            String exchangeType = "topic";
+            String bindingKey = "job." + this.getJobId() + ".exitCode";
+
             try ( Channel channel = this.getConnection().createChannel() )
             {
-                channel.queueDeclare( this.getQueueName(), false, false, false, null );
+                channel.exchangeDeclare( exchangeName, exchangeType );
+
+                // As the consumer, I want an exclusive queue for me?
+                String queueName = channel.queueDeclare().getQueue();
+                // Does this have any effect?
+                AMQP.Queue.BindOk bindResult = channel.queueBind( queueName, exchangeName, bindingKey );
+
+                LOGGER.debug( "Bindresult: {}", bindResult );
 
                 JobResultReceiver jobResultReceiver =
                         new JobResultReceiver( channel,
-                                               this.getCorrelationId(),
                                                result );
 
-                channel.basicConsume( this.getQueueName(),
-                                      true,
-                                      jobResultReceiver );
+                String consumerTag = channel.basicConsume( queueName,
+                                                           true,
+                                                           jobResultReceiver );
+                LOGGER.debug( "consumerTag: {}", consumerTag );
+
+                LOGGER.debug( "Waiting to take a result value..." );
+                resultValue = result.take();
+                LOGGER.debug( "Finished taking a result value." );
+            }
+            catch ( InterruptedException ie )
+            {
+                LOGGER.warn( "Interrupted while getting result for job {}, returning potentially fake result {}",
+                             jobId, resultValue );
+                Thread.currentThread().interrupt();
             }
             catch ( IOException ioe )
             {
@@ -168,22 +191,8 @@ class JobResults
                 throw ioe;
             }
 
-            int resultValue = Integer.MIN_VALUE;
-
-            try
-            {
-                resultValue = result.take();
-            }
-            catch ( InterruptedException ie )
-            {
-                LOGGER.warn( "Interrupted while getting result for job {}, returning potentially fake result {}",
-                             correlationId,
-                             resultValue );
-                Thread.currentThread().interrupt();
-            }
-
             // Store state back out to the static bag-o-state. A better way?
-            JOB_RESULTS_BY_ID.putIfAbsent( correlationId, resultValue );
+            JOB_RESULTS_BY_ID.put( jobId, resultValue );
 
             return resultValue;
         }
@@ -193,8 +202,8 @@ class JobResults
         {
             StringJoiner result = new StringJoiner( ", ", "JobResults with ", "" );
             result.add( "connection=" + this.getConnection() );
-            result.add( "queueName=" + this.getQueueName() );
-            result.add( "correlationId=" + this.getCorrelationId() );
+            result.add( "jobStatusExchangeName=" + this.getJobStatusExchangeName() );
+            result.add( "jobId=" + this.getJobId() );
             return result.toString();
         }
     }
@@ -203,27 +212,31 @@ class JobResults
     /**
      * Register a job request id with JobResults so that results are able to
      * be completely retrieved from a back-end web service.
-     * @param queueName the queue with job results
-     * @param correlationId the job to look for
+     * The bad part of this setup is the assumption of a single web server
+     * running also holding the results in memory. The memory issue can be fixed
+     * with a temp file, but really it is the single web server issue that is
+     * the bigger problem. Storing results in a database may be better.
+     * @param jobStatusExchangeName the queue with job results
+     * @param jobId the job to look for
      * @return a future with the job id, can be ignored because results are
      * available via JobResults.getJobResult(...)
      * @throws IOException when connecting to broker fails
      * @throws TimeoutException when connecting to broker fails
      */
 
-    Future<Integer> registerCorrelationId( String queueName,
-                                           String correlationId )
+    Future<Integer> registerjobId( String jobStatusExchangeName,
+                                           String jobId )
             throws IOException, TimeoutException
     {
-        if ( JOB_RESULTS_BY_ID.putIfAbsent( correlationId, JOB_NOT_DONE_YET ) != null )
+        if ( JOB_RESULTS_BY_ID.putIfAbsent( jobId, JOB_NOT_DONE_YET ) != null )
         {
-            LOGGER.warn( "Job correlationId {} may have been registered twice",
-                         correlationId );
+            LOGGER.warn( "jobId {} may have been registered twice",
+                         jobId );
         }
 
         ResultWatcher resultWatcher = new ResultWatcher( this.getConnection(),
-                                                         queueName,
-                                                         correlationId );
+                                                         jobStatusExchangeName,
+                                                         jobId );
         return EXECUTOR.submit( resultWatcher );
     }
 
