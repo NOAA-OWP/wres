@@ -75,12 +75,12 @@ import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants;
 import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.datamodel.thresholds.ThresholdsByMetric.ThresholdsByMetricBuilder;
+import wres.io.Operations;
 import wres.io.data.caching.Features;
 import wres.io.data.details.ProjectDetails;
 import wres.io.reading.commaseparated.CommaSeparatedReader;
 import wres.io.utilities.Database;
 import wres.io.writing.SharedWriters;
-import wres.io.writing.SharedWriters.SharedWritersBuilder;
 import wres.io.writing.WriterHelper;
 import wres.io.writing.netcdf.NetcdfDoubleScoreWriter;
 import wres.util.Strings;
@@ -1699,50 +1699,83 @@ public class ConfigHelper
         // Return empty set
         return Collections.emptySet();
     }
-
+    
     /**
      * Returns a set of writers to be shared across instances of writing. Returns a {@link SharedWriters} that 
      * contains one writer for each supported incremental data format and type.
      *
+     * @param projectIdentifier the unique project identifier
      * @param projectConfig the project configuration
      * @param featureCount the number of features
-     * @param timeStepCount the number of time steps
-     * @param leadCount the number of lead times
      * @param thresholdCount the number of thresholds
      * @param metrics the resolved DoubleScore metrics to write
-     * @return a pool of shared writers
-     * @throws IOException if one or more writers could not be created
-     * @throws ProjectConfigException if the project configuration is invalid
+     * @return a writer
+     * @throws IOException if the project could not be validated or the writer could not be created
      */
 
-    public static SharedWriters getSharedWriters( ProjectConfig projectConfig,
-                                                  int featureCount,
-                                                  int timeStepCount,
-                                                  int leadCount,
-                                                  int thresholdCount,
-                                                  Set<MetricConstants> metrics )
-            throws IOException, ProjectConfigException
+    public static NetcdfDoubleScoreWriter getNetcdfWriter( String projectIdentifier,
+                                                           ProjectConfig projectConfig,
+                                                           int featureCount,
+                                                           int thresholdCount,
+                                                           Set<MetricConstants> metrics )
+            throws IOException
     {
         Objects.requireNonNull( projectConfig, NULL_CONFIGURATION_ERROR );
-        WriterHelper.validateProjectForWriting( projectConfig );
 
-        SharedWritersBuilder builder = new SharedWritersBuilder();
-
-        // Add the DestinationType.NETCDF format
-        if ( ConfigHelper.getIncrementalFormats( projectConfig ).contains( DestinationType.NETCDF ) )
+        // Validate configuration
+        try
         {
-            // Set the writer
-            builder.setNetcdfDoublescoreWriter(
-                    NetcdfDoubleScoreWriter.of( projectConfig,
-                                                featureCount,
-                                                timeStepCount,
-                                                leadCount,
-                                                thresholdCount,
-                                                metrics ) );
+            WriterHelper.validateProjectForWriting( projectConfig );
+        }
+        // Wrap: public methods should throw one checked exception type
+        catch ( ProjectConfigException e )
+        {
+            throw new IOException( "While validating project configuration for writing: ", e );
         }
 
-        return builder.build();
+        int basisTimes;
+        int leadCount;
+
+        try
+        {
+            leadCount = (int) Operations.getLeadCountsForProject( projectIdentifier );
+        }
+        catch ( SQLException se )
+        {
+            throw new IOException( "Unable to get lead counts.", se );
+        }
+
+        if ( leadCount > Integer.MAX_VALUE )
+        {
+            throw new IOException( "Cannot use more than "
+                                   + Integer.MAX_VALUE
+                                   + " lead times in a netCDF file." );
+        }
+
+        try
+        {
+            basisTimes = (int) Operations.getBasisTimeCountsForProject( projectIdentifier );
+        }
+        catch ( SQLException se )
+        {
+            throw new IOException( "Unable to get basis time counts.", se );
+        }
+
+        if ( basisTimes > Integer.MAX_VALUE )
+        {
+            throw new IOException( "Cannot use more than "
+                                   + Integer.MAX_VALUE
+                                   + " basis times in a netCDF file." );
+        }
+
+        return NetcdfDoubleScoreWriter.of( projectConfig,
+                                           featureCount,
+                                           basisTimes,
+                                           leadCount,
+                                           thresholdCount,
+                                           metrics );
     }
+    
 
     /**
      * Returns the lead time units associated with the input configuration. Returns {@link ChronoUnit#HOURS} if no

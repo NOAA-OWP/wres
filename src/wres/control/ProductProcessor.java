@@ -2,7 +2,6 @@ package wres.control;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -37,7 +36,7 @@ import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.PairedOutput;
-import wres.io.Operations;
+import wres.io.config.ConfigHelper;
 import wres.io.writing.SharedWriters;
 import wres.io.writing.commaseparated.CommaSeparatedBoxPlotWriter;
 import wres.io.writing.commaseparated.CommaSeparatedDiagramWriter;
@@ -407,8 +406,6 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
     private void buildNetCDFConsumers( SharedWriters sharedWriters )
             throws IOException, MetricConfigException
     {
-        // Build the consumers conditionally
-
         // Register consumers for the NetCDF output type
         if ( writeWhenTrue.test( MetricOutputGroup.DOUBLE_SCORE, DestinationType.NETCDF ) )
         {
@@ -427,49 +424,12 @@ class ProductProcessor implements Consumer<MetricOutputForProjectByTimeAndThresh
                 Set<MetricConstants> metricConstants = this.getResolvedProject()
                                                            .getDoubleScoreMetrics();
 
-                long basisTimes;
-                long leadCount;
-
-                try
-                {
-                    leadCount = Operations.getLeadCountsForProject( this.getResolvedProject()
-                                                                        .getProjectIdentifier() );
-                }
-                catch ( SQLException se )
-                {
-                    throw new IOException( "Unable to get lead counts.", se );
-                }
-
-                if ( leadCount > Integer.MAX_VALUE )
-                {
-                    throw new IOException( "Cannot use more than "
-                                           + Integer.MAX_VALUE
-                                           + " lead times in a netCDF file." );
-                }
-
-                try
-                {
-                    basisTimes = Operations.getBasisTimeCountsForProject( this.getResolvedProject()
-                                                                              .getProjectIdentifier()  );
-                }
-                catch ( SQLException se )
-                {
-                    throw new IOException( "Unable to get basis time counts.", se );
-                }
-
-                if ( basisTimes > Integer.MAX_VALUE )
-                {
-                    throw new IOException( "Cannot use more than "
-                                           + Integer.MAX_VALUE
-                                           + " basis times in a netCDF file." );
-                }
                 NetcdfDoubleScoreWriter netcdfWriter =
-                        NetcdfDoubleScoreWriter.of( this.getProjectConfig(),
-                                                    featureCount,
-                                                    (int) basisTimes,
-                                                    (int) leadCount,
-                                                    thresholdCount,
-                                                    metricConstants );
+                        ConfigHelper.getNetcdfWriter( this.getResolvedProject().getProjectIdentifier(),
+                                                      this.getProjectConfig(),
+                                                      featureCount,
+                                                      thresholdCount,
+                                                      metricConstants );
                 this.resourcesToClose.add( netcdfWriter );
                 doubleScoreConsumers.put( DestinationType.NETCDF,
                                           netcdfWriter );
