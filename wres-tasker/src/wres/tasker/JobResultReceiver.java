@@ -18,27 +18,20 @@ public class JobResultReceiver extends DefaultConsumer
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( JobResultReceiver.class );
 
-    private final String correlationId;
     private final BlockingQueue<Integer> result;
 
     /**
      * Constructs a new instance and records its association to the passed-in channel.
      * @param channel the channel to which this consumer is attached
-     * @param correlationId the correlation id to look for
      * @param result the shared object to write a result to
      */
     JobResultReceiver( Channel channel,
-                       String correlationId,
                        BlockingQueue<Integer> result )
     {
         super( channel );
-        this.correlationId = correlationId;
         this.result = result;
-    }
-
-    private String getCorrelationId()
-    {
-        return this.correlationId;
+        LOGGER.debug( "instantiated with channel {} and result {}",
+                      channel, result );
     }
 
     private BlockingQueue<Integer> getResult()
@@ -52,17 +45,9 @@ public class JobResultReceiver extends DefaultConsumer
                                 AMQP.BasicProperties properties,
                                 byte[] message )
     {
-        if ( properties.getCorrelationId().equals( this.getCorrelationId() ) )
-        {
-            LOGGER.info( "Found a message with matching correlationId {}=={}",
-                         properties.getCorrelationId(), this.getCorrelationId() );
-            // TODO: deserialize the message here, read the actual result value
-            this.getResult().offer( 1 );
-        }
-        else
-        {
-            LOGGER.info( "Found a message with non-matching correlationIds {}!={}",
-                         properties.getCorrelationId(), this.getCorrelationId() );
-        }
+        LOGGER.info( "Heard a message, consumerTag: {}, envelope: {}, properties: {}, message: {}",
+                     consumerTag, envelope, properties, message );
+        // TODO: deserialize the message here, read the actual result value
+        this.getResult().offer( 1 );
     }
 }
