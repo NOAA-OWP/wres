@@ -2,6 +2,7 @@ package wres.tasker;
 
 import java.util.concurrent.BlockingQueue;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DefaultConsumer;
@@ -17,6 +18,8 @@ import org.slf4j.LoggerFactory;
 public class JobResultReceiver extends DefaultConsumer
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( JobResultReceiver.class );
+
+    private static final Integer PARSE_FAILED = 601;
 
     private final BlockingQueue<Integer> result;
 
@@ -47,7 +50,18 @@ public class JobResultReceiver extends DefaultConsumer
     {
         LOGGER.info( "Heard a message, consumerTag: {}, envelope: {}, properties: {}, message: {}",
                      consumerTag, envelope, properties, message );
-        // TODO: deserialize the message here, read the actual result value
-        this.getResult().offer( 1 );
+        wres.messages.generated.JobResult.job_result jobResult;
+
+        try
+        {
+            jobResult = wres.messages.generated.JobResult.job_result.parseFrom(
+                    message );
+            this.getResult().offer( jobResult.getResult() );
+        }
+        catch ( InvalidProtocolBufferException ipbe )
+        {
+            LOGGER.warn( "Could not parse a job result message.", ipbe );
+            this.getResult().offer( PARSE_FAILED );
+        }
     }
 }

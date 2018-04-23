@@ -384,6 +384,8 @@ project(':wres-messages')
 {
     apply plugin: 'com.google.protobuf'
 
+    def generatedDir = "${project.projectDir}/src"
+
     protobuf
     {
         // Automagically download and use the correct protobuf compiler
@@ -391,6 +393,8 @@ project(':wres-messages')
         {
             artifact = 'com.google.protobuf:protoc:3.5.1-1'
         }
+        // So all IDEs/editors can see generated files, use actual src dir:
+        generatedFilesBaseDir = "${generatedDir}"
     }
 
     sourceSets
