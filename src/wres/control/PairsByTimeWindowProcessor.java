@@ -43,7 +43,7 @@ class PairsByTimeWindowProcessor implements Supplier<MetricOutputForProjectByTim
      */
 
     PairsByTimeWindowProcessor( final Future<MetricInput<?>> futureInput,
-                                MetricProcessorForProject metricProcessor )
+                                final MetricProcessorForProject metricProcessor )
     {
         Objects.requireNonNull( futureInput, "Specify a non-null input for the processor." );
         Objects.requireNonNull( metricProcessor, "Specify a non-null metric processor." );

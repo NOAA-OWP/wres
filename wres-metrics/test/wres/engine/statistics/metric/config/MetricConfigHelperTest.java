@@ -34,9 +34,9 @@ import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants;
-import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
 import wres.datamodel.thresholds.ThresholdConstants.ThresholdGroup;
+import wres.datamodel.thresholds.ThresholdsByMetric;
 
 /**
  * Tests the {@link MetricConfigHelper}.

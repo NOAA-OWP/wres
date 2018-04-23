@@ -105,10 +105,10 @@ public class MetricFactory
 {
 
     /**
-     * Instance of the factory.
+     * Singleton instance of the factory.
      */
 
-    private static MetricFactory instance = null;
+    private static final MetricFactory INSTANCE = new MetricFactory();
 
     /**
      * String used in several error messages to denote an unrecognized metric.
@@ -134,23 +134,23 @@ public class MetricFactory
      * Instance of an {@link DataFactory} for building metric outputs.
      */
 
-    private final DataFactory outputFactory;
+    private DataFactory outputFactory;
 
     /**
      * Returns an instance of a {@link MetricFactory}.
      * 
-     * @param dataFactory a {@link DataFactory}
+     * @param outputFactory a {@link DataFactory}
      * @return a {@link MetricFactory}
+     * @throws NullPointerException if the input is null
      */
 
-    public static MetricFactory getInstance( final DataFactory dataFactory )
+    public static MetricFactory getInstance( final DataFactory outputFactory )
     {
-        //Lazy construction
-        if ( Objects.isNull( instance ) )
-        {
-            instance = new MetricFactory( dataFactory );
-        }
-        return instance;
+        Objects.requireNonNull( outputFactory, "Specify a non-null metric output factory to construct the "
+                                                + "metric factory." );
+        INSTANCE.outputFactory = outputFactory;
+        
+        return INSTANCE;
     }
 
     /**
@@ -1755,17 +1755,11 @@ public class MetricFactory
     /**
      * Hidden constructor.
      * 
-     * @param dataFactory a {@link DataFactory}
+     * @param outputFactory a {@link DataFactory}
      */
 
-    private MetricFactory( final DataFactory dataFactory )
+    private MetricFactory()
     {
-        if ( Objects.isNull( dataFactory ) )
-        {
-            throw new IllegalArgumentException( "Specify a non-null metric output factory to construct the "
-                                                + "metric factory." );
-        }
-        this.outputFactory = dataFactory;
     }
 
 }

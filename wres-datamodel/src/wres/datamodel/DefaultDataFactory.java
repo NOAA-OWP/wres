@@ -59,14 +59,14 @@ import wres.datamodel.time.TimeSeriesBuilder;
  * @author jesse
  */
 
-public class DefaultDataFactory implements DataFactory
+public enum DefaultDataFactory implements DataFactory
 {
 
     /**
-     * Instance of the factory.
+     * Instance of the factory using singleton enum pattern for thread-safe, lazy, construction.
      */
 
-    private static DataFactory instance = null;
+    INSTANCE;
 
     /**
      * Returns an instance of a {@link DataFactory}.
@@ -76,17 +76,13 @@ public class DefaultDataFactory implements DataFactory
 
     public static DataFactory getInstance()
     {
-        if ( Objects.isNull( instance ) )
-        {
-            instance = new DefaultDataFactory();
-        }
-        return instance;
+        return INSTANCE;
     }
 
     @Override
     public MetadataFactory getMetadataFactory()
     {
-        return DefaultMetadataFactory.getInstance();
+        return DefaultMetadataFactory.INSTANCE;
     }
 
     @Override
