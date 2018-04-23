@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package wres.messages.generated;
 
-message JobResult
+message job_result
 {
     int32 result = 1;
 }
