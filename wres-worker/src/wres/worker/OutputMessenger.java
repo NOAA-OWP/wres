@@ -10,7 +10,6 @@ import java.util.function.Consumer;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
-import com.rabbitmq.client.ConnectionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,22 +17,34 @@ public class OutputMessenger implements Consumer<InputStream>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( OutputMessenger.class );
 
-    private final ConnectionFactory connectionFactory;
-    private final String exchangeName;
-    private final String jobId;
+    /** Flag to indicate whether to also send output to system.out, system.err*/
+    private static final boolean PASS_THROUGH = true;
 
-    OutputMessenger( ConnectionFactory connectionFactory,
-                     String exchangeName,
-                     String jobId )
+    public enum WhichOutput
     {
-        this.connectionFactory = connectionFactory;
-        this.exchangeName = exchangeName;
-        this.jobId = jobId;
+        STDOUT,
+        STDERR;
     }
 
-    private ConnectionFactory getConnectionFactory()
+    private final Connection connection;
+    private final String exchangeName;
+    private final String jobId;
+    private final WhichOutput whichOutput;
+
+    OutputMessenger( Connection connection,
+                     String exchangeName,
+                     String jobId,
+                     WhichOutput whichOutput )
     {
-        return this.connectionFactory;
+        this.connection = connection;
+        this.exchangeName = exchangeName;
+        this.jobId = jobId;
+        this.whichOutput = whichOutput;
+    }
+
+    private Connection getConnection()
+    {
+        return this.connection;
     }
 
     private String getExchangeName()
@@ -46,31 +57,29 @@ public class OutputMessenger implements Consumer<InputStream>
         return this.jobId;
     }
 
+    private WhichOutput getWhichOutput()
+    {
+        return this.whichOutput;
+    }
+
     private String getRoutingKey()
     {
-        return "job." + this.getJobId() + ".stdout";
+        return "job." + this.getJobId() + "." + this.getWhichOutput().name();
     }
 
     @Override
     public void accept( InputStream inputStream )
     {
-        String line;
-
         try ( BufferedReader reader = new BufferedReader( new InputStreamReader( inputStream ) );
-              Connection connection = this.getConnectionFactory().newConnection();
-              Channel channel = connection.createChannel() )
+              Channel channel = this.getConnection().createChannel() )
         {
             String exchangeName = this.getExchangeName();
             String exchangeType = "topic";
 
             channel.exchangeDeclare( exchangeName, exchangeType );
 
-            do
-            {
-                line = reader.readLine();
-                this.sendLine( channel, line );
-            }
-            while ( line != null );
+            reader.lines()
+                  .forEach( line -> this.sendLine( channel, line ) );
         }
         catch ( TimeoutException te )
         {
@@ -81,6 +90,7 @@ public class OutputMessenger implements Consumer<InputStream>
             LOGGER.warn( "Failed to read a line,", ioe );
         }
     }
+
 
     /**
      * Attempts to send a message with a single line of output
@@ -105,6 +115,17 @@ public class OutputMessenger implements Consumer<InputStream>
         catch ( IOException ioe )
         {
             LOGGER.warn( "Sending this output failed: {}", line, ioe );
+        }
+
+        // We may also wish to see output on standard out and standard err...
+        if ( PASS_THROUGH && this.getWhichOutput().equals( WhichOutput.STDOUT ) )
+        {
+            System.out.println( line );
+        }
+        else if ( PASS_THROUGH
+                  && this.getWhichOutput().equals( WhichOutput.STDERR ) )
+        {
+            System.err.println( line );
         }
     }
 }

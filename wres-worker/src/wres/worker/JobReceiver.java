@@ -8,6 +8,7 @@ import java.util.List;
 
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
 import org.slf4j.Logger;
@@ -75,12 +76,28 @@ class JobReceiver extends DefaultConsumer
             return;
         }
 
+        // Set up way to publish the standard output of the process to broker
+        OutputMessenger stdoutMessenger =
+                new OutputMessenger( this.getChannel().getConnection(),
+                                     properties.getReplyTo(),
+                                     properties.getCorrelationId(),
+                                     OutputMessenger.WhichOutput.STDOUT );
+        OutputMessenger stderrMessenger =
+                new OutputMessenger( this.getChannel().getConnection(),
+                                     properties.getReplyTo(),
+                                     properties.getCorrelationId(),
+                                     OutputMessenger.WhichOutput.STDERR );
+
         // Do the execution requested from the queue
         Process process;
 
         try
         {
             process = processBuilder.start();
+
+            // Bind process outputs to message publishers
+            stderrMessenger.accept( process.getErrorStream() );
+            stdoutMessenger.accept( process.getInputStream() );
         }
         catch ( IOException ioe )
         {
@@ -165,7 +182,9 @@ class JobReceiver extends DefaultConsumer
         ProcessBuilder processBuilder = new ProcessBuilder( result );
 
         // Cause process builder to echo the subprocess's output when started.
-        processBuilder.inheritIO();
+        //processBuilder.inheritIO();
+        // May not be able to set inheritIO when capturing stdout and stderr
+
 
         // Cause process builder to get java options if needed
         if ( javaOpts != null )
