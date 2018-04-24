@@ -1,15 +1,19 @@
 package wres.tasker;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.StringJoiner;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import com.rabbitmq.client.AMQP;
@@ -35,6 +39,12 @@ class JobResults
 
     /** A magic value placeholder for job registered-but-not-done */
     private static final Integer JOB_NOT_DONE_YET = Integer.MIN_VALUE + 1;
+
+    /** A shared bag of job standard out */
+    private static final ConcurrentMap<String, List<String>> JOB_STDOUT_BY_ID = new ConcurrentHashMap<>();
+
+    /** A shared bag of job standard error */
+    private static final ConcurrentMap<String, List<String>> JOB_STDERR_BY_ID = new ConcurrentHashMap<>();
 
     /**
      * How many job results to look for at once (should probably be at least as
@@ -200,7 +210,7 @@ class JobResults
         @Override
         public String toString()
         {
-            StringJoiner result = new StringJoiner( ", ", "JobResults with ", "" );
+            StringJoiner result = new StringJoiner( ", ", "ResultWatcher with ", "" );
             result.add( "connection=" + this.getConnection() );
             result.add( "jobStatusExchangeName=" + this.getJobStatusExchangeName() );
             result.add( "jobId=" + this.getJobId() );
@@ -208,6 +218,154 @@ class JobResults
         }
     }
 
+
+    /**
+     * Watches for the stdout|stderr of a job regardless of if anyone actually
+     * is looking for it. Idea is to pro-actively seek the results of jobs
+     * on the service end and cache them before the web service is called.
+     */
+
+    private static class OutputWatcher implements Callable<List<String>>
+    {
+        public enum WhichOutput
+        {
+            STDOUT,
+            STDERR;
+        }
+
+        private final Connection connection;
+        private final String jobStatusExchangeName;
+        private final String jobId;
+        private final WhichOutput whichOutput;
+
+        /**
+         * @param connection shared connection
+         * @param jobStatusExchangeName the exchange name to look in
+         * @param jobId the job identifier to look for
+         */
+        OutputWatcher( Connection connection,
+                       String jobStatusExchangeName,
+                       String jobId,
+                       WhichOutput whichOutput )
+        {
+            this.connection = connection;
+            this.jobStatusExchangeName = jobStatusExchangeName;
+            this.jobId = jobId;
+            this.whichOutput = whichOutput;
+            LOGGER.debug( "Instantiated {}", this );
+        }
+
+        private Connection getConnection()
+        {
+            return this.connection;
+        }
+
+        private String getJobStatusExchangeName()
+        {
+            return this.jobStatusExchangeName;
+        }
+
+        private String getJobId()
+        {
+            return this.jobId;
+        }
+
+        private WhichOutput getWhichOutput()
+        {
+            return this.whichOutput;
+        }
+
+        /**
+         * @return the stdout|stderr of the job id (correlation id) or potentially empty list when interrupted
+         * @throws IOException when queue declaration fails
+         */
+
+        public List<String> call() throws IOException, TimeoutException
+        {
+            List<String> sharedList = new CopyOnWriteArrayList<>();
+
+            // Store shared list to the static bag-o-state.
+            if ( this.getWhichOutput().equals( WhichOutput.STDOUT ) )
+            {
+                JOB_STDOUT_BY_ID.put( this.getJobId(), sharedList );
+            }
+            else if ( this.getWhichOutput().equals( WhichOutput.STDERR ) )
+            {
+                JOB_STDERR_BY_ID.put( this.getJobId(), sharedList );
+            }
+            else
+            {
+                throw new UnsupportedOperationException( "Output has to be stderr or stdout." );
+            }
+
+            BlockingQueue<String> oneLineOfOutput = new ArrayBlockingQueue<>( 1 );
+
+            String exchangeName = this.getJobStatusExchangeName();
+            String exchangeType = "topic";
+            String bindingKey = "job." + this.getJobId() + "." + this.getWhichOutput().name();
+
+            try ( Channel channel = this.getConnection().createChannel() )
+            {
+                channel.exchangeDeclare( exchangeName, exchangeType );
+
+                // As the consumer, I want an exclusive queue for me.
+                String queueName = channel.queueDeclare().getQueue();
+                channel.queueBind( queueName, exchangeName, bindingKey );
+
+                JobOutputReceiver jobOutputReceiver =
+                        new JobOutputReceiver( channel,
+                                               oneLineOfOutput );
+
+                boolean timedOut = false;
+
+                while ( !timedOut )
+                {
+                    channel.basicConsume( queueName,
+                                          true,
+                                          jobOutputReceiver );
+
+                    // Give up waiting if we don't get any output for some time.
+                    String oneLine = oneLineOfOutput.poll( 10, TimeUnit.MINUTES );
+
+                    if ( oneLine != null )
+                    {
+                        sharedList.add( oneLine );
+                    }
+                    else
+                    {
+                        timedOut = true;
+                        LOGGER.info( "Finished waiting for job {} {}",
+                                     jobId, whichOutput );
+                    }
+                }
+            }
+            catch ( InterruptedException ie )
+            {
+                LOGGER.warn( "Interrupted while getting output for job {}", jobId );
+                Thread.currentThread().interrupt();
+            }
+            catch ( IOException ioe )
+            {
+                // Since we may or may not actually consume result, log exception here
+                LOGGER.warn( "When attempting to get job results message using {}:",
+                             this, ioe );
+                throw ioe;
+            }
+
+
+            return sharedList;
+        }
+
+        @Override
+        public String toString()
+        {
+            StringJoiner result = new StringJoiner( ", ", "OutputWatcher with ", "" );
+            result.add( "connection=" + this.getConnection() );
+            result.add( "jobStatusExchangeName=" + this.getJobStatusExchangeName() );
+            result.add( "jobId=" + this.getJobId() );
+            return result.toString();
+        }
+    }
 
     /**
      * Register a job request id with JobResults so that results are able to
@@ -237,6 +395,17 @@ class JobResults
         ResultWatcher resultWatcher = new ResultWatcher( this.getConnection(),
                                                          jobStatusExchangeName,
                                                          jobId );
+        OutputWatcher stdoutWatcher = new OutputWatcher( this.getConnection(),
+                                                         jobStatusExchangeName,
+                                                         jobId,
+                                                         OutputWatcher.WhichOutput.STDOUT );
+        OutputWatcher stderrWatcher = new OutputWatcher( this.getConnection(),
+                                                         jobStatusExchangeName,
+                                                         jobId,
+                                                         OutputWatcher.WhichOutput.STDERR );
+
+        EXECUTOR.submit( stdoutWatcher );
+        EXECUTOR.submit( stderrWatcher );
         return EXECUTOR.submit( resultWatcher );
     }
 
@@ -266,4 +435,29 @@ class JobResults
         }
     }
 
+
+    /**
+     * Get the plain text of standard out for a given wres job
+     * @param jobId the job to look for
+     * @return the standard out from the job
+     */
+
+    static String getJobStdout( String jobId )
+    {
+        List<String> stdout = JOB_STDOUT_BY_ID.get( jobId );
+
+        if ( stdout == null )
+        {
+            return "No job id '" + jobId + "' found.'";
+        }
+
+        StringJoiner result = new StringJoiner( System.lineSeparator() );
+
+        for ( String s : stdout )
+        {
+            result.add( s );
+        }
+
+        return result.toString();
+    }
 }
