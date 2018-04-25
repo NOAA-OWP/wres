@@ -9,7 +9,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -227,6 +226,10 @@ class JobResults
 
     private static class OutputWatcher implements Callable<List<String>>
     {
+        private static final int LOCAL_Q_SIZE = 10;
+        private static final int JOB_WAIT_MINUTES = 5;
+        private static final int MESSAGE_WAIT_SECONDS = 5;
+
         public enum WhichOutput
         {
             STDOUT,
@@ -298,7 +301,7 @@ class JobResults
                 throw new UnsupportedOperationException( "Output has to be stderr or stdout." );
             }
 
-            BlockingQueue<String> oneLineOfOutput = new ArrayBlockingQueue<>( 1 );
+            BlockingQueue<String> oneLineOfOutput = new ArrayBlockingQueue<>( LOCAL_Q_SIZE );
 
             String exchangeName = this.getJobStatusExchangeName();
             String exchangeType = "topic";
@@ -324,12 +327,33 @@ class JobResults
                                           true,
                                           jobOutputReceiver );
 
-                    // Give up waiting if we don't get any output for some time.
-                    String oneLine = oneLineOfOutput.poll( 10, TimeUnit.MINUTES );
+                    LOGGER.debug( "Consumed from {}, waiting for result.", queueName );
 
-                    if ( oneLine != null )
+                    // One call to .basicConsume can result in many messages
+                    // being received by our jobOutputReceiver. Look for them.
+                    // This still seems uncertain and finnicky, but works?
+                    boolean mayBeMoreMessages = true;
+
+                    while ( mayBeMoreMessages )
                     {
-                        sharedList.add( oneLine );
+                        String oneMoreLine = oneLineOfOutput.poll( MESSAGE_WAIT_SECONDS, TimeUnit.SECONDS );
+
+                        if ( oneMoreLine != null )
+                        {
+                            sharedList.add( oneMoreLine );
+                        }
+                        else
+                        {
+                            mayBeMoreMessages = false;
+                        }
+                    }
+
+                    // Give up waiting if we don't get any output for some time.
+                    String oneLastLine = oneLineOfOutput.poll( JOB_WAIT_MINUTES, TimeUnit.MINUTES );
+
+                    if ( oneLastLine != null )
+                    {
+                        sharedList.add( oneLastLine );
                     }
                     else
                     {
@@ -454,6 +478,32 @@ class JobResults
         StringJoiner result = new StringJoiner( System.lineSeparator() );
 
         for ( String s : stdout )
+        {
+            result.add( s );
+        }
+
+        return result.toString();
+    }
+
+
+    /**
+     * Get the plain text of standard err for a given wres job
+     * @param jobId the job to look for
+     * @return the standard err from the job
+     */
+
+    static String getJobStderr( String jobId )
+    {
+        List<String> stderr = JOB_STDERR_BY_ID.get( jobId );
+
+        if ( stderr == null )
+        {
+            return "No job id '" + jobId + "' found.'";
+        }
+
+        StringJoiner result = new StringJoiner( System.lineSeparator() );
+
+        for ( String s : stderr )
         {
             result.add( s );
         }
