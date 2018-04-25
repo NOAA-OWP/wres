@@ -99,7 +99,7 @@ public class Control implements Function<String[], Integer>
         ThreadFactory productFactory = runnable -> new Thread( runnable, "Product Thread" );
         
         // Processes features
-// !!!!!UNCOMMENT NEXT BLOCK TO TEST AYNCHRONOUS EXECUTION OF FEATURES!!!!!                
+// !!!!!UNCOMMENT NEXT BLOCK TO TEST ASYNCHRONOUS EXECUTION OF FEATURES!!!!!                
 //        ThreadPoolExecutor featureExecutor = new ThreadPoolExecutor( SystemSettings.maximumThreadCount(),
 //                                                                  SystemSettings.maximumThreadCount(),
 //                                                                  SystemSettings.poolObjectLifespan(),
