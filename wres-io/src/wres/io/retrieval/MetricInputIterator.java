@@ -16,8 +16,8 @@ import org.slf4j.Logger;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
-import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.inputs.MetricInput;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.UnitConversions;
@@ -364,12 +364,11 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
 
             if (!next && this.iterationCount == 0)
             {
-                String message = "Due to either the configuration or the data, "
-                                 + "no metric input could be created for the "
-                                 + "feature: " +
-                                 ConfigHelper.getFeatureDescription( this.getFeature() );
+                String message = "There was not enough data to evaluate feature: " 
+                        + ConfigHelper.getFeatureDescription( this.getFeature() );
 
-                throw new IterationFailedException( message );
+                // Flag this to the caller as a NoDataException 
+                throw new IterationFailedException( message, new NoDataException( message ) );
             }
         }
         catch ( SQLException | IOException e )
