@@ -1,6 +1,7 @@
 package wres.tasker;
 
 import java.io.IOException;
+import java.util.Random;
 import java.util.StringJoiner;
 import java.util.concurrent.TimeoutException;
 import javax.ws.rs.Consumes;
@@ -12,6 +13,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
@@ -31,12 +33,21 @@ public class WresJob
     // Using a member variable fails, make it same across instances.
     private static final ConnectionFactory CONNECTION_FACTORY = new ConnectionFactory();
 
+    private static final Random RANDOM = new Random( System.currentTimeMillis() );
+
     static
     {
         // Determine the actual broker name, whether from -D or default
         String brokerHost = WresJob.getBrokerHost();
         CONNECTION_FACTORY.setHost( brokerHost );
     }
+
+    private static final JobResults JOB_RESULTS = new JobResults( CONNECTION_FACTORY );
+
+    private static Connection connection = null;
+
+    /** Guards connection */
+    private static final Object CONNECTION_LOCK = new Object();
 
     @GET
     @Produces( MediaType.TEXT_PLAIN )
@@ -62,9 +73,11 @@ public class WresJob
                             + "-Dwres.username=" + databaseUser + " "
                             + "-Dwres.password=" + databasePassword );
 
+        String jobId;
+
         try
         {
-            sendMessage( messageBuilder.toString() );
+            jobId = sendMessage( messageBuilder.toString() );
         }
         catch ( IOException | TimeoutException e )
         {
@@ -72,26 +85,58 @@ public class WresJob
             return this.internalServerError();
         }
 
-        return Response.ok( "<!DOCTYPE html><html><head><title>Job received.</title></head><body><h1>Your job has been received for processing.</h1></body></html>" )
+        String statusUrl = "/job/" + jobId + "/status";
+        return Response.ok( "<!DOCTYPE html><html><head><title>Job received.</title></head><body><h1>Your job has been received for processing.</h1><p>See <a href=\""
+                            + statusUrl + "\">" + statusUrl + "</a></body></html>" )
                        .build();
     }
 
-    private void sendMessage( String message )
+
+    /**
+     *
+     * @param message
+     * @throws IOException when connectivity, queue declaration, or publication fails
+     * @throws TimeoutException
+     */
+    private String sendMessage( String message )
             throws IOException, TimeoutException
     {
-        try ( Connection connection = CONNECTION_FACTORY.newConnection();
-              Channel channel = connection.createChannel() )
+        // Use a shared connection across requests.
+        Connection connection = WresJob.getConnection();
+
+        try ( Channel channel = connection.createChannel() )
         {
+            long someRandomNumber = RANDOM.nextLong();
+            String jobId = String.valueOf( someRandomNumber );
+
             channel.queueDeclare( SEND_QUEUE_NAME, false, false, false, null );
 
-                channel.basicPublish( "",
-                                      SEND_QUEUE_NAME,
-                                      null,
-                                      message.getBytes() );
-            if ( LOGGER.isInfoEnabled() )
-            {
-                LOGGER.info( "I sent this message to the queue.", message );
-            }
+            // Tell the worker where to send results.
+            String jobStatusExchange = JobResults.getJobStatusExchangeName();
+            AMQP.BasicProperties properties =
+                    new AMQP.BasicProperties
+                            .Builder()
+                            .replyTo( jobStatusExchange )
+                            .correlationId( jobId )
+                            .build();
+
+            // Inform the JobResults class to start looking for correlationId.
+            // Share a connection, but not a channel, aim for channel-per-thread.
+            // I think something needs to be watching the queue or else messages
+            // end up dropping on the floor, that is why this is called prior
+            // to even publishing the job at all. JobResults is a bag-o-state.
+
+            JOB_RESULTS.registerjobId( jobStatusExchange,
+                                       jobId );
+
+            channel.basicPublish( "",
+                                  SEND_QUEUE_NAME,
+                                  properties,
+                                  message.getBytes() );
+
+            LOGGER.info( "I sent this message to queue '{}' with properties '{}': {}.",
+                         SEND_QUEUE_NAME, properties, message );
+            return jobId;
         }
     }
 
@@ -123,4 +168,17 @@ public class WresJob
         }
     }
 
+    private static Connection getConnection()
+            throws IOException, TimeoutException
+    {
+        synchronized( CONNECTION_LOCK )
+        {
+            if ( WresJob.connection == null )
+            {
+                WresJob.connection = CONNECTION_FACTORY.newConnection();
+            }
+        }
+
+        return WresJob.connection;
+    }
 }

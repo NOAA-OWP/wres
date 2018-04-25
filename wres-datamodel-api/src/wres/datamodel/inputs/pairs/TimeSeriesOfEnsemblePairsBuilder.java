@@ -1,25 +1,24 @@
-package wres.datamodel.inputs.pairs.builders;
+package wres.datamodel.inputs.pairs;
 
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
+import wres.datamodel.inputs.MetricInputBuilder;
 import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.EnsemblePairs;
-import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
-import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairs;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeSeriesBuilder;
 
 /**
  * <p>A builder for a possibly irregular {@link TimeSeries} of {@link EnsemblePairs}.</p>
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.4
  */
 
-public interface TimeSeriesOfEnsemblePairsBuilder extends PairedInputBuilder<PairOfDoubleAndVectorOfDoubles>
+public interface TimeSeriesOfEnsemblePairsBuilder
+        extends MetricInputBuilder<PairOfDoubleAndVectorOfDoubles>, TimeSeriesBuilder<PairOfDoubleAndVectorOfDoubles>
 {
 
     /**
@@ -33,9 +32,8 @@ public interface TimeSeriesOfEnsemblePairsBuilder extends PairedInputBuilder<Pai
     default TimeSeriesOfEnsemblePairsBuilder addTimeSeriesData( Instant basisTime,
                                                                 List<Event<PairOfDoubleAndVectorOfDoubles>> values )
     {
-        List<Event<List<Event<PairOfDoubleAndVectorOfDoubles>>>> input = new ArrayList<>();
-        input.add( Event.of( basisTime, values ) );
-        return addTimeSeriesData( input );
+        TimeSeriesBuilder.super.addTimeSeriesData( basisTime, values );
+        return this;
     }
 
     /**
@@ -52,6 +50,46 @@ public interface TimeSeriesOfEnsemblePairsBuilder extends PairedInputBuilder<Pai
         List<Event<List<Event<PairOfDoubleAndVectorOfDoubles>>>> input = new ArrayList<>();
         input.add( Event.of( basisTime, values ) );
         return addTimeSeriesDataForBaseline( input );
+    }
+
+    /**
+     * Adds a time-series to the builder.
+     * 
+     * @param timeSeries the time-series
+     * @return the builder
+     * @throws MetricInputException if the specified input is inconsistent with any existing input
+     * @throws NullPointerException if the input is null
+     */
+
+    default TimeSeriesOfEnsemblePairsBuilder addTimeSeries( TimeSeries<PairOfDoubleAndVectorOfDoubles> timeSeries )
+    {
+        TimeSeriesBuilder.super.addTimeSeries( timeSeries );
+        return this;
+    }
+
+    /**
+     * Adds a time-series to the builder for a baseline dataset.
+     * 
+     * @param timeSeries the time-series
+     * @return the builder
+     * @throws MetricInputException if the specified input is inconsistent with any existing input
+     * @throws NullPointerException if the input is null
+     */
+
+    default TimeSeriesOfEnsemblePairsBuilder
+            addTimeSeriesForBaseline( TimeSeries<PairOfDoubleAndVectorOfDoubles> timeSeries )
+    {
+        Objects.requireNonNull( timeSeries, "Specify non-null time-series input." );
+
+        for ( TimeSeries<PairOfDoubleAndVectorOfDoubles> next : timeSeries.basisTimeIterator() )
+        {
+            Instant basisTime = next.getEarliestBasisTime();
+            List<Event<PairOfDoubleAndVectorOfDoubles>> values = new ArrayList<>();
+            next.timeIterator().forEach( values::add );
+            this.addTimeSeriesDataForBaseline( basisTime, values );
+        }
+
+        return this;
     }
 
     /**
@@ -83,7 +121,7 @@ public interface TimeSeriesOfEnsemblePairsBuilder extends PairedInputBuilder<Pai
      */
 
     TimeSeriesOfEnsemblePairsBuilder addTimeSeries( TimeSeriesOfEnsemblePairs timeSeries );
-    
+
     /**
      * Adds a time-series to the builder as a baseline dataset only. Any data associated with the 
      * {@link TimeSeriesOfEnsemblePairs#getBaselineData()} of the input is ignored.
@@ -93,7 +131,7 @@ public interface TimeSeriesOfEnsemblePairsBuilder extends PairedInputBuilder<Pai
      * @throws MetricInputException if the specified input is inconsistent with any existing input
      */
 
-    TimeSeriesOfEnsemblePairsBuilder addTimeSeriesForBaseline( TimeSeriesOfEnsemblePairs timeSeries );    
+    TimeSeriesOfEnsemblePairsBuilder addTimeSeriesForBaseline( TimeSeriesOfEnsemblePairs timeSeries );
 
     /**
      * Builds a time-series.

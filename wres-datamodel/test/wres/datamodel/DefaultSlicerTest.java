@@ -19,8 +19,6 @@ import org.junit.rules.ExpectedException;
 
 import wres.datamodel.SafeTimeSeriesOfEnsemblePairs.SafeTimeSeriesOfEnsemblePairsBuilder;
 import wres.datamodel.SafeTimeSeriesOfSingleValuedPairs.SafeTimeSeriesOfSingleValuedPairsBuilder;
-import wres.datamodel.ThresholdConstants.Operator;
-import wres.datamodel.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.PairOfBooleans;
@@ -33,6 +31,9 @@ import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
+import wres.datamodel.thresholds.Threshold;
+import wres.datamodel.thresholds.ThresholdConstants.Operator;
+import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 
@@ -257,7 +258,7 @@ public final class DefaultSlicerTest
         //Test without baseline
         DichotomousPairs actualNoBase = slicer.transform( metIn.ofSingleValuedPairs( values, meta ), mapper );
         assertTrue( "The transformed test data does not match the benchmark.",
-                    actualNoBase.getData().equals( expectedNoBase.getData() ) );
+                    actualNoBase.getRawData().equals( expectedNoBase.getRawData() ) );
         //Test baseline
         DichotomousPairs actualBase =
                 slicer.transform( metIn.ofSingleValuedPairs( values, values, meta, meta, null ),
@@ -600,7 +601,7 @@ public final class DefaultSlicerTest
         SingleValuedPairs sliced = slicer.filter( pairs, Slicer.leftAndRight( Double::isFinite ), Double::isFinite );
 
         //Test with baseline
-        assertTrue( "The sliced data does not match the benchmark.", sliced.getData().equals( expectedValues ) );
+        assertTrue( "The sliced data does not match the benchmark.", sliced.getRawData().equals( expectedValues ) );
         assertTrue( "The sliced baseline data does not match the benchmark.",
                     sliced.getDataForBaseline().equals( expectedValues ) );
         assertTrue( "The sliced climatology data does not match the benchmark.",
@@ -611,13 +612,13 @@ public final class DefaultSlicerTest
                                           .getDoubles(),
                                     climatologyExpected.getDoubles() ) );
         assertTrue( "Unexpected equality of the sliced and unsliced data.",
-                    !sliced.getData().equals( values ) );
+                    !sliced.getRawData().equals( values ) );
         //Test without baseline or climatology
         SingleValuedPairs pairsNoBase = metIn.ofSingleValuedPairs( values, meta );
         SingleValuedPairs slicedNoBase = slicer.filter( pairsNoBase, Slicer.leftAndRight( Double::isFinite ), null );
 
         assertTrue( "The sliced data without a baseline does not match the benchmark.",
-                    slicedNoBase.getData().equals( expectedValues ) );
+                    slicedNoBase.getRawData().equals( expectedValues ) );
     }
 
     /**
@@ -650,7 +651,7 @@ public final class DefaultSlicerTest
         EnsemblePairs sliced = slicer.filter( pairs, slicer.leftAndEachOfRight( Double::isFinite ), Double::isFinite );
 
         //Test with baseline
-        assertTrue( "The sliced data does not match the benchmark.", sliced.getData().equals( expectedValues ) );
+        assertTrue( "The sliced data does not match the benchmark.", sliced.getRawData().equals( expectedValues ) );
         assertTrue( "The sliced baseline data does not match the benchmark.",
                     sliced.getDataForBaseline().equals( expectedValues ) );
         assertTrue( "The sliced climatology data does not match the benchmark.",
@@ -661,13 +662,13 @@ public final class DefaultSlicerTest
                                           .getDoubles(),
                                     climatologyExpected.getDoubles() ) );
         assertTrue( "Unexpected equality of the sliced and unsliced data.",
-                    !sliced.getData().equals( values ) );
+                    !sliced.getRawData().equals( values ) );
         //Test without baseline or climatology
         EnsemblePairs pairsNoBase = metIn.ofEnsemblePairs( values, meta );
         EnsemblePairs slicedNoBase = slicer.filter( pairsNoBase, slicer.leftAndEachOfRight( Double::isFinite ), null );
 
         assertTrue( "The sliced data without a baseline does not match the benchmark.",
-                    slicedNoBase.getData().equals( expectedValues ) );
+                    slicedNoBase.getRawData().equals( expectedValues ) );
     }
 
     /**
@@ -716,7 +717,7 @@ public final class DefaultSlicerTest
                                null );
 
         assertTrue( "The filtered time-series does not match the benchmark.",
-                    firstResult.getData().equals( firstSeries.getData() ) );
+                    firstResult.getRawData().equals( firstSeries.getRawData() ) );
 
         // Filter all values where the left side is greater than 3
         TimeSeriesOfSingleValuedPairs secondResult =

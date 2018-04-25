@@ -13,7 +13,10 @@ import java.util.stream.Collectors;
 
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.datamodel.ThresholdConstants.ThresholdGroup;
+import wres.datamodel.thresholds.OneOrTwoThresholds;
+import wres.datamodel.thresholds.Threshold;
+import wres.datamodel.thresholds.ThresholdsByMetric;
+import wres.datamodel.thresholds.ThresholdConstants.ThresholdGroup;
 
 /**
  * Immutable implementation of {@link ThresholdsByMetric}.

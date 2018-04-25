@@ -23,7 +23,6 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.SafeTimeSeriesOfEnsemblePairs.SafeTimeSeriesOfEnsemblePairsBuilder;
 import wres.datamodel.SafeTimeSeriesOfSingleValuedPairs.SafeTimeSeriesOfSingleValuedPairsBuilder;
-import wres.datamodel.ThresholdConstants.ThresholdType;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
@@ -33,10 +32,13 @@ import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
-import wres.datamodel.inputs.pairs.builders.TimeSeriesOfSingleValuedPairsBuilder;
+import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.ScoreOutput;
+import wres.datamodel.thresholds.OneOrTwoThresholds;
+import wres.datamodel.thresholds.Threshold;
+import wres.datamodel.thresholds.ThresholdConstants.ThresholdType;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 
@@ -47,20 +49,20 @@ import wres.datamodel.time.TimeSeries;
  * @author james.brown@hydrosolved.com
  */
 
-class DefaultSlicer implements Slicer
+enum DefaultSlicer implements Slicer
 {
 
+    /**
+     * Instance of the factory using singleton enum pattern for thread-safe, lazy, construction.
+     */
+
+    INSTANCE;
+    
     /**
      * Data factory for transformations.
      */
 
     private final DataFactory dataFac;
-
-    /**
-     * Instance of the slicer.
-     */
-
-    private static DefaultSlicer instance = null;
 
     /**
      * Returns an instance of a {@link Slicer}.
@@ -70,11 +72,7 @@ class DefaultSlicer implements Slicer
 
     public static Slicer getInstance()
     {
-        if ( Objects.isNull( instance ) )
-        {
-            instance = new DefaultSlicer();
-        }
-        return instance;
+        return INSTANCE;
     }
 
     /**
@@ -99,7 +97,7 @@ class DefaultSlicer implements Slicer
     {
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
 
-        return input.getData().stream().mapToDouble( PairOfDoubles::getItemOne ).toArray();
+        return input.getRawData().stream().mapToDouble( PairOfDoubles::getItemOne ).toArray();
     }
 
     @Override
@@ -107,7 +105,7 @@ class DefaultSlicer implements Slicer
     {
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
 
-        return input.getData().stream().mapToDouble( PairOfDoubleAndVectorOfDoubles::getItemOne ).toArray();
+        return input.getRawData().stream().mapToDouble( PairOfDoubleAndVectorOfDoubles::getItemOne ).toArray();
     }
 
     @Override
@@ -115,7 +113,7 @@ class DefaultSlicer implements Slicer
     {
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
 
-        return input.getData().stream().mapToDouble( PairOfDoubles::getItemTwo ).toArray();
+        return input.getRawData().stream().mapToDouble( PairOfDoubles::getItemTwo ).toArray();
     }
 
     @Override
@@ -128,7 +126,7 @@ class DefaultSlicer implements Slicer
 
         Objects.requireNonNull( condition, NULL_PREDICATE_EXCEPTION );
 
-        List<PairOfDoubles> mainPairs = input.getData();
+        List<PairOfDoubles> mainPairs = input.getRawData();
         List<PairOfDoubles> mainPairsSubset = mainPairs.stream().filter( condition ).collect( Collectors.toList() );
 
         //Filter climatology as required
@@ -164,7 +162,7 @@ class DefaultSlicer implements Slicer
 
         Objects.requireNonNull( condition, NULL_PREDICATE_EXCEPTION );
 
-        List<PairOfDoubleAndVectorOfDoubles> mainPairs = input.getData();
+        List<PairOfDoubleAndVectorOfDoubles> mainPairs = input.getRawData();
         List<PairOfDoubleAndVectorOfDoubles> mainPairsSubset =
                 mainPairs.stream().filter( condition ).collect( Collectors.toList() );
 
@@ -202,7 +200,7 @@ class DefaultSlicer implements Slicer
 
         Objects.requireNonNull( mapper, NULL_MAPPER_EXCEPTION );
 
-        List<PairOfDoubleAndVectorOfDoubles> mainPairs = input.getData();
+        List<PairOfDoubleAndVectorOfDoubles> mainPairs = input.getRawData();
         List<PairOfDoubleAndVectorOfDoubles> mainPairsSubset = new ArrayList<>();
 
         for ( PairOfDoubleAndVectorOfDoubles next : mainPairs )
@@ -245,10 +243,9 @@ class DefaultSlicer implements Slicer
         return dataFac.ofEnsemblePairs( mainPairsSubset, input.getMetadata(), climatology );
     }
 
-
     @Override
     public TimeSeriesOfSingleValuedPairs filter( TimeSeriesOfSingleValuedPairs input,
-                                                 Predicate<TimeSeriesOfSingleValuedPairs> condition,
+                                                 Predicate<TimeSeries<PairOfDoubles>> condition,
                                                  DoublePredicate applyToClimatology )
     {
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
@@ -263,10 +260,9 @@ class DefaultSlicer implements Slicer
         // Filter the main pairs and add them
         for ( TimeSeries<PairOfDoubles> next : input.basisTimeIterator() )
         {
-            TimeSeriesOfSingleValuedPairs nextPair = (TimeSeriesOfSingleValuedPairs) next;
-            if ( condition.test( nextPair ) )
+            if ( condition.test( next ) )
             {
-                builder.addTimeSeries( nextPair );
+                builder.addTimeSeries( next );
             }
         }
 
@@ -286,10 +282,9 @@ class DefaultSlicer implements Slicer
 
             for ( TimeSeries<PairOfDoubles> next : input.getBaselineData().basisTimeIterator() )
             {
-                TimeSeriesOfSingleValuedPairs nextPair = (TimeSeriesOfSingleValuedPairs) next;
-                if ( condition.test( nextPair ) )
+                if ( condition.test( next ) )
                 {
-                    builder.addTimeSeriesForBaseline( nextPair );
+                    builder.addTimeSeriesForBaseline( next );
                 }
             }
 
@@ -303,22 +298,21 @@ class DefaultSlicer implements Slicer
                                                            Predicate<Duration> duration )
     {
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
-        
+
         Objects.requireNonNull( duration, NULL_PREDICATE_EXCEPTION );
 
         //Iterate through the durations and append to the builder
         //Throw an exception if attempting to construct an irregular time-series
         SafeTimeSeriesOfSingleValuedPairsBuilder builder = new SafeTimeSeriesOfSingleValuedPairsBuilder();
-        
+
         // Set the metadata explicitly in case of an empty slice
         builder.setMetadata( input.getMetadata() );
-        
+
         for ( TimeSeries<PairOfDoubles> a : input.durationIterator() )
         {
-            TimeSeriesOfSingleValuedPairs next = (TimeSeriesOfSingleValuedPairs) a;
             if ( duration.test( a.getDurations().first() ) )
             {
-                builder.addTimeSeries( next );
+                builder.addTimeSeries( a );
             }
         }
 
@@ -326,15 +320,37 @@ class DefaultSlicer implements Slicer
     }
 
     @Override
+    public <T> TimeSeries<T> filterByDuration( final TimeSeries<T> input,
+                                               Predicate<Duration> duration )
+    {
+        List<Event<List<Event<T>>>> returnMe = new ArrayList<>();
+        // Iterate through basis times
+        for ( TimeSeries<T> nextSeries : input.basisTimeIterator() )
+        {
+            Instant basisTime = nextSeries.getEarliestBasisTime();
+            // Iterate through durations until it is later than the nextDuration
+            for ( Event<T> nextEvent : nextSeries.timeIterator() )
+            {
+                Duration candidateDuration = Duration.between( basisTime, nextEvent.getTime() );
+                if ( duration.test( candidateDuration ) )
+                {
+                    returnMe.add( Event.of( basisTime, Arrays.asList( nextEvent ) ) );
+                }
+            }
+        }
+        return new SafeTimeSeries<>( returnMe );
+    }
+
+    @Override
     public TimeSeriesOfSingleValuedPairs filterByBasisTime( TimeSeriesOfSingleValuedPairs input,
                                                             Predicate<Instant> basisTime )
     {
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
-        
+
         Objects.requireNonNull( basisTime, NULL_PREDICATE_EXCEPTION );
-        
+
         SafeTimeSeriesOfSingleValuedPairsBuilder builder = new SafeTimeSeriesOfSingleValuedPairsBuilder();
-        
+
         // Set the metadata explicitly in case of an empty slice
         builder.setMetadata( input.getMetadata() );
 
@@ -343,7 +359,7 @@ class DefaultSlicer implements Slicer
         {
             if ( basisTime.test( a.getEarliestBasisTime() ) )
             {
-                builder.addTimeSeries( (TimeSeriesOfSingleValuedPairs) a );
+                builder.addTimeSeries( a );
             }
         }
 
@@ -354,25 +370,24 @@ class DefaultSlicer implements Slicer
     public TimeSeriesOfEnsemblePairs filterByDuration( TimeSeriesOfEnsemblePairs input, Predicate<Duration> condition )
     {
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
-        
+
         Objects.requireNonNull( condition, NULL_PREDICATE_EXCEPTION );
-        
+
         //Iterate through the durations and append to the builder
         //Throw an exception if attempting to construct an irregular time-series
         SafeTimeSeriesOfEnsemblePairsBuilder builder = new SafeTimeSeriesOfEnsemblePairsBuilder();
-        
+
         // Set the metadata explicitly in case of an empty slice
         builder.setMetadata( input.getMetadata() );
-        
+
         for ( TimeSeries<PairOfDoubleAndVectorOfDoubles> a : input.durationIterator() )
         {
-            TimeSeriesOfEnsemblePairs next = (TimeSeriesOfEnsemblePairs) a;
             if ( condition.test( a.getDurations().first() ) )
             {
-                builder.addTimeSeries( next );
+                builder.addTimeSeries( a );
             }
         }
-        
+
         return builder.build();
     }
 
@@ -380,20 +395,20 @@ class DefaultSlicer implements Slicer
     public TimeSeriesOfEnsemblePairs filterByBasisTime( TimeSeriesOfEnsemblePairs input, Predicate<Instant> condition )
     {
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
-        
+
         Objects.requireNonNull( condition, NULL_PREDICATE_EXCEPTION );
-        
+
         SafeTimeSeriesOfEnsemblePairsBuilder builder = new SafeTimeSeriesOfEnsemblePairsBuilder();
-        
+
         // Set the metadata explicitly in case of an empty slice
         builder.setMetadata( input.getMetadata() );
-        
+
         //Add the filtered data
         for ( TimeSeries<PairOfDoubleAndVectorOfDoubles> a : input.basisTimeIterator() )
         {
             if ( condition.test( a.getEarliestBasisTime() ) )
             {
-                builder.addTimeSeries( (TimeSeriesOfEnsemblePairs) a );
+                builder.addTimeSeries( a );
             }
         }
 
@@ -404,15 +419,15 @@ class DefaultSlicer implements Slicer
     public TimeSeriesOfEnsemblePairs filterByTraceIndex( TimeSeriesOfEnsemblePairs input, Predicate<Integer> condition )
     {
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
-        
+
         Objects.requireNonNull( condition, NULL_PREDICATE_EXCEPTION );
-        
+
         //Build a single-valued time-series with the trace at index currentTrace
         SafeTimeSeriesOfEnsemblePairsBuilder builder =
                 new SafeTimeSeriesOfEnsemblePairsBuilder();
         builder.setMetadata( input.getMetadata() );
         DataFactory dFac = DefaultDataFactory.getInstance();
-        
+
         //Iterate through the basis times
         for ( TimeSeries<PairOfDoubleAndVectorOfDoubles> nextSeries : input.basisTimeIterator() )
         {
@@ -511,7 +526,7 @@ class DefaultSlicer implements Slicer
 
         Objects.requireNonNull( mapper, NULL_MAPPER_EXCEPTION );
 
-        List<PairOfDoubles> mainPairs = input.getData();
+        List<PairOfDoubles> mainPairs = input.getRawData();
         List<PairOfBooleans> mainPairsTransformed = new ArrayList<>();
         mainPairs.stream().map( mapper ).forEach( mainPairsTransformed::add );
         if ( input.hasBaseline() )
@@ -538,7 +553,7 @@ class DefaultSlicer implements Slicer
 
         Objects.requireNonNull( mapper, NULL_MAPPER_EXCEPTION );
 
-        List<PairOfDoubles> mainPairsTransformed = transform( input.getData(), mapper );
+        List<PairOfDoubles> mainPairsTransformed = transform( input.getRawData(), mapper );
         if ( input.hasBaseline() )
         {
             List<PairOfDoubles> basePairsTransformed = transform( input.getDataForBaseline(), mapper );
@@ -560,7 +575,7 @@ class DefaultSlicer implements Slicer
 
         Objects.requireNonNull( mapper, NULL_MAPPER_EXCEPTION );
 
-        List<PairOfDoubleAndVectorOfDoubles> mainPairs = input.getData();
+        List<PairOfDoubleAndVectorOfDoubles> mainPairs = input.getRawData();
         List<PairOfDoubles> mainPairsTransformed = new ArrayList<>();
         mainPairs.forEach( pair -> mainPairsTransformed.add( mapper.apply( pair, threshold ) ) );
         if ( input.hasBaseline() )

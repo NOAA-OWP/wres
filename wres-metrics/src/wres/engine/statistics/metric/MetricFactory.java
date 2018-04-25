@@ -16,13 +16,11 @@ import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
-import wres.datamodel.ThresholdsByMetric;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.DiscreteProbabilityPairs;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.MulticategoryPairs;
-import wres.datamodel.inputs.pairs.PairedInput;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.outputs.BoxPlotOutput;
@@ -30,6 +28,7 @@ import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MatrixOutput;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.PairedOutput;
+import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.engine.statistics.metric.MetricCollection.MetricCollectionBuilder;
 import wres.engine.statistics.metric.SampleSize.SampleSizeBuilder;
 import wres.engine.statistics.metric.categorical.ContingencyTable;
@@ -106,10 +105,10 @@ public class MetricFactory
 {
 
     /**
-     * Instance of the factory.
+     * Singleton instance of the factory.
      */
 
-    private static MetricFactory instance = null;
+    private static final MetricFactory INSTANCE = new MetricFactory();
 
     /**
      * String used in several error messages to denote an unrecognized metric.
@@ -135,23 +134,23 @@ public class MetricFactory
      * Instance of an {@link DataFactory} for building metric outputs.
      */
 
-    private final DataFactory outputFactory;
+    private DataFactory outputFactory;
 
     /**
      * Returns an instance of a {@link MetricFactory}.
      * 
-     * @param dataFactory a {@link DataFactory}
+     * @param outputFactory a {@link DataFactory}
      * @return a {@link MetricFactory}
+     * @throws NullPointerException if the input is null
      */
 
-    public static MetricFactory getInstance( final DataFactory dataFactory )
+    public static MetricFactory getInstance( final DataFactory outputFactory )
     {
-        //Lazy construction
-        if ( Objects.isNull( instance ) )
-        {
-            instance = new MetricFactory( dataFactory );
-        }
-        return instance;
+        Objects.requireNonNull( outputFactory, "Specify a non-null metric output factory to construct the "
+                                                + "metric factory." );
+        INSTANCE.outputFactory = outputFactory;
+        
+        return INSTANCE;
     }
 
     /**
@@ -1555,7 +1554,7 @@ public class MetricFactory
      * @throws MetricParameterException if one or more parameter values is incorrect
      */
 
-    public <T extends PairedInput<?>> SampleSize<T> ofSampleSize() throws MetricParameterException
+    public <T extends MetricInput<?>> SampleSize<T> ofSampleSize() throws MetricParameterException
     {
         return (SampleSize<T>) new SampleSizeBuilder<T>().setOutputFactory( outputFactory ).build();
     }
@@ -1756,17 +1755,11 @@ public class MetricFactory
     /**
      * Hidden constructor.
      * 
-     * @param dataFactory a {@link DataFactory}
+     * @param outputFactory a {@link DataFactory}
      */
 
-    private MetricFactory( final DataFactory dataFactory )
+    private MetricFactory()
     {
-        if ( Objects.isNull( dataFactory ) )
-        {
-            throw new IllegalArgumentException( "Specify a non-null metric output factory to construct the "
-                                                + "metric factory." );
-        }
-        this.outputFactory = dataFactory;
     }
 
 }

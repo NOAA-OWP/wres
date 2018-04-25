@@ -21,7 +21,6 @@ public class Worker
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( Worker.class );
     private static final String RECV_QUEUE_NAME = "wres.job";
-    private static final String SEND_QUEUE_NAME = "wres.jobResults";
 
     private static final String BROKER_HOST_PROPERTY_NAME = "wres.broker";
     private static final String DEFAULT_BROKER_HOST = "localhost";
@@ -65,18 +64,14 @@ public class Worker
         factory.setHost( brokerHost );
 
         try ( Connection connection = factory.newConnection();
-              Channel receiveChannel = connection.createChannel();
-              Channel sendChannel = connection.createChannel() )
+              Channel receiveChannel = connection.createChannel() )
         {
             // Take precisely one job at a time:
             receiveChannel.basicQos( 1 );
 
             receiveChannel.queueDeclare( RECV_QUEUE_NAME, false, false, false, null );
-            sendChannel.queueDeclare( SEND_QUEUE_NAME, false, false, false, null );
             JobReceiver receiver = new JobReceiver( receiveChannel,
-                                                    wresExecutable,
-                                                    sendChannel,
-                                                    SEND_QUEUE_NAME );
+                                                    wresExecutable );
 
             while ( true )
             {

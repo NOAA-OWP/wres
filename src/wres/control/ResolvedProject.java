@@ -15,7 +15,7 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.datamodel.ThresholdsByMetric;
+import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.engine.statistics.metric.config.MetricConfigHelper;
 
 /**

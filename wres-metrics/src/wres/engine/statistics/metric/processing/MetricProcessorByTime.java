@@ -28,16 +28,11 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.datamodel.OneOrTwoThresholds;
 import wres.datamodel.Slicer;
-import wres.datamodel.Threshold;
-import wres.datamodel.ThresholdConstants.ThresholdGroup;
-import wres.datamodel.ThresholdsByMetric;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
-import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.DoubleScoreOutput;
@@ -49,6 +44,11 @@ import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold.MetricOut
 import wres.datamodel.outputs.MetricOutputMapByMetric;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.PairedOutput;
+import wres.datamodel.thresholds.OneOrTwoThresholds;
+import wres.datamodel.thresholds.Threshold;
+import wres.datamodel.thresholds.ThresholdConstants.ThresholdGroup;
+import wres.datamodel.thresholds.ThresholdsByMetric;
+import wres.datamodel.time.TimeSeries;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricCollection;
 import wres.engine.statistics.metric.MetricParameterException;
@@ -667,7 +667,7 @@ public abstract class MetricProcessorByTime<S extends MetricInput<?>>
      * @throws UnsupportedOperationException if the threshold data type is unrecognized
      */
 
-    static Predicate<TimeSeriesOfSingleValuedPairs> getFilterForTimeSeriesOfSingleValuedPairs( Threshold input )
+    static Predicate<TimeSeries<PairOfDoubles>> getFilterForTimeSeriesOfSingleValuedPairs( Threshold input )
     {
         switch ( input.getDataType() )
         {

@@ -52,7 +52,7 @@ public final class MeanSquareErrorSkillScoreTest
         final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsTwo();
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getData().size(),
+        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getRawData().size(),
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension( "CMS" ),
                                                                    MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE,
@@ -114,7 +114,7 @@ public final class MeanSquareErrorSkillScoreTest
                                                  Instant.parse( "2010-12-31T11:59:59Z" ),
                                                  ReferenceTime.VALID_TIME,
                                                  Duration.ofHours( 24 ) );
-        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getData().size(),
+        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getRawData().size(),
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension( "MM/DAY" ),
                                                                    MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE,
@@ -157,7 +157,7 @@ public final class MeanSquareErrorSkillScoreTest
         //Generate some data
         SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
         //Metadata for the output
-        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getData().size(),
+        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getRawData().size(),
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension(),
                                                                    MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE,

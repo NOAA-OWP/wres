@@ -1,25 +1,24 @@
-package wres.datamodel.inputs.pairs.builders;
+package wres.datamodel.inputs.pairs;
 
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
+import wres.datamodel.inputs.MetricInputBuilder;
 import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.PairOfDoubles;
-import wres.datamodel.inputs.pairs.SingleValuedPairs;
-import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeSeriesBuilder;
 
 /**
  * <p>A builder for a possibly irregular {@link TimeSeries} of {@link SingleValuedPairs}.</p>
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.4
  */
 
-public interface TimeSeriesOfSingleValuedPairsBuilder extends PairedInputBuilder<PairOfDoubles>
+public interface TimeSeriesOfSingleValuedPairsBuilder
+        extends MetricInputBuilder<PairOfDoubles>, TimeSeriesBuilder<PairOfDoubles>
 {
 
     /**
@@ -33,9 +32,8 @@ public interface TimeSeriesOfSingleValuedPairsBuilder extends PairedInputBuilder
     default TimeSeriesOfSingleValuedPairsBuilder addTimeSeriesData( Instant basisTime,
                                                                     List<Event<PairOfDoubles>> values )
     {
-        List<Event<List<Event<PairOfDoubles>>>> input = new ArrayList<>();
-        input.add( Event.of( basisTime, values ) );
-        return addTimeSeriesData( input );
+        TimeSeriesBuilder.super.addTimeSeriesData( basisTime, values );
+        return this;
     }
 
     /**
@@ -52,6 +50,45 @@ public interface TimeSeriesOfSingleValuedPairsBuilder extends PairedInputBuilder
         List<Event<List<Event<PairOfDoubles>>>> input = new ArrayList<>();
         input.add( Event.of( basisTime, values ) );
         return addTimeSeriesDataForBaseline( input );
+    }
+
+    /**
+     * Adds a time-series to the builder.
+     * 
+     * @param timeSeries the time-series
+     * @return the builder
+     * @throws MetricInputException if the specified input is inconsistent with any existing input
+     * @throws NullPointerException if the input is null
+     */
+
+    default TimeSeriesOfSingleValuedPairsBuilder addTimeSeries( TimeSeries<PairOfDoubles> timeSeries )
+    {
+        TimeSeriesBuilder.super.addTimeSeries( timeSeries );
+        return this;
+    }
+
+    /**
+     * Adds a time-series to the builder for a baseline dataset.
+     * 
+     * @param timeSeries the time-series
+     * @return the builder
+     * @throws MetricInputException if the specified input is inconsistent with any existing input
+     * @throws NullPointerException if the input is null
+     */
+
+    default TimeSeriesOfSingleValuedPairsBuilder addTimeSeriesForBaseline( TimeSeries<PairOfDoubles> timeSeries )
+    {
+        Objects.requireNonNull( timeSeries, "Specify non-null time-series input." );
+
+        for ( TimeSeries<PairOfDoubles> next : timeSeries.basisTimeIterator() )
+        {
+            Instant basisTime = next.getEarliestBasisTime();
+            List<Event<PairOfDoubles>> values = new ArrayList<>();
+            next.timeIterator().forEach( values::add );
+            this.addTimeSeriesDataForBaseline( basisTime, values );
+        }
+
+        return this;
     }
 
     /**
@@ -83,7 +120,7 @@ public interface TimeSeriesOfSingleValuedPairsBuilder extends PairedInputBuilder
      */
 
     TimeSeriesOfSingleValuedPairsBuilder addTimeSeries( TimeSeriesOfSingleValuedPairs timeSeries );
-    
+
     /**
      * Adds a time-series to the builder as a baseline dataset only. Any data associated with the 
      * {@link TimeSeriesOfSingleValuedPairs#getBaselineData()} of the input is ignored.
@@ -94,7 +131,7 @@ public interface TimeSeriesOfSingleValuedPairsBuilder extends PairedInputBuilder
      */
 
     TimeSeriesOfSingleValuedPairsBuilder addTimeSeriesForBaseline( TimeSeriesOfSingleValuedPairs timeSeries );
-    
+
     /**
      * Builds a time-series.
      * 

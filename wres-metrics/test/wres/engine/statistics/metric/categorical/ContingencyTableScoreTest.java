@@ -141,7 +141,7 @@ public final class ContingencyTableScoreTest
         
         //Metadata for the output
         final MetricOutputMetadata m1 =
-                metaFac.getOutputMetadata( input.getData().size(),
+                metaFac.getOutputMetadata( input.getRawData().size(),
                                            metaFac.getDimension(),
                                            metaFac.getDimension(),
                                            MetricConstants.CONTINGENCY_TABLE,
@@ -192,7 +192,7 @@ public final class ContingencyTableScoreTest
         final DichotomousPairs input = MetricTestDataFactory.getDichotomousPairsOne();
         
         final MetricOutputMetadata expected =
-                metaFac.getOutputMetadata( input.getData().size(),
+                metaFac.getOutputMetadata( input.getRawData().size(),
                                            metaFac.getDimension(),
                                            metaFac.getDimension(),
                                            MetricConstants.THREAT_SCORE,

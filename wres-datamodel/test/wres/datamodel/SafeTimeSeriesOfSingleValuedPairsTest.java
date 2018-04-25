@@ -19,7 +19,7 @@ import org.junit.rules.ExpectedException;
 import wres.datamodel.SafeTimeSeriesOfSingleValuedPairs.SafeTimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
-import wres.datamodel.inputs.pairs.builders.TimeSeriesOfSingleValuedPairsBuilder;
+import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.time.Event;
@@ -229,20 +229,6 @@ public final class SafeTimeSeriesOfSingleValuedPairsTest
         //Add the first time-series and then append a second and third
         SafeTimeSeriesOfSingleValuedPairsBuilder c = new SafeTimeSeriesOfSingleValuedPairsBuilder();
         c.addTimeSeries( ts );
-
-        //Check that climatology has been preserved
-        assertTrue( "Failed to perserve climatology when building new time-series.",
-                    climatology.equals( c.build().getClimatology() ) );
-        assertTrue( "Failed to perserve climatology when iterating new time-series by basis time.",
-                    climatology.equals( ( (TimeSeriesOfSingleValuedPairs) c.build()
-                                                                           .durationIterator()
-                                                                           .iterator()
-                                                                           .next() ).getClimatology() ) );
-        assertTrue( "Failed to perserve climatology when iterating new time-series by duration.",
-                    climatology.equals( ( (TimeSeriesOfSingleValuedPairs) c.build()
-                                                                           .durationIterator()
-                                                                           .iterator()
-                                                                           .next() ).getClimatology() ) );
 
         second.add( Event.of( Instant.parse( "1985-01-01T01:00:00Z" ), metIn.pairOf( 4, 4 ) ) );
         second.add( Event.of( Instant.parse( "1985-01-01T02:00:00Z" ), metIn.pairOf( 5, 5 ) ) );
@@ -456,16 +442,6 @@ public final class SafeTimeSeriesOfSingleValuedPairsTest
         //Check that climatology has been preserved
         assertTrue( "Failed to perserve climatology when building new time-series.",
                     climatology.equals( c.build().getClimatology() ) );
-        assertTrue( "Failed to perserve climatology when iterating new time-series by basis time.",
-                    climatology.equals( ( (TimeSeriesOfSingleValuedPairs) c.build()
-                                                                           .durationIterator()
-                                                                           .iterator()
-                                                                           .next() ).getClimatology() ) );
-        assertTrue( "Failed to perserve climatology when iterating new time-series by duration.",
-                    climatology.equals( ( (TimeSeriesOfSingleValuedPairs) c.build()
-                                                                           .durationIterator()
-                                                                           .iterator()
-                                                                           .next() ).getClimatology() ) );
     }
     
 }

@@ -19,15 +19,9 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.datamodel.Threshold;
-import wres.datamodel.ThresholdConstants.Operator;
-import wres.datamodel.ThresholdConstants.ThresholdDataType;
-import wres.datamodel.ThresholdConstants.ThresholdType;
-import wres.datamodel.ThresholdsByMetric;
 import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.pairs.DichotomousPairs;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
-import wres.datamodel.inputs.pairs.PairedInput;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MatrixOutput;
@@ -37,6 +31,11 @@ import wres.datamodel.outputs.MetricOutputException;
 import wres.datamodel.outputs.MetricOutputForProject;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.datamodel.outputs.ScoreOutput;
+import wres.datamodel.thresholds.Threshold;
+import wres.datamodel.thresholds.ThresholdsByMetric;
+import wres.datamodel.thresholds.ThresholdConstants.Operator;
+import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
+import wres.datamodel.thresholds.ThresholdConstants.ThresholdType;
 import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricCollection;
@@ -527,7 +526,7 @@ public abstract class MetricProcessor<S extends MetricInput<?>, T extends Metric
      * @return a sorted array of values or null
      */
 
-    double[] getSortedClimatology( PairedInput<?> input, Set<Threshold> thresholds )
+    double[] getSortedClimatology( MetricInput<?> input, Set<Threshold> thresholds )
     {
         double[] sorted = null;
         if ( hasProbabilityThreshold( thresholds ) && input.hasClimatology() )

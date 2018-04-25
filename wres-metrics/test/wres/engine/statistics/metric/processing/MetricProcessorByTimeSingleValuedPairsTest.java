@@ -29,13 +29,6 @@ import wres.datamodel.MatrixOfDoubles;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.datamodel.OneOrTwoThresholds;
-import wres.datamodel.Threshold;
-import wres.datamodel.ThresholdConstants;
-import wres.datamodel.ThresholdConstants.Operator;
-import wres.datamodel.ThresholdConstants.ThresholdDataType;
-import wres.datamodel.ThresholdsByMetric;
-import wres.datamodel.ThresholdsByMetric.ThresholdsByMetricBuilder;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.metadata.Metadata;
@@ -51,6 +44,13 @@ import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold.MetricOutputMultiMapByTimeAndThresholdBuilder;
+import wres.datamodel.thresholds.OneOrTwoThresholds;
+import wres.datamodel.thresholds.Threshold;
+import wres.datamodel.thresholds.ThresholdConstants;
+import wres.datamodel.thresholds.ThresholdsByMetric;
+import wres.datamodel.thresholds.ThresholdConstants.Operator;
+import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
+import wres.datamodel.thresholds.ThresholdsByMetric.ThresholdsByMetricBuilder;
 import wres.datamodel.outputs.PairedOutput;
 import wres.engine.statistics.metric.MetricCalculationException;
 import wres.engine.statistics.metric.MetricFactory;
@@ -163,7 +163,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
             final Metadata meta = metFac.getMetadata( metFac.getDimension( "CMS" ),
                                                       metFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ),
                                                       window );
-            processor.apply( metIn.ofSingleValuedPairs( pairs.getData(), meta ) );
+            processor.apply( metIn.ofSingleValuedPairs( pairs.getRawData(), meta ) );
         }
 
         // Validate a subset of the data            
@@ -559,7 +559,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
             final Metadata meta = metFac.getMetadata( metFac.getDimension( "CMS" ),
                                                       metFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ),
                                                       window );
-            processor.apply( metIn.ofSingleValuedPairs( pairs.getData(), meta ) );
+            processor.apply( metIn.ofSingleValuedPairs( pairs.getRawData(), meta ) );
         }
 
         // Validate a subset of the data            
@@ -634,7 +634,7 @@ public final class MetricProcessorByTimeSingleValuedPairsTest
             final Metadata meta = metFac.getMetadata( metFac.getDimension( "CMS" ),
                                                       metFac.getDatasetIdentifier( "DRRC2", "SQIN", "HEFS" ),
                                                       window );
-            processor.apply( metIn.ofSingleValuedPairs( pairs.getData(), meta ) );
+            processor.apply( metIn.ofSingleValuedPairs( pairs.getRawData(), meta ) );
         }
 
         // Validate a subset of the data            

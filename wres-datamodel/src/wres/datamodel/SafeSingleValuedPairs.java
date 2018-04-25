@@ -54,7 +54,7 @@ class SafeSingleValuedPairs implements SingleValuedPairs
     private VectorOfDoubles climatology;
 
     @Override
-    public List<PairOfDoubles> getData()
+    public List<PairOfDoubles> getRawData()
     {
         return mainInput;
     }
@@ -100,10 +100,10 @@ class SafeSingleValuedPairs implements SingleValuedPairs
     }
 
     /**
-     * A {@link DefaultPairedInputBuilder} to build the metric input.
+     * A {@link DefaultMetricInputBuilder} to build the metric input.
      */
 
-    static class SingleValuedPairsBuilder extends DefaultPairedInputBuilder<PairOfDoubles>
+    static class SingleValuedPairsBuilder extends DefaultMetricInputBuilder<PairOfDoubles>
     {
 
         /**
@@ -220,13 +220,11 @@ class SafeSingleValuedPairs implements SingleValuedPairs
                                             + "unspecified." );
         }
 
-        if ( Objects.nonNull( baselineInput ) )
+        if ( Objects.nonNull( baselineInput ) && baselineInput.contains( null ) )
         {
-            if ( baselineInput.contains( null ) )
-            {
-                throw new MetricInputException( "One or more of the baseline pairs is null." );
-            }
+            throw new MetricInputException( "One or more of the baseline pairs is null." );
         }
+
     }
 
     /**

@@ -23,10 +23,9 @@ import wres.config.generated.TimeSeriesMetricConfigName;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.datamodel.ThresholdConstants;
-import wres.datamodel.ThresholdConstants.Operator;
-import wres.datamodel.ThresholdsByMetric;
-import wres.datamodel.ThresholdsByType;
+import wres.datamodel.thresholds.ThresholdConstants;
+import wres.datamodel.thresholds.ThresholdsByMetric;
+import wres.datamodel.thresholds.ThresholdConstants.Operator;
 
 /**
  * Provides static methods that help with ProjectConfig and its children.
@@ -63,14 +62,14 @@ public class ProjectConfigs
             new EnumMap<>( TimeSeriesMetricConfigName.class );
 
     /**
-     * Map between {@link ThresholdDataType} and {@link ThresholdsByMetric.ThresholdDataType}.
+     * Map between {@link ThresholdDataType} and {@link ThresholdConstants.ThresholdDataType}.
      */
 
     private static final EnumMap<ThresholdDataType, ThresholdConstants.ThresholdDataType> THRESHOLD_APPLICATION_TYPE_MAP =
             new EnumMap<>( ThresholdDataType.class );
 
     /**
-     * Map between {@link ThresholdType} and {@link ThresholdsByType.ThresholdGroup}.
+     * Map between {@link ThresholdType} and {@link ThresholdConstants.ThresholdGroup}.
      */
 
     private static final EnumMap<ThresholdType, ThresholdConstants.ThresholdGroup> THRESHOLD_TYPE_MAP =
@@ -670,7 +669,7 @@ public class ProjectConfigs
     }
 
     /**
-     * Builds the mapping between the {@link ThresholdsByType.ThresholdGroup} and the {@link ThresholdType}.
+     * Builds the mapping between the {@link ThresholdConstants.ThresholdGroup} and the {@link ThresholdType}.
      */
 
     private static void buildThresholdTypeMap()
