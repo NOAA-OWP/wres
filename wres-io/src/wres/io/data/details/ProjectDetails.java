@@ -60,7 +60,8 @@ import wres.util.TimeHelper;
 
 /**
  * Wrapper object linking a project configuration and the data needed to form
- * database statements
+ * database statements. TODO: refactor this class and make it immutable, ideally, but otherwise thread-safe. It's also
+ * far too large (JBr). See #49511.
  */
 public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
 {
@@ -113,9 +114,12 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
     private final ProjectConfig projectConfig;
 
     /**
-     *  Stores the last possible lead time for each feature
+     *  Stores the last possible lead time for each feature. TODO: refector this class to make it thread-safe, 
+     *  ideally immutable. Synchronizing access and setting the cache to 100 features avoids earlier problems 
+     *  with reads and writes both occurring in the same code block with a check-then-act, but this is not a long-term
+     *  Solution (JBr). See #49511. 
      */
-    private final Map<Feature, Integer> lastLeads = new LRUMap<>( 20 );
+    private final Map<Feature, Integer> lastLeads = java.util.Collections.synchronizedMap( new LRUMap<>( 100 ) );
 
     /**
      * Stores the lead hour offset for each person
@@ -131,11 +135,11 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
     /**
      * Stores the earliest possible observation date for each feature
      */
-    private final Map<Feature, String> initialObservationDates = new LRUMap<>( 20 );
+    private final Map<Feature, String> initialObservationDates = new LRUMap<>( 100 );
 
-    private final Map<Feature, String> initialForecastDates = new LRUMap<>(20);
+    private final Map<Feature, String> initialForecastDates = new LRUMap<>( 100 );
 
-    private final Map<Feature, Integer> forecastLag = new LRUMap<>(20);
+    private final Map<Feature, Integer> forecastLag = new LRUMap<>( 100 );
 
     /**
      * Stores the number of basis times pools for each feature
@@ -147,7 +151,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
      * on x different sets of issue times
      * </p>
      */
-    private final Map<Feature, Integer> poolCounts = new LRUMap<>( 20 );
+    private final Map<Feature, Integer> poolCounts = new LRUMap<>( 100 );
 
     /**
      * The set of all features pertaining to the project
