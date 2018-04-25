@@ -2,6 +2,9 @@ package wres.grid.client;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
+
+import org.apache.commons.lang3.tuple.Pair;
 
 import wres.config.generated.Feature;
 
@@ -21,4 +24,16 @@ public interface Request
     void setLatestLead( Duration latestLead );
     void setVariableName( String variableName );
     void setIsForecast(Boolean isForecast);
+
+    List<Pair<Integer, Integer>> getIndices();
+    List<String> getPaths();
+    List<Feature> getFeatures();
+    Instant getEarliestIssueTime();
+    Instant getLatestIssueTime();
+    Instant getEarliestValidTime();
+    Instant getLatestValidTime();
+    Duration getEarliestLead();
+    Duration getLatestLead();
+    String getVariableName();
+    Boolean getIsForecast();
 }

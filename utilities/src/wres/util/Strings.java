@@ -24,6 +24,10 @@ public final class Strings
 	private static final Pattern RTRIM = Pattern.compile("\\s+$");
 	private static final Pattern NUMERIC_PATTERN = Pattern.compile( "^[-]?\\d*\\.?\\d+$" );
 
+	// This should always be true in a production environment. Set to false in
+    // cases where the read time for full files prevents practical development
+	private static final boolean HASH_ENTIRE_FILE = true;
+
 	private static final int LINE_LENGTH = 120;
 	private static final int TRUNCATE_SIZE = 2000;
 
@@ -57,7 +61,6 @@ public final class Strings
 
 	public static String formatForLine(final String line)
 	{
-	    //return line;
 		String formattedLine = line;
 		while (formattedLine.length() < LINE_LENGTH)
 		{
@@ -153,7 +156,7 @@ public final class Strings
     {
         return string.replaceAll(pattern, "");
     }
-	
+
 	/**
 	 * Determines if a string describes some number
 	 * @param possibleNumber A string that might be a number
@@ -163,7 +166,7 @@ public final class Strings
 		return hasValue(possibleNumber) &&
                NUMERIC_PATTERN.matcher( possibleNumber.trim() ).matches();
 	}
-	
+
 	public static String getStackTrace(Exception error)
 	{
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -197,19 +200,24 @@ public final class Strings
     public static String getMD5Checksum(String filename) throws IOException
     {
         byte[] buffer = new byte[1024];
-        MessageDigest complete = getMD5Algorithm();
+        MessageDigest complete = Strings.getMD5Algorithm();
         int numRead;
+        final int passLimit = 5000;
+        int passCount = 0;
 
         try ( InputStream fis = new BufferedInputStream( new FileInputStream( filename ) ))
         {
             do
             {
                 numRead = fis.read( buffer );
+
                 if ( numRead > 0 )
                 {
                     complete.update( buffer, 0, numRead );
                 }
-            } while ( numRead != -1 );
+                passCount++;
+
+            } while ( (numRead != -1 && !Strings.HASH_ENTIRE_FILE && passCount < passLimit) || ( numRead != -1 && Strings.HASH_ENTIRE_FILE));
         }
 
         return getMD5Checksum( complete.digest() );

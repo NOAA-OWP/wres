@@ -13,6 +13,7 @@ import java.text.DecimalFormat;
 import java.time.DateTimeException;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.MonthDay;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeParseException;
@@ -75,6 +76,10 @@ import wres.datamodel.ThresholdsByMetric.ThresholdsByMetricBuilder;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
+import wres.grid.client.Fetcher;
+import wres.grid.client.Request;
+import wres.grid.client.Response;
+import wres.io.data.caching.DataSources;
 import wres.io.data.caching.Features;
 import wres.io.data.details.ProjectDetails;
 import wres.io.reading.commaseparated.CommaSeparatedReader;
@@ -132,6 +137,58 @@ public class ConfigHelper
     private ConfigHelper()
     {
         // prevent construction
+    }
+
+    public static Request getGridDataRequest(
+            final ProjectDetails projectDetails,
+            final DataSourceConfig dataSourceConfig,
+            final Feature feature) throws SQLException
+    {
+        Request griddedRequest = Fetcher.prepareRequest();
+        griddedRequest.addFeature( feature );
+        griddedRequest.setVariableName( dataSourceConfig.getVariable().getValue() );
+
+        boolean isForecast = ConfigHelper.isForecast( dataSourceConfig );
+
+        griddedRequest.setIsForecast( isForecast );
+
+        if (isForecast && projectDetails.getMinimumLeadHour() > Integer.MIN_VALUE)
+        {
+            griddedRequest.setEarliestLead(
+                    Duration.of(projectDetails.getMinimumLeadHour(), TimeHelper.LEAD_RESOLUTION)
+            );
+        }
+
+        if (isForecast && projectDetails.getMaximumLeadHour() < Integer.MAX_VALUE)
+        {
+            griddedRequest.setLatestLead(
+                    Duration.of(projectDetails.getMaximumLeadHour(), TimeHelper.LEAD_RESOLUTION)
+            );
+        }
+
+        if (projectDetails.getEarliestDate() != null)
+        {
+            griddedRequest.setEarliestValidTime( Instant.parse( projectDetails.getEarliestDate() ) );
+        }
+
+        if (projectDetails.getLatestDate() != null)
+        {
+            griddedRequest.setLatestValidTime( Instant.parse( projectDetails.getLatestDate() ) );
+        }
+
+        if (isForecast && projectDetails.getEarliestIssueDate() != null)
+        {
+            griddedRequest.setEarliestIssueTime( Instant.parse(projectDetails.getEarliestIssueDate()) );
+        }
+
+        if (isForecast && projectDetails.getLatestIssueDate() != null)
+        {
+            griddedRequest.setLatestIssueTime( Instant.parse(projectDetails.getLatestIssueDate()) );
+        }
+
+        DataSources.getSourcePaths( projectDetails, dataSourceConfig ).forEach( griddedRequest::addPath );
+
+        return griddedRequest;
     }
 
     // TODO: Move to Project Details
@@ -614,6 +671,11 @@ public class ConfigHelper
             else if ( Strings.hasValue( feature.getName() ) )
             {
                 description = feature.getName();
+            }
+            else if (feature.getCoordinate() != null)
+            {
+                description = feature.getCoordinate().getLongitude() + " " +
+                              feature.getCoordinate().getLatitude();
             }
         }
 

@@ -15,6 +15,7 @@ public interface Response extends Iterable<List<Response.Series>>
     {
         FeaturePlus getFeature();
         Instant getIssuedDate();
+        Duration getLastLead();
     }
 
     interface Entry extends Comparable<Entry>, Iterable<Double>
@@ -26,4 +27,6 @@ public interface Response extends Iterable<List<Response.Series>>
 
     String getMeasurementUnit();
     String getVariableName();
+    Integer getValueCount();
+    Duration getLastLead();
 }

@@ -7,7 +7,10 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.StringJoiner;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -18,11 +21,19 @@ import wres.io.config.LeftOrRightOrBaseline;
 import wres.io.data.details.ProjectDetails;
 import wres.io.reading.IngestResult;
 import wres.io.utilities.Database;
+import wres.io.utilities.LRUMap;
 
 /**
  * Cache of available types of forecast
  */
-public class Projects extends Cache<ProjectDetails, Integer> {
+// TODO: Find a way to remove the projects cache
+@Deprecated // We shouldn't cache; there will only ever be one project
+public class Projects
+{
+    private static final String NEWLINE = System.lineSeparator();
+
+    private Map<Integer, Integer> keyIndex;
+    private ConcurrentMap<Integer, ProjectDetails> details;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Projects.class);
     private static Projects instance = null;
@@ -30,18 +41,6 @@ public class Projects extends Cache<ProjectDetails, Integer> {
 
     private static final Object DETAIL_LOCK = new Object();
     private static final Object KEY_LOCK = new Object();
-
-    @Override
-    protected Object getDetailLock()
-    {
-        return Projects.DETAIL_LOCK;
-    }
-
-    @Override
-    protected Object getKeyLock()
-    {
-        return Projects.KEY_LOCK;
-    }
 
     private static Projects getCache ()
     {
@@ -53,6 +52,104 @@ public class Projects extends Cache<ProjectDetails, Integer> {
                 instance.init();
             }
             return instance;
+        }
+    }
+
+    private Map<Integer, Integer> getKeyIndex()
+    {
+        synchronized ( Projects.KEY_LOCK )
+        {
+            if ( keyIndex == null )
+            {
+                keyIndex = new LRUMap<>( this.getMaxDetails(), eldest -> {
+                    if ( this.details != null )
+                    {
+                        details.remove( eldest.getValue() );
+                    }
+                } );
+            }
+        }
+
+        return this.keyIndex;
+    }
+
+    final ConcurrentMap<Integer, ProjectDetails> getDetails()
+    {
+        synchronized ( Projects.DETAIL_LOCK )
+        {
+            this.initializeDetails();
+            return this.details;
+        }
+    }
+
+    private void initializeDetails()
+    {
+        synchronized ( Projects.DETAIL_LOCK )
+        {
+            if (this.details == null)
+            {
+                this.details = new ConcurrentHashMap<>( this.getMaxDetails() );
+            }
+        }
+    }
+
+    private boolean hasID(Integer key)
+    {
+        boolean hasIt;
+
+        synchronized ( Projects.KEY_LOCK )
+        {
+            hasIt = this.getKeyIndex().containsKey(key);
+        }
+
+        return hasIt;
+    }
+
+    private Integer getID(Integer key)
+    {
+        Integer id = null;
+
+        synchronized (Projects.KEY_LOCK)
+        {
+            if (this.getKeyIndex().containsKey(key))
+            {
+                id = this.getKeyIndex().get(key);
+            }
+        }
+
+        return id;
+    }
+
+    private ProjectDetails get(Integer id)
+    {
+        return this.getDetails().get(id);
+    }
+
+    /**
+     * Adds the details to the instance cache. If the details don't exist in the database, they are added.
+     * <br><br>
+     * Since only a limited amount of data is stored within the instanced cache, the least recently used item from the
+     * instanced cache is removed if the amount surpasses the maximum allowable number of stored details
+     * @param element The details to add to the instanced cache
+     * @throws SQLException Thrown if the ID of the element could not be retrieved or the cache could not be
+     * updated
+     */
+    private void addElement( ProjectDetails element ) throws SQLException
+    {
+        element.save();
+        this.add(element);
+    }
+
+    private void add( ProjectDetails element )
+    {
+        synchronized (Projects.KEY_LOCK)
+        {
+            this.getKeyIndex().put(element.getKey(), element.getId());
+
+            if (this.details != null && !this.details.containsKey(element.getId()))
+            {
+                this.getDetails().put(element.getId(), element);
+            }
         }
     }
 
@@ -101,13 +198,12 @@ public class Projects extends Cache<ProjectDetails, Integer> {
         return Pair.of( details, thisCallCausedInsert );
     }
 
-    @Override
-    protected int getMaxDetails() {
+    private int getMaxDetails() {
         return 10;
     }
 
-    @Override
-    protected void init() {
+    private void init()
+    {
         this.initializeDetails();
 
         Connection connection = null;
@@ -116,8 +212,7 @@ public class Projects extends Cache<ProjectDetails, Integer> {
         try
         {
             connection = Database.getHighPriorityConnection();
-            String loadScript = "SELECT *" + NEWLINE;
-            loadScript += "FROM wres.project;";
+            String loadScript = "SELECT * FROM wres.project;";
 
             projects = Database.getResults(connection, loadScript);
 

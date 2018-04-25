@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.generated.DataSourceConfig;
 import wres.io.data.details.VariableDetails;
 import wres.io.utilities.Database;
+import wres.io.utilities.ScriptBuilder;
 
 /**
  * @author Christopher Tubbs
@@ -158,55 +159,23 @@ public final class Variables extends Cache<VariableDetails, String>
     {       
         synchronized(this.getKeyIndex())
         {
-            Connection connection = null;
-            ResultSet variables = null;
-
             this.initializeDetails();
 
             try
             {
-                connection = Database.getHighPriorityConnection();
+            	ScriptBuilder script = new ScriptBuilder(  );
+            	script.setHighPriority( true );
 
-                String loadScript = "SELECT variable_id, variable_name, measurementunit_id" + System.lineSeparator();
-                loadScript += "FROM wres.variable;";
+            	script.addLine("SELECT variable_id, variable_name, measurementunit_id");
+            	script.add("FROM wres.Variable;");
 
-                variables = Database.getResults(connection, loadScript);
-                VariableDetails detail;
-
-                while (variables.next())
-				{
-                    detail = VariableDetails.from(variables);
-                    this.getKeyIndex().put(detail.getKey(), detail.getId());
-                    this.getDetails().put(detail.getId(), detail);
-                }
+            	script.consume( variable -> this.add(VariableDetails.from(variable)) );
             }
             catch ( SQLException sqlException )
             {
 				// Failure to pre-populate cache should not affect primary outputs.
                 LOGGER.warn( "An error was encountered when trying to populate "
                              + "the Variable cache.", sqlException );
-            }
-            finally
-            {
-                if (variables != null)
-                {
-                    try
-                    {
-                        variables.close();
-                    }
-                    catch(SQLException e)
-                    {
-						// Exception on close should not affect primary outputs.
-                        LOGGER.warn( "An error was encountered when trying to"
-                                     + "close the result set containing Variable "
-                                     + "information.", e );
-                    }
-                }
-
-                if (connection != null)
-                {
-                    Database.returnHighPriorityConnection(connection);
-                }
             }
         }
     }

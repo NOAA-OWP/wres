@@ -10,6 +10,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -47,6 +49,8 @@ import wres.util.FormattedStopwatch;
 import wres.util.NotImplementedException;
 import wres.util.ProgressMonitor;
 import wres.util.Strings;
+import wres.util.functional.ExceptionalConsumer;
+import wres.util.functional.ExceptionalFunction;
 
 /**
  * An Interface structure used for organizing database operations and providing
@@ -1018,6 +1022,151 @@ public final class Database {
         return result;
     }
 
+    public static LocalDateTime getLocalDateTime(ResultSet resultSet, String fieldName) throws SQLException
+	{
+		Instant instant = Database.getInstant( resultSet, fieldName );
+		return instant.atOffset( ZoneOffset.UTC ).toLocalDateTime();
+	}
+
+    /**
+     * Retrieves results from the database over a high priority connection and
+     * consumes the results
+     * @param script The script used to retrieve the results
+     * @param rowConsumer A function used to consume each row
+     * @throws SQLException Thrown if the retrieval script fails
+     * @throws SQLException Thrown if the consumer function fails
+     */
+	public static void highPriorityConsume(String script, ExceptionalConsumer<ResultSet, SQLException> rowConsumer)
+            throws SQLException
+    {
+        Connection connection = null;
+        ResultSet resultSet = null;
+
+        try
+        {
+            connection = Database.getHighPriorityConnection();
+            resultSet = Database.getResults( connection, script );
+
+            while (resultSet.next())
+            {
+                rowConsumer.accept( resultSet );
+            }
+        }
+        finally
+        {
+            if (resultSet != null)
+            {
+                try
+                {
+                    resultSet.close();
+                }
+                catch (SQLException closeException)
+                {
+                    LOGGER.debug("The result set used for interpretation could "
+                                 + "not be closed.", closeException);
+                }
+            }
+
+            if (connection != null)
+            {
+                Database.returnHighPriorityConnection( connection );
+            }
+        }
+    }
+
+    public static void consume(String script, ExceptionalConsumer<ResultSet, SQLException> rowConsumer) throws SQLException
+    {
+        Connection connection = null;
+        ResultSet resultSet = null;
+
+        try
+        {
+            connection = Database.getConnection();
+            resultSet = Database.getResults( connection, script );
+
+            while (resultSet.next())
+            {
+                rowConsumer.accept( resultSet );
+            }
+        }
+        finally
+        {
+            if (resultSet != null)
+            {
+                try
+                {
+                    resultSet.close();
+                }
+                catch (SQLException closeException)
+                {
+                    LOGGER.debug("The result set used for consumption could "
+                                 + "not be closed.", closeException);
+                }
+            }
+
+            if (connection != null)
+            {
+                Database.returnConnection( connection );
+            }
+        }
+    }
+
+    public static <U> List<U> interpret( String query,
+                                         ExceptionalFunction<ResultSet, U, SQLException> interpretor,
+                                         boolean priorityIsHigh)
+            throws SQLException
+    {
+        List<U> result = new ArrayList<>();
+
+        Connection connection = null;
+        ResultSet resultSet = null;
+
+        try
+        {
+            if (priorityIsHigh)
+            {
+                connection = Database.getHighPriorityConnection();
+            }
+            else
+            {
+                connection = Database.getConnection();
+            }
+
+            resultSet = Database.getResults( connection, query );
+
+            while (resultSet.next())
+            {
+                result.add(interpretor.call( resultSet ));
+            }
+        }
+        finally
+        {
+            if (resultSet != null)
+            {
+                try
+                {
+                    resultSet.close();
+                }
+                catch (SQLException closeException)
+                {
+                    LOGGER.debug("The result set used for interpretation could "
+                                 + "not be closed.", closeException);
+                }
+            }
+
+            if (connection != null && priorityIsHigh)
+            {
+                Database.returnHighPriorityConnection( connection );
+            }
+            else if (connection != null)
+            {
+                Database.returnConnection( connection );
+            }
+        }
+
+        return result;
+    }
+
     /**
      * Checks if the specified column is in the given result set
      * @param resultSet The set of data retrieved from the database
@@ -1081,13 +1230,10 @@ public final class Database {
                                                 final String fieldLabel)
             throws SQLException
 	{
-		Connection connection = null;
-		ResultSet results = null;
-
-		if (collection == null)
-        {
-            throw new NullPointerException("The collection passed into 'populateCollection' was null.");
-        }
+        Objects.requireNonNull( collection,
+                                "The collection passed into "
+                                + "'populateCollection' must have been "
+                                + "instantiated." );
 
         if (LOGGER.isTraceEnabled())
         {
@@ -1100,42 +1246,18 @@ public final class Database {
 
 		try
 		{
-            connection = Database.getConnection();
-            results = Database.getResults(connection, query);
-
-            while (results.next())
-            {
-            	if (results.getObject(fieldLabel) != null)
-            	{
-					collection.add(results.getObject(fieldLabel));
-				}
-            }
+            Database.consume( query, collectionRow -> {
+                if (collectionRow.getObject( fieldLabel ) != null)
+                {
+                    collection.add(collectionRow.getObject( fieldLabel ));
+                }
+            } );
 		}
 		catch (SQLException error)
 		{
             String message = "The following query failed:" + NEWLINE + query;
             // Decorate SQLException with additional information.
 			throw new SQLException( message, error );
-		}
-		finally
-		{
-			if (results != null)
-			{
-			    try
-                {
-                    results.close();
-                }
-                catch ( SQLException se )
-                {
-                    // Exception on close should not affect primary outputs.
-                    LOGGER.warn( "Could not close result set {}.", results, se );
-                }
-			}
-
-			if (connection != null)
-			{
-				Database.returnConnection(connection);
-			}
 		}
 
 		return collection;
@@ -1222,9 +1344,6 @@ public final class Database {
 								  final String valueLabel)
 		throws SQLException
 	{
-		Connection connection = null;
-		ResultSet results = null;
-
         Objects.requireNonNull(map,"The map passed into 'populateMap' was null." );
 
 		if (LOGGER.isTraceEnabled())
@@ -1238,42 +1357,19 @@ public final class Database {
 
 		try
 		{
-			connection = Database.getConnection();
-			results = Database.getResults( connection, query );
-			while (results.next())
-			{
-				Object key = results.getObject(keyLabel);
-				if (key != null)
-				{
-					map.put(key, results.getObject( valueLabel));
-				}
-			}
+			Database.consume( query, entryRow -> {
+			    if (entryRow.getObject( keyLabel ) != null)
+                {
+                    map.put(entryRow.getObject( keyLabel ),
+                            entryRow.getObject( valueLabel ));
+                }
+            });
 		}
 		catch (SQLException error)
 		{
             String message = "The following query failed:" + NEWLINE + query;
             // Decorate SQLException with additional information.
 			throw new SQLException( message, error );
-		}
-		finally
-		{
-			if (results != null)
-			{
-			    try
-                {
-                    results.close();
-                }
-                catch ( SQLException se )
-                {
-                    // Exception on close should not affect primary outputs.
-                    LOGGER.warn( "Could not close result set {}.", results, se );
-                }
-			}
-
-			if (connection != null)
-			{
-				Database.returnConnection( connection );
-			}
 		}
 
 		return map;
@@ -1465,35 +1561,23 @@ public final class Database {
                         + "will now be removed to ensure that all data operated "
                         + "upon is valid.");
 
-            ResultSet resultSet = null;
             List<String> partitionTables = new ArrayList<>();
-            ScriptBuilder scriptBuilder;
-            Connection connection = null;
+            ScriptBuilder script;
 
             // First, get list of all partition tables to gather
             try
             {
-                connection = Database.getConnection();
+                script = new ScriptBuilder();
+                script.addLine("SELECT N.nspname || '.' || C.relname AS table_name" );
+                script.addLine( "FROM pg_catalog.pg_class C" );
+                script.addLine( "INNER JOIN pg_catalog.pg_namespace N" );
+                script.addTab().addLine( "ON N.oid = C.relnamespace" );
+                script.addLine( "WHERE relchecks > 0" );
+                script.addTab().addLine( "AND N.nspname = 'partitions'" );
+                script.addTab().addLine( "AND C.relname LIKE 'forecastvalue_lead%'" );
+                script.addTab().addLine( "AND relkind = 'r';" );
 
-                scriptBuilder = new ScriptBuilder();
-                scriptBuilder.addLine(
-                        "SELECT N.nspname || '.' || C.relname AS table_name" );
-                scriptBuilder.addLine( "FROM pg_catalog.pg_class C" );
-                scriptBuilder.addLine( "INNER JOIN pg_catalog.pg_namespace N" );
-                scriptBuilder.addTab().addLine( "ON N.oid = C.relnamespace" );
-                scriptBuilder.addLine( "WHERE relchecks > 0" );
-                scriptBuilder.addTab()
-                             .addLine( "AND N.nspname = 'partitions'" );
-                scriptBuilder.addTab()
-                             .addLine( "AND C.relname LIKE 'forecastvalue_lead%'" );
-                scriptBuilder.addTab().addLine( "AND relkind = 'r';" );
-
-                resultSet = scriptBuilder.retrieve( connection );
-
-                while ( resultSet.next() )
-                {
-                    partitionTables.add( resultSet.getString( "table_name" ) );
-                }
+                script.consume( tableRow -> partitionTables.add(tableRow.getString( "table_name" )) );
             }
             catch ( SQLException databaseError )
             {
@@ -1502,89 +1586,69 @@ public final class Database {
                         + "could not be loaded.",
                         databaseError );
             }
-            finally
-            {
-                if ( resultSet != null )
-                {
-                    try
-                    {
-                        resultSet.close();
-                    }
-                    catch ( SQLException se )
-                    {
-                        // Exception on close should not affect primary outputs.
-                        LOGGER.warn( "Could not close result set {}.", resultSet, se );
-                    }
-                }
-
-                if (connection != null)
-                {
-                    Database.returnConnection( connection );
-                }
-            }
 
             // Next obtain locks for individual tables
             // Exclusive mode is used so that unrelated processes may read, but not modify
 
-            scriptBuilder = new ScriptBuilder(  );
+            script = new ScriptBuilder(  );
 
-            scriptBuilder.addLine( "LOCK TABLE wres.Source IN EXCLUSIVE MODE;" );
-            scriptBuilder.addLine( "LOCK TABLE wres.ProjectSource IN EXCLUSIVE MODE;");
-            scriptBuilder.addLine( "LOCK TABLE wres.Project IN EXCLUSIVE MODE;");
-            scriptBuilder.addLine( "LOCK TABLE wres.ForecastSource IN EXCLUSIVE MODE;");
-            scriptBuilder.addLine( "LOCK TABLE wres.TimeSeries IN EXCLUSIVE MODE;");
-            scriptBuilder.addLine( "LOCK TABLE wres.Observation IN EXCLUSIVE MODE;");
+            script.addLine( "LOCK TABLE wres.Source IN EXCLUSIVE MODE;" );
+            script.addLine( "LOCK TABLE wres.ProjectSource IN EXCLUSIVE MODE;");
+            script.addLine( "LOCK TABLE wres.Project IN EXCLUSIVE MODE;");
+            script.addLine( "LOCK TABLE wres.ForecastSource IN EXCLUSIVE MODE;");
+            script.addLine( "LOCK TABLE wres.TimeSeries IN EXCLUSIVE MODE;");
+            script.addLine( "LOCK TABLE wres.Observation IN EXCLUSIVE MODE;");
 
             for (String partition : partitionTables)
             {
-                scriptBuilder.addLine( "LOCK TABLE ", partition, " IN EXCLUSIVE MODE;" );
+                script.addLine( "LOCK TABLE ", partition, " IN EXCLUSIVE MODE;" );
             }
 
-            scriptBuilder.addLine();
+            script.addLine();
 
-            scriptBuilder.addLine("DELETE FROM wres.Source S" );
-            scriptBuilder.addLine("WHERE NOT EXISTS (");
-            scriptBuilder.addTab().addLine("SELECT 1");
-            scriptBuilder.addTab().addLine("FROM wres.ProjectSource PS");
-            scriptBuilder.addTab().addLine("WHERE PS.source_id = S.source_id");
-            scriptBuilder.addLine(");");
-            scriptBuilder.addLine("DELETE FROM wres.Project P");
-            scriptBuilder.addLine("WHERE NOT EXISTS (");
-            scriptBuilder.addTab().addLine("SELECT 1");
-            scriptBuilder.addTab().addLine("FROM wres.ProjectSource PS");
-            scriptBuilder.addTab().addLine("WHERE PS.project_id = P.project_id");
-            scriptBuilder.addLine(");");
-            scriptBuilder.addLine("DELETE FROM wres.ForecastSource FS");
-            scriptBuilder.addLine("WHERE NOT EXISTS (");
-            scriptBuilder.addTab().addLine("SELECT 1");
-            scriptBuilder.addTab().addLine("FROM wres.ProjectSource S");
-            scriptBuilder.addTab().addLine("WHERE S.source_id = FS.source_id");
-            scriptBuilder.addLine(");");
-            scriptBuilder.addLine("DELETE FROM wres.Observation O");
-            scriptBuilder.addLine("WHERE NOT EXISTS (");
-            scriptBuilder.addTab().addLine("SELECT 1");
-            scriptBuilder.addTab().addLine("FROM wres.ProjectSource S");
-            scriptBuilder.addTab().addLine("WHERE S.source_id = O.source_id");
-            scriptBuilder.addLine(");");
-            scriptBuilder.addLine("DELETE FROM wres.TimeSeries TS");
-            scriptBuilder.addLine("WHERE NOT EXISTS (");
-            scriptBuilder.addTab().addLine("SELECT 1");
-            scriptBuilder.addTab().addLine("FROM wres.ForecastSource FS");
-            scriptBuilder.addTab().addLine("INNER JOIN wres.ProjectSource PS");
-            scriptBuilder.addTab(  2  ).addLine("ON PS.source_id = FS.source_id");
-            scriptBuilder.addTab().addLine("WHERE FS.forecast_id = TS.timeseries_id");
-            scriptBuilder.addLine(");");
+            script.addLine("DELETE FROM wres.Source S" );
+            script.addLine("WHERE NOT EXISTS (");
+            script.addTab().addLine("SELECT 1");
+            script.addTab().addLine("FROM wres.ProjectSource PS");
+            script.addTab().addLine("WHERE PS.source_id = S.source_id");
+            script.addLine(");");
+            script.addLine("DELETE FROM wres.Project P");
+            script.addLine("WHERE NOT EXISTS (");
+            script.addTab().addLine("SELECT 1");
+            script.addTab().addLine("FROM wres.ProjectSource PS");
+            script.addTab().addLine("WHERE PS.project_id = P.project_id");
+            script.addLine(");");
+            script.addLine("DELETE FROM wres.ForecastSource FS");
+            script.addLine("WHERE NOT EXISTS (");
+            script.addTab().addLine("SELECT 1");
+            script.addTab().addLine("FROM wres.ProjectSource S");
+            script.addTab().addLine("WHERE S.source_id = FS.source_id");
+            script.addLine(");");
+            script.addLine("DELETE FROM wres.Observation O");
+            script.addLine("WHERE NOT EXISTS (");
+            script.addTab().addLine("SELECT 1");
+            script.addTab().addLine("FROM wres.ProjectSource S");
+            script.addTab().addLine("WHERE S.source_id = O.source_id");
+            script.addLine(");");
+            script.addLine("DELETE FROM wres.TimeSeries TS");
+            script.addLine("WHERE NOT EXISTS (");
+            script.addTab().addLine("SELECT 1");
+            script.addTab().addLine("FROM wres.ForecastSource FS");
+            script.addTab().addLine("INNER JOIN wres.ProjectSource PS");
+            script.addTab(  2  ).addLine("ON PS.source_id = FS.source_id");
+            script.addTab().addLine("WHERE FS.forecast_id = TS.timeseries_id");
+            script.addLine(");");
 
             for (String partition : partitionTables)
             {
-                scriptBuilder.addLine("DELETE FROM ", partition, " FV");
-                scriptBuilder.addLine("WHERE NOT EXISTS (");
-                scriptBuilder.addTab().addLine("SELECT 1");
-                scriptBuilder.addTab().addLine("FROM wres.ProjectSource PS");
-                scriptBuilder.addTab().addLine("INNER JOIN wres.ForecastSource FS");
-                scriptBuilder.addTab(  2  ).addLine("ON FS.source_id = PS.source_id");
-                scriptBuilder.addTab().addLine("WHERE FS.forecast_id = FV.timeseries_id");
-                scriptBuilder.addLine(");");
+                script.addLine("DELETE FROM ", partition, " FV");
+                script.addLine("WHERE NOT EXISTS (");
+                script.addTab().addLine("SELECT 1");
+                script.addTab().addLine("FROM wres.ProjectSource PS");
+                script.addTab().addLine("INNER JOIN wres.ForecastSource FS");
+                script.addTab(  2  ).addLine("ON FS.source_id = PS.source_id");
+                script.addTab().addLine("WHERE FS.forecast_id = FV.timeseries_id");
+                script.addLine(");");
             }
 
             // We have to run everything sequentially because the tables need
@@ -1592,7 +1656,7 @@ public final class Database {
             // Async would be neat, but not really possible. MVCC might make it
             // possible though; probably worth exploring since this can take a
             // while
-            scriptBuilder.executeInTransaction();
+            script.executeInTransaction();
 
             LOGGER.info("Incomplete data has been removed from the system.");
         }
