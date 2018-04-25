@@ -1,9 +1,7 @@
 package wres.tasker;
 
 import java.nio.charset.Charset;
-import java.util.List;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CyclicBarrier;
 
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
@@ -43,7 +41,7 @@ class JobOutputReceiver extends DefaultConsumer
     {
         LOGGER.debug( "Heard a message, consumerTag: {}, envelope: {}, properties: {}, message: {}",
                       consumerTag, envelope, properties, message );
-        String decodedResult = new String( message, Charset.forName( "UTF-16" ) );
+        String decodedResult = new String( message, Charset.forName( "UTF-8" ) );
         this.getResult().offer( decodedResult );
     }
 }
