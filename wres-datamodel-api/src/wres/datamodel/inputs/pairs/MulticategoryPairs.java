@@ -9,7 +9,7 @@ import wres.datamodel.inputs.MetricInput;
  * 
  * @author james.brown@hydrosolved.com
  */
-public interface MulticategoryPairs extends PairedInput<VectorOfBooleans>
+public interface MulticategoryPairs extends MetricInput<VectorOfBooleans>
 {
 
     /**

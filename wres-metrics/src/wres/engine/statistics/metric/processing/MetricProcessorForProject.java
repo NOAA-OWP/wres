@@ -7,11 +7,11 @@ import java.util.concurrent.ExecutorService;
 import wres.config.generated.DatasourceType;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.datamodel.ThresholdsByMetric;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.outputs.MetricOutputException;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
+import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.engine.statistics.metric.MetricFactory;
 
 /**

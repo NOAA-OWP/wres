@@ -27,9 +27,6 @@ import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricDimension;
-import wres.datamodel.OneOrTwoThresholds;
-import wres.datamodel.ThresholdConstants.Operator;
-import wres.datamodel.ThresholdConstants.ThresholdDataType;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
@@ -38,6 +35,9 @@ import wres.datamodel.outputs.MetricOutputAccessException;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMapByMetric;
 import wres.datamodel.outputs.MultiVectorOutput;
+import wres.datamodel.thresholds.OneOrTwoThresholds;
+import wres.datamodel.thresholds.ThresholdConstants.Operator;
+import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 
 /**
  * Tests the writing of diagram outputs to a file of Comma Separated Values (CSV).

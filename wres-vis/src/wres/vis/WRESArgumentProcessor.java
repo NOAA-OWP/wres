@@ -16,13 +16,13 @@ import ohd.hseb.hefs.utils.plugins.UniqueGenericParameterList;
 import ohd.hseb.util.misc.HString;
 import wres.datamodel.DatasetIdentifier;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.OneOrTwoThresholds;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.metadata.ReferenceTime;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.BoxPlotOutput;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
+import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.vis.ChartEngineFactory.ChartType;
 
 /**

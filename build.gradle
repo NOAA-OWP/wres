@@ -28,6 +28,8 @@ plugins
     id 'org.ajoberstar.grgit' version '1.7.2'
     // To compile user documentation (not working: blows up on compileMarkdown)
     //id 'org.uulib.gradle.markdown' version '0.0.1'
+    // To generate de/serialization classes for message bodies
+    id 'com.google.protobuf' version '0.8.5'
 }
 
 repositories
@@ -378,10 +380,49 @@ project(':wres-grid')
     }
 }
 
+project(':wres-messages')
+{
+    apply plugin: 'com.google.protobuf'
+
+    def generatedDir = "${project.projectDir}/src"
+
+    protobuf
+    {
+        // Automagically download and use the correct protobuf compiler
+        protoc
+        {
+            artifact = 'com.google.protobuf:protoc:3.5.1-1'
+        }
+        // So all IDEs/editors can see generated files, use actual src dir:
+        generatedFilesBaseDir = "${generatedDir}"
+    }
+
+    sourceSets
+    {
+        main
+        {
+            // Tell protobuf plugin where to find .proto schema files:
+            proto
+            {
+                srcDirs = ['nonsrc']
+            }
+        }
+    }
+
+    dependencies
+    {
+        compile 'org.slf4j:slf4j-api:1.7.25'
+        compile 'com.google.protobuf:protobuf-java:3.5.1'
+        runtime 'ch.qos.logback:logback-classic:1.2.3'
+    }
+}
+
+
 project(':wres-worker')
 {
     dependencies
     {
+        compile project( ':wres-messages' )
         compile 'org.slf4j:slf4j-api:1.7.25'
         compile 'com.rabbitmq:amqp-client:5.2.0'
         runtime 'ch.qos.logback:logback-classic:1.2.3'
@@ -396,6 +437,7 @@ project(':wres-tasker')
 {
     dependencies
     {
+        compile project( ':wres-messages' )
         compile 'org.slf4j:slf4j-api:1.7.25'
         compile 'com.rabbitmq:amqp-client:5.2.0'
         compile 'javax.ws.rs:javax.ws.rs-api:2.1'
@@ -448,6 +490,7 @@ project(':wres-tasker')
         }
     }
 }
+
 
 
 /* Single report for test coverage, thanks to

@@ -70,7 +70,7 @@ public final class RelativeOperatingCharacteristicScoreTest
         final RelativeOperatingCharacteristicScore rocs = b.build();
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getData().size(),
+        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getRawData().size(),
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension(),
                                                                    MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE,
@@ -134,7 +134,7 @@ public final class RelativeOperatingCharacteristicScoreTest
         final RelativeOperatingCharacteristicScore rocs = b.build();
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getData().size(),
+        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getRawData().size(),
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension(),
                                                                    MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE,
@@ -197,7 +197,7 @@ public final class RelativeOperatingCharacteristicScoreTest
         final RelativeOperatingCharacteristicScore rocs = b.build();
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getData().size(),
+        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getRawData().size(),
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension(),
                                                                    MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE,

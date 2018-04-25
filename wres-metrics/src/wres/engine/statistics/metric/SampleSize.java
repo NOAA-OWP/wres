@@ -4,8 +4,8 @@ import java.util.Objects;
 
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.ScoreOutputGroup;
+import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.inputs.MetricInputException;
-import wres.datamodel.inputs.pairs.PairedInput;
 import wres.datamodel.outputs.DoubleScoreOutput;
 
 /**
@@ -13,7 +13,7 @@ import wres.datamodel.outputs.DoubleScoreOutput;
  * 
  * @author james.brown@hydrosolved.com
  */
-class SampleSize<S extends PairedInput<?>> extends OrdinaryScore<S, DoubleScoreOutput>
+class SampleSize<S extends MetricInput<?>> extends OrdinaryScore<S, DoubleScoreOutput>
 {
 
     @Override
@@ -23,8 +23,8 @@ class SampleSize<S extends PairedInput<?>> extends OrdinaryScore<S, DoubleScoreO
         {
             throw new MetricInputException( "Specify non-null input to the '" + this + "'." );
         }
-        return getDataFactory().ofDoubleScoreOutput( s.getData().size(),
-                                               getMetadata( s, s.getData().size(), MetricConstants.MAIN, null ) );
+        return getDataFactory().ofDoubleScoreOutput( s.getRawData().size(),
+                                               getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null ) );
     }
 
     @Override
@@ -61,7 +61,7 @@ class SampleSize<S extends PairedInput<?>> extends OrdinaryScore<S, DoubleScoreO
      * A {@link MetricBuilder} to build the metric.
      */
 
-    static class SampleSizeBuilder<S extends PairedInput<?>> extends OrdinaryScoreBuilder<S, DoubleScoreOutput>
+    static class SampleSizeBuilder<S extends MetricInput<?>> extends OrdinaryScoreBuilder<S, DoubleScoreOutput>
     {
         @Override
         public SampleSize<S> build() throws MetricParameterException

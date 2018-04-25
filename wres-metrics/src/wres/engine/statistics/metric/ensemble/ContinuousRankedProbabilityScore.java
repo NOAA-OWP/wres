@@ -50,15 +50,15 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Ensemble
         }
         //Slice the data into groups with an equal number of ensemble members
         Slicer slicer = getDataFactory().getSlicer();
-        Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> sliced = slicer.filterByRightSize( s.getData() );
+        Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> sliced = slicer.filterByRightSize( s.getRawData() );
         //CRPS, currently without decomposition
         //TODO: implement the decomposition
         double[] crps = new double[1];
         sliced.values().forEach( pairs -> crps[0] += getSumCRPS( pairs )[0] );
         //Compute the average (implicitly weighted by the number of pairs in each group)
-        crps[0] = FunctionFactory.finiteOrMissing().applyAsDouble( crps[0] / s.getData().size() );
+        crps[0] = FunctionFactory.finiteOrMissing().applyAsDouble( crps[0] / s.getRawData().size() );
         //Metadata
-        final MetricOutputMetadata metOut = getMetadata( s, s.getData().size(), MetricConstants.MAIN, null );
+        final MetricOutputMetadata metOut = getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null );
         return getDataFactory().ofDoubleScoreOutput( crps[0], metOut );
     }
 

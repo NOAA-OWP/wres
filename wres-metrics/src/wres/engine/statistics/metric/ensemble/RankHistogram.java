@@ -61,12 +61,12 @@ public class RankHistogram extends Diagram<EnsemblePairs, MultiVectorOutput>
         double[] relativeFrequencies = new double[] { MissingValues.MISSING_DOUBLE };
 
         // Some data to process
-        if ( !s.getData().isEmpty() )
+        if ( !s.getRawData().isEmpty() )
         {
 
             Slicer slicer = d.getSlicer();
             //Acquire subsets in case of missing data
-            Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> sliced = slicer.filterByRightSize( s.getData() );
+            Map<Integer, List<PairOfDoubleAndVectorOfDoubles>> sliced = slicer.filterByRightSize( s.getRawData() );
             //Find the subset with the most elements
             List<PairOfDoubleAndVectorOfDoubles> useMe =
                     sliced.values().stream().max( Comparator.comparingInt( List::size ) ).get();
@@ -87,7 +87,7 @@ public class RankHistogram extends Diagram<EnsemblePairs, MultiVectorOutput>
         Map<MetricDimension, double[]> output = new EnumMap<>( MetricDimension.class );
         output.put( MetricDimension.RANK_ORDER, ranks );
         output.put( MetricDimension.OBSERVED_RELATIVE_FREQUENCY, relativeFrequencies );
-        final MetricOutputMetadata metOut = getMetadata( s, s.getData().size(), MetricConstants.MAIN, null );
+        final MetricOutputMetadata metOut = getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null );
         return d.ofMultiVectorOutput( output, metOut );
     }
 

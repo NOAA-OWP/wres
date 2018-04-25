@@ -125,7 +125,7 @@ public final class PeirceSkillScoreTest
         final DoubleScoreOutput actual = ps.apply( input );
         final DoubleScoreOutput expected =
                 outF.ofDoubleScoreOutput( 0.05057466520850963,
-                                          metaFac.getOutputMetadata( meta, input.getData().size() ) );
+                                          metaFac.getOutputMetadata( meta, input.getRawData().size() ) );
         assertTrue( "Actual: " + actual.getData().doubleValue()
                     + ". Expected: "
                     + expected.getData().doubleValue()

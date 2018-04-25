@@ -52,7 +52,7 @@ implements Collectable<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput>
         Slicer slicer = d.getSlicer();
         Metadata in = s.getMetadata();
         // Set the metadata explicitly since this class implements Collectable and getID() may be overridden
-        MetricOutputMetadata meta = mF.getOutputMetadata( s.getData().size(),
+        MetricOutputMetadata meta = mF.getOutputMetadata( s.getRawData().size(),
                                                           mF.getDimension(),
                                                           in.getDimension(),
                                                           MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
@@ -60,7 +60,7 @@ implements Collectable<SingleValuedPairs, DoubleScoreOutput, DoubleScoreOutput>
                                                           in.getIdentifier() );
         double returnMe = Double.NaN;
         // Minimum sample size of 1
-        if ( s.getData().size() > 1 )
+        if ( s.getRawData().size() > 1 )
         {
             returnMe = FunctionFactory.finiteOrMissing()
                                       .applyAsDouble( correlation.correlation( slicer.getLeftSide( s ),

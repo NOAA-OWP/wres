@@ -66,7 +66,7 @@ public final class BoxPlotErrorByForecastTest
         b.setProbabilities( dataF.vectorOf( new double[] { 0.0, 0.25, 0.5, 0.75, 1.0 } ) );
         BoxPlotErrorByForecast bpe = (BoxPlotErrorByForecast) b.build();
 
-        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getData().size(),
+        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getRawData().size(),
                                                                    metFac.getDimension( "MM/DAY" ),
                                                                    metFac.getDimension( "MM/DAY" ),
                                                                    MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE,
@@ -126,7 +126,7 @@ public final class BoxPlotErrorByForecastTest
         b.setProbabilities( dataF.vectorOf( new double[] { 0.0, 0.25, 0.5, 0.75, 1.0 } ) );
         BoxPlotErrorByForecast bpe = (BoxPlotErrorByForecast) b.build();
 
-        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getData().size(),
+        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getRawData().size(),
                                                                    metFac.getDimension( "MM/DAY" ),
                                                                    metFac.getDimension( "MM/DAY" ),
                                                                    MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE,

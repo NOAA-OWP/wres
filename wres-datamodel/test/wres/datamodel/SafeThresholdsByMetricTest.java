@@ -15,9 +15,12 @@ import org.junit.Test;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.SafeThresholdsByMetric.SafeThresholdsByMetricBuilder;
-import wres.datamodel.ThresholdConstants.Operator;
-import wres.datamodel.ThresholdConstants.ThresholdDataType;
-import wres.datamodel.ThresholdConstants.ThresholdGroup;
+import wres.datamodel.thresholds.OneOrTwoThresholds;
+import wres.datamodel.thresholds.Threshold;
+import wres.datamodel.thresholds.ThresholdsByMetric;
+import wres.datamodel.thresholds.ThresholdConstants.Operator;
+import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
+import wres.datamodel.thresholds.ThresholdConstants.ThresholdGroup;
 
 /**
  * Tests the {@link SafeThresholdsByMetric}.

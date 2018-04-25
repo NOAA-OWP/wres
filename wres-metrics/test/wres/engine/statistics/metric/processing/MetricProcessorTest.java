@@ -20,14 +20,14 @@ import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.datamodel.Threshold;
-import wres.datamodel.ThresholdConstants.Operator;
-import wres.datamodel.ThresholdConstants.ThresholdDataType;
-import wres.datamodel.ThresholdsByMetric;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.outputs.MetricOutputForProjectByTimeAndThreshold;
+import wres.datamodel.thresholds.Threshold;
+import wres.datamodel.thresholds.ThresholdsByMetric;
+import wres.datamodel.thresholds.ThresholdConstants.Operator;
+import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 import wres.engine.statistics.metric.MetricFactory;
 import wres.engine.statistics.metric.MetricParameterException;
 
@@ -180,7 +180,7 @@ public final class MetricProcessorTest
 
     /**
      * Tests the {@link MetricProcessor#doNotComputeTheseMetricsForThisThreshold(wres.datamodel.MetricConstants.MetricInputGroup, 
-     * wres.datamodel.MetricConstants.MetricOutputGroup, wres.datamodel.Threshold)}. 
+     * wres.datamodel.MetricConstants.MetricOutputGroup, wres.datamodel.thresholds.Threshold)}. 
      * Uses the configuration in testinput/metricProcessorTest/test4SingleValued.xml.
      * 
      * @throws IOException if the input data could not be read
@@ -256,7 +256,7 @@ public final class MetricProcessorTest
 
     /**
      * Tests the {@link MetricProcessor#doNotComputeTheseMetricsForThisThreshold(wres.datamodel.MetricConstants.MetricInputGroup, 
-     * wres.datamodel.MetricConstants.MetricOutputGroup, wres.datamodel.Threshold)}. 
+     * wres.datamodel.MetricConstants.MetricOutputGroup, wres.datamodel.thresholds.Threshold)}. 
      * Uses the configuration in testinput/metricProcessorTest/test5Ensemble.xml.
      * 
      * @throws IOException if the input data could not be read

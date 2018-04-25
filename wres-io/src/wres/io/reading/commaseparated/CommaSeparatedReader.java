@@ -17,9 +17,9 @@ import wres.config.generated.Feature;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.Dimension;
-import wres.datamodel.Threshold;
-import wres.datamodel.ThresholdConstants.Operator;
-import wres.datamodel.ThresholdConstants.ThresholdDataType;
+import wres.datamodel.thresholds.Threshold;
+import wres.datamodel.thresholds.ThresholdConstants.Operator;
+import wres.datamodel.thresholds.ThresholdConstants.ThresholdDataType;
 
 /**
  * Helps read files of Comma Separated Values (CSV).

@@ -35,13 +35,13 @@ import wres.config.generated.DestinationConfig;
 import wres.config.generated.DestinationType;
 import wres.config.generated.ProjectConfig;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.OneOrTwoThresholds;
-import wres.datamodel.Threshold;
 import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.outputs.DoubleScoreOutput;
 import wres.datamodel.outputs.MapKey;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.MetricOutputMultiMapByTimeAndThreshold;
+import wres.datamodel.thresholds.OneOrTwoThresholds;
+import wres.datamodel.thresholds.Threshold;
 import wres.io.writing.WriteException;
 
 /**

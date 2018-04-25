@@ -5,16 +5,14 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.SortedSet;
 
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
-import wres.datamodel.inputs.pairs.builders.TimeSeriesOfSingleValuedPairsBuilder;
+import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairsBuilder;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetadataFactory;
 import wres.datamodel.time.Event;
@@ -36,7 +34,13 @@ class SafeTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
      * Instance of base class for a time-series of pairs.
      */
 
-    private final SafeTimeSeriesOfPairs<PairOfDoubles> bP;
+    private final SafeTimeSeries<PairOfDoubles> main;
+
+    /**
+     * Instance of base class for a baseline time-series of pairs.
+     */
+
+    private final SafeTimeSeries<PairOfDoubles> baseline;
 
     @Override
     public TimeSeriesOfSingleValuedPairs getBaselineData()
@@ -46,56 +50,56 @@ class SafeTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
             return null;
         }
         SafeTimeSeriesOfSingleValuedPairsBuilder builder = new SafeTimeSeriesOfSingleValuedPairsBuilder();
-        builder.addTimeSeriesData( bP.getDataForBaseline() ).setMetadata( getMetadataForBaseline() );
+        builder.addTimeSeriesData( baseline.getRawData() ).setMetadata( getMetadataForBaseline() );
         return builder.build();
     }
 
     @Override
     public Iterable<Event<PairOfDoubles>> timeIterator()
     {
-        return bP.timeIterator();
+        return main.timeIterator();
     }
 
     @Override
     public Iterable<TimeSeries<PairOfDoubles>> basisTimeIterator()
     {
-        return bP.basisTimeIterator();
+        return main.basisTimeIterator();
     }
 
     @Override
     public Iterable<TimeSeries<PairOfDoubles>> durationIterator()
     {
-        return bP.durationIterator();
+        return main.durationIterator();
     }
 
     @Override
     public List<Instant> getBasisTimes()
     {
-        return Collections.unmodifiableList( bP.getBasisTimes() );
+        return Collections.unmodifiableList( main.getBasisTimes() );
     }
 
     @Override
     public SortedSet<Duration> getDurations()
     {
-        return Collections.unmodifiableSortedSet( bP.getDurations() );
+        return Collections.unmodifiableSortedSet( main.getDurations() );
     }
 
     @Override
     public boolean hasMultipleTimeSeries()
     {
-        return bP.hasMultipleTimeSeries();
+        return main.hasMultipleTimeSeries();
     }
 
     @Override
     public boolean isRegular()
     {
-        return bP.isRegular();
+        return main.isRegular();
     }
 
     @Override
     public Duration getRegularDuration()
     {
-        return bP.getRegularDuration();
+        return main.getRegularDuration();
     }
 
     @Override
@@ -117,7 +121,7 @@ class SafeTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
     }
 
     /**
-     * A {@link DefaultPairedInputBuilder} to build the metric input.
+     * A {@link DefaultMetricInputBuilder} to build the metric input.
      */
 
     static class SafeTimeSeriesOfSingleValuedPairsBuilder extends SingleValuedPairsBuilder
@@ -167,30 +171,20 @@ class SafeTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
         public SafeTimeSeriesOfSingleValuedPairsBuilder
                 addTimeSeries( TimeSeriesOfSingleValuedPairs timeSeries )
         {
-            VectorOfDoubles climatology = null;
-
             for ( TimeSeries<PairOfDoubles> a : timeSeries.basisTimeIterator() )
             {
                 //Add the main data
-                TimeSeriesOfSingleValuedPairs next = (TimeSeriesOfSingleValuedPairs) a;
-
                 List<Event<PairOfDoubles>> nextSource = new ArrayList<>();
-                for ( Event<PairOfDoubles> nextEvent : next.timeIterator() )
+                for ( Event<PairOfDoubles> nextEvent : a.timeIterator() )
                 {
                     nextSource.add( nextEvent );
                 }
-                this.addTimeSeriesData( Arrays.asList( Event.of( next.getEarliestBasisTime(), nextSource ) ) );
-
-                //Add climatology if available
-                if ( next.hasClimatology() )
-                {
-                    climatology = next.getClimatology();
-                }
+                this.addTimeSeriesData( Arrays.asList( Event.of( a.getEarliestBasisTime(), nextSource ) ) );
             }
-            
+
             // Set the union of the current metadata and any previously added time-series
             MetadataFactory metaFac = DefaultMetadataFactory.getInstance();
-            List<Metadata> mainMeta = new ArrayList<>();  
+            List<Metadata> mainMeta = new ArrayList<>();
             mainMeta.add( timeSeries.getMetadata() );
             if ( Objects.nonNull( this.mainMeta ) )
             {
@@ -204,7 +198,7 @@ class SafeTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
                 this.addTimeSeriesForBaseline( timeSeries.getBaselineData() );
             }
 
-            this.setClimatology( climatology );
+            this.setClimatology( timeSeries.getClimatology() );
             return this;
         }
 
@@ -213,22 +207,20 @@ class SafeTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
         {
             for ( TimeSeries<PairOfDoubles> a : timeSeries.basisTimeIterator() )
             {
-                //Add the main data
-                TimeSeriesOfSingleValuedPairs next = (TimeSeriesOfSingleValuedPairs) a;
-
                 List<Event<PairOfDoubles>> nextSource = new ArrayList<>();
 
-                for ( Event<PairOfDoubles> nextEvent : next.timeIterator() )
+                for ( Event<PairOfDoubles> nextEvent : a.timeIterator() )
                 {
                     nextSource.add( nextEvent );
                 }
-                this.addTimeSeriesDataForBaseline( Arrays.asList( Event.of( next.getEarliestBasisTime(), nextSource ) ) );
+                this.addTimeSeriesDataForBaseline( Arrays.asList( Event.of( a.getEarliestBasisTime(),
+                                                                            nextSource ) ) );
             }
-            
+
             // Set the union of the current metadata and any previously added time-series
             MetadataFactory metaFac = DefaultMetadataFactory.getInstance();
             List<Metadata> baselineMeta = new ArrayList<>();
-            
+
             // Metadata, as with data, is taken from the main input
             baselineMeta.add( timeSeries.getMetadata() );
             if ( Objects.nonNull( this.baselineMeta ) )
@@ -258,129 +250,8 @@ class SafeTimeSeriesOfSingleValuedPairs extends SafeSingleValuedPairs
     SafeTimeSeriesOfSingleValuedPairs( final SafeTimeSeriesOfSingleValuedPairsBuilder b )
     {
         super( b );
-        bP = new SafeTimeSeriesOfPairs<>( b.data,
-                                          b.baselineData,
-                                          getBasisTimeIterator(),
-                                          getDurationIterator() );
-    }
-
-    /**
-     * Returns an {@link Iterable} view of the atomic time-series by basis time.
-     * 
-     * @return an iterable view of the basis times
-     */
-
-    private Iterable<TimeSeries<PairOfDoubles>> getBasisTimeIterator()
-    {
-        //Construct an iterable view of the basis times
-        class IterableTimeSeries implements Iterable<TimeSeries<PairOfDoubles>>
-        {
-            @Override
-            public Iterator<TimeSeries<PairOfDoubles>> iterator()
-            {
-                return new Iterator<TimeSeries<PairOfDoubles>>()
-                {
-                    int returned = 0;
-                    Iterator<Instant> iterator = getBasisTimes().iterator();
-
-                    @Override
-                    public boolean hasNext()
-                    {
-                        return iterator.hasNext();
-                    }
-
-                    @Override
-                    public TimeSeries<PairOfDoubles> next()
-                    {
-                        if ( !hasNext() )
-                        {
-                            throw new NoSuchElementException( "No more basis times to iterate." );
-                        }
-                        SafeTimeSeriesOfSingleValuedPairsBuilder builder =
-                                new SafeTimeSeriesOfSingleValuedPairsBuilder();
-
-                        // Iterate
-                        iterator.next();
-
-                        builder.addTimeSeriesData( Arrays.asList( bP.getData().get( returned ) ) );
-
-                        // Propagate the metadata without adjustment because the input period is canonical
-                        builder.setMetadata( getMetadata() );
-
-                        // Set the climatology
-                        builder.setClimatology( getClimatology() );
-                        returned++;
-                        return builder.build();
-                    }
-
-                    @Override
-                    public void remove()
-                    {
-                        throw new UnsupportedOperationException( TimeSeriesHelper.UNSUPPORTED_MODIFICATION );
-                    }
-                };
-            }
-        }
-        return new IterableTimeSeries();
-    }
-
-    /**
-     * Returns an {@link Iterable} view of the atomic time-series by duration.
-     * 
-     * @return an iterable view of the durations
-     */
-
-    private Iterable<TimeSeries<PairOfDoubles>> getDurationIterator()
-    {
-        //Construct an iterable view of the basis times
-        class IterableTimeSeries implements Iterable<TimeSeries<PairOfDoubles>>
-        {
-            @Override
-            public Iterator<TimeSeries<PairOfDoubles>> iterator()
-            {
-                return new Iterator<TimeSeries<PairOfDoubles>>()
-                {
-                    Iterator<Duration> iterator = bP.getDurations().iterator();
-
-                    @Override
-                    public boolean hasNext()
-                    {
-                        return iterator.hasNext();
-                    }
-
-                    @Override
-                    public TimeSeries<PairOfDoubles> next()
-                    {
-                        if ( !hasNext() )
-                        {
-                            throw new NoSuchElementException( "No more durations to iterate." );
-                        }
-                        SafeTimeSeriesOfSingleValuedPairsBuilder builder =
-                                new SafeTimeSeriesOfSingleValuedPairsBuilder();
-
-                        // Iterate
-                        Duration nextDuration = iterator.next();
-
-                        //Adjust the time window for the metadata
-                        builder.setMetadata( TimeSeriesHelper.getDurationAdjustedMetadata( getMetadata(),
-                                                                                           nextDuration,
-                                                                                           nextDuration ) );
-                        // Data for the current duration by basis time
-                        builder.addTimeSeriesData( bP.filterByDuration( nextDuration, bP.getData() ) );
-                        // Set the climatology
-                        builder.setClimatology( getClimatology() );
-                        return builder.build();
-                    }
-
-                    @Override
-                    public void remove()
-                    {
-                        throw new UnsupportedOperationException( TimeSeriesHelper.UNSUPPORTED_MODIFICATION );
-                    }
-                };
-            }
-        }
-        return new IterableTimeSeries();
+        main = new SafeTimeSeries<>( b.data );
+        this.baseline = this.hasBaseline() ? new SafeTimeSeries<>( b.baselineData ): null;
     }
 
 }

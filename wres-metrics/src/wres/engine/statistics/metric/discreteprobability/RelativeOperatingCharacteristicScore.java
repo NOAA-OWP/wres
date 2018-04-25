@@ -66,7 +66,7 @@ public class RelativeOperatingCharacteristicScore extends OrdinaryScore<Discrete
         {
             rocScore = 2.0 * getAUCMasonGraham( s ) - 1.0;
         }
-        final MetricOutputMetadata metOut = getMetadata( s, s.getData().size(), MetricConstants.MAIN, null );
+        final MetricOutputMetadata metOut = getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null );
         return getDataFactory().ofDoubleScoreOutput( rocScore, metOut );
     }
 
@@ -142,7 +142,7 @@ public class RelativeOperatingCharacteristicScore extends OrdinaryScore<Discrete
         DataFactory d = getDataFactory();
         //Obtain the predicted probabilities when the event occurred and did not occur
         //Begin by collecting against occurrence/non-occurrence
-        Map<Boolean, List<PairOfDoubles>> mapped = pairs.getData()
+        Map<Boolean, List<PairOfDoubles>> mapped = pairs.getRawData()
                                                         .stream()
                                                         .collect( Collectors.groupingBy( a -> d.doubleEquals( a.getItemOne(),
                                                                                                               1.0,

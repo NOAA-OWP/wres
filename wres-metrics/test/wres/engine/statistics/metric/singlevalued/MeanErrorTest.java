@@ -45,7 +45,7 @@ public final class MeanErrorTest
         final SingleValuedPairs input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getData().size(),
+        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getRawData().size(),
                                                                    metaFac.getDimension(),
                                                                    metaFac.getDimension(),
                                                                    MetricConstants.MEAN_ERROR,

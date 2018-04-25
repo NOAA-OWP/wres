@@ -24,6 +24,7 @@ import wres.datamodel.inputs.pairs.TimeSeriesOfEnsemblePairs;
 import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.outputs.MetricOutputMapByTimeAndThreshold;
 import wres.datamodel.outputs.ScoreOutput;
+import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 
@@ -31,8 +32,6 @@ import wres.datamodel.time.TimeSeries;
  * A utility class for slicing/dicing and transforming datasets associated with verification metrics.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 
 public interface Slicer
@@ -245,7 +244,7 @@ public interface Slicer
      * @throws NullPointerException if the input is null
      */
 
-    static Predicate<TimeSeriesOfSingleValuedPairs>
+    static Predicate<TimeSeries<PairOfDoubles>>
             anyOfLeftInTimeSeriesOfSingleValuedPairs( DoublePredicate predicate )
     {
         Objects.requireNonNull( predicate, "Specify non-null input when slicing a time-series by any of left." );
@@ -276,7 +275,7 @@ public interface Slicer
      * @throws NullPointerException if the input is null
      */
 
-    static Predicate<TimeSeriesOfSingleValuedPairs>
+    static Predicate<TimeSeries<PairOfDoubles>>
             anyOfRightInTimeSeriesOfSingleValuedPairs( DoublePredicate predicate )
     {
         Objects.requireNonNull( predicate, "Specify non-null input when slicing a time-series by any of right." );
@@ -308,7 +307,7 @@ public interface Slicer
      * @throws NullPointerException if the input is null
      */
 
-    static Predicate<TimeSeriesOfSingleValuedPairs>
+    static Predicate<TimeSeries<PairOfDoubles>>
             anyOfLeftAndAnyOfRightInTimeSeriesOfSingleValuedPairs( DoublePredicate predicate )
     {
         Objects.requireNonNull( predicate, "Specify non-null input when slicing a time-series by any of left"
@@ -393,7 +392,7 @@ public interface Slicer
     }
 
     /**
-     * Returns the left side of {@link SingleValuedPairs#getData()} as a primitive array of doubles.
+     * Returns the left side of a {@link SingleValuedPairs} as a primitive array of doubles.
      * 
      * @param input the input pairs
      * @return the left side
@@ -402,7 +401,7 @@ public interface Slicer
     double[] getLeftSide( SingleValuedPairs input );
 
     /**
-     * Returns the right side of {@link SingleValuedPairs#getData()} as a primitive array of doubles.
+     * Returns the right side of a {@link SingleValuedPairs} as a primitive array of doubles.
      * 
      * @param input the input pairs
      * @return the right side
@@ -411,7 +410,7 @@ public interface Slicer
     double[] getRightSide( SingleValuedPairs input );
 
     /**
-     * Returns the left side of {@link EnsemblePairs#getData()} as a primitive array of doubles.
+     * Returns the left side of a {@link EnsemblePairs} as a primitive array of doubles.
      * 
      * @param input the input pairs
      * @return the left side
@@ -475,7 +474,7 @@ public interface Slicer
      */
 
     TimeSeriesOfSingleValuedPairs filter( TimeSeriesOfSingleValuedPairs input,
-                                          Predicate<TimeSeriesOfSingleValuedPairs> condition,
+                                          Predicate<TimeSeries<PairOfDoubles>> condition,
                                           DoublePredicate applyToClimatology );
 
     /**
@@ -515,6 +514,18 @@ public interface Slicer
 
     TimeSeriesOfEnsemblePairs filterByDuration( TimeSeriesOfEnsemblePairs input,
                                                 Predicate<Duration> condition );
+
+    /**
+     * Filters the input time-series by the {@link Duration} associated with each value. 
+     * 
+     * @param <T> the type of time-series data
+     * @param input the input to slice
+     * @param condition the condition on which to slice
+     * @return the subset of the input that meets the condition
+     * @throws NullPointerException if either the input or condition is null
+     */
+
+    <T> TimeSeries<T> filterByDuration( TimeSeries<T> input, Predicate<Duration> condition );
 
     /**
      * Filters the input time-series by basis time. Applies to both the main pairs and any baseline pairs.

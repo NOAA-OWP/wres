@@ -72,7 +72,7 @@ public class RelativeOperatingCharacteristicDiagram extends Diagram<DiscreteProb
         DataFactory d = getDataFactory();
         
         // Some data to process        
-        if ( !s.getData().isEmpty() )
+        if ( !s.getRawData().isEmpty() )
         {
             Slicer slice = d.getSlicer();
 
@@ -102,7 +102,7 @@ public class RelativeOperatingCharacteristicDiagram extends Diagram<DiscreteProb
         Map<MetricDimension, double[]> output = new EnumMap<>( MetricDimension.class );
         output.put( MetricDimension.PROBABILITY_OF_DETECTION, pOD );
         output.put( MetricDimension.PROBABILITY_OF_FALSE_DETECTION, pOFD );
-        final MetricOutputMetadata metOut = getMetadata( s, s.getData().size(), MetricConstants.MAIN, null );
+        final MetricOutputMetadata metOut = getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null );
         return d.ofMultiVectorOutput( output, metOut );
     }
 

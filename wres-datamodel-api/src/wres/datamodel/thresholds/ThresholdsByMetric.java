@@ -1,12 +1,13 @@
-package wres.datamodel;
+package wres.datamodel.thresholds;
 
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import wres.datamodel.MetricConstants;
 import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
-import wres.datamodel.ThresholdConstants.ThresholdGroup;
+import wres.datamodel.thresholds.ThresholdConstants.ThresholdGroup;
 
 /**
  * A container of {@link Threshold} by {@link MetricConstants}. Includes an optional builder.

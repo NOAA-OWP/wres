@@ -69,7 +69,7 @@ public class QuantileQuantileDiagram extends Diagram<SingleValuedPairs, MultiVec
         Map<MetricDimension, double[]> output = new EnumMap<>( MetricDimension.class );
         output.put( MetricDimension.OBSERVED_QUANTILES, observedQ );
         output.put( MetricDimension.PREDICTED_QUANTILES, predictedQ );
-        final MetricOutputMetadata metOut = getMetadata( s, s.getData().size(), MetricConstants.MAIN, null );
+        final MetricOutputMetadata metOut = getMetadata( s, s.getRawData().size(), MetricConstants.MAIN, null );
         return d.ofMultiVectorOutput( output, metOut );
     }
 

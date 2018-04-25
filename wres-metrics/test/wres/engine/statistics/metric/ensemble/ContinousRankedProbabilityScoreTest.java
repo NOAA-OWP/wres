@@ -61,7 +61,7 @@ public final class ContinousRankedProbabilityScoreTest
 
         //Metadata for the output
         final MetricOutputMetadata m1 =
-                metaFac.getOutputMetadata( input.getData().size(),
+                metaFac.getOutputMetadata( input.getRawData().size(),
                                            metaFac.getDimension(),
                                            metaFac.getDimension(),
                                            MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
@@ -116,7 +116,7 @@ public final class ContinousRankedProbabilityScoreTest
 
         //Metadata for the output
         final MetricOutputMetadata m1 =
-                metaFac.getOutputMetadata( input.getData().size(),
+                metaFac.getOutputMetadata( input.getRawData().size(),
                                            metaFac.getDimension(),
                                            metaFac.getDimension(),
                                            MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,
@@ -157,7 +157,7 @@ public final class ContinousRankedProbabilityScoreTest
 
         //Metadata for the output
         final MetricOutputMetadata m1 =
-                metaFac.getOutputMetadata( input.getData().size(),
+                metaFac.getOutputMetadata( input.getRawData().size(),
                                            metaFac.getDimension(),
                                            metaFac.getDimension(),
                                            MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE,

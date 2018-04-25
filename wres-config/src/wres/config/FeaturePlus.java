@@ -15,8 +15,6 @@ import wres.config.generated.Feature;
  * be preserved.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 1.0
  */
 
 public class FeaturePlus implements Comparable<FeaturePlus>

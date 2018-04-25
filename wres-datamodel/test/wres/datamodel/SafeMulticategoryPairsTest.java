@@ -47,7 +47,7 @@ public final class SafeMulticategoryPairsTest
         //Check category count
         assertTrue("Unexpected category count on inputs [2," + p.getCategoryCount() + "].", p.getCategoryCount() == 2);
         //Check pair count
-        assertTrue("Unexpected pair count for main pairs [10," + p.getData().size() + "].", p.getData().size() == 10);
+        assertTrue("Unexpected pair count for main pairs [10," + p.getRawData().size() + "].", p.getRawData().size() == 10);
         //Check category count of two when fully expanded
         final MulticategoryPairsBuilder bn = new MulticategoryPairsBuilder();
         values.clear();

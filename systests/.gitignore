@@ -3,3 +3,11 @@ wresSysTestResults*
 /wres.sh*
 
 /data.in_repo
+
+# Image binaries
+*.png
+*.jpg
+*.jpeg
+*.bmp
+*.tif
+*.tiff

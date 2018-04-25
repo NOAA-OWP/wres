@@ -30,13 +30,13 @@ import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.Dimension;
 import wres.datamodel.MetricConstants;
-import wres.datamodel.OneOrTwoThresholds;
-import wres.datamodel.Threshold;
-import wres.datamodel.ThresholdConstants;
-import wres.datamodel.ThresholdConstants.Operator;
-import wres.datamodel.ThresholdConstants.ThresholdGroup;
-import wres.datamodel.ThresholdsByMetric;
 import wres.datamodel.metadata.MetadataFactory;
+import wres.datamodel.thresholds.OneOrTwoThresholds;
+import wres.datamodel.thresholds.Threshold;
+import wres.datamodel.thresholds.ThresholdConstants;
+import wres.datamodel.thresholds.ThresholdConstants.Operator;
+import wres.datamodel.thresholds.ThresholdConstants.ThresholdGroup;
+import wres.datamodel.thresholds.ThresholdsByMetric;
 
 /**
  * Tests the {@link MetricConfigHelper}.

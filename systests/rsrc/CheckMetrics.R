@@ -79,9 +79,18 @@ generateAllMetricsForAllFeatures <- function( pairs, threshold, thresholdType, .
 		data <- fread( pairs, fill = TRUE, stringsAsFactors = FALSE )
 		data <- data[ data$V1!="Feature", ]
 	}
-	# Convert columns with header information to numeric type
-	data[,5] <- sapply( data[,5],as.numeric )
-	data[,6] <- sapply( data[,6],as.numeric )
+
+	# Convert numeric columns to numeric type
+      data[,5] <- sapply( data[,5],as.numeric )
+      data[,6] <- sapply( data[,6],as.numeric )
+
+      # Replace NaN with NA
+      data[sapply(data,is.na)] = NA
+
+      # Remove rows with missing obs
+      #data = na.omit( data )
+	data=data[complete.cases(data[, "V5"]),]
+
 	# Find the features
       features <- unique(data$V1)
 	# Iterate through the features and generate the metrics for each one
