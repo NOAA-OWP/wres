@@ -57,6 +57,8 @@
         <xs:sequence>
             <xs:element name="alias" type="xs:string" minOccurs="0" maxOccurs="unbounded" />
             <xs:element name="coordinate" type="coordinateSelection" minOccurs="0" />
+            <xs:element name="polygon" type="PolygonSelection" minOccurs="0" maxOccurs="unbounded" />
+            <xs:element name="circle" type="CircleSelection" minOccurs="0" maxOccurs="unbounded" />
         </xs:sequence>
         <xs:attribute name="label" type="xs:string" />
         <xs:attribute name="locationId" type="xs:string" />
@@ -78,6 +80,39 @@
             <xs:element name="latitude" type="xs:float" />
             <xs:element name="range" type="xs:float" />
         </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="CircleSelection">
+        <xs:annotation>
+            <xs:appinfo>
+                <jaxb:class name="Circle" />
+            </xs:appinfo>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="latitude" type="xs:float" />
+            <xs:element name="longitude" type="xs:float" />
+            <xs:element name="diameter" type="xs:float" />
+        </xs:sequence>
+        <xs:attribute name="srid" type="xs:integer" default="4326" />
+    </xs:complexType>
+
+    <xs:complexType name="PolygonSelection">
+        <xs:annotation>
+            <xs:appinfo>
+                <jaxb:class name="Polygon" />
+            </xs:appinfo>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="point" minOccurs="3" maxOccurs="unbounded" >
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="latitude" type="xs:float" />
+                        <xs:element name="longitude" type="xs:float" />
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+        <xs:attribute name="srid" type="xs:integer" default="4326" />
     </xs:complexType>
 
     <!-- TODO revisit selection of a grid point by index - who wants? -->

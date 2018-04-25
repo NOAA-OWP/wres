@@ -198,7 +198,7 @@ public class FeaturePlus implements Comparable<FeaturePlus>
         if ( Objects.nonNull( feature.getCoordinate() ) )
         {
             CoordinateSelection c = feature.getCoordinate();
-            coordinate = "(" + c.getLatitude() + "," + c.getLongitude() + "," + c.getRange() + ")";
+            coordinate = c.getLatitude() + " " + c.getLongitude();
         }
         StringJoiner joiner = new StringJoiner( ",", "{", "}" );
         joiner.add( feature.getLocationId() )

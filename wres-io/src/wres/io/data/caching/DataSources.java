@@ -3,14 +3,23 @@ package wres.io.data.caching;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.generated.DataSourceConfig;
+import wres.io.config.ConfigHelper;
+import wres.io.data.details.ProjectDetails;
 import wres.io.data.details.SourceDetails;
 import wres.io.data.details.SourceDetails.SourceKey;
 import wres.io.utilities.Database;
+import wres.io.utilities.ScriptBuilder;
 import wres.util.Collections;
+import wres.util.TimeHelper;
 
 /**
  * Caches information about the source of forecast and observation data
@@ -199,6 +208,77 @@ public class DataSources extends Cache<SourceDetails, SourceKey>
 
 	    return super.getID(key);
 	}
+
+	public static List<String> getSourcePaths( final ProjectDetails projectDetails,
+                                               final DataSourceConfig dataSourceConfig)
+            throws SQLException
+    {
+        List<String> paths = new ArrayList<>();
+
+        boolean isForecast = ConfigHelper.isForecast( dataSourceConfig );
+
+        ScriptBuilder script = new ScriptBuilder();
+        script.addLine("SELECT path");
+        script.addLine("FROM wres.Source S");
+        script.addLine("WHERE S.is_point_data = FALSE");
+
+        if (isForecast && projectDetails.getMinimumLeadHour() > Integer.MIN_VALUE)
+        {
+            script.addTab().addLine("AND S.lead >= ", projectDetails.getMinimumLeadHour());
+        }
+
+        if (isForecast && projectDetails.getMaximumLeadHour() < Integer.MAX_VALUE)
+        {
+            script.addTab().addLine("AND S.lead <= ", projectDetails.getMaximumLeadHour());
+        }
+
+        if (projectDetails.getEarliestDate() != null)
+        {
+            script.addTab().add("AND S.output_time ");
+
+            if (isForecast)
+            {
+                script.add("+ INTERVAL '1 ", TimeHelper.LEAD_RESOLUTION, "' * S.lead ");
+            }
+
+            script.addLine(">= '", projectDetails.getEarliestDate(), "'");
+        }
+
+        if (projectDetails.getLatestDate() != null)
+        {
+            script.addTab().add("AND S.output_time ");
+
+            if (isForecast)
+            {
+                script.add("+ INTERVAL '1 ", TimeHelper.LEAD_RESOLUTION, "' * S.lead ");
+            }
+
+            script.addLine("<= '", projectDetails.getLatestDate(), "'");
+        }
+
+        if (isForecast && projectDetails.getEarliestIssueDate() != null)
+        {
+            script.addTab().addLine("AND S.output_time >= '", projectDetails.getEarliestIssueDate(), "'");
+        }
+
+        if (isForecast && projectDetails.getLatestIssueDate() != null)
+        {
+            script.addTab().addLine("AND S.output_time <= '", projectDetails.getLatestIssueDate(), "'");
+        }
+
+        script.addTab().addLine("AND EXISTS (");
+        script.addTab(  2  ).addLine("SELECT 1");
+        script.addTab(  2  ).addLine("FROM wres.ProjectSource PS");
+        script.addTab(  2  ).addLine("WHERE PS.project_id = ", projectDetails.getId());
+        script.addTab(   3   ).addLine("AND PS.member = ", projectDetails.getInputName( dataSourceConfig ));
+        script.addTab(   3   ).addLine("AND PS.source_id = S.source_id");
+        script.addTab().addLine(");");
+
+        script.consume( pathRow -> paths.add(pathRow.getString( "path" )) );
+
+        return paths;
+    }
+
 
 	@Override
 	protected int getMaxDetails() {

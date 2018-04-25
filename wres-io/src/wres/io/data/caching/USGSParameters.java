@@ -10,6 +10,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import org.apache.commons.lang3.StringUtils;
 
 import wres.io.utilities.Database;
+import wres.io.utilities.ScriptBuilder;
 
 public class USGSParameters
 {
@@ -166,30 +167,17 @@ public class USGSParameters
 
     private static void init() throws SQLException
     {
-        Connection connection = null;
-        ResultSet parameters = null;
+        ScriptBuilder script = new ScriptBuilder(  );
+        script.setHighPriority( true );
 
-        try
-        {
-            connection = Database.getHighPriorityConnection();
-            parameters = Database.getResults( connection, "SELECT * FROM wres.USGSParameter;" );
-
-            while (parameters.next())
-            {
-                USGSParameter parameter = new USGSParameter( parameters );
-                USGSParameters.parameterStore.putIfAbsent( parameter.getKey(), parameter );
-            }
-        }
-        finally
-        {
-            if (connection != null)
-            {
-                Database.returnHighPriorityConnection( connection );
-            }
-        }
+        script.add("SELECT * FROM wres.USGSParameter;");
+        script.consume( parameter -> {
+            USGSParameter usgsParameter = new USGSParameter( parameter );
+            USGSParameters.parameterStore.putIfAbsent( usgsParameter.getKey(), usgsParameter );
+        } );
     }
 
-    public static USGSParameter getParameterByCode(String code)
+    public static USGSParameter getParameterByCode(final String code)
             throws SQLException
     {
         USGSParameter foundParameter = null;

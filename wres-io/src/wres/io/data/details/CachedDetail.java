@@ -66,6 +66,13 @@ public abstract class CachedDetail<U, V extends Comparable<V>> implements Compar
             throw new SQLException( "No data could be loaded for " + this );
         }
 	}
+
+	public CachedDetail(ResultSet resultSet) throws SQLException
+	{
+		this.update( resultSet );
+	}
+
+	public CachedDetail(){};
 	
 	/**
 	 * Saves the ID of the detail from the database based on the result of the of the insert/select statement
