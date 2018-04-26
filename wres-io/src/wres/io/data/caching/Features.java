@@ -326,7 +326,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
                                               null ));
         }
 
-        if (feature.getPolygon().size() > 0 || feature.getCircle().size() > 0)
+        if (feature.getPolygon() != null || feature.getCircle() != null)
         {
             details.addAll(Features.getDetailsByGeometry( feature ));
         }
@@ -389,7 +389,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
 
         for (Feature feature : projectConfig.getPair().getFeature())
         {
-            for (Circle circle : feature.getCircle())
+            if (feature.getCircle() != null)
             {
                 if (geometryAdded)
                 {
@@ -402,17 +402,17 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
                 }
 
                 script.add("geographic_coordinate <@ CIRCLE '( ( ",
-                           circle.getLongitude(),
+                           feature.getCircle().getLongitude(),
                            ", ",
-                           circle.getLatitude(),
+                           feature.getCircle().getLatitude(),
                            "), ",
-                           circle.getDiameter(),
+                           feature.getCircle().getDiameter(),
                            ") )'");
 
                 script.addLine(" )");
             }
 
-            for (Polygon polygon : feature.getPolygon())
+            if (feature.getPolygon() != null)
             {
                 if (geometryAdded)
                 {
@@ -428,7 +428,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
                                                              "geographic_coordinate <@ POLYGON '( (",
                                                              ") )'" );
 
-                for ( Polygon.Point point : polygon.getPoint())
+                for ( Polygon.Point point : feature.getPolygon().getPoint())
                 {
                     pointJoiner.add(point.getLongitude() + ", " + point.getLatitude());
                 }
@@ -505,28 +505,19 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         script.addTab().addLine("AND (");
         boolean geometryAdded = false;
 
-        for (Circle circle : feature.getCircle())
+        if (feature.getCircle() != null)
         {
-            if (geometryAdded)
-            {
-                script.addTab(  2  ).add("OR (");
-            }
-            else
-            {
-                geometryAdded = true;
-                script.addTab(  2  ).add("(");
-            }
-
-            script.addLine(" POINT(F.longitude, F.latitude) <@ CIRCLE '((",
-                           circle.getLongitude(),
+            geometryAdded = true;
+            script.addLine("( POINT(F.longitude, F.latitude) <@ CIRCLE '((",
+                           feature.getCircle().getLongitude(),
                            ", ",
-                           circle.getLatitude(),
+                           feature.getCircle().getLatitude(),
                            "), ",
-                           circle.getDiameter(),
+                           feature.getCircle().getDiameter(),
                            ") )");
         }
 
-        for (Polygon polygon : feature.getPolygon())
+        if (feature.getPolygon() != null)
         {
             if ( geometryAdded )
             {
@@ -534,7 +525,6 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
             }
             else
             {
-                geometryAdded = true;
                 script.addTab( 2 ).add( "(" );
             }
 
@@ -542,7 +532,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
                                                          " POINT(F.longitude, F.latitude) <@ polygon '((",
                                                          "))'" );
 
-            for ( Polygon.Point point : polygon.getPoint())
+            for ( Polygon.Point point : feature.getPolygon().getPoint())
             {
                 pointJoiner.add( point.getLongitude() + ", " + point.getLatitude() );
             }
