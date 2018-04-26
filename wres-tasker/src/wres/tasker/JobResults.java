@@ -326,13 +326,13 @@ class JobResults
 
                 boolean timedOut = false;
 
+                channel.basicConsume( queueName,
+                                      true,
+                                      jobOutputReceiver );
+
                 while ( !timedOut )
                 {
-                    channel.basicConsume( queueName,
-                                          true,
-                                          jobOutputReceiver );
-
-                    LOGGER.debug( "Consumed from {}, waiting for result.", queueName );
+                    LOGGER.debug( "Consuming from {}, waiting for result.", queueName );
 
                     // One call to .basicConsume can result in many messages
                     // being received by our jobOutputReceiver. Look for them.
