@@ -12,6 +12,7 @@ import wres.io.data.caching.Variables;
 import wres.io.data.details.ProjectDetails;
 import wres.io.reading.usgs.USGSReader;
 import wres.io.utilities.Database;
+import wres.io.utilities.ScriptBuilder;
 
 import java.io.IOException;
 import java.sql.Connection;
@@ -48,6 +49,12 @@ class ClimatologyBuilder
         {
             this.startDate = beginning;
             this.endDate = end;
+        }
+
+        DateRange(ResultSet resultSet) throws SQLException
+        {
+            this.startDate = resultSet.getString( "start_date" );
+            this.endDate = resultSet.getString( "end_date" );
         }
 
         private final String startDate;
@@ -264,87 +271,59 @@ class ClimatologyBuilder
         protected SortedMap<DateRange, List<Double>> execute()
                 throws SQLException, IOException
         {
-            StringBuilder script = new StringBuilder("SELECT").append(NEWLINE);
-            script.append("    (")
-                  .append(earliestDate).append("::timestamp without time zone");
+            ScriptBuilder script = new ScriptBuilder();
+            script.addLine("SELECT");
 
-            if (dataSourceConfig.getTimeShift() != null)
+            script.addTab().add("(", this.earliestDate, "::timestamp without time zone");
+
+            if (this.dataSourceConfig.getTimeShift() != null)
             {
-                script.append(" + '")
-                      .append(dataSourceConfig.getTimeShift().getWidth())
-                      .append(" ")
-                      .append(dataSourceConfig.getTimeShift().getUnit())
-                      .append("'");
+                script.add(" + '",
+                           this.dataSourceConfig.getTimeShift().getWidth(),
+                           " ",
+                           this.dataSourceConfig.getTimeShift().getUnit(),
+                           "'");
             }
 
 
-            script.append(" + ( member_number || ' ")
-                  .append(projectDetails.getScale().getUnit())
-                  .append("')::INTERVAL)::TEXT AS start_date,").append(NEWLINE);
-            script.append("    (")
-                  .append(earliestDate).append("::timestamp without time zone");
+            script.addLine(" + ( member_number || ' ",
+                           this.projectDetails.getScale().getUnit(),
+                           "')::INTERVAL)::TEXT AS start_date,");
 
-            if (dataSourceConfig.getTimeShift() != null)
+            script.addTab().addLine("(",
+                                    this.earliestDate,
+                                    "::timestamp without time zone");
+
+            if (this.dataSourceConfig.getTimeShift() != null)
             {
-                script.append(" + '")
-                      .append(dataSourceConfig.getTimeShift().getWidth())
-                      .append(" ")
-                      .append(dataSourceConfig.getTimeShift().getUnit())
-                      .append("'");
+                script.addLine(" + '",
+                               this.dataSourceConfig.getTimeShift().getWidth(),
+                               " ",
+                               this.dataSourceConfig.getTimeShift().getUnit(),
+                               "'");
             }
 
-            script.append(" + ( ( member_number + ").append(projectDetails.getScale().getPeriod())
-                  .append(" ) || ' ").append(projectDetails.getScale().getUnit()).append("')::INTERVAL)::TEXT AS end_date")
-                  .append(NEWLINE);
-            script.append("FROM generate_series(0, ")
-                  .append( ConfigHelper.getValueCount(projectDetails,
-                                                      dataSourceConfig,
-                                                      feature))
-                  .append(" * ")
-                  .append(projectDetails.getScale().getPeriod())
-                  .append(", ")
-                  .append(projectDetails.getScale().getPeriod())
-                  .append(") AS member_number;");
+            script.addLine(" + ( ( member_number + ",
+                           this.projectDetails.getScale().getPeriod(),
+                           " ) || ' ",
+                           this.projectDetails.getScale().getUnit(),
+                           "')::INTERVAL)::TEXT AS end_date");
 
-            Connection connection = null;
-            ResultSet results = null;
+            script.add("FROM generate_series(0, ",
+                       ConfigHelper.getValueCount(this.projectDetails,
+                                                  this.dataSourceConfig,
+                                                  this.feature),
+                       " * ",
+                       this.projectDetails.getScale().getPeriod(),
+                       ", ",
+                       this.projectDetails.getScale().getPeriod(),
+                       ") AS member_number;");
 
             SortedMap<DateRange, List<Double>> returnValues = new TreeMap<>();
 
-            try
-            {
-                connection = Database.getConnection();
-                results = Database.getResults( connection, script.toString() );
-
-                while (results.next())
-                {
-                    returnValues.put(
-                            new DateRange(results.getString("start_date"),
-                                          results.getString("end_date")),
-                            new ArrayList<>(  )
-                    );
-                }
-            }
-            finally
-            {
-                if (results != null)
-                {
-                    try
-                    {
-                        results.close();
-                    }
-                    catch ( SQLException e )
-                    {
-                        // Exception on close shouldn't change main outputs.
-                        LOGGER.warn( "Failed to close a db result set.", e );
-                    }
-                }
-
-                if (connection != null)
-                {
-                    Database.returnConnection( connection );
-                }
-            }
+            script.consume(
+                    range -> returnValues.put( new DateRange(range), new ArrayList<>())
+            );
 
             return Collections.unmodifiableSortedMap( returnValues );
         }

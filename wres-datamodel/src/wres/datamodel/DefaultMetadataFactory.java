@@ -17,28 +17,24 @@ import wres.datamodel.metadata.TimeWindow;
  * @author james.brown@hydrosolved.com
  */
 
-public class DefaultMetadataFactory implements MetadataFactory
+public enum DefaultMetadataFactory implements MetadataFactory
 {
 
     /**
-     * Instance of the factory.
+     * Instance of the factory using singleton enum pattern for thread-safe, lazy, construction.
      */
 
-    private static MetadataFactory instance = null;
+    INSTANCE;
 
     /**
-     * Returns an instance of a {@link DataFactory}.
+     * Returns an instance of a {@link MetadataFactory}.
      * 
-     * @return a {@link DataFactory}
+     * @return a {@link MetadataFactory}
      */
 
     public static MetadataFactory getInstance()
     {
-        if(Objects.isNull(instance))
-        {
-            instance = new DefaultMetadataFactory();
-        }
-        return instance;
+        return INSTANCE;
     }
 
     @Override

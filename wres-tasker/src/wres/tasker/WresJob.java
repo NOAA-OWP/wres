@@ -1,7 +1,6 @@
 package wres.tasker;
 
 import java.io.IOException;
-import java.sql.Time;
 import java.util.Random;
 import java.util.StringJoiner;
 import java.util.concurrent.TimeoutException;
@@ -86,9 +85,15 @@ public class WresJob
             return this.internalServerError();
         }
 
-        String statusUrl = "/jobResult/" + jobId;
+        String statusUrl = "/job/" + jobId + "/status";
+        String stdoutUrl = "/job/" + jobId + "/stdout";
+        String stderrUrl = "/job/" + jobId + "/stderr";
+
         return Response.ok( "<!DOCTYPE html><html><head><title>Job received.</title></head><body><h1>Your job has been received for processing.</h1><p>See <a href=\""
-                            + statusUrl + "\">" + statusUrl + "</a></body></html>" )
+                            + statusUrl + "\">" + statusUrl + "</a></p>"
+                            + "<p>For more details, see <a href=\"" + stdoutUrl + "\">" + stdoutUrl + "</a>"
+                            + " or <a href=\"" + stderrUrl + "\">" + stderrUrl + "</a>"
+                            + "</body></html>" )
                        .build();
     }
 
@@ -108,17 +113,17 @@ public class WresJob
         try ( Channel channel = connection.createChannel() )
         {
             long someRandomNumber = RANDOM.nextLong();
-            String correlationId = String.valueOf( someRandomNumber );
+            String jobId = String.valueOf( someRandomNumber );
 
             channel.queueDeclare( SEND_QUEUE_NAME, false, false, false, null );
 
             // Tell the worker where to send results.
-            String resultsQueueName = JobResults.getResultsQueueName();
+            String jobStatusExchange = JobResults.getJobStatusExchangeName();
             AMQP.BasicProperties properties =
                     new AMQP.BasicProperties
                             .Builder()
-                            .replyTo( resultsQueueName )
-                            .correlationId( correlationId )
+                            .replyTo( jobStatusExchange )
+                            .correlationId( jobId )
                             .build();
 
             // Inform the JobResults class to start looking for correlationId.
@@ -127,8 +132,8 @@ public class WresJob
             // end up dropping on the floor, that is why this is called prior
             // to even publishing the job at all. JobResults is a bag-o-state.
 
-            JOB_RESULTS.registerCorrelationId( resultsQueueName,
-                                               correlationId );
+            JOB_RESULTS.registerjobId( jobStatusExchange,
+                                       jobId );
 
             channel.basicPublish( "",
                                   SEND_QUEUE_NAME,
@@ -137,7 +142,7 @@ public class WresJob
 
             LOGGER.info( "I sent this message to queue '{}' with properties '{}': {}.",
                          SEND_QUEUE_NAME, properties, message );
-            return correlationId;
+            return jobId;
         }
     }
 

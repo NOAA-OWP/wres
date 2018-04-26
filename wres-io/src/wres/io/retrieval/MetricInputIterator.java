@@ -16,13 +16,14 @@ import org.slf4j.Logger;
 
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.Feature;
-import wres.datamodel.inputs.MetricInput;
 import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.inputs.MetricInput;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.UnitConversions;
 import wres.io.data.caching.Variables;
 import wres.io.data.details.ProjectDetails;
+import wres.io.retrieval.left.LeftHandCache;
 import wres.io.utilities.Database;
 import wres.io.utilities.NoDataException;
 import wres.util.Collections;
@@ -40,7 +41,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
     private final Feature feature;
 
     private final ProjectDetails projectDetails;
-    private NavigableMap<LocalDateTime, Double> leftHandMap;
+    private LeftHandCache leftCache;
     private VectorOfDoubles climatology;
     private int poolingStep;
     private Integer finalPoolingStep;
@@ -122,16 +123,6 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
         return this.projectDetails;
     }
 
-    private void addLeftHandValue(LocalDateTime date, Double measurement)
-    {
-        if (this.leftHandMap == null)
-        {
-            this.leftHandMap = new TreeMap<>(  );
-        }
-
-        this.leftHandMap.put( date, measurement );
-    }
-
     private VectorOfDoubles getClimatology() throws IOException
     {
         if (this.getProjectDetails().usesProbabilityThresholds() && this.climatology == null)
@@ -153,14 +144,7 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
 
         this.feature = feature;
 
-        this.createLeftHandCache();
-
-        if (this.leftHandMap == null || this.leftHandMap.size() == 0)
-        {
-            throw new NoDataException( "No data for the left hand side of " +
-                                       " the evaluation could be loaded. " +
-                                       "Please check your specifications." );
-        }
+        this.leftCache = LeftHandCache.getCache( this.projectDetails, this.feature );
 
         this.finalPoolingStep = this.getFinalPoolingStep();
 
@@ -179,144 +163,6 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
     protected int calculateFinalPoolingStep() throws SQLException
     {
         return this.projectDetails.getIssuePoolCount( this.feature );
-    }
-
-    // TODO: Put into its own class
-    private void createLeftHandCache() throws SQLException
-    {
-        Integer desiredMeasurementUnitID =
-                MeasurementUnits.getMeasurementUnitID( this.getProjectDetails()
-                                                           .getDesiredMeasurementUnit());
-
-        DataSourceConfig left = this.getLeft();
-        StringBuilder script = new StringBuilder();
-        Integer leftVariableID = Variables.getVariableID( left);
-
-        String earliestDate = this.getProjectDetails().getEarliestDate();
-        String latestDate = this.getProjectDetails().getLatestDate();
-
-        if (earliestDate != null)
-        {
-            earliestDate = "'" + earliestDate + "'";
-        }
-
-        if (latestDate != null)
-        {
-            latestDate = "'" + latestDate + "'";
-        }
-
-        String timeShift = null;
-
-        String variablepositionClause = ConfigHelper.getVariablePositionClause(this.getFeature(), leftVariableID, "");
-
-        if (left.getTimeShift() != null)
-        {
-            timeShift = "'" + left.getTimeShift().getWidth() + " " + left.getTimeShift().getUnit().value() + "'";
-        }
-
-        // TODO: Put this script generation into another class
-        script.append("SELECT (O.observation_time");
-
-        if (timeShift != null)
-        {
-            script.append(" + ").append(timeShift);
-        }
-
-        script.append(") AS left_date,").append(NEWLINE);
-        script.append("     O.observed_value AS left_value,").append(NEWLINE);
-        script.append("     O.measurementunit_id").append(NEWLINE);
-        script.append("FROM wres.ProjectSource PS").append(NEWLINE);
-        script.append("INNER JOIN wres.Observation O").append(NEWLINE);
-        script.append("     ON O.source_id = PS.source_id").append(NEWLINE);
-        script.append("WHERE PS.project_id = ")
-              .append(this.getProjectDetails().getId())
-              .append(NEWLINE);
-        script.append("     AND PS.member = 'left'").append(NEWLINE);
-        script.append("     AND ").append(variablepositionClause).append(NEWLINE);
-
-        if (earliestDate != null)
-        {
-            script.append("     AND O.observation_time");
-
-            if (timeShift != null)
-            {
-                script.append(" + INTERVAL '1 hour' * ").append(timeShift);
-            }
-
-            script.append(" >= ").append(earliestDate).append(NEWLINE);
-        }
-
-        if (latestDate != null)
-        {
-            script.append("     AND O.observation_time");
-
-            if (timeShift != null)
-            {
-                script.append(" + INTERVAL '1 hour' * ").append(timeShift);
-            }
-
-            script.append(" <= ").append(latestDate).append(NEWLINE);
-        }
-
-        script.append(";");
-
-        Connection connection = null;
-        ResultSet resultSet = null;
-
-        try
-        {
-            connection = Database.getHighPriorityConnection();
-            resultSet = Database.getResults(connection, script.toString());
-
-            while(resultSet.next())
-            {
-                LocalDateTime date = TimeHelper.convertStringToDate(
-                        resultSet.getString( "left_date" ),
-                        LocalDateTime::from);
-                Double measurement = Database.getValue( resultSet, "left_value" );
-
-                int unitID = Database.getValue( resultSet, "measurementunit_id" );
-
-                if ( unitID != desiredMeasurementUnitID
-                     && measurement != null )
-                {
-                    measurement = UnitConversions.convert( measurement,
-                                                           unitID,
-                                                           this.getProjectDetails()
-                                                               .getDesiredMeasurementUnit());
-                }
-
-                if (measurement != null && measurement < this.projectDetails.getMinimumValue())
-                {
-                    measurement = this.projectDetails.getDefaultMinimumValue();
-                }
-                else if (measurement != null && measurement > this.projectDetails.getMaximumValue())
-                {
-                    measurement = this.projectDetails.getDefaultMaximumValue();
-                }
-                else if (measurement == null)
-                {
-                    measurement = Double.NaN;
-                }
-
-                if (measurement != null)
-                {
-                    this.addLeftHandValue( date, measurement );
-                }
-            }
-        }
-        finally
-        {
-            if (resultSet != null)
-            {
-                resultSet.close();
-            }
-
-            if (connection != null)
-            {
-                Database.returnHighPriorityConnection(connection);
-            }
-        }
     }
 
     @Override
@@ -364,12 +210,11 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
 
             if (!next && this.iterationCount == 0)
             {
-                String message = "Due to either the configuration or the data, "
-                                 + "no metric input could be created for the "
-                                 + "feature: " +
-                                 ConfigHelper.getFeatureDescription( this.getFeature() );
+                String message = "There was not enough data to evaluate feature: " 
+                        + ConfigHelper.getFeatureDescription( this.getFeature() );
 
-                throw new IterationFailedException( message );
+                // Flag this to the caller as a NoDataException 
+                throw new IterationFailedException( message, new NoDataException( message ) );
             }
         }
         catch ( SQLException | IOException e )
@@ -415,10 +260,9 @@ abstract class MetricInputIterator implements Iterator<Future<MetricInput<?>>>
      */
     Callable<MetricInput<?>> createRetriever() throws IOException
     {
-        // TODO: Pass the leftHandMap instead of the function
         InputRetriever retriever = new InputRetriever(
                 this.getProjectDetails(),
-                ( firstDate, lastDate ) -> Collections.getValuesInRange( this.leftHandMap, firstDate, lastDate )
+                this.leftCache::getLeftValues
         );
         retriever.setFeature(feature);
         retriever.setClimatology( this.getClimatology() );

@@ -2,10 +2,7 @@ package wres.io.reading.waterml;
 
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.SortedMap;
-import java.util.Stack;
 import java.util.TreeMap;
 
 import org.apache.commons.math3.util.Precision;
@@ -22,7 +19,7 @@ import wres.io.reading.waterml.timeseries.TimeSeries;
 import wres.io.reading.waterml.timeseries.TimeSeriesValue;
 import wres.io.reading.waterml.timeseries.TimeSeriesValues;
 import wres.io.utilities.Database;
-import wres.io.utilities.IOExceptionalConsumer;
+import wres.util.functional.ExceptionalConsumer;
 import wres.io.utilities.ScriptBuilder;
 import wres.util.NotImplementedException;
 import wres.util.ProgressMonitor;
@@ -51,8 +48,8 @@ public class WaterMLSource
     private final Response waterML;
     private final SortedMap<String, Integer> variablePositionIDs;
     private final int variableId;
-    private IOExceptionalConsumer<TimeSeries> invalidSeriesHandler;
-    private IOExceptionalConsumer<TimeSeries> seriesReadCompleteHandler;
+    private ExceptionalConsumer<TimeSeries, IOException> invalidSeriesHandler;
+    private ExceptionalConsumer<TimeSeries, IOException> seriesReadCompleteHandler;
     private final int waterMLMeasurementId;
     private ScriptBuilder copyScript;
     private int copyCount = 0;
@@ -71,12 +68,12 @@ public class WaterMLSource
         this.variableId = variableId;
     }
 
-    public void setInvalidSeriesHandler(IOExceptionalConsumer<TimeSeries> handler)
+    public void setInvalidSeriesHandler(ExceptionalConsumer<TimeSeries, IOException> handler)
     {
         this.invalidSeriesHandler = handler;
     }
 
-    public void setSeriesReadCompleteHandler(IOExceptionalConsumer<TimeSeries> handler)
+    public void setSeriesReadCompleteHandler(ExceptionalConsumer<TimeSeries, IOException> handler)
     {
         this.seriesReadCompleteHandler = handler;
     }

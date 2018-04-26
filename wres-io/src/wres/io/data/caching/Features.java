@@ -1,24 +1,27 @@
 package wres.io.data.caching;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.StringJoiner;
 import java.util.TreeMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.generated.Circle;
 import wres.config.generated.Feature;
+import wres.config.generated.Polygon;
 import wres.config.generated.ProjectConfig;
 import wres.io.config.ConfigHelper;
 import wres.io.data.details.FeatureDetails;
+import wres.io.data.details.ProjectDetails;
 import wres.io.utilities.Database;
 import wres.io.utilities.ScriptBuilder;
+import wres.util.NotImplementedException;
 import wres.util.Strings;
 
 /**
@@ -121,7 +124,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
     private static Integer getFeatureID( Integer comid, String lid, String gageID, String huc)
             throws SQLException
     {
-        return Features.getFeatureID( new FeatureDetails.FeatureKey( comid, lid, gageID, huc ));
+        return Features.getFeatureID( new FeatureDetails.FeatureKey( comid, lid, gageID, huc, null, null ));
     }
 
     public static Integer getFeatureID(Feature feature) throws SQLException
@@ -150,9 +153,8 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
     private static Set<FeatureDetails> getUnspecifiedDetails( ProjectConfig projectConfig )
             throws SQLException
     {
+        // A set is used to avoid duplications
         Set<FeatureDetails> features = new HashSet<>(  );
-        boolean hasNetCDF = ConfigHelper.usesNetCDFData( projectConfig );
-        boolean hasUSGS = ConfigHelper.usesUSGSData( projectConfig );
 
         ScriptBuilder script = new ScriptBuilder(  );
         script.addLine("SELECT *");
@@ -160,57 +162,20 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         script.addLine("WHERE lid != ''");
         script.addTab().addLine("AND lid IS NOT NULL");
 
-        if (hasNetCDF)
+        if (ConfigHelper.usesNetCDFData( projectConfig ))
         {
             script.addTab().addLine("AND comid != -999");
             script.addTab().addLine("AND nwm_index IS NOT NULL");
         }
 
-        if (hasUSGS)
+        if (ConfigHelper.usesUSGSData( projectConfig ))
         {
             script.addTab(  ).addLine("AND character_length(gage_id) >= 0");
         }
 
         script.addLine("ORDER BY feature_id");
 
-        Connection connection = null;
-        ResultSet resultSet = null;
-
-        try
-        {
-            connection = Database.getConnection();
-            resultSet = Database.getResults( connection, script.toString() );
-
-            while (resultSet.next())
-            {
-                features.add( new FeatureDetails( resultSet ));
-            }
-        }
-        catch (SQLException e)
-        {
-            throw new SQLException( "Available Features could not be determined.",
-                                    e );
-        }
-        finally
-        {
-            if (resultSet != null)
-            {
-                try
-                {
-                    resultSet.close();
-                }
-                catch ( SQLException se )
-                {
-                    // Exception on close should not affect primary outputs.
-                    LOGGER.warn( "Failed to close result set {}.", resultSet, se );
-                }
-            }
-
-            if (connection != null)
-            {
-                Database.returnConnection( connection );
-            }
-        }
+        script.consume( featureRow -> features.add( new FeatureDetails(  featureRow  )) );
 
         return features;
     }
@@ -361,12 +326,120 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
                                               null ));
         }
 
+        if (feature.getPolygon() != null || feature.getCircle() != null)
+        {
+            details.addAll(Features.getDetailsByGeometry( feature ));
+        }
+
         for (FeatureDetails detail : details)
         {
             detail.setAliases( feature.getAlias() );
         }
 
         return details;
+    }
+
+    public static List<FeatureDetails> getGriddedDetails(ProjectDetails details)
+            throws SQLException
+    {
+        List<FeatureDetails> features;
+
+        if (details.getProjectConfig().getPair().getFeature().size() > 0)
+        {
+            features = Features.getSpecifiedGriddedFeatures( details.getProjectConfig() );
+        }
+        else
+        {
+            features = Features.getAllGriddedFeatures( details.getProjectConfig() );
+        }
+
+        return features;
+    }
+
+    private static List<FeatureDetails> getAllGriddedFeatures(ProjectConfig projectConfig) throws SQLException
+    {
+        // We need a new solution for decomposing gridded features; we can't
+        // and shouldn't hold ~17,000,000 of these objects in memory at once
+        throw new NotImplementedException( "The retrieval of all gridded features has not been implemented yet." );
+
+    }
+
+    /**
+     * Creates a list of features to retrieve from gridded data.
+     * <p>
+     *     Retrieving data is currently reliant on a WKT. RFCs and bounding
+     *     boxes should be implemented later.
+     * </p>
+     * @param projectConfig
+     * @return
+     * @throws SQLException
+     */
+    private static List<FeatureDetails> getSpecifiedGriddedFeatures(ProjectConfig projectConfig) throws SQLException
+    {
+        ScriptBuilder script = new ScriptBuilder(  );
+
+        script.addLine("SELECT geographic_coordinate[0]::real AS longitude,");
+        script.addTab().addLine("geographic_coordinate[1]::real AS latitude,");
+        script.addTab().addLine("row_number() OVER (ORDER BY x_position, y_position)::int AS feature_id,");
+        script.addTab().addLine("*");
+        script.addLine("FROM wres.NetcdfCoordinate");
+        script.addLine("WHERE");
+
+        boolean geometryAdded = false;
+
+        for (Feature feature : projectConfig.getPair().getFeature())
+        {
+            if (feature.getCircle() != null)
+            {
+                if (geometryAdded)
+                {
+                    script.addTab().add("OR ( ");
+                }
+                else
+                {
+                    geometryAdded = true;
+                    script.addTab().add("( ");
+                }
+
+                script.add("geographic_coordinate <@ CIRCLE '( ( ",
+                           feature.getCircle().getLongitude(),
+                           ", ",
+                           feature.getCircle().getLatitude(),
+                           "), ",
+                           feature.getCircle().getDiameter(),
+                           ") )'");
+
+                script.addLine(" )");
+            }
+
+            if (feature.getPolygon() != null)
+            {
+                if (geometryAdded)
+                {
+                    script.addTab().add("OR ( ");
+                }
+                else
+                {
+                    geometryAdded = true;
+                    script.addTab().add("( ");
+                }
+
+                StringJoiner pointJoiner = new StringJoiner( "), (",
+                                                             "geographic_coordinate <@ POLYGON '( (",
+                                                             ") )'" );
+
+                for ( Polygon.Point point : feature.getPolygon().getPoint())
+                {
+                    pointJoiner.add(point.getLongitude() + ", " + point.getLatitude());
+                }
+
+
+
+                script.addLine(pointJoiner.toString(), " )");
+            }
+        }
+
+        return Features.getDetailsFromDatabase( script );
     }
 
     private static FeatureDetails getDetails(Integer comid, String lid, String gageID, String huc)
@@ -386,7 +459,7 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         return Features.getDetails( null, null, gageID, null );
     }
 
-    private static List<FeatureDetails> getDetailsByCoordinates(Float longitude, Float latitude, Float range)
+    private static List<FeatureDetails> getDetailsByCoordinates(final Float longitude, final Float latitude, final Float range)
             throws SQLException
     {
         Double radianLatitude = Math.toRadians( latitude );
@@ -405,131 +478,102 @@ public class Features extends Cache<FeatureDetails, FeatureDetails.FeatureKey>
         // spot on.
         Double rangeInDegrees = Math.max( range / distanceOfOneDegree, 0.00005);
 
-        String script = "";
-        script += "WITH feature_and_distance AS" + NEWLINE;
-        script += "(" + NEWLINE;
-        script += "    SELECT SQRT((" + latitude + " - latitude)^2 + (" + longitude + " - longitude)^2) AS distance, *" + NEWLINE;
-        script += "    FROM wres.Feature" + NEWLINE;
-        script += ")" + NEWLINE;
-        script += "SELECT *" + NEWLINE;
-        script += "FROM feature_and_distance" + NEWLINE;
-        script += "WHERE distance <= " + rangeInDegrees + NEWLINE;
-        script += "ORDER BY feature_id;";
+        ScriptBuilder script = new ScriptBuilder(  );
+        script.addLine("WITH feature_and_distance AS");
+        script.addLine("(");
+        script.addTab().addLine("SELECT SQRT((", latitude, " - latitude)^2 + (", longitude, " - longitude)^2) AS distance");
+        script.addTab().addLine("FROM wres.Feature");
+        script.addTab().addLine("WHERE NOT (");
+        script.addTab(  2  ).addLine("longitude IS NULL OR latitude IS NULL");
+        script.addTab().addLine(")");
+        script.addLine(")");
+        script.addLine("SELECT *");
+        script.addLine("FROM feature_and_distance");
+        script.addLine("WHERE distance <= ", rangeInDegrees);
+        script.addLine("ORDER BY feature_id;");
 
-        Connection connection = null;
-        ResultSet closestFeatures = null;
-        List<FeatureDetails> features = new ArrayList<>(  );
+        return Features.getDetailsFromDatabase( script );
+    }
 
-        try
+    private static List<FeatureDetails> getDetailsByGeometry( Feature feature ) throws SQLException
+    {
+        ScriptBuilder script = new ScriptBuilder(  );
+
+        script.addLine("SELECT *");
+        script.addLine("FROM wres.Feature F");
+        script.addLine("WHERE F.latitude IS NOT NULL");
+        script.addTab().addLine("AND (");
+        boolean geometryAdded = false;
+
+        if (feature.getCircle() != null)
         {
-            connection = Database.getHighPriorityConnection();
-            closestFeatures = Database.getResults( connection, script );
-
-            while (closestFeatures.next())
-            {
-                FeatureDetails details = new FeatureDetails( closestFeatures );
-                features.add( details );
-                Features.getCache().add( details );
-            }
+            geometryAdded = true;
+            script.addLine("( POINT(F.longitude, F.latitude) <@ CIRCLE '((",
+                           feature.getCircle().getLongitude(),
+                           ", ",
+                           feature.getCircle().getLatitude(),
+                           "), ",
+                           feature.getCircle().getDiameter(),
+                           ") )");
         }
-        finally
+
+        if (feature.getPolygon() != null)
         {
-            if (closestFeatures != null)
+            if ( geometryAdded )
             {
-                closestFeatures.close();
+                script.addTab( 2 ).add( "OR (" );
+            }
+            else
+            {
+                script.addTab( 2 ).add( "(" );
             }
 
-            if (connection != null)
+            StringJoiner pointJoiner = new StringJoiner( "), (",
+                                                         " POINT(F.longitude, F.latitude) <@ polygon '((",
+                                                         "))'" );
+
+            for ( Polygon.Point point : feature.getPolygon().getPoint())
             {
-                Database.returnHighPriorityConnection( connection );
+                pointJoiner.add( point.getLongitude() + ", " + point.getLatitude() );
             }
+
+            script.addLine(pointJoiner.toString(), ")");
         }
 
-        return features;
+        script.addTab().add(");");
 
-
+        return Features.getDetailsFromDatabase( script );
     }
 
     private static List<FeatureDetails> getDetailsByHUC(String huc)
             throws SQLException
     {
-        String script = "";
+        ScriptBuilder script = new ScriptBuilder(  );
+        script.addLine("SELECT *");
+        script.addLine("FROM wres.Feature");
+        script.addLine("WHERE huc LIKE '", huc, "%'");
+        script.addLine("ORDER BY feature_id;");
 
-        script += "SELECT *" + NEWLINE;
-        script += "FROM wres.Feature" + NEWLINE;
-        script += "WHERE huc LIKE '" + huc + "%'" + NEWLINE;
-        script += "ORDER BY feature_id;";
-
-        Connection connection = null;
-        ResultSet hucFeatures = null;
-        List<FeatureDetails> features = new ArrayList<>(  );
-
-        try
-        {
-            connection = Database.getHighPriorityConnection();
-            hucFeatures = Database.getResults( connection, script );
-
-            while (hucFeatures.next())
-            {
-                FeatureDetails details = new FeatureDetails( hucFeatures );
-                features.add( details );
-                Features.getCache().add( details );
-            }
-        }
-        finally
-        {
-            if (hucFeatures != null)
-            {
-                hucFeatures.close();
-            }
-
-            if (connection != null)
-            {
-                Database.returnHighPriorityConnection( connection );
-            }
-        }
-
-        return features;
+        return Features.getDetailsFromDatabase( script );
     }
 
     private static List<FeatureDetails> getDetailsByRFC(String rfc)
             throws SQLException
     {
-        String script = "";
-        script += "SELECT *" + NEWLINE;
-        script += "FROM wres.Feature" + NEWLINE;
-        script += "WHERE rfc = '" + rfc + "'" + NEWLINE;
+        ScriptBuilder script = new ScriptBuilder(  );
+        script.addLine("SELECT *");
+        script.addLine("FROM wres.Feature");
+        script.addLine("WHERE rfc = '", rfc, "'");
+        script.addLine("ORDER BY feature_id;");
 
-        script += "ORDER BY feature_id;";
+        return Features.getDetailsFromDatabase( script );
+    }
 
-        Connection connection = null;
-        ResultSet rfcFeatures = null;
-        List<FeatureDetails> features = new ArrayList<>(  );
+    private static List<FeatureDetails> getDetailsFromDatabase(ScriptBuilder script) throws SQLException
+    {
+        List<FeatureDetails> features = script.interpret( FeatureDetails::new );
 
-        try
-        {
-            connection = Database.getHighPriorityConnection();
-            rfcFeatures = Database.getResults( connection, script );
-
-            while (rfcFeatures.next())
-            {
-                FeatureDetails details = new FeatureDetails( rfcFeatures );
-                features.add( details );
-                Features.getCache().add( details );
-            }
-        }
-        finally
-        {
-            if (rfcFeatures != null)
-            {
-                rfcFeatures.close();
-            }
-
-            if (connection != null)
-            {
-                Database.returnHighPriorityConnection( connection );
-            }
-        }
+        features.forEach( Features.getCache()::add );
 
         return features;
     }

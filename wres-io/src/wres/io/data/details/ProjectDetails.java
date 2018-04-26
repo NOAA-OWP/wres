@@ -6,6 +6,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.Duration;
 import java.time.MonthDay;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -41,6 +42,8 @@ import wres.config.generated.ProjectConfig;
 import wres.config.generated.ThresholdType;
 import wres.config.generated.TimeScaleConfig;
 import wres.config.generated.TimeScaleFunction;
+import wres.grid.client.Fetcher;
+import wres.grid.client.Request;
 import wres.io.concurrency.DataSetRetriever;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Ensembles;
@@ -60,9 +63,10 @@ import wres.util.TimeHelper;
 
 /**
  * Wrapper object linking a project configuration and the data needed to form
- * database statements
+ * database statements. TODO: refactor this class and make it immutable, ideally, but otherwise thread-safe. It's also
+ * far too large (JBr). See #49511.
  */
-public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
+public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
 {
     public enum PairingMode
     {
@@ -71,6 +75,9 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
         BACK_TO_BACK,
         TIME_SERIES
     }
+
+    @Deprecated
+    private static final String NEWLINE = System.lineSeparator();
 
     /**
      * Ensures that multiple copies of a project aren't saved at the same time
@@ -113,9 +120,12 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
     private final ProjectConfig projectConfig;
 
     /**
-     *  Stores the last possible lead time for each feature
+     *  Stores the last possible lead time for each feature. TODO: refector this class to make it thread-safe, 
+     *  ideally immutable. Synchronizing access and setting the cache to 100 features avoids earlier problems 
+     *  with reads and writes both occurring in the same code block with a check-then-act, but this is not a long-term
+     *  Solution (JBr). See #49511. 
      */
-    private final Map<Feature, Integer> lastLeads = new LRUMap<>( 20 );
+    private final Map<Feature, Integer> lastLeads = java.util.Collections.synchronizedMap( new LRUMap<>( 100 ) );
 
     /**
      * Stores the lead hour offset for each person
@@ -131,11 +141,11 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
     /**
      * Stores the earliest possible observation date for each feature
      */
-    private final Map<Feature, String> initialObservationDates = new LRUMap<>( 20 );
+    private final Map<Feature, String> initialObservationDates = new LRUMap<>( 100 );
 
-    private final Map<Feature, String> initialForecastDates = new LRUMap<>(20);
+    private final Map<Feature, String> initialForecastDates = new LRUMap<>( 100 );
 
-    private final Map<Feature, Integer> forecastLag = new LRUMap<>(20);
+    private final Map<Feature, Integer> forecastLag = new LRUMap<>( 100 );
 
     /**
      * Stores the number of basis times pools for each feature
@@ -147,7 +157,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
      * on x different sets of issue times
      * </p>
      */
-    private final Map<Feature, Integer> poolCounts = new LRUMap<>( 20 );
+    private final Map<Feature, Integer> poolCounts = new LRUMap<>( 100 );
 
     /**
      * The set of all features pertaining to the project
@@ -362,7 +372,6 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
         this.inputCode = inputCode;
     }
 
-    @Override
     public Integer getKey()
     {
         return this.getInputCode();
@@ -415,6 +424,11 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
     {
         if (this.features == null)
         {
+            if (this.usesGriddedData( this.getRight() ))
+            {
+                this.features = new HashSet<>(  );
+                this.features.addAll( Features.getGriddedDetails( this ) );
+            }
             // If there is no indication whatsoever of what to look for, we
             // want to query the database specifically for all locations
             // that have data ingested pertaining to the project.
@@ -422,7 +436,7 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
             // The similar function in wres.io.data.caching.Features cannot be
             // used because it doesn't restrict data based on what lies in the
             // database.
-            if (this.getProjectConfig().getPair().getFeature() == null ||
+            else if (this.getProjectConfig().getPair().getFeature() == null ||
                 this.projectConfig.getPair().getFeature().isEmpty())
             {
                 this.features = new HashSet<>(  );
@@ -535,20 +549,9 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
 
                 script.addLine( ");" );
 
-                Connection connection = null;
-                ResultSet resultSet = null;
-
                 try
                 {
-                    connection = Database.getConnection();
-                    resultSet = Database.getResults( connection,
-                                                     script.toString() );
-
-                    // Convert each row into a new Feature for the project
-                    while ( resultSet.next() )
-                    {
-                        this.features.add( new FeatureDetails( resultSet ) );
-                    }
+                    script.consume( feature -> this.features.add( new FeatureDetails( feature )) );
                 }
                 catch ( SQLException e )
                 {
@@ -556,27 +559,6 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
                             "The features for this project could "
                             + "not be retrieved from the database.",
                             e );
-                }
-                finally
-                {
-                    if ( resultSet != null )
-                    {
-                        try
-                        {
-                            resultSet.close();
-                        }
-                        catch ( SQLException se )
-                        {
-                            // Failure to close shouldn't affect primary output.
-                            LOGGER.warn( "Failed to close result set {}.",
-                                         resultSet, se );
-                        }
-                    }
-
-                    if ( connection != null )
-                    {
-                        Database.returnConnection( connection );
-                    }
                 }
             }
             else
@@ -1883,7 +1865,9 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
     public Integer getLeadOffset(Feature feature)
             throws IOException, SQLException
     {
-        if (ConfigHelper.isSimulation( this.getRight() ) || this.usesTimeSeriesMetrics())
+        if (ConfigHelper.isSimulation( this.getRight() ) ||
+            this.usesTimeSeriesMetrics() ||
+            this.usesGriddedData( this.getRight() ))
         {
             return 0;
         }
@@ -2060,7 +2044,9 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
                         Database.getValue(resultSet, "comid"),
                         Database.getValue(resultSet, "lid"),
                         Database.getValue( resultSet,"gage_id"),
-                        Database.getValue(resultSet,"huc" )
+                        Database.getValue(resultSet,"huc" ),
+                        Database.getValue(resultSet, "longitude"),
+                        Database.getValue( resultSet, "latitude" )
                 );
 
                 futureOffsets.put(key, finalScript.submit( "offset" ));
@@ -2579,23 +2565,19 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
         return this.getBaseline() != null;
     }
 
-    @Override
     public Integer getId() {
         return this.projectID;
     }
 
-    @Override
     protected String getIDName() {
         return "project_id";
     }
 
-    @Override
     protected void setID(Integer id)
     {
         this.projectID = id;
     }
 
-    @Override
     protected PreparedStatement getInsertSelectStatement( Connection connection )
             throws SQLException
     {
@@ -2634,14 +2616,11 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
         return script.getPreparedStatement( connection, args );
     }
 
-    @Override
     protected Object getSaveLock()
     {
         return PROJECT_SAVE_LOCK;
     }
 
-
-    @Override
     public void save() throws SQLException
     {
         Connection connection = null;
@@ -2723,12 +2702,6 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
     }
 
     @Override
-    protected Logger getLogger()
-    {
-        return ProjectDetails.LOGGER;
-    }
-
-    @Override
     public String toString()
     {
         return "Project { Name: " + this.getProjectName() +
@@ -2746,11 +2719,20 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
      * @throws SQLException Thrown if the value could not be retrieved from the
      * database
      */
-    public Integer getLastLead(Feature feature) throws SQLException
+    public Integer getLastLead(Feature feature) throws SQLException, IOException
     {
         boolean leadIsMissing = !this.lastLeads.containsKey( feature );
 
-        if (leadIsMissing)
+        if (leadIsMissing && this.usesGriddedData( this.getRight() ))
+        {
+            Request request = ConfigHelper.getGridDataRequest( this, this.getRight(), feature );
+
+            // TODO: Implement actual, non-nonsense code
+            request.setEarliestLead( Duration.ofHours(0) );
+            request.setLatestLead( Duration.ofHours( 6 ) );
+            this.lastLeads.put( feature, (int)TimeHelper.durationToLeadUnits( Fetcher.getLastLead( request ) ) );
+        }
+        else if (leadIsMissing)
         {
             String script = "";
 
@@ -2876,16 +2858,6 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
         }
 
         return result;
-    }
-
-    public int getMaximumLeadHourForFeature(Feature feature)
-    {
-        if (this.getMaximumLeadHour() < Integer.MAX_VALUE)
-        {
-            return this.getMaximumLeadHour();
-        }
-
-        return 0;
     }
 
     /**
@@ -3075,7 +3047,6 @@ public class ProjectDetails extends CachedDetail<ProjectDetails, Integer>
         return false;
     }
 
-    @Override
     public int compareTo(ProjectDetails other)
     {
         return this.getInputCode().compareTo( other.getInputCode() );

@@ -13,6 +13,7 @@ import java.util.concurrent.ConcurrentMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.generated.CoordinateSelection;
 import wres.config.generated.Feature;
 import wres.io.utilities.Database;
 import wres.io.utilities.ScriptBuilder;
@@ -42,6 +43,9 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
     private Float longitude = null;
 	private Float latitude = null;
 	private Integer nwmIndex = null;
+
+	private Integer netcdfXIndex = null;
+	private Integer netcdfYIndex = null;
 
 	private List<String> aliases = null;
 
@@ -78,7 +82,19 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
             comID = this.getComid().longValue();
         }
 
+        CoordinateSelection coordinateSelection = null;
+
+        if (this.longitude != null && this.latitude != null)
+        {
+            coordinateSelection = new CoordinateSelection(
+                    this.longitude,
+                    this.latitude,
+                    0.0f );
+        }
+
         return new Feature( aliases,
+                            coordinateSelection,
+                            null,
                             null,
                             this.getFeatureName(),
                             this.getLid(),
@@ -146,6 +162,16 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
         if (Database.hasColumn( row, "nwm_index" ))
         {
             this.nwmIndex = Database.getValue( row, "nwm_index" );
+        }
+
+        if (Database.hasColumn( row, "x_position" ))
+        {
+            this.netcdfXIndex = Database.getValue( row, "x_position" );
+        }
+
+        if (Database.hasColumn( row, "y_position" ))
+        {
+            this.netcdfYIndex = Database.getValue( row, "y_position" );
         }
 
         if (Database.hasColumn( row, this.getIDName() ))
@@ -289,7 +315,9 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
             this.key = new FeatureKey( this.getComid(),
                                        this.getLid(),
                                        this.getGageID(),
-                                       this.getHuc() );
+                                       this.getHuc(),
+                                       this.getLongitude(),
+                                       this.getLatitude() );
         }
 		return this.key;
 	}
@@ -419,6 +447,16 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
         {
             this.latitude = latitude;
         }
+    }
+
+    public Integer getNetcdfXIndex()
+    {
+        return this.netcdfXIndex;
+    }
+
+    public Integer getNetcdfYIndex()
+    {
+        return this.netcdfYIndex;
     }
 
     @Override
@@ -944,13 +982,17 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
         {
             name = "NHDPlus ID: " + this.getComid();
         }
+        else if (this.longitude != null && this.latitude != null)
+        {
+            name = "(" + this.longitude + ", " + this.latitude + ")";
+        }
 
         return name;
     }
 
     public static FeatureKey keyOfLid(String lid)
     {
-        return new FeatureKey( null, lid, null, null );
+        return new FeatureKey( null, lid, null, null, null, null );
     }
 
     @Override
@@ -974,6 +1016,10 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
             {
                 equals = this.gageID.equalsIgnoreCase( other.gageID );
             }
+            else if (this.latitude != null && this.longitude != null && other.latitude != null && other.longitude != null)
+            {
+                equals = this.latitude.equals( other.latitude ) && this.longitude.equals( other.longitude );
+            }
         }
 
         return equals;
@@ -991,13 +1037,17 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
         private final String lid;
         private final String gageID;
         private final String huc;
+        private final Float longitude;
+        private final Float latitude;
 
-        public FeatureKey (Integer comid, String lid, String gageID, String huc)
+        public FeatureKey (Integer comid, String lid, String gageID, String huc, Float longitude, Float latitude)
         {
             this.comid = comid;
             this.lid = lid;
             this.gageID = gageID;
             this.huc = huc;
+            this.longitude = longitude;
+            this.latitude = latitude;
         }
 
         @Override
@@ -1006,7 +1056,9 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
             return "Comid: '" + String.valueOf(comid) +
                    "', lid: '" + String.valueOf(lid) +
                    "', gageID: '" + String.valueOf(gageID) +
-                   "', huc: '" + String.valueOf(huc) + "'";
+                   "', huc: '" + String.valueOf(huc) +
+                   "', Longitude: '" + String.valueOf(this.longitude) +
+                   "', Latitude: '" + String.valueOf(this.latitude);
         }
 
         @Override
@@ -1043,6 +1095,12 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
                 if ( equal == null && Strings.hasValue( other.huc ) && Strings.hasValue( this.huc ))
                 {
                     equal = other.huc.equalsIgnoreCase( this.huc );
+                }
+
+                if (equal == null && this.longitude != null && this.latitude != null &&
+                    other.longitude != null && other.latitude != null)
+                {
+                    equal = this.longitude.equals( other.longitude ) && this.latitude.equals( other.latitude );
                 }
             }
 
@@ -1082,6 +1140,16 @@ public final class FeatureDetails extends CachedDetail<FeatureDetails, FeatureDe
                 if (comparison == 0 && this.comid != null && featureKey.comid != null)
                 {
                     comparison = this.comid.compareTo( featureKey.comid );
+                }
+
+                if (comparison == 0 && this.longitude != null && featureKey.longitude != null)
+                {
+                    comparison = this.longitude.compareTo( featureKey.longitude );
+                }
+
+                if (comparison == 0 && this.latitude != null && featureKey.latitude != null)
+                {
+                    comparison = this.latitude.compareTo( featureKey.latitude );
                 }
             }
 

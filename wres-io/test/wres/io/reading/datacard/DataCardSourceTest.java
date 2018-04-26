@@ -138,6 +138,8 @@ public class DataCardSourceTest
         Feature featureConfig = new Feature( null,
                                              null,
                                              null,
+                                             null,
+                                             null,
                                              "FAKELID",
                                              null,
                                              null,
@@ -220,6 +222,8 @@ public class DataCardSourceTest
                                                                 config,
                                                                 null );
         Feature featureConfig = new Feature( null,
+                                             null,
+                                             null,
                                              null,
                                              null,
                                              "FAKELID",

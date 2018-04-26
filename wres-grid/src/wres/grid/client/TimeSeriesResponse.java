@@ -8,6 +8,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.StringJoiner;
 import java.util.TreeMap;
 
 import wres.config.FeaturePlus;
@@ -26,6 +27,31 @@ class TimeSeriesResponse implements Response
         return this.variableName;
     }
 
+    @Override
+    public Integer getValueCount()
+    {
+        return this.valueCount;
+    }
+
+    @Override
+    public Duration getLastLead()
+    {
+        Duration lastLead = null;
+
+        for (List<Series> seriesList : this)
+        {
+            for (Series series : seriesList)
+            {
+                if (lastLead == null || series.getLastLead().compareTo( lastLead ) > 0)
+                {
+                    lastLead = series.getLastLead();
+                }
+            }
+        }
+
+        return lastLead;
+    }
+
     static class TimeSeries implements Response.Series
     {
         TimeSeries( final FeaturePlus feature, final Instant issuedDate)
@@ -42,7 +68,7 @@ class TimeSeriesResponse implements Response
         {
             Objects.requireNonNull( validDate, "A valid date must be supplied in order to add a value" );
             Duration leadDuration = Duration.ofSeconds( validDate.getEpochSecond() - this.issuedDate.getEpochSecond() );
-            TimeSeriesEntry updatedEntry = null;
+            TimeSeriesEntry updatedEntry;
 
             if (this.entries.containsKey( leadDuration ))
             {
@@ -54,6 +80,10 @@ class TimeSeriesResponse implements Response
             }
 
             this.entries.put(leadDuration, updatedEntry);
+            if (this.lastLead == null || leadDuration.compareTo( lastLead ) > 0)
+            {
+                this.lastLead = leadDuration;
+            }
         }
 
         @Override
@@ -79,18 +109,25 @@ class TimeSeriesResponse implements Response
             return issuedDate;
         }
 
+        @Override
+        public Duration getLastLead()
+        {
+            return this.lastLead;
+        }
+
         private final Map<Duration, Response.Entry> entries;
         private final Instant issuedDate;
         private final FeaturePlus feature;
+        private Duration lastLead;
 
         @Override
-        public int compareTo( Response.Series entries )
+        public int compareTo( Response.Series series )
         {
-            int equality = this.feature.compareTo( entries.getFeature() );
+            int equality = this.feature.compareTo( series.getFeature() );
 
             if (equality == 0)
             {
-                equality = this.issuedDate.compareTo( entries.getIssuedDate() );
+                equality = this.issuedDate.compareTo( series.getIssuedDate() );
             }
             return equality;
         }
@@ -99,6 +136,14 @@ class TimeSeriesResponse implements Response
         public Iterator<Response.Entry> iterator()
         {
             return this.entries.values().iterator();
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format( "Feature: %s, Start: %s",
+                                  this.feature.toString(),
+                                  this.issuedDate.toString() );
         }
     }
 
@@ -157,6 +202,17 @@ class TimeSeriesResponse implements Response
         {
             return this.lead.compareTo( doubles.getLead() );
         }
+
+        @Override
+        public String toString()
+        {
+            StringJoiner valueJoiner = new StringJoiner( ", ", "[", "]" );
+            values.forEach( value -> valueJoiner.add(String.valueOf(value)) );
+            return String.format( "Valid: %s, Lead: %s, Values: %s",
+                                  this.validDate.toString(),
+                                  this.lead.toString(),
+                                  valueJoiner.toString());
+        }
     }
 
     TimeSeriesResponse()
@@ -197,11 +253,13 @@ class TimeSeriesResponse implements Response
         }
 
         ((TimeSeries)series).add( validDate, value );
+        this.valueCount++;
     }
 
     private final Map<FeaturePlus, List<Series>> timeSeriesPerFeature;
     private String measurementUnit;
     private String variableName;
+    private Integer valueCount = 0;
 
     @Override
     public Iterator<List<Series>> iterator()

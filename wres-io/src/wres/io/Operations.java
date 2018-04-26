@@ -405,7 +405,8 @@ public final class Operations {
             // Check if the feature has any intersecting values
             Feature feature = details.toFeature();
 
-            if ( projectDetails.getLeadOffset( feature ) != null)
+            if ( projectDetails.usesGriddedData( projectDetails.getRight() ) ||
+                 projectDetails.getLeadOffset( feature ) != null)
             {
                 Feature resolvedFeature = details.toFeature();
                 atomicFeatures.add( FeaturePlus.of ( resolvedFeature ));

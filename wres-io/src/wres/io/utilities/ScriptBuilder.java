@@ -15,12 +15,15 @@ import org.slf4j.LoggerFactory;
 import wres.io.concurrency.SQLExecutor;
 import wres.io.concurrency.StatementRunner;
 import wres.io.concurrency.ValueRetriever;
+import wres.util.functional.ExceptionalConsumer;
+import wres.util.functional.ExceptionalFunction;
 
 public class ScriptBuilder
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( ScriptBuilder.class );
     private static final String NEWLINE = System.lineSeparator();
     private final StringBuilder script;
+    private boolean isHighPriority = false;
 
     public ScriptBuilder()
     {
@@ -30,6 +33,15 @@ public class ScriptBuilder
     public ScriptBuilder (String beginning)
     {
         this.script = new StringBuilder( beginning );
+    }
+
+    /**
+     * Sets whether or not the script should use high priority connections
+     * @param highPriority Whether or not high priority connections should be used
+     */
+    public void setHighPriority(boolean highPriority)
+    {
+        this.isHighPriority = highPriority;
     }
 
     /**
@@ -136,7 +148,15 @@ public class ScriptBuilder
 
         try
         {
-            connection = Database.getConnection();
+            if (this.isHighPriority)
+            {
+                connection = Database.getHighPriorityConnection();
+            }
+            else
+            {
+                connection = Database.getConnection();
+            }
+
             statement = this.getPreparedStatement( connection, parameters );
             statement.execute();
         }
@@ -144,7 +164,16 @@ public class ScriptBuilder
         {
             if (statement != null)
             {
-                statement.close();
+                try
+                {
+                    statement.close();
+                }
+                catch (SQLException exception)
+                {
+                    LOGGER.debug("Failed to close the prepared statement with the script:{}{}",
+                                 NEWLINE,
+                                 this.toString());
+                }
             }
 
             if (connection != null)
@@ -242,14 +271,29 @@ public class ScriptBuilder
 
         try
         {
-            connection = Database.getConnection();
+            if (this.isHighPriority)
+            {
+                connection = Database.getHighPriorityConnection();
+            }
+            else
+            {
+                connection = Database.getConnection();
+            }
+
             value = Database.getResult( this.toString(), label );
         }
         finally
         {
             if (connection != null)
             {
-                Database.returnConnection( connection );
+                if (this.isHighPriority)
+                {
+                    Database.returnHighPriorityConnection( connection );
+                }
+                else
+                {
+                    Database.returnConnection( connection );
+                }
             }
         }
 
@@ -371,6 +415,29 @@ public class ScriptBuilder
         }
 
         return statement;
+    }
+
+    /**
+     * Runs a consumer function on each row of the result returned from the script
+     * @param consumer A function that will use each row of the result set
+     * @throws SQLException Thrown if the consumer threw an error
+     * @throws SQLException Thrown if the script failed to run properly
+     */
+    public void consume(ExceptionalConsumer<ResultSet, SQLException> consumer) throws SQLException
+    {
+        if (this.isHighPriority)
+        {
+            Database.highPriorityConsume( this.toString(), consumer );
+        }
+        else
+        {
+            Database.consume( this.toString(), consumer );
+        }
+    }
+
+    public <U> List<U> interpret( ExceptionalFunction<ResultSet, U, SQLException> interpretor) throws SQLException
+    {
+        return Database.interpret( this.toString(), interpretor, this.isHighPriority );
     }
 
 }

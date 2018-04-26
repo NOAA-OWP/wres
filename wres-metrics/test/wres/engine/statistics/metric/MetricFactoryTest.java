@@ -3,21 +3,33 @@ package wres.engine.statistics.metric;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ForkJoinPool;
 
-import org.hamcrest.CoreMatchers;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import wres.config.ProjectConfigPlus;
+import wres.config.MetricConfigException;
+import wres.config.generated.DataSourceConfig;
+import wres.config.generated.DatasourceType;
+import wres.config.generated.DestinationConfig;
+import wres.config.generated.MetricConfig;
+import wres.config.generated.MetricConfigName;
+import wres.config.generated.MetricsConfig;
+import wres.config.generated.OutputTypeSelection;
 import wres.config.generated.ProjectConfig;
+import wres.config.generated.ProjectConfig.Inputs;
+import wres.config.generated.ProjectConfig.Outputs;
+import wres.config.generated.ThresholdDataType;
+import wres.config.generated.ThresholdOperator;
+import wres.config.generated.ThresholdType;
+import wres.config.generated.ThresholdsConfig;
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
 import wres.datamodel.MetricConstants;
@@ -77,6 +89,25 @@ public final class MetricFactoryTest
 
     private MetricFactory metF;
 
+    /**
+     * Mocked single-valued configuration.
+     */
+
+    private ProjectConfig mockSingleValued;
+
+    /**
+     * Mocked single-valued configuration.
+     */
+
+    private ProjectConfig mockEnsemble;
+
+    /**
+     * Mock of a configuration that throws a {@link MetricConfigException}
+     */
+
+    private ProjectConfig mockInvalid;
+
+
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
@@ -85,8 +116,27 @@ public final class MetricFactoryTest
     {
         outF = DefaultDataFactory.getInstance();
         metF = MetricFactory.getInstance( outF );
+
+        setMockConfiguration();
     }
 
+
+    /**
+     * Tests the {@link MetricFactory#getInstance(DataFactory)}.
+     * 
+     */
+
+    @Test
+    public void testGetInstance() 
+    {
+        assertTrue( Objects.nonNull( MetricFactory.getInstance( outF ) ) );
+
+        exception.expect( NullPointerException.class );
+        exception.expectMessage( "Specify a non-null metric output factory to construct the metric factory." );
+        
+        MetricFactory.getInstance( null );
+    }
+    
     /**
      * Tests {@link MetricFactory#ofSingleValuedScore(MetricConstants)}. 
      * @throws MetricParameterException if the metric construction fails
@@ -399,30 +449,6 @@ public final class MetricFactoryTest
     }
 
     /**
-     * Tests for exceptions in {@link MetricFactory}.
-     * 
-     * @throws SecurityException if reflection fails
-     * @throws NoSuchMethodException if reflection fails
-     * @throws InstantiationException if reflection fails
-     * @throws IllegalAccessException if reflection fails
-     * @throws InvocationTargetException if reflection fails
-     */
-
-    @Test
-    public void testExceptions() throws InstantiationException,
-            IllegalAccessException,
-            InvocationTargetException,
-            NoSuchMethodException,
-            SecurityException
-    {
-        Constructor<MetricFactory> cons = MetricFactory.class.getDeclaredConstructor( DataFactory.class );
-        cons.setAccessible( true );
-
-        exception.expectCause( CoreMatchers.instanceOf( IllegalArgumentException.class ) );
-        cons.newInstance( (DataFactory) null );
-    }
-
-    /**
      * Tests {@link MetricFactory#ofSummaryStatisticsForTimingErrorMetric(MetricConstants)}. 
      * @throws MetricParameterException if the metric construction fails 
      */
@@ -456,15 +482,10 @@ public final class MetricFactoryTest
     @Test
     public void testOfMetricProcessorByProject() throws IOException, MetricProcessorException
     {
-        String configPathSingleValued =
-                "testinput/metricProcessorSingleValuedPairsByTimeTest/testApplyWithoutThresholds.xml";
-
-        ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathSingleValued ) ).getProjectConfig();
-        assertTrue( MetricFactory.getInstance( DefaultDataFactory.getInstance() )
-                                 .ofMetricProcessorForProject( config,
-                                                               null,
-                                                               ForkJoinPool.commonPool(),
-                                                               ForkJoinPool.commonPool() ) instanceof MetricProcessorForProject );
+        assertTrue( metF.ofMetricProcessorForProject( mockSingleValued,
+                                                      null,
+                                                      ForkJoinPool.commonPool(),
+                                                      ForkJoinPool.commonPool() ) instanceof MetricProcessorForProject );
     }
 
     /**
@@ -476,13 +497,8 @@ public final class MetricFactoryTest
     @Test
     public void testOfMetricProcessorByTimeSingleValuedPairs() throws IOException, MetricProcessorException
     {
-        String configPathSingleValued =
-                "testinput/metricProcessorSingleValuedPairsByTimeTest/testApplyWithoutThresholds.xml";
-
-        ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathSingleValued ) ).getProjectConfig();
-        assertTrue( MetricFactory.getInstance( DefaultDataFactory.getInstance() )
-                                 .ofMetricProcessorByTimeSingleValuedPairs( config,
-                                                                            null ) instanceof MetricProcessorByTimeSingleValuedPairs );
+        assertTrue( metF.ofMetricProcessorByTimeSingleValuedPairs( mockSingleValued,
+                                                                   null ) instanceof MetricProcessorByTimeSingleValuedPairs );
     }
 
     /**
@@ -495,11 +511,8 @@ public final class MetricFactoryTest
     @Test
     public void testOfMetricProcessorByTimeEnsemblePairs() throws IOException, MetricProcessorException
     {
-        String configPathEnsemble = "testinput/metricProcessorEnsemblePairsByTimeTest/testApplyWithoutThresholds.xml";
-        ProjectConfig configTwo = ProjectConfigPlus.from( Paths.get( configPathEnsemble ) ).getProjectConfig();
-        assertTrue( MetricFactory.getInstance( DefaultDataFactory.getInstance() )
-                                 .ofMetricProcessorByTimeEnsemblePairs( configTwo,
-                                                                        null ) instanceof MetricProcessorByTimeEnsemblePairs );
+        assertTrue( metF.ofMetricProcessorByTimeEnsemblePairs( mockEnsemble,
+                                                               null ) instanceof MetricProcessorByTimeEnsemblePairs );
     }
 
     /**
@@ -513,14 +526,9 @@ public final class MetricFactoryTest
     public void testOfMetricProcessorByTimeSingleValuedPairsWithExternalThresholds()
             throws IOException, MetricProcessorException
     {
-        String configPathSingleValued =
-                "testinput/metricProcessorSingleValuedPairsByTimeTest/testApplyWithThresholds.xml";
-
-        ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathSingleValued ) ).getProjectConfig();
-        assertTrue( MetricFactory.getInstance( DefaultDataFactory.getInstance() )
-                                 .ofMetricProcessorByTimeSingleValuedPairs( config,
-                                                                            null,
-                                                                            null ) instanceof MetricProcessorByTimeSingleValuedPairs );
+        assertTrue( metF.ofMetricProcessorByTimeSingleValuedPairs( mockSingleValued,
+                                                                   null,
+                                                                   null ) instanceof MetricProcessorByTimeSingleValuedPairs );
     }
 
     /**
@@ -534,14 +542,9 @@ public final class MetricFactoryTest
     public void testOfMetricProcessorByTimeEnsemblePairsWithExternalThresholds()
             throws IOException, MetricProcessorException
     {
-        String configPathSingleValued =
-                "testinput/metricProcessorEnsemblePairsByTimeTest/testApplyWithValueThresholds.xml";
-
-        ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathSingleValued ) ).getProjectConfig();
-        assertTrue( MetricFactory.getInstance( DefaultDataFactory.getInstance() )
-                                 .ofMetricProcessorByTimeEnsemblePairs( config,
-                                                                        null,
-                                                                        null ) instanceof MetricProcessorByTimeEnsemblePairs );
+        assertTrue( metF.ofMetricProcessorByTimeEnsemblePairs( mockEnsemble,
+                                                               null,
+                                                               null ) instanceof MetricProcessorByTimeEnsemblePairs );
     }
 
 
@@ -556,15 +559,10 @@ public final class MetricFactoryTest
     public void testOfMetricProcessorByTimeSingleValuedPairsWithExternalThresholdsAndExecutors()
             throws IOException, MetricProcessorException
     {
-        String configPathSingleValued =
-                "testinput/metricProcessorSingleValuedPairsByTimeTest/testApplyWithThresholds.xml";
-
-        ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathSingleValued ) ).getProjectConfig();
-        assertTrue( MetricFactory.getInstance( DefaultDataFactory.getInstance() )
-                                 .ofMetricProcessorByTimeSingleValuedPairs( config,
-                                                                            null,
-                                                                            ForkJoinPool.commonPool(),
-                                                                            ForkJoinPool.commonPool() ) instanceof MetricProcessorByTimeSingleValuedPairs );
+        assertTrue( metF.ofMetricProcessorByTimeSingleValuedPairs( mockSingleValued,
+                                                                   null,
+                                                                   ForkJoinPool.commonPool(),
+                                                                   ForkJoinPool.commonPool() ) instanceof MetricProcessorByTimeSingleValuedPairs );
     }
 
     /**
@@ -582,15 +580,10 @@ public final class MetricFactoryTest
         exception.expect( MetricProcessorException.class );
         exception.expectMessage( "While building the metric processor, a configuration exception occurred:" );
 
-        String configPathSingleValued =
-                "testinput/metricProcessorEnsemblePairsByTimeTest/testApplyWithValueThresholds.xml";
-
-        ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathSingleValued ) ).getProjectConfig();
-        MetricFactory.getInstance( DefaultDataFactory.getInstance() )
-                     .ofMetricProcessorByTimeSingleValuedPairs( config,
-                                                                null,
-                                                                ForkJoinPool.commonPool(),
-                                                                ForkJoinPool.commonPool() );
+        metF.ofMetricProcessorByTimeSingleValuedPairs( mockInvalid,
+                                                       null,
+                                                       ForkJoinPool.commonPool(),
+                                                       ForkJoinPool.commonPool() );
     }
 
     /**
@@ -604,15 +597,10 @@ public final class MetricFactoryTest
     public void testOfMetricProcessorByTimeEnsemblePairsWithExternalThresholdsAndExecutors()
             throws IOException, MetricProcessorException
     {
-        String configPathSingleValued =
-                "testinput/metricProcessorEnsemblePairsByTimeTest/testApplyWithValueThresholds.xml";
-
-        ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathSingleValued ) ).getProjectConfig();
-        assertTrue( MetricFactory.getInstance( DefaultDataFactory.getInstance() )
-                                 .ofMetricProcessorByTimeEnsemblePairs( config,
-                                                                        null,
-                                                                        ForkJoinPool.commonPool(),
-                                                                        ForkJoinPool.commonPool() ) instanceof MetricProcessorByTimeEnsemblePairs );
+        assertTrue( metF.ofMetricProcessorByTimeEnsemblePairs( mockEnsemble,
+                                                               null,
+                                                               ForkJoinPool.commonPool(),
+                                                               ForkJoinPool.commonPool() ) instanceof MetricProcessorByTimeEnsemblePairs );
     }
 
     /**
@@ -624,21 +612,106 @@ public final class MetricFactoryTest
      */
 
     @Test
-    public void testOfMetricProcessorByTimeEnsemblePairsWithExternalThresholdsAndExecutorsThrowsException()
+    public void testOfMetricProcessorByTimeEnsemblePairsWithExternalThresholdsAndExecutorsThrowsExternalException()
             throws IOException, MetricProcessorException
     {
         exception.expect( MetricProcessorException.class );
         exception.expectMessage( "While building the metric processor, a configuration exception occurred:" );
 
-        String configPathEnsemble =
-                "testinput/metricProcessorSingleValuedPairsByTimeTest/testApplyWithThresholds.xml";
+        metF.ofMetricProcessorByTimeEnsemblePairs( mockInvalid,
+                                                   null,
+                                                   ForkJoinPool.commonPool(),
+                                                   ForkJoinPool.commonPool() );
+    }
 
-        ProjectConfig config = ProjectConfigPlus.from( Paths.get( configPathEnsemble ) ).getProjectConfig();
-        MetricFactory.getInstance( DefaultDataFactory.getInstance() )
-                     .ofMetricProcessorByTimeEnsemblePairs( config,
-                                                            null,
-                                                            ForkJoinPool.commonPool(),
-                                                            ForkJoinPool.commonPool() );
+    /**
+     * Generates mock configuration for testing.
+     */
+
+    private void setMockConfiguration()
+    {
+        // Mock several project configurations
+        List<MetricConfig> metrics = new ArrayList<>();
+        metrics.add( new MetricConfig( null, null, MetricConfigName.BIAS_FRACTION ) );
+        metrics.add( new MetricConfig( null, null, MetricConfigName.VOLUMETRIC_EFFICIENCY ) );
+        metrics.add( new MetricConfig( null, null, MetricConfigName.SUM_OF_SQUARE_ERROR ) );
+        metrics.add( new MetricConfig( null, null, MetricConfigName.MEAN_SQUARE_ERROR ) );
+        metrics.add( new MetricConfig( null, null, MetricConfigName.ROOT_MEAN_SQUARE_ERROR ) );
+        metrics.add( new MetricConfig( null, null, MetricConfigName.PEARSON_CORRELATION_COEFFICIENT ) );
+        metrics.add( new MetricConfig( null, null, MetricConfigName.COEFFICIENT_OF_DETERMINATION ) );
+
+        mockSingleValued =
+                new ProjectConfig( new Inputs( null,
+                                               new DataSourceConfig( DatasourceType.SINGLE_VALUED_FORECASTS,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null ),
+                                               null ),
+                                   null,
+                                   Arrays.asList( new MetricsConfig( null, metrics, null ) ),
+                                   null,
+                                   null,
+                                   null );
+
+        // Add a threshold-dependent metric for the ensemble mock
+        metrics.add( new MetricConfig( null, null, MetricConfigName.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM ) );
+
+        // Mock some thresholds
+        List<ThresholdsConfig> thresholds = new ArrayList<>();
+        thresholds.add( new ThresholdsConfig( ThresholdType.PROBABILITY,
+                                              ThresholdDataType.LEFT,
+                                              "0.1,0.2,0.3",
+                                              ThresholdOperator.GREATER_THAN ) );
+
+        mockEnsemble =
+                new ProjectConfig( new Inputs( null,
+                                               new DataSourceConfig( DatasourceType.SINGLE_VALUED_FORECASTS,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null ),
+                                               null ),
+                                   null,
+                                   Arrays.asList( new MetricsConfig( thresholds, metrics, null ) ),
+                                   new Outputs( Arrays.asList( new DestinationConfig( null,
+                                                                                      OutputTypeSelection.THRESHOLD_LEAD,
+                                                                                      null,
+                                                                                      null,
+                                                                                      null ) ) ),
+                                   null,
+                                   null );
+
+        // Configuration that requires thresholds and has none
+        mockInvalid =
+                new ProjectConfig( new Inputs( null,
+                                               new DataSourceConfig( DatasourceType.SINGLE_VALUED_FORECASTS,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null,
+                                                                     null ),
+                                               null ),
+                                   null,
+                                   Arrays.asList( new MetricsConfig( null,
+                                                                     Arrays.asList( new MetricConfig( null,
+                                                                                                      null,
+                                                                                                      MetricConfigName.FREQUENCY_BIAS ) ),
+                                                                     null ) ),
+                                   null,
+                                   null,
+                                   null );
     }
 
 }

@@ -825,9 +825,10 @@ final class MainFunctions
                     // Loop through a full join across all contained x and y values
                     Variable xCoordinates = NetCDF.getVariable(file, "x");
                     Variable yCoordinates = NetCDF.getVariable(file, "y");
+                    Variable coordinateSystem = NetCDF.getVariable( file, "ProjectionCoordinateSystem" );
 
-                    Attribute sr = NetCDF.getVariableAttribute( xCoordinates, "esri_pe_string" );
-                    Attribute proj4 = NetCDF.getVariableAttribute( xCoordinates, "proj4" );
+                    Attribute sr = NetCDF.getVariableAttribute( coordinateSystem, "esri_pe_string" );
+                    Attribute proj4 = NetCDF.getVariableAttribute( coordinateSystem, "proj4" );
                     String srtext = sr.getStringValue();
                     String proj4Text = proj4.getStringValue();
 
@@ -844,7 +845,7 @@ final class MainFunctions
 					script.addTab(  2  ).addLine("SELECT 1");
 					script.addTab(  2  ).addLine("FROM public.spatial_ref_sys");
 					script.addTab(  2  ).addLine("WHERE srtext = '", srtext, "'");
-					script.addTab(   3   ).addLine("AND proj4 = '", proj4Text, "'");
+					script.addTab(   3   ).addLine("AND proj4Text = '", proj4Text, "'");
 					script.addTab().addLine(")");
 					script.addTab().addLine("RETURNING srid");
 					script.addLine(")");
@@ -856,7 +857,7 @@ final class MainFunctions
 					script.addLine("SELECT srid");
 					script.addLine("FROM public.spatial_ref_sys");
                     script.addLine("WHERE srtext = '", srtext, "'");
-                    script.addTab().addLine("AND proj4 = '", proj4Text, "';");
+                    script.addTab().addLine("AND proj4Text = '", proj4Text, "';");
 
                     final int customSRID = script.retrieve( "srid" );
 
@@ -874,7 +875,7 @@ final class MainFunctions
 					Array yValues = yCoordinates.read();
 
 					int currentXIndex = 0;
-					int currentYIndex = 0;
+					int currentYIndex;
 					for (; currentXIndex < xLength; ++currentXIndex) {
 						currentYIndex = 0;
 
@@ -912,6 +913,15 @@ final class MainFunctions
 							}
 						}
 					}
+
+					if (copyCount > 0)
+                    {
+                        SQLExecutor sqlExecutor = new SQLExecutor(builder.toString());
+                        sqlExecutor.setOnRun(ProgressMonitor.onThreadStartHandler());
+                        sqlExecutor.setOnComplete(ProgressMonitor.onThreadCompleteHandler());
+                        LOGGER.trace("Sending the last coordinate values to the database executor to copy...");
+                        copyOperations.add(Database.execute(sqlExecutor));
+                    }
 
 					for (Future copy : copyOperations) {
 						copy.get();

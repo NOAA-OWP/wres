@@ -112,6 +112,8 @@ public class CommaSeparatedWriterTest
         return new Feature( null,
                             null,
                             null,
+                            null,
+                            null,
                             locationId,
                             null,
                             null,

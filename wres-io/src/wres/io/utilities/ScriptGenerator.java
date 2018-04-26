@@ -31,7 +31,7 @@ public final class ScriptGenerator
 
         script.addLine( "WITH forecast_positions AS" );
         script.addLine( "(");
-        script.addTab().addLine("SELECT VP.variableposition_id, feature_id, comid, gage_id, lid, huc");
+        script.addTab().addLine("SELECT VP.variableposition_id, feature_id, comid, gage_id, lid, huc, latitude, longitude");
         script.addTab().addLine("FROM wres.VariablePosition VP");
         script.addTab().addLine("INNER JOIN wres.Feature F");
         script.addTab(  2  ).addLine("ON F.feature_id = VP.x_position");
@@ -40,6 +40,15 @@ public final class ScriptGenerator
         boolean addedFeature = false;
         for (Feature feature : projectDetails.getProjectConfig().getPair().getFeature())
         {
+            if (!Strings.hasValue( feature.getRfc() ) &&
+                !Strings.hasValue( feature.getGageId() ) &&
+                !Strings.hasValue( feature.getHuc() ) &&
+                feature.getComid() == null &&
+                !Strings.hasValue( feature.getLocationId() ) )
+            {
+                continue;
+            }
+
             if (!addedFeature)
             {
                 addedFeature = true;
@@ -261,7 +270,9 @@ public final class ScriptGenerator
         script.addTab().addLine("FP.comid,");
         script.addTab().addLine("FP.gage_id,");
         script.addTab().addLine("FP.huc,");
-        script.addTab().addLine("FP.lid");
+        script.addTab().addLine("FP.lid,");
+        script.addTab().addLine("FP.latitude,");
+        script.addTab().addLine("FP.longitude");
         script.addLine("FROM forecast_positions FP");
 
         if (selectObservedPositions)

@@ -15,9 +15,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.function.BiFunction;
 import java.util.function.BinaryOperator;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,17 +44,18 @@ import wres.datamodel.metadata.TimeWindow;
 import wres.datamodel.time.Event;
 import wres.grid.client.Fetcher;
 import wres.grid.client.Request;
+import wres.grid.client.Response;
 import wres.io.concurrency.Executor;
 import wres.io.concurrency.WRESCallable;
 import wres.io.config.ConfigHelper;
+import wres.io.data.caching.DataSources;
 import wres.io.data.caching.MeasurementUnits;
 import wres.io.data.caching.UnitConversions;
 import wres.io.data.details.ProjectDetails;
-import wres.io.reading.waterml.Response;
 import wres.io.retrieval.scripting.Scripter;
 import wres.io.utilities.Database;
+import wres.util.functional.ExceptionalTriFunction;
 import wres.io.utilities.NoDataException;
-import wres.io.utilities.ScriptBuilder;
 import wres.io.writing.PairWriter;
 import wres.util.NotImplementedException;
 import wres.util.TimeHelper;
@@ -93,11 +94,9 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
     private Feature feature;
 
     /**
-     * Function used to find all left side data based on a range of dates
+     * Function used to find all left side data based on a range of dates for a specific feature
      */
-    private final BiFunction<LocalDateTime, LocalDateTime, List<Double>> getLeftValues;
-
-    private final Map<LocalDateTime, LocalDateTime> leftValues = null;
+    private final ExceptionalTriFunction<Feature, LocalDateTime, LocalDateTime, List<Double>, IOException> getLeftValues;
 
     /**
      * The total set of climatology data to group with the pairs
@@ -122,7 +121,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
     private Map<Integer, UnitConversions.Conversion> conversionMap;
 
     InputRetriever ( ProjectDetails projectDetails,
-                     BiFunction<LocalDateTime, LocalDateTime, List<Double>> getLeftValues )
+                     ExceptionalTriFunction<Feature, LocalDateTime, LocalDateTime, List<Double>, IOException> getLeftValues )
     {
         this.projectDetails = projectDetails;
         this.getLeftValues = getLeftValues;
@@ -601,108 +600,20 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
     private List<ForecastedPair> createGriddedPairs( DataSourceConfig dataSourceConfig )
             throws IOException, SQLException
     {
-        List<ForecastedPair> pairs = null;
+        List<ForecastedPair> pairs = new ArrayList<>(  );
 
-        Request griddedRequest = Fetcher.prepareRequest();
-        griddedRequest.addFeature( this.feature );
-        griddedRequest.setVariableName( dataSourceConfig.getVariable().getValue() );
+        Request griddedRequest = ConfigHelper.getGridDataRequest( this.projectDetails, dataSourceConfig, this.feature );
+        Pair<Integer, Integer>
+                leadRange = this.projectDetails.getLeadRange( this.feature, this.leadIteration );
 
-        boolean isForecast = ConfigHelper.isForecast( dataSourceConfig );
+        griddedRequest.setEarliestLead( Duration.of(leadRange.getLeft(), TimeHelper.LEAD_RESOLUTION) );
+        griddedRequest.setLatestLead( Duration.of(leadRange.getRight(), TimeHelper.LEAD_RESOLUTION) );
 
-        griddedRequest.setIsForecast( isForecast );
+        /*
+         * TODO: Add code to pull indexes from the index table that fit within the wkt in the feature
+         */
 
-        ScriptBuilder script = new ScriptBuilder();
-        script.addLine("SELECT path");
-        script.addLine("FROM wres.Source S");
-        script.addLine("WHERE S.is_point_data = FALSE");
-
-        if (isForecast && this.projectDetails.getMinimumLeadHour() > Integer.MIN_VALUE)
-        {
-            griddedRequest.setEarliestLead(
-                    Duration.of(this.projectDetails.getMinimumLeadHour(), TimeHelper.LEAD_RESOLUTION)
-            );
-
-            script.addTab().addLine("AND S.lead >= ", this.projectDetails.getMinimumLeadHour());
-        }
-
-        if (isForecast && this.projectDetails.getMaximumLeadHour() < Integer.MAX_VALUE)
-        {
-            griddedRequest.setLatestLead(
-                    Duration.of(this.projectDetails.getMaximumLeadHour(), TimeHelper.LEAD_RESOLUTION)
-            );
-
-            script.addTab().addLine("AND S.lead <= ", this.projectDetails.getMaximumLeadHour());
-        }
-
-        if (this.projectDetails.getEarliestDate() != null)
-        {
-            griddedRequest.setEarliestValidTime( Instant.parse( this.projectDetails.getEarliestDate() ) );
-
-            script.addTab().add("AND S.output_time ");
-
-            if (isForecast)
-            {
-                script.add("+ INTERVAL '1 ", TimeHelper.LEAD_RESOLUTION, "' * S.lead ");
-            }
-
-            script.addLine(">= '", this.projectDetails.getEarliestDate(), "'");
-        }
-
-        if (this.projectDetails.getLatestDate() != null)
-        {
-            griddedRequest.setLatestValidTime( Instant.parse( this.projectDetails.getLatestDate() ) );
-
-            script.addTab().add("AND S.output_time ");
-
-            if (isForecast)
-            {
-                script.add("+ INTERVAL '1 ", TimeHelper.LEAD_RESOLUTION, "' * S.lead ");
-            }
-
-            script.addLine("<= '", this.projectDetails.getLatestDate(), "'");
-        }
-
-        if (isForecast && this.projectDetails.getEarliestIssueDate() != null)
-        {
-            griddedRequest.setEarliestIssueTime( Instant.parse(this.projectDetails.getEarliestIssueDate()) );
-
-            script.addTab().addLine("AND S.output_time >= '", this.projectDetails.getEarliestIssueDate(), "'");
-        }
-
-        if (isForecast && this.projectDetails.getLatestIssueDate() != null)
-        {
-            griddedRequest.setLatestIssueTime( Instant.parse(this.projectDetails.getLatestIssueDate()) );
-
-            script.addTab().addLine("AND S.output_time <= '", this.projectDetails.getLatestIssueDate(), "'");
-        }
-
-        script.addTab().addLine("AND EXISTS (");
-        script.addTab(  2  ).addLine("SELECT 1");
-        script.addTab(  2  ).addLine("FROM wres.ProjectSource PS");
-        script.addTab(  2  ).addLine("WHERE PS.project_id = ", this.projectDetails.getId());
-        script.addTab(   3   ).addLine("AND PS.member = ", this.projectDetails.getInputName( dataSourceConfig ));
-        script.addTab().addLine(")");
-        script.addTab().addLine("AND is_point_data = FALSE;");
-
-        Connection connection;
-        ResultSet paths;
-
-        try
-        {
-            connection = Database.getConnection();
-            paths = script.retrieve( connection );
-
-            while (paths.next())
-            {
-                griddedRequest.addPath( paths.getString("path") );
-            }
-        }
-        catch ( SQLException e )
-        {
-            e.printStackTrace();
-        }
-
-        wres.grid.client.Response response = Fetcher.getData( griddedRequest );
+        Response response = Fetcher.getData( griddedRequest );
 
         int measurementUnitId = MeasurementUnits.getMeasurementUnitID(response.getMeasurementUnit());
 
@@ -720,14 +631,14 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                 frequency
         );
 
-        for (List<wres.grid.client.Response.Series> listOfSeries : response)
+        for (List<Response.Series> listOfSeries : response)
         {
             // Until we support many locations per retrieval, we don't need special handling for features
-            for ( wres.grid.client.Response.Series series : listOfSeries)
+            for ( Response.Series series : listOfSeries)
             {
                 IngestedValueCollection ingestedValues = new IngestedValueCollection();
 
-                for ( wres.grid.client.Response.Entry entry : series)
+                for ( Response.Entry entry : series)
                 {
                     IngestedValue value = new IngestedValue(
                             entry.getValidDate(),
@@ -766,10 +677,6 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
                 }
             }
         }
-
-        /*
-         * TODO: Add code to pull indexes from the index table that fit within the wkt in the feature
-         */
 
         return pairs;
     }
@@ -1227,7 +1134,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             List<ForecastedPair> pairs,
             CondensedIngestedValue condensedIngestedValue,
             DataSourceConfig dataSourceConfig)
-            throws NoDataException, SQLException
+            throws IOException, SQLException
     {
         if (!condensedIngestedValue.isEmpty())
         {
@@ -1361,7 +1268,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
     }
 
     private PairOfDoubleAndVectorOfDoubles getPair(CondensedIngestedValue condensedIngestedValue)
-            throws NoDataException, SQLException
+            throws IOException, SQLException
     {
         if (condensedIngestedValue.isEmpty())
         {
@@ -1396,7 +1303,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
      * @throws NoDataException
      */
     private Double getLeftAggregation(Instant end)
-            throws NoDataException, SQLException
+            throws SQLException, IOException
     {
 
         Instant firstDate;
@@ -1421,7 +1328,8 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         LocalDateTime startDate = LocalDateTime.ofInstant( firstDate, ZoneId.of( "Z" ) );
         LocalDateTime endDate = LocalDateTime.ofInstant(end, ZoneId.of( "Z" ) );
 
-        List<Double> leftValues = this.getLeftValues.apply( startDate, endDate );
+        //List<Double> leftValues = this.getLeftValues.apply( startDate, endDate );
+        List<Double> leftValues = this.getLeftValues.call( this.feature, startDate, endDate );
 
         if (leftValues == null || leftValues.isEmpty())
         {
@@ -1524,12 +1432,12 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             this.values = values;
         }
 
-        public Instant getBasisTime()
+        Instant getBasisTime()
         {
             return this.basisTime;
         }
 
-        public Instant getValidTime()
+        Instant getValidTime()
         {
             return this.validTime;
         }
@@ -1539,7 +1447,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             return this.values;
         }
 
-        public PairOfDoubles[] getSingleValuedPairs()
+        PairOfDoubles[] getSingleValuedPairs()
         {
             PairOfDoubles[] pairOfDoubles = new PairOfDoubles[this.getValues().getItemTwo().length];
 
@@ -1553,14 +1461,14 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             return pairOfDoubles;
         }
 
-        public Duration getLeadDuration()
+        Duration getLeadDuration()
         {
             long millis = this.getValidTime().toEpochMilli()
                           - this.getBasisTime().toEpochMilli();
             return Duration.of( millis, ChronoUnit.MILLIS );
         }
 
-        public long getLeadHours()
+        long getLeadHours()
         {
             return getLeadDuration().toHours();
         }
@@ -1591,7 +1499,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
         private final double value;
         private final int measurementUnitId;
 
-        public RawPersistenceRow( long millisSinceEpoch,
+        RawPersistenceRow( long millisSinceEpoch,
                                   double value,
                                   int measurementUnitId )
         {
@@ -1600,7 +1508,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             this.measurementUnitId = measurementUnitId;
         }
 
-        public long getMillisSinceEpoch()
+        long getMillisSinceEpoch()
         {
             return this.millisSinceEpoch;
         }
@@ -1610,7 +1518,7 @@ class InputRetriever extends WRESCallable<MetricInput<?>>
             return this.value;
         }
 
-        public int getMeasurementUnitId()
+        int getMeasurementUnitId()
         {
             return this.measurementUnitId;
         }

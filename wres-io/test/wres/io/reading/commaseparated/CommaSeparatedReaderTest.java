@@ -76,7 +76,7 @@ public class CommaSeparatedReaderTest
                                                    ThresholdDataType.LEFT,
                                                    "C" ) );
 
-        Feature firstFeature = new Feature( null, null, null, "DRRC2", null, null, null, null, null, null );
+        Feature firstFeature = new Feature( null, null, null, null, null, "DRRC2", null, null, null, null, null, null );
         expected.put( FeaturePlus.of( firstFeature ), first );
 
         Set<Threshold> second = new TreeSet<>();
@@ -93,7 +93,7 @@ public class CommaSeparatedReaderTest
                                                     ThresholdDataType.LEFT,
                                                     "C" ) );
 
-        Feature secondFeature = new Feature( null, null, null, "DOLC2", null, null, null, null, null, null );
+        Feature secondFeature = new Feature( null,null, null,  null, null, "DOLC2", null, null, null, null, null, null );
         expected.put( FeaturePlus.of( secondFeature ), second );
 
         // Compare
@@ -145,7 +145,7 @@ public class CommaSeparatedReaderTest
                                         "G",
                                         dim ) );
 
-        Feature firstFeature = new Feature( null, null, null, "DRRC2", null, null, null, null, null, null );
+        Feature firstFeature = new Feature( null, null, null, null, null, "DRRC2", null, null, null, null, null, null );
         expected.put( FeaturePlus.of( firstFeature ), first );
 
         Set<Threshold> second = new TreeSet<>();
@@ -165,7 +165,7 @@ public class CommaSeparatedReaderTest
                                          "G",
                                          dim ) );
 
-        Feature secondFeature = new Feature( null, null, null, "DOLC2", null, null, null, null, null, null );
+        Feature secondFeature = new Feature( null, null, null, null, null, "DOLC2", null, null, null, null, null, null );
         expected.put( FeaturePlus.of( secondFeature ), second );
 
         // Compare
@@ -207,7 +207,7 @@ public class CommaSeparatedReaderTest
                                                    Operator.GREATER,
                                                    ThresholdDataType.LEFT ) );
 
-        Feature firstFeature = new Feature( null, null, null, "DRRC2", null, null, null, null, null, null );
+        Feature firstFeature = new Feature( null, null, null, null, null, "DRRC2", null, null, null, null, null, null );
         expected.put( FeaturePlus.of( firstFeature ), first );
 
         Set<Threshold> second = new TreeSet<>();
@@ -221,7 +221,7 @@ public class CommaSeparatedReaderTest
                                                     Operator.GREATER,
                                                     ThresholdDataType.LEFT ) );
 
-        Feature secondFeature = new Feature( null, null, null, "DOLC2", null, null, null, null, null, null );
+        Feature secondFeature = new Feature( null, null, null, null, null, "DOLC2", null, null, null, null, null, null );
         expected.put( FeaturePlus.of( secondFeature ), second );
 
         // Compare
@@ -257,7 +257,7 @@ public class CommaSeparatedReaderTest
         first.add( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( 7.0 ), Operator.GREATER, ThresholdDataType.LEFT ) );
         first.add( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( 15.0 ), Operator.GREATER, ThresholdDataType.LEFT ) );
 
-        Feature firstFeature = new Feature( null, null, null, "DRRC2", null, null, null, null, null, null );
+        Feature firstFeature = new Feature( null, null, null, null, null, "DRRC2", null, null, null, null, null, null );
         expected.put( FeaturePlus.of( firstFeature ), first );
 
         Set<Threshold> second = new TreeSet<>();
@@ -271,7 +271,7 @@ public class CommaSeparatedReaderTest
                                          Operator.GREATER,
                                          ThresholdDataType.LEFT ) );
 
-        Feature secondFeature = new Feature( null, null, null, "DOLC2", null, null, null, null, null, null );
+        Feature secondFeature = new Feature( null, null, null, null, null, "DOLC2", null, null, null, null, null, null );
         expected.put( FeaturePlus.of( secondFeature ), second );
 
         // Compare
@@ -306,7 +306,7 @@ public class CommaSeparatedReaderTest
         first.add( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( 3.0 ), Operator.GREATER, ThresholdDataType.LEFT ) );
         first.add( FACTORY.ofThreshold( FACTORY.ofOneOrTwoDoubles( 7.0 ), Operator.GREATER, ThresholdDataType.LEFT ) );
 
-        Feature firstFeature = new Feature( null, null, null, "DRRC2", null, null, null, null, null, null );
+        Feature firstFeature = new Feature( null, null, null, null, null, "DRRC2", null, null, null, null, null, null );
         expected.put( FeaturePlus.of( firstFeature ), first );
 
         Set<Threshold> second = new TreeSet<>();
@@ -317,7 +317,7 @@ public class CommaSeparatedReaderTest
                                          Operator.GREATER,
                                          ThresholdDataType.LEFT ) );
 
-        Feature secondFeature = new Feature( null, null, null, "DOLC2", null, null, null, null, null, null );
+        Feature secondFeature = new Feature( null, null, null, null, null, "DOLC2", null, null, null, null, null, null );
         expected.put( FeaturePlus.of( secondFeature ), second );
 
         // Compare
