@@ -1,13 +1,17 @@
 package wres.config;
 
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Objects;
 import java.util.SortedMap;
 import java.util.StringJoiner;
 
+import wres.config.generated.Circle;
 import wres.config.generated.CoordinateSelection;
 import wres.config.generated.Feature;
+import wres.config.generated.Polygon;
 
 /**
  * Class that wraps a {@link Feature} and implements {@link Comparable} on the contents of the {@link Feature}. As such,
@@ -87,7 +91,9 @@ public class FeaturePlus implements Comparable<FeaturePlus>
                         && Objects.equals( in.getName(), feature.getName() )
                         && Objects.equals( in.getRfc(), feature.getRfc() )
                         && Objects.equals( in.getWkt(), feature.getWkt() );
-        return first && second && third;
+        boolean fourth = comparePolygons( in.getPolygon(), feature.getPolygon() ) == 0
+                         && compareCircles( in.getCircle(), feature.getCircle() ) == 0;
+        return first && second && third && fourth;
     }
 
     @Override
@@ -186,6 +192,18 @@ public class FeaturePlus implements Comparable<FeaturePlus>
         {
             return returnMe;
         }
+        // Compare Polygon
+        returnMe = comparePolygons( input.getPolygon(), feature.getPolygon() );
+        if (returnMe != 0)
+        {
+            return returnMe;
+        }
+        // Compare Circle
+        returnMe = compareCircles( input.getCircle(), feature.getCircle() );
+        if (returnMe != 0)
+        {
+            return returnMe;
+        }
         return 0;
     }
 
@@ -198,6 +216,37 @@ public class FeaturePlus implements Comparable<FeaturePlus>
             CoordinateSelection c = feature.getCoordinate();
             coordinate = c.getLatitude() + " " + c.getLongitude();
         }
+
+        String polygon = null;
+
+        if (Objects.nonNull( feature.getPolygon() ))
+        {
+            StringJoiner pointJoiner = new StringJoiner(", ",
+                                                        "'POLYGON (",
+                                                        ")', SRID: " + feature.getPolygon().getSrid());
+
+            for (Polygon.Point point : feature.getPolygon().getPoint())
+            {
+                pointJoiner.add(point.getLatitude() + " " + point.getLongitude() );
+            }
+
+            polygon = pointJoiner.toString();
+        }
+
+        String circle = null;
+
+        if ( Objects.nonNull( feature.getCircle() ))
+        {
+            circle = "CIRCLE '( (" +
+                     feature.getCircle().getLongitude() +
+                     ", " +
+                     feature.getCircle().getLatitude() +
+                     "), " +
+                     feature.getCircle().getDiameter() +
+                     ") )', SRID: " +
+                     feature.getCircle().getSrid();
+        }
+
         StringJoiner joiner = new StringJoiner( ",", "{", "}" );
         joiner.add( feature.getLocationId() )
               .add( feature.getName() )
@@ -208,6 +257,8 @@ public class FeaturePlus implements Comparable<FeaturePlus>
               .add( feature.getRfc() )
               .add( feature.getWkt() )
               .add( coordinate )
+              .add( polygon )
+              .add( circle )
               .add( Objects.toString( feature.getAlias() ) );
         return joiner.toString();
     }
@@ -260,6 +311,85 @@ public class FeaturePlus implements Comparable<FeaturePlus>
             }
             returnMe = Float.compare( left.getRange(), right.getRange() );
             if ( returnMe != 0 )
+            {
+                return returnMe;
+            }
+        }
+        return 0;
+    }
+
+    private int comparePolygons( Polygon leftPolygon, Polygon rightPolygon )
+    {
+        // Compare the circles
+        if ( Objects.nonNull( leftPolygon ) && Objects.isNull( rightPolygon ) )
+        {
+            return -1;
+        }
+        else if ( Objects.isNull( leftPolygon ) && Objects.nonNull( rightPolygon ) )
+        {
+            return 1;
+        }
+        else if ( Objects.nonNull( leftPolygon ) )
+        {
+            int returnMe = Integer.compare( leftPolygon.getPoint().size(), rightPolygon.getPoint().size() );
+            if (returnMe != 0)
+            {
+                return returnMe;
+            }
+
+            for (int i = 0; i < leftPolygon.getPoint().size(); ++i)
+            {
+                returnMe = Float.compare(leftPolygon.getPoint().get( i ).getLatitude(), rightPolygon.getPoint().get( i ).getLatitude());
+                if (returnMe != 0)
+                {
+                    return returnMe;
+                }
+                returnMe = Float.compare(leftPolygon.getPoint().get( i ).getLongitude(), rightPolygon.getPoint().get( i ).getLongitude());
+                if (returnMe != 0)
+                {
+                    return returnMe;
+                }
+            }
+
+            returnMe = leftPolygon.getSrid().compareTo( rightPolygon.getSrid() );
+            if (returnMe != 0)
+            {
+                return returnMe;
+            }
+        }
+        return 0;
+    }
+
+    private int compareCircles( Circle leftCircle, Circle rightCircle)
+    {
+        // Compare the circles
+        if ( Objects.nonNull( leftCircle ) && Objects.isNull( rightCircle ) )
+        {
+            return -1;
+        }
+        else if ( Objects.isNull( leftCircle ) && Objects.nonNull( rightCircle ) )
+        {
+            return 1;
+        }
+        else if ( Objects.nonNull( leftCircle ) )
+        {
+            int returnMe = Float.compare( leftCircle.getLatitude(), rightCircle.getLatitude() );
+            if ( returnMe != 0 )
+            {
+                return returnMe;
+            }
+            returnMe = Float.compare( leftCircle.getLongitude(), rightCircle.getLongitude() );
+            if ( returnMe != 0 )
+            {
+                return returnMe;
+            }
+            returnMe = Float.compare( leftCircle.getDiameter(), rightCircle.getDiameter() );
+            if ( returnMe != 0 )
+            {
+                return returnMe;
+            }
+            returnMe = leftCircle.getSrid().compareTo( rightCircle.getSrid() );
+            if (returnMe != 0)
             {
                 return returnMe;
             }

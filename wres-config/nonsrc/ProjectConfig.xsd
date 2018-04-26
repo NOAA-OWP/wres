@@ -57,8 +57,8 @@
         <xs:sequence>
             <xs:element name="alias" type="xs:string" minOccurs="0" maxOccurs="unbounded" />
             <xs:element name="coordinate" type="coordinateSelection" minOccurs="0" />
-            <xs:element name="polygon" type="PolygonSelection" minOccurs="0" maxOccurs="unbounded" />
-            <xs:element name="circle" type="CircleSelection" minOccurs="0" maxOccurs="unbounded" />
+            <xs:element name="polygon" type="PolygonSelection" minOccurs="0"/>
+            <xs:element name="circle" type="CircleSelection" minOccurs="0" />
         </xs:sequence>
         <xs:attribute name="label" type="xs:string" />
         <xs:attribute name="locationId" type="xs:string" />

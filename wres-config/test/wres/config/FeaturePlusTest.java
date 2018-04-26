@@ -3,12 +3,16 @@ package wres.config;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import java.math.BigInteger;
 import java.util.Arrays;
+import java.util.List;
 
 import org.junit.Test;
 
+import wres.config.generated.Circle;
 import wres.config.generated.CoordinateSelection;
 import wres.config.generated.Feature;
+import wres.config.generated.Polygon;
 
 /**
  * Class that tests {@link FeaturePlus}.
@@ -26,10 +30,18 @@ public class FeaturePlusTest
     @Test
     public void testEquals()
     {
+        List<Polygon.Point> points = Arrays.asList(
+                new Polygon.Point( 1, 2 ),
+                new Polygon.Point( 3, 4 ),
+                new Polygon.Point( 5, 6 )
+        );
+
         // Reflexive
         Feature one =
                 new Feature( Arrays.asList( "A" ),
                              new CoordinateSelection( 1.0f, 2.0f, 3.0f ),
+                             new Polygon( points, BigInteger.valueOf( 4326 ) ),
+                             new Circle( 1, 2, 100, BigInteger.valueOf( 4326 )),
                              "A",
                              "B",
                              12345L,
@@ -46,6 +58,8 @@ public class FeaturePlusTest
         Feature two =
                 new Feature( Arrays.asList( "A" ),
                              new CoordinateSelection( 1.0f, 2.0f, 3.0f ),
+                             new Polygon( points, BigInteger.valueOf( 4326 ) ),
+                             new Circle( 1, 2, 100, BigInteger.valueOf( 4326 )),
                              "A",
                              "B",
                              12345L,
@@ -62,6 +76,8 @@ public class FeaturePlusTest
         Feature three =
                 new Feature( Arrays.asList( "A" ),
                              new CoordinateSelection( 1.0f, 2.0f, 3.0f ),
+                             new Polygon( points, BigInteger.valueOf( 4326 ) ),
+                             new Circle( 1, 2, 100, BigInteger.valueOf( 4326 )),
                              "A",
                              "B",
                              12345L,
@@ -95,6 +111,8 @@ public class FeaturePlusTest
                              null,
                              null,
                              null,
+                             null,
+                             null,
                              null );
 
         FeaturePlus nullth = FeaturePlus.of( nullFeature );
@@ -102,6 +120,8 @@ public class FeaturePlusTest
         // Alias
         Feature four =
                 new Feature( Arrays.asList( "A", "B" ),
+                             null,
+                             null,
                              null,
                              null,
                              null,
@@ -127,6 +147,8 @@ public class FeaturePlusTest
                              null,
                              null,
                              null,
+                             null,
+                             null,
                              null );
 
         FeaturePlus fifth = FeaturePlus.of( five );
@@ -134,6 +156,8 @@ public class FeaturePlusTest
         Feature fiveLat =
                 new Feature( null,
                              new CoordinateSelection( 6.0f, 6.0f, 7.0f ),
+                             null,
+                             null,
                              null,
                              null,
                              null,
@@ -160,6 +184,8 @@ public class FeaturePlusTest
                              null,
                              null,
                              null,
+                             null,
+                             null,
                              null );
 
         FeaturePlus fifthLong = FeaturePlus.of( fiveLong );
@@ -169,6 +195,8 @@ public class FeaturePlusTest
         Feature fiveRange =
                 new Feature( null,
                              new CoordinateSelection( 5.0f, 6.0f, 8.0f ),
+                             null,
+                             null,
                              null,
                              null,
                              null,
@@ -186,6 +214,8 @@ public class FeaturePlusTest
         Feature seven =
                 new Feature( null,
                              null,
+                             null,
+                             null,
                              "B",
                              null,
                              null,
@@ -201,6 +231,8 @@ public class FeaturePlusTest
 
         Feature eight =
                 new Feature( null,
+                             null,
+                             null,
                              null,
                              "C",
                              null,
@@ -220,6 +252,8 @@ public class FeaturePlusTest
                 new Feature( null,
                              null,
                              null,
+                             null,
+                             null,
                              "B",
                              null,
                              null,
@@ -234,6 +268,8 @@ public class FeaturePlusTest
 
         Feature ten =
                 new Feature( null,
+                             null,
+                             null,
                              null,
                              null,
                              "C",
@@ -254,6 +290,8 @@ public class FeaturePlusTest
                              null,
                              null,
                              null,
+                             null,
+                             null,
                              123L,
                              null,
                              null,
@@ -267,6 +305,8 @@ public class FeaturePlusTest
 
         Feature twelve =
                 new Feature( null,
+                             null,
+                             null,
                              null,
                              null,
                              null,
@@ -288,6 +328,8 @@ public class FeaturePlusTest
                              null,
                              null,
                              null,
+                             null,
+                             null,
                              "B",
                              null,
                              null,
@@ -300,6 +342,8 @@ public class FeaturePlusTest
 
         Feature fourteen =
                 new Feature( null,
+                             null,
+                             null,
                              null,
                              null,
                              null,
@@ -322,6 +366,8 @@ public class FeaturePlusTest
                              null,
                              null,
                              null,
+                             null,
+                             null,
                              "B",
                              null,
                              null,
@@ -333,6 +379,8 @@ public class FeaturePlusTest
 
         Feature sixteen =
                 new Feature( null,
+                             null,
+                             null,
                              null,
                              null,
                              null,
@@ -356,6 +404,8 @@ public class FeaturePlusTest
                              null,
                              null,
                              null,
+                             null,
+                             null,
                              "B",
                              null,
                              null );
@@ -366,6 +416,8 @@ public class FeaturePlusTest
 
         Feature eighteen =
                 new Feature( null,
+                             null,
+                             null,
                              null,
                              null,
                              null,
@@ -390,6 +442,8 @@ public class FeaturePlusTest
                              null,
                              null,
                              null,
+                             null,
+                             null,
                              "B",
                              null );
 
@@ -399,6 +453,8 @@ public class FeaturePlusTest
 
         Feature twenty =
                 new Feature( null,
+                             null,
+                             null,
                              null,
                              null,
                              null,
@@ -424,6 +480,8 @@ public class FeaturePlusTest
                              null,
                              null,
                              null,
+                             null,
+                             null,
                              "B" );
 
         FeaturePlus twentyFirst = FeaturePlus.of( twentyOne );
@@ -440,11 +498,92 @@ public class FeaturePlusTest
                              null,
                              null,
                              null,
+                             null,
+                             null,
                              "C" );
 
         FeaturePlus twentySecond = FeaturePlus.of( twentyTwo );
 
         assertFalse( "Expected unequal features.", twentySecond.equals( twentyFirst ) );
+
+        // Polygon
+
+        Feature twentyThree = new Feature ( null,
+                                            null,
+                                            new Polygon(
+                                                    Arrays.asList(new Polygon.Point( 1, 2 )),
+                                                    BigInteger.valueOf(4326)
+                                            ),
+                                            null,
+                                            null,
+                                            null,
+                                            null,
+                                            null,
+                                            null,
+                                            null,
+                                            null,
+                                            null);
+
+        FeaturePlus twentyThird = FeaturePlus.of(twentyThree);
+
+        assertFalse( "Expected unequal features.", first.equals( twentyThird ) );
+
+        Feature twentyFour = new Feature ( null,
+                                            null,
+                                            new Polygon(
+                                                    Arrays.asList(new Polygon.Point( 3, 4 )),
+                                                    BigInteger.valueOf(7)
+                                            ),
+                                            null,
+                                            null,
+                                            null,
+                                            null,
+                                            null,
+                                            null,
+                                            null,
+                                            null,
+                                            null);
+
+        FeaturePlus twentyFourth = FeaturePlus.of(twentyFour);
+
+        assertFalse( "Expected unequal features.", twentyFourth.equals( twentyThird ) );
+
+
+        // Circle
+
+        Feature twentyFive = new Feature (null,
+                                          null,
+                                          null,
+                                          new Circle(1, 2, 100, BigInteger.valueOf( 3 )),
+                                          null,
+                                          null,
+                                          null,
+                                          null,
+                                          null,
+                                          null,
+                                          null,
+                                          null);
+
+        FeaturePlus twentyFifth = FeaturePlus.of( twentyFive );
+
+        assertFalse( "Expected unequal features.", first.equals( twentyFifth ) );
+
+        Feature twentySix = new Feature (null,
+                                          null,
+                                          null,
+                                          new Circle(7, 12, 103, BigInteger.valueOf( 4326 )),
+                                          null,
+                                          null,
+                                          null,
+                                          null,
+                                          null,
+                                          null,
+                                          null,
+                                          null);
+
+        FeaturePlus twentySixth = FeaturePlus.of(twentySix);
+
+        assertFalse( "Expected unequal features.", twentySixth.equals( twentyFifth ) );
 
     }
 
@@ -459,6 +598,11 @@ public class FeaturePlusTest
         Feature one =
                 new Feature( Arrays.asList( "A" ),
                              new CoordinateSelection( 1.0f, 2.0f, 3.0f ),
+                             new Polygon(
+                                     Arrays.asList(new Polygon.Point( 3, 4 )),
+                                     BigInteger.valueOf(7)
+                             ),
+                             new Circle(7, 12, 103, BigInteger.valueOf( 4326 )),
                              "A",
                              "B",
                              12345L,
@@ -478,6 +622,11 @@ public class FeaturePlusTest
         Feature two =
                 new Feature( Arrays.asList( "A" ),
                              new CoordinateSelection( 1.0f, 2.0f, 3.0f ),
+                             new Polygon(
+                                     Arrays.asList(new Polygon.Point( 3, 4 )),
+                                     BigInteger.valueOf(7)
+                             ),
+                             new Circle(7, 12, 103, BigInteger.valueOf( 4326 )),
                              "A",
                              "B",
                              12345L,
@@ -493,6 +642,8 @@ public class FeaturePlusTest
         Feature three =
                 new Feature( Arrays.asList( "A" ),
                              null,
+                             null,
+                             null,
                              "A",
                              "B",
                              12345L,
@@ -506,6 +657,8 @@ public class FeaturePlusTest
         // Consistent with equals
         Feature four =
                 new Feature( Arrays.asList( "A" ),
+                             null,
+                             null,
                              null,
                              "A",
                              "B",
@@ -532,6 +685,11 @@ public class FeaturePlusTest
         Feature one =
                 new Feature( Arrays.asList( "A" ),
                              new CoordinateSelection( 1.0f, 2.0f, 3.0f ),
+                             new Polygon(
+                                     Arrays.asList(new Polygon.Point( 3, 4 )),
+                                     BigInteger.valueOf(7)
+                             ),
+                             new Circle(7, 12, 103, BigInteger.valueOf( 4326 )),
                              "A",
                              "B",
                              12345L,
@@ -548,6 +706,11 @@ public class FeaturePlusTest
         Feature two =
                 new Feature( Arrays.asList( "A" ),
                              new CoordinateSelection( 3.0f, 2.0f, 3.0f ),
+                             new Polygon(
+                                     Arrays.asList(new Polygon.Point( 5, 4 )),
+                                     BigInteger.valueOf(7)
+                             ),
+                             new Circle(7, 14, 1, BigInteger.valueOf( 7 )),
                              "A",
                              "Q",
                              12345L,
@@ -565,6 +728,11 @@ public class FeaturePlusTest
         Feature three =
                 new Feature( Arrays.asList( "A" ),
                              new CoordinateSelection( 3.0f, 2.0f, 3.0f ),
+                             new Polygon(
+                                     Arrays.asList(new Polygon.Point( 5, 4 )),
+                                     BigInteger.valueOf(7)
+                             ),
+                             new Circle(7, 14, 1, BigInteger.valueOf( 7 )),
                              "A",
                              "Q",
                              12345L,
@@ -583,6 +751,11 @@ public class FeaturePlusTest
         Feature threeTrans =
                 new Feature( Arrays.asList( "B" ),
                              new CoordinateSelection( 3.0f, 2.0f, 3.0f ),
+                             new Polygon(
+                                     Arrays.asList(new Polygon.Point( 5, 4 )),
+                                     BigInteger.valueOf(7)
+                             ),
+                             new Circle(7, 14, 1, BigInteger.valueOf( 7 )),
                              "A",
                              "Q",
                              12345L,
@@ -608,6 +781,8 @@ public class FeaturePlusTest
                              null,
                              null,
                              null,
+                             null,
+                             null,
                              null );
 
         FeaturePlus nullth = FeaturePlus.of( nullFeature );
@@ -615,6 +790,8 @@ public class FeaturePlusTest
         // Alias
         Feature four =
                 new Feature( Arrays.asList( "A", "B" ),
+                             null,
+                             null,
                              null,
                              null,
                              null,
@@ -641,6 +818,8 @@ public class FeaturePlusTest
                              null,
                              null,
                              null,
+                             null,
+                             null,
                              null );
 
         FeaturePlus fifth = FeaturePlus.of( five );
@@ -648,6 +827,8 @@ public class FeaturePlusTest
         Feature fiveLat =
                 new Feature( null,
                              new CoordinateSelection( 6.0f, 6.0f, 7.0f ),
+                             null,
+                             null,
                              null,
                              null,
                              null,
@@ -674,6 +855,8 @@ public class FeaturePlusTest
                              null,
                              null,
                              null,
+                             null,
+                             null,
                              null );
 
         FeaturePlus fifthLong = FeaturePlus.of( fiveLong );
@@ -683,6 +866,8 @@ public class FeaturePlusTest
         Feature fiveRange =
                 new Feature( null,
                              new CoordinateSelection( 5.0f, 6.0f, 8.0f ),
+                             null,
+                             null,
                              null,
                              null,
                              null,
@@ -700,6 +885,8 @@ public class FeaturePlusTest
         Feature seven =
                 new Feature( null,
                              null,
+                             null,
+                             null,
                              "B",
                              null,
                              null,
@@ -715,6 +902,8 @@ public class FeaturePlusTest
 
         Feature eight =
                 new Feature( null,
+                             null,
+                             null,
                              null,
                              "C",
                              null,
@@ -734,6 +923,8 @@ public class FeaturePlusTest
                 new Feature( null,
                              null,
                              null,
+                             null,
+                             null,
                              "B",
                              null,
                              null,
@@ -748,6 +939,8 @@ public class FeaturePlusTest
 
         Feature ten =
                 new Feature( null,
+                             null,
+                             null,
                              null,
                              null,
                              "C",
@@ -768,6 +961,8 @@ public class FeaturePlusTest
                              null,
                              null,
                              null,
+                             null,
+                             null,
                              123L,
                              null,
                              null,
@@ -781,6 +976,8 @@ public class FeaturePlusTest
 
         Feature twelve =
                 new Feature( null,
+                             null,
+                             null,
                              null,
                              null,
                              null,
@@ -802,6 +999,8 @@ public class FeaturePlusTest
                              null,
                              null,
                              null,
+                             null,
+                             null,
                              "B",
                              null,
                              null,
@@ -814,6 +1013,8 @@ public class FeaturePlusTest
 
         Feature fourteen =
                 new Feature( null,
+                             null,
+                             null,
                              null,
                              null,
                              null,
@@ -836,6 +1037,8 @@ public class FeaturePlusTest
                              null,
                              null,
                              null,
+                             null,
+                             null,
                              "B",
                              null,
                              null,
@@ -847,6 +1050,8 @@ public class FeaturePlusTest
 
         Feature sixteen =
                 new Feature( null,
+                             null,
+                             null,
                              null,
                              null,
                              null,
@@ -870,6 +1075,8 @@ public class FeaturePlusTest
                              null,
                              null,
                              null,
+                             null,
+                             null,
                              "B",
                              null,
                              null );
@@ -880,6 +1087,8 @@ public class FeaturePlusTest
 
         Feature eighteen =
                 new Feature( null,
+                             null,
+                             null,
                              null,
                              null,
                              null,
@@ -904,6 +1113,8 @@ public class FeaturePlusTest
                              null,
                              null,
                              null,
+                             null,
+                             null,
                              "B",
                              null );
 
@@ -913,6 +1124,8 @@ public class FeaturePlusTest
 
         Feature twenty =
                 new Feature( null,
+                             null,
+                             null,
                              null,
                              null,
                              null,
@@ -938,6 +1151,8 @@ public class FeaturePlusTest
                              null,
                              null,
                              null,
+                             null,
+                             null,
                              "B" );
 
         FeaturePlus twentyFirst = FeaturePlus.of( twentyOne );
@@ -954,11 +1169,89 @@ public class FeaturePlusTest
                              null,
                              null,
                              null,
+                             null,
+                             null,
                              "C" );
 
         FeaturePlus twentySecond = FeaturePlus.of( twentyTwo );
 
         assertFalse( "Expected unequal features.", twentySecond.compareTo( twentyFirst ) == 0 );
+
+        // Polygons
+
+        Feature twentyThree =
+                new Feature( null,
+                             null,
+                             new Polygon(Arrays.asList(new Polygon.Point( 1, 2)), BigInteger.valueOf( 100 )),
+                             null,
+                             null,
+                             null,
+                             null,
+                             null,
+                             null,
+                             null,
+                             null,
+                             null );
+
+        FeaturePlus twentyThird = FeaturePlus.of(twentyThree);
+
+        assertFalse("Expected unequal features.", first.compareTo( twentyThird ) == 0);
+
+        Feature twentyFour =
+                new Feature( null,
+                             null,
+                             new Polygon(Arrays.asList(new Polygon.Point( 3, 4)), BigInteger.valueOf( 100 )),
+                             null,
+                             null,
+                             null,
+                             null,
+                             null,
+                             null,
+                             null,
+                             null,
+                             null );
+
+        FeaturePlus twentyFourth = FeaturePlus.of(twentyFour);
+
+        assertFalse( "Expected unequal features.", twentyFourth.compareTo( twentyThird ) == 0 );
+
+        // Circles
+
+        Feature twentyFive =
+                new Feature( null,
+                             null,
+                             null,
+                             new Circle(1, 2, 3, BigInteger.valueOf(100)),
+                             null,
+                             null,
+                             null,
+                             null,
+                             null,
+                             null,
+                             null,
+                             null );
+
+        FeaturePlus twentyFifth = FeaturePlus.of(twentyFive);
+
+        assertFalse("Expected unequal features.", first.compareTo( twentyFifth ) == 0);
+
+        Feature twentySix =
+                new Feature( null,
+                             null,
+                             null,
+                             new Circle(4, 5, 6, BigInteger.valueOf(100)),
+                             null,
+                             null,
+                             null,
+                             null,
+                             null,
+                             null,
+                             null,
+                             null );
+
+        FeaturePlus twentySixth = FeaturePlus.of(twentySix);
+
+        assertFalse( "Expected unequal features.", twentySixth.compareTo( twentyFifth ) == 0 );
 
     }
 
@@ -973,6 +1266,8 @@ public class FeaturePlusTest
                 new Feature( null,
                              null,
                              null,
+                             null,
+                             null,
                              "A",
                              null,
                              null,
@@ -985,6 +1280,8 @@ public class FeaturePlusTest
 
         Feature two =
                 new Feature( null,
+                             null,
+                             null,
                              null,
                              null,
                              "A",
@@ -1011,6 +1308,8 @@ public class FeaturePlusTest
         Feature one =
                 new Feature( Arrays.asList( "A" ),
                              new CoordinateSelection( 1.0f, 2.0f, 3.0f ),
+                             new Polygon(Arrays.asList( new Polygon.Point( 1.0f, 2.0f ) ), BigInteger.valueOf( 4326 )),
+                             new Circle(1.0f, 2.0f, 3.0f, BigInteger.valueOf( 4326 )),
                              "A",
                              "B",
                              12345L,
@@ -1022,10 +1321,12 @@ public class FeaturePlusTest
         FeaturePlus first = FeaturePlus.of( one );
         
         assertTrue( "Unexpected string representation of feature.",
-                    first.toString().equals( "{B,F,A,D,E,12345,G,H,(2.0,1.0,3.0),[A]}" ) );
+                    first.toString().equals( "{B,F,A,D,E,12345,G,H,2.0 1.0,'POLYGON (1.0 2.0)', SRID: 4326,CIRCLE '( (2.0, 1.0), 3.0) )', SRID: 4326,[A]}" ) );
         
         Feature two =
                 new Feature( null,
+                             null,
+                             null,
                              null,
                              null,
                              null,
@@ -1039,7 +1340,7 @@ public class FeaturePlusTest
         FeaturePlus second = FeaturePlus.of( two );
 
         assertTrue( "Unexpected string representation of feature.",
-                    second.toString().equals( "{null,null,null,null,null,null,null,null,null,[]}" ) );
+                    second.toString().equals( "{null,null,null,null,null,null,null,null,null,null,null,[]}" ) );
         
     }
 
