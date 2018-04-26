@@ -24,6 +24,10 @@ public final class Strings
 	private static final Pattern RTRIM = Pattern.compile("\\s+$");
 	private static final Pattern NUMERIC_PATTERN = Pattern.compile( "^[-]?\\d*\\.?\\d+$" );
 
+	// This should always be true in a production environment. Set to false in
+    // cases where the read time for full files prevents practical development
+	private static final boolean HASH_ENTIRE_FILE = true;
+
 	private static final int LINE_LENGTH = 120;
 	private static final int TRUNCATE_SIZE = 2000;
 
@@ -57,7 +61,6 @@ public final class Strings
 
 	public static String formatForLine(final String line)
 	{
-	    //return line;
 		String formattedLine = line;
 		while (formattedLine.length() < LINE_LENGTH)
 		{
@@ -153,7 +156,7 @@ public final class Strings
     {
         return string.replaceAll(pattern, "");
     }
-	
+
 	/**
 	 * Determines if a string describes some number
 	 * @param possibleNumber A string that might be a number
@@ -163,7 +166,7 @@ public final class Strings
 		return hasValue(possibleNumber) &&
                NUMERIC_PATTERN.matcher( possibleNumber.trim() ).matches();
 	}
-	
+
 	public static String getStackTrace(Exception error)
 	{
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -194,25 +197,74 @@ public final class Strings
         return Paths.get(path).getFileName().toString();
     }
 
+	/**
+	 * Generates a hash from a file on the file system to identify a file's
+	 * contents using the MD5 algorithm
+	 * @param filename The path to the file to load into memory
+	 * @return The hash that can be used to identify a file's contents
+	 * @throws IOException Thrown if the file could not be read
+	 */
     public static String getMD5Checksum(String filename) throws IOException
     {
         byte[] buffer = new byte[1024];
-        MessageDigest complete = getMD5Algorithm();
-        int numRead;
+        MessageDigest complete = Strings.getMD5Algorithm();
+        int bytesBuffered;
+        final int passLimit = 5000;
+        int passCount = 0;
 
-        try ( InputStream fis = new BufferedInputStream( new FileInputStream( filename ) ))
+        try ( InputStream fileStream = new BufferedInputStream( new FileInputStream( filename ) ))
         {
             do
             {
-                numRead = fis.read( buffer );
-                if ( numRead > 0 )
+                bytesBuffered = fileStream.read( buffer );
+
+                if ( bytesBuffered > 0 )
                 {
-                    complete.update( buffer, 0, numRead );
+                    complete.update( buffer, 0, bytesBuffered );
                 }
-            } while ( numRead != -1 );
+                passCount++;
+
+            } while ( Strings.continueBufferingForChecksum( passCount, bytesBuffered, filename ));
         }
 
         return getMD5Checksum( complete.digest() );
+	}
+
+	/**
+	 * Determines if buffering should continue for determining a checksum
+	 * <p>
+	 *     If short buffering is enabled (i.e., HASH_ENTIRE_FILE == false),
+	 *     a warning is output to make it abundantly clear that this should not
+	 *     be active for a genuine operating environment.
+	 * </p>
+	 * @param passCount The amount of times that the stream has passed through the data
+	 * @param amountLastBuffered The amount of data that was last read through the stream
+	 * @param filename The name of the file being loaded for hashing
+	 * @return Whether or not the function that loads data to hash should
+	 * continue to attempt to read data
+	 */
+	private static boolean continueBufferingForChecksum(final int passCount,
+														final int amountLastBuffered,
+														final String filename)
+	{
+		final int passLimit = 5000;
+
+		boolean continueBuffering = amountLastBuffered != -1;
+
+		if (continueBuffering && !Strings.HASH_ENTIRE_FILE)
+		{
+			continueBuffering = passCount < passLimit;
+
+			if (!continueBuffering)
+			{
+				LOGGER.warn("Short hashing is enabled and {} was not fully hashed! "
+							+ "This is not acceptable for a production environment.",
+							filename);
+			}
+		}
+
+
+		return continueBuffering;
 	}
 
 	public static String getMD5Checksum(byte[] checksum)

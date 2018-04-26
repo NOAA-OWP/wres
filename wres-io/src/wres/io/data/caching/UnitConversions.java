@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import static wres.io.data.caching.Cache.NEWLINE;
 
 import wres.io.utilities.Database;
+import wres.io.utilities.ScriptBuilder;
 import wres.util.NotImplementedException;
 
 public final class UnitConversions
@@ -79,50 +80,27 @@ public final class UnitConversions
     private UnitConversions ()
     {
         this.conversionMap = new ConcurrentHashMap<>(  );
-        Connection connection = null;
-        ResultSet conversionRows = null;
-
         try
         {
-            String script = "SELECT UC.*, M.unit_name" + NEWLINE;
-            script += "FROM wres.UnitConversion UC" + NEWLINE;
-            script += "INNER JOIN wres.MeasurementUnit M" + NEWLINE;
-            script += "     ON M.measurementunit_id = UC.to_unit;";
+            ScriptBuilder script = new ScriptBuilder(  );
+            script.setHighPriority( true );
 
-            connection = Database.getHighPriorityConnection();
-            conversionRows = Database.getResults(connection, script);
+            script.addLine("SELECT UC.*, M.unit_name");
+            script.addLine("FROM wres.UnitConversion UC");
+            script.addLine("INNER JOIN wres.MeasurementUnit M");
+            script.addTab().add("ON M.measurementunit_id = UC.to_unit;");
 
-            while (conversionRows.next())
-            {
-                this.conversionMap.put(new ConversionKey( conversionRows ),
-                                       new Conversion( conversionRows ));
-            }
+            script.consume(
+                    conversionRow -> this.conversionMap.put(
+                            new ConversionKey( conversionRow ),
+                            new Conversion( conversionRow )
+                    )
+            );
         }
         catch (SQLException e)
         {
             // Failure to pre-populate cache should not affect primary outputs.
             LOGGER.warn( "Failed to pre-populate unit conversions cache.", e );
-        }
-        finally
-        {
-            if (conversionRows != null)
-            {
-                try
-                {
-                    conversionRows.close();
-                }
-                catch (SQLException e)
-                {
-                    // Exception on close should not affect primary outputs.
-                    LOGGER.warn( "Failed to close unit conversion row results.",
-                                 e );
-                }
-            }
-
-            if (connection != null)
-            {
-                Database.returnHighPriorityConnection(connection);
-            }
         }
     }
 

@@ -43,7 +43,7 @@ import wres.io.reading.waterml.timeseries.TimeSeries;
 import wres.io.reading.waterml.timeseries.TimeSeriesValue;
 import wres.io.reading.waterml.timeseries.TimeSeriesValues;
 import wres.io.utilities.Database;
-import wres.io.utilities.IOExceptionalConsumer;
+import wres.util.functional.ExceptionalConsumer;
 import wres.io.utilities.NoDataException;
 import wres.io.utilities.ScriptBuilder;
 import wres.util.FormattedStopwatch;
@@ -851,7 +851,7 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
         }
     }
 
-    void setOnUpdate( IOExceptionalConsumer<TimeSeries> handler)
+    void setOnUpdate( ExceptionalConsumer<TimeSeries, IOException> handler)
     {
         this.onUpdate = handler;
     }
@@ -873,7 +873,7 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
     private final DataSourceConfig dataSourceConfig;
     private String operationStartTime;
 
-    private IOExceptionalConsumer<TimeSeries> onUpdate;
+    private ExceptionalConsumer<TimeSeries, IOException> onUpdate;
 
     // "00060" corresponds to a specific type of discharge. We need a list and
     // a way to transform user specifications about variable, time aggregation,

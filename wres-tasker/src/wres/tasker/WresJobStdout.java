@@ -6,13 +6,13 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
-@Path( "/job/{jobId}/status")
-public class WresJobResult
+@Path( "/job/{jobId}/stdout")
+public class WresJobStdout
 {
     @GET
     @Produces( MediaType.TEXT_PLAIN )
     public String getWresJobResult( @PathParam( "jobId" ) String jobId )
     {
-        return JobResults.getJobResult( jobId );
+        return JobResults.getJobStdout( jobId );
     }
 }

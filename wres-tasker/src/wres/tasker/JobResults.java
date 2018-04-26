@@ -7,16 +7,22 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentNavigableMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import wres.messages.generated.JobStandardStream;
 
 
 /**
@@ -34,6 +40,14 @@ class JobResults
 
     /** A magic value placeholder for job registered-but-not-done */
     private static final Integer JOB_NOT_DONE_YET = Integer.MIN_VALUE + 1;
+
+    /** A shared bag of job standard out */
+    private static final ConcurrentMap<String, ConcurrentNavigableMap<Integer,String>> JOB_STDOUT_BY_ID
+            = new ConcurrentHashMap<>();
+
+    /** A shared bag of job standard error */
+    private static final ConcurrentMap<String, ConcurrentNavigableMap<Integer,String>> JOB_STDERR_BY_ID
+            = new ConcurrentHashMap<>();
 
     /**
      * How many job results to look for at once (should probably be at least as
@@ -83,13 +97,13 @@ class JobResults
     }
 
     /**
-     * Get the results queue name to get results from workers from.
+     * Get the results exchange name to get results from workers from.
      * @return a results queue name to use
      */
 
-    static String getResultsQueueName()
+    static String getJobStatusExchangeName()
     {
-        return "wres.jobResults";
+        return "wres.job.status";
     }
 
 
@@ -102,21 +116,21 @@ class JobResults
     private static class ResultWatcher implements Callable<Integer>
     {
         private final Connection connection;
-        private final String queueName;
-        private final String correlationId;
+        private final String jobStatusExchangeName;
+        private final String jobId;
 
         /**
          * @param connection shared connection
-         * @param queueName the queue name to look in
-         * @param correlationId the job identifier to look for
+         * @param jobStatusExchangeName the exchange name to look in
+         * @param jobId the job identifier to look for
          */
         ResultWatcher( Connection connection,
-                       String queueName,
-                       String correlationId )
+                       String jobStatusExchangeName,
+                       String jobId )
         {
             this.connection = connection;
-            this.queueName = queueName;
-            this.correlationId = correlationId;
+            this.jobStatusExchangeName = jobStatusExchangeName;
+            this.jobId = jobId;
             LOGGER.debug( "Instantiated {}", this );
         }
 
@@ -125,14 +139,14 @@ class JobResults
             return this.connection;
         }
 
-        private String getQueueName()
+        private String getJobStatusExchangeName()
         {
-            return this.queueName;
+            return this.jobStatusExchangeName;
         }
 
-        private String getCorrelationId()
+        private String getJobId()
         {
-            return this.correlationId;
+            return this.jobId;
         }
 
 
@@ -147,18 +161,40 @@ class JobResults
 
             BlockingQueue<Integer> result = new ArrayBlockingQueue<>( 1 );
 
+            int resultValue = Integer.MIN_VALUE;
+            String exchangeName = this.getJobStatusExchangeName();
+            String exchangeType = "topic";
+            String bindingKey = "job." + this.getJobId() + ".exitCode";
+
             try ( Channel channel = this.getConnection().createChannel() )
             {
-                channel.queueDeclare( this.getQueueName(), false, false, false, null );
+                channel.exchangeDeclare( exchangeName, exchangeType );
+
+                // As the consumer, I want an exclusive queue for me?
+                String queueName = channel.queueDeclare().getQueue();
+                // Does this have any effect?
+                AMQP.Queue.BindOk bindResult = channel.queueBind( queueName, exchangeName, bindingKey );
+
+                LOGGER.debug( "Bindresult: {}", bindResult );
 
                 JobResultReceiver jobResultReceiver =
                         new JobResultReceiver( channel,
-                                               this.getCorrelationId(),
                                                result );
 
-                channel.basicConsume( this.getQueueName(),
-                                      true,
-                                      jobResultReceiver );
+                String consumerTag = channel.basicConsume( queueName,
+                                                           true,
+                                                           jobResultReceiver );
+                LOGGER.debug( "consumerTag: {}", consumerTag );
+
+                LOGGER.debug( "Waiting to take a result value..." );
+                resultValue = result.take();
+                LOGGER.debug( "Finished taking a result value." );
+            }
+            catch ( InterruptedException ie )
+            {
+                LOGGER.warn( "Interrupted while getting result for job {}, returning potentially fake result {}",
+                             jobId, resultValue );
+                Thread.currentThread().interrupt();
             }
             catch ( IOException ioe )
             {
@@ -168,22 +204,8 @@ class JobResults
                 throw ioe;
             }
 
-            int resultValue = Integer.MIN_VALUE;
-
-            try
-            {
-                resultValue = result.take();
-            }
-            catch ( InterruptedException ie )
-            {
-                LOGGER.warn( "Interrupted while getting result for job {}, returning potentially fake result {}",
-                             correlationId,
-                             resultValue );
-                Thread.currentThread().interrupt();
-            }
-
             // Store state back out to the static bag-o-state. A better way?
-            JOB_RESULTS_BY_ID.putIfAbsent( correlationId, resultValue );
+            JOB_RESULTS_BY_ID.put( jobId, resultValue );
 
             return resultValue;
         }
@@ -191,39 +213,232 @@ class JobResults
         @Override
         public String toString()
         {
-            StringJoiner result = new StringJoiner( ", ", "JobResults with ", "" );
+            StringJoiner result = new StringJoiner( ", ", "ResultWatcher with ", "" );
             result.add( "connection=" + this.getConnection() );
-            result.add( "queueName=" + this.getQueueName() );
-            result.add( "correlationId=" + this.getCorrelationId() );
+            result.add( "jobStatusExchangeName=" + this.getJobStatusExchangeName() );
+            result.add( "jobId=" + this.getJobId() );
             return result.toString();
         }
     }
 
 
     /**
+     * Watches for the stdout|stderr of a job regardless of if anyone actually
+     * is looking for it. Idea is to pro-actively seek the results of jobs
+     * on the service end and cache them before the web service is called.
+     */
+
+    private static class OutputWatcher implements Callable<ConcurrentNavigableMap<Integer,String>>
+    {
+        private static final int LOCAL_Q_SIZE = 10;
+        private static final int JOB_WAIT_MINUTES = 5;
+        private static final int MESSAGE_WAIT_SECONDS = 5;
+
+        public enum WhichOutput
+        {
+            STDOUT,
+            STDERR;
+        }
+
+        private final Connection connection;
+        private final String jobStatusExchangeName;
+        private final String jobId;
+        private final WhichOutput whichOutput;
+
+        /**
+         * @param connection shared connection
+         * @param jobStatusExchangeName the exchange name to look in
+         * @param jobId the job identifier to look for
+         */
+        OutputWatcher( Connection connection,
+                       String jobStatusExchangeName,
+                       String jobId,
+                       WhichOutput whichOutput )
+        {
+            this.connection = connection;
+            this.jobStatusExchangeName = jobStatusExchangeName;
+            this.jobId = jobId;
+            this.whichOutput = whichOutput;
+            LOGGER.debug( "Instantiated {}", this );
+        }
+
+        private Connection getConnection()
+        {
+            return this.connection;
+        }
+
+        private String getJobStatusExchangeName()
+        {
+            return this.jobStatusExchangeName;
+        }
+
+        private String getJobId()
+        {
+            return this.jobId;
+        }
+
+        private WhichOutput getWhichOutput()
+        {
+            return this.whichOutput;
+        }
+
+        /**
+         * @return the stdout|stderr of the job id (correlation id) or potentially empty list when interrupted
+         * @throws IOException when queue declaration fails
+         */
+
+        public ConcurrentNavigableMap<Integer,String> call() throws IOException, TimeoutException
+        {
+            ConcurrentNavigableMap<Integer,String> sharedList = new ConcurrentSkipListMap<>();
+
+            // Store shared list to the static bag-o-state.
+            if ( this.getWhichOutput().equals( WhichOutput.STDOUT ) )
+            {
+                JOB_STDOUT_BY_ID.put( this.getJobId(), sharedList );
+            }
+            else if ( this.getWhichOutput().equals( WhichOutput.STDERR ) )
+            {
+                JOB_STDERR_BY_ID.put( this.getJobId(), sharedList );
+            }
+            else
+            {
+                throw new UnsupportedOperationException( "Output has to be stderr or stdout." );
+            }
+
+            BlockingQueue<JobStandardStream.job_standard_stream> oneLineOfOutput
+                    = new ArrayBlockingQueue<>( LOCAL_Q_SIZE );
+
+            String exchangeName = this.getJobStatusExchangeName();
+            String exchangeType = "topic";
+            String bindingKey = "job." + this.getJobId() + "." + this.getWhichOutput().name();
+
+            try ( Channel channel = this.getConnection().createChannel() )
+            {
+                channel.exchangeDeclare( exchangeName, exchangeType );
+
+                // As the consumer, I want an exclusive queue for me.
+                String queueName = channel.queueDeclare().getQueue();
+                channel.queueBind( queueName, exchangeName, bindingKey );
+
+                JobOutputReceiver jobOutputReceiver =
+                        new JobOutputReceiver( channel,
+                                               oneLineOfOutput );
+
+                boolean timedOut = false;
+
+                while ( !timedOut )
+                {
+                    channel.basicConsume( queueName,
+                                          true,
+                                          jobOutputReceiver );
+
+                    LOGGER.debug( "Consumed from {}, waiting for result.", queueName );
+
+                    // One call to .basicConsume can result in many messages
+                    // being received by our jobOutputReceiver. Look for them.
+                    // This still seems uncertain and finnicky, but works?
+                    boolean mayBeMoreMessages = true;
+
+                    while ( mayBeMoreMessages )
+                    {
+                        JobStandardStream.job_standard_stream oneMoreLine
+                                = oneLineOfOutput.poll( MESSAGE_WAIT_SECONDS, TimeUnit.SECONDS );
+
+                        if ( oneMoreLine != null )
+                        {
+                            sharedList.put( oneMoreLine.getIndex(),
+                                            oneMoreLine.getText() );
+                        }
+                        else
+                        {
+                            mayBeMoreMessages = false;
+                        }
+                    }
+
+                    // Give up waiting if we don't get any output for some time.
+                    JobStandardStream.job_standard_stream oneLastLine =
+                            oneLineOfOutput.poll( JOB_WAIT_MINUTES, TimeUnit.MINUTES );
+
+                    if ( oneLastLine != null )
+                    {
+                        sharedList.put( oneLastLine.getIndex(),
+                                        oneLastLine.getText() );
+                    }
+                    else
+                    {
+                        timedOut = true;
+                        LOGGER.info( "Finished waiting for job {} {}",
+                                     jobId, whichOutput );
+                    }
+                }
+            }
+            catch ( InterruptedException ie )
+            {
+                LOGGER.warn( "Interrupted while getting output for job {}", jobId );
+                Thread.currentThread().interrupt();
+            }
+            catch ( IOException ioe )
+            {
+                // Since we may or may not actually consume result, log exception here
+                LOGGER.warn( "When attempting to get job results message using {}:",
+                             this, ioe );
+                throw ioe;
+            }
+
+
+            return sharedList;
+        }
+
+        @Override
+        public String toString()
+        {
+            StringJoiner result = new StringJoiner( ", ", "OutputWatcher with ", "" );
+            result.add( "connection=" + this.getConnection() );
+            result.add( "jobStatusExchangeName=" + this.getJobStatusExchangeName() );
+            result.add( "jobId=" + this.getJobId() );
+            return result.toString();
+        }
+    }
+
+    /**
      * Register a job request id with JobResults so that results are able to
      * be completely retrieved from a back-end web service.
-     * @param queueName the queue with job results
-     * @param correlationId the job to look for
+     * The bad part of this setup is the assumption of a single web server
+     * running also holding the results in memory. The memory issue can be fixed
+     * with a temp file, but really it is the single web server issue that is
+     * the bigger problem. Storing results in a database may be better.
+     * @param jobStatusExchangeName the queue with job results
+     * @param jobId the job to look for
      * @return a future with the job id, can be ignored because results are
      * available via JobResults.getJobResult(...)
      * @throws IOException when connecting to broker fails
      * @throws TimeoutException when connecting to broker fails
      */
 
-    Future<Integer> registerCorrelationId( String queueName,
-                                           String correlationId )
+    Future<Integer> registerjobId( String jobStatusExchangeName,
+                                           String jobId )
             throws IOException, TimeoutException
     {
-        if ( JOB_RESULTS_BY_ID.putIfAbsent( correlationId, JOB_NOT_DONE_YET ) != null )
+        if ( JOB_RESULTS_BY_ID.putIfAbsent( jobId, JOB_NOT_DONE_YET ) != null )
         {
-            LOGGER.warn( "Job correlationId {} may have been registered twice",
-                         correlationId );
+            LOGGER.warn( "jobId {} may have been registered twice",
+                         jobId );
         }
 
         ResultWatcher resultWatcher = new ResultWatcher( this.getConnection(),
-                                                         queueName,
-                                                         correlationId );
+                                                         jobStatusExchangeName,
+                                                         jobId );
+        OutputWatcher stdoutWatcher = new OutputWatcher( this.getConnection(),
+                                                         jobStatusExchangeName,
+                                                         jobId,
+                                                         OutputWatcher.WhichOutput.STDOUT );
+        OutputWatcher stderrWatcher = new OutputWatcher( this.getConnection(),
+                                                         jobStatusExchangeName,
+                                                         jobId,
+                                                         OutputWatcher.WhichOutput.STDERR );
+
+        EXECUTOR.submit( stdoutWatcher );
+        EXECUTOR.submit( stderrWatcher );
         return EXECUTOR.submit( resultWatcher );
     }
 
@@ -253,4 +468,67 @@ class JobResults
         }
     }
 
+
+    /**
+     * Get the plain text of standard out for a given wres job
+     * @param jobId the job to look for
+     * @return the standard out from the job
+     */
+
+    static String getJobStdout( String jobId )
+    {
+        ConcurrentNavigableMap<Integer,String> stdout = JOB_STDOUT_BY_ID.get( jobId );
+
+        if ( stdout == null )
+        {
+            return "No job id '" + jobId + "' found.'";
+        }
+
+        StringJoiner result = new StringJoiner( System.lineSeparator() );
+
+        // There is an assumption that the worker starts counting at 0
+        int previousIndex = -1;
+
+        for ( Integer index : stdout.keySet() )
+        {
+            int indexDiff = index - previousIndex;
+
+            // Handle missing lines by looking for gaps in incrementing integer.
+            if ( indexDiff > 1 )
+            {
+                result.add( "***Missing " + indexDiff + " lines ***" );
+            }
+
+            result.add( stdout.get( index ) );
+            previousIndex = index;
+        }
+
+        return result.toString();
+    }
+
+
+    /**
+     * Get the plain text of standard err for a given wres job
+     * @param jobId the job to look for
+     * @return the standard err from the job
+     */
+
+    static String getJobStderr( String jobId )
+    {
+        ConcurrentNavigableMap<Integer,String> stderr = JOB_STDERR_BY_ID.get( jobId );
+
+        if ( stderr == null )
+        {
+            return "No job id '" + jobId + "' found.'";
+        }
+
+        StringJoiner result = new StringJoiner( System.lineSeparator() );
+
+        for ( Integer index : stderr.keySet() )
+        {
+            result.add( stderr.get( index ) );
+        }
+
+        return result.toString();
+    }
 }

@@ -41,7 +41,7 @@ public final class MeasurementDetails extends CachedDetail<MeasurementDetails, S
 
 	@Override
 	public int compareTo(MeasurementDetails other) {
-		return this.unit.compareTo(other.unit);
+		return this.unit.toLowerCase().compareTo(other.unit.toLowerCase());
 	}
 
 	@Override
@@ -83,7 +83,7 @@ public final class MeasurementDetails extends CachedDetail<MeasurementDetails, S
 		ScriptBuilder script = new ScriptBuilder(  );
 		script.addLine("SELECT measurementunit_id");
 		script.addLine("FROM wres.MeasurementUnit");
-		script.addLine("WHERE unit_name = ?;");
+		script.addLine("WHERE LOWER(unit_name) = LOWER(?);");
 
 		return script.getPreparedStatement( connection, this.unit );
 	}

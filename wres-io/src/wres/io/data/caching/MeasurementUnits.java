@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.io.data.details.MeasurementDetails;
 import wres.io.utilities.Database;
+import wres.io.utilities.ScriptBuilder;
 import wres.util.Collections;
 
 /**
@@ -91,50 +92,28 @@ public class MeasurementUnits extends Cache<MeasurementDetails, String> {
 	@Override
     protected synchronized void init()
 	{
-        Connection connection = null;
-        ResultSet measurements = null;
-
         try
         {
-            connection = Database.getHighPriorityConnection();
+            ScriptBuilder script = new ScriptBuilder(  );
+            script.setHighPriority( true );
 
-            String loadScript = "SELECT measurementunit_id, unit_name" + NEWLINE;
-            loadScript += "FROM wres.measurementunit" + NEWLINE;
-            loadScript += "LIMIT " + getMaxDetails() + ";";
+            script.addLine("SELECT measurementunit_id, unit_name");
+            script.addLine("FROM wres.MeasurementUnit");
+            script.add("LIMIT ", this.getMaxDetails(), ";");
 
-            measurements = Database.getResults(connection, loadScript);
-
-            while (measurements.next())
-            {
-                this.getKeyIndex().put(measurements.getString("unit_name").toLowerCase(), measurements.getInt("measurementunit_id"));
-            }
+            script.consume(
+                    unitRow -> this.getKeyIndex()
+                                   .put(
+                                           unitRow.getString( "unit_name" ),
+                                           unitRow.getInt( "measurementunit_id" )
+                                   )
+            );
         }
         catch (SQLException error)
         {
             // Failure to pre-populate cache should not affect primary outputs.
             LOGGER.warn( "An error was encountered when trying to populate the Measurement cache.",
                          error );
-        }
-        finally
-        {
-            if (measurements != null)
-            {
-                try
-                {
-                    measurements.close();
-                }
-                catch(SQLException e)
-                {
-                    // Exception on close should not affect primary outputs.
-                    LOGGER.warn( "An error was encountered when trying to close the resultset that loaded measurements.",
-                                  e );
-                }
-            }
-
-            if (connection != null)
-            {
-                Database.returnHighPriorityConnection(connection);
-            }
         }
 	}
 }

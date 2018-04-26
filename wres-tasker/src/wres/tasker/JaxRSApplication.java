@@ -21,6 +21,8 @@ public class JaxRSApplication extends Application
         Set<Class<?>> s = new HashSet<>( 2 );
         s.add( WresJob.class );
         s.add( WresJobResult.class );
+        s.add( WresJobStdout.class );
+        s.add( WresJobStderr.class );
         return Collections.unmodifiableSet( s );
     }
 }
