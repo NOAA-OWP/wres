@@ -401,6 +401,16 @@ project(':wres-messages')
     {
         main
         {
+            // Deviate from our typical source tree here to work around plugin's
+            // inflexibility on paths plus IDEs handling generated code, see
+            // https://github.com/google/protobuf-gradle-plugin/issues/190
+            // The different srcDirs seems to work for eclipse, not IDEA.
+            // But somehow a bunch of weird src tree shows up too.
+            java
+            {
+                srcDirs = ['src/main/java']
+            }
+
             // Tell protobuf plugin where to find .proto schema files:
             proto
             {
