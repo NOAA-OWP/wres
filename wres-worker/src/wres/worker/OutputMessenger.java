@@ -4,8 +4,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.nio.charset.Charset;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 import com.rabbitmq.client.AMQP;
@@ -31,6 +31,8 @@ public class OutputMessenger implements Consumer<InputStream>
     private final String exchangeName;
     private final String jobId;
     private final WhichOutput whichOutput;
+    /** Helps the consumer re-order the stream */
+    private final AtomicInteger order = new AtomicInteger( 0 );
 
     OutputMessenger( Connection connection,
                      String exchangeName,
@@ -61,6 +63,11 @@ public class OutputMessenger implements Consumer<InputStream>
     private WhichOutput getWhichOutput()
     {
         return this.whichOutput;
+    }
+
+    private AtomicInteger getOrder()
+    {
+        return this.order;
     }
 
     private String getRoutingKey()
@@ -106,16 +113,25 @@ public class OutputMessenger implements Consumer<InputStream>
                         .correlationId( this.getJobId() )
                         .build();
 
+        int order = this.getOrder().getAndIncrement();
+
+        wres.messages.generated.JobStandardStream.job_standard_stream message
+                = wres.messages.generated.JobStandardStream.job_standard_stream
+                .newBuilder()
+                .setIndex( order )
+                .setText( line )
+                .build();
+
         try
         {
             channel.basicPublish( this.getExchangeName(),
                                   this.getRoutingKey(),
                                   properties,
-                                  line.getBytes( Charset.forName( "UTF-8" ) ) );
+                                  message.toByteArray() );
         }
         catch ( IOException ioe )
         {
-            LOGGER.warn( "Sending this output failed: {}", line, ioe );
+            LOGGER.warn( "Sending this output failed: {}", message, ioe );
         }
 
         // We may also wish to see output on standard out and standard err...
