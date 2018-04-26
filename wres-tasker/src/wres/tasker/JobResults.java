@@ -2,12 +2,15 @@ package wres.tasker;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.SortedMap;
 import java.util.StringJoiner;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentNavigableMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -21,6 +24,8 @@ import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import wres.messages.generated.JobStandardStream;
 
 
 /**
@@ -40,10 +45,12 @@ class JobResults
     private static final Integer JOB_NOT_DONE_YET = Integer.MIN_VALUE + 1;
 
     /** A shared bag of job standard out */
-    private static final ConcurrentMap<String, List<String>> JOB_STDOUT_BY_ID = new ConcurrentHashMap<>();
+    private static final ConcurrentMap<String, ConcurrentNavigableMap<Integer,String>> JOB_STDOUT_BY_ID
+            = new ConcurrentHashMap<>();
 
     /** A shared bag of job standard error */
-    private static final ConcurrentMap<String, List<String>> JOB_STDERR_BY_ID = new ConcurrentHashMap<>();
+    private static final ConcurrentMap<String, ConcurrentNavigableMap<Integer,String>> JOB_STDERR_BY_ID
+            = new ConcurrentHashMap<>();
 
     /**
      * How many job results to look for at once (should probably be at least as
@@ -224,7 +231,7 @@ class JobResults
      * on the service end and cache them before the web service is called.
      */
 
-    private static class OutputWatcher implements Callable<List<String>>
+    private static class OutputWatcher implements Callable<ConcurrentNavigableMap<Integer,String>>
     {
         private static final int LOCAL_Q_SIZE = 10;
         private static final int JOB_WAIT_MINUTES = 5;
@@ -283,9 +290,9 @@ class JobResults
          * @throws IOException when queue declaration fails
          */
 
-        public List<String> call() throws IOException, TimeoutException
+        public ConcurrentNavigableMap<Integer,String> call() throws IOException, TimeoutException
         {
-            List<String> sharedList = new CopyOnWriteArrayList<>();
+            ConcurrentNavigableMap<Integer,String> sharedList = new ConcurrentSkipListMap<>();
 
             // Store shared list to the static bag-o-state.
             if ( this.getWhichOutput().equals( WhichOutput.STDOUT ) )
@@ -301,7 +308,8 @@ class JobResults
                 throw new UnsupportedOperationException( "Output has to be stderr or stdout." );
             }
 
-            BlockingQueue<String> oneLineOfOutput = new ArrayBlockingQueue<>( LOCAL_Q_SIZE );
+            BlockingQueue<JobStandardStream.job_standard_stream> oneLineOfOutput
+                    = new ArrayBlockingQueue<>( LOCAL_Q_SIZE );
 
             String exchangeName = this.getJobStatusExchangeName();
             String exchangeType = "topic";
@@ -336,11 +344,13 @@ class JobResults
 
                     while ( mayBeMoreMessages )
                     {
-                        String oneMoreLine = oneLineOfOutput.poll( MESSAGE_WAIT_SECONDS, TimeUnit.SECONDS );
+                        JobStandardStream.job_standard_stream oneMoreLine
+                                = oneLineOfOutput.poll( MESSAGE_WAIT_SECONDS, TimeUnit.SECONDS );
 
                         if ( oneMoreLine != null )
                         {
-                            sharedList.add( oneMoreLine );
+                            sharedList.put( oneMoreLine.getIndex(),
+                                            oneMoreLine.getText() );
                         }
                         else
                         {
@@ -349,11 +359,13 @@ class JobResults
                     }
 
                     // Give up waiting if we don't get any output for some time.
-                    String oneLastLine = oneLineOfOutput.poll( JOB_WAIT_MINUTES, TimeUnit.MINUTES );
+                    JobStandardStream.job_standard_stream oneLastLine =
+                            oneLineOfOutput.poll( JOB_WAIT_MINUTES, TimeUnit.MINUTES );
 
                     if ( oneLastLine != null )
                     {
-                        sharedList.add( oneLastLine );
+                        sharedList.put( oneLastLine.getIndex(),
+                                        oneLastLine.getText() );
                     }
                     else
                     {
@@ -468,7 +480,7 @@ class JobResults
 
     static String getJobStdout( String jobId )
     {
-        List<String> stdout = JOB_STDOUT_BY_ID.get( jobId );
+        ConcurrentNavigableMap<Integer,String> stdout = JOB_STDOUT_BY_ID.get( jobId );
 
         if ( stdout == null )
         {
@@ -477,9 +489,21 @@ class JobResults
 
         StringJoiner result = new StringJoiner( System.lineSeparator() );
 
-        for ( String s : stdout )
+        // There is an assumption that the worker starts counting at 0
+        int previousIndex = -1;
+
+        for ( Integer index : stdout.keySet() )
         {
-            result.add( s );
+            int indexDiff = index - previousIndex;
+
+            // Handle missing lines by looking for gaps in incrementing integer.
+            if ( indexDiff > 1 )
+            {
+                result.add( "***Missing " + indexDiff + " lines ***" );
+            }
+
+            result.add( stdout.get( index ) );
+            previousIndex = index;
         }
 
         return result.toString();
@@ -494,7 +518,7 @@ class JobResults
 
     static String getJobStderr( String jobId )
     {
-        List<String> stderr = JOB_STDERR_BY_ID.get( jobId );
+        ConcurrentNavigableMap<Integer,String> stderr = JOB_STDERR_BY_ID.get( jobId );
 
         if ( stderr == null )
         {
@@ -503,9 +527,9 @@ class JobResults
 
         StringJoiner result = new StringJoiner( System.lineSeparator() );
 
-        for ( String s : stderr )
+        for ( Integer index : stderr.keySet() )
         {
-            result.add( s );
+            result.add( stderr.get( index ) );
         }
 
         return result.toString();
