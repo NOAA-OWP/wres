@@ -74,10 +74,13 @@ class JobReceiver extends DefaultConsumer
 
         // Translate the message into a command
         ProcessBuilder processBuilder = createBuilderFromMessage( message );
+        // Set up the information needed to launch process and send info back
         WresProcess wresProcess = new WresProcess( processBuilder,
                                                    properties.getReplyTo(),
                                                    properties.getCorrelationId(),
-                                                   this.getChannel().getConnection() );
+                                                   this.getChannel().getConnection(),
+                                                   envelope );
+        // Share the process information with the caller
         this.getProcessToLaunch().offer( wresProcess );
     }
 

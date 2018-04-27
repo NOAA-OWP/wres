@@ -4,15 +4,23 @@ import java.io.IOException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
+import com.rabbitmq.client.Envelope;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.messages.generated.JobResult;
+
+
+/**
+ * Holds a ProcessBuilder that can be started with call(), also sends messages
+ * with stdout and stderr to an exchange via a connection
+ */
 
 class WresProcess implements Callable<Integer>
 {
@@ -25,15 +33,23 @@ class WresProcess implements Callable<Integer>
     private final String jobId;
     private final Connection connection;
 
+    /**
+     * The envelope from the message that caused creation of this process,
+     * used by the caller to send an ack to the broker.
+     */
+    private final Envelope envelope;
+
     WresProcess( ProcessBuilder processBuilder,
                  String exchangeName,
                  String jobId,
-                 Connection connection )
+                 Connection connection,
+                 Envelope envelope )
     {
         this.processBuilder = processBuilder;
         this.exchangeName = exchangeName;
         this.jobId = jobId;
         this.connection = connection;
+        this.envelope = envelope;
     }
 
     private ProcessBuilder getProcessBuilder()
@@ -55,6 +71,27 @@ class WresProcess implements Callable<Integer>
     {
         return this.connection;
     }
+
+    private Envelope getEnvelope()
+    {
+        return this.envelope;
+    }
+
+    /**
+     * Get the delivery tag to send an ack with
+     * @return the delivery tag that was used in creating this process.
+     */
+    long getDeliveryTag()
+    {
+        return this.getEnvelope().getDeliveryTag();
+    }
+
+    /**
+     * Execute the process assigned, return the exit code or 600+ if something
+     * went wrong talking to the broker.
+     * @return exit code of process or META_FAILURE_CODE (600+) if broker
+     * communication failed.
+     */
 
     @Override
     public Integer call()
@@ -102,9 +139,9 @@ class WresProcess implements Callable<Integer>
             LOGGER.warn( "Failed to launch process from {}.", processBuilder, ioe );
             byte[] response = WresProcess.prepareMetaFailureResponse( ioe );
             this.sendResponse( response );
+            WresProcess.shutdownExecutor( executorService );
             return META_FAILURE_CODE;
         }
-
         LOGGER.info( "Started subprocess {}", process );
 
         try
@@ -115,6 +152,7 @@ class WresProcess implements Callable<Integer>
             byte[] response;
             response = WresProcess.prepareResponse( exitValue );
             this.sendResponse( response );
+            WresProcess.shutdownExecutor( executorService );
             return exitValue;
         }
         catch ( InterruptedException ie )
@@ -122,6 +160,7 @@ class WresProcess implements Callable<Integer>
             LOGGER.warn( "Interrupted while waiting for {}.", process );
             byte[] response = WresProcess.prepareMetaFailureResponse( ie );
             this.sendResponse( response );
+            WresProcess.shutdownExecutor( executorService );
             Thread.currentThread().interrupt();
             return META_FAILURE_CODE;
         }
@@ -195,5 +234,42 @@ class WresProcess implements Callable<Integer>
         }
     }
 
+    private static void shutdownExecutor( ExecutorService executorService )
+    {
+        WresProcess.shutdownExecutor( executorService, 10, TimeUnit.SECONDS );
+    }
+
+    /**
+     * Shuts down an executor service, waiting specified time before forcing it.
+     * @param executorService the service to shut down
+     * @param wait the quantity of time units to wait before forcible shutdown
+     * @param waitUnit the unit of time for wait before forcible shutdown
+     */
+
+    private static void shutdownExecutor( ExecutorService executorService,
+                                          long wait,
+                                          TimeUnit waitUnit )
+    {
+        executorService.shutdown();
+        boolean died = false;
+
+        try
+        {
+            died = executorService.awaitTermination( wait, waitUnit );
+        }
+        catch ( InterruptedException ie )
+        {
+            LOGGER.warn( "Interrupted while waiting for executor shutdown" );
+            executorService.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+
+        if ( !died )
+        {
+            LOGGER.warn( "Executor did not shut down in {} {}, forcing down.",
+                         wait, waitUnit );
+            executorService.shutdownNow();
+        }
+    }
 
 }
