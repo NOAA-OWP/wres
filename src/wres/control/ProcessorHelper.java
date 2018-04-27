@@ -62,7 +62,7 @@ class ProcessorHelper
      * thresholds and metrics.
      * 
      * @param projectConfigPlus the project configuration
-     * @param executorServices the executors
+     * @param executors the executors
      * @throws IOException when an issue occurs during ingest
      * @throws ProjectConfigException if the project configuration is invalid
      * @throws WresProcessingException when an issue occurs during processing
@@ -81,6 +81,7 @@ class ProcessorHelper
 
         // Need to ingest first
         ProjectDetails projectDetails = Operations.ingest( projectConfig );
+        Operations.prepareForExecution( projectDetails );
 
         LOGGER.debug( "Finished ingest for project {}...", projectConfigPlus );
 

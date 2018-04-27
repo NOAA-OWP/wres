@@ -104,6 +104,18 @@ public final class UnitConversions
         }
     }
 
+    // TODO: Find a better solution
+    /**
+     * Loads all unit conversions for later use
+     */
+    public static void initialize()
+    {
+        synchronized ( UnitConversions.CACHE_LOCK )
+        {
+            UnitConversions.getCache();
+        }
+    }
+
     public static double convert(double value, int fromMeasurementUnitID, String toMeasurementUnit)
     {
         Conversion conversion = getConversion( fromMeasurementUnitID, toMeasurementUnit );

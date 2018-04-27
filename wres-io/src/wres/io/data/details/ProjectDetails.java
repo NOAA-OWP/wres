@@ -28,6 +28,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.FeaturePlus;
 import wres.config.ProjectConfigs;
 import wres.config.generated.DataSourceConfig;
 import wres.config.generated.DestinationConfig;
@@ -115,6 +116,11 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
      * The member identifier for baseline data in the database
      */
     public static final String BASELINE_MEMBER = "'baseline'";
+
+    /**
+     * Protects access and generation of the feature collection
+     */
+    private static final Object FEATURE_LOCK = new Object();
 
     private Integer projectID = null;
     private final ProjectConfig projectConfig;
@@ -412,6 +418,28 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
         return name;
     }
 
+    public void prepareForExecution() throws SQLException, IOException
+    {
+        this.populateFeatures();
+
+        if( !this.shouldCalculateLeads() )
+        {
+            this.populateDiscreteLeads();
+        }
+
+        if (ProjectConfigs.hasTimeSeriesMetrics( this.getProjectConfig() ))
+        {
+            this.getNumberOfSeriesToRetrieve();
+        }
+
+        if (!ConfigHelper.isSimulation( this.getRight() ) &&
+            !ProjectConfigs.hasTimeSeriesMetrics( this.getProjectConfig() ) &&
+            !this.usesGriddedData( this.getRight() ))
+        {
+            this.populateLeadOffsets();
+        }
+    }
+
     /**
      * Returns the set of FeaturesDetails for the project. If none have been
      * created yet, then it is evaluated. If there is no specification within
@@ -422,11 +450,23 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
      */
     public Set<FeatureDetails> getFeatures() throws SQLException
     {
-        if (this.features == null)
+        synchronized ( ProjectDetails.FEATURE_LOCK )
         {
-            if (this.usesGriddedData( this.getRight() ))
+            if ( this.features == null )
             {
-                this.features = new HashSet<>(  );
+                this.populateFeatures();
+            }
+            return this.features;
+        }
+    }
+
+    private void populateFeatures() throws SQLException
+    {
+        synchronized ( ProjectDetails.FEATURE_LOCK )
+        {
+            if ( this.usesGriddedData( this.getRight() ) )
+            {
+                this.features = new HashSet<>();
                 this.features.addAll( Features.getGriddedDetails( this ) );
             }
             // If there is no indication whatsoever of what to look for, we
@@ -436,10 +476,10 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
             // The similar function in wres.io.data.caching.Features cannot be
             // used because it doesn't restrict data based on what lies in the
             // database.
-            else if (this.getProjectConfig().getPair().getFeature() == null ||
-                this.projectConfig.getPair().getFeature().isEmpty())
+            else if ( this.getProjectConfig().getPair().getFeature() == null ||
+                      this.projectConfig.getPair().getFeature().isEmpty() )
             {
-                this.features = new HashSet<>(  );
+                this.features = new HashSet<>();
 
                 ScriptBuilder script = new ScriptBuilder();
 
@@ -551,7 +591,8 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
 
                 try
                 {
-                    script.consume( feature -> this.features.add( new FeatureDetails( feature )) );
+                    script.consume( feature -> this.features.add( new FeatureDetails(
+                            feature ) ) );
                 }
                 catch ( SQLException e )
                 {
@@ -564,10 +605,10 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
             else
             {
                 // Get all features that correspond to the feature configuration
-                this.features = Features.getAllDetails( this.getProjectConfig() );
+                this.features =
+                        Features.getAllDetails( this.getProjectConfig() );
             }
         }
-        return this.features;
     }
 
     /**
@@ -1490,6 +1531,7 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
         }
     }
 
+    @Deprecated
     /**
      * @return Indicates whether or not pairs will be fed into time series
      * only metrics
@@ -2029,8 +2071,6 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
 
             LOGGER.trace("Variable position metadata loaded...");
 
-            LOGGER.info("Loading preliminary metadata...");
-
             while (resultSet.next())
             {
                 ScriptBuilder finalScript = new ScriptBuilder( );
@@ -2081,9 +2121,6 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
             }
         }
 
-        ProgressMonitor.resetMonitor();
-        ProgressMonitor.setSteps( (long)futureOffsets.size() );
-
         while (!futureOffsets.isEmpty())
         {
             FeatureDetails.FeatureKey key = ( FeatureDetails.FeatureKey)futureOffsets.keySet().toArray()[0];
@@ -2114,7 +2151,6 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
                         offset
                 );
                 LOGGER.trace( "An offset for {} was loaded!", ConfigHelper.getFeatureDescription( feature ) );
-                ProgressMonitor.completeStep();
             }
             catch ( InterruptedException e )
             {
@@ -2142,8 +2178,6 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
             LOGGER.debug( "It took {} to get the offsets for all locations.",
                           timer.getFormattedDuration() );
         }
-
-        ProgressMonitor.resetMonitor();
     }
 
     /**
@@ -2722,6 +2756,7 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
     public Integer getLastLead(Feature feature) throws SQLException, IOException
     {
         boolean leadIsMissing = !this.lastLeads.containsKey( feature );
+        Integer lastLead;
 
         if (leadIsMissing && this.usesGriddedData( this.getRight() ))
         {
@@ -2790,7 +2825,19 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
                 script += "        WHERE PS.project_id = " + this.getId() + NEWLINE;
                 script += "            AND PS.inactive_time IS NULL" + NEWLINE;
                 script += "            AND FS.forecast_id = TS.timeseries_id" + NEWLINE;
-                script += "    )";
+                script += "    );";
+
+                lastLead = Database.getResult( script, "last_lead" );
+
+                if (Objects.isNull( lastLead ))
+                {
+                    throw new NoDataException( "No count could be found for the "
+                                               + "right hand data that could be "
+                                               + "used. Variable ID: " +
+                                               this.rightVariableID +
+                                               " Feature: " +
+                                               FeaturePlus.of( feature ) );
+                }
             }
             else
             {
@@ -2803,13 +2850,20 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
                           ConfigHelper.getVariablePositionClause(
                                   feature,
                                   this.getRightVariableID(),
-                                  "O" );
-                script += NEWLINE;
+                                  "O;" );
+                lastLead = Database.getResult( script, "last_lead" );
+
+                if (Objects.isNull( lastLead ))
+                {
+                    throw new NoDataException( "No count of the right hand data "
+                                               + "could be performed. Variable ID: " +
+                                               this.getRightVariableID() +
+                                               " Feature: " +
+                                               FeaturePlus.of( feature ));
+                }
             }
-            script += ";";
 
-
-            this.lastLeads.put(feature, Database.getResult( script, "last_lead" ));
+            this.lastLeads.put(feature, lastLead);
         }
 
         return this.lastLeads.get(feature);
