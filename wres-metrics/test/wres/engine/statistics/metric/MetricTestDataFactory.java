@@ -1085,7 +1085,7 @@ public final class MetricTestDataFactory
         return (TimeSeriesOfSingleValuedPairs) builder.addTimeSeriesData( secondId, secondValues )
                                                       .setMetadata( metaData )
                                                       .build();
-    }
+    }   
 
     /**
      * Returns a {@link TimeSeriesOfSingleValuedPairs} containing no data.
@@ -1113,5 +1113,48 @@ public final class MetricTestDataFactory
         return (TimeSeriesOfSingleValuedPairs) builder.setMetadata( metaData )
                                                       .build();
     }    
+    
+    
+    /**
+     * Returns a {@link TimeSeriesOfSingleValuedPairs} containing fake data with the same peak at multiple times.
+     * 
+     * @return a time-series of single-valued pairs
+     */
+
+    public static TimeSeriesOfSingleValuedPairs getTimeSeriesOfSingleValuedPairsFive()
+    {
+        // Build an immutable regular time-series of single-valued pairs
+        DataFactory dataFactory = DefaultDataFactory.getInstance();
+        MetadataFactory metaFac = dataFactory.getMetadataFactory();
+        TimeSeriesOfSingleValuedPairsBuilder builder =
+                dataFactory.ofTimeSeriesOfSingleValuedPairsBuilder();
+        // Create a regular time-series with an issue date/time, a series of paired values, and a timestep
+
+        // Add another time-series
+        Instant secondId = Instant.parse( "1985-01-02T00:00:00Z" );
+        List<Event<PairOfDoubles>> secondValues = new ArrayList<>();
+        
+        // Add some values
+        secondValues.add( Event.of( Instant.parse( "1985-01-02T06:00:00Z" ), dataFactory.pairOf( 10, 1 ) ) );
+        secondValues.add( Event.of( Instant.parse( "1985-01-02T12:00:00Z" ), dataFactory.pairOf( 1, 1 ) ) );
+        secondValues.add( Event.of( Instant.parse( "1985-01-02T18:00:00Z" ), dataFactory.pairOf( 10, 10 ) ) );
+        secondValues.add( Event.of( Instant.parse( "1985-01-03T00:00:00Z" ), dataFactory.pairOf( 2, 10 ) ) );
+        secondValues.add( Event.of( Instant.parse( "1985-01-03T06:00:00Z" ), dataFactory.pairOf( 4, 7 ) ) );
+
+        // Create some default metadata for the time-series
+        final TimeWindow window = TimeWindow.of( Instant.parse( "1985-01-02T00:00:00Z" ),
+                                                 Instant.parse( "1985-01-02T00:00:00Z" ),
+                                                 ReferenceTime.ISSUE_TIME,
+                                                 Duration.ofHours( 6 ),
+                                                 Duration.ofHours( 30 ) );
+        final Metadata metaData = metaFac.getMetadata( metaFac.getDimension( "CMS" ),
+                                                       metaFac.getDatasetIdentifier( "A",
+                                                                                     "Streamflow" ),
+                                                       window );
+        // Build the time-series
+        return (TimeSeriesOfSingleValuedPairs) builder.addTimeSeriesData( secondId, secondValues )
+                                                      .setMetadata( metaData )
+                                                      .build();
+    } 
     
 }

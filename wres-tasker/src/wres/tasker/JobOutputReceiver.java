@@ -1,6 +1,5 @@
 package wres.tasker;
 
-import java.nio.charset.Charset;
 import java.util.concurrent.BlockingQueue;
 
 import javax.xml.bind.DatatypeConverter;
@@ -62,11 +61,13 @@ class JobOutputReceiver extends DefaultConsumer
         this.getResult().offer( decodedResult );
     }
 
+
     /**
      * Because of the lack of checked exception handling above, use custom
      * RuntimeException to notify when a parse error occurs (which means that
      * we probably messed up somewhere in versions of a dependency or something)
      */
+
     private static class WresParseException extends RuntimeException
     {
         public WresParseException( Throwable cause )

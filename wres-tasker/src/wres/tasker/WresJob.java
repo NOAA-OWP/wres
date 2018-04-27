@@ -86,8 +86,14 @@ public class WresJob
         }
 
         String statusUrl = "/job/" + jobId + "/status";
+        String stdoutUrl = "/job/" + jobId + "/stdout";
+        String stderrUrl = "/job/" + jobId + "/stderr";
+
         return Response.ok( "<!DOCTYPE html><html><head><title>Job received.</title></head><body><h1>Your job has been received for processing.</h1><p>See <a href=\""
-                            + statusUrl + "\">" + statusUrl + "</a></body></html>" )
+                            + statusUrl + "\">" + statusUrl + "</a></p>"
+                            + "<p>For more details, see <a href=\"" + stdoutUrl + "\">" + stdoutUrl + "</a>"
+                            + " or <a href=\"" + stderrUrl + "\">" + stderrUrl + "</a>"
+                            + "</body></html>" )
                        .build();
     }
 
