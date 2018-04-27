@@ -58,7 +58,6 @@ import wres.io.utilities.ScriptBuilder;
 import wres.io.utilities.ScriptGenerator;
 import wres.util.Collections;
 import wres.util.FormattedStopwatch;
-import wres.util.ProgressMonitor;
 import wres.util.Strings;
 import wres.util.TimeHelper;
 
@@ -2752,6 +2751,7 @@ public class ProjectDetails// extends CachedDetail<ProjectDetails, Integer>
      * @return The last lead time for the feature available for evaluation
      * @throws SQLException Thrown if the value could not be retrieved from the
      * database
+     * @throws IOException If the value could not be retrieved for gridded data
      */
     public Integer getLastLead(Feature feature) throws SQLException, IOException
     {
