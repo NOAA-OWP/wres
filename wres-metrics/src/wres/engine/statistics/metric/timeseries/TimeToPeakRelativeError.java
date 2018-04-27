@@ -16,7 +16,6 @@ import wres.datamodel.inputs.pairs.TimeSeriesOfSingleValuedPairs;
 import wres.datamodel.metadata.Metadata;
 import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.PairedOutput;
-import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.engine.statistics.metric.Metric;
 import wres.engine.statistics.metric.MetricParameterException;
@@ -50,28 +49,13 @@ public class TimeToPeakRelativeError extends TimingError
         List<Pair<Instant, Duration>> returnMe = new ArrayList<>();
         for ( TimeSeries<PairOfDoubles> next : s.basisTimeIterator() )
         {
-            Instant peakLeftTime = null;
-            Instant peakRightTime = null;
-            double peakLeftValue = Double.NEGATIVE_INFINITY;
-            double peakRightValue = Double.NEGATIVE_INFINITY;
-            // Iterate through the pairs to find the peak on each side
-            for ( Event<PairOfDoubles> nextPair : next.timeIterator() )
-            {
-                // New peak left
-                if ( Double.compare( nextPair.getValue().getItemOne(), peakLeftValue ) > 0 )
-                {
-                    peakLeftValue = nextPair.getValue().getItemOne();
-                    peakLeftTime = nextPair.getTime();
-                }
-                // New peak right
-                if ( Double.compare( nextPair.getValue().getItemTwo(), peakRightValue ) > 0 )
-                {
-                    peakRightValue = nextPair.getValue().getItemTwo();
-                    peakRightTime = nextPair.getTime();
-                }
-            }
+            Pair<Instant, Instant> peak = TimingErrorHelper.getTimeToPeak( next, this.getRNG() );
+
+            // Duration.between is negative if the predicted/right or "end" is before the observed/left or "start"
+            Duration error = Duration.between( peak.getLeft(), peak.getRight() );
+
             // Compute the denominator
-            Duration denominator = Duration.between( next.getEarliestBasisTime(), peakLeftTime );
+            Duration denominator = Duration.between( next.getEarliestBasisTime(), peak.getLeft() );
             long denominatorHours = denominator.toHours();
 
             // Add the relative time-to-peak error against the basis time
@@ -80,9 +64,7 @@ public class TimeToPeakRelativeError extends TimingError
             // than swallowing the outcome here
             if ( denominatorHours != 0 )
             {
-                returnMe.add( Pair.of( next.getEarliestBasisTime(),
-                                       Duration.between( peakLeftTime, peakRightTime )
-                                               .dividedBy( denominatorHours ) ) );
+                returnMe.add( Pair.of( next.getEarliestBasisTime(), error.dividedBy( denominatorHours ) ) );
             }
         }
 

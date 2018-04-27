@@ -1,8 +1,6 @@
 package wres.tasker;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.SortedMap;
 import java.util.StringJoiner;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -11,7 +9,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -329,13 +326,13 @@ class JobResults
 
                 boolean timedOut = false;
 
+                channel.basicConsume( queueName,
+                                      true,
+                                      jobOutputReceiver );
+
                 while ( !timedOut )
                 {
-                    channel.basicConsume( queueName,
-                                          true,
-                                          jobOutputReceiver );
-
-                    LOGGER.debug( "Consumed from {}, waiting for result.", queueName );
+                    LOGGER.debug( "Consuming from {}, waiting for result.", queueName );
 
                     // One call to .basicConsume can result in many messages
                     // being received by our jobOutputReceiver. Look for them.

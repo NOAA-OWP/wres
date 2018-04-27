@@ -96,17 +96,21 @@ do
 		# get the value from 2nd field with a greater than sign as separator, relacce the equal sign to null.
 		value=$(echo $nameValuePairs | sed -e 's/\=//' | cut -d'>' -f2 | gawk '{print $1}')
 		#echo $value
-		if [ "$value" = "NA" ]
-		then
-			theSign=
-		fi
+		#if [ "$value" = "NA" ]
+		#then
+		#	theSign=
+		#fi
 		echo "Name, value, and sign for RScript: ename is $ename, value is $value, theSign is $theSign"
 		if [ -f sorted_pairs.csv ] # just double check
 		then
 			if [ -f $sortedFile ]
 			then
-				#(Rscript ../../rsrc/CheckMetrics.R $sortedFile "$ename" $value > temp1.txt) 2>> $errorFile
-				(Rscript ../../rsrc/CheckMetrics.R $sortedFile "$ename" $value "$theSign" > temp1.txt) 2>> $errorFile
+				if [ "$value" = "NA" ]
+				then
+					(Rscript ../../rsrc/CheckMetrics.R $sortedFile "$ename" $value > temp1.txt) 2>> $errorFile
+				else
+					(Rscript ../../rsrc/CheckMetrics.R $sortedFile "$ename" $value "$theSign" > temp1.txt) 2>> $errorFile
+				fi
 				theSign= # reset the sign after Rscript
 			fi
 			#head -6 temp1.txt > header.txt
@@ -142,6 +146,12 @@ do
 			cat fileValues.txt
 		fi
 		# debugging
+		metricsValuesRows=$(cat metricsValues.txt | wc -l)
+		fileValuesRows=$(cat fileValues.txt | wc -l)
+		if [ $metricsValuesRows -ne $fileValuesRows ]
+		then
+			echo "WARNING: Output from RScript = $metricsValuesRows rows; and Output from csv file = $fileValuesRows rows"
+		fi
 
 		pwd > joinFiles.txt
 		echo "$CSV_FILE" >> joinFiles.txt
