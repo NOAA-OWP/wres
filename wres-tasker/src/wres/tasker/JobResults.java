@@ -302,7 +302,7 @@ class JobResults
             }
             else
             {
-                throw new UnsupportedOperationException( "Output has to be stderr or stdout." );
+                throw new IllegalStateException( "Output has to be stderr or stdout." );
             }
 
             BlockingQueue<JobStandardStream.job_standard_stream> oneLineOfOutput
@@ -355,7 +355,8 @@ class JobResults
                         }
                     }
 
-                    // Give up waiting if we don't get any output for some time.
+                    // Give up waiting if we don't get any output for some time
+                    // after the job has completed.
                     JobStandardStream.job_standard_stream oneLastLine =
                             oneLineOfOutput.poll( JOB_WAIT_MINUTES, TimeUnit.MINUTES );
 
@@ -366,9 +367,21 @@ class JobResults
                     }
                     else
                     {
-                        timedOut = true;
-                        LOGGER.info( "Finished waiting for job {} {}",
-                                     jobId, whichOutput );
+                        // Has the job actually finished?
+                        Integer jobStatus = JobResults.getJobResultRaw( this.getJobId() );
+
+                        if ( jobStatus != null && !jobStatus.equals( JOB_NOT_DONE_YET ) )
+                        {
+                            timedOut = true;
+                            LOGGER.info( "Finished waiting for job {} {}",
+                                         jobId, whichOutput );
+                        }
+                        else
+                        {
+                            timedOut = false;
+                            LOGGER.info( "Still waiting for job {} {}",
+                                         jobId, whichOutput );
+                        }
                     }
                 }
             }
@@ -384,7 +397,6 @@ class JobResults
                              this, ioe );
                 throw ioe;
             }
-
 
             return sharedList;
         }
@@ -468,6 +480,17 @@ class JobResults
         }
     }
 
+    /**
+     * Return the raw job result, which can be the exit code of the application,
+     * or JOB_NOT_DONE_YET, or null if it was never registered.
+     * @param correlationId
+     * @return
+     */
+
+    static Integer getJobResultRaw( String correlationId )
+    {
+        return JOB_RESULTS_BY_ID.get( correlationId );
+    }
 
     /**
      * Get the plain text of standard out for a given wres job
@@ -496,7 +519,7 @@ class JobResults
             // Handle missing lines by looking for gaps in incrementing integer.
             if ( indexDiff > 1 )
             {
-                result.add( "***Missing " + indexDiff + " lines ***" );
+                result.add( "*** Missing " + ( indexDiff - 1 ) + " lines ***" );
             }
 
             result.add( stdout.get( index ) );
