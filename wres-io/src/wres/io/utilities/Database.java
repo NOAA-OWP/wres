@@ -898,7 +898,7 @@ public final class Database {
 			if ( results.isBeforeFirst() )
 			{
 				results.next();
-				result = (T) results.getObject(label);
+				result = Database.getValue (results, label);
 			}
 		}
 		catch ( SQLException error )

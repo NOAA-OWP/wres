@@ -26,6 +26,7 @@ import wres.config.generated.ProjectConfig;
 import wres.io.concurrency.Executor;
 import wres.io.config.ConfigHelper;
 import wres.io.data.caching.Projects;
+import wres.io.data.caching.UnitConversions;
 import wres.io.data.details.FeatureDetails;
 import wres.io.data.details.ProjectDetails;
 import wres.io.reading.IngestException;
@@ -44,6 +45,22 @@ public final class Operations {
 
     private Operations ()
     {
+    }
+
+    public static void prepareForExecution( ProjectDetails projectDetails ) throws IOException
+    {
+        LOGGER.info("Loading preliminary metadata...");
+        UnitConversions.initialize();
+
+        try
+        {
+            projectDetails.prepareForExecution();
+        }
+        catch (SQLException exception)
+        {
+            throw new IOException("This project could not be prepared for "
+                                  + "execution.", exception);
+        }
     }
 
     /**
