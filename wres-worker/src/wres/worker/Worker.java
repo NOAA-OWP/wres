@@ -8,15 +8,12 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.Channel;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import wres.messages.generated.JobResult;
 
 /**
  * A long-running, light-weight process that takes a job from a queue, and runs
@@ -83,16 +80,19 @@ public class Worker
                                                     wresExecutable,
                                                     processToLaunch );
 
+            receiveChannel.basicConsume( RECV_QUEUE_NAME, false, receiver );
+
             while ( true )
             {
                 LOGGER.info( "Waiting for work..." );
-                receiveChannel.basicConsume( RECV_QUEUE_NAME, true, receiver );
                 WresProcess wresProcess = processToLaunch.poll( 2, TimeUnit.SECONDS );
 
                 if ( wresProcess != null )
                 {
                     // Launch WRES if the consumer found a message saying so.
                     wresProcess.call();
+                    // Tell broker it is OK to get more messages by acknowledging
+                    receiveChannel.basicAck( wresProcess.getDeliveryTag(), false );
                 }
             }
         }
