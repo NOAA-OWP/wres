@@ -89,7 +89,7 @@ class FeatureReport implements Consumer<FeatureProcessingResult>
         this.printDetailedReport = printDetailedReport;
         this.successfulFeatures = new ConcurrentLinkedQueue<>();
         this.missingDataFeatures = new ConcurrentLinkedQueue<>();
-        this.processed = new AtomicInteger();
+        this.processed = new AtomicInteger( 1 );
     }
 
     /**
@@ -103,24 +103,30 @@ class FeatureReport implements Consumer<FeatureProcessingResult>
     {
         Objects.requireNonNull( result, "cannot accept a null feature processing result." );
 
+        // Increment the feature count
+        int currentFeature = this.processed.getAndIncrement();
+        
+        // Data available
         if ( result.hadData() )
         {
             this.successfulFeatures.add( result.getFeature() );
-            this.processed.getAndIncrement();
             if ( LOGGER.isInfoEnabled() )
             {
                 LOGGER.info( "[{}/{}] Completed feature '{}'",
-                             this.processed.get(),
+                             currentFeature,
                              this.totalFeatures,
                              ConfigHelper.getFeatureDescription( result.getFeature() ) );
             }
         }
+        // No data available
         else
         {
             this.missingDataFeatures.add( result.getFeature() );
             if ( LOGGER.isWarnEnabled() )
             {
-                LOGGER.warn( "Not enough data found for feature {}:",
+                LOGGER.warn( "[{}/{}] Not enough data found for feature '{}':",
+                             currentFeature,
+                             this.totalFeatures,
                              ConfigHelper.getFeatureDescription( result.getFeature() ),
                              result.getCause() );
             }
