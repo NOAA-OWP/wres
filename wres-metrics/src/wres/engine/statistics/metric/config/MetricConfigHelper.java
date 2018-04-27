@@ -31,8 +31,8 @@ import wres.datamodel.MetricConstants.MetricInputGroup;
 import wres.datamodel.MetricConstants.MetricOutputGroup;
 import wres.datamodel.thresholds.Threshold;
 import wres.datamodel.thresholds.ThresholdConstants;
-import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.datamodel.thresholds.ThresholdConstants.Operator;
+import wres.datamodel.thresholds.ThresholdsByMetric;
 import wres.datamodel.thresholds.ThresholdsByMetric.ThresholdsByMetricBuilder;
 
 /**
@@ -240,29 +240,33 @@ public final class MetricConfigHelper
 
     /**
      * Returns true if the specified project configuration contains a metric of the specified type for which summary
-     * statistics are defined, false otherwise.
+     * statistics are defined, false otherwise. The predicate must test for a named metric, not 
+     * {@link TimeSeriesMetricConfigName#ALL_VALID}. 
      * 
      * @param config the project configuration
      * @param metric the predicate to find a metric whose summary statistics are required
      * @return true if the configuration contains the specified type of metric, false otherwise
      * @throws MetricConfigException if the configuration is invalid
+     * @throws IllegalArgumentException if the predicate tests for {@link TimeSeriesMetricConfigName#ALL_VALID}
      */
 
     public static boolean hasSummaryStatisticsFor( ProjectConfig config, Predicate<TimeSeriesMetricConfigName> metric )
             throws MetricConfigException
     {
-        return ! MetricConfigHelper.getSummaryStatisticsFor( config, metric ).isEmpty();
+        return !MetricConfigHelper.getSummaryStatisticsFor( config, metric ).isEmpty();
     }
 
     /**
-     * Returns a list of summary statistics associated with the named metric. The input name cannot be 
-     * {@link TimeSeriesMetricConfigName#ALL_VALID}, but will match the input against configuration that says
-     * {@link TimeSeriesMetricConfigName#ALL_VALID}.
+     * Returns a list of summary statistics associated with the predicate for a named metric. The predicate must test 
+     * for a named metric, not {@link TimeSeriesMetricConfigName#ALL_VALID}. However, configuration that contains
+     * {@link TimeSeriesMetricConfigName#ALL_VALID} will be tested separately and an appropriate list of summary 
+     * statistics returned for that configuration.
      * 
      * @param config the project configuration
      * @param metric the predicate to find a metric whose summary statistics are required
      * @return the summary statistics associated with the named metric
      * @throws MetricConfigException if the project contains an unmapped summary statistic
+     * @throws IllegalArgumentException if the predicate tests for {@link TimeSeriesMetricConfigName#ALL_VALID}
      */
 
     public static Set<MetricConstants> getSummaryStatisticsFor( ProjectConfig config,
@@ -614,7 +618,7 @@ public final class MetricConfigHelper
         {
             // Thresholds
             Set<Threshold> thresholds =
-                    MetricConfigHelper.getThresholdsFromThresholdsConfig( nextThresholds, units, dataFactory );
+                    MetricConfigHelper.getInternalThresholdsFromThresholdsConfig( nextThresholds, units, dataFactory );
 
             // Build the thresholds map per metric
             Map<MetricConstants, Set<Threshold>> thresholdsMap = new EnumMap<>( MetricConstants.class );
@@ -642,21 +646,21 @@ public final class MetricConfigHelper
     }
 
     /**
-     * Transforms a {@link ThresholdsConfig} to a set of {@link Threshold}.
+     * Obtains a set of {@link Threshold} from a {@link ThresholdsConfig} for thresholds that are configured internally
+     * and not sourced externally. In other words, {@link ThresholdsConfig#getCommaSeparatedValuesOrSource()} must 
+     * return a string of thresholds and not a {@link ThresholdsConfig.Source}.
      * 
      * @param thresholds the thresholds configuration
      * @param units optional units for non-probability thresholds
      * @param dataFactory the data factory with which to build thresholds
-     * @param types an optional list of threshold types to read
      * @return a set of thresholds (possibly empty)
      * @throws MetricConfigException if the metric configuration is invalid
      * @throws NullPointerException if either input is null
      */
 
-    private static Set<Threshold> getThresholdsFromThresholdsConfig( ThresholdsConfig thresholds,
-                                                                     Dimension units,
-                                                                     DataFactory dataFactory,
-                                                                     ThresholdType... types )
+    private static Set<Threshold> getInternalThresholdsFromThresholdsConfig( ThresholdsConfig thresholds,
+                                                                             Dimension units,
+                                                                             DataFactory dataFactory )
             throws MetricConfigException
     {
         Objects.requireNonNull( thresholds, NULL_CONFIGURATION_ERROR );
@@ -691,10 +695,8 @@ public final class MetricConfigHelper
             type = thresholds.getType();
         }
 
-        // String = internal sourced
-        if ( values instanceof String
-             && ( types.length == 0
-                  || Arrays.asList( types ).contains( type ) ) )
+        // String = internal source
+        if ( values instanceof String )
         {
             returnMe.addAll( MetricConfigHelper.getThresholdsFromCommaSeparatedValues( dataFactory,
                                                                                        values.toString(),
