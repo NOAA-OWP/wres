@@ -441,6 +441,7 @@ project(':wres-worker')
     apply plugin: 'application'
 
     mainClassName = 'wres.worker.Worker'
+    applicationDefaultJvmArgs = ['-Xms32m','-Xmx32m']
 }
 
 project(':wres-tasker')
@@ -476,6 +477,7 @@ project(':wres-tasker')
     apply plugin: 'application'
 
     mainClassName = 'wres.tasker.Tasker'
+    applicationDefaultJvmArgs = ['-Xms160m','-Xmx160m']
 
     // Add static html files to the classpath when running via script
     startScripts
