@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.BlockingQueue;
 
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
@@ -24,20 +25,22 @@ class JobReceiver extends DefaultConsumer
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( JobReceiver.class );
 
-    private static final int META_FAILURE_CODE = 600;
-
     private final File wresExecutable;
+    private final BlockingQueue<WresProcess> processToLaunch;
 
 
     /**
      * Constructs a new instance and records its association to the passed-in channel.
      * @param channel the channel to which this consumer is attached
      * @param wresExecutable the wresExecutable to use for launching WRES
+     * @param processToLaunch a Q to send data back to the main thread with
      */
-    JobReceiver( Channel channel, File wresExecutable )
+
+    JobReceiver( Channel channel, File wresExecutable, BlockingQueue<WresProcess> processToLaunch )
     {
         super( channel );
         this.wresExecutable = wresExecutable;
+        this.processToLaunch = processToLaunch;
     }
 
     private File getWresExecutable()
@@ -45,8 +48,15 @@ class JobReceiver extends DefaultConsumer
         return this.wresExecutable;
     }
 
+    private BlockingQueue<WresProcess> getProcessToLaunch()
+    {
+        return this.processToLaunch;
+    }
+
     /**
-     * This is the entry point that will accept a message and create a process.
+     * This is the entry point that will accept a message and create a
+     * WresProcess that the main thread or another thread can run, sharing it
+     * with the creator of this JobReceiver via a blocking q.
      * @param consumerTag boilerplate
      * @param envelope boilerplate
      * @param properties boilerplate
@@ -64,66 +74,11 @@ class JobReceiver extends DefaultConsumer
 
         // Translate the message into a command
         ProcessBuilder processBuilder = createBuilderFromMessage( message );
-
-        // Check to see if there is any command at all.
-        if ( processBuilder == null )
-        {
-            UnsupportedOperationException problem = new UnsupportedOperationException( "Could not execute due to invalid message." );
-            LOGGER.warn( "", problem );
-            byte[] response = JobReceiver.prepareMetaFailureResponse( new UnsupportedOperationException( problem ) );
-            this.sendResponse( properties, response );
-            return;
-        }
-
-        // Set up way to publish the standard output of the process to broker
-        OutputMessenger stdoutMessenger =
-                new OutputMessenger( this.getChannel().getConnection(),
-                                     properties.getReplyTo(),
-                                     properties.getCorrelationId(),
-                                     OutputMessenger.WhichOutput.STDOUT );
-        OutputMessenger stderrMessenger =
-                new OutputMessenger( this.getChannel().getConnection(),
-                                     properties.getReplyTo(),
-                                     properties.getCorrelationId(),
-                                     OutputMessenger.WhichOutput.STDERR );
-
-        // Do the execution requested from the queue
-        Process process;
-
-        try
-        {
-            process = processBuilder.start();
-
-            // Bind process outputs to message publishers
-            stderrMessenger.accept( process.getErrorStream() );
-            stdoutMessenger.accept( process.getInputStream() );
-        }
-        catch ( IOException ioe )
-        {
-            LOGGER.warn( "Failed to launch process from {}.", processBuilder, ioe );
-            byte[] response = JobReceiver.prepareMetaFailureResponse( ioe );
-            this.sendResponse( properties, response );
-            return;
-        }
-
-        LOGGER.info( "Started subprocess {}", process );
-
-        try
-        {
-            process.waitFor();
-            int exitValue = process.exitValue();
-            LOGGER.info( "Subprocess {} exited {}", process, exitValue );
-            byte[] response;
-            response = JobReceiver.prepareResponse( exitValue );
-            this.sendResponse( properties, response );
-        }
-        catch ( InterruptedException ie )
-        {
-            LOGGER.warn( "Interrupted while waiting for {}.", process );
-            byte[] response = JobReceiver.prepareMetaFailureResponse( ie );
-            this.sendResponse( properties, response );
-            Thread.currentThread().interrupt();
-        }
+        WresProcess wresProcess = new WresProcess( processBuilder,
+                                                   properties.getReplyTo(),
+                                                   properties.getCorrelationId(),
+                                                   this.getChannel().getConnection() );
+        this.getProcessToLaunch().offer( wresProcess );
     }
 
 
@@ -195,67 +150,4 @@ class JobReceiver extends DefaultConsumer
     }
 
 
-    /**
-     * Helper to prepare a completed job response
-     * @param exitCode the actual exitCode of the wres process
-     * @return raw message indicating job exit code
-     */
-    private static byte[] prepareResponse( int exitCode )
-    {
-        JobResult.job_result jobResult = JobResult.job_result
-                                                  .newBuilder()
-                                                  .setResult( exitCode )
-                                                  .build();
-        return jobResult.toByteArray();
-    }
-
-
-    /**
-     * Helper to prepare a job that failed due to never getting the job to run
-     * @param e the exception that occurred or null if none
-     * @return raw message indicating meta failure
-     */
-
-    private static byte[] prepareMetaFailureResponse( Exception e )
-    {
-        JobResult.job_result jobResult = JobResult.job_result
-                                                  .newBuilder()
-                                                  .setResult( META_FAILURE_CODE )
-                                                  .build();
-        return jobResult.toByteArray();
-    }
-
-    /**
-     * Attempts to send a message with job results to the queue specified in job
-     * @param jobProperties the properties of the job message, has queue and id
-     * @param message the message to send.
-     */
-    private void sendResponse( AMQP.BasicProperties jobProperties, byte[] message )
-    {
-        AMQP.BasicProperties resultProperties =
-                new AMQP.BasicProperties
-                        .Builder()
-                        .correlationId( jobProperties.getCorrelationId() )
-                        .build();
-
-        try
-        {
-            String exchangeName = jobProperties.getReplyTo();
-            String exchangeType = "topic";
-            String routingKey = "job." + jobProperties.getCorrelationId() + ".exitCode";
-
-            this.getChannel().exchangeDeclare( exchangeName, exchangeType );
-
-            this.getChannel().basicPublish( exchangeName,
-                                            routingKey,
-                                            resultProperties,
-                                            message );
-            LOGGER.info( "Seems like I published to exchange {}, key {}",
-                         exchangeName, routingKey );
-        }
-        catch ( IOException ioe )
-        {
-            LOGGER.warn( "Sending this message failed: {}", message, ioe );
-        }
-    }
 }

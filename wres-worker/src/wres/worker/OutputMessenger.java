@@ -6,7 +6,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
@@ -14,7 +13,7 @@ import com.rabbitmq.client.Connection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class OutputMessenger implements Consumer<InputStream>
+public class OutputMessenger implements Runnable
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( OutputMessenger.class );
 
@@ -31,18 +30,22 @@ public class OutputMessenger implements Consumer<InputStream>
     private final String exchangeName;
     private final String jobId;
     private final WhichOutput whichOutput;
+    private final InputStream stream;
+
     /** Helps the consumer re-order the stream */
     private final AtomicInteger order = new AtomicInteger( 0 );
 
     OutputMessenger( Connection connection,
                      String exchangeName,
                      String jobId,
-                     WhichOutput whichOutput )
+                     WhichOutput whichOutput,
+                     InputStream stream )
     {
         this.connection = connection;
         this.exchangeName = exchangeName;
         this.jobId = jobId;
         this.whichOutput = whichOutput;
+        this.stream = stream;
     }
 
     private Connection getConnection()
@@ -65,6 +68,11 @@ public class OutputMessenger implements Consumer<InputStream>
         return this.whichOutput;
     }
 
+    private InputStream getStream()
+    {
+        return this.stream;
+    }
+
     private AtomicInteger getOrder()
     {
         return this.order;
@@ -76,8 +84,9 @@ public class OutputMessenger implements Consumer<InputStream>
     }
 
     @Override
-    public void accept( InputStream inputStream )
+    public void run()
     {
+        InputStream inputStream = this.getStream();
         try ( BufferedReader reader = new BufferedReader( new InputStreamReader( inputStream ) );
               Channel channel = this.getConnection().createChannel() )
         {
@@ -97,6 +106,7 @@ public class OutputMessenger implements Consumer<InputStream>
         {
             LOGGER.warn( "Failed to read a line,", ioe );
         }
+        LOGGER.info( "Finished sending {} for job {}", whichOutput, jobId );
     }
 
 
