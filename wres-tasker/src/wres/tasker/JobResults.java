@@ -5,8 +5,6 @@ import java.util.StringJoiner;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ExecutorService;
@@ -15,6 +13,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
@@ -36,18 +36,24 @@ class JobResults
     private static final Logger LOGGER = LoggerFactory.getLogger( JobResults.class );
 
     /** A shared bag of job results by ID */
-    private static final ConcurrentMap<String,Integer> JOB_RESULTS_BY_ID = new ConcurrentHashMap<>();
+    private static final Cache<String,Integer> JOB_RESULTS_BY_ID = Caffeine.newBuilder()
+                                                                           .maximumSize( 10_000 )
+                                                                           .build();
 
     /** A magic value placeholder for job registered-but-not-done */
     private static final Integer JOB_NOT_DONE_YET = Integer.MIN_VALUE + 1;
 
     /** A shared bag of job standard out */
-    private static final ConcurrentMap<String, ConcurrentNavigableMap<Integer,String>> JOB_STDOUT_BY_ID
-            = new ConcurrentHashMap<>();
+    private static final Cache<String, ConcurrentNavigableMap<Integer,String>> JOB_STDOUT_BY_ID
+            = Caffeine.newBuilder()
+                      .maximumSize( 1_000 )
+                      .build();
 
     /** A shared bag of job standard error */
-    private static final ConcurrentMap<String, ConcurrentNavigableMap<Integer,String>> JOB_STDERR_BY_ID
-            = new ConcurrentHashMap<>();
+    private static final Cache<String, ConcurrentNavigableMap<Integer,String>> JOB_STDERR_BY_ID
+            = Caffeine.newBuilder()
+                      .maximumSize( 1_000 )
+                      .build();
 
     /**
      * How many job results to look for at once (should probably be at least as
@@ -431,7 +437,7 @@ class JobResults
                                            String jobId )
             throws IOException, TimeoutException
     {
-        if ( JOB_RESULTS_BY_ID.putIfAbsent( jobId, JOB_NOT_DONE_YET ) != null )
+        if ( JOB_RESULTS_BY_ID.asMap().putIfAbsent( jobId, JOB_NOT_DONE_YET ) != null )
         {
             LOGGER.warn( "jobId {} may have been registered twice",
                          jobId );
@@ -463,7 +469,7 @@ class JobResults
 
     static String getJobResult( String correlationId )
     {
-        Integer result = JOB_RESULTS_BY_ID.get( correlationId );
+        Integer result = JOB_RESULTS_BY_ID.asMap().get( correlationId );
 
         if ( result == null )
         {
@@ -489,7 +495,8 @@ class JobResults
 
     static Integer getJobResultRaw( String correlationId )
     {
-        return JOB_RESULTS_BY_ID.get( correlationId );
+        return JOB_RESULTS_BY_ID.asMap()
+                                .get( correlationId );
     }
 
     /**
@@ -500,7 +507,8 @@ class JobResults
 
     static String getJobStdout( String jobId )
     {
-        ConcurrentNavigableMap<Integer,String> stdout = JOB_STDOUT_BY_ID.get( jobId );
+        ConcurrentNavigableMap<Integer,String> stdout = JOB_STDOUT_BY_ID.asMap()
+                                                                        .get( jobId );
 
         if ( stdout == null )
         {
@@ -538,7 +546,8 @@ class JobResults
 
     static String getJobStderr( String jobId )
     {
-        ConcurrentNavigableMap<Integer,String> stderr = JOB_STDERR_BY_ID.get( jobId );
+        ConcurrentNavigableMap<Integer,String> stderr = JOB_STDERR_BY_ID.asMap()
+                                                                        .get( jobId );
 
         if ( stderr == null )
         {
