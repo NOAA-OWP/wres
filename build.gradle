@@ -464,6 +464,8 @@ project(':wres-tasker')
         // DefaultServlet.class
         compile 'org.glassfish.jersey.containers:jersey-container-servlet-core:2.26'
 
+        compile 'com.github.ben-manes.caffeine:caffeine:2.6.2'
+
         runtime 'ch.qos.logback:logback-classic:1.2.3'
         runtime 'org.glassfish.jersey.core:jersey-server:2.26'
         runtime 'org.glassfish.jersey.containers:jersey-container-jetty-http:2.26'
