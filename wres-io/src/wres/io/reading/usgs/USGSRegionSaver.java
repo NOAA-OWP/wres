@@ -734,6 +734,10 @@ public class USGSRegionSaver extends WRESCallable<IngestResult>
             this.copyScript = new ScriptBuilder(  );
         }
 
+        observationTime = OffsetDateTime.parse( observationTime)
+                                        .withOffsetSameInstant( ZoneOffset.UTC )
+                                        .toString();
+
         this.copyScript.add(this.getVariablePositionID( gageID )).add("|")
                        .add("'" + observationTime + "'").add("|");
 
