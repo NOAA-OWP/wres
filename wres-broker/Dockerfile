@@ -18,15 +18,4 @@ WORKDIR /etc/rabbitmq
 COPY nonsrc/rabbitmq.conf .
 COPY nonsrc/definitions.json .
 
-#WORKDIR /opt/wres-broker/bin
-
-# Create a script that helps read the key from an env var set at runtime
-#COPY nonsrc/wres-broker-setup.sh .
-#RUN chown wres_docker:wres . && chown wres_docker:wres *
-
 USER wres_docker
-
-# NOTE: Must specify a volume at runtime having this key
-#VOLUME /opt/wres-broker/***REMOVED***wres-broker_server_secret_rsa_key.pem
-
-#CMD [ "/bin/sh", "/opt/wres-broker/bin/wres-broker-setup.sh" ]
