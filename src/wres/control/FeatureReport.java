@@ -16,7 +16,7 @@ import wres.config.generated.Feature;
 import wres.io.config.ConfigHelper;
 
 /**
- * <p>A {@link Consumer} that records information about the completion state of {@link Feature}. The 
+ * <p>A {@link Consumer} that records information about the completion state of a {@link Feature}. The 
  * {@link FeatureReport} is mutable and is updated asynchronously as {@link FeatureProcessingResult} become available.
  * Some information is reported during execution, and additional information is reported on request (e.g. at the 
  * end of execution) by calling {@link #report()}.</p>
@@ -34,7 +34,7 @@ class FeatureReport implements Consumer<FeatureProcessingResult>
     private static final Logger LOGGER = LoggerFactory.getLogger( FeatureReport.class );
 
     /**
-     * List of successful features..
+     * List of successful features.
      */
 
     private final ConcurrentLinkedQueue<Feature> successfulFeatures;
@@ -46,7 +46,7 @@ class FeatureReport implements Consumer<FeatureProcessingResult>
     private final ConcurrentLinkedQueue<Feature> missingDataFeatures;
 
     /**
-     * The total number of features to process (provided in construction).
+     * The total number of features to process.
      */
 
     private final int totalFeatures;
@@ -58,7 +58,7 @@ class FeatureReport implements Consumer<FeatureProcessingResult>
     private final ProjectConfigPlus projectConfigPlus;
 
     /**
-     * Running total of features.
+     * The number of features processed so far.
      */
 
     private AtomicInteger processed;

@@ -1,12 +1,16 @@
 package wres.engine.statistics.metric.discreteprobability;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
@@ -26,20 +30,42 @@ import wres.engine.statistics.metric.discreteprobability.RelativeOperatingCharac
  * Tests the {@link RelativeOperatingCharacteristicScore}.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 public final class RelativeOperatingCharacteristicScoreTest
 {
 
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
+
     /**
-     * Constructs a {@link RelativeOperatingCharacteristicScore} and compares the actual result to the expected result
-     * for the model with ties from Mason and Graham (2002).
-     * @throws MetricParameterException if the metric could not be constructed
+     * Default instance of a {@link RelativeOperatingCharacteristicScore}.
+     */
+
+    private RelativeOperatingCharacteristicScore rocScore;
+
+    /**
+     * Instance of a data factory.
+     */
+
+    private DataFactory outF;
+
+    @Before
+    public void setupBeforeEachTest() throws MetricParameterException
+    {
+        RelativeOperatingCharacteristicScoreBuilder b =
+                new RelativeOperatingCharacteristicScore.RelativeOperatingCharacteristicScoreBuilder();
+        this.outF = DefaultDataFactory.getInstance();
+        b.setOutputFactory( outF );
+        this.rocScore = b.build();
+    }
+
+    /**
+     * Compares the output from {@link RelativeOperatingCharacteristicScore#apply(DiscreteProbabilityPairs)} against 
+     * expected output for a dataset with ties from Mason and Graham (2002).
      */
 
     @Test
-    public void test1RelativeOperatingCharacteristicScoreWithTies() throws MetricParameterException
+    public void testApplyWithTies()
     {
         //Generate some data
         final DataFactory outF = DefaultDataFactory.getInstance();
@@ -63,12 +89,6 @@ public final class RelativeOperatingCharacteristicScoreTest
 
         final DiscreteProbabilityPairs input = outF.ofDiscreteProbabilityPairs( values, metaFac.getMetadata() );
 
-        //Build the metric
-        final RelativeOperatingCharacteristicScoreBuilder b = new RelativeOperatingCharacteristicScoreBuilder();
-        b.setOutputFactory( outF );
-
-        final RelativeOperatingCharacteristicScore rocs = b.build();
-
         //Metadata for the output
         final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getRawData().size(),
                                                                    metaFac.getDimension(),
@@ -77,33 +97,22 @@ public final class RelativeOperatingCharacteristicScoreTest
                                                                    MetricConstants.MAIN );
 
         //Check the results       
-        final DoubleScoreOutput actual = rocs.apply( input );
+        final DoubleScoreOutput actual = rocScore.apply( input );
         final DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 0.6785714285714286, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
                     + ".",
                     actual.equals( expected ) );
-        //Check the parameters
-        assertTrue( "Unexpected name for the ROC Score.",
-                    rocs.getName()
-                        .equals( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE.toString() ) );
-        assertTrue( "The ROC Score is not decomposable.", !rocs.isDecomposable() );
-        assertTrue( "The ROC Score is a skill score.", rocs.isSkillScore() );
-        assertTrue( "Expected no decomposition for the ROC Score.",
-                    rocs.getScoreOutputGroup() == ScoreOutputGroup.NONE );
-        assertTrue( "The ROC Score is not proper.", !rocs.isProper() );
-        assertTrue( "The ROC Score is not strictly proper.", !rocs.isStrictlyProper() );
     }
 
     /**
-     * Constructs a {@link RelativeOperatingCharacteristicScore} and compares the actual result to the expected result
-     * for the model with ties from Mason and Graham (2002).
-     * @throws MetricParameterException if the metric could not be constructed 
+     * Compares the output from {@link RelativeOperatingCharacteristicScore#apply(DiscreteProbabilityPairs)} against 
+     * expected output for a dataset without ties.
      */
 
     @Test
-    public void test2RelativeOperatingCharacteristicScoreWithoutTies() throws MetricParameterException
+    public void testApplyWithoutTies()
     {
         //Generate some data
         final DataFactory outF = DefaultDataFactory.getInstance();
@@ -125,33 +134,28 @@ public final class RelativeOperatingCharacteristicScoreTest
         values.add( outF.pairOf( 1, 0.984 ) );
         values.add( outF.pairOf( 1, 0.952 ) );
         Metadata meta = metaFac.getMetadata();
-        final DiscreteProbabilityPairs input = outF.ofDiscreteProbabilityPairs( values, meta );
-
-        //Build the metric
-        final RelativeOperatingCharacteristicScoreBuilder b = new RelativeOperatingCharacteristicScoreBuilder();
-        b.setOutputFactory( outF );
-
-        final RelativeOperatingCharacteristicScore rocs = b.build();
+        DiscreteProbabilityPairs input = outF.ofDiscreteProbabilityPairs( values, meta );
 
         //Metadata for the output
-        final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getRawData().size(),
-                                                                   metaFac.getDimension(),
-                                                                   metaFac.getDimension(),
-                                                                   MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE,
-                                                                   MetricConstants.MAIN );
+        MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getRawData().size(),
+                                                             metaFac.getDimension(),
+                                                             metaFac.getDimension(),
+                                                             MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE,
+                                                             MetricConstants.MAIN );
 
         //Check the results       
-        final DoubleScoreOutput actual = rocs.apply( input );
-        final DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 0.75, m1 );
+        DoubleScoreOutput actual = rocScore.apply( input );
+        DoubleScoreOutput expected = outF.ofDoubleScoreOutput( 0.75, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
                     + ".",
                     actual.equals( expected ) );
+
         //Check against a baseline
-        final DiscreteProbabilityPairs inputBase = outF.ofDiscreteProbabilityPairs( values, values, meta, meta );
-        final DoubleScoreOutput actualBase = rocs.apply( inputBase );
-        final DoubleScoreOutput expectedBase = outF.ofDoubleScoreOutput( 0.0, m1 );
+        DiscreteProbabilityPairs inputBase = outF.ofDiscreteProbabilityPairs( values, values, meta, meta );
+        DoubleScoreOutput actualBase = rocScore.apply( inputBase );
+        DoubleScoreOutput expectedBase = outF.ofDoubleScoreOutput( 0.0, m1 );
         assertTrue( "Actual: " + actualBase.getData()
                     + ". Expected: "
                     + expectedBase.getData()
@@ -160,13 +164,12 @@ public final class RelativeOperatingCharacteristicScoreTest
     }
 
     /**
-     * Constructs a {@link RelativeOperatingCharacteristicScore} and compares the actual result to the expected result
-     * for an example dataset with no occurrences.
-     * @throws MetricParameterException if the metric could not be constructed 
+     * Compares the output from {@link RelativeOperatingCharacteristicScore#apply(DiscreteProbabilityPairs)} against 
+     * expected output for a dataset with no occurrences.
      */
 
     @Test
-    public void test3RelativeOperatingCharacteristicScoreNoOccurrences() throws MetricParameterException
+    public void testApplyWithNoOccurrences() throws MetricParameterException
     {
         //Generate some data
         final DataFactory outF = DefaultDataFactory.getInstance();
@@ -188,13 +191,8 @@ public final class RelativeOperatingCharacteristicScoreTest
         values.add( outF.pairOf( 0, 0.984 ) );
         values.add( outF.pairOf( 0, 0.952 ) );
         Metadata meta = metaFac.getMetadata();
-        final DiscreteProbabilityPairs input = outF.ofDiscreteProbabilityPairs( values, meta );
 
-        //Build the metric
-        final RelativeOperatingCharacteristicScoreBuilder b = new RelativeOperatingCharacteristicScoreBuilder();
-        b.setOutputFactory( outF );
-
-        final RelativeOperatingCharacteristicScore rocs = b.build();
+        DiscreteProbabilityPairs input = outF.ofDiscreteProbabilityPairs( values, meta );
 
         //Metadata for the output
         final MetricOutputMetadata m1 = metaFac.getOutputMetadata( input.getRawData().size(),
@@ -204,8 +202,8 @@ public final class RelativeOperatingCharacteristicScoreTest
                                                                    MetricConstants.MAIN );
 
         //Check the results       
-        final DoubleScoreOutput actual = rocs.apply( input );
-        final DoubleScoreOutput expected = outF.ofDoubleScoreOutput( Double.NaN, m1 );
+        DoubleScoreOutput actual = rocScore.apply( input );
+        DoubleScoreOutput expected = outF.ofDoubleScoreOutput( Double.NaN, m1 );
         assertTrue( "Actual: " + actual.getData()
                     + ". Expected: "
                     + expected.getData()
@@ -214,31 +212,96 @@ public final class RelativeOperatingCharacteristicScoreTest
     }
 
     /**
-     * Constructs a {@link RelativeOperatingCharacteristicScore} and checks for exceptional cases.
-     * @throws MetricParameterException if the metric could not be constructed
+     * Validates the output from {@link RelativeOperatingCharacteristicScore#apply(DiscreteProbabilityPairs)} when 
+     * supplied with no data.
      */
 
     @Test
-    public void test4Exceptions() throws MetricParameterException
+    public void testApplyWithNoData()
     {
-        //Obtain the factories
-        final DataFactory outF = DefaultDataFactory.getInstance();
+        // Generate empty data
+        DiscreteProbabilityPairs input =
+                outF.ofDiscreteProbabilityPairs( Arrays.asList(), outF.getMetadataFactory().getMetadata() );
 
-        //Build the metric
-        final RelativeOperatingCharacteristicScoreBuilder b = new RelativeOperatingCharacteristicScoreBuilder();
-        b.setOutputFactory( outF );
+        DoubleScoreOutput actual = rocScore.apply( input );
 
-        final RelativeOperatingCharacteristicScore rocs = b.build();
+        assertTrue( actual.getData().isNaN() );
+    }
 
-        //Check exceptions
-        try
-        {
-            rocs.apply( null );
-            fail( "Expected an exception on null input." );
-        }
-        catch ( MetricInputException e )
-        {
-        }
+    /**
+     * Checks that the {@link RelativeOperatingCharacteristicScore#getName()} returns 
+     * {@link MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE.toString()}
+     */
+
+    @Test
+    public void testGetName()
+    {
+        assertTrue( rocScore.getName().equals( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE.toString() ) );
+    }
+
+    /**
+     * Checks that the {@link BrierScore#isDecomposable()} returns <code>true</code>.
+     */
+
+    @Test
+    public void testIsDecomposable()
+    {
+        assertFalse( rocScore.isDecomposable() );
+    }
+
+    /**
+     * Checks that the {@link RelativeOperatingCharacteristicScore#isSkillScore()} returns <code>false</code>.
+     */
+
+    @Test
+    public void testIsSkillScore()
+    {
+        assertTrue( rocScore.isSkillScore() );
+    }
+
+    /**
+     * Checks that the {@link RelativeOperatingCharacteristicScore#getScoreOutputGroup()} returns the result provided 
+     * on construction.
+     */
+
+    @Test
+    public void testGetScoreOutputGroup()
+    {
+        assertTrue( rocScore.getScoreOutputGroup() == ScoreOutputGroup.NONE );
+    }
+
+    /**
+     * Checks that the {@link RelativeOperatingCharacteristicScore#isProper()} returns <code>true</code>.
+     */
+
+    @Test
+    public void testIsProper()
+    {
+        assertFalse( rocScore.isProper() );
+    }
+
+    /**
+     * Checks that the {@link RelativeOperatingCharacteristicScore#isStrictlyProper()} returns <code>true</code>.
+     */
+
+    @Test
+    public void testIsStrictlyProper()
+    {
+        assertFalse( rocScore.isStrictlyProper() );
+    }
+
+    /**
+     * Tests for an expected exception on calling 
+     * {@link RelativeOperatingCharacteristicScore#apply(DiscreteProbabilityPairs)} with null input.
+     */
+
+    @Test
+    public void testApplyExceptionOnNullInput()
+    {
+        exception.expect( MetricInputException.class );
+        exception.expectMessage( "Specify non-null input to the 'RELATIVE OPERATING CHARACTERISTIC SCORE'." );
+
+        rocScore.apply( null );
     }
 
 }

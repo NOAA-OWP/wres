@@ -10,7 +10,7 @@ import java.util.List;
 import org.junit.Test;
 
 import wres.datamodel.SafeSingleValuedPairs.SingleValuedPairsBuilder;
-import wres.datamodel.inputs.InsufficientDataException;
+import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
 import wres.datamodel.metadata.Metadata;
@@ -82,7 +82,7 @@ public final class SafeSingleValuedPairsTest
             c.addData( values ).setMetadata( meta ).setClimatology( climatology ).build();
             fail( "Expected a checked exception on invalid inputs: all climatology data missing." );
         }
-        catch ( final InsufficientDataException e )
+        catch ( final MetricInputException e )
         {
         }
 

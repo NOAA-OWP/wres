@@ -188,7 +188,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
         catch ( IterationFailedException re )
         {
             // If there was not enough data for this feature, OK
-            if ( ProcessorHelper.wasInsufficientDataOrNoDataInThisStack( re ) )
+            if ( ProcessorHelper.wasNoDataExceptionInThisStack( re ) )
             {
                 return new FeatureProcessingResult( this.feature.getFeature(),
                                                     false,
@@ -214,7 +214,7 @@ class FeatureProcessor implements Supplier<FeatureProcessingResult>
         catch ( CompletionException e )
         {
             // If there was simply not enough data for this feature, OK
-            if ( ProcessorHelper.wasInsufficientDataOrNoDataInThisStack( e ) )
+            if ( ProcessorHelper.wasNoDataExceptionInThisStack( e ) )
             {
                 return new FeatureProcessingResult( this.feature.getFeature(),
                                                     false,

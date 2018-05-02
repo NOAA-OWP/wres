@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.StringJoiner;
 
-import wres.datamodel.inputs.InsufficientDataException;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.EnsemblePairs;
 import wres.datamodel.inputs.pairs.PairOfDoubleAndVectorOfDoubles;
@@ -17,8 +16,6 @@ import wres.datamodel.metadata.Metadata;
  * Immutable implementation of a store of verification pairs that comprise a single value and an ensemble of values.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 class SafeEnsemblePairs implements EnsemblePairs
 {
@@ -175,7 +172,6 @@ class SafeEnsemblePairs implements EnsemblePairs
      * 
      * @param b the builder
      * @throws MetricInputException if the pairs are invalid
-     * @throws InsufficientDataException if the climatological data is both non-null and without finite values
      */
 
     SafeEnsemblePairs( final EnsemblePairsBuilder b )
@@ -256,7 +252,6 @@ class SafeEnsemblePairs implements EnsemblePairs
      * Validates the climatological input after the constructor has copied it.
      * 
      * @throws MetricInputException if the climatological input is invalid
-     * @throws InsufficientDataException if all climatological inputs are non-finite
      */
 
     private void validateClimatologicalInput()
@@ -271,7 +266,7 @@ class SafeEnsemblePairs implements EnsemblePairs
 
             if ( !Arrays.stream( climatology.getDoubles() ).anyMatch( Double::isFinite ) )
             {
-                throw new InsufficientDataException( "Must have at least one non-missing value in the climatological "
+                throw new MetricInputException( "Must have at least one non-missing value in the climatological "
                                                      + "input" );
             }
         }

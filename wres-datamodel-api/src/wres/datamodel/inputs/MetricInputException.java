@@ -6,8 +6,6 @@ import wres.datamodel.DataException;
  * A runtime exception associated with an incorrect {@link MetricInput}.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 
 public class MetricInputException extends DataException
