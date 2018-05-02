@@ -24,12 +24,19 @@ plugins
     //id 'com.github.jacobono.jaxb' version '1.3.5'
     // above is unmaintained, less gradle-y, below fork has several improvements
     id 'org.openrepose.gradle.plugins.jaxb' version '2.4.1'
+
     // for ability to use git ids for versioning jar files:
     id 'org.ajoberstar.grgit' version '1.7.2'
+
     // To compile user documentation (not working: blows up on compileMarkdown)
     //id 'org.uulib.gradle.markdown' version '0.0.1'
+
     // To generate de/serialization classes for message bodies
     id 'com.google.protobuf' version '0.8.5'
+
+    // To create trusted certificate files (.jks aka cacerts) from dir of .pem
+    // (Not working: not friendly to our directory structure nor submodules)
+    //id 'de.chkpnt.truststorebuilder' version '0.2.57'
 }
 
 repositories
