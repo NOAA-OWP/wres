@@ -1,12 +1,15 @@
 package wres.engine.statistics.metric.discreteprobability;
 
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import wres.datamodel.DataFactory;
 import wres.datamodel.DefaultDataFactory;
@@ -19,38 +22,52 @@ import wres.datamodel.metadata.MetricOutputMetadata;
 import wres.datamodel.outputs.MultiVectorOutput;
 import wres.engine.statistics.metric.MetricParameterException;
 import wres.engine.statistics.metric.MetricTestDataFactory;
-import wres.engine.statistics.metric.discreteprobability.ReliabilityDiagram;
 import wres.engine.statistics.metric.discreteprobability.ReliabilityDiagram.ReliabilityDiagramBuilder;
 
 /**
  * Tests the {@link ReliabilityDiagram}.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 public final class ReliabilityDiagramTest
 {
 
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
+
     /**
-     * Constructs a {@link ReliabilityDiagram} and compares the actual result to the expected result. Also, checks the
-     * parameters of the metric. Uses the data from {@link MetricTestDataFactory#getDiscreteProbabilityPairsThree()}.
-     * @throws MetricParameterException if the metric could not be constructed 
+     * Default instance of a {@link ReliabilityDiagram}.
+     */
+
+    private ReliabilityDiagram rel;
+
+    /**
+     * Instance of a data factory.
+     */
+
+    private DataFactory outF;
+
+    @Before
+    public void setupBeforeEachTest() throws MetricParameterException
+    {
+        ReliabilityDiagramBuilder b = new ReliabilityDiagramBuilder();
+        this.outF = DefaultDataFactory.getInstance();
+        b.setOutputFactory( outF );
+        this.rel = b.build();
+    }
+
+    /**
+     * Compares the output from {@link ReliabilityDiagram#apply(DiscreteProbabilityPairs)} against 
+     * expected output.
      */
 
     @Test
-    public void test1ReliabilityDiagram() throws MetricParameterException
+    public void testApply() throws MetricParameterException
     {
         //Generate some data
-        final DiscreteProbabilityPairs input = MetricTestDataFactory.getDiscreteProbabilityPairsThree();
+        DiscreteProbabilityPairs input = MetricTestDataFactory.getDiscreteProbabilityPairsThree();
 
-        //Build the metric
-        final ReliabilityDiagramBuilder b = new ReliabilityDiagram.ReliabilityDiagramBuilder();
-        final DataFactory outF = DefaultDataFactory.getInstance();
-        final MetadataFactory metaFac = outF.getMetadataFactory();
-        b.setOutputFactory( outF );
-
-        final ReliabilityDiagram rel = b.build();
+        MetadataFactory metaFac = outF.getMetadataFactory();
 
         //Metadata for the output
         final MetricOutputMetadata m1 =
@@ -79,36 +96,67 @@ public final class ReliabilityDiagramTest
         output.put( MetricDimension.SAMPLE_SIZE, expectedSample );
 
         final MultiVectorOutput expected = outF.ofMultiVectorOutput( output, m1 );
+
         assertTrue( "Difference between actual and expected Reliability Diagram.", actual.equals( expected ) );
-        //Check the parameters
-        assertTrue( "Unexpected name for the Reliability Diagram.",
-                    rel.getName().equals( MetricConstants.RELIABILITY_DIAGRAM.toString() ) );
     }
 
     /**
-     * Constructs a {@link ReliabilityDiagram} and checks for exceptional cases.
-     * @throws MetricParameterException if the metric could not be constructed 
+     * Validates the output from {@link ReliabilityDiagram#apply(DiscreteProbabilityPairs)} when supplied with no data.
      */
 
     @Test
-    public void test2Exceptions() throws MetricParameterException
+    public void testApplyWithNoData()
     {
-        //Build the metric
-        final ReliabilityDiagramBuilder b = new ReliabilityDiagram.ReliabilityDiagramBuilder();
-        final DataFactory outF = DefaultDataFactory.getInstance();
-        b.setOutputFactory( outF );
+        // Generate empty data
+        DiscreteProbabilityPairs input =
+                outF.ofDiscreteProbabilityPairs( Arrays.asList(), outF.getMetadataFactory().getMetadata() );
 
-        final ReliabilityDiagram rel = b.build();
+        MultiVectorOutput actual = rel.apply( input );
 
-        //Check exceptions
-        try
-        {
-            rel.apply( null );
-            fail( "Expected an exception on null input." );
-        }
-        catch ( MetricInputException e )
-        {
-        }
+        double[] source = new double[10];
+        double[] sourceSample = new double[10];
+
+        Arrays.fill( source, Double.NaN );
+
+        assertTrue( Arrays.equals( actual.getData()
+                                         .get( MetricDimension.FORECAST_PROBABILITY )
+                                         .getDoubles(),
+                                   source ) );
+
+        assertTrue( Arrays.equals( actual.getData()
+                                         .get( MetricDimension.OBSERVED_RELATIVE_FREQUENCY )
+                                         .getDoubles(),
+                                   source ) );
+
+        assertTrue( Arrays.equals( actual.getData()
+                                         .get( MetricDimension.SAMPLE_SIZE )
+                                         .getDoubles(),
+                                   sourceSample ) );
+    }
+
+    /**
+     * Checks that the {@link ReliabilityDiagram#getName()} returns 
+     * {@link MetricConstants.RELIABILITY_DIAGRAM.toString()}
+     */
+
+    @Test
+    public void testGetName()
+    {
+        assertTrue( rel.getName().equals( MetricConstants.RELIABILITY_DIAGRAM.toString() ) );
+    }
+
+    /**
+     * Tests for an expected exception on calling 
+     * {@link ReliabilityDiagram#apply(DiscreteProbabilityPairs)} with null input.
+     */
+
+    @Test
+    public void testApplyExceptionOnNullInput()
+    {
+        exception.expect( MetricInputException.class );
+        exception.expectMessage( "Specify non-null input to the 'RELIABILITY DIAGRAM'." );
+
+        rel.apply( null );
     }
 
 }

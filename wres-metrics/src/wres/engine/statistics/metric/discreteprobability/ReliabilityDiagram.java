@@ -35,8 +35,6 @@ import wres.engine.statistics.metric.MetricParameterException;
  * </p>
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 
 public class ReliabilityDiagram extends Diagram<DiscreteProbabilityPairs, MultiVectorOutput>
@@ -131,8 +129,9 @@ public class ReliabilityDiagram extends Diagram<DiscreteProbabilityPairs, MultiV
     protected ReliabilityDiagram( final ReliabilityDiagramBuilder builder ) throws MetricParameterException
     {
         super( builder );
+        
         //Set the default bins
-        bins = 10;
+        this.bins = 10;
     }
 
     /**
@@ -150,7 +149,7 @@ public class ReliabilityDiagram extends Diagram<DiscreteProbabilityPairs, MultiV
         return pair -> {
             
             //Determine forecast bin
-            for ( int i = 0; i < bins; i++ )
+            for ( int i = 0; i < this.bins; i++ )
             {
                 //Define the bin
                 double lower = Precision.round( i * constant, 5 );

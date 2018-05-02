@@ -6,8 +6,6 @@ import wres.io.writing.WriteException;
  * A runtime exception associated with writing metric outputs in Portable Network Graphics (PNG) format.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 1.0
  */
 
 public class PNGWriteException extends WriteException

@@ -6,7 +6,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
-import wres.datamodel.inputs.InsufficientDataException;
 import wres.datamodel.inputs.MetricInputException;
 import wres.datamodel.inputs.pairs.PairOfDoubles;
 import wres.datamodel.inputs.pairs.SingleValuedPairs;
@@ -17,8 +16,6 @@ import wres.datamodel.metadata.Metadata;
  * variables.
  * 
  * @author james.brown@hydrosolved.com
- * @version 0.1
- * @since 0.1
  */
 class SafeSingleValuedPairs implements SingleValuedPairs
 {
@@ -152,7 +149,6 @@ class SafeSingleValuedPairs implements SingleValuedPairs
      * 
      * @param b the builder
      * @throws MetricInputException if the pairs are invalid
-     * @throws InsufficientDataException if the climatological data is both non-null and without finite values
      */
 
     SafeSingleValuedPairs( final SingleValuedPairsBuilder b )
@@ -231,7 +227,6 @@ class SafeSingleValuedPairs implements SingleValuedPairs
      * Validates the climatological input after the constructor has copied it.
      * 
      * @throws MetricInputException if the climatological input is invalid
-     * @throws InsufficientDataException if all climatological inputs are non-finite
      */
 
     private void validateClimatologicalInput()
@@ -246,7 +241,7 @@ class SafeSingleValuedPairs implements SingleValuedPairs
 
             if ( !Arrays.stream( climatology.getDoubles() ).anyMatch( Double::isFinite ) )
             {
-                throw new InsufficientDataException( "Must have at least one non-missing value in the climatological "
+                throw new MetricInputException( "Must have at least one non-missing value in the climatological "
                                                      + "input" );
             }
         }
