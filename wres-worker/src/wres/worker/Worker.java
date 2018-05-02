@@ -2,11 +2,21 @@ package wres.worker;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Paths;
+import java.security.KeyManagementException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509TrustManager;
 
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.Connection;
@@ -28,6 +38,11 @@ public class Worker
     private static final String BROKER_HOST_PROPERTY_NAME = "wres.broker";
     private static final String DEFAULT_BROKER_HOST = "localhost";
 
+    private static final String BROKER_VHOST_PROPERTY_NAME = "wres.broker.vhost";
+    private static final String DEFAULT_BROKER_VHOST = "wres";
+
+    private static final int BROKER_PORT = 5671;
+
     /**
      * Expects exactly one arg with a path to WRES executable
      * @param args arguments, but only one is expected, a WRES executable
@@ -36,10 +51,14 @@ public class Worker
      * @throws java.net.ConnectException when connection to queue fails.
      * @throws TimeoutException when connection to the queue times out.
      * @throws InterruptedException when interrupted while waiting for work.
+     * @throws NoSuchAlgorithmException when TLSv1.2 is unavailable
+     * @throws KeyManagementException when creating trust manager fails?
+     * @throws IllegalStateException when setting up our custom trust list fails
      */
 
     public static void main( String[] args )
-            throws IOException, TimeoutException, InterruptedException
+            throws IOException, TimeoutException, InterruptedException,
+            NoSuchAlgorithmException, KeyManagementException
     {
         if ( args.length != 1 )
         {
@@ -60,11 +79,16 @@ public class Worker
 
         // Determine the actual broker name, whether from -D or default
         String brokerHost = Worker.getBrokerHost();
+        String brokerVhost = Worker.getBrokerVhost();
         LOGGER.info( "Using broker at host '{}'", brokerHost );
 
         // Get work from the queue
         ConnectionFactory factory = new ConnectionFactory();
         factory.setHost( brokerHost );
+        factory.setVirtualHost( brokerVhost );
+        factory.setPort( BROKER_PORT );
+
+        factory.useSslProtocol( "TLSv1.2", Worker.getDefaultTrustManager() );
 
         try ( Connection connection = factory.newConnection();
               Channel receiveChannel = connection.createChannel() )
@@ -118,4 +142,86 @@ public class Worker
         }
     }
 
+    /**
+     * Helper to get the broker vhost name. Returns what was set in -D args
+     * or a default value if -D is not set.
+     * @return the broker host name to try connecting to.
+     */
+
+    private static String getBrokerVhost()
+    {
+        String brokerVhostFromDashD= System.getProperty( BROKER_VHOST_PROPERTY_NAME );
+
+        if ( brokerVhostFromDashD != null )
+        {
+            return brokerVhostFromDashD;
+        }
+        else
+        {
+            return DEFAULT_BROKER_VHOST;
+        }
+    }
+
+    /**
+     * Return an X509 trust manager tied to our custom java trusted certificates
+     * @return the default trust manager
+     */
+    private static TrustManager getDefaultTrustManager()
+    {
+        KeyStore customTrustStore;
+        String ourCustomTrustFileName = "trustedCertificateAuthorities.jks";
+
+        try
+        {
+            customTrustStore = KeyStore.getInstance( KeyStore.getDefaultType() );
+        }
+        catch ( KeyStoreException kse )
+        {
+            throw new IllegalStateException( "Expected jdk to have KeyStore.getDefaultType()", kse );
+        }
+
+        InputStream customTrustStoreFile = Worker.class.getClassLoader()
+                                                       .getResourceAsStream( ourCustomTrustFileName );
+
+        try
+        {
+            customTrustStore.load( customTrustStoreFile,
+                                   "changeit".toCharArray() );
+        }
+        catch ( IOException | NoSuchAlgorithmException | CertificateException e )
+        {
+            throw new IllegalStateException( "Could not open " + ourCustomTrustFileName, e );
+        }
+
+        TrustManagerFactory trustManagerFactory;
+        String algorithm = "PKIX";
+
+        try
+        {
+            trustManagerFactory = TrustManagerFactory.getInstance( algorithm );
+        }
+        catch ( NoSuchAlgorithmException nsae )
+        {
+            throw new IllegalStateException( "No " + algorithm + " algorithm existed.", nsae );
+        }
+
+        try
+        {
+            trustManagerFactory.init( customTrustStore );
+        }
+        catch ( KeyStoreException kse )
+        {
+            throw new IllegalStateException( "Could not initialize trust manager factory.", kse );
+        }
+
+        for ( TrustManager trustManager : trustManagerFactory.getTrustManagers() )
+        {
+            if ( trustManager instanceof X509TrustManager )
+            {
+                return trustManager;
+            }
+        }
+
+        throw new IllegalStateException( "No trust manager was found." );
+    }
 }
